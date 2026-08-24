@@ -129,7 +129,7 @@ export default async function UsagePage() {
           <CardDescription>Last {DAYS} days</CardDescription>
         </CardHeader>
         <CardContent>
-          <CharChart series={requestSeries} labels={chartLabels} format={(n) => `${n} req`} />
+          <CharChart series={requestSeries} labels={chartLabels} formatKind="count" />
         </CardContent>
       </Card>
 
@@ -139,7 +139,7 @@ export default async function UsagePage() {
           <CardDescription>EST. · last {DAYS} days</CardDescription>
         </CardHeader>
         <CardContent>
-          <CharChart series={spendSeries} labels={chartLabels} format={formatUsd} />
+          <CharChart series={spendSeries} labels={chartLabels} formatKind="usd" />
         </CardContent>
       </Card>
 

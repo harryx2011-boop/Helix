@@ -62,7 +62,7 @@ function localStubKey(profileId: string): ApiKeyRow {
   return {
     id: 'local-default', profile_id: profileId, name: 'Default', prefix: keyPrefix(LOCAL_KEY), last3: keyLast3(LOCAL_KEY),
     key_hash: hashApiKey(LOCAL_KEY), key_ciphertext: `\\x${ciphertext.toString('hex')}`, key_iv: `\\x${iv.toString('hex')}`,
-    rate_limit_per_min: null, last_used_at: null, created_at: new Date(0).toISOString(), revoked_at: null,
+    rate_limit_per_min: null, last_used_at: null, created_at: new Date().toISOString(), revoked_at: null,
   };
 }
 

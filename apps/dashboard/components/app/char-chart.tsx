@@ -11,13 +11,26 @@ export interface CharChartSeries {
   values: number[];
 }
 
+export type CharChartFormatKind = 'count' | 'usd';
+
 export interface CharChartProps {
   series: CharChartSeries[];
   labels: string[];
   height?: number;
   format?: (n: number) => string;
+  /**
+   * Server-safe alternative to `format` — a function prop can't cross a
+   * server/client boundary, so pages that compose this from a server
+   * component pass a plain string kind instead. `format` wins if both are given.
+   */
+  formatKind?: CharChartFormatKind;
   variant?: 'bars' | 'area';
 }
+
+const FORMAT_KINDS: Record<CharChartFormatKind, (n: number) => string> = {
+  count: (n) => String(n),
+  usd: (n) => `$${n.toFixed(n < 1 ? 4 : 2)}`,
+};
 
 function glyphForRatio(ratio: number): (typeof GLYPHS)[number] {
   if (ratio <= 0) return GLYPHS[0];
@@ -41,7 +54,8 @@ function visibleLabelIndices(count: number, max = 12): Set<number> {
 
 const defaultFormat = (n: number): string => String(n);
 
-export function CharChart({ series, labels, height = 8, format = defaultFormat, variant = 'bars' }: CharChartProps) {
+export function CharChart({ series, labels, height = 8, format, formatKind, variant = 'bars' }: CharChartProps) {
+  const resolvedFormat = format ?? (formatKind ? FORMAT_KINDS[formatKind] : defaultFormat);
   const [hoverIndex, setHoverIndex] = React.useState<number | null>(null);
   const columnCount = labels.length;
 
@@ -133,7 +147,7 @@ export function CharChart({ series, labels, height = 8, format = defaultFormat, 
                   <div key={s.label} className="flex items-center gap-2">
                     <span className={cn('h-1.5 w-1.5 rounded-full', seriesColorClass(seriesIndex).replace('text-', 'bg-'))} />
                     <span className="text-muted-foreground">{s.label}</span>
-                    <span className="ml-auto text-foreground">{format(s.values[hoverIndex] ?? 0)}</span>
+                    <span className="ml-auto text-foreground">{resolvedFormat(s.values[hoverIndex] ?? 0)}</span>
                   </div>
                 ))}
               </div>
@@ -180,7 +194,7 @@ export function CharChart({ series, labels, height = 8, format = defaultFormat, 
             <tr key={label + i}>
               <th scope="row">{label}</th>
               {series.map((s) => (
-                <td key={s.label}>{format(s.values[i] ?? 0)}</td>
+                <td key={s.label}>{resolvedFormat(s.values[i] ?? 0)}</td>
               ))}
             </tr>
           ))}

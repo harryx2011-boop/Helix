@@ -20,7 +20,7 @@ import type {
   SearchResponse,
 } from '@/lib/api';
 import { runEndpoint } from '@/lib/run-endpoint';
-import { useApiKey } from '@/components/shell/api-key-provider';
+import { useAppSession } from '@/components/app/session-provider';
 import { ENDPOINTS, TAB_GROUPS, endpointById } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/supabase/types';
 import { cn } from '@/lib/utils';
@@ -45,7 +45,7 @@ function isJobAcceptedShape(body: unknown): body is { id: string } {
 
 export function Playground({ initialTab }: PlaygroundProps) {
   const router = useRouter();
-  const { apiKey } = useApiKey();
+  const { apiKey } = useAppSession();
   const [activeId, setActiveId] = React.useState<string>(endpointById(initialTab) ? initialTab : 'scrape');
   const [result, setResult] = React.useState<PlaygroundResult | undefined>(undefined);
   const [loading, setLoading] = React.useState(false);

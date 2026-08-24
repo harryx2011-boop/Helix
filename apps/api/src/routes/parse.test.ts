@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { registerParse, type ParseRouteDeps } from './parse.js';
 import { ExtractHttpError, type DocumentResult, type ExtractClient } from '../extract/client.js';
 import { ParseCache } from '../parse/cache.js';
+import type { Lookup } from '../parse/remote.js';
 
 const PDF = Buffer.from('%PDF-1.7\n1 0 obj << /Type /Catalog >> endobj\n%%EOF');
 const PNG = Buffer.concat([Buffer.from([0x89]), Buffer.from('PNG\r\n\x1a\n', 'latin1'), Buffer.alloc(16)]);
@@ -39,6 +40,8 @@ function remote(
   return vi.fn(async () => new Response(new Uint8Array(bytes), { status: init.status ?? 200, headers: init.headers ?? {} })) as unknown as typeof fetch;
 }
 
+const publicLookup: Lookup = async () => [{ address: '93.184.216.34', family: 4 }];
+
 async function build(deps: Partial<ParseRouteDeps> = {}): Promise<FastifyInstance> {
   const app = Fastify();
   await app.register(
@@ -46,8 +49,10 @@ async function build(deps: Partial<ParseRouteDeps> = {}): Promise<FastifyInstanc
       await registerParse(instance, {
         extractClient: deps.extractClient ?? extractClient(),
         maxUploadBytes: deps.maxUploadBytes ?? 1024 * 1024,
+        maxInFlight: deps.maxInFlight,
         userAgent: 'HelixTest/0',
         fetchImpl: deps.fetchImpl ?? remote(PDF, { headers: { 'content-type': 'application/pdf' } }),
+        lookup: deps.lookup ?? publicLookup,
         cache: deps.cache ?? new ParseCache<DocumentResult>(),
       });
     },
@@ -133,11 +138,36 @@ describe('POST /v1/parse — url path', () => {
 
   it('classifies a DNS failure from the remote fetch', async () => {
     const failing = vi.fn(async () => {
-      throw Object.assign(new TypeError('fetch failed'), { cause: { code: 'ENOTFOUND' } });
+      throw Object.assign(new TypeError('fetch failed'), {
+        cause: { code: 'ENOTFOUND', message: 'getaddrinfo ENOTFOUND nope.invalid' },
+      });
     }) as unknown as typeof fetch;
     const app = await build({ fetchImpl: failing });
     const response = await postJson(app, { url: 'https://nope.invalid/x.pdf' });
-    expect(response.json()).toMatchObject({ success: false, failure: { reason: 'dns' } });
+    expect(response.json()).toMatchObject({
+      success: false,
+      failure: { reason: 'dns', detail: 'the hostname could not be resolved (ENOTFOUND)' },
+    });
+  });
+
+  it('never echoes the transport error message, which names the address and port', async () => {
+    const failing = vi.fn(async () => {
+      throw Object.assign(new TypeError('fetch failed'), {
+        cause: { code: 'ECONNREFUSED', message: 'connect ECONNREFUSED 93.184.216.34:8443' },
+      });
+    }) as unknown as typeof fetch;
+    const app = await build({ fetchImpl: failing });
+    const response = await postJson(app, { url: 'https://example.com:8443/x.pdf' });
+    const { failure } = response.json();
+    expect(failure).toMatchObject({ reason: 'http_error', detail: 'the remote fetch failed (ECONNREFUSED)' });
+    expect(JSON.stringify(failure)).not.toContain('93.184.216.34');
+  });
+
+  it('sniffs a PDF served with a text/html content type', async () => {
+    const app = await build({ fetchImpl: remote(PDF, { headers: { 'content-type': 'text/html; charset=utf-8' } }) });
+    const response = await postJson(app, { url: 'https://legacy.example.com/report' });
+    expect(response.json().success).toBe(true);
+    expect(response.json().data.metadata.fileType).toBe('pdf');
   });
 
   it('refuses an HTML page as unsupported_type and points at /scrape', async () => {
@@ -172,6 +202,86 @@ describe('POST /v1/parse — url path', () => {
     const response = await postJson(app, { url: 'https://example.com/big.pdf' });
     expect(response.statusCode).toBe(413);
     expect(response.json()).toMatchObject({ error: 'payload_too_large', field: 'file' });
+  });
+});
+
+describe('POST /v1/parse — host policy', () => {
+  const untouched = () => vi.fn(async () => new Response('never')) as unknown as typeof fetch;
+
+  it('refuses loopback, private and link-local literals before connecting', async () => {
+    const fetchImpl = untouched();
+    const app = await build({ fetchImpl });
+    for (const url of [
+      'http://127.0.0.1:7402/health',
+      'http://localhost:7401/',
+      'http://10.0.0.5/a.pdf',
+      'http://169.254.169.254/latest/meta-data/',
+      'http://[::1]:7432/',
+    ]) {
+      const response = await postJson(app, { url });
+      expect(response.statusCode, url).toBe(400);
+      expect(response.json()).toMatchObject({ error: 'invalid_request', field: 'url' });
+    }
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('refuses a hostname that resolves to an internal address', async () => {
+    const fetchImpl = untouched();
+    const lookup: Lookup = async () => [{ address: '192.168.0.10', family: 4 }];
+    const app = await build({ fetchImpl, lookup });
+    const response = await postJson(app, { url: 'https://intranet.example.com/a.pdf' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('url');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('refuses schemes other than http and https', async () => {
+    const app = await build({ fetchImpl: untouched() });
+    const response = await postJson(app, { url: 'ftp://example.com/a.pdf' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().message).toContain('http');
+  });
+
+  it('checks every redirect hop, so a public host cannot bounce the fetch inside', async () => {
+    const fetchImpl = vi.fn(
+      async () => new Response(null, { status: 302, headers: { location: 'http://127.0.0.1:7432/' } }),
+    ) as unknown as typeof fetch;
+    const app = await build({ fetchImpl });
+    const response = await postJson(app, { url: 'https://example.com/a.pdf' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('url');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('follows a redirect to another public host and names the final file', async () => {
+    const fetchImpl = vi.fn(async (input: string | URL | Request) => {
+      if (String(input) === 'https://example.com/latest') {
+        return new Response(null, { status: 302, headers: { location: '/files/report-2026.pdf' } });
+      }
+      return new Response(new Uint8Array(PDF), { status: 200, headers: { 'content-type': 'application/pdf' } });
+    }) as unknown as typeof fetch;
+    const app = await build({ fetchImpl });
+    const response = await postJson(app, { url: 'https://example.com/latest' });
+    expect(response.json().success).toBe(true);
+    expect(response.json().data.metadata).toMatchObject({
+      filename: 'report-2026.pdf',
+      sourceUrl: 'https://example.com/latest',
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(String((fetchImpl as ReturnType<typeof vi.fn>).mock.calls[1]?.[0])).toBe(
+      'https://example.com/files/report-2026.pdf',
+    );
+    expect((fetchImpl as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]).toMatchObject({ redirect: 'manual' });
+  });
+
+  it('gives up after too many redirects', async () => {
+    const fetchImpl = vi.fn(
+      async () => new Response(null, { status: 301, headers: { location: 'https://example.com/again' } }),
+    ) as unknown as typeof fetch;
+    const app = await build({ fetchImpl });
+    const response = await postJson(app, { url: 'https://example.com/a.pdf' });
+    expect(response.json()).toMatchObject({ success: false, failure: { reason: 'http_error' } });
+    expect(response.json().failure.detail).toContain('redirected');
   });
 });
 
@@ -261,6 +371,27 @@ describe('POST /v1/parse — upload path', () => {
     expect(response.json().data.metadata.fileType).toBe('xlsx');
   });
 
+  it('does not serve a pptx parse to the same zip bytes named as a sheet', async () => {
+    const client = extractClient({
+      document: vi.fn(async (opts: { contentType: string }) => ({
+        ...PARSED,
+        parserUsed: opts.contentType.includes('presentation') ? 'python-pptx' : 'openpyxl',
+      })),
+    });
+    const app = await build({ extractClient: client });
+
+    const deck = await multipart(
+      {},
+      { name: 'deck.pptx', type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', bytes: ZIP },
+    );
+    const sheet = await multipart({}, { name: 'sheet.xlsx', type: 'application/octet-stream', bytes: ZIP });
+    await app.inject({ method: 'POST', url: '/v1/parse', headers: deck.headers, payload: deck.payload });
+    const response = await app.inject({ method: 'POST', url: '/v1/parse', headers: sheet.headers, payload: sheet.payload });
+
+    expect(client.document).toHaveBeenCalledTimes(2);
+    expect(response.json().data.metadata).toMatchObject({ fileType: 'xlsx', parser: 'openpyxl', fromCache: false });
+  });
+
   it('reports an empty upload as an empty failure', async () => {
     const app = await build();
     const { headers, payload } = await multipart({}, { name: 'a.pdf', type: 'application/pdf', bytes: Buffer.alloc(0) });
@@ -334,6 +465,25 @@ describe('POST /v1/parse — parser outcomes', () => {
     });
   });
 
+  it('reports a file the parser could not open as the file\'s fault, not an outage', async () => {
+    const client = extractClient({
+      document: vi.fn(async () => {
+        throw new ExtractHttpError(422, 'the file could not be parsed as docx: File is not a zip file');
+      }),
+    });
+    const app = await build({ extractClient: client });
+    const { headers, payload } = await multipart({}, { name: 'a.docx', type: 'application/msword', bytes: ZIP });
+    const response = await app.inject({ method: 'POST', url: '/v1/parse', headers, payload });
+    expect(response.json()).toMatchObject({
+      success: false,
+      failure: {
+        reason: 'unsupported_type',
+        detail: 'the file could not be parsed as docx: File is not a zip file',
+        escalationAvailable: false,
+      },
+    });
+  });
+
   it('reports an unreachable helix-extract as service_unavailable with escalation available', async () => {
     const client = extractClient({
       document: vi.fn(async () => {
@@ -393,5 +543,97 @@ describe('POST /v1/parse — cache', () => {
     await postJson(app, { url: 'https://example.com/report.pdf', ocr: 'force' });
 
     expect(client.document).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('POST /v1/parse — request framing errors', () => {
+  it('returns 400 for a malformed JSON body', async () => {
+    const app = await build();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/parse',
+      headers: { 'content-type': 'application/json' },
+      payload: '{"url":',
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: 'invalid_request' });
+    expect(response.json().requestId).toBeDefined();
+  });
+
+  it('returns 400 for an empty JSON body', async () => {
+    const app = await build();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/parse',
+      headers: { 'content-type': 'application/json' },
+      payload: '',
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error).toBe('invalid_request');
+  });
+
+  it('returns 415 with a pointer to both accepted bodies for a raw binary upload', async () => {
+    const app = await build();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/parse',
+      headers: { 'content-type': 'application/pdf' },
+      payload: PDF,
+    });
+    expect(response.statusCode).toBe(415);
+    expect(response.json().error).toBe('invalid_request');
+    expect(response.json().message).toContain('multipart/form-data');
+  });
+
+  it('keeps 500 for a genuine failure inside the handler', async () => {
+    const client = extractClient();
+    const app = await build({ extractClient: client, cache: { get: () => { throw new Error('boom'); }, set: () => undefined } as unknown as ParseCache<DocumentResult> });
+    const response = await postJson(app, { url: 'https://example.com/a.pdf' });
+    expect(response.statusCode).toBe(500);
+    expect(response.json().error).toBe('internal_error');
+  });
+});
+
+describe('POST /v1/parse — in-flight cap', () => {
+  it('answers 503 with Retry-After while the cap is held, and frees the slot afterwards', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const client = extractClient({
+      document: vi.fn(async () => {
+        await gate;
+        return PARSED;
+      }),
+    });
+    const app = await build({ extractClient: client, maxInFlight: 1 });
+
+    const held = postJson(app, { url: 'https://example.com/slow.pdf' });
+    await vi.waitFor(() => expect(client.document).toHaveBeenCalledTimes(1));
+
+    const refused = await postJson(app, { url: 'https://example.com/other.pdf' });
+    expect(refused.statusCode).toBe(503);
+    expect(refused.headers['retry-after']).toBe('1');
+    expect(refused.json()).toMatchObject({ error: 'service_unavailable' });
+    expect(refused.json().message).toContain('HELIX_PARSE_MAX_INFLIGHT');
+
+    release();
+    expect((await held).statusCode).toBe(200);
+
+    const after = await postJson(app, { url: 'https://example.com/other.pdf' });
+    expect(after.statusCode).toBe(200);
+  });
+
+  it('frees the slot when the parse fails', async () => {
+    const client = extractClient({
+      document: vi.fn(async () => {
+        throw new TypeError('fetch failed');
+      }),
+    });
+    const app = await build({ extractClient: client, maxInFlight: 1 });
+    await postJson(app, { url: 'https://example.com/a.pdf' });
+    const response = await postJson(app, { url: 'https://example.com/b.pdf' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().failure.reason).toBe('service_unavailable');
   });
 });

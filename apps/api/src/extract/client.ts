@@ -133,16 +133,15 @@ export class ExtractClient {
 
   /** Parse a document's bytes. The service classifies before parsing, so OCR only runs when the text layer is missing (or forced). */
   async document(options: DocumentOptions): Promise<DocumentResult> {
-    const response = await fetch(`${this.#baseUrl}/document`, {
+    const query = new URLSearchParams({ ocr: options.ocr ?? 'auto', tables: options.tables ?? 'auto' });
+    if (options.maxPages !== undefined) query.set('max_pages', String(options.maxPages));
+
+    // The bytes travel as the raw body: base64 inside JSON would hold two more
+    // copies of a 25 MB upload for the whole parse.
+    const response = await fetch(`${this.#baseUrl}/document?${query.toString()}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        content_base64: options.data.toString('base64'),
-        content_type: options.contentType,
-        ocr: options.ocr ?? 'auto',
-        max_pages: options.maxPages ?? null,
-        tables: options.tables ?? 'auto',
-      }),
+      headers: { 'content-type': options.contentType },
+      body: options.data as Uint8Array<ArrayBuffer>,
       // OCR over a long scan is the slowest thing Helix does; the default is generous on purpose.
       signal: AbortSignal.timeout(options.timeoutMs ?? 300_000),
     });

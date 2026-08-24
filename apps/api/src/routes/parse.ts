@@ -4,6 +4,7 @@ import { ExtractHttpError, type DocumentResult, type ExtractClient } from '../ex
 import type { FailureReason } from '../core/block-detection.js';
 import { classifyFile, CONTENT_TYPE_FOR, type FileType } from '../parse/file-type.js';
 import { contentHash, ParseCache } from '../parse/cache.js';
+import { assertPublicUrl, defaultLookup, HostNotAllowedError, type Lookup } from '../parse/remote.js';
 import { rejectFabricationKeywords } from './scrape.js';
 
 /**
@@ -13,7 +14,8 @@ import { rejectFabricationKeywords } from './scrape.js';
  * a `url` is fetched here first (binary-safe: helix-fetch decodes bodies as
  * text, which destroys a PDF). Either way the bytes are classified, hashed,
  * and parsed once per distinct file. The gateway enforces the upload ceiling
- * before a byte leaves the process.
+ * before a byte leaves the process, refuses remote hosts that are not public,
+ * and caps how many parses it holds in memory at once.
  */
 
 const JsonOptionsSchema = z
@@ -52,8 +54,15 @@ export interface ParseRouteDeps {
   userAgent: string;
   /** Injectable for tests; defaults to global fetch. */
   fetchImpl?: typeof fetch | undefined;
+  /** Injectable for tests; defaults to the system resolver. */
+  lookup?: Lookup | undefined;
+  /** Parses held in memory at once before the route answers 503. */
+  maxInFlight?: number | undefined;
   cache?: ParseCache<DocumentResult> | undefined;
 }
+
+const DEFAULT_MAX_IN_FLIGHT = 8;
+const MAX_REDIRECTS = 5;
 
 interface FileInput {
   bytes: Buffer;
@@ -196,40 +205,73 @@ function filenameFromDisposition(header: string | null): string | undefined {
   return plain?.[1]?.trim() || undefined;
 }
 
+// The failure detail names the class of error and the code only. The
+// underlying message carries the resolved address and port, which would turn
+// the response into a probe of whatever the gateway can reach.
 function classifyRemoteError(error: unknown): ParseFailure {
-  const err = error as { name?: string; message?: string; cause?: { code?: string; message?: string } };
+  const err = error as { name?: string; cause?: { code?: string } };
   const code = err.cause?.code ?? '';
-  const message = [err.message, err.cause?.message].filter(Boolean).join(': ');
 
   if (err.name === 'TimeoutError' || err.name === 'AbortError') {
     return { reason: 'timeout', detail: 'the remote file did not finish downloading within `timeout`' };
   }
   if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
-    return { reason: 'dns', detail: message };
+    return { reason: 'dns', detail: `the hostname could not be resolved (${code})` };
   }
   if (code.startsWith('ERR_TLS') || code.startsWith('CERT_') || code === 'DEPTH_ZERO_SELF_SIGNED_CERT') {
-    return { reason: 'tls', detail: message };
+    return { reason: 'tls', detail: `the TLS handshake failed (${code})` };
   }
-  return { reason: 'http_error', detail: message || 'the remote fetch failed' };
+  return { reason: 'http_error', detail: code ? `the remote fetch failed (${code})` : 'the remote fetch failed' };
 }
 
 async function fetchRemote(
   url: string,
-  deps: { fetchImpl: typeof fetch; userAgent: string; timeoutMs: number; maxBytes: number },
+  deps: { fetchImpl: typeof fetch; lookup: Lookup; userAgent: string; timeoutMs: number; maxBytes: number },
 ): Promise<{ ok: true; file: FileInput } | { ok: false; failure: ParseFailure } | { ok: false; tooLarge: true }> {
+  const deadline = Date.now() + deps.timeoutMs;
+  let current = new URL(url);
   let response: Response;
-  try {
-    response = await deps.fetchImpl(url, {
-      redirect: 'follow',
-      headers: {
-        'user-agent': deps.userAgent,
-        accept:
-          'application/pdf, application/vnd.openxmlformats-officedocument.*, image/png, image/jpeg, */*;q=0.5',
-      },
-      signal: AbortSignal.timeout(deps.timeoutMs),
-    });
-  } catch (error) {
-    return { ok: false, failure: classifyRemoteError(error) };
+
+  // Redirects are followed by hand so every hop is checked against the host
+  // policy: an allowed public host answering 302 to an internal address is the
+  // usual way around a check made only on the first URL.
+  for (let hop = 0; ; hop += 1) {
+    await assertPublicUrl(current, deps.lookup);
+
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      return { ok: false, failure: classifyRemoteError({ name: 'TimeoutError' }) };
+    }
+
+    try {
+      response = await deps.fetchImpl(current.toString(), {
+        redirect: 'manual',
+        headers: {
+          'user-agent': deps.userAgent,
+          accept:
+            'application/pdf, application/vnd.openxmlformats-officedocument.*, image/png, image/jpeg, */*;q=0.5',
+        },
+        signal: AbortSignal.timeout(remaining),
+      });
+    } catch (error) {
+      return { ok: false, failure: classifyRemoteError(error) };
+    }
+
+    const location = response.headers.get('location');
+    if (response.status < 300 || response.status >= 400 || !location) break;
+
+    await response.body?.cancel().catch(() => undefined);
+    if (hop >= MAX_REDIRECTS) {
+      return {
+        ok: false,
+        failure: { reason: 'http_error', detail: `the remote server redirected more than ${MAX_REDIRECTS} times` },
+      };
+    }
+    try {
+      current = new URL(location, current);
+    } catch {
+      return { ok: false, failure: { reason: 'http_error', detail: 'the remote server sent an invalid redirect' } };
+    }
   }
 
   if (!response.ok) {
@@ -274,7 +316,8 @@ async function fetchRemote(
     ok: true,
     file: {
       bytes: Buffer.concat(chunks),
-      filename: filenameFromDisposition(response.headers.get('content-disposition')) ?? filenameFromUrl(url),
+      filename:
+        filenameFromDisposition(response.headers.get('content-disposition')) ?? filenameFromUrl(current.toString()),
       contentType: response.headers.get('content-type') ?? undefined,
       sourceUrl: url,
     },
@@ -333,6 +376,9 @@ function tooLargeBody(request: FastifyRequest, maxBytes: number): Record<string,
 function documentFailure(error: unknown): ParseFailure | RequestError {
   if (error instanceof ExtractHttpError) {
     if (error.status === 415) return { reason: 'unsupported_type', detail: error.detail };
+    // 422 is helix-extract's answer for bytes its parser could not open: a
+    // corrupt or mislabelled file, which retrying will not fix.
+    if (error.status === 422) return { reason: 'unsupported_type', detail: error.detail };
     if (error.status === 400) return invalid(error.detail);
     return { reason: 'service_unavailable', detail: error.detail || `helix-extract answered HTTP ${error.status}` };
   }
@@ -343,11 +389,27 @@ function documentFailure(error: unknown): ParseFailure | RequestError {
   return { reason: 'service_unavailable', detail: err.message ?? 'helix-extract is unreachable' };
 }
 
+function saturatedBody(request: FastifyRequest, maxInFlight: number): Record<string, unknown> {
+  return {
+    error: 'service_unavailable',
+    message: `This instance is already parsing ${maxInFlight} documents (HELIX_PARSE_MAX_INFLIGHT). Retry shortly.`,
+    requestId: request.id,
+  };
+}
+
 export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps): Promise<void> {
   const fetchImpl = deps.fetchImpl ?? fetch;
+  const lookup = deps.lookup ?? defaultLookup;
   const cache = deps.cache ?? new ParseCache<DocumentResult>();
+  const maxInFlight = deps.maxInFlight ?? DEFAULT_MAX_IN_FLIGHT;
   // Multipart framing adds headers and boundaries on top of the file itself.
   const bodyLimit = deps.maxUploadBytes + 64 * 1024;
+
+  // Each parse holds its file in memory for as long as helix-extract takes,
+  // and the per-key rate limit counts requests, not bytes. This is the bound
+  // on resident uploads; the browser pool's maxContexts plays the same role
+  // for /scrape.
+  let inFlight = 0;
 
   await app.register(async (scope) => {
     scope.addContentTypeParser(
@@ -356,10 +418,33 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
       (_request, body, done) => done(null, body),
     );
 
+    // Refuse before the body is buffered; the handler re-checks when it
+    // actually takes a slot.
+    scope.addHook('preParsing', async (request, reply) => {
+      if (inFlight >= maxInFlight) {
+        void reply.header('retry-after', '1');
+        return reply.code(503).send(saturatedBody(request, maxInFlight));
+      }
+      return undefined;
+    });
+
     scope.setErrorHandler((error, request, reply) => {
-      const status = (error as { statusCode?: number }).statusCode;
+      const { statusCode: status, message: fastifyMessage } = error as { statusCode?: number; message?: string };
       if (status === 413) {
         return reply.code(413).send(tooLargeBody(request, deps.maxUploadBytes));
+      }
+      // Fastify's own parser errors (malformed or empty JSON, a content type
+      // with no parser) are the client's to fix, not ours to alarm on.
+      if (status !== undefined && status >= 400 && status < 500) {
+        const message =
+          status === 415
+            ? 'Send a JSON body with `url`, or a multipart/form-data body with a `file` part.'
+            : fastifyMessage ?? 'The request body could not be parsed.';
+        return reply.code(status).send({
+          error: 'invalid_request',
+          message,
+          requestId: request.id,
+        });
       }
       request.log.error({ error }, 'parse route failed');
       return reply.code(500).send({
@@ -370,6 +455,19 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
     });
 
     scope.post('/parse', { bodyLimit }, async (request, reply) => {
+      if (inFlight >= maxInFlight) {
+        void reply.header('retry-after', '1');
+        return reply.code(503).send(saturatedBody(request, maxInFlight));
+      }
+      inFlight += 1;
+      try {
+        return await handleParse(request, reply);
+      } finally {
+        inFlight -= 1;
+      }
+    });
+
+    async function handleParse(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> {
       const started = Date.now();
       const contentType = request.headers['content-type'] ?? '';
       const isMultipart = contentType.toLowerCase().startsWith('multipart/form-data');
@@ -382,6 +480,9 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
           const raw = request.body;
           if (!Buffer.isBuffer(raw)) throw invalid('multipart body was empty.', 'file');
           const read = await readMultipart(raw, contentType);
+          // The framed body is not needed again; only the file's own bytes stay
+          // resident for the parse.
+          (request as { body: unknown }).body = undefined;
           file = read.file;
           options = validateOptions(read.options);
         } else {
@@ -401,6 +502,7 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
 
           const fetched = await fetchRemote(url, {
             fetchImpl,
+            lookup,
             userAgent: deps.userAgent,
             timeoutMs: options.timeout,
             maxBytes: deps.maxUploadBytes,
@@ -418,6 +520,7 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
         }
       } catch (error) {
         if (error instanceof RequestError) return sendRequestError(reply, request, error);
+        if (error instanceof HostNotAllowedError) return sendRequestError(reply, request, invalid(error.message, 'url'));
         throw error;
       }
 
@@ -454,7 +557,10 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
       const fileType: FileType = classified.fileType;
 
       const hash = contentHash(file.bytes);
+      // Office containers share a zip signature, so the parser is chosen from
+      // the declared type or name; the same bytes can legitimately parse two ways.
       const cacheKey = ParseCache.key(hash, {
+        fileType,
         ocr: options.ocr,
         maxPages: options.maxPages,
         tables: options.tables,
@@ -549,6 +655,6 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
         data,
         ...(warnings.length > 0 ? { warnings } : {}),
       });
-    });
+    }
   });
 }

@@ -35,6 +35,20 @@ MIN_CHARS_PER_PAGE = 50
 GARBLED_THRESHOLD = 0.10
 
 
+class DocumentError(Exception):
+    """The bytes could not be opened as the document they were declared to be.
+
+    Distinct from ValueError (an unsupported type) so the service can answer
+    with the file's fault rather than its own: a truncated docx or a PDF that
+    is really an HTML error page is not an outage.
+    """
+
+    def __init__(self, kind: str, cause: BaseException) -> None:
+        detail = str(cause).strip() or cause.__class__.__name__
+        super().__init__(f"the file could not be parsed as {kind}: {detail}")
+        self.kind = kind
+
+
 class DocumentKind(str, Enum):
     PDF = "pdf"
     DOCX = "docx"
@@ -230,7 +244,10 @@ class ParsedDocument:
 def _pdf_to_markdown(data: bytes, max_pages: int | None = None) -> tuple[str, int]:
     import pypdfium2 as pdfium
 
-    document = pdfium.PdfDocument(data)
+    try:
+        document = pdfium.PdfDocument(data)
+    except Exception as exc:
+        raise DocumentError("pdf", exc) from exc
     try:
         total = len(document)
         limit = min(total, max_pages) if max_pages else total
@@ -253,7 +270,10 @@ def _docx_to_markdown(data: bytes) -> str:
 
     from docx import Document as DocxDocument
 
-    document = DocxDocument(io.BytesIO(data))
+    try:
+        document = DocxDocument(io.BytesIO(data))
+    except Exception as exc:
+        raise DocumentError("docx", exc) from exc
     lines: list[str] = []
 
     for paragraph in document.paragraphs:
@@ -286,7 +306,10 @@ def _pptx_to_markdown(data: bytes) -> tuple[str, int]:
 
     from pptx import Presentation
 
-    presentation = Presentation(io.BytesIO(data))
+    try:
+        presentation = Presentation(io.BytesIO(data))
+    except Exception as exc:
+        raise DocumentError("pptx", exc) from exc
     parts: list[str] = []
 
     for index, slide in enumerate(presentation.slides, start=1):
@@ -306,7 +329,10 @@ def _xlsx_to_markdown(data: bytes, max_rows: int = 1000) -> str:
 
     from openpyxl import load_workbook
 
-    workbook = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    try:
+        workbook = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    except Exception as exc:
+        raise DocumentError("xlsx", exc) from exc
     parts: list[str] = []
 
     for sheet in workbook.worksheets:

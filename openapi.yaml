@@ -158,6 +158,11 @@ paths:
 
         Synchronous. The upload ceiling is set by the operator
         (`HELIX_PARSE_MAX_UPLOAD_MB`, default 25) and answered with `413`.
+        The `url` path only fetches from public hosts over http or https:
+        localhost, private, link-local and internal addresses are refused
+        with `400`, on the first request and on every redirect. An instance
+        holds at most `HELIX_PARSE_MAX_INFLIGHT` parses in memory (default 8)
+        and answers `503` with `Retry-After` beyond that.
       operationId: parse
       requestBody:
         required: true
@@ -205,7 +210,21 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+        '415':
+          description: The request body is neither JSON nor `multipart/form-data`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: This instance is already holding `HELIX_PARSE_MAX_INFLIGHT` parses in memory. Retry after the `Retry-After` header.
+          headers:
+            Retry-After:
+              schema: { type: integer }
+              description: Seconds to wait before retrying.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /map:
     post:

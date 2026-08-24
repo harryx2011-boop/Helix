@@ -157,6 +157,7 @@ await app.register(
     await registerParse(instance, {
       extractClient,
       maxUploadBytes: config.parseMaxUploadMb * 1024 * 1024,
+      maxInFlight: config.parseMaxInflight,
       userAgent: config.userAgent,
     });
     await registerKeys(instance);

@@ -24,6 +24,18 @@ describe('classifyFile', () => {
     expect(result.reason).toContain('/v1/scrape');
   });
 
+  it('lets a recognised signature override a text/html content type', () => {
+    expect(classifyFile({ bytes: PDF, contentType: 'text/html; charset=utf-8' }).fileType).toBe('pdf');
+    expect(classifyFile({ bytes: JPG, contentType: 'text/html' }).fileType).toBe('jpg');
+    expect(classifyFile({ bytes: ZIP, contentType: 'text/html', filename: 'q.docx' }).fileType).toBe('docx');
+  });
+
+  it('still refuses text/html when the bytes say nothing', () => {
+    const result = classifyFile({ bytes: Buffer.from('<div>fragment</div>'), contentType: 'text/html', filename: 'a.pdf' });
+    expect(result.fileType).toBeUndefined();
+    expect(result.reason).toContain('/v1/scrape');
+  });
+
   it('falls back to the extension for unknown bytes', () => {
     expect(classifyFile({ bytes: Buffer.from('xxxx'), filename: 'photo.JPEG' }).fileType).toBe('jpg');
     expect(classifyFile({ bytes: Buffer.from('xxxx'), filename: 'notes.md' }).reason).toContain('supported:');

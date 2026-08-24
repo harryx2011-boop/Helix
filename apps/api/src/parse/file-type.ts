@@ -83,9 +83,9 @@ export function classifyFile(input: {
   const fromExtension = BY_EXTENSION[extensionOf(input.filename) ?? ''];
   const signature = sniff(input.bytes);
 
-  if (signature === 'html' || declared === 'text/html') {
-    return { reason: 'the source is an HTML page, not a document; use /v1/scrape for web pages' };
-  }
+  const htmlPage = { reason: 'the source is an HTML page, not a document; use /v1/scrape for web pages' };
+
+  if (signature === 'html') return htmlPage;
 
   if (signature === 'pdf' || signature === 'png' || signature === 'jpg') {
     return { fileType: signature };
@@ -100,6 +100,10 @@ export function classifyFile(input: {
       reason: 'a zip container with no recognisable Office type; send a .docx, .pptx or .xlsx name or content type',
     };
   }
+
+  // Only now does the declared type get a say: a PDF served as text/html by a
+  // misconfigured server was already recognised from its bytes above.
+  if (declared === 'text/html') return htmlPage;
 
   if (fromHeader) return { fileType: fromHeader };
   if (fromExtension) return { fileType: fromExtension };

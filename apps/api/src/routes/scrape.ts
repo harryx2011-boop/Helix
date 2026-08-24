@@ -63,7 +63,7 @@ export interface ScrapeRouteDeps {
  * the request through anyway. Refusing it with an explanation is better than a
  * confidently wrong answer.
  */
-function rejectFabricationKeywords(schema: Record<string, unknown>, path = 'extract.schema'): void {
+export function rejectFabricationKeywords(schema: Record<string, unknown>, path = 'extract.schema'): void {
   for (const keyword of ['minItems', 'maxItems'] as const) {
     if (keyword in schema) {
       throw Object.assign(new Error(`\`${keyword}\` is not supported in extraction schemas.`), {

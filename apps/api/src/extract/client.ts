@@ -27,6 +27,63 @@ export interface ExtractResult {
   contentHash: string;
 }
 
+export interface DocumentOptions {
+  data: Buffer;
+  contentType: string;
+  ocr?: 'auto' | 'never' | 'always' | undefined;
+  maxPages?: number | undefined;
+  tables?: 'auto' | 'high-fidelity' | undefined;
+  timeoutMs?: number | undefined;
+}
+
+export interface DocumentResult {
+  markdown: string;
+  pages: number;
+  needsOcr: boolean;
+  ocrApplied: boolean;
+  suspectedGarbledText: boolean;
+  parserUsed: string;
+}
+
+export interface StructuredOptions {
+  content: string;
+  schema?: Record<string, unknown> | undefined;
+  prompt?: string | undefined;
+  model?: string | undefined;
+  timeoutMs?: number | undefined;
+}
+
+export interface StructuredResult {
+  data: Record<string, unknown>;
+  tokensInput: number;
+  tokensOutput: number;
+  modelUsed: string;
+}
+
+/** helix-extract answered with a status the caller can act on (400 schema, 415 type, 503 provider). */
+export class ExtractHttpError extends Error {
+  readonly status: number;
+  readonly detail: string;
+
+  constructor(status: number, detail: string) {
+    super(`helix-extract returned HTTP ${status}: ${detail.slice(0, 200)}`);
+    this.name = 'ExtractHttpError';
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+async function detailOf(response: Response): Promise<string> {
+  const text = await response.text().catch(() => '');
+  try {
+    const body = JSON.parse(text) as { detail?: unknown };
+    if (typeof body.detail === 'string') return body.detail;
+  } catch {
+    // Not JSON; the raw text is the detail.
+  }
+  return text;
+}
+
 export class ExtractClient {
   readonly #baseUrl: string;
   readonly #logger: Log | undefined;
@@ -74,6 +131,78 @@ export class ExtractClient {
       links: body.links ?? [],
       extractorUsed: body.extractor_used,
       contentHash: body.content_hash,
+    };
+  }
+
+  /** Parse a document's bytes. The service classifies before parsing, so OCR only runs when the text layer is missing (or forced). */
+  async document(options: DocumentOptions): Promise<DocumentResult> {
+    const response = await fetch(`${this.#baseUrl}/document`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        content_base64: options.data.toString('base64'),
+        content_type: options.contentType,
+        ocr: options.ocr ?? 'auto',
+        max_pages: options.maxPages ?? null,
+        tables: options.tables ?? 'auto',
+      }),
+      // OCR over a long scan is the slowest thing Helix does; the default is generous on purpose.
+      signal: AbortSignal.timeout(options.timeoutMs ?? 300_000),
+    });
+
+    if (!response.ok) {
+      throw new ExtractHttpError(response.status, await detailOf(response));
+    }
+
+    const body = (await response.json()) as {
+      markdown: string;
+      pages: number;
+      needs_ocr: boolean;
+      ocr_applied: boolean;
+      suspected_garbled_text: boolean;
+      parser_used: string;
+    };
+
+    return {
+      markdown: body.markdown,
+      pages: body.pages,
+      needsOcr: body.needs_ocr,
+      ocrApplied: body.ocr_applied,
+      suspectedGarbledText: body.suspected_garbled_text,
+      parserUsed: body.parser_used,
+    };
+  }
+
+  /** Schema- or prompt-driven extraction over already-parsed content, using the operator's configured model. */
+  async structured(options: StructuredOptions): Promise<StructuredResult> {
+    const response = await fetch(`${this.#baseUrl}/structured`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        content: options.content,
+        schema: options.schema ?? {},
+        prompt: options.prompt ?? null,
+        model: options.model ?? null,
+      }),
+      signal: AbortSignal.timeout(options.timeoutMs ?? 120_000),
+    });
+
+    if (!response.ok) {
+      throw new ExtractHttpError(response.status, await detailOf(response));
+    }
+
+    const body = (await response.json()) as {
+      data: Record<string, unknown>;
+      tokens_input: number;
+      tokens_output: number;
+      model_used: string;
+    };
+
+    return {
+      data: body.data,
+      tokensInput: body.tokens_input,
+      tokensOutput: body.tokens_output,
+      modelUsed: body.model_used,
     };
   }
 

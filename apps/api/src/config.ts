@@ -48,6 +48,9 @@ const ConfigSchema = z.object({
 
   resultTtlHours: int(168),
 
+  /** Upload ceiling for `/parse`, enforced at the gateway before a byte reaches helix-extract. */
+  parseMaxUploadMb: int(25),
+
   // Comma-separated allowed origins for the dashboard. Defaults to the dev
   // origins for the split-port setup (dashboard 3400 -> API 7400). Set
   // explicitly in production to the dashboard's real origin.
@@ -84,6 +87,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     proxyUrl: env.HELIX_PROXY_URL || undefined,
     searchProvider: env.HELIX_SEARCH_PROVIDER,
     resultTtlHours: env.HELIX_RESULT_TTL_HOURS,
+    parseMaxUploadMb: env.HELIX_PARSE_MAX_UPLOAD_MB,
     corsOrigins: env.HELIX_CORS_ORIGINS,
   });
 

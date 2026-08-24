@@ -187,7 +187,7 @@ export function Playground({ initialTab }: PlaygroundProps) {
           {activeDef.id === 'monitor' && (
             <MonitorForm
               loading={loading}
-              onSubmit={(request: MonitorRequest) => run('monitor', 'monitor', request as unknown as Record<string, unknown>, true)}
+              onSubmit={(request: MonitorRequest) => run('monitor', 'monitor', request as unknown as Record<string, unknown>, false)}
               onGetCode={(body) => openCode('monitor', body)}
             />
           )}

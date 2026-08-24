@@ -78,6 +78,17 @@ const ConfigSchema = z.object({
   /** Parses held in memory at once; beyond this `/parse` answers 503 with Retry-After. */
   parseMaxInflight: int(8),
 
+  /** Shortest gap between two checks of one monitor, in seconds. Hourly by default. */
+  monitorMinIntervalSeconds: int(3600),
+  /** Checks running at once across all monitors on this instance. */
+  monitorConcurrency: int(2),
+  monitorRetainSnapshots: int(30),
+  monitorRetainDays: int(90),
+  /** History rows kept per monitor; older ones are pruned as checks run. */
+  monitorRetainChecks: int(2000),
+  /** A page whose text exceeds this many bytes fails the check instead of being stored. */
+  monitorMaxContentBytes: int(1_048_576),
+
   // Comma-separated allowed origins for the dashboard. Defaults to the dev
   // origins for the split-port setup (dashboard 3400 -> API 7400). Set
   // explicitly in production to the dashboard's real origin.
@@ -126,6 +137,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     resultTtlHours: env.HELIX_RESULT_TTL_HOURS,
     parseMaxUploadMb: env.HELIX_PARSE_MAX_UPLOAD_MB,
     parseMaxInflight: env.HELIX_PARSE_MAX_INFLIGHT,
+    monitorMinIntervalSeconds: env.HELIX_MONITOR_MIN_INTERVAL,
+    monitorConcurrency: env.HELIX_MONITOR_CONCURRENCY,
+    monitorRetainSnapshots: env.HELIX_MONITOR_RETAIN_SNAPSHOTS,
+    monitorRetainDays: env.HELIX_MONITOR_RETAIN_DAYS,
+    monitorRetainChecks: env.HELIX_MONITOR_RETAIN_CHECKS,
+    monitorMaxContentBytes: env.HELIX_MONITOR_MAX_CONTENT_BYTES,
     corsOrigins: env.HELIX_CORS_ORIGINS,
   });
 

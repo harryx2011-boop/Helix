@@ -23,8 +23,15 @@ import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerInternal } from './routes/internal.js';
 import { createSearchProvider } from './search/providers.js';
-import { WebhookDispatcher } from './webhooks/dispatcher.js';
+import { WebhookDispatcher as CrawlWebhookDispatcher } from './webhooks/dispatcher.js';
 import { registerMcp } from './mcp/server.js';
+import { registerMonitor } from './routes/monitor.js';
+import { PgMonitorStore } from './monitor/store.js';
+import { MonitorScheduler } from './monitor/scheduler.js';
+import { WebhookDispatcher as MonitorWebhookDispatcher } from './monitor/webhooks.js';
+import { includeSelectorsFor, runCheck, type FetchOutcome } from './monitor/checker.js';
+import { runPipeline } from './core/pipeline.js';
+import type { MonitorRecord } from './monitor/store.js';
 
 const config = loadConfig();
 
@@ -91,11 +98,64 @@ const crawlWorker = new CrawlWorker({
   logger: app.log,
 });
 
-const webhookDispatcher = new WebhookDispatcher({
+const crawlWebhookDispatcher = new CrawlWebhookDispatcher({
   db: pool,
   secret: config.webhookSecret,
   maxAttempts: config.webhookMaxAttempts,
   retentionHours: config.resultTtlHours,
+  logger: app.log,
+});
+
+const monitorStore = new PgMonitorStore(pool);
+const monitorRetention = {
+  keep: config.monitorRetainSnapshots,
+  maxAgeDays: config.monitorRetainDays,
+  keepChecks: config.monitorRetainChecks,
+};
+
+/** A monitor check is a markdown-only scrape through the same ladder as /scrape. */
+const fetchMonitorPage = async (monitor: MonitorRecord): Promise<FetchOutcome> => {
+  const options = monitor.scrapeOptions;
+  const result = await runPipeline(
+    {
+      url: monitor.url,
+      formats: ['markdown'],
+      tier: options.tier ?? 'auto',
+      onlyMainContent: options.onlyMainContent ?? true,
+      includeSelectors: includeSelectorsFor(monitor),
+      excludeSelectors: options.excludeSelectors ?? [],
+      extractor: options.extractor ?? 'trafilatura',
+      waitFor: options.waitFor,
+      timeout: options.timeout ?? 30_000,
+      headers: options.headers,
+      profile: options.profile,
+      proxy: options.proxy?.url,
+    },
+    { fetchClient, extractClient, browserPool, logger: app.log },
+  );
+  if (!result.success) return { ok: false, reason: result.reason, detail: result.detail };
+  const content = result.content.markdown || result.content.text || '';
+  if (content.trim().length === 0) return { ok: false, reason: 'empty', detail: 'The page produced no readable text.' };
+  return { ok: true, content, contentHash: result.content.contentHash };
+};
+
+const monitorScheduler = new MonitorScheduler({
+  store: monitorStore,
+  concurrency: config.monitorConcurrency,
+  check: (monitor) =>
+    runCheck(monitor, {
+      store: monitorStore,
+      fetchPage: fetchMonitorPage,
+      retention: monitorRetention,
+      maxContentBytes: config.monitorMaxContentBytes,
+      logger: app.log,
+    }),
+  logger: app.log,
+});
+
+const monitorWebhookDispatcher = new MonitorWebhookDispatcher({
+  store: monitorStore,
+  defaultSecret: config.webhookSecret,
   logger: app.log,
 });
 
@@ -160,6 +220,11 @@ await app.register(
       cacheTtlMs: config.searchCacheTtlMs,
       maxDurationMs: config.searchMaxDurationMs,
     });
+    await registerMonitor(instance, {
+      store: monitorStore,
+      scheduler: monitorScheduler,
+      minIntervalSeconds: config.monitorMinIntervalSeconds,
+    });
   },
   { prefix: '/v1' },
 );
@@ -171,7 +236,7 @@ await registerInternal(app, { adminToken: config.internalAdminToken });
 // and rate limited once on the way in; the replayed tool call rides a ticket.
 await registerMcp(app, { prefix: '/v1', tickets });
 
-// TODO(M7+): /monitor, /interact
+// TODO(M7+): /interact
 
 const start = async (): Promise<void> => {
   try {
@@ -197,7 +262,9 @@ const start = async (): Promise<void> => {
     // Runs in-process. A separate worker deployment would scale further, but
     // one process is the right default for a self-hosted tool.
     void crawlWorker.start();
-    void webhookDispatcher.start();
+    void crawlWebhookDispatcher.start();
+    await monitorScheduler.start();
+    monitorWebhookDispatcher.start();
 
     await app.listen({ port: config.port, host: '0.0.0.0' });
     app.log.info(
@@ -220,7 +287,9 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 
     void (async () => {
       crawlWorker.stop();
-      webhookDispatcher.stop();
+      monitorScheduler.stop();
+      monitorWebhookDispatcher.stop();
+      crawlWebhookDispatcher.stop();
       await app.close().catch(() => undefined);
       await browserPool.close().catch(() => undefined);
       await closePool().catch(() => undefined);

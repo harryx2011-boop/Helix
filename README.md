@@ -31,7 +31,7 @@ Helix inverts all three.
 | `/map` | List a site's URLs without reading them. |
 | `/search` | Search the web, optionally reading every result in the same call. |
 | `/enrich` | Turn a sparse identifier into structured columns with citations. |
-| `/monitors` | Scheduled re-reads with inline diffs. Unchanged pages are free. |
+| `/monitor` | Scheduled re-reads with inline diffs. Unchanged pages are free. |
 
 Plus an MCP server, so agents can call it directly.
 

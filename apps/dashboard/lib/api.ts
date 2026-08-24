@@ -349,20 +349,56 @@ export type InteractResponse = InteractResponseSuccess | InteractResponseFailure
 
 // --- Monitor ---
 
-export interface MonitorRequest {
+export type MonitorGranularity = 'word' | 'line' | 'character';
+export type MonitorEvent = 'changed' | 'checked' | 'failed';
+
+/** A cron string, or `{ cron | every, timezone }`. Mirrors `MonitorSchedule` in openapi.yaml. */
+export type MonitorSchedule = string | { cron?: string; every?: string; timezone?: string };
+
+export interface MonitorWebhook {
   url: string;
-  schedule: string;
-  scrapeOptions?: ScrapeOptions;
-  jsonOptions?: ParseJsonOptions;
-  sensitivity?: 'any' | 'significant';
-  webhook?: string;
+  headers?: Record<string, string>;
+  events?: MonitorEvent[];
+  metadata?: Record<string, unknown>;
+  secret?: string;
 }
 
+export interface MonitorTrigger {
+  keywordAppears?: string;
+  keywordDisappears?: string;
+  selector?: string;
+  minChangeRatio?: number;
+}
+
+export interface MonitorRequest {
+  url: string;
+  schedule: MonitorSchedule;
+  scrapeOptions?: Omit<ScrapeOptions, 'formats' | 'extract'>;
+  diff?: { granularity?: MonitorGranularity; inline?: boolean };
+  trigger?: MonitorTrigger;
+  sensitivity?: 'any' | 'significant';
+  webhook?: string | MonitorWebhook;
+}
+
+/** Mirrors `Monitor` in openapi.yaml: what `POST /v1/monitor` and `GET /v1/monitor/{id}` return. */
 export interface MonitorResponse {
   success: boolean;
-  monitorId?: string;
-  status?: 'active' | 'paused' | 'error';
-  nextCheckAt?: string;
+  id: string;
+  monitorId: string;
+  url: string;
+  schedule: { cron: string; timezone: string; every?: string };
+  sensitivity: 'any' | 'significant';
+  diff: { granularity: MonitorGranularity; inline: boolean };
+  trigger: MonitorTrigger;
+  webhook: { url: string; events: MonitorEvent[]; metadata: Record<string, unknown> | null; headers: string[]; signed: boolean } | null;
+  status: 'active' | 'paused' | 'error';
+  createdAt: string;
+  updatedAt: string;
+  lastCheckedAt: string | null;
+  nextCheckAt: string | null;
+  lastChangeAt: string | null;
+  lastError: string | null;
+  stats: { checks: number; changes: number; pagesUnchanged: number };
 }
 
 export interface DocumentImage {

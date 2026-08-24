@@ -148,13 +148,19 @@ what `assess_pdf` returns.
 - ☐ `destination` wired into the crawl worker — sinks exist but nothing calls them
 - ☐ Live embedding run unverified: the local model was not downloaded here
 
-## M7 — Monitors ☐
+## M7 — Monitors ◐
 
-- ☐ Scheduler: cron, intervals, timezone and business-hours windows
-- ☐ Content hashing, unchanged pages free
-- ☐ Diffs at word, line and character granularity, delivered inline
-- ☐ Keyword triggers (no model call)
-- ☐ Webhooks: HMAC signing, backoff over days, dead letter with replay
+- ☑ `POST/GET /v1/monitor`, `GET/PATCH/DELETE /v1/monitor/{id}`, `GET /v1/monitor/{id}/history`, `GET .../snapshots/{id}`, `POST .../check`, `GET .../deliveries`, `POST .../deliveries/{id}/replay`
+- ☑ Scheduler: cron and intervals (`15m`, `6h`, `1d`) with timezone, Postgres due-queue claimed with SKIP LOCKED, operator minimum interval (`HELIX_MONITOR_MIN_INTERVAL`), concurrency cap
+- ☑ Content hashing, unchanged pages free (no snapshot, no webhook, a history row only)
+- ☑ Diffs at word, line and character granularity, delivered inline (Myers over tokens)
+- ☑ `sensitivity: significant` noise filters (relative times, clock times, dates, tracking params)
+- ☑ Keyword triggers (`keywordAppears`, `keywordDisappears`, `minChangeRatio`, `selector`) with no model call
+- ☑ Webhooks: HMAC signing (`Helix-Signature`), backoff over ten attempts, dead letter with replay
+- ☑ Snapshot retention by count and age (`HELIX_MONITOR_RETAIN_SNAPSHOTS`, `HELIX_MONITOR_RETAIN_DAYS`)
+- ☐ Business-hours windows as a first-class field (today: express them in cron, e.g. `0 9-17 * * 1-5`)
+- ☐ Field-level JSON diffs (`jsonOptions`) — needs the extraction pipeline on the check path
+- ☐ Multi-page monitors over a crawl scope (spec §7 open question; v1 is one URL per monitor)
 
 ## M8 — Enrich ☐
 

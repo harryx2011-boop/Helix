@@ -67,10 +67,10 @@ export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
   },
   monitor: {
     id: 'monitor',
-    purpose: 'Watch a URL on a schedule and get a diff — word, line and character level — the moment it changes. Unchanged checks store a snapshot but trigger nothing.',
-    whenToUse: 'Reach for Monitor when you need to know about future changes, not the current state. For a one-time read, use Scrape.',
-    responseShape: 'Create: `{ success, monitorId, status, nextCheckAt }`. History: `{ checkedAt, changed, diff, snapshotUrl }[]`.',
-    failureReasons: ['timeout', 'service_unavailable', 'empty'],
+    purpose: 'Watch one URL on a cron schedule and get a word, line or character diff when it changes. Unchanged checks store no snapshot and send nothing; `sensitivity: significant` ignores timestamps and tracking noise, and keyword triggers narrow it further without a model call.',
+    whenToUse: 'Reach for Monitor when you need to know about future changes, not the current state. For a one-time read, use Scrape. For many pages at once, create one monitor per URL; a monitor watches a single page.',
+    responseShape: 'Create: `{ success, id, monitorId, status, nextCheckAt, schedule, stats }` (201). History: `GET /v1/monitor/{id}/history` returns `{ entries: [{ checkedAt, changed, reason, diff, snapshotUrl }], next }`. Webhooks post `{ event, monitorId, url, checkedAt, changed, diff, snapshot, previousSnapshot }` signed with `Helix-Signature`.',
+    failureReasons: ['blocked', 'challenge', 'timeout', 'dns', 'tls', 'http_error', 'empty', 'robots_denied', 'service_unavailable'],
   },
 };
 

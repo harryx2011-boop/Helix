@@ -286,9 +286,11 @@ export class CrawlWorker {
           if (!contentUnchanged) {
             await this.#recordDocument(jobId, item.url, result);
             completed++;
+            // The markdown is not copied into the delivery row: the dispatcher
+            // reads it from `documents` at send time, so a crawl with a webhook
+            // stores each page once.
             await this.#emit(jobId, request, 'page', item.url, {
               url: item.url,
-              markdown: result.content.markdown,
               metadata: {
                 title: result.content.title,
                 sourceUrl: item.url,
@@ -341,7 +343,7 @@ export class CrawlWorker {
       return;
     }
 
-    await getPool().query(
+    const { rowCount } = await getPool().query(
       `UPDATE jobs
           SET status = 'completed', finished_at = now(),
               completed = $2, failed = $3, total = $4, usage = $5, rejections = $6
@@ -358,6 +360,14 @@ export class CrawlWorker {
         JSON.stringify(frontier.rejections()),
       ],
     );
+
+    // A cancellation that landed between the last poll and the queue draining
+    // leaves the row cancelled and the update unapplied. Cancellation emits
+    // nothing, so neither does this.
+    if ((rowCount ?? 0) === 0) {
+      this.#logger?.info({ jobId, completed, failed }, 'crawl cancelled as it finished');
+      return;
+    }
 
     this.#logger?.info(
       { jobId, completed, failed, unchanged, rejections: frontier.rejections() },

@@ -32,9 +32,9 @@ const ALL_FAILURE_REASONS: FailureReason[] = [
 export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
   scrape: {
     id: 'scrape',
-    purpose: 'Read one URL and return it as markdown, HTML, JSON, a screenshot or links. Works identically for web pages and documents.',
-    whenToUse: 'Reach for Scrape whenever you already have the URL. Use Search when you only have a query, Crawl when you need a whole site, and Interact when the page needs clicks or typing before it can be read.',
-    responseShape: '`{ success, data: { markdown, html, json, screenshot, links, metadata }, warnings }` on success, or `{ success: false, failure: { reason, detail, tier, tiersAttempted, escalationAvailable } }`.',
+    purpose: 'Read one URL and return it as markdown, sanitised or raw HTML, text, links, a screenshot, schema-shaped JSON or citation-ready chunks. One request, any combination of formats.',
+    whenToUse: 'Reach for Scrape whenever you already have the URL. Use Search when you only have a query, Crawl when you need a whole site, Parse when the input is a file you are uploading, and Interact when the page needs clicks or typing across several calls before it can be read. For `json`, send a JSON Schema in `jsonOptions` and optionally pick `provider` and `model` per request; the key must already be configured on the instance. `proxy` takes `auto`, `stealth`, `none` or your own `{ url }`; `mobile: true` renders the phone layout.',
+    responseShape: '`{ success: true, data: { markdown, html, rawHtml, text, links, screenshot, json, chunks, metadata }, warnings, usage }` where only requested formats are present, `warnings` is always an array, and `usage` (model, tokens, blocks kept) appears only when a model ran. A format that failed after the page was read comes back `null` with a warning naming it. Otherwise `{ success: false, failure: { reason, detail, statusCode, detectedBy, tier, tiersAttempted, profile, escalationAvailable }, warnings }` inside a 200; a 400 means the request itself was wrong (`invalid_request`, `invalid_schema`, `proxy_unavailable`).',
     failureReasons: ALL_FAILURE_REASONS,
   },
   parse: {

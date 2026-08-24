@@ -30,6 +30,10 @@ The walking skeleton. Proves the three-runtime shape end to end.
 - ☑ `FetchClient` and `ExtractClient` with typed contracts and health probes
 - ☑ Scrape pipeline: ladder walk, block classification, typed failures (9 tests)
 - ☑ `POST /scrape` with format selection and fabrication-keyword rejection
+- ☑ `/scrape` contract aligned with the spec: `jsonOptions` alias with per-request
+      `provider`/`model`, `json` wired to helix-extract with `usage` reported,
+      `proxy` as `auto|stealth|none` or an object, `mobile`, sanitised `html`,
+      `chunks`, `warnings` on every response (28 route and sanitiser tests)
 - ☑ `helix-fetch` transport: wreq client, 13 browser identities, proxy support,
       per-request clients so a pooled connection cannot leak the prior identity
 - ☑ `helix-extract`: trafilatura + readability, `auto` routing, selector support,

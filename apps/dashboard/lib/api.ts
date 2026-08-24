@@ -6,18 +6,8 @@
  * lands. Shapes mirror the spec's `components.schemas` names exactly.
  */
 
-export type Format =
-  | 'markdown'
-  | 'html'
-  | 'rawHtml'
-  | 'text'
-  | 'links'
-  | 'images'
-  | 'screenshot'
-  | 'pdf'
-  | 'json'
-  | 'chunks'
-  | 'summary';
+/** Every format `/scrape` serves today (openapi.yaml `Format`). */
+export type Format = 'markdown' | 'html' | 'rawHtml' | 'text' | 'links' | 'screenshot' | 'json' | 'chunks';
 
 export type Tier = 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium';
 
@@ -42,11 +32,24 @@ export interface ProxyConfig {
   geo?: string;
 }
 
+export type ExtractProvider = 'anthropic' | 'openai' | 'openrouter' | 'google' | 'gemini' | 'ollama' | 'vllm' | 'openai-compatible';
+
 export interface ExtractConfig {
   schema?: Record<string, unknown>;
   prompt?: string;
+  /** Per-request override; the key must already be configured on the instance. */
+  provider?: ExtractProvider;
   model?: string;
   includeSources?: boolean;
+}
+
+/** `auto`: instance proxy if configured. `stealth`: instance proxy required. `none`: direct. Object: your own. */
+export type ProxyOption = 'auto' | 'stealth' | 'none' | ProxyConfig;
+
+export interface ChunkConfig {
+  strategy?: 'semantic' | 'heading' | 'fixed';
+  maxTokens?: number;
+  overlap?: number;
 }
 
 export interface ScrapeOptions {
@@ -58,10 +61,14 @@ export interface ScrapeOptions {
   extractor?: Extractor;
   waitFor?: number;
   timeout?: number;
+  mobile?: boolean;
   headers?: Record<string, string>;
   profile?: string;
-  proxy?: ProxyConfig;
+  proxy?: ProxyOption;
+  /** Same option as `jsonOptions`; send one of the two. */
   extract?: ExtractConfig;
+  jsonOptions?: ExtractConfig;
+  chunk?: ChunkConfig;
 }
 
 export interface ScrapeRequest extends ScrapeOptions {
@@ -309,8 +316,17 @@ export interface DocumentMetadata {
   tiersAttempted?: Tier[];
   profile?: string;
   extractor?: string;
+  mobile?: boolean;
   timingMs?: number;
   fromCache?: boolean;
+}
+
+export interface DocumentChunk {
+  text: string;
+  anchor: string;
+  tokens: number;
+  headingPath: string[];
+  index: number;
 }
 
 export interface Document {
@@ -321,9 +337,22 @@ export interface Document {
   summary?: string;
   links?: string[];
   images?: DocumentImage[];
-  screenshot?: string;
-  json?: Record<string, unknown>;
+  /** A `data:image/png;base64,` URI, or `null` with a warning when nothing was captured. */
+  screenshot?: string | null;
+  /** `null` with a warning when the model step failed after the page was read. */
+  json?: Record<string, unknown> | null;
+  jsonSources?: Record<string, unknown>[];
+  chunks?: DocumentChunk[] | null;
   metadata?: DocumentMetadata;
+}
+
+/** Present only when a model ran. Tokens are billed by the caller's provider. */
+export interface ExtractionUsage {
+  model: string;
+  tokens: { input: number; output: number };
+  blocksKept: number;
+  blocksTotal: number;
+  providerCost: { amount: number | null; currency: string };
 }
 
 export interface FetchFailure {
@@ -341,7 +370,8 @@ export interface FetchFailure {
 export interface ScrapeResponseSuccess {
   success: true;
   data: Document;
-  warnings?: string[];
+  warnings: string[];
+  usage?: ExtractionUsage;
 }
 
 export interface ScrapeResponseFailure {

@@ -6,6 +6,7 @@ import type {
   CrawlResponse,
   Document,
   Estimate,
+  ExtractionUsage,
   InteractResponse,
   JobAccepted,
   MapResponse,
@@ -117,17 +118,48 @@ function ResultTabs({ mode, onChange }: { mode: ViewMode; onChange: (mode: ViewM
   );
 }
 
-function DocumentResult({ data, timingMs }: { data: Document; timingMs: number | undefined }) {
+function DocumentResult({
+  data,
+  timingMs,
+  warnings = [],
+  usage,
+}: {
+  data: Document;
+  timingMs: number | undefined;
+  warnings?: string[];
+  usage?: ExtractionUsage;
+}) {
   const [mode, setMode] = React.useState<ViewMode>('rendered');
   const hasMarkdown = typeof data.markdown === 'string';
+  const hasJson = data.json !== undefined && data.json !== null;
 
   return (
     <div className="flex flex-col gap-4">
       {data.metadata && <MetadataStrip metadata={data.metadata} timingMs={timingMs} contentHash={data.metadata.contentHash} />}
+      {warnings.length > 0 && (
+        <ul className="flex flex-col gap-1 rounded-card border border-border px-3 py-2 font-mono text-xs text-muted-foreground">
+          {warnings.map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+      )}
       <ResultTabs mode={mode} onChange={setMode} />
+      {mode === 'rendered' && hasJson && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Extracted JSON</span>
+            {usage && (
+              <span className="font-mono text-xs text-muted-foreground">
+                {usage.model} · {usage.tokens.input} in / {usage.tokens.output} out · {usage.blocksKept}/{usage.blocksTotal} blocks
+              </span>
+            )}
+          </div>
+          <JsonView data={data.json} />
+        </div>
+      )}
       {mode === 'rendered' && hasMarkdown && data.markdown && <MarkdownView content={data.markdown} />}
-      {mode === 'rendered' && !hasMarkdown && (
-        <p className="text-sm text-muted-foreground">No markdown in this response — check Raw JSON.</p>
+      {mode === 'rendered' && !hasMarkdown && !hasJson && (
+        <p className="text-sm text-muted-foreground">No markdown in this response. Check Raw JSON.</p>
       )}
       {mode === 'raw' && <JsonView data={data} />}
       {data.screenshot && (
@@ -221,7 +253,7 @@ export function Results({ result, loading, timingMs, error }: ResultsProps) {
       }
       return (
         <div className={wrapperClass}>
-          <DocumentResult data={response.data} timingMs={timingMs} />
+          <DocumentResult data={response.data} timingMs={timingMs} warnings={response.warnings} {...(response.usage ? { usage: response.usage } : {})} />
         </div>
       );
     }

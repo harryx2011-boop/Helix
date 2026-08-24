@@ -1,6 +1,6 @@
 # Helix — context
 
-> **v0.1.0-pre** (2026-08-24): website + app plan settled in WEBSITE.md; foundation build starting. Six-API catalog adopted from research/api-specs. Git initialised, private remote.
+> **v0.1.0-pre** (2026-08-24): WEBSITE.md plan settled; Phase 1 shipped (marketing site, capability pages, docs, agent routes, Clerk auth GitHub+Google, onboarding, /app shell, playground, keys/usage/activity/settings/self-host; every route 200 at 1440/390, tsc+lint clean). Phase 2: seven workflows (scrape, parse, search, crawl, interact, monitor, agent-surfaces) running in nested worktrees `.worktrees/<api>` on branches `api/<api>`, dev ports 3411–3417; merge order per WEBSITE.md §12.
 
 ## What this is
 

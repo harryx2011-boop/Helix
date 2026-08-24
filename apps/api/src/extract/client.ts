@@ -1,4 +1,3 @@
-import type { Log } from '../core/logger.js';
 
 /**
  * Client for helix-extract.
@@ -86,11 +85,9 @@ async function detailOf(response: Response): Promise<string> {
 
 export class ExtractClient {
   readonly #baseUrl: string;
-  readonly #logger: Log | undefined;
 
-  constructor(baseUrl: string, logger?: Log) {
+  constructor(baseUrl: string) {
     this.#baseUrl = baseUrl.replace(/\/$/, '');
-    this.#logger = logger;
   }
 
   async extract(options: ExtractOptions): Promise<ExtractResult> {

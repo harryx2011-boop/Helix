@@ -53,7 +53,7 @@ const app = Fastify({
 const pool = createPool(config.databaseUrl, app.log);
 
 const fetchClient = new FetchClient(config.fetchUrl, app.log);
-const extractClient = new ExtractClient(config.extractUrl, app.log);
+const extractClient = new ExtractClient(config.extractUrl);
 
 const browserPool = new BrowserPool({
   size: config.browserPoolSize,

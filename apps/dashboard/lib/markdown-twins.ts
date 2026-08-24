@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ENDPOINTS, EXAMPLE_REQUEST } from './catalog';
-import { ENDPOINT_DOCS, docsCurlExample, docsEndpointList } from './docs-content';
+import { ENDPOINT_DOCS, docsCurlExample, docsEndpointList, agentSurfaceDocs, AGENT_SURFACE_SLUGS } from './docs-content';
+import { MCP_URL, SITE_URL } from './mode';
 import { generateCode } from './codegen';
 import type { Endpoint } from './supabase/types';
 
@@ -129,6 +130,25 @@ function docsEndpointMarkdown(id: Endpoint): string | undefined {
   ].join('\n');
 }
 
+function agentSurfaceMarkdown(): Record<string, string> {
+  const docs = agentSurfaceDocs({ mcpUrl: MCP_URL, siteUrl: SITE_URL });
+  const out: Record<string, string> = {};
+  for (const slug of AGENT_SURFACE_SLUGS) {
+    const doc = docs[slug];
+    out[`docs/${slug}`] = [
+      frontmatter(doc.title, doc.summary),
+      ...doc.sections.flatMap((section) => [
+        `## ${section.title}`,
+        section.body,
+        ...(section.code ? ['', '```', section.code.text, '```'] : []),
+        '',
+      ]),
+      AGENT_BLOCK,
+    ].join('\n');
+  }
+  return out;
+}
+
 const STATIC_DOCS_MARKDOWN: Record<string, string> = {
   'docs/getting-started': [
     frontmatter('Getting started', 'Sign up, get a key, make your first request.'),
@@ -141,29 +161,7 @@ const STATIC_DOCS_MARKDOWN: Record<string, string> = {
     '',
     AGENT_BLOCK,
   ].join('\n'),
-  'docs/mcp': [
-    frontmatter('MCP', 'Connect an MCP client to the six endpoints as tools.'),
-    'Helix exposes an MCP server at `https://mcp.helix.dev/v1` over streamable HTTP. Tools mirror the endpoint catalog, generated from openapi.yaml.',
-    '```bash',
-    generateCode('mcp', { endpoint: 'scrape', body: { url: 'https://example.com' } }),
-    '```',
-    '',
-    AGENT_BLOCK,
-  ].join('\n'),
-  'docs/cli': [
-    frontmatter('CLI', 'One command to connect your agent harness.'),
-    '```bash',
-    'npx -y @helix/cli@latest init --all -k helix-YOUR_KEY',
-    '```',
-    '',
-    AGENT_BLOCK,
-  ].join('\n'),
-  'docs/skills': [
-    frontmatter('Skills', 'A generated SKILL.md scoped to the endpoints you use.'),
-    'A SKILL.md is generated per account from the endpoints selected in onboarding. The public, ungated version covering every endpoint is at /agent-onboarding/SKILL.md.',
-    '',
-    AGENT_BLOCK,
-  ].join('\n'),
+  ...agentSurfaceMarkdown(),
 };
 
 const PRODUCT_ENDPOINTS = ENDPOINTS.filter((e) => e.product).map((e) => e.id);

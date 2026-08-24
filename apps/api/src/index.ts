@@ -4,8 +4,9 @@ import Fastify, { type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { loadConfig } from './config.js';
-import { RateLimiter, rateLimitHeaders } from './core/rate-limit.js';
-import { ensureBootstrapKey, verifyApiKey, type ApiKey } from './core/api-keys.js';
+import { RateLimiter } from './core/rate-limit.js';
+import { ensureBootstrapKey, verifyApiKey } from './core/api-keys.js';
+import { InternalTickets, registerAuth } from './core/auth.js';
 import { closePool, createPool } from './db/pool.js';
 import { migrate } from './db/migrate.js';
 import { FetchClient } from './fetch/client.js';
@@ -23,12 +24,7 @@ import { registerSearch } from './routes/search.js';
 import { registerInternal } from './routes/internal.js';
 import { createSearchProvider } from './search/providers.js';
 import { WebhookDispatcher } from './webhooks/dispatcher.js';
-
-declare module 'fastify' {
-  interface FastifyRequest {
-    apiKey?: ApiKey;
-  }
-}
+import { registerMcp } from './mcp/server.js';
 
 const config = loadConfig();
 
@@ -115,69 +111,14 @@ const limiter = new RateLimiter({
 
 setInterval(() => limiter.prune(), 60_000).unref();
 
+const tickets = new InternalTickets();
+
 await app.register(helmet, { contentSecurityPolicy: false });
 // Scoped to the dashboard origin(s). The dashboard authenticates with a
 // bearer key rather than cookies, so credentials mode stays off.
 await app.register(cors, { origin: config.corsOrigins });
 
-/**
- * Auth and rate limiting.
- *
- * `/health` stays open: an unauthenticated liveness probe is what orchestrators
- * need, and it reveals only whether providers are configured, never key material.
- */
-app.addHook('onRequest', async (request, reply) => {
-  if (request.url.startsWith('/v1/health')) return;
-
-  const header = request.headers.authorization;
-  const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : undefined;
-
-  if (!token) {
-    return reply.code(401).send({
-      error: 'unauthorized',
-      message: 'Missing API key. Send `Authorization: Bearer helix-...`.',
-      requestId: request.id,
-    });
-  }
-
-  let apiKey: ApiKey | undefined;
-  try {
-    apiKey = await verifyApiKey(token);
-  } catch (error) {
-    // The key store being unreachable is our fault, not the caller's. Say so
-    // plainly rather than implying their credentials are wrong.
-    app.log.error({ error }, 'api key lookup failed');
-    return reply.code(503).send({
-      error: 'service_unavailable',
-      message: 'Unable to verify credentials right now. Retry shortly.',
-      requestId: request.id,
-    });
-  }
-
-  if (!apiKey) {
-    // Unknown and revoked are deliberately indistinguishable.
-    return reply.code(401).send({
-      error: 'unauthorized',
-      message: 'Invalid API key.',
-      requestId: request.id,
-    });
-  }
-
-  request.apiKey = apiKey;
-
-  const decision = limiter.check(apiKey.id, apiKey.rateLimit);
-  for (const [name, value] of Object.entries(rateLimitHeaders(decision))) {
-    void reply.header(name, value);
-  }
-
-  if (!decision.allowed) {
-    return reply.code(429).send({
-      error: 'rate_limited',
-      message: `Rate limit exceeded. Retry in ${decision.retryAfterSeconds ?? 60}s.`,
-      requestId: request.id,
-    });
-  }
-});
+registerAuth(app, { verifyApiKey, limiter, tickets });
 
 await app.register(
   async (instance) => {
@@ -224,6 +165,11 @@ await app.register(
 );
 
 await registerInternal(app, { adminToken: config.internalAdminToken });
+
+// Tools are generated from openapi.yaml for the routes registered above; the
+// bearer key on the MCP request is the same key the HTTP API takes, verified
+// and rate limited once on the way in; the replayed tool call rides a ticket.
+await registerMcp(app, { prefix: '/v1', tickets });
 
 // TODO(M7+): /monitor, /interact
 

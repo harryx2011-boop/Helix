@@ -1,0 +1,28 @@
+{
+  "name": "@helix/cli",
+  "version": "0.1.0",
+  "description": "Connect Claude Code, Cursor, Codex and Windsurf to the Helix web-data API: writes each harness's MCP config and your SKILL.md.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "helix": "./dist/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5",
+    "eslint": "^9.15.0"
+  }
+}

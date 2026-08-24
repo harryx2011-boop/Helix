@@ -14,6 +14,7 @@ COPY package.json pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/schema/package.json ./packages/schema/
 COPY packages/sdk-ts/package.json ./packages/sdk-ts/
+COPY packages/cli/package.json ./packages/cli/
 RUN pnpm install --frozen-lockfile || pnpm install
 
 FROM deps AS build
@@ -37,6 +38,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./dist
 COPY --from=build /app/apps/api/package.json ./package.json
 COPY --from=build /app/apps/api/migrations ./migrations
+COPY --from=build /app/openapi.yaml ./openapi.yaml
 
 RUN npx playwright install chromium --with-deps 2>/dev/null || npx playwright install chromium
 

@@ -166,9 +166,11 @@ Last, because the hard part is not the loop — it is calibration and knowing wh
 - ☐ Guardrails: parked domains, placeholder pages, social blocklist, content floor, URL validation
 - ☐ `null` with a reason when no good data exists
 
-## M9 — Surface ☐
+## M9 — Surface ◐
 
-- ☐ MCP server, every parameter described, schemas CI-validated against the real API
+- ☑ MCP server at `/mcp` (streamable HTTP, bearer key), tools generated from `openapi.yaml` for every live route; descriptions and input schemas are the spec's, and tests check the generator against the real spec plus a tool-call round trip through the HTTP routes
+- ☑ `@helix/cli` connector (`packages/cli`): `init --all -k` writes MCP config and SKILL.md for Claude Code, Cursor, Codex, Windsurf; `--browser` opens the connect page. Unpublished; the `@helix` npm scope is unclaimed
+- ☑ Per-account SKILL.md served at `/api/app/skill` (session or bearer key) and the public `/agent-onboarding/SKILL.md`
 - ☐ Generated TypeScript SDK
 - ☐ Documentation site
 - ☐ Self-host polish, resource tuning

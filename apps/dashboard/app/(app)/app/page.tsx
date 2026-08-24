@@ -12,6 +12,8 @@ export default async function OverviewPage({
 }) {
   const params = await searchParams;
   const welcome = params.welcome === '1';
+  // `helix init --browser` lands here with the connect sheet already open.
+  const connect = params.connect === '1';
 
   if (!HOSTED) {
     return (
@@ -20,6 +22,7 @@ export default async function OverviewPage({
         keyMasked={null}
         revealedKey={null}
         welcome={false}
+        connect={connect}
       />
     );
   }
@@ -47,6 +50,7 @@ export default async function OverviewPage({
       keyMasked={keyMasked}
       revealedKey={revealedKey}
       welcome={welcome}
+      connect={connect}
     />
   );
 }

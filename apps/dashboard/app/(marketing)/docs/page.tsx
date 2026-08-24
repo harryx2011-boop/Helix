@@ -2,21 +2,17 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Server, Terminal, Puzzle, type LucideIcon } from 'lucide-react';
 import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
-import { docsEndpointList } from '@/lib/docs-content';
+import { docsEndpointList, agentSurfaceDocs } from '@/lib/docs-content';
+import { MCP_URL, SITE_URL } from '@/lib/mode';
 
 export const metadata: Metadata = {
   title: 'Docs',
   description: 'Getting started, the self-host guide, the six endpoint references, and MCP, CLI and Skills.',
 };
 
-const AGENT_SURFACES = [
-  { slug: 'mcp', title: 'MCP', body: 'Connect an MCP client to the six endpoints as tools, generated from openapi.yaml.' },
-  { slug: 'cli', title: 'CLI', body: '`npx -y @helix/cli@latest init --all -k helix-…` wires your agent harness in one command.' },
-  { slug: 'skills', title: 'Skills', body: 'A generated SKILL.md, scoped to the endpoints you selected, ready for an agent to follow.' },
-];
-
 export default function DocsIndexPage() {
   const endpoints = docsEndpointList();
+  const surfaces = agentSurfaceDocs({ mcpUrl: MCP_URL, siteUrl: SITE_URL });
 
   return (
     <div className="mx-auto max-w-container px-4 pb-24 pt-16 lg:pt-24">
@@ -57,9 +53,9 @@ export default function DocsIndexPage() {
       <section className="mx-auto mt-14 max-w-[880px] animate-fade-up [animation-delay:180ms]">
         <h2 className="text-[13px] font-medium uppercase tracking-wide text-m-ink/48">Agent surfaces</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <DocLink href="/docs/mcp" icon={Puzzle} title="MCP" body={AGENT_SURFACES[0]!.body} />
-          <DocLink href="/docs/cli" icon={Terminal} title="CLI" body={AGENT_SURFACES[1]!.body} />
-          <DocLink href="/docs/skills" icon={BookOpen} title="Skills" body={AGENT_SURFACES[2]!.body} />
+          <DocLink href="/docs/mcp" icon={Puzzle} title={surfaces.mcp.title} body={surfaces.mcp.summary} />
+          <DocLink href="/docs/cli" icon={Terminal} title={surfaces.cli.title} body={surfaces.cli.summary} />
+          <DocLink href="/docs/skills" icon={BookOpen} title={surfaces.skills.title} body={surfaces.skills.summary} />
         </div>
       </section>
     </div>

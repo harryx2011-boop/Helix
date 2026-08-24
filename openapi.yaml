@@ -61,8 +61,6 @@ tags:
     description: Multi-page discovery and read.
   - name: Search
     description: Web search, optionally scraping each result.
-  - name: Enrich
-    description: Sparse identifier to structured columns, with citations.
   - name: Monitors
     description: Scheduled re-reads with change detection.
   - name: Jobs
@@ -83,7 +81,7 @@ paths:
         classified before parsing, so scanned documents route to OCR rather than
         silently returning garbled text.
 
-        Synchronous. Use `/batch/scrape` for many URLs.
+        Synchronous. For many URLs, use `/crawl` with an explicit URL list or call `/scrape` concurrently.
       operationId: scrape
       requestBody:
         required: true
@@ -136,22 +134,6 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/RateLimited' }
-
-  /batch/scrape:
-    post:
-      tags: [Scrape, Jobs]
-      summary: Read many URLs
-      description: Asynchronous. Returns a job id; poll `/jobs/{id}` or supply a webhook.
-      operationId: batchScrape
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/BatchScrapeRequest' }
-      responses:
-        '202': { $ref: '#/components/responses/JobAccepted' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /map:
     post:
@@ -241,42 +223,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
-  /enrich:
-    post:
-      tags: [Enrich, Jobs]
-      summary: Turn sparse identifiers into structured rows
-      description: |
-        Takes rows containing a little information — an email, a domain, a company
-        name — and fills in the columns you ask for.
-
-        Every value carries a confidence score, a source URL, and the passage that
-        grounded it, so a claim can be checked rather than merely traced.
-
-        When no good data exists, the field comes back `null` with a reason. A
-        fabricated plausible answer is worse than an admitted gap.
-      operationId: enrich
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/EnrichRequest' }
-            examples:
-              companies:
-                summary: Enrich from email domains
-                value:
-                  rows:
-                    - { email: 'someone@stripe.com' }
-                    - { email: 'someone@figma.com' }
-                  fields:
-                    - { name: industry, type: string, description: Primary industry }
-                    - { name: headcount, type: number, description: Approximate employee count }
-                    - { name: techStack, type: array, description: Notable technologies used }
-      responses:
-        '202': { $ref: '#/components/responses/JobAccepted' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /monitors:
+  /monitor:
     get:
       tags: [Monitors]
       summary: List monitors
@@ -334,7 +281,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
-  /monitors/{id}:
+  /monitor/{id}:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
     get:
@@ -412,28 +359,6 @@ paths:
                     type: array
                     items: { type: string, format: uri }
         '404': { $ref: '#/components/responses/NotFound' }
-
-  /profiles:
-    get:
-      tags: [System]
-      summary: List browser identity profiles
-      description: |
-        Profiles bundle TLS, HTTP/2, header and JS characteristics into one coherent
-        identity. They are validated for internal consistency at load — a profile
-        claiming one browser in its handshake and another in its headers is rejected
-        rather than shipped.
-      operationId: listProfiles
-      responses:
-        '200':
-          description: Available profiles.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  profiles:
-                    type: array
-                    items: { $ref: '#/components/schemas/ProfileSummary' }
 
   /health:
     get:
@@ -625,20 +550,6 @@ components:
           required: [url]
           properties:
             url: { type: string, format: uri }
-        - $ref: '#/components/schemas/ScrapeOptions'
-
-    BatchScrapeRequest:
-      allOf:
-        - type: object
-          required: [urls]
-          properties:
-            urls:
-              type: array
-              minItems: 1
-              maxItems: 10000
-              items: { type: string, format: uri }
-            webhook: { $ref: '#/components/schemas/WebhookConfig' }
-            maxConcurrency: { type: integer, minimum: 1 }
         - $ref: '#/components/schemas/ScrapeOptions'
 
     Action:
@@ -883,75 +794,6 @@ components:
                   publishedAt: { type: string, format: date-time }
               - $ref: '#/components/schemas/Document'
 
-    EnrichRequest:
-      type: object
-      required: [rows, fields]
-      properties:
-        rows:
-          type: array
-          minItems: 1
-          maxItems: 1000
-          items:
-            type: object
-            additionalProperties: { type: string }
-            description: 'At least one identifying value, e.g. `{ "email": "a@b.com" }` or `{ "domain": "b.com" }`.'
-        fields:
-          type: array
-          minItems: 1
-          maxItems: 20
-          items: { $ref: '#/components/schemas/EnrichField' }
-        maxSourcesPerField: { type: integer, default: 5 }
-        webhook: { $ref: '#/components/schemas/WebhookConfig' }
-
-    EnrichField:
-      type: object
-      required: [name, type]
-      properties:
-        name: { type: string }
-        type: { type: string, enum: [string, number, boolean, array] }
-        description: { type: string, description: What you want. Doubles as extraction guidance for the model. }
-        examples:
-          type: array
-          items: { type: string }
-          description: Sample values. Materially improves accuracy.
-
-    EnrichResult:
-      type: object
-      properties:
-        rowIndex: { type: integer }
-        input:
-          type: object
-          additionalProperties: { type: string }
-        fields:
-          type: object
-          additionalProperties:
-            type: object
-            properties:
-              value:
-                description: The extracted value, or null when nothing trustworthy was found.
-                oneOf:
-                  - { type: string }
-                  - { type: number }
-                  - { type: boolean }
-                  - { type: array, items: { type: string } }
-                  - { type: 'null' }
-              confidence:
-                type: number
-                minimum: 0
-                maximum: 1
-                description: Model-reported. Uncalibrated until measured against a labelled set — treat as ordinal.
-              reason:
-                type: string
-                description: Why a value is null — no sources found, sources conflicted, low confidence.
-              sources:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    url: { type: string, format: uri }
-                    snippet: { type: string, description: The passage the value came from. }
-        status: { type: string, enum: [completed, partial, failed] }
-
     MonitorRequest:
       type: object
       required: [urls, schedule]
@@ -1177,7 +1019,6 @@ components:
           items:
             oneOf:
               - $ref: '#/components/schemas/Document'
-              - $ref: '#/components/schemas/EnrichResult'
         usage: { $ref: '#/components/schemas/Usage' }
 
     Usage:
@@ -1198,18 +1039,6 @@ components:
           properties:
             amount: { type: number }
             currency: { type: string }
-
-    ProfileSummary:
-      type: object
-      properties:
-        id: { type: string }
-        browser: { type: string }
-        version: { type: string }
-        platform: { type: string }
-        capturedAt: { type: string, format: date-time }
-        coherent:
-          type: boolean
-          description: Whether the identity validates as internally consistent. Incoherent profiles are never used.
 
     Health:
       type: object

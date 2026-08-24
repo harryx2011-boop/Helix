@@ -31,14 +31,14 @@ export function CodePanel({ chrome, label, tabs, children, className, copyText }
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-panel shadow-card',
+        'w-full min-w-0 max-w-full overflow-hidden rounded-panel shadow-card',
         isTerminal ? 'dark bg-background text-foreground' : 'bg-m-surface',
         className,
       )}
     >
       <div
         className={cn(
-          'flex items-center gap-2 border-b px-4 py-2.5',
+          'flex min-w-0 items-center gap-2 border-b px-4 py-2.5',
           isTerminal ? 'border-border' : 'border-m-border-faint',
         )}
       >
@@ -72,7 +72,7 @@ export function CodePanel({ chrome, label, tabs, children, className, copyText }
           </button>
         )}
       </div>
-      <div className="overflow-x-auto px-4 py-4">{children}</div>
+      <div className="w-full min-w-0 max-w-full overflow-x-auto px-4 py-4">{children}</div>
     </div>
   );
 }
@@ -94,7 +94,7 @@ export function CodeBlock({ children, dark }: { children: string; className?: st
   return (
     <pre
       className={cn(
-        'whitespace-pre font-mono text-[13px] leading-relaxed',
+        'whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed sm:whitespace-pre sm:break-normal',
         dark ? 'text-foreground' : 'text-m-ink',
       )}
     >

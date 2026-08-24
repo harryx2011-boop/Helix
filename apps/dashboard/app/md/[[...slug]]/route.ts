@@ -4,8 +4,9 @@ import { resolveMarkdownTwin } from '@/lib/markdown-twins';
 export const dynamic = 'force-static';
 
 /** Markdown twin of every marketing page, no chrome (WEBSITE.md §9.4): `/md`, `/md/scrape`, `/md/docs/crawl`, … */
-export async function GET(_request: Request, { params }: { params: { slug?: string[] } }) {
-  const path = (params.slug ?? []).join('/');
+export async function GET(_request: Request, { params }: { params: Promise<{ slug?: string[] }> }) {
+  const { slug } = await params;
+  const path = (slug ?? []).join('/');
   const body = path === '' ? homeMarkdown() : await resolveMarkdownTwin(path);
 
   if (!body) {

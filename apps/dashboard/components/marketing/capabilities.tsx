@@ -83,7 +83,7 @@ export function Capabilities() {
             </button>
           ))}
         >
-          <pre className="whitespace-pre font-mono text-[13px] leading-relaxed">
+          <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed sm:whitespace-pre sm:break-normal">
             <CodeToken kind="plain">{code}</CodeToken>
           </pre>
         </CodePanel>

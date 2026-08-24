@@ -8,17 +8,17 @@ interface Panel {
 
 function EscalationDemo() {
   return (
-    <div className="overflow-x-auto font-mono text-[11px] text-m-ink/56">
-      <div className="grid min-w-[420px] grid-cols-4 gap-px overflow-hidden rounded-card border border-m-border-muted bg-m-border-muted">
+    <div className="w-full min-w-0 max-w-full font-mono text-[11px] text-m-ink/56">
+      <div className="grid grid-cols-4 gap-px overflow-hidden rounded-card border border-m-border-muted bg-m-border-muted">
         {[
-          { t: 'plain', s: '● 403  5ms', strike: true },
-          { t: 'tls', s: '● 403  51ms', strike: true },
-          { t: 'lightpanda', s: '● 200  24ms', strike: false },
+          { t: 'plain', s: '● 403 5ms', strike: true },
+          { t: 'tls', s: '● 403 51ms', strike: true },
+          { t: 'lightpanda', s: '● 200 24ms', strike: false },
           { t: 'chromium', s: '○ skipped', strike: false },
         ].map((row) => (
-          <div key={row.t} className="bg-m-surface px-2.5 py-2">
-            <p className="text-m-ink/40">{row.t}</p>
-            <p className={row.strike ? 'mt-1 text-m-ink/32 line-through' : 'mt-1 text-m-ink'}>{row.s}</p>
+          <div key={row.t} className="min-w-0 overflow-hidden bg-m-surface px-1 py-2 sm:px-2.5">
+            <p className="truncate text-[9px] text-m-ink/40 sm:text-[11px]">{row.t}</p>
+            <p className={`mt-1 truncate text-[9px] sm:text-[11px] ${row.strike ? 'text-m-ink/32 line-through' : 'text-m-ink'}`}>{row.s}</p>
           </div>
         ))}
       </div>
@@ -89,19 +89,19 @@ export function ObjectionA() {
           JavaScript, documents, forms, rate limits and block pages. Handled, and reported honestly.
         </p>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
+        <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {PANELS.map((p, i) => (
             <div
               key={p.h3}
               style={{ animationDelay: `${i * 60}ms` }}
-              className="animate-fade-up rounded-card border border-m-border-muted bg-m-surface p-6"
+              className="min-w-0 animate-fade-up rounded-card border border-m-border-muted bg-m-surface p-6"
             >
               <h3 className="text-[20px] font-medium leading-tight tracking-tight">{p.h3}</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-m-ink/64">
                 {p.body}
                 {p.h3.startsWith('A block') && <span className="block text-m-ink/48">A block is a failure, not a document.</span>}
               </p>
-              <div className="mt-4 rounded-card bg-m-bg-lighter p-3">{p.demo}</div>
+              <div className="mt-4 min-w-0 max-w-full overflow-hidden rounded-card bg-m-bg-lighter p-3">{p.demo}</div>
             </div>
           ))}
         </div>

@@ -91,7 +91,7 @@ export function HeroPanel({ id }: { id?: string }) {
       </div>
 
       <div className="w-full min-w-0 max-w-full overflow-x-auto px-4 py-4">
-        <pre className="whitespace-pre font-mono text-[13px] leading-relaxed">
+        <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed sm:whitespace-pre sm:break-normal">
           <HighlightedCode code={code} keyPlaceholder={KEY_PLACEHOLDER} />
         </pre>
       </div>

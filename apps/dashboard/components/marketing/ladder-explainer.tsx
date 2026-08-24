@@ -99,18 +99,18 @@ export function LadderExplainer({ playKey, className }: LadderExplainerProps) {
   const settled = frameIndex === FRAMES.length - 1;
 
   return (
-    <div className={cn('font-mono text-[12px]', className)}>
+    <div className={cn('min-w-0 max-w-full font-mono text-[12px]', className)}>
       <p className="mb-2 tracking-wide text-m-ink/48">[ EXPLAINER ]</p>
-      <div className="overflow-x-auto">
-        <div className="grid min-w-[560px] grid-cols-4 gap-px overflow-hidden rounded-card border border-m-border-muted bg-m-border-muted">
+      <div className="w-full max-w-full min-w-0 overflow-x-auto">
+        <div className="grid grid-cols-4 gap-px overflow-hidden rounded-card border border-m-border-muted bg-m-border-muted">
           {TIERS.map((tier, i) => {
             const row = frame.rows[i] ?? { label: tier, status: null, glyph: null };
             return (
-              <div key={tier} className="bg-m-surface px-3 py-2.5">
-                <p className="text-m-ink/40">{tier}</p>
+              <div key={tier} className="min-w-0 overflow-hidden bg-m-surface px-1 py-2 sm:px-3 sm:py-2.5">
+                <p className="truncate text-[10px] text-m-ink/40 sm:text-[12px]">{tier}</p>
                 <p
                   className={cn(
-                    'mt-1 flex items-center gap-1.5',
+                    'mt-1 flex flex-wrap items-baseline gap-x-1 gap-y-0.5 break-words text-[10px] sm:text-[12px]',
                     settled && row.glyph === '●' && tier !== 'lightpanda' && 'text-m-ink/32 line-through',
                     settled && row.label === 'lightpanda' && 'text-m-ink',
                     !settled && 'text-m-ink/72',

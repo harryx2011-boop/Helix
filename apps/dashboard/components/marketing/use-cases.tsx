@@ -18,12 +18,12 @@ export function UseCases() {
           Give your agents the live web.
         </h2>
 
-        <div className="mt-10 flex gap-5 overflow-x-auto sm:grid sm:grid-cols-4 sm:overflow-visible">
+        <div className="mt-10 grid w-full min-w-0 max-w-full grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {CARDS.map((c, i) => (
             <div
               key={c.title}
               style={{ animationDelay: `${i * 60}ms` }}
-              className="w-[240px] shrink-0 animate-fade-up rounded-card border border-m-border-muted bg-m-surface p-5 shadow-card-sm sm:w-auto"
+              className="min-w-0 animate-fade-up rounded-card border border-m-border-muted bg-m-surface p-5 shadow-card-sm"
             >
               <c.icon className="h-5 w-5 text-violet" aria-hidden />
               <h3 className="mt-3 text-[18px] font-medium leading-tight tracking-tight">{c.title}</h3>

@@ -36,10 +36,11 @@ function titleFor(slug: string): string | undefined {
   return STATIC_SLUGS.includes(slug as StaticSlug) ? titles[slug as StaticSlug] : undefined;
 }
 
-export default function DocsSlugPage({ params }: { params: { slug: string } }) {
-  const endpoint = docsEndpointOrThrow(params.slug);
+export default async function DocsSlugPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const endpoint = docsEndpointOrThrow(slug);
   if (endpoint) return <EndpointDoc def={endpoint.def} docs={endpoint.docs} />;
-  if (STATIC_SLUGS.includes(params.slug as StaticSlug)) return <StaticDoc slug={params.slug as StaticSlug} />;
+  if (STATIC_SLUGS.includes(slug as StaticSlug)) return <StaticDoc slug={slug as StaticSlug} />;
   notFound();
 }
 

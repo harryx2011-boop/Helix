@@ -34,7 +34,7 @@ export function Hero() {
         ✦
       </span>
 
-      <div className="mx-auto flex max-w-container flex-col items-center px-4 text-center">
+      <div className="mx-auto flex min-w-0 max-w-container flex-col items-center px-4 text-center">
         <span className="inline-flex items-center gap-2 rounded-pill bg-m-ink/[0.039] px-4 py-1.5 font-mono text-[13px] text-m-ink/72">
           Apache-2.0 · self-hosted · bring your own keys
           <span aria-hidden>→</span>
@@ -57,7 +57,7 @@ export function Hero() {
           <LadderReplayLink />
         </div>
 
-        <div className="relative mt-16 w-full max-w-[720px]">
+        <div className="relative mt-16 w-full min-w-0 max-w-full sm:max-w-[720px]">
           <CharGrid className="pointer-events-none absolute -inset-8 -z-10 hidden lg:block" />
           <HeroPanel id="ladder" />
         </div>

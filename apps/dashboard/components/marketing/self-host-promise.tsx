@@ -62,9 +62,9 @@ export function SelfHostPromise() {
 
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
           <CodePanel chrome="browser" label="docker-compose.yml">
-            <pre className="whitespace-pre font-mono text-[13px] leading-relaxed">
+            <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed">
               {COMPOSE_LINES.map((line, i) => (
-                <div key={i} className="flex items-baseline justify-between gap-4">
+                <div key={i} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                   <CodeToken kind={line.text.trim().endsWith(':') && !line.text.includes('  ') ? 'key' : 'plain'}>
                     {line.text}
                   </CodeToken>
@@ -76,38 +76,55 @@ export function SelfHostPromise() {
             </pre>
           </CodePanel>
 
-          <div className="overflow-x-auto rounded-panel border border-m-border-muted bg-m-surface p-5 shadow-card-sm">
+          <div className="min-w-0 max-w-full rounded-panel border border-m-border-muted bg-m-surface p-5 shadow-card-sm">
             <p className="font-mono text-[12px] uppercase tracking-wide text-m-ink/48">Three runtimes</p>
-            <pre className="mt-3 min-w-[420px] whitespace-pre font-mono text-[12px] leading-relaxed text-m-ink/64">
-              {ARCHITECTURE_DIAGRAM}
-            </pre>
+            <div className="w-full min-w-0 max-w-full overflow-hidden">
+              <pre className="mt-3 whitespace-pre font-mono text-[8.5px] leading-relaxed tracking-tighter text-m-ink/64 sm:text-[12px] sm:tracking-normal">
+                {ARCHITECTURE_DIAGRAM}
+              </pre>
+            </div>
           </div>
         </div>
 
-        <div className="mt-8 overflow-x-auto rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm">
-          <table className="w-full min-w-[520px] border-collapse text-[14px]">
-            <thead>
-              <tr className="border-b border-m-border-faint text-left font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
-                <th className="px-5 py-3 font-normal"> </th>
-                <th className="px-5 py-3 font-normal">Helix self-host</th>
-                <th className="px-5 py-3 font-normal">Category norm</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ROWS.map((row) => (
-                <tr key={row.label} className="border-b border-m-border-faint last:border-0">
-                  <td className="px-5 py-3 text-m-ink/72">{row.label}</td>
-                  <td className="px-5 py-3 font-medium text-m-ink">
-                    <span className="flex items-center gap-1.5">
-                      <Check className="h-3.5 w-3.5 shrink-0 text-violet" aria-hidden />
-                      {row.helix}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-m-ink/48">{row.norm}</td>
+        <div className="mt-8 min-w-0 max-w-full rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm">
+          <div className="hidden overflow-x-auto sm:block">
+            <table className="w-full min-w-[520px] border-collapse text-[14px]">
+              <thead>
+                <tr className="border-b border-m-border-faint text-left font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
+                  <th className="px-5 py-3 font-normal"> </th>
+                  <th className="px-5 py-3 font-normal">Helix self-host</th>
+                  <th className="px-5 py-3 font-normal">Category norm</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {ROWS.map((row) => (
+                  <tr key={row.label} className="border-b border-m-border-faint last:border-0">
+                    <td className="px-5 py-3 text-m-ink/72">{row.label}</td>
+                    <td className="px-5 py-3 font-medium text-m-ink">
+                      <span className="flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5 shrink-0 text-violet" aria-hidden />
+                        {row.helix}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-m-ink/48">{row.norm}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="divide-y divide-m-border-faint sm:hidden">
+            {ROWS.map((row) => (
+              <div key={row.label} className="min-w-0 px-4 py-3">
+                <p className="text-[12px] text-m-ink/56">{row.label}</p>
+                <p className="mt-1 flex items-center gap-1.5 break-words text-[13px] font-medium text-m-ink">
+                  <Check className="h-3.5 w-3.5 shrink-0 text-violet" aria-hidden />
+                  {row.helix}
+                </p>
+                <p className="mt-0.5 text-[12px] text-m-ink/40">Category norm: {row.norm}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">

@@ -1,0 +1,77 @@
+[project]
+name = "helix-extract"
+version = "0.1.0"
+description = "Extraction, parsing, structured output and embeddings for Helix"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+
+    # HTML extraction. trafilatura leads on F1 across independent benchmarks;
+    # readability recovers more where recall matters more than precision.
+    "trafilatura>=2.0.0",
+    "readability-lxml>=0.8.1",
+    "lxml>=5.3.0",
+
+    # PDF. pypdfium2 is Apache/BSD — chosen over the faster PyMuPDF, whose AGPL
+    # licence would contaminate a permissively-licensed project.
+    "pypdfium2>=4.30.0",
+
+    # Office formats.
+    "python-docx>=1.1.2",
+    "python-pptx>=1.0.2",
+    "openpyxl>=3.1.5",
+
+    # LLM providers. Native adapters where the structured-output mechanism
+    # genuinely differs; everything else goes through the OpenAI-compatible path.
+    "openai>=1.54.0",
+    "anthropic>=0.39.0",
+    "google-genai>=0.3.0",
+
+    # Local embeddings by default, so chunking and vector sync work with no keys.
+    "sentence-transformers>=3.3.0",
+
+    "httpx>=0.27.0",
+    "structlog>=24.4.0",
+]
+
+[project.optional-dependencies]
+# Heavier parsers, opt-in. Marker matches a frontier VLM on olmocr-bench at
+# roughly five times MinerU's throughput; Docling leads on table fidelity.
+documents = [
+    "marker-pdf>=1.2.0",
+    "docling>=2.14.0",
+]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["helix_extract"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+# Requires pytest-asyncio, which ships in the dev extra.
+asyncio_mode = "auto"
+testpaths = ["tests"]

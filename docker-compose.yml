@@ -1,0 +1,137 @@
+# Helix — one command, works the first time.
+#
+#   cp .env.example .env && docker compose up
+#
+# Every dependency is health-gated: a service does not start until the things it
+# needs report healthy. There is no boot race to retry past.
+
+name: helix
+
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-helix}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-helix}
+      POSTGRES_DB: ${POSTGRES_DB:-helix}
+    ports:
+      - "${POSTGRES_PORT:-7432}:5432"
+    volumes:
+      - helix-pgdata:/var/lib/postgresql/data
+      - ./apps/api/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-helix} -d ${POSTGRES_DB:-helix}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: unless-stopped
+
+  fetch:
+    build:
+      context: ./apps/fetch
+    environment:
+      HELIX_FETCH_PORT: 7401
+      RUST_LOG: ${RUST_LOG:-info}
+    ports:
+      - "${HELIX_FETCH_PORT:-7401}:7401"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/helix-fetch", "--healthcheck"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 3s
+    restart: unless-stopped
+
+  extract:
+    build:
+      context: ./apps/extract
+    environment:
+      HELIX_EXTRACT_PORT: 7402
+      HELIX_LLM_PROVIDER: ${HELIX_LLM_PROVIDER:-openai}
+      HELIX_LLM_MODEL: ${HELIX_LLM_MODEL:-gpt-4o-mini}
+      HELIX_EMBEDDING_PROVIDER: ${HELIX_EMBEDDING_PROVIDER:-local}
+      HELIX_EMBEDDING_MODEL: ${HELIX_EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_COMPATIBLE_API_KEY: ${OPENAI_COMPATIBLE_API_KEY:-}
+      OPENAI_COMPATIBLE_BASE_URL: ${OPENAI_COMPATIBLE_BASE_URL:-}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+    ports:
+      - "${HELIX_EXTRACT_PORT:-7402}:7402"
+    volumes:
+      # Cache the local embedding model so a rebuild does not re-download it.
+      - helix-models:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:7402/health', timeout=2).status==200 else 1)"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    environment:
+      HELIX_PORT: 7400
+      HELIX_LOG_LEVEL: ${HELIX_LOG_LEVEL:-info}
+      HELIX_BOOTSTRAP_KEY: ${HELIX_BOOTSTRAP_KEY:-}
+      DATABASE_URL: postgres://${POSTGRES_USER:-helix}:${POSTGRES_PASSWORD:-helix}@postgres:5432/${POSTGRES_DB:-helix}
+      HELIX_FETCH_URL: http://fetch:7401
+      HELIX_EXTRACT_URL: http://extract:7402
+      HELIX_RESPECT_ROBOTS: ${HELIX_RESPECT_ROBOTS:-true}
+      HELIX_USER_AGENT: ${HELIX_USER_AGENT:-HelixBot/0.1}
+      HELIX_DEFAULT_POLITENESS: ${HELIX_DEFAULT_POLITENESS:-adaptive}
+      HELIX_MAX_HOST_CONCURRENCY: ${HELIX_MAX_HOST_CONCURRENCY:-8}
+      HELIX_BROWSER_POOL_SIZE: ${HELIX_BROWSER_POOL_SIZE:-4}
+      HELIX_BROWSER_MAX_CONTEXTS: ${HELIX_BROWSER_MAX_CONTEXTS:-20}
+      HELIX_BROWSER_RECYCLE_AFTER: ${HELIX_BROWSER_RECYCLE_AFTER:-250}
+      HELIX_PROXY_URL: ${HELIX_PROXY_URL:-}
+      HELIX_SEARCH_PROVIDER: ${HELIX_SEARCH_PROVIDER:-serper}
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+      SERPAPI_KEY: ${SERPAPI_KEY:-}
+      QDRANT_URL: ${QDRANT_URL:-}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+      HELIX_RESULT_TTL_HOURS: ${HELIX_RESULT_TTL_HOURS:-168}
+      # The dashboard runs on its own origin (3400) and calls the API here.
+      HELIX_CORS_ORIGINS: ${HELIX_CORS_ORIGINS:-http://localhost:3400,http://127.0.0.1:3400}
+    ports:
+      - "${HELIX_PORT:-7400}:7400"
+    depends_on:
+      postgres: { condition: service_healthy }
+      fetch:    { condition: service_healthy }
+      extract:  { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:7400/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  # The dashboard: a static Next.js export served on its own port. Split from
+  # the API by the project's FE/BE port convention (3400 FE, 7400 API). It calls
+  # the API cross-origin, which is why the API sets HELIX_CORS_ORIGINS above.
+  dashboard:
+    build:
+      context: .
+      dockerfile: ./apps/dashboard/Dockerfile
+      args:
+        # Baked at build time — a static export cannot read runtime env. Point
+        # this at wherever the API is reachable from the browser.
+        NEXT_PUBLIC_HELIX_API_URL: ${NEXT_PUBLIC_HELIX_API_URL:-http://localhost:7400}
+    ports:
+      - "${HELIX_DASHBOARD_PORT:-3400}:3400"
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+
+volumes:
+  helix-pgdata:
+  helix-models:

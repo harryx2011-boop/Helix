@@ -1,0 +1,37 @@
+[package]
+name = "helix-fetch"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "TLS-impersonating fetch tier for Helix"
+
+[[bin]]
+name = "helix-fetch"
+path = "src/main.rs"
+
+[dependencies]
+# wreq exposes the TLS/HTTP2 handshake, which is the whole point of this
+# service: a coherent browser identity has to be constructed at the transport
+# layer, and mainstream HTTP clients do not let you shape it.
+#
+# It is the maintained successor to rquest, whose every published version was
+# yanked from crates.io. wreq-util carries the browser emulation profiles.
+# Pinned to 0.15.x: 0.16 requires rustc 1.98, above the toolchain in use.
+wreq = "0.15.3"
+wreq-util = "0.1"
+tokio = { version = "1", features = ["full"] }
+axum = "0.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+thiserror = "2"
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true

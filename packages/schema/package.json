@@ -1,0 +1,19 @@
+{
+  "name": "@helix/schema",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Types generated from openapi.yaml. The spec is the source of truth for all three runtimes.",
+  "main": "generated/types.ts",
+  "scripts": {
+    "codegen": "pnpm codegen:ts && pnpm codegen:py && pnpm codegen:rs",
+    "codegen:ts": "npx --yes openapi-typescript ../../openapi.yaml -o generated/types.ts",
+    "codegen:py": "npx --yes @hey-api/openapi-ts -i ../../openapi.yaml -o ../../apps/extract/helix_extract/generated -c @hey-api/client-fetch || echo 'python codegen: configure a generator in M0'",
+    "codegen:rs": "echo 'rust codegen: wire up progenitor or typify in M0'",
+    "build": "echo 'no build step; codegen only'",
+    "test": "echo 'no tests'",
+    "typecheck": "echo 'generated'",
+    "lint": "echo 'generated'"
+  }
+}

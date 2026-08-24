@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  api:
+    name: api (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm --filter @helix/api typecheck
+      - run: pnpm --filter @helix/api test
+
+  fetch:
+    name: fetch (Rust)
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: apps/fetch }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: clippy, rustfmt }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/fetch }
+      - run: cargo fmt --check
+      - run: cargo clippy -- -D warnings
+      - run: cargo test
+
+  extract:
+    name: extract (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: apps/extract }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: pytest
+
+  spec:
+    name: OpenAPI spec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      # The spec is the source of truth for all three runtimes. If it stops
+      # being valid, every generated client silently drifts — the exact bug
+      # class this project is built to avoid.
+      - run: npx --yes @redocly/cli@latest lint openapi.yaml
+
+  compose:
+    name: docker compose boots
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      # "Works the first time" is a promise in the README, so it is tested.
+      # Every service is health-gated; if any fails to report healthy, this fails.
+      - run: docker compose up --build --wait --wait-timeout 300
+      - run: curl -fsS localhost:7400/v1/health | tee /dev/stderr | grep -q '"status"'
+      - if: always()
+        run: docker compose logs
+      - if: always()
+        run: docker compose down -v

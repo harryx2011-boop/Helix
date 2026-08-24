@@ -1,0 +1,1242 @@
+openapi: 3.1.0
+
+info:
+  title: Helix
+  version: 0.1.0
+  summary: Self-hostable, BYOK web-data API.
+  description: |
+    Helix turns web pages and documents into clean, structured, LLM-ready data.
+
+    It is self-hosted and bring-your-own-key throughout: Helix never bundles an LLM,
+    a proxy pool or a vector store. You configure your own providers; your provider
+    bills you directly. Helix takes no margin on inference.
+
+    ## Credentials
+
+    Two distinct concepts, never conflated:
+
+    - **Helix API keys** (`Authorization: Bearer hx_...`) authenticate *you* to this
+      Helix instance. Create as many as you like, one per project, each revocable.
+    - **Provider credentials** (LLM, embedding, proxy, vector store) belong to the
+      operator and are set through environment variables on the server. Helix calls
+      *your* models with *your* keys.
+
+    ## Failure semantics
+
+    A page that returns a bot-challenge interstitial is a **failure**, not a success,
+    even when the upstream status is 200. Such responses come back as a typed
+    `FetchFailure` with a machine-readable `reason`. Helix never returns challenge
+    HTML dressed up as content.
+
+    Rate limiting **fails open**: if the limiter's backing store is unavailable the
+    request proceeds and the server logs a warning. Infrastructure trouble here never
+    becomes a 429 for you. Every response carries `X-RateLimit-*` headers so
+    autonomous clients can self-throttle without parsing error strings.
+
+    ## Estimating before you run
+
+    Any operation whose cost scales with discovered pages accepts `estimate: true`
+    and returns projected work — pages, time, tokens, provider spend — without
+    doing it.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+
+servers:
+  - url: http://localhost:7400/v1
+    description: Local self-hosted default
+  - url: '{scheme}://{host}/v1'
+    description: Your deployment
+    variables:
+      scheme: { default: https, enum: [http, https] }
+      host: { default: localhost:7400 }
+
+security:
+  - ApiKey: []
+
+tags:
+  - name: Scrape
+    description: Single-resource read. Web pages and documents share one envelope.
+  - name: Crawl
+    description: Multi-page discovery and read.
+  - name: Search
+    description: Web search, optionally scraping each result.
+  - name: Enrich
+    description: Sparse identifier to structured columns, with citations.
+  - name: Monitors
+    description: Scheduled re-reads with change detection.
+  - name: Jobs
+    description: Status, results and cancellation for asynchronous work.
+  - name: System
+    description: Health, profiles and capability discovery.
+
+paths:
+  /scrape:
+    post:
+      tags: [Scrape]
+      summary: Read one URL
+      description: |
+        Fetches a single URL and returns it in the formats you ask for.
+
+        Works identically for HTML pages, PDFs and Office documents — the response
+        envelope is the same shape regardless of what was on the other end. PDFs are
+        classified before parsing, so scanned documents route to OCR rather than
+        silently returning garbled text.
+
+        Synchronous. Use `/batch/scrape` for many URLs.
+      operationId: scrape
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ScrapeRequest' }
+            examples:
+              minimal:
+                summary: Just the markdown
+                value: { url: 'https://example.com' }
+              structured:
+                summary: Extract to a schema with your own model
+                value:
+                  url: 'https://example.com/pricing'
+                  formats: [markdown, json]
+                  extract:
+                    schema:
+                      type: object
+                      properties:
+                        plans:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name: { type: string }
+                              monthlyPrice: { type: number }
+              rendered:
+                summary: Force a browser and act on the page
+                value:
+                  url: 'https://example.com/app'
+                  tier: chromium
+                  formats: [markdown, screenshot]
+                  actions:
+                    - { type: click, selector: '#accept-cookies' }
+                    - { type: scroll, direction: down }
+                    - { type: wait, milliseconds: 500 }
+      responses:
+        '200':
+          description: |
+            The fetch resolved. Check `success` — a typed failure (including a bot
+            challenge) is reported here rather than as an HTTP error, so you can see
+            which tier and profile were tried.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ScrapeResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /batch/scrape:
+    post:
+      tags: [Scrape, Jobs]
+      summary: Read many URLs
+      description: Asynchronous. Returns a job id; poll `/jobs/{id}` or supply a webhook.
+      operationId: batchScrape
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchScrapeRequest' }
+      responses:
+        '202': { $ref: '#/components/responses/JobAccepted' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /map:
+    post:
+      tags: [Crawl]
+      summary: List a site's URLs
+      description: |
+        Discovers URLs without reading them. Sitemap-first, falling back to link
+        discovery from the seed page.
+
+        Cheap and fast, and the basis of cost estimation for `/crawl` — map first to
+        learn how many pages exist, then decide.
+      operationId: map
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MapRequest' }
+      responses:
+        '200':
+          description: Discovered URLs.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MapResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /crawl:
+    post:
+      tags: [Crawl, Jobs]
+      summary: Crawl a site
+      description: |
+        Discovers and reads pages from a seed URL.
+
+        Respects `robots.txt` by default, including `Crawl-delay`. Politeness is
+        adaptive: concurrency ramps while a host stays healthy and backs off on 429s
+        or latency spikes.
+
+        Pass `estimate: true` to get projected pages, time and cost without crawling.
+      operationId: crawl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CrawlRequest' }
+            examples:
+              basic:
+                summary: Crawl a docs site
+                value: { url: 'https://docs.example.com', limit: 200 }
+              estimate:
+                summary: What would this cost?
+                value: { url: 'https://docs.example.com', estimate: true }
+              toVectors:
+                summary: Crawl straight into a vector store
+                value:
+                  url: 'https://docs.example.com'
+                  chunk: { strategy: semantic, maxTokens: 512 }
+                  destination: { type: qdrant, collection: docs }
+      responses:
+        '200':
+          description: Estimate only — returned when `estimate` is true.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Estimate' }
+        '202': { $ref: '#/components/responses/JobAccepted' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /search:
+    post:
+      tags: [Search]
+      summary: Search the web, optionally reading the results
+      description: |
+        Runs a web search and, when `scrape` is set, reads each result in the same
+        call — so one request goes from question to page content.
+      operationId: search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SearchRequest' }
+      responses:
+        '200':
+          description: Search results, with page content when `scrape` was set.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /enrich:
+    post:
+      tags: [Enrich, Jobs]
+      summary: Turn sparse identifiers into structured rows
+      description: |
+        Takes rows containing a little information — an email, a domain, a company
+        name — and fills in the columns you ask for.
+
+        Every value carries a confidence score, a source URL, and the passage that
+        grounded it, so a claim can be checked rather than merely traced.
+
+        When no good data exists, the field comes back `null` with a reason. A
+        fabricated plausible answer is worse than an admitted gap.
+      operationId: enrich
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EnrichRequest' }
+            examples:
+              companies:
+                summary: Enrich from email domains
+                value:
+                  rows:
+                    - { email: 'someone@stripe.com' }
+                    - { email: 'someone@figma.com' }
+                  fields:
+                    - { name: industry, type: string, description: Primary industry }
+                    - { name: headcount, type: number, description: Approximate employee count }
+                    - { name: techStack, type: array, description: Notable technologies used }
+      responses:
+        '202': { $ref: '#/components/responses/JobAccepted' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /monitors:
+    get:
+      tags: [Monitors]
+      summary: List monitors
+      operationId: listMonitors
+      responses:
+        '200':
+          description: Your monitors.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  monitors:
+                    type: array
+                    items: { $ref: '#/components/schemas/Monitor' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Monitors]
+      summary: Create a monitor
+      description: |
+        Watches URLs on a schedule and tells you what changed.
+
+        Diffs arrive inline in the webhook payload — word, line or character
+        granularity — so you never need a second request to find out what moved.
+
+        Unchanged pages are free. Keyword triggers fire without an LLM call at all,
+        and scheduling windows keep monitors off overnight A/B flicker.
+      operationId: createMonitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MonitorRequest' }
+            examples:
+              pricing:
+                summary: Watch a pricing page on weekday mornings
+                value:
+                  urls: ['https://example.com/pricing']
+                  schedule: { cron: '0 9 * * 1-5', timezone: 'Europe/London' }
+                  diff: { granularity: word }
+                  webhook: { url: 'https://your.app/hooks/helix' }
+              restock:
+                summary: Only tell me when a phrase disappears
+                value:
+                  urls: ['https://example.com/product/123']
+                  schedule: { every: '15m' }
+                  trigger: { keywordDisappears: 'Out of stock' }
+                  webhook: { url: 'https://your.app/hooks/helix' }
+      responses:
+        '201':
+          description: Monitor created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Monitor' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /monitors/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Monitors]
+      summary: Get a monitor
+      operationId: getMonitor
+      responses:
+        '200':
+          description: The monitor.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Monitor' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Monitors]
+      summary: Delete a monitor
+      operationId: deleteMonitor
+      responses:
+        '204': { description: Deleted. }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /jobs/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - name: cursor
+        in: query
+        schema: { type: string }
+        description: Continue a paginated result set.
+    get:
+      tags: [Jobs]
+      summary: Get job status and results
+      operationId: getJob
+      responses:
+        '200':
+          description: Job state, with results so far.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Jobs]
+      summary: Cancel a job
+      description: |
+        Stops the job. Already-completed results stay retrievable. Cancellation does
+        not emit a failure webhook per queued URL.
+      operationId: cancelJob
+      responses:
+        '200':
+          description: Cancelled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /jobs/{id}/errors:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Jobs]
+      summary: Per-URL failures for a job
+      description: Every failure with its typed reason, the tier and profile tried, and whether escalation remains.
+      operationId: getJobErrors
+      responses:
+        '200':
+          description: Failures.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items: { $ref: '#/components/schemas/FetchFailure' }
+                  robotsBlocked:
+                    type: array
+                    items: { type: string, format: uri }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /profiles:
+    get:
+      tags: [System]
+      summary: List browser identity profiles
+      description: |
+        Profiles bundle TLS, HTTP/2, header and JS characteristics into one coherent
+        identity. They are validated for internal consistency at load — a profile
+        claiming one browser in its handshake and another in its headers is rejected
+        rather than shipped.
+      operationId: listProfiles
+      responses:
+        '200':
+          description: Available profiles.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items: { $ref: '#/components/schemas/ProfileSummary' }
+
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      operationId: health
+      security: []
+      responses:
+        '200':
+          description: Service health, including each dependency.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '503':
+          description: One or more dependencies are unhealthy.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+
+components:
+
+  securitySchemes:
+    ApiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: hx_...
+      description: |
+        A Helix API key. Create as many as you need, one per project; each can be
+        revoked independently and carries its own rate limit and usage counter.
+
+        This authenticates you to Helix. It is unrelated to your LLM, proxy and
+        vector-store credentials, which live in server environment variables and are
+        never sent over this API.
+
+  headers:
+    RateLimitLimit:
+      description: Requests permitted in the current window.
+      schema: { type: integer }
+    RateLimitRemaining:
+      description: Requests left in the current window.
+      schema: { type: integer }
+    RateLimitReset:
+      description: Unix seconds at which the window resets.
+      schema: { type: integer }
+
+  responses:
+    JobAccepted:
+      description: Job accepted.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/JobAccepted' }
+    BadRequest:
+      description: The request was malformed or self-contradictory.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            unsupportedKeyword:
+              summary: A schema keyword that induces hallucination
+              value:
+                error: invalid_schema
+                message: >-
+                  `minItems` is not supported in extraction schemas. Length
+                  constraints make models invent entries to satisfy them. Describe
+                  the expectation in the field description instead.
+                field: extract.schema.properties.plans
+    Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: No such resource.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: |
+        Rate limit exceeded. Returned only for genuine limit breaches — never
+        because Helix's own limiter backend was unavailable.
+      headers:
+        Retry-After:
+          description: Seconds to wait.
+          schema: { type: integer }
+        X-RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+
+    Format:
+      type: string
+      description: |
+        An output representation.
+
+        `markdown` is clean prose. `html` is sanitised, `rawHtml` untouched.
+        `json` requires `extract` and returns schema-conforming data. `screenshot`
+        and `pdf` force the Chromium tier. `chunks` returns semantically split text
+        with stable anchors for citation.
+      enum: [markdown, html, rawHtml, text, links, images, screenshot, pdf, json, chunks, summary]
+
+    Tier:
+      type: string
+      description: |
+        Fetch tier. Omit to let Helix escalate on evidence — cheapest first, moving
+        up only when a block is detected, content is absent from the raw HTML, or a
+        requested capability demands it.
+
+        Framework detection alone never triggers escalation: server-rendered React
+        and Vue frequently need no browser at all.
+      enum: [auto, plain, tls, lightpanda, chromium]
+      default: auto
+
+    ScrapeOptions:
+      type: object
+      description: Shared read options. Reused by scrape, batch, crawl and search.
+      properties:
+        formats:
+          type: array
+          items: { $ref: '#/components/schemas/Format' }
+          default: [markdown]
+        tier: { $ref: '#/components/schemas/Tier' }
+        onlyMainContent:
+          type: boolean
+          default: true
+          description: Strip navigation, headers, footers and other furniture.
+        includeSelectors:
+          type: array
+          items: { type: string }
+        excludeSelectors:
+          type: array
+          items: { type: string }
+        extractor:
+          type: string
+          enum: [trafilatura, readability, auto]
+          default: trafilatura
+          description: |
+            HTML-to-text engine. trafilatura is the more precise; readability
+            recovers more at the cost of including extra. `auto` picks per page shape.
+        waitFor:
+          type: integer
+          description: Milliseconds to wait after load. Browser tiers only.
+          minimum: 0
+          maximum: 30000
+        timeout:
+          type: integer
+          default: 30000
+          minimum: 1000
+          maximum: 300000
+        actions:
+          type: array
+          maxItems: 50
+          items: { $ref: '#/components/schemas/Action' }
+          description: Steps to run before reading. Forces the Chromium tier.
+        headers:
+          type: object
+          additionalProperties: { type: string }
+        profile:
+          type: string
+          description: Browser identity to present. Omit for an automatic choice.
+        proxy: { $ref: '#/components/schemas/ProxyConfig' }
+        location:
+          type: object
+          properties:
+            country: { type: string, minLength: 2, maxLength: 2 }
+            languages:
+              type: array
+              items: { type: string }
+        extract: { $ref: '#/components/schemas/ExtractConfig' }
+        chunk: { $ref: '#/components/schemas/ChunkConfig' }
+        document: { $ref: '#/components/schemas/DocumentConfig' }
+        cache:
+          type: object
+          properties:
+            maxAge:
+              type: integer
+              description: Serve a cached copy if newer than this many milliseconds. 0 forces a fresh read.
+              default: 0
+            store:
+              type: boolean
+              default: true
+
+    ScrapeRequest:
+      allOf:
+        - type: object
+          required: [url]
+          properties:
+            url: { type: string, format: uri }
+        - $ref: '#/components/schemas/ScrapeOptions'
+
+    BatchScrapeRequest:
+      allOf:
+        - type: object
+          required: [urls]
+          properties:
+            urls:
+              type: array
+              minItems: 1
+              maxItems: 10000
+              items: { type: string, format: uri }
+            webhook: { $ref: '#/components/schemas/WebhookConfig' }
+            maxConcurrency: { type: integer, minimum: 1 }
+        - $ref: '#/components/schemas/ScrapeOptions'
+
+    Action:
+      type: object
+      required: [type]
+      discriminator: { propertyName: type }
+      properties:
+        type:
+          type: string
+          enum: [wait, click, write, press, scroll, screenshot, executeJavascript, scrape]
+        selector: { type: string }
+        milliseconds: { type: integer }
+        text: { type: string }
+        key: { type: string }
+        direction: { type: string, enum: [up, down] }
+        script: { type: string }
+        fullPage: { type: boolean }
+
+    ExtractConfig:
+      type: object
+      description: |
+        Structured extraction using your configured model.
+
+        Page content is relevance-scored and trimmed before it reaches the model
+        rather than dumped wholesale — cheaper and more accurate.
+
+        Constrained decoding guarantees the *shape* of the output and guarantees
+        nothing about its truth. Length keywords such as `minItems` and `maxItems`
+        are rejected because they push models to invent entries; say what you expect
+        in the field description instead.
+      properties:
+        schema:
+          type: object
+          description: A JSON Schema. Over ~30 fields, split into several calls — accuracy degrades measurably.
+        prompt: { type: string }
+        model:
+          type: string
+          description: Override the server's default model. Must be configured on the server.
+        includeSources:
+          type: boolean
+          default: false
+          description: Return the passage that grounded each field.
+
+    ChunkConfig:
+      type: object
+      description: Split content for retrieval. Chunks carry stable anchors that survive re-crawls, so citations keep resolving.
+      properties:
+        strategy:
+          type: string
+          enum: [semantic, heading, fixed]
+          default: semantic
+        maxTokens: { type: integer, default: 512 }
+        overlap: { type: integer, default: 64 }
+        contextual:
+          type: boolean
+          default: false
+          description: Prepend a short generated summary to each chunk for retrieval accuracy. Costs one model call per chunk.
+
+    DocumentConfig:
+      type: object
+      description: |
+        Document handling. PDFs are classified before parsing, so a scanned document
+        routes to OCR instead of returning garbled characters.
+      properties:
+        ocr:
+          type: string
+          enum: [auto, never, always]
+          default: auto
+        maxPages: { type: integer, minimum: 1 }
+        tables:
+          type: string
+          enum: [auto, high-fidelity]
+          default: auto
+          description: '`high-fidelity` routes to a table-specialised parser. Slower, markedly better on complex tables.'
+
+    ProxyConfig:
+      type: object
+      description: Your own proxy. Helix ships no pool and never proxies through its own credentials.
+      properties:
+        url:
+          type: string
+          description: 'scheme://user:pass@host:port'
+        sessionId:
+          type: string
+          description: Reuse the same exit IP across requests sharing this value.
+        geo: { type: string, minLength: 2, maxLength: 2 }
+
+    Destination:
+      type: object
+      description: Write results straight to your own store, skipping a round trip.
+      required: [type]
+      properties:
+        type: { type: string, enum: [qdrant, pgvector] }
+        collection: { type: string }
+        namespace: { type: string }
+        upsertMode:
+          type: string
+          enum: [update-in-place, append]
+          default: update-in-place
+          description: |
+            `update-in-place` derives deterministic point IDs from the URL, so
+            re-crawling a site updates existing vectors instead of duplicating them.
+
+    WebhookConfig:
+      type: object
+      required: [url]
+      description: |
+        Signed with HMAC-SHA256 over `{timestamp}.{body}`, sent as
+        `Helix-Signature: t=<unix>,v1=<hex>`. Compare in constant time and reject
+        timestamps outside a five-minute window.
+
+        Delivery retries with exponential backoff for up to three days. Ordering is
+        not guaranteed — make your handler idempotent. Exhausted deliveries land in
+        a dead-letter queue you can replay.
+      properties:
+        url: { type: string, format: uri }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+        events:
+          type: array
+          items: { type: string, enum: [started, page, changed, completed, failed] }
+        metadata:
+          type: object
+          description: Echoed back in every delivery.
+
+    MapRequest:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, format: uri }
+        search: { type: string, description: Rank discovered URLs by relevance to this. }
+        sitemap: { type: string, enum: [include, skip, only], default: include }
+        includeSubdomains: { type: boolean, default: false }
+        ignoreQueryParameters: { type: boolean, default: true }
+        limit: { type: integer, default: 5000, maximum: 100000 }
+
+    MapResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        links:
+          type: array
+          items:
+            type: object
+            properties:
+              url: { type: string, format: uri }
+              title: { type: string }
+              description: { type: string }
+              source: { type: string, enum: [sitemap, links, both] }
+              lastModified:
+                type: string
+                format: date-time
+                description: From the sitemap where present. Frequently stale or fabricated — treat as a hint.
+        truncated: { type: boolean }
+
+    CrawlRequest:
+      allOf:
+        - type: object
+          required: [url]
+          properties:
+            url: { type: string, format: uri }
+            estimate:
+              type: boolean
+              default: false
+              description: Return projected work instead of crawling.
+            limit: { type: integer, default: 1000 }
+            maxDepth: { type: integer }
+            includePaths:
+              type: array
+              items: { type: string }
+            excludePaths:
+              type: array
+              items: { type: string }
+            allowSubdomains: { type: boolean, default: false }
+            allowExternal: { type: boolean, default: false }
+            sitemap: { type: string, enum: [include, skip, only], default: include }
+            respectRobots:
+              type: boolean
+              default: true
+              description: |
+                Honours `robots.txt` including `Crawl-delay`. Disabling is logged and
+                is your responsibility — only do it for sites you own or have
+                permission to crawl.
+            politeness:
+              type: string
+              enum: [adaptive, fixed]
+              default: adaptive
+              description: |
+                `adaptive` ramps concurrency while a host stays healthy and backs off
+                on 429s or rising latency.
+            maxConcurrency: { type: integer }
+            delay: { type: number, description: Seconds between requests to one host. Overrides adaptive pacing. }
+            incremental:
+              type: boolean
+              default: false
+              description: Skip pages whose content hash is unchanged since the last crawl of this site.
+            destination: { $ref: '#/components/schemas/Destination' }
+            webhook: { $ref: '#/components/schemas/WebhookConfig' }
+        - $ref: '#/components/schemas/ScrapeOptions'
+
+    SearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string, maxLength: 500 }
+        limit: { type: integer, default: 10, maximum: 100 }
+        sources:
+          type: array
+          items: { type: string, enum: [web, news, images] }
+          default: [web]
+        categories:
+          type: array
+          items: { type: string, enum: [github, research, pdf, docs] }
+        includeDomains:
+          type: array
+          items: { type: string }
+        excludeDomains:
+          type: array
+          items: { type: string }
+        freshness: { type: string, description: 'Relative window, e.g. `24h`, `7d`, `1y`.' }
+        country: { type: string, minLength: 2, maxLength: 2 }
+        scrape:
+          allOf:
+            - $ref: '#/components/schemas/ScrapeOptions'
+          description: Read every result in the same call. Omit for metadata only.
+
+    SearchResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        results:
+          type: array
+          items:
+            allOf:
+              - type: object
+                properties:
+                  title: { type: string }
+                  url: { type: string, format: uri }
+                  snippet: { type: string }
+                  position: { type: integer }
+                  publishedAt: { type: string, format: date-time }
+              - $ref: '#/components/schemas/Document'
+
+    EnrichRequest:
+      type: object
+      required: [rows, fields]
+      properties:
+        rows:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            type: object
+            additionalProperties: { type: string }
+            description: 'At least one identifying value, e.g. `{ "email": "a@b.com" }` or `{ "domain": "b.com" }`.'
+        fields:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { $ref: '#/components/schemas/EnrichField' }
+        maxSourcesPerField: { type: integer, default: 5 }
+        webhook: { $ref: '#/components/schemas/WebhookConfig' }
+
+    EnrichField:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string }
+        type: { type: string, enum: [string, number, boolean, array] }
+        description: { type: string, description: What you want. Doubles as extraction guidance for the model. }
+        examples:
+          type: array
+          items: { type: string }
+          description: Sample values. Materially improves accuracy.
+
+    EnrichResult:
+      type: object
+      properties:
+        rowIndex: { type: integer }
+        input:
+          type: object
+          additionalProperties: { type: string }
+        fields:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              value:
+                description: The extracted value, or null when nothing trustworthy was found.
+                oneOf:
+                  - { type: string }
+                  - { type: number }
+                  - { type: boolean }
+                  - { type: array, items: { type: string } }
+                  - { type: 'null' }
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+                description: Model-reported. Uncalibrated until measured against a labelled set — treat as ordinal.
+              reason:
+                type: string
+                description: Why a value is null — no sources found, sources conflicted, low confidence.
+              sources:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    url: { type: string, format: uri }
+                    snippet: { type: string, description: The passage the value came from. }
+        status: { type: string, enum: [completed, partial, failed] }
+
+    MonitorRequest:
+      type: object
+      required: [urls, schedule]
+      properties:
+        urls:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { type: string, format: uri }
+        schedule: { $ref: '#/components/schemas/Schedule' }
+        diff:
+          type: object
+          properties:
+            granularity: { type: string, enum: [word, line, character], default: word }
+            inline:
+              type: boolean
+              default: true
+              description: Include the diff in the webhook body so no follow-up request is needed.
+        trigger:
+          type: object
+          description: |
+            Narrow what counts as a change. Keyword triggers need no model call — far
+            cheaper than semantic judgement, and enough for most watches.
+          properties:
+            keywordAppears: { type: string }
+            keywordDisappears: { type: string }
+            selector: { type: string, description: Watch only this part of the page. }
+            minChangeRatio: { type: number, description: Ignore changes smaller than this fraction of the content. }
+        webhook: { $ref: '#/components/schemas/WebhookConfig' }
+        scrapeOptions: { $ref: '#/components/schemas/ScrapeOptions' }
+
+    Schedule:
+      type: object
+      description: A cron expression, or a plain interval. Windows keep checks inside the hours you care about.
+      properties:
+        cron: { type: string }
+        every: { type: string, description: 'Interval such as `15m`, `6h`, `1d`.' }
+        timezone: { type: string, default: UTC }
+        window:
+          type: object
+          properties:
+            days:
+              type: array
+              items: { type: string, enum: [mon, tue, wed, thu, fri, sat, sun] }
+            startHour: { type: integer, minimum: 0, maximum: 23 }
+            endHour: { type: integer, minimum: 0, maximum: 23 }
+
+    Monitor:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        urls:
+          type: array
+          items: { type: string, format: uri }
+        schedule: { $ref: '#/components/schemas/Schedule' }
+        createdAt: { type: string, format: date-time }
+        lastCheckedAt: { type: string, format: date-time }
+        nextCheckAt: { type: string, format: date-time }
+        status: { type: string, enum: [active, paused, failing] }
+        stats:
+          type: object
+          properties:
+            checks: { type: integer }
+            changes: { type: integer }
+            pagesUnchanged:
+              type: integer
+              description: Unchanged pages, which cost nothing.
+
+    Document:
+      type: object
+      description: The read content of one resource. Identical in shape for web pages and documents.
+      properties:
+        markdown: { type: string }
+        html: { type: string }
+        rawHtml: { type: string }
+        text: { type: string }
+        summary: { type: string }
+        links:
+          type: array
+          items: { type: string, format: uri }
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              url: { type: string, format: uri }
+              alt: { type: string }
+        screenshot: { type: string, description: 'Signed URL, expires in 24 hours.' }
+        json:
+          type: object
+          description: Schema-conforming extraction, present when `json` was requested.
+        chunks:
+          type: array
+          items:
+            type: object
+            properties:
+              text: { type: string }
+              anchor: { type: string, description: 'Stable across re-crawls, so citations keep resolving.' }
+              tokens: { type: integer }
+              embedding:
+                type: array
+                items: { type: number }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+
+    Metadata:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        language: { type: string }
+        sourceUrl: { type: string, format: uri }
+        finalUrl: { type: string, format: uri, description: After redirects. }
+        statusCode: { type: integer }
+        contentType: { type: string }
+        fetchedAt: { type: string, format: date-time }
+        contentHash: { type: string, description: SHA-256 of normalised content. Drives incremental crawl and change detection. }
+        tier: { $ref: '#/components/schemas/Tier' }
+        tiersAttempted:
+          type: array
+          items: { $ref: '#/components/schemas/Tier' }
+        profile: { type: string }
+        fromCache: { type: boolean }
+        document:
+          type: object
+          description: Present for PDFs and Office files.
+          properties:
+            pages: { type: integer }
+            needsOcr: { type: boolean }
+            ocrApplied: { type: boolean }
+            suspectedGarbledText:
+              type: boolean
+              description: >-
+                Text layer decoded suspiciously. Common with CJK PDFs; triggers
+                an OCR fallback when `ocr` is `auto`.
+            parser: { type: string }
+
+    ScrapeResponse:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/Document' }
+        failure: { $ref: '#/components/schemas/FetchFailure' }
+        warnings:
+          type: array
+          items: { type: string }
+
+    FetchFailure:
+      type: object
+      description: |
+        A typed failure. Bot challenges appear here even when the upstream returned
+        200 — a challenge page is never returned as content.
+      required: [reason]
+      properties:
+        url: { type: string, format: uri }
+        reason:
+          type: string
+          enum: [blocked, challenge, timeout, dns, tls, http_error, empty, robots_denied, unsupported_type]
+        detail: { type: string }
+        statusCode: { type: integer }
+        detectedBy:
+          type: array
+          items: { type: string }
+          description: 'Signals that fired, e.g. `cloudflare-interstitial`, `content-too-short`.'
+        tier: { $ref: '#/components/schemas/Tier' }
+        tiersAttempted:
+          type: array
+          items: { $ref: '#/components/schemas/Tier' }
+        profile: { type: string }
+        escalationAvailable:
+          type: boolean
+          description: Whether a higher tier, another profile or a different proxy could still be tried.
+
+    Estimate:
+      type: object
+      description: Projected work. Resources rather than credits — Helix sells no inference.
+      properties:
+        pages: { type: integer }
+        pagesFromCache: { type: integer }
+        tierBreakdown:
+          type: object
+          additionalProperties: { type: integer }
+        estimatedSeconds: { type: integer }
+        estimatedTokens:
+          type: object
+          properties:
+            input: { type: integer }
+            output: { type: integer }
+        estimatedProviderCost:
+          type: object
+          description: Your provider's charge at the configured model. Zero when no model is involved.
+          properties:
+            amount: { type: number }
+            currency: { type: string }
+            model: { type: string }
+        assumptions:
+          type: array
+          items: { type: string }
+
+    JobAccepted:
+      type: object
+      properties:
+        success: { type: boolean }
+        id: { type: string, format: uuid }
+        url: { type: string, format: uri, description: Where to poll. }
+
+    Job:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [crawl, batch_scrape, enrich] }
+        status: { type: string, enum: [queued, running, completed, failed, cancelled] }
+        total: { type: integer }
+        completed: { type: integer }
+        failed: { type: integer }
+        createdAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        next: { type: string, format: uri, description: Cursor for the next page of results. }
+        data:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/Document'
+              - $ref: '#/components/schemas/EnrichResult'
+        usage: { $ref: '#/components/schemas/Usage' }
+
+    Usage:
+      type: object
+      description: What the job actually consumed. Provider spend is what your provider bills you, not a Helix charge.
+      properties:
+        pagesFetched: { type: integer }
+        pagesFromCache: { type: integer }
+        pagesUnchanged: { type: integer }
+        browserSeconds: { type: number }
+        tokens:
+          type: object
+          properties:
+            input: { type: integer }
+            output: { type: integer }
+        providerCost:
+          type: object
+          properties:
+            amount: { type: number }
+            currency: { type: string }
+
+    ProfileSummary:
+      type: object
+      properties:
+        id: { type: string }
+        browser: { type: string }
+        version: { type: string }
+        platform: { type: string }
+        capturedAt: { type: string, format: date-time }
+        coherent:
+          type: boolean
+          description: Whether the identity validates as internally consistent. Incoherent profiles are never used.
+
+    Health:
+      type: object
+      properties:
+        status: { type: string, enum: [ok, degraded, unhealthy] }
+        version: { type: string }
+        services:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status: { type: string, enum: [ok, degraded, unhealthy] }
+              detail: { type: string }
+        providers:
+          type: object
+          description: Which BYOK providers are configured. Never reveals key material.
+          additionalProperties:
+            type: object
+            properties:
+              configured: { type: boolean }
+              model: { type: string }
+
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error: { type: string }
+        message: { type: string }
+        field: { type: string }
+        requestId: { type: string }

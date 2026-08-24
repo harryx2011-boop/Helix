@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Dark-first tokens (FRONTEND.md §3: "this should feel like something you
+ * run: a terminal, a control panel, an instrument"). Light values live on
+ * :root as the fallback / opt-out theme.
+ */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222 48% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 48% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 48% 9%;
+  --primary: 263 83% 58%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 20% 97%;
+  --secondary-foreground: 222 48% 9%;
+  --muted: 240 20% 97%;
+  --muted-foreground: 222 18% 40%;
+  --accent: 258 90% 96%;
+  --accent-foreground: 263 83% 40%;
+  --destructive: 0 74% 42%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 71% 29%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 33%;
+  --warning-foreground: 0 0% 100%;
+  --border: 228 22% 91%;
+  --input: 228 22% 91%;
+  --ring: 263 83% 58%;
+
+  /* Fetch-ladder tiers. On a light ground, deeper = darker = more expensive.
+     The scale inverts in dark mode; identical hexes would make one end vanish
+     in each theme. All four clear 3:1 on white. */
+  --tier-plain: 262 93% 68%;
+  --tier-tls: 258 90% 66%;
+  --tier-lightpanda: 263 83% 58%;
+  --tier-chromium: 265 69% 42%;
+
+  --radius: 0.5rem;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+}
+
+.dark {
+  /* Surface built up from the logo's near-black (#0B1220). Deliberately
+     blue-cast rather than neutral grey — it keeps the violet from looking
+     stranded. */
+  --background: 222 48% 9%;
+  --foreground: 220 33% 96%;
+  --card: 222 39% 12%;
+  --card-foreground: 220 33% 96%;
+  --popover: 222 38% 15%;
+  --popover-foreground: 220 33% 96%;
+  --primary: 258 90% 66%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 222 32% 18%;
+  --secondary-foreground: 220 33% 96%;
+  --muted: 222 32% 18%;
+  --muted-foreground: 220 17% 66%;
+  --accent: 262 46% 22%;
+  --accent-foreground: 258 90% 76%;
+  --destructive: 0 91% 71%;
+  --destructive-foreground: 222 48% 9%;
+  --success: 142 69% 58%;
+  --success-foreground: 222 48% 9%;
+  --warning: 43 96% 56%;
+  --warning-foreground: 222 48% 9%;
+  --border: 222 32% 20%;
+  --input: 222 32% 20%;
+  --ring: 258 90% 66%;
+
+  /* On a dark ground the scale runs the other way: lighter = cheaper.
+     tier-chromium at 4.7:1 is the deepest that stays legible here. */
+  --tier-plain: 253 100% 92%;
+  --tier-tls: 262 93% 85%;
+  --tier-lightpanda: 258 90% 76%;
+  --tier-chromium: 262 91% 68%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: 222 48% 9%;
+    --foreground: 220 33% 96%;
+    --card: 222 39% 12%;
+    --card-foreground: 220 33% 96%;
+    --popover: 222 38% 15%;
+    --popover-foreground: 220 33% 96%;
+    --primary: 258 90% 66%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 32% 18%;
+    --secondary-foreground: 220 33% 96%;
+    --muted: 222 32% 18%;
+    --muted-foreground: 220 17% 66%;
+    --accent: 262 46% 22%;
+    --accent-foreground: 258 90% 76%;
+    --destructive: 0 91% 71%;
+    --destructive-foreground: 222 48% 9%;
+    --success: 142 69% 58%;
+    --success-foreground: 222 48% 9%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 222 48% 9%;
+    --border: 222 32% 20%;
+    --input: 222 32% 20%;
+    --ring: 258 90% 66%;
+    --tier-plain: 253 100% 92%;
+    --tier-tls: 262 93% 85%;
+    --tier-lightpanda: 258 90% 76%;
+    --tier-chromium: 262 91% 68%;
+  }
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+}
+.markdown-body h1 { font-size: 1.5rem; }
+.markdown-body h2 { font-size: 1.25rem; }
+.markdown-body h3 { font-size: 1.1rem; }
+.markdown-body p { margin-bottom: 1em; }
+.markdown-body ul,
+.markdown-body ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+.markdown-body ul { list-style-type: disc; }
+.markdown-body ol { list-style-type: decimal; }
+.markdown-body a {
+  color: hsl(var(--primary));
+  text-underline-offset: 2px;
+}
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body code {
+  background-color: hsl(var(--secondary));
+  border-radius: 0.25rem;
+  padding: 0.125em 0.375em;
+  font-size: 0.85em;
+}
+.markdown-body pre {
+  background-color: hsl(var(--secondary));
+  border-radius: var(--radius);
+  padding: 0.75em 1em;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+.markdown-body pre code {
+  background-color: transparent;
+  padding: 0;
+}
+.markdown-body blockquote {
+  border-left: 2px solid hsl(var(--border));
+  padding-left: 1em;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 1em;
+}
+.markdown-body table {
+  border-collapse: collapse;
+  margin-bottom: 1em;
+  width: 100%;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.375em 0.75em;
+  text-align: left;
+}
+.markdown-body img { max-width: 100%; border-radius: var(--radius); }
+.markdown-body hr { border-color: hsl(var(--border)); margin: 1.5em 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,163 @@
+# Milestones
+
+v0.1 is large: six endpoint families, three runtimes, a stealth layer and monitors. These are sequenced by real dependency, so the tail can be cut without stranding half-built work.
+
+Legend: ☐ not started · ◐ in progress · ☑ done
+
+---
+
+## M0 — Skeleton ☑
+
+The shape of the thing, with nothing working yet.
+
+- ☑ Monorepo layout, pnpm workspace
+- ☑ `docker compose` with health-gated startup (no boot race)
+- ☑ Postgres schema: keys, jobs, tasks, documents, failures, crawl state, monitors, webhooks, chunks
+- ☑ OpenAPI spec covering every v0.1 endpoint
+- ☑ CI: typecheck, clippy, ruff, spec lint, and a compose boot test
+- ☑ Block-detection classifier + tests
+- ☑ Fail-open rate limiter + tests
+- ☑ Escalation policy (content-presence, not framework detection)
+- ☑ Postgres pool, checksummed migrations runner, real health probe
+- ☑ API keys: generation, SHA-256 hashing, lookup, revocation, per-key limits
+- ☐ Codegen wired for all three runtimes (deferred — hand-written types for now)
+
+## M1 — Fetch and extract ☑
+
+The walking skeleton. Proves the three-runtime shape end to end.
+
+- ☑ Profile model + coherence validator + resolver (7 Rust tests)
+- ☑ `FetchClient` and `ExtractClient` with typed contracts and health probes
+- ☑ Scrape pipeline: ladder walk, block classification, typed failures (9 tests)
+- ☑ `POST /scrape` with format selection and fabrication-keyword rejection
+- ☑ `helix-fetch` transport: wreq client, 13 browser identities, proxy support,
+      per-request clients so a pooled connection cannot leak the prior identity
+- ☑ `helix-extract`: trafilatura + readability, `auto` routing, selector support,
+      absolute link resolution, whitespace-stable content hashing (16 tests)
+- ☐ Real captured profiles from `tools/capture` (the sample is a placeholder)
+
+## M2 — Browser tiers ☑
+
+- ☑ Playwright pool: one process, many contexts, drain-then-recycle after N pages
+- ☑ Lightpanda as tier 2 over CDP, skipped when visual layout is needed
+- ☑ Escalation wired to the live ladder, capability-aware
+- ☑ Actions (click, write, press, scroll, wait, screenshot, executeJavascript, scrape)
+- ☑ Screenshots, full-page and viewport
+
+## M3 — Documents ☑
+
+The unclaimed structural gap: web pages and documents under one API.
+
+- ☑ PDF classification before parsing, routing on `needsOcr` / `suspectedGarbledText`
+- ☑ Mojibake detection by Unicode category — catches broken CMaps and subsetted
+      fonts without false-positiving on CJK, Arabic or emoji
+- ☑ pypdfium2 for clean text layers (Apache/BSD — PyMuPDF's AGPL is disqualifying here)
+- ☑ Marker routing for scanned and garbled documents (optional `documents` extra)
+- ☑ Docling routing when table fidelity matters (optional `documents` extra)
+- ☑ DOCX, PPTX, XLSX with heading and table preservation
+- ☑ Page markers in output so a citation stays locatable
+- ☑ 19 tests against real generated PDFs
+
+Implemented the classification directly rather than depending on
+`@firecrawl/pdf-inspector`: the routing decision is four rules over pypdfium2
+output, and a native binary with per-platform builds is a heavy dependency for
+that. The behaviour it provides — `needsOcr` and `suspected_garbled_text` — is
+what `assess_pdf` returns.
+
+## M4 — Crawl ☑
+
+- ☑ URL normalisation: tracking params, `www`, trailing slash, fragments, param order
+- ☑ Frontier: BFS, per-host partitioning, scope and depth filtering, rejection accounting
+- ☑ Bloom dedup above 50k URLs, exact set below — verified at 100k URLs with
+      zero false positives and zero false negatives
+- ☑ Adaptive politeness (AIMD: ramp while healthy, halve on 5xx and latency
+      spikes, floor and back off on 429 with `Retry-After`)
+- ☑ robots.txt (RFC 9309, 24h cache, 500 KiB parse, `Crawl-delay` honoured)
+- ☑ Sitemap discovery incl. recursive `<sitemapindex>`, cycle-safe, depth-capped
+- ☑ `POST /map`
+- ☑ `POST /crawl` + worker draining the Postgres queue via `FOR UPDATE SKIP LOCKED`
+- ☑ `GET /jobs/:id`, `DELETE /jobs/:id`, `GET /jobs/:id/errors`
+- ☑ Cost estimator via `estimate: true`, reporting assumptions rather than false precision
+- ☑ Incremental mode: conditional requests (ETag / If-Modified-Since) plus
+      content-hash comparison; unchanged pages counted, not re-written
+- ☑ Frontier persistence: Postgres-backed queue with batched writes, claim
+      batching, resume-on-restart, and claim release on shutdown or cancellation
+
+## M5 — LLM ☑
+
+- ☑ Provider adapters: OpenAI, Anthropic (forced tool use), Gemini (`responseSchema`)
+      native; one OpenAI-compatible path covering Ollama, vLLM, OpenRouter, LM Studio
+- ☑ One internal schema representation compiled per provider, including strict-mode
+      rewriting (optional fields become nullable) and Gemini keyword filtering
+- ☑ Reject `minItems`/`maxItems`/`minProperties`/`maxProperties` with an
+      explanatory error, plus a warning past ~30 fields
+- ☑ Retrieval-then-extract: block splitting with headings attached, lexical
+      relevance scoring, budget trimming that preserves document order
+- ☑ `blocks_kept` / `blocks_total` reported, so a missing field can be told
+      apart from a trimmed-away one
+- ☑ `POST /search` with Serper (default) and SerpAPI adapters, domain operators,
+      freshness windows, category shorthands, and search-then-scrape in one call
+- ☑ One failed result does not fail the search — failures travel per-row
+- ☐ Prompt caching where the provider supports it
+- ☐ Live provider calls unverified — no API keys available in this environment
+
+## M6 — Vectors ◐
+
+- ☑ Semantic chunking: heading-aware sections, sentence-boundary splitting,
+      configurable overlap, and `heading`/`fixed`/`semantic` strategies
+- ☑ Stable anchors — hashed from a 64-character opening plus heading path, so
+      editing a paragraph does not invalidate citations into its section
+- ☑ Local embeddings by default (no key, no cost); OpenAI and Voyage optional
+- ☑ Qdrant sink with collection auto-creation
+- ☑ pgvector sink reporting inserts and updates separately
+- ☑ Deterministic UUID v5 IDs from URL + anchor, so a re-crawl updates in place
+      rather than appending a second copy of every chunk
+- ☐ `destination` wired into the crawl worker — sinks exist but nothing calls them
+- ☐ Live embedding run unverified: the local model was not downloaded here
+
+## M7 — Monitors ☐
+
+- ☐ Scheduler: cron, intervals, timezone and business-hours windows
+- ☐ Content hashing, unchanged pages free
+- ☐ Diffs at word, line and character granularity, delivered inline
+- ☐ Keyword triggers (no model call)
+- ☐ Webhooks: HMAC signing, backoff over days, dead letter with replay
+
+## M8 — Enrich ☐
+
+Last, because the hard part is not the loop — it is calibration and knowing when to say nothing.
+
+- ☐ Field routing across phased extractors
+- ☐ Confidence scoring, with honest limits stated
+- ☐ Citations carrying the grounding passage, not just a URL
+- ☐ Guardrails: parked domains, placeholder pages, social blocklist, content floor, URL validation
+- ☐ `null` with a reason when no good data exists
+
+## M9 — Surface ☐
+
+- ☐ MCP server, every parameter described, schemas CI-validated against the real API
+- ☐ Generated TypeScript SDK
+- ☐ Documentation site
+- ☐ Self-host polish, resource tuning
+
+---
+
+## Deliberately out of scope for v0.1
+
+- Hosted multi-tenant deployment and billing
+- BYO-browser (pointing at Browserbase or Steel) — the seam exists, the adapter does not
+- SQL/Parquet/BigQuery export
+- Knowledge-graph extraction
+- Cross-source entity resolution (Diffbot-scale fusion is a separate multi-year bet)
+
+## Known risks
+
+**Stealth is validated locally only.** CreepJS, Sannysoft and browserleaks catch fingerprint incoherence; they cannot tell you whether Cloudflare or DataDome would let you through. The local suite will find real bugs and cannot confirm the ladder works.
+
+**Three runtimes is real overhead.** If the Rust tier proves marginal against curl_cffi in Python, collapsing it is a legitimate simplification, not a defeat.
+
+**`wreq` is pinned to 0.15.3.** 0.16 requires rustc 1.98, above the 1.95 toolchain here. Its predecessor `rquest` was yanked from crates.io entirely — every version — so this dependency needs watching.
+
+**BoringSSL needs cmake to build.** Present in the Docker image, absent on this host, so `cargo test` for the fetch service only runs in a container until cmake is installed locally.
+
+**The sample profile is a placeholder.** Hand-written fingerprint values validate structurally and are wrong in precisely the way detection looks for. Nothing goes near a live target until `tools/capture` has produced real ones.

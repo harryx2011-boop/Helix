@@ -839,7 +839,7 @@ components:
           description: Two-letter country, e.g. `us`.
         tbs:
           type: string
-          pattern: '^qdr:[hdwmy]\\d*$'
+          pattern: '^qdr:[hdwmy][0-9]*$'
           description: 'Time filter in Google `tbs` form: `qdr:d` (day), `qdr:w`, `qdr:m`, `qdr:y`. Wins over `freshness`.'
         freshness:
           type: string

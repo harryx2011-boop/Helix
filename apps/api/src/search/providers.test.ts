@@ -1,9 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   applyOperators,
   createSearchProvider,
   freshnessToTbs,
+  resolveTbs,
+  SearxngProvider,
   SerperProvider,
+  tbsToSearxngRange,
 } from './providers.js';
 
 describe('applyOperators', () => {
@@ -81,5 +84,104 @@ describe('provider configuration', () => {
     expect(createSearchProvider('serper', { SERPER_API_KEY: 'k' })?.name).toBe('serper');
     expect(createSearchProvider('serpapi', { SERPAPI_KEY: 'k' })?.name).toBe('serpapi');
     expect(createSearchProvider('nonesuch', {})).toBeUndefined();
+  });
+});
+
+describe('resolveTbs', () => {
+  it('prefers an explicit tbs over freshness', () => {
+    expect(resolveTbs({ query: 'x', limit: 1, sources: ['web'], tbs: 'qdr:y', freshness: '1d' })).toBe('qdr:y');
+    expect(resolveTbs({ query: 'x', limit: 1, sources: ['web'], freshness: '7d' })).toBe('qdr:d7');
+    expect(resolveTbs({ query: 'x', limit: 1, sources: ['web'] })).toBeUndefined();
+  });
+});
+
+describe('tbsToSearxngRange', () => {
+  it('rounds Google windows up to the SearXNG range that contains them', () => {
+    expect(tbsToSearxngRange('qdr:h')).toBe('day');
+    expect(tbsToSearxngRange('qdr:d')).toBe('day');
+    expect(tbsToSearxngRange('qdr:d7')).toBe('month');
+    expect(tbsToSearxngRange('qdr:w')).toBe('month');
+    expect(tbsToSearxngRange('qdr:m')).toBe('month');
+    expect(tbsToSearxngRange('qdr:m3')).toBe('year');
+    expect(tbsToSearxngRange('qdr:y')).toBe('year');
+    expect(tbsToSearxngRange(undefined)).toBeUndefined();
+    expect(tbsToSearxngRange('nonsense')).toBeUndefined();
+  });
+});
+
+describe('SearxngProvider', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('is unconfigured without a URL and refuses to search', async () => {
+    expect(new SearxngProvider(undefined).configured()).toBe(false);
+    expect(new SearxngProvider('   ').configured()).toBe(false);
+    await expect(
+      new SearxngProvider(undefined).search({ query: 'x', limit: 5, sources: ['web'] }),
+    ).rejects.toThrow(/SEARXNG_URL/);
+  });
+
+  it('queries the JSON API with category, locale and time range and maps the rows', async () => {
+    const calls: string[] = [];
+    globalThis.fetch = vi.fn(async (input: string | URL | Request) => {
+      calls.push(String(input));
+      return new Response(
+        JSON.stringify({
+          results: [
+            { url: 'https://a.test/1', title: 'A', content: 'first', publishedDate: '2026-01-02' },
+            { url: 'https://b.test/2', title: 'B', content: '' },
+            { title: 'no url' },
+            { url: 'https://c.test/3', title: 'C', content: 'over the limit' },
+          ],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    }) as typeof fetch;
+
+    const hits = await new SearxngProvider('http://searxng:8080/').search({
+      query: 'web scraping',
+      limit: 2,
+      sources: ['web'],
+      lang: 'en',
+      country: 'us',
+      tbs: 'qdr:w',
+      excludeDomains: ['spam.com'],
+    });
+
+    const url = new URL(calls[0]!);
+    expect(url.origin + url.pathname).toBe('http://searxng:8080/search');
+    expect(url.searchParams.get('format')).toBe('json');
+    expect(url.searchParams.get('categories')).toBe('general');
+    expect(url.searchParams.get('language')).toBe('en-US');
+    expect(url.searchParams.get('time_range')).toBe('month');
+    expect(url.searchParams.get('q')).toBe('web scraping -site:spam.com');
+
+    expect(hits).toEqual([
+      { title: 'A', url: 'https://a.test/1', snippet: 'first', position: 1, source: 'web', publishedAt: '2026-01-02', imageUrl: undefined },
+      { title: 'B', url: 'https://b.test/2', snippet: undefined, position: 2, source: 'web', publishedAt: undefined, imageUrl: undefined },
+    ]);
+  });
+
+  it('returns an empty list rather than throwing when the instance refuses JSON', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('forbidden', { status: 403 })) as typeof fetch;
+    const hits = await new SearxngProvider('http://searxng:8080').search({ query: 'x', limit: 5, sources: ['web'] });
+    expect(hits).toEqual([]);
+  });
+});
+
+describe('createSearchProvider auto', () => {
+  it('prefers SearXNG, then Serper, then SerpAPI, whichever has credentials', () => {
+    expect(createSearchProvider('auto', { SEARXNG_URL: 'http://s', SERPER_API_KEY: 'k' })?.name).toBe('searxng');
+    expect(createSearchProvider('auto', { SERPER_API_KEY: 'k', SERPAPI_KEY: 'k' })?.name).toBe('serper');
+    expect(createSearchProvider('auto', { SERPAPI_KEY: 'k' })?.name).toBe('serpapi');
+    expect(createSearchProvider('auto', {})).toBeUndefined();
+  });
+
+  it('builds a named SearXNG backend', () => {
+    expect(createSearchProvider('searxng', { SEARXNG_URL: 'http://s' })?.name).toBe('searxng');
+    expect(createSearchProvider('searxng', {})?.configured()).toBe(false);
   });
 });

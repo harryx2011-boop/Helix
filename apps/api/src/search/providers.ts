@@ -1,15 +1,15 @@
 import type { Log } from '../core/logger.js';
 
 /**
- * SERP providers.
+ * Search backends.
  *
- * Search is the one capability Helix cannot self-host: a search index is not
- * something a scraping tool builds. So this is bring-your-own-key like the rest
- * — the operator's credentials, billed to their account.
+ * A search index is not something a scraping tool builds, so Helix brings none.
+ * Three adapters ship: SearXNG (self-hostable, no key, the zero-dependency
+ * default when SEARXNG_URL is set) and two BYOK SERP APIs, Serper and SerpAPI,
+ * billed to the operator's own account.
  *
- * Serper is the default because the price difference is not marginal. At
- * comparable volume it runs roughly 10-25x cheaper than SerpAPI for the same
- * Google results, which for a search-then-scrape workload dominates the bill.
+ * Serper is preferred over SerpAPI when both keys are present because at
+ * comparable volume it runs roughly 10-25x cheaper for the same Google results.
  */
 
 export type SearchSource = 'web' | 'news' | 'images';
@@ -18,8 +18,14 @@ export interface SearchQuery {
   query: string;
   limit: number;
   sources: SearchSource[];
+  /** Two-letter UI language, e.g. `en`. */
+  lang?: string | undefined;
+  /** Two-letter country, e.g. `us`. */
   country?: string | undefined;
+  /** Relative window, e.g. `24h`, `7d`; converted to `tbs` when `tbs` is absent. */
   freshness?: string | undefined;
+  /** Google-style time filter, e.g. `qdr:m`. Wins over `freshness`. */
+  tbs?: string | undefined;
   includeDomains?: string[] | undefined;
   excludeDomains?: string[] | undefined;
 }
@@ -40,7 +46,7 @@ export interface SearchProvider {
   configured(): boolean;
 }
 
-/** Domain filters as Google search operators, which every SERP API passes through. */
+/** Domain filters as Google search operators, which every backend passes through. */
 function applyOperators(query: SearchQuery): string {
   const parts = [query.query];
 
@@ -66,6 +72,30 @@ function freshnessToTbs(freshness: string | undefined): string | undefined {
 
   const [, amount, unit] = match;
   return `qdr:${unit}${amount === '1' ? '' : amount}`;
+}
+
+/** The effective time filter: an explicit `tbs` wins over a relative `freshness`. */
+function resolveTbs(query: SearchQuery): string | undefined {
+  return query.tbs?.trim() || freshnessToTbs(query.freshness);
+}
+
+/**
+ * SearXNG only knows day / month / year, so a Google `tbs` window rounds up to
+ * the smallest SearXNG range that still contains it.
+ */
+function tbsToSearxngRange(tbs: string | undefined): 'day' | 'month' | 'year' | undefined {
+  if (!tbs) return undefined;
+  const match = /^qdr:([hdwmy])(\d*)$/.exec(tbs.trim().toLowerCase());
+  if (!match) return undefined;
+  const unit = match[1];
+  const amount = Number.parseInt(match[2] || '1', 10);
+
+  const hoursPerUnit: Record<string, number> = { h: 1, d: 24, w: 24 * 7, m: 24 * 30, y: 24 * 365 };
+  const hours = amount * (hoursPerUnit[unit ?? 'd'] ?? 24);
+
+  if (hours <= 24) return 'day';
+  if (hours <= 24 * 31) return 'month';
+  return 'year';
 }
 
 export class SerperProvider implements SearchProvider {
@@ -103,7 +133,8 @@ export class SerperProvider implements SearchProvider {
       };
 
       if (query.country) body['gl'] = query.country.toLowerCase();
-      const tbs = freshnessToTbs(query.freshness);
+      if (query.lang) body['hl'] = query.lang.toLowerCase();
+      const tbs = resolveTbs(query);
       if (tbs) body['tbs'] = tbs;
 
       try {
@@ -188,8 +219,9 @@ export class SerpApiProvider implements SearchProvider {
       if (source === 'news') params.set('tbm', 'nws');
       if (source === 'images') params.set('tbm', 'isch');
       if (query.country) params.set('gl', query.country.toLowerCase());
+      if (query.lang) params.set('hl', query.lang.toLowerCase());
 
-      const tbs = freshnessToTbs(query.freshness);
+      const tbs = resolveTbs(query);
       if (tbs) params.set('tbs', tbs);
 
       try {
@@ -236,19 +268,136 @@ export class SerpApiProvider implements SearchProvider {
   }
 }
 
+/**
+ * SearXNG: a self-hosted metasearch engine, queried over its JSON API.
+ *
+ * The instance must list `json` under `search.formats` in its settings.yml;
+ * a stock install answers JSON requests with 403 otherwise.
+ */
+export class SearxngProvider implements SearchProvider {
+  readonly name = 'searxng';
+  readonly #baseUrl: string | undefined;
+  readonly #logger: Log | undefined;
+
+  constructor(baseUrl: string | undefined, logger?: Log) {
+    this.#baseUrl = baseUrl?.trim().replace(/\/+$/, '') || undefined;
+    this.#logger = logger;
+  }
+
+  configured(): boolean {
+    return Boolean(this.#baseUrl);
+  }
+
+  async search(query: SearchQuery): Promise<SearchHit[]> {
+    if (!this.#baseUrl) {
+      throw new Error('SEARXNG_URL is not set.');
+    }
+
+    const categories: Record<SearchSource, string> = {
+      web: 'general',
+      news: 'news',
+      images: 'images',
+    };
+
+    const hits: SearchHit[] = [];
+
+    for (const source of query.sources) {
+      const params = new URLSearchParams({
+        q: applyOperators(query),
+        format: 'json',
+        categories: categories[source],
+      });
+
+      if (query.lang) {
+        // SearXNG takes a locale rather than separate language and country.
+        params.set(
+          'language',
+          query.country
+            ? `${query.lang.toLowerCase()}-${query.country.toUpperCase()}`
+            : query.lang.toLowerCase(),
+        );
+      }
+
+      const range = tbsToSearxngRange(resolveTbs(query));
+      if (range) params.set('time_range', range);
+
+      try {
+        const response = await fetch(`${this.#baseUrl}/search?${params}`, {
+          headers: { accept: 'application/json' },
+          signal: AbortSignal.timeout(20_000),
+        });
+
+        if (!response.ok) {
+          this.#logger?.warn(
+            { status: response.status, source },
+            response.status === 403
+              ? 'searxng refused the JSON format; enable json under search.formats in settings.yml'
+              : 'searxng request failed',
+          );
+          continue;
+        }
+
+        const payload = (await response.json()) as {
+          results?: {
+            url?: string;
+            title?: string;
+            content?: string;
+            publishedDate?: string | null;
+            img_src?: string;
+            thumbnail_src?: string;
+          }[];
+        };
+
+        payload.results?.slice(0, query.limit).forEach((row, index) => {
+          if (!row.url) return;
+          hits.push({
+            title: row.title ?? '',
+            url: row.url,
+            snippet: row.content || undefined,
+            position: index + 1,
+            source,
+            publishedAt: row.publishedDate ?? undefined,
+            imageUrl: row.img_src ?? row.thumbnail_src ?? undefined,
+          });
+        });
+      } catch (error) {
+        this.#logger?.warn({ error, source }, 'searxng request errored');
+      }
+    }
+
+    return hits;
+  }
+}
+
+export type SearchProviderName = 'auto' | 'searxng' | 'serper' | 'serpapi' | 'none';
+
+/**
+ * `auto` picks the first backend with credentials: SearXNG (no key, no cost),
+ * then Serper, then SerpAPI. Naming a backend explicitly skips the search.
+ */
 export function createSearchProvider(
   name: string,
   env: NodeJS.ProcessEnv,
   logger?: Log,
 ): SearchProvider | undefined {
   switch (name) {
+    case 'searxng':
+      return new SearxngProvider(env['SEARXNG_URL'], logger);
     case 'serper':
       return new SerperProvider(env['SERPER_API_KEY'], logger);
     case 'serpapi':
       return new SerpApiProvider(env['SERPAPI_KEY'], logger);
+    case 'auto': {
+      const candidates = [
+        new SearxngProvider(env['SEARXNG_URL'], logger),
+        new SerperProvider(env['SERPER_API_KEY'], logger),
+        new SerpApiProvider(env['SERPAPI_KEY'], logger),
+      ];
+      return candidates.find((candidate) => candidate.configured());
+    }
     default:
       return undefined;
   }
 }
 
-export { applyOperators, freshnessToTbs };
+export { applyOperators, freshnessToTbs, resolveTbs, tbsToSearxngRange };

@@ -44,7 +44,12 @@ const ConfigSchema = z.object({
   lightpandaUrl: z.string().default('http://localhost:9222'),
 
   proxyUrl: z.string().optional(),
-  searchProvider: z.enum(['serper', 'serpapi', 'none']).default('none'),
+  /** `auto` picks SearXNG, then Serper, then SerpAPI, whichever has credentials. */
+  searchProvider: z.enum(['auto', 'searxng', 'serper', 'serpapi', 'none']).default('auto'),
+  searchMaxResults: int(50),
+  searchScrapeConcurrency: int(5),
+  /** Provider-hit cache lifetime for identical queries; 0 disables it. */
+  searchCacheTtlMs: int(60_000),
 
   resultTtlHours: int(168),
 
@@ -83,6 +88,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     lightpandaUrl: env.HELIX_LIGHTPANDA_URL,
     proxyUrl: env.HELIX_PROXY_URL || undefined,
     searchProvider: env.HELIX_SEARCH_PROVIDER,
+    searchMaxResults: env.HELIX_SEARCH_MAX_RESULTS,
+    searchScrapeConcurrency: env.HELIX_SEARCH_SCRAPE_CONCURRENCY,
+    searchCacheTtlMs: env.HELIX_SEARCH_CACHE_TTL_MS,
     resultTtlHours: env.HELIX_RESULT_TTL_HOURS,
     corsOrigins: env.HELIX_CORS_ORIGINS,
   });

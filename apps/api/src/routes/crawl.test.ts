@@ -12,6 +12,10 @@ interface Call {
   values: unknown[];
 }
 
+const JOB = '0f6c1d2e-3a4b-4c5d-8e6f-7a8b9c0d1e2f';
+const JOB_2 = '1f6c1d2e-3a4b-4c5d-8e6f-7a8b9c0d1e2f';
+const JOB_9 = '9f6c1d2e-3a4b-4c5d-8e6f-7a8b9c0d1e2f';
+
 const db = vi.hoisted(() => {
   const state = {
     calls: [] as Call[],
@@ -22,7 +26,7 @@ const db = vi.hoisted(() => {
   };
   const query = vi.fn(async (text: string, values: unknown[] = []) => {
     state.calls.push({ text, values });
-    if (text.includes('INSERT INTO jobs')) return { rows: [{ id: 'job-1' }], rowCount: 1 };
+    if (text.includes('INSERT INTO jobs')) return { rows: [{ id: JOB }], rowCount: 1 };
     if (text.includes('INSERT INTO job_tasks')) return { rows: [], rowCount: 1 };
     if (text.startsWith('SELECT id, type, status')) return { rows: state.job ? [state.job] : [], rowCount: state.job ? 1 : 0 };
     if (text.includes('FROM documents')) return { rows: state.documents, rowCount: state.documents.length };
@@ -84,10 +88,10 @@ describe('POST /v1/crawl', () => {
     const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { url: 'https://example.com' } });
 
     expect(response.statusCode).toBe(202);
-    expect(response.json()).toEqual({ success: true, id: 'job-1', jobId: 'job-1', url: '/v1/crawl/job-1' });
+    expect(response.json()).toEqual({ success: true, id: JOB, jobId: JOB, url: `/v1/crawl/${JOB}` });
 
     const seed = db.state.calls.find((call) => call.text.includes('INSERT INTO job_tasks'));
-    expect(seed?.values).toEqual(['job-1', 'https://example.com', 'https://example.com::0']);
+    expect(seed?.values).toEqual([JOB, 'https://example.com', 'https://example.com::0']);
   });
 
   it('applies the operator default limit and rejects a request above the ceiling', async () => {
@@ -163,6 +167,50 @@ describe('POST /v1/crawl', () => {
     });
   });
 
+  it('rejects a webhook that points at the deployment network', async () => {
+    const app = await buildApp();
+    for (const url of [
+      'http://localhost:7401/',
+      'http://127.0.0.1:7400/v1/internal/keys',
+      'http://helix-extract:7402/',
+      'http://169.254.169.254/latest/meta-data/',
+      'ftp://myapp.example/hook',
+    ]) {
+      const bare = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { url: 'https://example.com', webhook: url } });
+      expect(bare.statusCode, url).toBe(400);
+      expect(bare.json().field, url).toBe('webhook');
+
+      const object = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { url: 'https://example.com', webhook: { url } } });
+      expect(object.statusCode, url).toBe(400);
+      expect(object.json().field, url).toBe('webhook.url');
+    }
+    expect(db.state.calls).toHaveLength(0);
+  });
+
+  it('rejects webhook headers fetch would refuse or Helix reserves', async () => {
+    const app = await buildApp();
+    for (const headers of [{ 'bad header': 'x' }, { 'x-a': 'a\nb' }, { 'content-type': 'text/plain' }, { 'helix-signature': 'x' }]) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/crawl',
+        payload: { url: 'https://example.com', webhook: { url: 'https://myapp.example/hook', headers } },
+      });
+      expect(response.statusCode, JSON.stringify(headers)).toBe(400);
+      expect(response.json().field).toBe('webhook.headers');
+    }
+  });
+
+  it('bounds webhook metadata, which is copied into every delivery', async () => {
+    const app = await buildApp();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/crawl',
+      payload: { url: 'https://example.com', webhook: { url: 'https://myapp.example/hook', metadata: { blob: 'x'.repeat(5_000) } } },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('webhook.metadata');
+  });
+
   it('rejects an unknown webhook event', async () => {
     const app = await buildApp();
     const response = await app.inject({
@@ -227,15 +275,35 @@ describe('POST /v1/crawl', () => {
 describe('GET /v1/crawl/{jobId}', () => {
   it('answers 404 for an unknown job', async () => {
     const app = await buildApp();
-    const response = await app.inject({ method: 'GET', url: '/v1/crawl/nope' });
+    const response = await app.inject({ method: 'GET', url: `/v1/crawl/${JOB_9}` });
 
     expect(response.statusCode).toBe(404);
     expect(response.json()).toMatchObject({ error: 'not_found' });
   });
 
+  it('answers 404 for an id that is not a uuid without asking the database', async () => {
+    const app = await buildApp();
+    const response = await app.inject({ method: 'GET', url: '/v1/crawl/not-a-uuid' });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toMatchObject({ error: 'not_found' });
+    expect(db.state.calls).toHaveLength(0);
+  });
+
+  it('answers 400 for a cursor it did not hand out', async () => {
+    db.state.job = { id: JOB, type: 'crawl', status: 'running', total: 1, completed: 1, failed: 0, usage: {}, error: null };
+    const app = await buildApp();
+    for (const cursor of ['-5', '99999999999999999999', 'abc', '1.5']) {
+      const response = await app.inject({ method: 'GET', url: `/v1/crawl/${JOB}?cursor=${cursor}` });
+      expect(response.statusCode, cursor).toBe(400);
+      expect(response.json()).toMatchObject({ error: 'invalid_request', field: 'cursor' });
+    }
+    expect(db.state.calls.some((call) => call.text.includes('FROM documents'))).toBe(false);
+  });
+
   it('returns the job with its documents, each carrying its url', async () => {
     db.state.job = {
-      id: 'job-1',
+      id: JOB,
       type: 'crawl',
       status: 'running',
       total: 10,
@@ -252,12 +320,12 @@ describe('GET /v1/crawl/{jobId}', () => {
       { url: 'https://example.com/a', final_url: 'https://example.com/a/', content: { markdown: '# A' }, metadata: { title: 'A' } },
     ];
     const app = await buildApp();
-    const response = await app.inject({ method: 'GET', url: '/v1/crawl/job-1' });
+    const response = await app.inject({ method: 'GET', url: `/v1/crawl/${JOB}` });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
-      id: 'job-1',
-      jobId: 'job-1',
+      id: JOB,
+      jobId: JOB,
       status: 'running',
       total: 10,
       completed: 1,
@@ -273,7 +341,7 @@ describe('GET /v1/crawl/{jobId}', () => {
   });
 
   it('points the next cursor back at /v1/crawl', async () => {
-    db.state.job = { id: 'job-1', type: 'crawl', status: 'running', total: 500, completed: 200, failed: 0, usage: {}, error: null };
+    db.state.job = { id: JOB, type: 'crawl', status: 'running', total: 500, completed: 200, failed: 0, usage: {}, error: null };
     db.state.documents = Array.from({ length: 100 }, (_, i) => ({
       url: `https://example.com/${i}`,
       final_url: null,
@@ -281,15 +349,15 @@ describe('GET /v1/crawl/{jobId}', () => {
       metadata: {},
     }));
     const app = await buildApp();
-    const response = await app.inject({ method: 'GET', url: '/v1/crawl/job-1?cursor=100' });
+    const response = await app.inject({ method: 'GET', url: `/v1/crawl/${JOB}?cursor=100` });
 
-    expect(response.json().next).toBe('/v1/crawl/job-1?cursor=200');
+    expect(response.json().next).toBe(`/v1/crawl/${JOB}?cursor=200`);
   });
 
   it('does not serve a job of another type under the crawl path', async () => {
-    db.state.job = { id: 'job-2', type: 'batch_scrape', status: 'running' };
+    db.state.job = { id: JOB_2, type: 'batch_scrape', status: 'running' };
     const app = await buildApp();
-    const response = await app.inject({ method: 'GET', url: '/v1/crawl/job-2' });
+    const response = await app.inject({ method: 'GET', url: `/v1/crawl/${JOB_2}` });
 
     expect(response.statusCode).toBe(404);
   });
@@ -297,25 +365,33 @@ describe('GET /v1/crawl/{jobId}', () => {
 
 describe('DELETE /v1/crawl/{jobId}', () => {
   it('cancels a running crawl and drops its queued tasks', async () => {
-    db.state.cancelled = { id: 'job-1', status: 'cancelled' };
+    db.state.cancelled = { id: JOB, status: 'cancelled' };
     const app = await buildApp();
-    const response = await app.inject({ method: 'DELETE', url: '/v1/crawl/job-1' });
+    const response = await app.inject({ method: 'DELETE', url: `/v1/crawl/${JOB}` });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ id: 'job-1', jobId: 'job-1', status: 'cancelled' });
+    expect(response.json()).toEqual({ id: JOB, jobId: JOB, status: 'cancelled' });
     expect(db.state.calls.some((call) => call.text.includes('UPDATE job_tasks'))).toBe(true);
+  });
+
+  it('answers 404 for an id that is not a uuid', async () => {
+    const app = await buildApp();
+    const response = await app.inject({ method: 'DELETE', url: '/v1/crawl/not-a-uuid' });
+
+    expect(response.statusCode).toBe(404);
+    expect(db.state.calls).toHaveLength(0);
   });
 
   it('answers 409 when the crawl already finished and 404 when it never existed', async () => {
     const app = await buildApp();
 
     db.state.exists = true;
-    const finished = await app.inject({ method: 'DELETE', url: '/v1/crawl/job-1' });
+    const finished = await app.inject({ method: 'DELETE', url: `/v1/crawl/${JOB}` });
     expect(finished.statusCode).toBe(409);
     expect(finished.json()).toMatchObject({ error: 'not_cancellable' });
 
     db.state.exists = false;
-    const missing = await app.inject({ method: 'DELETE', url: '/v1/crawl/job-9' });
+    const missing = await app.inject({ method: 'DELETE', url: `/v1/crawl/${JOB_9}` });
     expect(missing.statusCode).toBe(404);
   });
 });

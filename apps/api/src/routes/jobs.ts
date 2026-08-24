@@ -14,6 +14,27 @@ import { getPool } from '../db/pool.js';
 
 const PAGE_SIZE = 100;
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Job ids are uuids. Anything else is answered as not found before it reaches
+ * a query: Postgres rejects a malformed value on a uuid column as an error,
+ * which would surface as a 500 for what is a caller's typo.
+ */
+export function isJobId(id: string): boolean {
+  return UUID.test(id);
+}
+
+/** Only an offset this API handed out is a cursor. Postgres rejects a negative or oversized one. */
+const CURSOR = /^\d{1,15}$/;
+
+function notFound(requestId: string): RouteResult {
+  return {
+    code: 404,
+    body: { error: 'not_found', message: 'No such job.', requestId },
+  };
+}
+
 interface JobRow {
   id: string;
   type: string;
@@ -44,6 +65,20 @@ export interface RouteResult {
 }
 
 export async function fetchJobView(id: string, options: JobViewOptions): Promise<RouteResult> {
+  if (!isJobId(id)) return notFound(options.requestId);
+
+  if (options.cursor !== undefined && !CURSOR.test(options.cursor)) {
+    return {
+      code: 400,
+      body: {
+        error: 'invalid_request',
+        message: 'cursor: must be the `next` cursor from a previous response',
+        field: 'cursor',
+        requestId: options.requestId,
+      },
+    };
+  }
+
   const { rows } = await getPool().query<JobRow>(
     `SELECT id, type, status, total, completed, failed, usage, error,
             created_at, started_at, finished_at, expires_at
@@ -53,13 +88,10 @@ export async function fetchJobView(id: string, options: JobViewOptions): Promise
 
   const job = rows[0];
   if (!job || (options.type !== undefined && job.type !== options.type)) {
-    return {
-      code: 404,
-      body: { error: 'not_found', message: 'No such job.', requestId: options.requestId },
-    };
+    return notFound(options.requestId);
   }
 
-  const offset = Number.parseInt(options.cursor ?? '0', 10) || 0;
+  const offset = Number.parseInt(options.cursor ?? '0', 10);
 
   const { rows: documents } = await getPool().query<{
     url: string;
@@ -108,6 +140,8 @@ export async function cancelJob(
   id: string,
   options: { type?: string | undefined; requestId: string },
 ): Promise<RouteResult> {
+  if (!isJobId(id)) return notFound(options.requestId);
+
   // Cancelling drops queued work but leaves finished results retrievable —
   // and deliberately does not emit one failure webhook per abandoned URL,
   // which turns a cancellation into a flood for the receiver.
@@ -126,12 +160,7 @@ export async function cancelJob(
       `SELECT 1 FROM jobs WHERE id = $1 AND ($2::text IS NULL OR type = $2::job_type)`,
       [id, options.type ?? null],
     );
-    if ((rowCount ?? 0) === 0) {
-      return {
-        code: 404,
-        body: { error: 'not_found', message: 'No such job.', requestId: options.requestId },
-      };
-    }
+    if ((rowCount ?? 0) === 0) return notFound(options.requestId);
     return {
       code: 409,
       body: {
@@ -170,15 +199,16 @@ export async function registerJobs(app: FastifyInstance): Promise<void> {
   });
 
   app.get<{ Params: { id: string } }>('/jobs/:id/errors', async (request, reply) => {
+    if (!isJobId(request.params.id)) {
+      const result = notFound(request.id);
+      return reply.code(result.code).send(result.body);
+    }
     const { rowCount } = await getPool().query('SELECT 1 FROM jobs WHERE id = $1', [
       request.params.id,
     ]);
     if ((rowCount ?? 0) === 0) {
-      return reply.code(404).send({
-        error: 'not_found',
-        message: 'No such job.',
-        requestId: request.id,
-      });
+      const result = notFound(request.id);
+      return reply.code(result.code).send(result.body);
     }
 
     const { rows } = await getPool().query<{

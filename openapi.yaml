@@ -561,11 +561,11 @@ components:
         extract:
           allOf:
             - $ref: '#/components/schemas/ExtractConfig'
-          description: Same option as `jsonOptions`. Send one of the two, not both.
+          description: 'Same option as `jsonOptions`. Send one of the two, not both.'
         jsonOptions:
           allOf:
             - $ref: '#/components/schemas/ExtractConfig'
-          description: Structured extraction for the `json` format. `schema` is required when `json` is requested.
+          description: 'Structured extraction for the `json` format. `schema` is required when `json` is requested.'
         chunk: { $ref: '#/components/schemas/ChunkConfig' }
 
     ScrapeRequest:
@@ -607,23 +607,23 @@ components:
       properties:
         schema:
           type: object
-          description: A JSON Schema. Required for the `json` format. Over ~30 fields, split into several calls.
+          description: 'A JSON Schema. Required for the `json` format. Over ~30 fields, split into several calls.'
         prompt:
           type: string
           maxLength: 4000
-          description: Guidance for the model. Accompanies a schema; it cannot replace one.
+          description: 'Guidance for the model. Accompanies a schema; it cannot replace one.'
         provider:
           type: string
           enum: [anthropic, openai, openrouter, google, gemini, ollama, vllm, openai-compatible]
-          description: Override the instance's default provider. Its key must already be configured; Helix never accepts credentials over the API.
+          description: Override the instance default provider. Its key must already be configured; Helix never accepts credentials over the API.
         model:
           type: string
           maxLength: 200
-          description: Override the instance's default model.
+          description: Override the instance default model.
         includeSources:
           type: boolean
           default: false
-          description: Return the passages that grounded the extraction as `jsonSources`.
+          description: 'Return the passages that grounded the extraction as `jsonSources`.'
 
     ChunkConfig:
       type: object
@@ -902,20 +902,17 @@ components:
           type: array
           items: { type: string, format: uri }
         screenshot:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: 'A `data:image/png;base64,...` URI. `null` with a warning when no image was captured.'
         json:
-          type: object
-          nullable: true
-          description: Schema-conforming extraction, present when `json` was requested. `null` with a warning when the model step failed after the page was read.
+          type: [object, 'null']
+          description: 'Schema-conforming extraction, present when `json` was requested. `null` with a warning when the model step failed after the page was read.'
         jsonSources:
           type: array
           items: { type: object }
-          description: Present when `includeSources` was set.
+          description: 'Present when `includeSources` was set.'
         chunks:
-          type: array
-          nullable: true
+          type: [array, 'null']
           items:
             type: object
             properties:
@@ -945,9 +942,9 @@ components:
           type: array
           items: { $ref: '#/components/schemas/Tier' }
         profile: { type: string }
-        extractor: { type: string, description: The HTML-to-text engine that ran. }
+        extractor: { type: string, description: 'The HTML-to-text engine that ran.' }
         mobile: { type: boolean }
-        timingMs: { type: integer, description: Wall-clock for the fetch ladder, in milliseconds. }
+        timingMs: { type: integer, description: 'Wall-clock for the fetch ladder, in milliseconds.' }
         fromCache: { type: boolean }
         document:
           type: object
@@ -973,12 +970,12 @@ components:
         warnings:
           type: array
           items: { type: string }
-          description: Always present. Each entry names the format it concerns, e.g. `json: No LLM credentials configured.`
+          description: 'Always present. Each entry names the format it concerns, e.g. `json: No LLM credentials configured.`'
         usage: { $ref: '#/components/schemas/ExtractionUsage' }
 
     ExtractionUsage:
       type: object
-      description: Present only when a model ran. Tokens are billed by your provider, not by Helix.
+      description: 'Present only when a model ran. Tokens are billed by your provider, not by Helix.'
       properties:
         model: { type: string }
         tokens:
@@ -994,8 +991,7 @@ components:
           type: object
           properties:
             amount:
-              type: number
-              nullable: true
+              type: [number, 'null']
               description: '`null`: Helix carries no price table, so the amount is unknown rather than zero.'
             currency: { type: string }
 

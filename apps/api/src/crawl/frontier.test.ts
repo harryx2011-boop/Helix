@@ -58,6 +58,42 @@ describe('Frontier', () => {
     expect(frontier.add('https://example.com/docs/internal/secret', 1)).toBe(false);
   });
 
+  it('fetches the seed even when the path filters would not follow it', () => {
+    // The spec's own example: seed the site root, include /blog/*. The root is
+    // where the blog links live; filtering it out crawls nothing.
+    const frontier = new Frontier({
+      seedUrl: 'https://example.com',
+      limit: 100,
+      includePaths: ['/blog/*'],
+    });
+
+    expect(frontier.add('https://example.com', 0)).toBe(true);
+    expect(frontier.add('https://example.com/blog/post-1', 1)).toBe(true);
+    expect(frontier.add('https://example.com/pricing', 1)).toBe(false);
+    expect(frontier.rejections()['not-included']).toBe(1);
+  });
+
+  it('applies the filters to any other depth-zero URL and to an excluded seed', () => {
+    const filtered = base({ includePaths: ['/blog/*'] });
+    expect(filtered.add('https://example.com/pricing', 0)).toBe(false);
+
+    // Off-site still wins: the seed exemption is about path filters only.
+    const offSite = new Frontier({ seedUrl: 'https://example.com', limit: 10 });
+    expect(offSite.add('https://elsewhere.com', 0)).toBe(false);
+  });
+
+  it('accepts a seed with a trailing slash under a directory glob', () => {
+    const frontier = new Frontier({
+      seedUrl: 'https://example.com/blog/',
+      limit: 100,
+      includePaths: ['/blog/*'],
+    });
+
+    expect(frontier.add('https://example.com/blog/', 0)).toBe(true);
+    expect(frontier.add('https://example.com/blog', 1)).toBe(false); // duplicate of the seed
+    expect(frontier.rejections()['duplicate']).toBe(1);
+  });
+
   it('lets exclusion win over inclusion', () => {
     // A URL matching both is excluded: the narrower statement is the intent.
     const frontier = base({ includePaths: ['^/docs'], excludePaths: ['^/docs/draft'] });

@@ -141,6 +141,13 @@ export function depthFrom(base: string, target: string): number | undefined {
   }
 }
 
+export interface PathMatcher {
+  test(pathname: string): boolean;
+}
+
+/** Longer than any path pattern a caller means; bounds the work a regex can do. */
+const MAX_PATTERN_LENGTH = 512;
+
 /**
  * A path pattern is a glob when it uses `*` or `?` and nothing that only a
  * regular expression would: anchors, groups, classes, escapes, alternation.
@@ -152,31 +159,91 @@ export function isGlobPattern(pattern: string): boolean {
 }
 
 /**
- * Glob to anchored RegExp over the pathname. `*` and `**` match any run of
- * characters including `/` — `/blog/*` means "everything under /blog", which is
- * what the include/exclude use reads as — and `?` matches one character.
- * A pattern without a leading slash matches anywhere in the path.
+ * A quantified group that itself repeats or alternates (`(a+)+`, `(a|aa)*`)
+ * backtracks exponentially on a non-matching path. Patterns are matched inside
+ * the API process against every discovered link, so one such pattern would
+ * stall every request on the server.
  */
-export function globToRegExp(pattern: string): RegExp {
-  const source = pattern
-    .split(/(\*+|\?)/)
-    .map((part) => {
-      if (part.startsWith('*')) return '.*';
-      if (part === '?') return '[^/]';
-      return part.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-    })
-    .join('');
-  const prefix = pattern.startsWith('/') ? '^' : '^.*';
-  return new RegExp(`${prefix}${source}/?$`);
+function hasNestedQuantifier(pattern: string): boolean {
+  return /\((?:[^()\\]|\\.)*[*+}|](?:[^()\\]|\\.)*\)[*+{]/.test(pattern);
 }
 
-/** Compile a path pattern, or undefined when it is a regular expression that does not parse. */
-export function compilePathPattern(pattern: string): RegExp | undefined {
+/**
+ * Wildcard match without a regular expression: `*` (or `**`) matches any run
+ * of characters including `/`, `?` matches one character other than `/`.
+ * Linear in the pattern for each position of the path, never exponential,
+ * which is why globs are not compiled to `.*`.
+ */
+function wildcardMatch(pattern: string, text: string): boolean {
+  let p = 0;
+  let t = 0;
+  let starP = -1;
+  let starT = -1;
+
+  while (t < text.length) {
+    const c = pattern[p];
+    if (c === '*') {
+      while (pattern[p] === '*') p++;
+      starP = p;
+      starT = t;
+    } else if (p < pattern.length && (c === text[t] || (c === '?' && text[t] !== '/'))) {
+      p++;
+      t++;
+    } else if (starP !== -1) {
+      p = starP;
+      starT++;
+      t = starT;
+    } else {
+      return false;
+    }
+  }
+
+  while (pattern[p] === '*') p++;
+  return p === pattern.length;
+}
+
+/**
+ * Glob over the pathname. `/blog/*` means "everything under /blog", which is
+ * what the include/exclude use reads as, so it also matches `/blog` itself:
+ * the trailing slash is not significant after normalisation. A pattern
+ * without a leading slash matches anywhere in the path.
+ */
+export function globMatcher(pattern: string): PathMatcher {
+  const anchored = pattern.startsWith('/') ? pattern : `*${pattern}`;
+  const coversDirectory = /\/\*+$/.test(anchored);
+
+  return {
+    test(pathname: string): boolean {
+      const path =
+        pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+      if (wildcardMatch(anchored, path)) return true;
+      return coversDirectory && wildcardMatch(anchored, `${path}/`);
+    },
+  };
+}
+
+/**
+ * Compile a path pattern, or undefined when it is a regular expression that
+ * does not parse or could not be matched in bounded time.
+ */
+export function compilePathPattern(pattern: string): PathMatcher | undefined {
+  if (pattern.length > MAX_PATTERN_LENGTH) return undefined;
+  if (isGlobPattern(pattern)) return globMatcher(pattern);
+  if (hasNestedQuantifier(pattern)) return undefined;
   try {
-    return isGlobPattern(pattern) ? globToRegExp(pattern) : new RegExp(pattern);
+    return new RegExp(pattern);
   } catch {
     return undefined;
   }
+}
+
+/** Compile every pattern, dropping the ones that do not compile: an invalid pattern must not match everything by accident. */
+export function compilePathPatterns(patterns: string[]): PathMatcher[] {
+  return patterns.flatMap((pattern) => compilePathPattern(pattern) ?? []);
+}
+
+export function matchesAny(pathname: string, matchers: PathMatcher[]): boolean {
+  return matchers.some((matcher) => matcher.test(pathname));
 }
 
 export function matchesAnyPattern(url: string, patterns: string[]): boolean {
@@ -189,6 +256,5 @@ export function matchesAnyPattern(url: string, patterns: string[]): boolean {
     return false;
   }
 
-  // An invalid pattern must not match everything by accident.
-  return patterns.some((pattern) => compilePathPattern(pattern)?.test(pathname) ?? false);
+  return matchesAny(pathname, compilePathPatterns(patterns));
 }

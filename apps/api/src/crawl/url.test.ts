@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { depthFrom, globToRegExp, isGlobPattern, isSameSite, matchesAnyPattern, normaliseUrl, siteOf } from './url.js';
+import {
+  compilePathPattern,
+  depthFrom,
+  globMatcher,
+  isGlobPattern,
+  isSameSite,
+  matchesAnyPattern,
+  normaliseUrl,
+  siteOf,
+} from './url.js';
 
 describe('normaliseUrl', () => {
   it('collapses the variants of one page into a single key', () => {
@@ -129,8 +138,42 @@ describe('glob path patterns', () => {
     expect(matchesAnyPattern('https://s.com/a/b/draft-1', ['draft-*'])).toBe(true);
   });
 
-  it('escapes regex metacharacters inside a glob', () => {
-    expect(globToRegExp('/files/*.pdf').test('/files/report.pdf')).toBe(true);
-    expect(globToRegExp('/files/*.pdf').test('/files/reportxpdf')).toBe(false);
+  it('treats a dot inside a glob literally', () => {
+    expect(globMatcher('/files/*.pdf').test('/files/report.pdf')).toBe(true);
+    expect(globMatcher('/files/*.pdf').test('/files/reportxpdf')).toBe(false);
+  });
+
+  it('matches the directory itself with a trailing star', () => {
+    // The seed `https://example.com/blog/` normalises to `/blog`; the spec's
+    // `/blog/*` must still cover it.
+    expect(matchesAnyPattern('https://s.com/blog', ['/blog/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/blog/', ['/blog/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/', ['/blog/*'])).toBe(false);
+  });
+
+  it('keeps a question mark to one segment', () => {
+    expect(globMatcher('/a/?/b').test('/a/x/b')).toBe(true);
+    expect(globMatcher('/a/?/b').test('/a///b')).toBe(false);
+  });
+});
+
+describe('pattern cost bounds', () => {
+  it('matches a star-heavy glob against a long path in bounded time', () => {
+    const glob = '/*a*a*a*a*a*a*a*a*a*a*a*a*a*a*b';
+    const path = `/${'a'.repeat(4_000)}!`;
+    const started = Date.now();
+    expect(matchesAnyPattern(`https://s.com${path}`, [glob])).toBe(false);
+    expect(Date.now() - started).toBeLessThan(500);
+  });
+
+  it('refuses a regular expression with a nested quantifier', () => {
+    expect(compilePathPattern('^(a+)+$')).toBeUndefined();
+    expect(compilePathPattern('^(a|aa)*$')).toBeUndefined();
+    expect(compilePathPattern('^(?:ab)+$')).toBeDefined();
+    expect(compilePathPattern('^/docs/(v1|v2)/.*$')).toBeDefined();
+  });
+
+  it('refuses a pattern longer than any path a caller means', () => {
+    expect(compilePathPattern(`/${'a'.repeat(600)}`)).toBeUndefined();
   });
 });

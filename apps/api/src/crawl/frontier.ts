@@ -1,11 +1,13 @@
 import { BloomFilter } from 'bloom-filters';
 import {
+  compilePathPatterns,
   depthFrom,
   isSameOrigin,
   isSameSite,
-  matchesAnyPattern,
+  matchesAny,
   normaliseUrl,
   siteOf,
+  type PathMatcher,
 } from './url.js';
 
 /**
@@ -58,9 +60,15 @@ export class Frontier {
   #enqueued = 0;
   #dispensed = 0;
   readonly #rejections = new Map<RejectionReason, number>();
+  readonly #seed: string | undefined;
+  readonly #include: PathMatcher[];
+  readonly #exclude: PathMatcher[];
 
   constructor(options: FrontierOptions) {
     this.#options = options;
+    this.#seed = normaliseUrl(options.seedUrl, { ignoreQuery: options.ignoreQuery ?? false });
+    this.#include = compilePathPatterns(options.includePaths ?? []);
+    this.#exclude = compilePathPatterns(options.excludePaths ?? []);
 
     if (options.limit <= EXACT_SET_THRESHOLD) {
       this.#exact = new Set<string>();
@@ -95,7 +103,11 @@ export class Frontier {
 
     if (this.#seen(url)) return this.#reject('duplicate');
 
-    if (!this.#inScope(url)) return false; // #inScope records its own reason
+    // The seed is what the caller asked to crawl. Path filters describe what
+    // to follow from it: `includePaths: ['/blog/*']` from a site root must
+    // still fetch the root to find the blog, or the crawl returns nothing.
+    const isSeed = depth === 0 && url === this.#seed;
+    if (!this.#inScope(url, isSeed)) return false; // #inScope records its own reason
 
     if (this.#options.maxDepth !== undefined && depth > this.#options.maxDepth) {
       return this.#reject('too-deep');
@@ -110,8 +122,8 @@ export class Frontier {
     return true;
   }
 
-  #inScope(url: string): boolean {
-    const { seedUrl, allowExternal, allowSubdomains, includePaths, excludePaths } = this.#options;
+  #inScope(url: string, isSeed: boolean): boolean {
+    const { seedUrl, allowExternal, allowSubdomains } = this.#options;
 
     if (!allowExternal) {
       const sameSite = isSameSite(seedUrl, url);
@@ -124,13 +136,17 @@ export class Frontier {
       }
     }
 
+    if (isSeed) return true;
+
+    const pathname = new URL(url).pathname;
+
     // Exclusion wins over inclusion: a URL matching both is excluded, because
     // the narrower statement is the one the caller meant.
-    if (excludePaths && excludePaths.length > 0 && matchesAnyPattern(url, excludePaths)) {
+    if (this.#exclude.length > 0 && matchesAny(pathname, this.#exclude)) {
       return this.#reject('excluded');
     }
 
-    if (includePaths && includePaths.length > 0 && !matchesAnyPattern(url, includePaths)) {
+    if (this.#include.length > 0 && !matchesAny(pathname, this.#include)) {
       return this.#reject('not-included');
     }
 

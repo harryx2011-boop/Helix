@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { CharChart } from '@/components/app/char-chart';
 import { ConnectSheet } from '@/components/app/connect-sheet';
-import { HOSTED } from '@/lib/mode';
-import { endpointById } from '@/lib/catalog';
+import { HOSTED, MCP_URL } from '@/lib/mode';
+import { endpointById, PRODUCTS } from '@/lib/catalog';
 
 interface EndpointSummary {
   id: string;
@@ -25,14 +25,19 @@ interface RequestsSeries {
 }
 
 function ExploreRow({ endpoints }: { endpoints: EndpointSummary[] }) {
+  // Map lives inside Search/Crawl (WEBSITE.md §11: "not a seventh product") — only the
+  // six standalone products get a cell, so the grid never orphans a lone item on its own row.
+  const productIds = new Set(PRODUCTS.map((p) => p.id));
+  const products = endpoints.filter((e) => productIds.has(e.id as (typeof PRODUCTS)[number]['id']));
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="font-mono text-xs uppercase tracking-wide text-muted-foreground">Explore your endpoints</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-3 lg:grid-cols-6 lg:divide-y-0">
-          {endpoints.map((e) => {
+        <div className="grid grid-cols-1 divide-y divide-border md:grid-cols-2 md:divide-x lg:grid-cols-3">
+          {products.map((e) => {
             const def = endpointById(e.id);
             const Icon = def?.icon ?? FileText;
             return (
@@ -169,12 +174,22 @@ function ApiKeyPanel({ keyMasked, revealedKey, welcome }: { keyMasked: string | 
   );
 }
 
+interface IntegrationRow {
+  id: string;
+  label: string;
+  description?: string;
+  lines?: string[];
+  action: 'view' | 'copy';
+  href?: string;
+  copyText?: string;
+}
+
 function AgentIntegrations({ apiKey }: { apiKey: string }) {
   const [open, setOpen] = React.useState(false);
   const [copiedRow, setCopiedRow] = React.useState<string | null>(null);
 
   const cliCmd = `npx -y @helix/cli@latest init --all -k ${apiKey}`;
-  const mcpCmd = `claude mcp add --transport http helix`;
+  const mcpLines = [`claude mcp add --transport http helix ${MCP_URL}`, `claude mcp login helix`];
 
   const copyRow = (id: string, text: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -182,6 +197,12 @@ function AgentIntegrations({ apiKey }: { apiKey: string }) {
       setTimeout(() => setCopiedRow(null), 1500);
     });
   };
+
+  const rows: IntegrationRow[] = [
+    { id: 'skill', label: 'SKILL.md', description: 'Per-endpoint reference for your selected APIs.', action: 'view', href: '/api/app/skill' },
+    { id: 'cli', label: 'CLI', lines: [cliCmd], action: 'copy', copyText: cliCmd },
+    { id: 'mcp', label: 'MCP', lines: mcpLines, action: 'copy', copyText: mcpLines.join('\n') },
+  ];
 
   return (
     <Card>
@@ -193,15 +214,19 @@ function AgentIntegrations({ apiKey }: { apiKey: string }) {
         </Button>
       </CardHeader>
       <CardContent className="flex flex-col divide-y divide-border p-0">
-        {[
-          { id: 'skill', label: 'SKILL.md', action: 'view', href: '/api/app/skill' },
-          { id: 'cli', label: 'CLI', text: cliCmd },
-          { id: 'mcp', label: 'MCP', text: mcpCmd },
-        ].map((row) => (
+        {rows.map((row) => (
           <div key={row.id} className="flex items-center justify-between gap-3 px-4 py-3">
-            <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">{row.label}</span>
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">{row.label}</span>
+              {row.description && <span className="text-xs text-muted-foreground">{row.description}</span>}
+              {row.lines?.map((line) => (
+                <span key={line} className="truncate font-mono text-xs text-foreground">
+                  {line}
+                </span>
+              ))}
+            </div>
             {row.action === 'view' ? (
-              <div className="flex items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 <Button variant="ghost" size="sm" asChild>
                   <a href={row.href} target="_blank" rel="noreferrer">
                     View
@@ -212,7 +237,12 @@ function AgentIntegrations({ apiKey }: { apiKey: string }) {
                 </Button>
               </div>
             ) : (
-              <Button variant="ghost" size="sm" className="gap-1.5 font-mono text-xs" onClick={() => row.text && copyRow(row.id, row.text)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 gap-1.5 font-mono text-xs"
+                onClick={() => row.copyText && copyRow(row.id, row.copyText)}
+              >
                 {copiedRow === row.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 Copy
               </Button>

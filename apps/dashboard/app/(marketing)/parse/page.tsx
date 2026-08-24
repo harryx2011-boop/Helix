@@ -54,7 +54,7 @@ export default function ParsePage() {
         { icon: UploadCloud, title: 'Upload or URL', body: 'Send a multipart file directly, or point at a remote URL and let Helix fetch it first.' },
         { icon: ScanEye, title: 'OCR only when needed', body: 'Scanned or garbled pages route to OCR automatically. Text-layer documents skip it entirely, so parsing stays fast.' },
         { icon: Table2, title: 'Tables survive the trip', body: 'Spreadsheet rows and PDF tables convert to markdown tables rather than flattening into prose.' },
-        { icon: FileWarning, title: 'Garbled text is detected', body: 'A text layer that decodes suspiciously — common with CJK PDFs — triggers the OCR fallback automatically under `ocr: auto`.' },
+        { icon: FileWarning, title: 'Garbled text is detected', body: 'A text layer that decodes suspiciously, common with CJK PDFs, triggers the OCR fallback automatically under `ocr: auto`.' },
         { icon: FileScan, title: 'Schema extraction on documents', body: 'The same `extract` schema-or-prompt mechanism from Scrape works against parsed document content.' },
       ]}
       request={REQUEST}

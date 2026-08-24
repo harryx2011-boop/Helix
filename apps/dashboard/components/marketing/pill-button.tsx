@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 interface PillButtonProps {
   href?: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   variant?: 'primary' | 'secondary';
   children: React.ReactNode;
   className?: string;

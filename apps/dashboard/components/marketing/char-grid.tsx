@@ -62,9 +62,9 @@ function ladderFrame(tick: number): string[] {
   const step = Math.floor(tick / 6) % 4;
   const states = ['▸ ...   ', '● 403   ', '● 200   ', '○ skip  '];
   const line = `│ ${states[step]} │  ${states[(step + 1) % 4]}│  ${states[(step + 2) % 4]}│  ${states[(step + 3) % 4]}│`;
-  const rows = [LADDER_GHOST[0], line, LADDER_GHOST[2]];
+  const rows = [LADDER_GHOST[0] ?? '', line, LADDER_GHOST[2] ?? ''];
   while (rows.length < ROWS) rows.push(' '.repeat(COLS));
-  return rows.map((r) => r.padEnd(COLS).slice(0, COLS));
+  return rows.map((r) => (r ?? '').padEnd(COLS).slice(0, COLS));
 }
 
 const FRONTIER_BASE = ['● example.com/', '├─▸ /pricing', '├─▸ /docs', '├─▸ /blog', '└─▸ /about'];
@@ -113,7 +113,7 @@ export function CharGrid({ quiet, className }: { quiet?: boolean; className?: st
   React.useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { threshold: 0.1 });
+    const observer = new IntersectionObserver(([entry]) => entry && setVisible(entry.isIntersecting), { threshold: 0.1 });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -124,7 +124,8 @@ export function CharGrid({ quiet, className }: { quiet?: boolean; className?: st
     if (!running) return;
     const id = setInterval(() => {
       tickRef.current += 1;
-      setRows(buildFrame(TEMPLATES[templateIdx], tickRef.current));
+      const t = TEMPLATES[templateIdx] ?? TEMPLATES[0]!;
+      setRows(buildFrame(t, tickRef.current));
     }, FPS_MS);
     return () => clearInterval(id);
   }, [running, templateIdx]);

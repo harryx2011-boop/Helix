@@ -42,9 +42,9 @@ export function HeroPanel({ id }: { id?: string }) {
   }
 
   return (
-    <div id={id} className="w-full max-w-[720px] overflow-hidden rounded-panel bg-m-surface shadow-card ring-8 ring-m-bg">
-      <form onSubmit={handleSubmit} className="flex items-center gap-2 border-b border-m-border-faint p-3">
-        <div className="flex flex-1 items-center gap-2 rounded-card border border-m-border-muted bg-m-bg px-3 py-2">
+    <div id={id} className="w-full min-w-0 max-w-full overflow-hidden rounded-panel bg-m-surface shadow-card ring-8 ring-m-bg sm:max-w-[720px]">
+      <form onSubmit={handleSubmit} className="flex min-w-0 items-center gap-2 border-b border-m-border-faint p-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-card border border-m-border-muted bg-m-bg px-3 py-2">
           <Globe className="h-4 w-4 shrink-0 text-m-ink/40" aria-hidden />
           <input
             type="text"
@@ -90,14 +90,14 @@ export function HeroPanel({ id }: { id?: string }) {
         </button>
       </div>
 
-      <div className="overflow-x-auto px-4 py-4">
+      <div className="w-full min-w-0 max-w-full overflow-x-auto px-4 py-4">
         <pre className="whitespace-pre font-mono text-[13px] leading-relaxed">
           <HighlightedCode code={code} keyPlaceholder={KEY_PLACEHOLDER} />
         </pre>
       </div>
 
-      <div className="border-t border-m-border-faint bg-m-bg-lighter px-4 py-4">
-        <LadderExplainer playKey={playKey} />
+      <div className="min-w-0 max-w-full border-t border-m-border-faint bg-m-bg-lighter px-4 py-4">
+        {playKey === undefined ? <LadderExplainer /> : <LadderExplainer playKey={playKey} />}
       </div>
     </div>
   );

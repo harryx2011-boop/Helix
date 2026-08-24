@@ -36,7 +36,7 @@ export function generateSkillMarkdown(opts: GenerateSkillOptions): string {
   const { endpoints, apiKey, baseUrl, mcpUrl } = opts;
   const parts: string[] = [preamble(baseUrl, apiKey)];
   for (const endpoint of endpoints) {
-    parts.push(endpointSection(endpoint, { apiKey, baseUrl, mcpUrl }));
+    parts.push(endpointSection(endpoint, { ...(apiKey !== undefined ? { apiKey } : {}), baseUrl, mcpUrl }));
   }
   return parts.join('\n');
 }
@@ -72,7 +72,7 @@ function endpointSection(endpoint: EndpointDef, ctx: { apiKey?: string; baseUrl:
   }
 
   const body = EXAMPLE_REQUEST[endpoint.id];
-  const curl = generateCode('curl', { endpoint: endpoint.id, body, apiKey: ctx.apiKey, baseUrl: ctx.baseUrl, mcpUrl: ctx.mcpUrl });
+  const curl = generateCode('curl', { endpoint: endpoint.id, body, ...(ctx.apiKey !== undefined ? { apiKey: ctx.apiKey } : {}), baseUrl: ctx.baseUrl, mcpUrl: ctx.mcpUrl });
   const successEnvelope = JSON.stringify({ success: true, data: exampleDataShape(endpoint.id), warnings: [] }, null, 2);
   const failureEnvelope = JSON.stringify({ success: false, failure: { reason: 'blocked', signals: ['string[]'] }, warnings: [] }, null, 2);
 

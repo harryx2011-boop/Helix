@@ -49,7 +49,7 @@ export function TerminalReplay({ className }: { className?: string }) {
     if (!el || hasPlayed) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry?.isIntersecting) {
           setHasPlayed(true);
           observer.disconnect();
         }

@@ -70,7 +70,7 @@ const FRAMES: { rows: LadderRow[]; reason: string }[] = [
   },
 ];
 
-const SETTLED = FRAMES[FRAMES.length - 1];
+const SETTLED = FRAMES[FRAMES.length - 1]!;
 const FRAME_MS = 125;
 
 export function LadderExplainer({ playKey, className }: LadderExplainerProps) {
@@ -93,10 +93,9 @@ export function LadderExplainer({ playKey, className }: LadderExplainerProps) {
       timers.push(setTimeout(() => setFrameIndex(i), i * FRAME_MS));
     }
     return () => timers.forEach(clearTimeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playKey, reducedMotion]);
 
-  const frame = reducedMotion ? SETTLED : FRAMES[frameIndex];
+  const frame = reducedMotion ? SETTLED : (FRAMES[frameIndex] ?? SETTLED);
   const settled = frameIndex === FRAMES.length - 1;
 
   return (
@@ -105,7 +104,7 @@ export function LadderExplainer({ playKey, className }: LadderExplainerProps) {
       <div className="overflow-x-auto">
         <div className="grid min-w-[560px] grid-cols-4 gap-px overflow-hidden rounded-card border border-m-border-muted bg-m-border-muted">
           {TIERS.map((tier, i) => {
-            const row = frame.rows[i];
+            const row = frame.rows[i] ?? { label: tier, status: null, glyph: null };
             return (
               <div key={tier} className="bg-m-surface px-3 py-2.5">
                 <p className="text-m-ink/40">{tier}</p>

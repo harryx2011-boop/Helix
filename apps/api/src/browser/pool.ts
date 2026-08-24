@@ -1,5 +1,7 @@
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import type { Log } from '../core/logger.js';
+import { isPrivateHost } from '../core/url-guard.js';
+import { captureScreenshot } from './screenshot.js';
 
 /**
  * Browser pool — tiers 2 and 3.
@@ -35,6 +37,8 @@ export interface RenderOptions {
   actions?: unknown[] | undefined;
   /** Phone-sized viewport with touch events, for pages that serve a different layout to phones. */
   mobile?: boolean | undefined;
+  /** Operator opt-in: let the page, its redirects and its subresources reach private addresses. */
+  allowPrivate?: boolean | undefined;
 }
 
 export interface RenderResult {
@@ -55,6 +59,70 @@ export interface BrowserPoolOptions {
   lightpandaEnabled?: boolean | undefined;
   lightpandaUrl?: string | undefined;
   logger?: Log | undefined;
+}
+
+/**
+ * Abort every request bound for a loopback, link-local or private address.
+ *
+ * The route already checked the URL the caller sent, including what its name
+ * resolves to. This covers what the check cannot: redirects, and fetches the
+ * page itself makes once it runs. It is a literal check (no DNS per request),
+ * so a public name that resolves privately at render time is the one case it
+ * does not close.
+ */
+async function blockPrivateHosts(context: BrowserContext): Promise<void> {
+  await context.route(
+    () => true,
+    (route) => {
+      let url: URL;
+      try {
+        url = new URL(route.request().url());
+      } catch {
+        return route.abort('blockedbyclient');
+      }
+      const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
+      return isHttp && isPrivateHost(url) ? route.abort('blockedbyclient') : route.continue();
+    },
+  );
+}
+
+/** Navigate, wait, act and capture, each step bounded by the shared deadline. */
+async function drivePage(
+  page: Page,
+  options: RenderOptions,
+  deadline: number,
+): Promise<Omit<RenderResult, 'timingMs'>> {
+  // Never 0: Playwright reads a zero timeout as "no timeout".
+  const remaining = (): number => Math.max(1, deadline - Date.now());
+
+  const response = await page.goto(options.url, {
+    timeout: remaining(),
+    waitUntil: 'domcontentloaded',
+  });
+
+  if (options.waitFor && options.waitFor > 0) {
+    await page.waitForTimeout(Math.min(options.waitFor, 30_000, remaining()));
+  }
+
+  if (options.actions && options.actions.length > 0) {
+    const { runActions } = await import('./actions.js');
+    await runActions(page, options.actions, { deadline });
+  }
+
+  const html = await page.content();
+
+  let screenshot: string | undefined;
+  if (options.screenshot) {
+    screenshot = await captureScreenshot(page, options.fullPage ?? false);
+  }
+
+  return {
+    html,
+    status: response?.status(),
+    headers: response ? await response.allHeaders().catch(() => ({})) : {},
+    finalUrl: page.url(),
+    screenshot,
+  };
 }
 
 interface PooledBrowser {
@@ -154,6 +222,11 @@ export class BrowserPool {
 
   async render(options: RenderOptions): Promise<RenderResult> {
     const started = Date.now();
+    // `timeout` is the whole budget for the render: navigation, `waitFor`,
+    // actions and the screenshot share it. Separate caps would add up, and a
+    // context held for their sum is how a handful of slow requests empties the pool.
+    const budgetMs = options.timeout ?? 30_000;
+    const deadline = started + budgetMs;
 
     if (options.engine === 'lightpanda') {
       if (!this.#options.lightpandaEnabled) {
@@ -163,7 +236,17 @@ export class BrowserPool {
           error: 'lightpanda tier requested but not enabled',
         };
       }
-      return this.#renderLightpanda(options, started);
+      if (options.proxy) {
+        // A per-context proxy travels over CDP, and whether Lightpanda honours
+        // it is not observable from here. Declining is the only answer that
+        // cannot leave from the instance's own address.
+        return {
+          headers: {},
+          timingMs: Date.now() - started,
+          error: 'lightpanda tier does not route through a proxy; use the chromium tier',
+        };
+      }
+      return this.#renderLightpanda(options, started, deadline);
     }
 
     if (!this.#started) await this.start();
@@ -173,6 +256,7 @@ export class BrowserPool {
 
     let context: BrowserContext | undefined;
     let page: Page | undefined;
+    let timer: NodeJS.Timeout | undefined;
 
     try {
       // A fresh context per request: separate cookies, storage and cache
@@ -183,43 +267,22 @@ export class BrowserPool {
         ...(options.mobile ? MOBILE_CONTEXT : {}),
       });
 
+      if (!options.allowPrivate) await blockPrivateHosts(context);
+
       page = await context.newPage();
 
-      const response = await page.goto(options.url, {
-        timeout: options.timeout ?? 30_000,
-        waitUntil: 'domcontentloaded',
+      const expired = new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`render exceeded the ${budgetMs}ms timeout`)),
+          Math.max(0, deadline - Date.now()),
+        );
       });
 
-      if (options.waitFor && options.waitFor > 0) {
-        await page.waitForTimeout(Math.min(options.waitFor, 30_000));
-      }
-
-      if (options.actions && options.actions.length > 0) {
-        const { runActions } = await import('./actions.js');
-        await runActions(page, options.actions);
-      }
-
-      const html = await page.content();
-
-      let screenshot: string | undefined;
-      if (options.screenshot) {
-        const buffer = await page.screenshot({
-          fullPage: options.fullPage ?? false,
-          type: 'png',
-        });
-        screenshot = buffer.toString('base64');
-      }
+      const result = await Promise.race([drivePage(page, options, deadline), expired]);
 
       pooled.pagesServed++;
 
-      return {
-        html,
-        status: response?.status(),
-        headers: response ? await response.allHeaders().catch(() => ({})) : {},
-        finalUrl: page.url(),
-        screenshot,
-        timingMs: Date.now() - started,
-      };
+      return { ...result, timingMs: Date.now() - started };
     } catch (error) {
       pooled.pagesServed++;
       return {
@@ -228,6 +291,8 @@ export class BrowserPool {
         error: error instanceof Error ? error.message : 'render failed',
       };
     } finally {
+      if (timer) clearTimeout(timer);
+      // Closing the page aborts whatever step the deadline interrupted.
       await page?.close().catch(() => undefined);
       await context?.close().catch(() => undefined);
       pooled.activeContexts--;
@@ -240,10 +305,11 @@ export class BrowserPool {
    *
    * Roughly 11x faster and 9x lighter than Chromium because it skips layout,
    * compositing and font rendering — which is also why anything visual must not
-   * be routed here. The escalation policy already refuses to send screenshot or
-   * canvas work to this tier.
+   * be routed here. The escalation policy already refuses to send screenshot,
+   * canvas or proxied work to this tier, and `mobile` is not applied because
+   * there is no layout for a viewport to change; the route says so in a warning.
    */
-  async #renderLightpanda(options: RenderOptions, started: number): Promise<RenderResult> {
+  async #renderLightpanda(options: RenderOptions, started: number, deadline: number): Promise<RenderResult> {
     try {
       const browser = await chromium.connectOverCDP(
         this.#options.lightpandaUrl ?? 'http://localhost:9222',
@@ -251,15 +317,30 @@ export class BrowserPool {
       );
 
       try {
-        const context = await browser.newContext();
+        const context = await browser.newContext({
+          ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
+        });
+
+        if (!options.allowPrivate) {
+          // Request interception over CDP is what enforces the guard for every
+          // hop and subresource. A build that lacks it declines the tier rather
+          // than fetching unguarded.
+          try {
+            await blockPrivateHosts(context);
+          } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            throw new Error(`lightpanda tier cannot enforce the private-address guard (${detail})`);
+          }
+        }
+
         const page = await context.newPage();
         const response = await page.goto(options.url, {
-          timeout: options.timeout ?? 30_000,
+          timeout: Math.max(1, deadline - Date.now()),
           waitUntil: 'domcontentloaded',
         });
 
         if (options.waitFor && options.waitFor > 0) {
-          await page.waitForTimeout(Math.min(options.waitFor, 10_000));
+          await page.waitForTimeout(Math.min(options.waitFor, 10_000, Math.max(0, deadline - Date.now())));
         }
 
         const html = await page.content();

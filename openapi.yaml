@@ -530,13 +530,18 @@ components:
           default: 30000
           minimum: 1000
           maximum: 300000
+          description: |
+            Milliseconds for the whole fetch. On the browser tiers this is one
+            budget shared by navigation, `waitFor`, `actions` and the screenshot,
+            not a per-step allowance.
         mobile:
           type: boolean
           default: false
           description: |
             Render in a phone viewport (390x844, touch enabled). Forces the Chromium
-            tier when `tier` is `auto`; with `plain` or `tls` the page is fetched
-            as-is and a warning says so.
+            tier when `tier` is `auto`. With `plain`, `tls` or `lightpanda` no
+            viewport exists, so the page is fetched as-is, a warning says so, and
+            `metadata.mobile` is `false`.
         actions:
           type: array
           maxItems: 50
@@ -554,6 +559,10 @@ components:
             direct otherwise. `stealth` requires it and is a 400 `proxy_unavailable`
             when none is set. `none` goes direct regardless. An object is your own
             proxy for this one request. Helix ships no pool.
+
+            A proxied request never uses the `lightpanda` tier: `auto` skips it, and
+            asking for it explicitly is a failure rather than a fetch from the
+            instance's own address.
           oneOf:
             - type: string
               enum: [auto, stealth, none]
@@ -615,15 +624,26 @@ components:
         provider:
           type: string
           enum: [anthropic, openai, openrouter, google, gemini, ollama, vllm, openai-compatible]
-          description: Override the instance default provider. Its key must already be configured; Helix never accepts credentials over the API.
+          description: |
+            Override the instance default provider. Its key must already be
+            configured (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
+            `GEMINI_API_KEY` or `GOOGLE_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`);
+            Helix never accepts credentials over the API.
         model:
           type: string
           maxLength: 200
-          description: Override the instance default model.
+          description: |
+            Override the instance default model. When `provider` differs from the
+            instance default and `model` is omitted, a standard model for that
+            provider is used; `ollama`, `vllm` and `openai-compatible` have none,
+            so `model` is required there (400 with `field: jsonOptions.model`).
         includeSources:
           type: boolean
           default: false
-          description: 'Return the passages that grounded the extraction as `jsonSources`.'
+          description: |
+            Return the passages that reached the model as `jsonSources`: each with
+            its `text`, its `index` in page order, and the relevance `score` that
+            selected it.
 
     ChunkConfig:
       type: object
@@ -909,8 +929,13 @@ components:
           description: 'Schema-conforming extraction, present when `json` was requested. `null` with a warning when the model step failed after the page was read.'
         jsonSources:
           type: array
-          items: { type: object }
-          description: 'Present when `includeSources` was set.'
+          items:
+            type: object
+            properties:
+              text: { type: string }
+              index: { type: integer, description: 'Position of the passage in page order.' }
+              score: { type: number, description: 'Relevance to the schema and prompt; 0 when the whole page fit the budget.' }
+          description: 'Present when `includeSources` was set. The passages that reached the model, in page order.'
         chunks:
           type: [array, 'null']
           items:

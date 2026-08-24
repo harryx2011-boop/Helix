@@ -73,6 +73,7 @@ async function build(over: Partial<ScrapeRouteDeps> = {}): Promise<{ app: Fastif
     fetchClient: fetchClientReturning(ARTICLE),
     extractClient: extractClient(),
     browserPool: browserPool(),
+    resolveHost: async () => ['93.184.216.34'],
     ...over,
   };
   app = Fastify();
@@ -94,6 +95,38 @@ describe('POST /scrape validation', () => {
     const res = await post(app, { url: 'not a url' });
     expect(res.statusCode).toBe(400);
     expect(res.json()).toMatchObject({ error: 'invalid_request', field: 'url' });
+  });
+
+  it.each([
+    'file:///etc/passwd',
+    'gopher://example.com/',
+    'http://169.254.169.254/latest/meta-data/',
+    'http://localhost:7402/structured',
+    'http://[::1]/',
+    'http://10.0.0.5/',
+    'http://[::ffff:127.0.0.1]/',
+  ])('refuses %s before any tier is called', async (url) => {
+    const { app, deps } = await build();
+    const res = await post(app, { url, formats: ['rawHtml'] });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: 'invalid_request', field: 'url' });
+    expect(deps.fetchClient.fetch).not.toHaveBeenCalled();
+    expect(deps.browserPool?.render).not.toHaveBeenCalled();
+  });
+
+  it('refuses a public name that resolves to a private address', async () => {
+    const { app, deps } = await build({ resolveHost: async () => ['203.0.113.9', '10.1.2.3'] });
+    const res = await post(app, { url: 'https://rebind.example.com/' });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('10.1.2.3');
+    expect(deps.fetchClient.fetch).not.toHaveBeenCalled();
+  });
+
+  it('lets an operator opt in to private addresses', async () => {
+    const { app, deps } = await build({ allowPrivateUrls: true });
+    const res = await post(app, { url: 'http://10.0.0.5/' });
+    expect(res.statusCode).toBe(200);
+    expect(deps.fetchClient.fetch).toHaveBeenCalledWith(expect.objectContaining({ allowPrivate: true }));
   });
 
   it('rejects formats nothing serves yet', async () => {
@@ -231,6 +264,23 @@ describe('POST /scrape formats', () => {
     expect(body.usage).toBeUndefined();
   });
 
+  it('names the field when helix-extract rejects the request rather than the schema', async () => {
+    const { app } = await build({
+      extractClient: extractClient({
+        structured: vi.fn(async () => {
+          throw new StructuredError(400, '`model` is required with provider "ollama".', 'model');
+        }),
+      }),
+    });
+    const res = await post(app, {
+      url: 'https://example.com',
+      formats: ['json'],
+      jsonOptions: { schema: { type: 'object' }, provider: 'ollama' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: 'invalid_request', field: 'jsonOptions.model' });
+  });
+
   it('surfaces a schema rejection from helix-extract as a 400', async () => {
     const { app } = await build({
       extractClient: extractClient({
@@ -310,6 +360,15 @@ describe('POST /scrape proxy and mobile', () => {
     const { app } = await build();
     const res = await post(app, { url: 'https://example.com', mobile: true, tier: 'plain' });
     expect(res.json().warnings[0]).toContain('mobile');
+    expect(res.json().data.metadata.mobile).toBe(false);
+  });
+
+  it('warns when mobile is combined with lightpanda and does not report a phone viewport', async () => {
+    const { app } = await build();
+    const res = await post(app, { url: 'https://example.com', mobile: true, tier: 'lightpanda' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().warnings[0]).toContain('lightpanda');
+    expect(res.json().data.metadata).toMatchObject({ tier: 'lightpanda', mobile: false });
   });
 });
 

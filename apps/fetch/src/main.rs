@@ -21,8 +21,10 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::{Duration, Instant};
+use wreq::redirect;
+use wreq::Url;
 
 #[derive(Debug, Deserialize)]
 struct FetchRequest {
@@ -40,6 +42,11 @@ struct FetchRequest {
     /// False for tier 0 (plain), true for tier 1 (impersonating).
     #[serde(default = "default_true")]
     impersonate: bool,
+    /// Operator opt-in. Off, the request and every redirect hop must resolve
+    /// to a public address; the core has already checked the URL it sends, and
+    /// this closes the redirect that a check-before-fetch cannot see.
+    #[serde(default)]
+    allow_private: bool,
 }
 
 fn default_timeout_ms() -> u64 {
@@ -47,6 +54,60 @@ fn default_timeout_ms() -> u64 {
 }
 fn default_true() -> bool {
     true
+}
+
+/// Loopback, link-local, private-range, multicast or reserved.
+fn is_private_v4(ip: Ipv4Addr) -> bool {
+    let [a, b, _, _] = ip.octets();
+    ip.is_unspecified()
+        || ip.is_loopback()
+        || ip.is_private()
+        || ip.is_link_local()
+        || ip.is_multicast()
+        || ip.is_broadcast()
+        || (a == 100 && (64..=127).contains(&b))
+        || (a == 192 && b == 0)
+        || (a == 198 && (b == 18 || b == 19))
+        || a >= 240
+}
+
+fn is_private_v6(ip: Ipv6Addr) -> bool {
+    if let Some(v4) = ip.to_ipv4_mapped() {
+        return is_private_v4(v4);
+    }
+    let segments = ip.segments();
+    // 64:ff9b::/96 (NAT64) carries a v4 address in the last two groups.
+    if segments[..6] == [0x64, 0xff9b, 0, 0, 0, 0] {
+        return is_private_v4(Ipv4Addr::from(
+            ((segments[6] as u32) << 16) | segments[7] as u32,
+        ));
+    }
+    ip.is_unspecified()
+        || ip.is_loopback()
+        || ip.is_multicast()
+        || (segments[0] & 0xfe00) == 0xfc00
+        || (segments[0] & 0xffc0) == 0xfe80
+}
+
+fn is_private_ip(ip: IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(v4) => is_private_v4(v4),
+        IpAddr::V6(v6) => is_private_v6(v6),
+    }
+}
+
+/// The literal-only check: an address, or a name that is local by definition.
+/// No DNS, so it is cheap enough to run on every redirect hop.
+fn is_private_host(url: &Url) -> bool {
+    let Some(host) = url.host_str() else {
+        return true;
+    };
+    let host = host.trim_start_matches('[').trim_end_matches(']');
+    if let Ok(ip) = host.parse::<IpAddr>() {
+        return is_private_ip(ip);
+    }
+    let name = host.trim_end_matches('.').to_ascii_lowercase();
+    name == "localhost" || name.ends_with(".localhost")
 }
 
 #[derive(Debug, Serialize)]
@@ -112,12 +173,42 @@ fn build_client(req: &FetchRequest) -> anyhow::Result<(wreq::Client, Option<Stri
         builder = builder.proxy(wreq::Proxy::all(proxy)?);
     }
 
+    if !req.allow_private {
+        builder = builder.redirect(redirect::Policy::custom(|attempt| {
+            if is_private_host(attempt.url()) {
+                attempt.error("redirected to a private or local address")
+            } else if attempt.previous().len() >= 10 {
+                attempt.error("too many redirects")
+            } else {
+                attempt.follow()
+            }
+        }));
+    }
+
     Ok((builder.build()?, profile_used))
 }
 
 async fn fetch(Json(req): Json<FetchRequest>) -> Json<FetchResponse> {
     let started = Instant::now();
     let elapsed = |t: Instant| t.elapsed().as_millis() as u64;
+
+    if !req.allow_private {
+        match Url::parse(&req.url) {
+            Ok(url) if !is_private_host(&url) => {}
+            Ok(_) => {
+                return Json(FetchResponse::failure(
+                    "private or local address, which this instance does not fetch",
+                    elapsed(started),
+                ))
+            }
+            Err(error) => {
+                return Json(FetchResponse::failure(
+                    format!("invalid url: {error}"),
+                    elapsed(started),
+                ))
+            }
+        }
+    }
 
     let (client, profile_used) = match build_client(&req) {
         Ok(pair) => pair,

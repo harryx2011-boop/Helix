@@ -43,6 +43,18 @@ class Block:
     index: int
 
 
+@dataclass
+class Selection:
+    """What reached the model, and how much of the page that was."""
+
+    text: str
+    # The passages sent, in original order. Reported back as `sources` on request.
+    kept: list[Block]
+    # 0 when the page fit the budget and nothing was trimmed.
+    kept_count: int
+    total: int
+
+
 def _terms(text: str) -> list[str]:
     return [w for w in _WORD.findall(text.lower()) if w not in STOPWORDS and len(w) > 1]
 
@@ -160,19 +172,36 @@ def trim_to_budget(
     """Trim content to a token budget, keeping the most relevant parts.
 
     Returns the trimmed text, how many blocks were kept, and how many existed.
+    """
+    selection = select(markdown, schema, prompt, max_tokens=max_tokens)
+    return selection.text, selection.kept_count, selection.total
+
+
+def select(
+    markdown: str,
+    schema: dict,
+    prompt: str | None = None,
+    max_tokens: int = 8_000,
+) -> Selection:
+    """Choose what reaches the model within a token budget.
+
     Selected blocks are re-emitted in their original order: a document reordered
     by score reads as nonsense, and the model does worse on it.
     """
     budget_chars = max_tokens * CHARS_PER_TOKEN
+    wanted = schema_terms(schema, prompt)
 
     if len(markdown) <= budget_chars:
-        return markdown, 0, 0
+        whole = [
+            Block(text=block, score=score_block(block, wanted), index=i)
+            for i, block in enumerate(split_blocks(markdown))
+        ]
+        return Selection(text=markdown, kept=whole, kept_count=0, total=0)
 
     blocks = split_blocks(markdown)
     if not blocks:
-        return markdown[:budget_chars], 0, 0
-
-    wanted = schema_terms(schema, prompt)
+        excerpt = markdown[:budget_chars]
+        return Selection(text=excerpt, kept=[Block(text=excerpt, score=0.0, index=0)], kept_count=0, total=0)
 
     scored = [Block(text=block, score=score_block(block, wanted), index=i) for i, block in enumerate(blocks)]
 
@@ -192,9 +221,17 @@ def trim_to_budget(
         # first block is a worse answer than a clean excerpt but a far better
         # one than silence.
         if not kept:
-            return blocks[0][:budget_chars], 1, len(blocks)
+            excerpt = blocks[0][:budget_chars]
+            return Selection(
+                text=excerpt,
+                kept=[Block(text=excerpt, score=scored[0].score, index=0)],
+                kept_count=1,
+                total=len(blocks),
+            )
 
-        return "\n\n".join(b.text for b in kept), len(kept), len(blocks)
+        return Selection(
+            text="\n\n".join(b.text for b in kept), kept=kept, kept_count=len(kept), total=len(blocks)
+        )
 
     ranked = sorted(scored, key=lambda b: b.score, reverse=True)
 
@@ -210,8 +247,17 @@ def trim_to_budget(
     # Every block individually over budget — take the highest-scoring one,
     # truncated. Returning nothing would look like an empty page.
     if not kept and ranked:
-        return ranked[0].text[:budget_chars], 1, len(blocks)
+        best = ranked[0]
+        excerpt = best.text[:budget_chars]
+        return Selection(
+            text=excerpt,
+            kept=[Block(text=excerpt, score=best.score, index=best.index)],
+            kept_count=1,
+            total=len(blocks),
+        )
 
     kept.sort(key=lambda b: b.index)
 
-    return "\n\n".join(b.text for b in kept), len(kept), len(blocks)
+    return Selection(
+        text="\n\n".join(b.text for b in kept), kept=kept, kept_count=len(kept), total=len(blocks)
+    )

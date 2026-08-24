@@ -157,6 +157,7 @@ await app.register(
       extractClient,
       browserPool,
       proxyUrl: config.proxyUrl,
+      allowPrivateUrls: config.allowPrivateUrls,
     });
     await registerKeys(instance);
     await registerMap(instance, { fetchClient, extractClient, userAgent: config.userAgent });

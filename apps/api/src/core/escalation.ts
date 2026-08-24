@@ -28,6 +28,8 @@ export interface Capabilities {
   visualLayout?: boolean;
   pdfRender?: boolean;
   waitFor?: number;
+  /** The request must leave through a proxy. */
+  proxy?: boolean;
 }
 
 export interface EscalationDecision {
@@ -36,11 +38,18 @@ export interface EscalationDecision {
   reason: string;
 }
 
-/** Lightpanda has no layout engine, so anything visual must skip it. */
+/**
+ * Lightpanda has no layout engine, so anything visual must skip it. It is also
+ * skipped when a proxy is required: the pool cannot confirm that a proxy handed
+ * over CDP is honoured there, and a fetch that quietly leaves from the
+ * instance's own address is worse than one tier fewer.
+ */
 function tierSupports(tier: Tier, caps: Capabilities): boolean {
   const needsRealBrowser =
     caps.screenshot || caps.actions || caps.visualLayout || caps.pdfRender;
   if (needsRealBrowser) return tier === 'chromium';
+
+  if (caps.proxy && tier === 'lightpanda') return false;
 
   const needsJs = caps.waitFor !== undefined && caps.waitFor > 0;
   if (needsJs) return tier === 'lightpanda' || tier === 'chromium';

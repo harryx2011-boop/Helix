@@ -34,3 +34,34 @@ describe('sanitizeHtml', () => {
     expect(sanitizeHtml('<div one="1" data-onx="2">x</div>')).toBe('<div one="1" data-onx="2">x</div>');
   });
 });
+
+describe('sanitizeHtml on hostile input', () => {
+  it('drops everything after an unterminated script, as a browser would', () => {
+    expect(sanitizeHtml('<p>a</p><script>x(')).toBe('<p>a</p>');
+    expect(sanitizeHtml('<p>a</p><!-- open')).toBe('<p>a</p>');
+  });
+
+  it('removes a stray closing tag without swallowing what follows', () => {
+    expect(sanitizeHtml('<p>a</p></script><p>b</p>')).toBe('<p>a</p><p>b</p>');
+  });
+
+  it('ignores blocked tags inside a comment', () => {
+    expect(sanitizeHtml('<!-- <script> --><p>ok</p>')).toBe('<p>ok</p>');
+  });
+
+  it('stays linear on many unclosed blocked tags', () => {
+    const html = '<script>'.repeat(120_000) + 'x'.repeat(200_000);
+    const started = performance.now();
+    expect(sanitizeHtml(html)).toBe('');
+    expect(performance.now() - started).toBeLessThan(1_000);
+  });
+
+  it('stays linear on many unclosed attribute quotes and stray angle brackets', () => {
+    const handlers = '<div onclick="go('.repeat(60_000) + 'x'.repeat(200_000);
+    const brackets = '<a'.repeat(200_000);
+    const started = performance.now();
+    sanitizeHtml(handlers);
+    expect(sanitizeHtml(brackets)).toBe(brackets);
+    expect(performance.now() - started).toBeLessThan(1_000);
+  });
+});

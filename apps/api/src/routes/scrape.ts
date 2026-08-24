@@ -5,6 +5,7 @@ import type { FetchClient } from '../fetch/client.js';
 import { StructuredError, type ExtractClient } from '../extract/client.js';
 import { sanitizeHtml } from '../extract/sanitize.js';
 import type { BrowserPool } from '../browser/pool.js';
+import { checkUrl, type HostResolver } from '../core/url-guard.js';
 
 /**
  * Scrape: one URL in, one document out.
@@ -86,6 +87,10 @@ export interface ScrapeRouteDeps {
   browserPool?: BrowserPool | undefined;
   /** The operator's proxy (`HELIX_PROXY_URL`), used by `proxy: "auto" | "stealth"`. */
   proxyUrl?: string | undefined;
+  /** `HELIX_ALLOW_PRIVATE_URLS`: let callers fetch loopback, link-local and private-range addresses. */
+  allowPrivateUrls?: boolean | undefined;
+  /** DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver. */
+  resolveHost?: HostResolver | undefined;
 }
 
 /**
@@ -164,6 +169,22 @@ export async function registerScrape(
 
     const body = parsed.data;
 
+    // The URL is the caller's choice of what this instance connects to. Without
+    // this, an API key reaches cloud metadata, Postgres and the internal
+    // services through the fetch tiers.
+    const urlVerdict = await checkUrl(body.url, {
+      allowPrivate: deps.allowPrivateUrls,
+      resolve: deps.resolveHost,
+    });
+    if (!urlVerdict.ok) {
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: `url: ${urlVerdict.reason}`,
+        field: 'url',
+        requestId: request.id,
+      });
+    }
+
     if (body.extract && body.jsonOptions) {
       return reply.code(400).send({
         error: 'invalid_request',
@@ -224,6 +245,8 @@ export async function registerScrape(
 
     if (body.mobile && (tier === 'plain' || tier === 'tls')) {
       warnings.push(`mobile: the ${tier} tier has no viewport, so the page was fetched as-is.`);
+    } else if (body.mobile && tier === 'lightpanda') {
+      warnings.push('mobile: the lightpanda tier has no layout engine, so the phone viewport was not applied.');
     }
 
     const result = await runPipeline(
@@ -242,6 +265,7 @@ export async function registerScrape(
         proxy: proxy.url,
         actions: body.actions,
         mobile: body.mobile,
+        allowPrivate: deps.allowPrivateUrls,
       },
       {
         fetchClient: deps.fetchClient,
@@ -311,9 +335,9 @@ export async function registerScrape(
       } catch (error) {
         if (error instanceof StructuredError && error.status === 400) {
           return reply.code(400).send({
-            error: 'invalid_schema',
+            error: error.field ? 'invalid_request' : 'invalid_schema',
             message: error.message,
-            field: `${extractionField}.schema`,
+            field: `${extractionField}.${error.field ?? 'schema'}`,
             requestId: request.id,
           });
         }
@@ -355,7 +379,8 @@ export async function registerScrape(
       tiersAttempted: result.tiersAttempted,
       profile: result.profileUsed,
       extractor: content.extractorUsed,
-      mobile: body.mobile,
+      // True only when a phone viewport was actually applied, which needs Chromium.
+      mobile: body.mobile && result.tier === 'chromium',
       timingMs: result.timingMs,
       fromCache: false,
     };

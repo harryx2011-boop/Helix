@@ -1,5 +1,6 @@
 import type { Page } from 'playwright';
 import { z } from 'zod';
+import { captureScreenshot } from './screenshot.js';
 
 /**
  * Pre-scrape browser actions.
@@ -8,11 +9,17 @@ import { z } from 'zod';
  * and the same input produces the same run. Agentic navigation is a separate
  * concern with different failure modes and different costs.
  *
- * Total wait across a request is capped, so a caller cannot hold a browser
- * context open indefinitely with a chain of long sleeps.
+ * Total wait across a request is capped, and every step is also bounded by the
+ * request's own deadline, so a caller cannot hold a browser context open
+ * beyond `timeout` with a chain of long sleeps or slow clicks.
  */
 
 const MAX_TOTAL_WAIT_MS = 60_000;
+
+export interface RunActionsOptions {
+  /** Absolute time (ms since epoch) after which no step may still be running. */
+  deadline?: number | undefined;
+}
 
 const ActionSchema = z.discriminatedUnion('type', [
   z.object({
@@ -60,9 +67,17 @@ export function parseActions(input: unknown[]): Action[] {
   });
 }
 
-export async function runActions(page: Page, input: unknown[]): Promise<ActionOutcome> {
+export async function runActions(
+  page: Page,
+  input: unknown[],
+  options: RunActionsOptions = {},
+): Promise<ActionOutcome> {
   const actions = parseActions(input);
   const outcome: ActionOutcome = { screenshots: [], scrapes: [], javascriptReturns: [] };
+
+  // Never 0: Playwright reads a zero timeout as "no timeout".
+  const remaining = (): number =>
+    options.deadline === undefined ? Number.POSITIVE_INFINITY : Math.max(1, options.deadline - Date.now());
 
   let waited = 0;
 
@@ -70,12 +85,12 @@ export async function runActions(page: Page, input: unknown[]): Promise<ActionOu
     switch (action.type) {
       case 'wait': {
         if (action.selector) {
-          const remaining = Math.max(0, MAX_TOTAL_WAIT_MS - waited);
+          const budget = Math.max(0, MAX_TOTAL_WAIT_MS - waited);
           const started = Date.now();
-          await page.waitForSelector(action.selector, { timeout: Math.min(remaining, 30_000) });
+          await page.waitForSelector(action.selector, { timeout: Math.min(budget, 30_000, remaining()) });
           waited += Date.now() - started;
         } else {
-          const ms = Math.min(action.milliseconds ?? 1_000, MAX_TOTAL_WAIT_MS - waited);
+          const ms = Math.min(action.milliseconds ?? 1_000, MAX_TOTAL_WAIT_MS - waited, remaining());
           if (ms > 0) {
             await page.waitForTimeout(ms);
             waited += ms;
@@ -89,10 +104,10 @@ export async function runActions(page: Page, input: unknown[]): Promise<ActionOu
           const elements = page.locator(action.selector);
           const count = await elements.count();
           for (let i = 0; i < count; i++) {
-            await elements.nth(i).click({ timeout: 5_000 }).catch(() => undefined);
+            await elements.nth(i).click({ timeout: Math.min(5_000, remaining()) }).catch(() => undefined);
           }
         } else {
-          await page.click(action.selector, { timeout: 10_000 });
+          await page.click(action.selector, { timeout: Math.min(10_000, remaining()) });
         }
         break;
       }
@@ -119,8 +134,7 @@ export async function runActions(page: Page, input: unknown[]): Promise<ActionOu
       }
 
       case 'screenshot': {
-        const buffer = await page.screenshot({ fullPage: action.fullPage, type: 'png' });
-        outcome.screenshots.push(buffer.toString('base64'));
+        outcome.screenshots.push(await captureScreenshot(page, action.fullPage));
         break;
       }
 

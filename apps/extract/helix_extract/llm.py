@@ -13,7 +13,7 @@ LM Studio — speaks the OpenAI wire format, so one adapter covers them all.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from . import relevance
@@ -29,16 +29,92 @@ class ExtractionResult:
     model_used: str
     blocks_kept: int = 0
     blocks_total: int = 0
+    # The passages that reached the model, when the caller asked for them.
+    sources: list[dict[str, Any]] = field(default_factory=list)
 
 
 class ProviderError(RuntimeError):
     """A provider call failed, or none was configured."""
 
 
+class RequestError(ValueError):
+    """The request itself is incomplete; `field` names what to send."""
+
+    def __init__(self, message: str, field: str) -> None:
+        super().__init__(message)
+        self.message = message
+        self.field = field
+
+
+# What a provider override runs when the request names no model. The instance's
+# HELIX_LLM_MODEL belongs to the instance's provider and means nothing elsewhere.
+DEFAULT_MODELS: dict[str, str] = {
+    "openai": "gpt-4o-mini",
+    "anthropic": "claude-sonnet-4-5",
+    "gemini": "gemini-2.5-flash",
+    "google": "gemini-2.5-flash",
+    "openrouter": "openai/gpt-4o-mini",
+}
+
+# Providers whose model names are interchangeable, so the instance default carries over.
+_LOCAL_OPENAI_WIRE = frozenset({"ollama", "vllm", "openai-compatible"})
+_GEMINI = frozenset({"gemini", "google"})
+
+
+def _same_family(a: str, b: str) -> bool:
+    if a == b:
+        return True
+    return (a in _LOCAL_OPENAI_WIRE and b in _LOCAL_OPENAI_WIRE) or (a in _GEMINI and b in _GEMINI)
+
+
 def _resolve(model: str | None, provider: str | None = None) -> tuple[str, str]:
     """The provider and model this request will use."""
-    resolved_provider = (provider or settings.helix_llm_provider).lower()
-    return resolved_provider, model or settings.helix_llm_model
+    default_provider = settings.helix_llm_provider.lower()
+    resolved_provider = (provider or default_provider).lower()
+
+    if model:
+        return resolved_provider, model
+    if _same_family(resolved_provider, default_provider):
+        return resolved_provider, settings.helix_llm_model
+
+    fallback = DEFAULT_MODELS.get(resolved_provider)
+    if fallback is None:
+        raise RequestError(
+            f"`model` is required with provider \"{resolved_provider}\": this instance's default "
+            f"model belongs to \"{default_provider}\" and there is no standard model for a local runtime.",
+            field="model",
+        )
+    return resolved_provider, fallback
+
+
+def _openai_wire_credentials(provider: str) -> tuple[str, str | None]:
+    """Key and base URL for a provider that speaks the OpenAI wire format.
+
+    Each provider reads its own settings: OpenRouter's key must never be sent to
+    api.openai.com, and a local runtime's base URL must not be borrowed by a
+    request that asked for OpenAI.
+    """
+    if provider == "openrouter":
+        if not settings.openrouter_api_key:
+            raise ProviderError("OPENROUTER_API_KEY is not set.")
+        return settings.openrouter_api_key, settings.openrouter_base_url
+
+    if provider in _LOCAL_OPENAI_WIRE:
+        if not settings.openai_compatible_base_url:
+            raise ProviderError(
+                f"OPENAI_COMPATIBLE_BASE_URL is not set; provider \"{provider}\" needs a runtime to call."
+            )
+        # A local runtime needs no real key, but the SDK requires the field.
+        return settings.openai_compatible_api_key or "not-needed", settings.openai_compatible_base_url
+
+    if settings.openai_api_key:
+        return settings.openai_api_key, settings.openai_base_url
+    if settings.openai_compatible_base_url:
+        return settings.openai_compatible_api_key or "not-needed", settings.openai_compatible_base_url
+    raise ProviderError(
+        "No LLM credentials configured. Set OPENAI_API_KEY, or point "
+        "OPENAI_COMPATIBLE_BASE_URL at a local runtime."
+    )
 
 
 async def _call_openai(
@@ -47,23 +123,11 @@ async def _call_openai(
     prompt: str | None,
     model: str,
     *,
-    base_url: str | None = None,
-    api_key: str | None = None,
+    provider: str = "openai",
 ) -> ExtractionResult:
     from openai import AsyncOpenAI
 
-    key = api_key or settings.openai_api_key or settings.openai_compatible_api_key
-    url = base_url or settings.openai_base_url or settings.openai_compatible_base_url
-
-    # A local runtime needs no real key, but the SDK requires the field.
-    if not key and url:
-        key = "not-needed"
-
-    if not key:
-        raise ProviderError(
-            "No LLM credentials configured. Set OPENAI_API_KEY, or point "
-            "OPENAI_COMPATIBLE_BASE_URL at a local runtime."
-        )
+    key, url = _openai_wire_credentials(provider)
 
     client = AsyncOpenAI(api_key=key, base_url=url) if url else AsyncOpenAI(api_key=key)
 
@@ -146,10 +210,11 @@ async def _call_gemini(
     from google import genai
     from google.genai import types
 
-    if not settings.gemini_api_key:
-        raise ProviderError("GEMINI_API_KEY is not set.")
+    api_key = settings.gemini_api_key or settings.google_api_key
+    if not api_key:
+        raise ProviderError("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set.")
 
-    client = genai.Client(api_key=settings.gemini_api_key)
+    client = genai.Client(api_key=api_key)
 
     response = await client.aio.models.generate_content(
         model=model,
@@ -175,6 +240,16 @@ async def _call_gemini(
     )
 
 
+def _describe_failure(provider: str, model: str, exc: Exception) -> str:
+    """One line the caller can act on. SDK messages carry status and reason; never key material."""
+    status = getattr(exc, "status_code", None)
+    detail = str(exc).strip() or exc.__class__.__name__
+    prefix = f"{provider} ({model})"
+    if status is not None:
+        return f"{prefix} returned HTTP {status}: {detail}"[:500]
+    return f"{prefix}: {detail}"[:500]
+
+
 async def extract_structured(
     content: str,
     schema: dict[str, Any],
@@ -182,6 +257,7 @@ async def extract_structured(
     model: str | None = None,
     max_input_tokens: int = 8_000,
     provider: str | None = None,
+    include_sources: bool = False,
 ) -> ExtractionResult:
     """Extract structured data using the operator's configured provider.
 
@@ -191,22 +267,41 @@ async def extract_structured(
     """
     provider, resolved_model = _resolve(model, provider)
 
-    trimmed, kept, total = relevance.trim_to_budget(
-        content, schema, prompt, max_tokens=max_input_tokens
-    )
+    selection = relevance.select(content, schema, prompt, max_tokens=max_input_tokens)
+    trimmed = selection.text
 
-    if provider == "anthropic":
-        result = await _call_anthropic(trimmed, schema, prompt, resolved_model)
-    elif provider in ("gemini", "google"):
-        result = await _call_gemini(trimmed, schema, prompt, resolved_model)
-    elif provider in ("openai", "openai-compatible", "ollama", "vllm", "openrouter"):
-        result = await _call_openai(trimmed, schema, prompt, resolved_model)
-    else:
-        raise ProviderError(f"Unknown provider: {provider}")
+    try:
+        if provider == "anthropic":
+            result = await _call_anthropic(trimmed, schema, prompt, resolved_model)
+        elif provider in _GEMINI:
+            result = await _call_gemini(trimmed, schema, prompt, resolved_model)
+        elif provider == "openai" or provider == "openrouter" or provider in _LOCAL_OPENAI_WIRE:
+            result = await _call_openai(trimmed, schema, prompt, resolved_model, provider=provider)
+        else:
+            raise ProviderError(f"Unknown provider: {provider}")
+    except (ProviderError, SchemaError):
+        raise
+    except Exception as exc:
+        # Every SDK has its own exception tree (auth, not-found, rate limit,
+        # transport, a runtime answering with something other than JSON). To the
+        # caller they are all one thing: the model step failed, and here is why.
+        raise ProviderError(_describe_failure(provider, resolved_model, exc)) from exc
 
-    result.blocks_kept = kept
-    result.blocks_total = total
+    result.blocks_kept = selection.kept_count
+    result.blocks_total = selection.total
+    if include_sources:
+        result.sources = [
+            {"text": block.text, "score": round(block.score, 4), "index": block.index}
+            for block in selection.kept
+        ]
     return result
 
 
-__all__ = ["ExtractionResult", "ProviderError", "SchemaError", "extract_structured"]
+__all__ = [
+    "DEFAULT_MODELS",
+    "ExtractionResult",
+    "ProviderError",
+    "RequestError",
+    "SchemaError",
+    "extract_structured",
+]

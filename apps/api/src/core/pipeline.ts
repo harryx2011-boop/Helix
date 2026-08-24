@@ -37,6 +37,8 @@ export interface PipelineOptions {
   proxy?: string | undefined;
   actions?: unknown[] | undefined;
   mobile?: boolean | undefined;
+  /** Operator opt-in: fetch loopback, link-local and private-range addresses. */
+  allowPrivate?: boolean | undefined;
 }
 
 export interface PipelineSuccess {
@@ -82,6 +84,7 @@ function capabilitiesFor(options: PipelineOptions): Capabilities {
   if (options.formats.includes('pdf')) caps.pdfRender = true;
   if (options.actions && options.actions.length > 0) caps.actions = true;
   if (options.waitFor !== undefined && options.waitFor > 0) caps.waitFor = options.waitFor;
+  if (options.proxy) caps.proxy = true;
   return caps;
 }
 
@@ -106,6 +109,7 @@ async function attemptTier(
       proxy: options.proxy,
       headers: options.headers,
       timeoutMs: options.timeout,
+      allowPrivate: options.allowPrivate,
     });
 
     return {
@@ -136,6 +140,7 @@ async function attemptTier(
     screenshot: options.formats.includes('screenshot'),
     actions: options.actions,
     mobile: options.mobile,
+    allowPrivate: options.allowPrivate,
   });
 
   return {

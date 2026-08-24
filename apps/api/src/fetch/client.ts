@@ -17,6 +17,8 @@ export interface FetchOptions {
   proxy?: string | undefined;
   headers?: Record<string, string> | undefined;
   timeoutMs?: number | undefined;
+  /** Operator opt-in: follow redirects onto private addresses. */
+  allowPrivate?: boolean | undefined;
 }
 
 export interface FetchResult {
@@ -53,6 +55,7 @@ export class FetchClient {
           proxy: options.proxy,
           headers: options.headers,
           timeout_ms: timeoutMs,
+          allow_private: options.allowPrivate ?? false,
         }),
         // A little headroom over the inner timeout, so the service can report
         // its own failure rather than being cut off mid-answer.

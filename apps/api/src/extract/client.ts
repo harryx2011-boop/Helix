@@ -71,11 +71,14 @@ export interface Chunk {
  */
 export class StructuredError extends Error {
   readonly status: number;
+  /** The request field at fault, when helix-extract named one. */
+  readonly field: string | undefined;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, field?: string) {
     super(message);
     this.name = 'StructuredError';
     this.status = status;
+    this.field = field;
   }
 }
 
@@ -148,14 +151,21 @@ export class ExtractClient {
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
       let message = detail.slice(0, 500);
+      let field: string | undefined;
       try {
         const parsed = JSON.parse(detail) as { detail?: unknown };
-        if (typeof parsed.detail === 'string') message = parsed.detail;
+        if (typeof parsed.detail === 'string') {
+          message = parsed.detail;
+        } else if (parsed.detail && typeof parsed.detail === 'object') {
+          const structured = parsed.detail as { message?: unknown; field?: unknown };
+          if (typeof structured.message === 'string') message = structured.message;
+          if (typeof structured.field === 'string') field = structured.field;
+        }
       } catch {
         // Not JSON; the raw text is the best detail available.
       }
       this.#logger?.warn({ status: response.status }, 'helix-extract /structured failed');
-      throw new StructuredError(response.status, message || `helix-extract returned HTTP ${response.status}`);
+      throw new StructuredError(response.status, message || `helix-extract returned HTTP ${response.status}`, field);
     }
 
     const body = (await response.json()) as {

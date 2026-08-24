@@ -311,7 +311,8 @@ export class ExtractClient {
         signal: AbortSignal.timeout(2_000),
       });
       return response.ok;
-    } catch {
+    } catch (err) {
+      this.#logger?.debug({ err }, 'helix-extract health check failed');
       return false;
     }
   }

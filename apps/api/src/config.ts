@@ -36,6 +36,16 @@ const ConfigSchema = z.object({
   politeness: z.enum(['adaptive', 'fixed']).default('adaptive'),
   maxHostConcurrency: int(8),
 
+  // Guard rails for crawls. Without a billing layer nothing else bounds a
+  // runaway job, so the operator sets the default and the ceiling.
+  crawlDefaultLimit: int(1000),
+  crawlMaxLimit: int(100_000),
+  crawlMaxDepth: int(50),
+
+  // Webhook deliveries are signed only when a secret is configured.
+  webhookSecret: z.string().optional(),
+  webhookMaxAttempts: int(20),
+
   browserPoolSize: int(4),
   browserMaxContexts: int(20),
   /** Recycle a browser process after this many pages, to bound memory growth. */
@@ -96,6 +106,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     userAgent: env.HELIX_USER_AGENT,
     politeness: env.HELIX_DEFAULT_POLITENESS,
     maxHostConcurrency: env.HELIX_MAX_HOST_CONCURRENCY,
+    crawlDefaultLimit: env.HELIX_CRAWL_DEFAULT_LIMIT,
+    crawlMaxLimit: env.HELIX_CRAWL_MAX_LIMIT,
+    crawlMaxDepth: env.HELIX_CRAWL_MAX_DEPTH,
+    webhookSecret: env.HELIX_WEBHOOK_SECRET || undefined,
+    webhookMaxAttempts: env.HELIX_WEBHOOK_MAX_ATTEMPTS,
     browserPoolSize: env.HELIX_BROWSER_POOL_SIZE,
     browserMaxContexts: env.HELIX_BROWSER_MAX_CONTEXTS,
     browserRecycleAfter: env.HELIX_BROWSER_RECYCLE_AFTER,

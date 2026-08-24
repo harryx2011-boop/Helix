@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import Fastify from 'fastify';
+import Fastify, { type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { loadConfig } from './config.js';
@@ -22,6 +22,7 @@ import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerInternal } from './routes/internal.js';
 import { createSearchProvider } from './search/providers.js';
+import { WebhookDispatcher } from './webhooks/dispatcher.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -50,6 +51,26 @@ const app = Fastify({
   bodyLimit: 5 * 1024 * 1024,
 });
 
+// A thrown error must not reach the caller as the database's or a library's
+// own message. Fastify's own errors carry a status (413 for an oversized body,
+// 400 for malformed JSON); anything else is a 500 with the request id to grep.
+app.setErrorHandler((error: FastifyError, request, reply) => {
+  const statusCode = error.statusCode !== undefined && error.statusCode >= 400 ? error.statusCode : 500;
+  if (statusCode >= 500) {
+    request.log.error({ error }, 'request failed');
+    return reply.code(statusCode).send({
+      error: 'internal_error',
+      message: 'The request could not be completed.',
+      requestId: request.id,
+    });
+  }
+  return reply.code(statusCode).send({
+    error: 'invalid_request',
+    message: error.message,
+    requestId: request.id,
+  });
+});
+
 const pool = createPool(config.databaseUrl, app.log);
 
 const fetchClient = new FetchClient(config.fetchUrl, app.log);
@@ -71,6 +92,14 @@ const crawlWorker = new CrawlWorker({
   extractClient,
   browserPool,
   userAgent: config.userAgent,
+  logger: app.log,
+});
+
+const webhookDispatcher = new WebhookDispatcher({
+  db: pool,
+  secret: config.webhookSecret,
+  maxAttempts: config.webhookMaxAttempts,
+  retentionHours: config.resultTtlHours,
   logger: app.log,
 });
 
@@ -173,6 +202,11 @@ await app.register(
       extractClient,
       userAgent: config.userAgent,
       defaultModel: process.env['HELIX_LLM_MODEL'] ?? 'unset',
+      limits: {
+        defaultLimit: config.crawlDefaultLimit,
+        maxLimit: config.crawlMaxLimit,
+        maxDepth: config.crawlMaxDepth,
+      },
     });
     await registerJobs(instance);
     await registerSearch(instance, {
@@ -217,6 +251,7 @@ const start = async (): Promise<void> => {
     // Runs in-process. A separate worker deployment would scale further, but
     // one process is the right default for a self-hosted tool.
     void crawlWorker.start();
+    void webhookDispatcher.start();
 
     await app.listen({ port: config.port, host: '0.0.0.0' });
     app.log.info(
@@ -239,6 +274,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 
     void (async () => {
       crawlWorker.stop();
+      webhookDispatcher.stop();
       await app.close().catch(() => undefined);
       await browserPool.close().catch(() => undefined);
       await closePool().catch(() => undefined);
@@ -247,5 +283,4 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
-void pool;
 await start();

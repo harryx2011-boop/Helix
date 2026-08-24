@@ -12,18 +12,32 @@ const REQUEST = `POST /v1/crawl
   "url": "https://example.com",
   "limit": 100,
   "maxDepth": 3,
-  "estimate": true
+  "includePaths": ["/blog/*"],
+  "excludePaths": ["/blog/tag/*"],
+  "scrapeOptions": { "formats": ["markdown"] },
+  "webhook": "https://myapp.example/webhooks/helix"
 }`;
 
-const RESPONSE = `{ "success": true, "jobId": "crawl_abc123",
-  "url": "http://localhost:7400/v1/crawl/crawl_abc123" }
-
-GET /v1/crawl/crawl_abc123
+const RESPONSE = `202 Accepted
 {
-  "status": "scraping",
+  "success": true,
+  "id": "6f1c…",
+  "jobId": "6f1c…",
+  "url": "/v1/crawl/6f1c…"
+}
+
+GET /v1/crawl/6f1c…
+{
+  "status": "running",
   "total": 100,
   "completed": 42,
-  "data": [ { "url": "...", "markdown": "..." } ]
+  "failed": 0,
+  "data": [
+    { "url": "https://example.com/blog/post-1",
+      "markdown": "…",
+      "metadata": { "title": "…", "sourceUrl": "…" } }
+  ],
+  "next": "/v1/crawl/6f1c…?cursor=100"
 }`;
 
 export default function CrawlPage() {
@@ -39,17 +53,18 @@ export default function CrawlPage() {
 ├─┼┼─┤  ├─ /blog
 │ ││ │  ├─ /blog/post-1   done
 └─┴┴─┘  ├─ /blog/post-2   done
+        ├─ /blog/tag/x    excluded
         └─ /pricing        queued
 
-42 / 100 pages`,
+42 / 100 pages · status: running`,
       }}
       features={[
-        { icon: GitBranch, title: 'BFS discovery, predictable depth', body: 'Breadth-first traversal by default, so `maxDepth` behaves the way it reads.' },
-        { icon: ShieldHalf, title: 'Robots-aware', body: 'robots.txt is honoured by default, with longest-match rules and Crawl-delay respected.' },
-        { icon: Gauge, title: 'Adaptive politeness', body: 'Per-host concurrency ramps while a site stays healthy and backs off hard on 429s and latency spikes.' },
-        { icon: Calculator, title: 'Estimate before you run', body: '`estimate: true` returns a projected page count and cost before a single page is fetched.' },
-        { icon: Webhook, title: 'Webhooks per page', body: 'Get a webhook per discovered page and on completion, signed and retried with backoff.' },
-        { icon: Network, title: 'Path filters', body: 'Include or exclude paths with glob patterns, and choose whether external links are followed.' },
+        { icon: GitBranch, title: 'BFS discovery, predictable depth', body: 'Breadth-first traversal, so `maxDepth: 3` means three links from the seed. Sitemaps seed the frontier too, so pages nothing links to are still found.' },
+        { icon: ShieldHalf, title: 'Robots-aware', body: 'robots.txt is honoured by default, longest-match rules and `Crawl-delay` included. Disallowed URLs are reported as `robots_denied`, not silently dropped.' },
+        { icon: Gauge, title: 'Adaptive politeness', body: 'Per-host concurrency ramps while a site stays healthy and backs off on 429s and latency spikes. Pin a fixed `delay` when you would rather not adapt.' },
+        { icon: Calculator, title: 'Estimate before you run', body: '`estimate: true` returns the projected page count, time and provider tokens with its assumptions listed. Nothing is fetched.' },
+        { icon: Webhook, title: 'Webhooks per page', body: 'Point `webhook` at a URL for `started`, `page`, `completed` and `failed` events. Retried with backoff for days, signed when you configure a secret, dead-lettered rather than lost.' },
+        { icon: Network, title: 'Path filters as globs', body: '`includePaths: ["/blog/*"]` and `excludePaths: ["/blog/tag/*"]`, exclusion winning. Subdomains and external links stay out unless you opt in.' },
       ]}
       request={REQUEST}
       response={RESPONSE}

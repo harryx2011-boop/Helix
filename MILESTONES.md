@@ -94,6 +94,19 @@ what `assess_pdf` returns.
       content-hash comparison; unchanged pages counted, not re-written
 - ☑ Frontier persistence: Postgres-backed queue with batched writes, claim
       batching, resume-on-restart, and claim release on shutdown or cancellation
+- ☑ `GET`/`DELETE /crawl/:id` serve the job view under the spec's path; the
+      202 carries `jobId` and a `/v1/crawl/{jobId}` poll URL
+- ☑ `includePaths`/`excludePaths` accept globs (`/blog/*`); regex still honoured;
+      an unparseable pattern is a 400, not a silent match-nothing
+- ☑ Spec aliases: `webhook` as a bare URL, `allowExternalLinks`, nested `scrapeOptions`
+- ☑ Operator caps: `HELIX_CRAWL_DEFAULT_LIMIT`, `HELIX_CRAWL_MAX_LIMIT`,
+      `HELIX_CRAWL_MAX_DEPTH`; a request above the cap is rejected, not clamped
+- ☑ Webhooks: `started`/`page`/`completed`/`failed` events queued per job with
+      dedupe keys, delivered by an in-process dispatcher with exponential backoff
+      (1 min doubling, 6 h cap, ~3 days at 20 attempts), HMAC-SHA256 signature
+      when `HELIX_WEBHOOK_SECRET` is set, dead letters kept in `webhook_deliveries`
+- ☐ Dead-letter replay endpoint (rows are kept; nothing re-queues them yet)
+- ☐ Job results in `data[]` carry `text`/`links`, not the full `Document` (no html/screenshot per page)
 
 ## M5 — LLM ☑
 

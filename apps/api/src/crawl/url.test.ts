@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { depthFrom, isSameSite, matchesAnyPattern, normaliseUrl, siteOf } from './url.js';
+import {
+  compilePathPattern,
+  depthFrom,
+  globMatcher,
+  isGlobPattern,
+  isSameSite,
+  matchesAnyPattern,
+  normaliseUrl,
+  siteOf,
+} from './url.js';
 
 describe('normaliseUrl', () => {
   it('collapses the variants of one page into a single key', () => {
@@ -95,5 +104,76 @@ describe('matchesAnyPattern', () => {
 
   it('reports false for an empty pattern list', () => {
     expect(matchesAnyPattern('https://s.com/x', [])).toBe(false);
+  });
+});
+
+describe('glob path patterns', () => {
+  it('tells globs from regular expressions', () => {
+    expect(isGlobPattern('/blog/*')).toBe(true);
+    expect(isGlobPattern('/docs/**/api')).toBe(true);
+    expect(isGlobPattern('/page-?')).toBe(true);
+    expect(isGlobPattern('^/blog')).toBe(false);
+    expect(isGlobPattern('/blog/.*')).toBe(false);
+    expect(isGlobPattern('/(a|b)/*')).toBe(false);
+    expect(isGlobPattern('/internal')).toBe(false);
+  });
+
+  it('matches everything under a prefix with a trailing star', () => {
+    // The spec's own example: include /blog/*, exclude /blog/tag/*.
+    expect(matchesAnyPattern('https://s.com/blog/post-1', ['/blog/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/blog/2024/post-1', ['/blog/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/blog/tag/x', ['/blog/tag/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/pricing', ['/blog/*'])).toBe(false);
+    expect(matchesAnyPattern('https://s.com/blogroll', ['/blog/*'])).toBe(false);
+  });
+
+  it('anchors globs to the whole path and tolerates a trailing slash', () => {
+    expect(matchesAnyPattern('https://s.com/docs/', ['/docs'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/docs/api/', ['/docs/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/docs/api/v2', ['/docs/?pi'])).toBe(false);
+    expect(matchesAnyPattern('https://s.com/docs/api', ['/docs/?pi'])).toBe(true);
+  });
+
+  it('matches anywhere when the glob has no leading slash', () => {
+    expect(matchesAnyPattern('https://s.com/a/b/draft-1', ['draft-*'])).toBe(true);
+  });
+
+  it('treats a dot inside a glob literally', () => {
+    expect(globMatcher('/files/*.pdf').test('/files/report.pdf')).toBe(true);
+    expect(globMatcher('/files/*.pdf').test('/files/reportxpdf')).toBe(false);
+  });
+
+  it('matches the directory itself with a trailing star', () => {
+    // The seed `https://example.com/blog/` normalises to `/blog`; the spec's
+    // `/blog/*` must still cover it.
+    expect(matchesAnyPattern('https://s.com/blog', ['/blog/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/blog/', ['/blog/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/', ['/blog/*'])).toBe(false);
+  });
+
+  it('keeps a question mark to one segment', () => {
+    expect(globMatcher('/a/?/b').test('/a/x/b')).toBe(true);
+    expect(globMatcher('/a/?/b').test('/a///b')).toBe(false);
+  });
+});
+
+describe('pattern cost bounds', () => {
+  it('matches a star-heavy glob against a long path in bounded time', () => {
+    const glob = '/*a*a*a*a*a*a*a*a*a*a*a*a*a*a*b';
+    const path = `/${'a'.repeat(4_000)}!`;
+    const started = Date.now();
+    expect(matchesAnyPattern(`https://s.com${path}`, [glob])).toBe(false);
+    expect(Date.now() - started).toBeLessThan(500);
+  });
+
+  it('refuses a regular expression with a nested quantifier', () => {
+    expect(compilePathPattern('^(a+)+$')).toBeUndefined();
+    expect(compilePathPattern('^(a|aa)*$')).toBeUndefined();
+    expect(compilePathPattern('^(?:ab)+$')).toBeDefined();
+    expect(compilePathPattern('^/docs/(v1|v2)/.*$')).toBeDefined();
+  });
+
+  it('refuses a pattern longer than any path a caller means', () => {
+    expect(compilePathPattern(`/${'a'.repeat(600)}`)).toBeUndefined();
   });
 });

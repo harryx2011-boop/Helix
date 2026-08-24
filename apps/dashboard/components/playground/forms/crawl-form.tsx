@@ -5,6 +5,7 @@ import type { CrawlRequest } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormFooter } from './form-footer';
 
 function parseLines(value: string): string[] {
@@ -14,11 +15,16 @@ function parseLines(value: string): string[] {
     .filter((line) => line.length > 0);
 }
 
+type SitemapMode = NonNullable<CrawlRequest['sitemap']>;
+
 interface CrawlFormProps {
   onSubmit: (request: CrawlRequest) => void;
   onGetCode: (body: Record<string, unknown>) => void;
   loading: boolean;
 }
+
+const TEXTAREA_CLASS =
+  'flex w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 export function CrawlForm({ onSubmit, onGetCode, loading }: CrawlFormProps) {
   const [url, setUrl] = React.useState('');
@@ -26,6 +32,10 @@ export function CrawlForm({ onSubmit, onGetCode, loading }: CrawlFormProps) {
   const [maxDepth, setMaxDepth] = React.useState<number | ''>('');
   const [includePaths, setIncludePaths] = React.useState('');
   const [excludePaths, setExcludePaths] = React.useState('');
+  const [sitemap, setSitemap] = React.useState<SitemapMode>('include');
+  const [respectRobots, setRespectRobots] = React.useState(true);
+  const [allowExternal, setAllowExternal] = React.useState(false);
+  const [webhook, setWebhook] = React.useState('');
   const [estimate, setEstimate] = React.useState(true);
 
   const buildRequest = React.useCallback((): CrawlRequest => {
@@ -35,8 +45,12 @@ export function CrawlForm({ onSubmit, onGetCode, loading }: CrawlFormProps) {
     const exclude = parseLines(excludePaths);
     if (include.length > 0) request.includePaths = include;
     if (exclude.length > 0) request.excludePaths = exclude;
+    if (sitemap !== 'include') request.sitemap = sitemap;
+    if (!respectRobots) request.respectRobots = false;
+    if (allowExternal) request.allowExternal = true;
+    if (webhook.trim().length > 0) request.webhook = webhook.trim();
     return request;
-  }, [url, limit, maxDepth, includePaths, excludePaths, estimate]);
+  }, [url, limit, maxDepth, includePaths, excludePaths, sitemap, respectRobots, allowExternal, webhook, estimate]);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -90,7 +104,7 @@ export function CrawlForm({ onSubmit, onGetCode, loading }: CrawlFormProps) {
           placeholder="/docs/*"
           value={includePaths}
           onChange={(event) => setIncludePaths(event.target.value)}
-          className="flex w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className={TEXTAREA_CLASS}
         />
       </div>
 
@@ -99,10 +113,49 @@ export function CrawlForm({ onSubmit, onGetCode, loading }: CrawlFormProps) {
         <textarea
           id="crawl-exclude"
           rows={2}
-          placeholder="/blog/*"
+          placeholder="/docs/changelog/*"
           value={excludePaths}
           onChange={(event) => setExcludePaths(event.target.value)}
-          className="flex w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className={TEXTAREA_CLASS}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="crawl-sitemap">Sitemap</Label>
+        <Select value={sitemap} onValueChange={(value) => setSitemap(value as SitemapMode)}>
+          <SelectTrigger id="crawl-sitemap" className="h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="include">Seed from sitemap and links</SelectItem>
+            <SelectItem value="skip">Links only</SelectItem>
+            <SelectItem value="only">Sitemap only</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <Label htmlFor="crawl-robots" className="text-sm font-normal">
+          Respect robots.txt
+        </Label>
+        <Switch id="crawl-robots" checked={respectRobots} onCheckedChange={setRespectRobots} />
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <Label htmlFor="crawl-external" className="text-sm font-normal">
+          Follow external links
+        </Label>
+        <Switch id="crawl-external" checked={allowExternal} onCheckedChange={setAllowExternal} />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="crawl-webhook">Webhook URL (optional)</Label>
+        <Input
+          id="crawl-webhook"
+          type="url"
+          placeholder="https://your.app/webhooks/helix"
+          value={webhook}
+          onChange={(event) => setWebhook(event.target.value)}
         />
       </div>
 

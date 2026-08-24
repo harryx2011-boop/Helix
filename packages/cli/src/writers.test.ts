@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { detectHarnesses, HARNESSES, harnessById, writeSkill } from './harnesses.js';
 import { codexSection, upsertJsonMcpServer, upsertTomlSection, writeCodexConfig } from './writers.js';
 import { runInit, selectHarnesses } from './init.js';
+import { fetchSkill } from './skill.js';
 import { parseArgs } from './args.js';
 
 const TARGET = { mcpUrl: 'https://mcp.example.test/v1', apiKey: 'helix-abcdefghijklmnop' };
@@ -177,6 +178,16 @@ describe('init end to end', () => {
     expect(result.skillSource).toBe('public');
     expect(result.warnings[0]).toMatch(/public version/);
     expect(readFileSync(join(home, '.cursor', 'skills', 'helix', 'SKILL.md'), 'utf8')).toBe('# public skill\n');
+  });
+
+  it('gives up on a site that never answers instead of hanging', async () => {
+    const stalled: typeof fetch = (_input, init) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+      });
+    await expect(fetchSkill('https://app.example.test', TARGET.apiKey, stalled, 20)).rejects.toThrow(
+      /could not fetch SKILL.md .*no response within 20ms/,
+    );
   });
 
   it('dry-run touches nothing', async () => {

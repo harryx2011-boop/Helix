@@ -21,6 +21,13 @@ import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerInternal } from './routes/internal.js';
 import { createSearchProvider } from './search/providers.js';
+import { registerMonitor } from './routes/monitor.js';
+import { PgMonitorStore } from './monitor/store.js';
+import { MonitorScheduler } from './monitor/scheduler.js';
+import { WebhookDispatcher } from './monitor/webhooks.js';
+import { runCheck, type FetchOutcome } from './monitor/checker.js';
+import { runPipeline } from './core/pipeline.js';
+import type { MonitorRecord } from './monitor/store.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -70,6 +77,49 @@ const crawlWorker = new CrawlWorker({
   extractClient,
   browserPool,
   userAgent: config.userAgent,
+  logger: app.log,
+});
+
+const monitorStore = new PgMonitorStore(pool);
+const monitorRetention = { keep: config.monitorRetainSnapshots, maxAgeDays: config.monitorRetainDays };
+
+/** A monitor check is a markdown-only scrape through the same ladder as /scrape. */
+const fetchMonitorPage = async (monitor: MonitorRecord): Promise<FetchOutcome> => {
+  const options = monitor.scrapeOptions;
+  const result = await runPipeline(
+    {
+      url: monitor.url,
+      formats: ['markdown'],
+      tier: options.tier ?? 'auto',
+      onlyMainContent: options.onlyMainContent ?? true,
+      includeSelectors: options.includeSelectors ?? [],
+      excludeSelectors: options.excludeSelectors ?? [],
+      extractor: options.extractor ?? 'trafilatura',
+      waitFor: options.waitFor,
+      timeout: options.timeout ?? 30_000,
+      headers: options.headers,
+      profile: options.profile,
+      proxy: options.proxy?.url,
+    },
+    { fetchClient, extractClient, browserPool, logger: app.log },
+  );
+  if (!result.success) return { ok: false, reason: result.reason, detail: result.detail };
+  const content = result.content.markdown || result.content.text || '';
+  if (content.trim().length === 0) return { ok: false, reason: 'empty', detail: 'The page produced no readable text.' };
+  return { ok: true, content, contentHash: result.content.contentHash };
+};
+
+const monitorScheduler = new MonitorScheduler({
+  store: monitorStore,
+  concurrency: config.monitorConcurrency,
+  check: (monitor) =>
+    runCheck(monitor, { store: monitorStore, fetchPage: fetchMonitorPage, retention: monitorRetention, logger: app.log }),
+  logger: app.log,
+});
+
+const webhookDispatcher = new WebhookDispatcher({
+  store: monitorStore,
+  defaultSecret: config.webhookSecret,
   logger: app.log,
 });
 
@@ -168,13 +218,19 @@ await app.register(
       extractClient,
       browserPool,
     });
+    await registerMonitor(instance, {
+      store: monitorStore,
+      fetchPage: fetchMonitorPage,
+      minIntervalSeconds: config.monitorMinIntervalSeconds,
+      retention: monitorRetention,
+    });
   },
   { prefix: '/v1' },
 );
 
 await registerInternal(app, { adminToken: config.internalAdminToken });
 
-// TODO(M7+): /monitor, /parse, /interact
+// TODO: /parse, /interact
 
 const start = async (): Promise<void> => {
   try {
@@ -200,6 +256,8 @@ const start = async (): Promise<void> => {
     // Runs in-process. A separate worker deployment would scale further, but
     // one process is the right default for a self-hosted tool.
     void crawlWorker.start();
+    await monitorScheduler.start();
+    webhookDispatcher.start();
 
     await app.listen({ port: config.port, host: '0.0.0.0' });
     app.log.info(
@@ -222,6 +280,8 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 
     void (async () => {
       crawlWorker.stop();
+      monitorScheduler.stop();
+      webhookDispatcher.stop();
       await app.close().catch(() => undefined);
       await browserPool.close().catch(() => undefined);
       await closePool().catch(() => undefined);

@@ -48,6 +48,15 @@ const ConfigSchema = z.object({
 
   resultTtlHours: int(168),
 
+  /** Shortest gap between two checks of one monitor, in seconds. Hourly by default. */
+  monitorMinIntervalSeconds: int(3600),
+  /** Checks running at once across all monitors on this instance. */
+  monitorConcurrency: int(2),
+  monitorRetainSnapshots: int(30),
+  monitorRetainDays: int(90),
+  /** Instance-wide HMAC secret for webhook signatures; a webhook's own `secret` wins. */
+  webhookSecret: z.string().optional(),
+
   // Comma-separated allowed origins for the dashboard. Defaults to the dev
   // origins for the split-port setup (dashboard 3400 -> API 7400). Set
   // explicitly in production to the dashboard's real origin.
@@ -84,6 +93,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     proxyUrl: env.HELIX_PROXY_URL || undefined,
     searchProvider: env.HELIX_SEARCH_PROVIDER,
     resultTtlHours: env.HELIX_RESULT_TTL_HOURS,
+    monitorMinIntervalSeconds: env.HELIX_MONITOR_MIN_INTERVAL,
+    monitorConcurrency: env.HELIX_MONITOR_CONCURRENCY,
+    monitorRetainSnapshots: env.HELIX_MONITOR_RETAIN_SNAPSHOTS,
+    monitorRetainDays: env.HELIX_MONITOR_RETAIN_DAYS,
+    webhookSecret: env.HELIX_WEBHOOK_SECRET || undefined,
     corsOrigins: env.HELIX_CORS_ORIGINS,
   });
 

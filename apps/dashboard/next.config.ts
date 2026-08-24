@@ -3,15 +3,15 @@ import { dirname } from 'node:path';
 import type { NextConfig } from 'next';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
+const hosted = process.env.HELIX_HOSTED === '1';
 
-// Static export: the Fastify API serves this build at `/`, API under `/v1`.
-// One container, one port — see FRONTEND.md §3.
+// Self-host: static export served by the Fastify API at `/` (FRONTEND.md §3).
+// Hosted: server output, because Clerk middleware and the route handlers need it (WEBSITE.md §1).
 const nextConfig: NextConfig = {
-  output: 'export',
+  ...(hosted ? {} : { output: 'export' as const }),
   images: { unoptimized: true },
-  // Without this, Next.js walks up to the pnpm-lock.yaml at the repo root and
-  // misdetects the workspace root, which breaks file tracing on Windows.
   outputFileTracingRoot: currentDir,
+  env: { NEXT_PUBLIC_HELIX_HOSTED: hosted ? '1' : '0' },
 };
 
 export default nextConfig;

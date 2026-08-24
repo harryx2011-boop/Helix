@@ -40,9 +40,9 @@
   --tier-lightpanda: 263 83% 58%;
   --tier-chromium: 265 69% 42%;
 
-  --radius: 0.5rem;
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  --radius: 6px;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', monospace;
 }
 
 .dark {
@@ -199,5 +199,58 @@ kbd {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Marketing surface (WEBSITE.md §3.2): Firecrawl's structure in Helix's palette.
+ * Scoped by data-surface so app and marketing tokens never mix.
+ */
+[data-surface='marketing'] {
+  --m-bg: #f9f9f9;
+  --m-bg-lighter: #fbfbfb;
+  --m-surface: #ffffff;
+  --m-ink: #0b1220;
+  --m-border-faint: #ededed;
+  --m-border-muted: #e8e8e8;
+  --m-border-loud: #e6e6e6;
+  --m-illus-faint: #ededed;
+  --m-illus-muted: #e6e6e6;
+  --m-illus-default: #dbdbdb;
+
+  --violet-100: #7c3aed;
+  --violet-90: #7c3aede6;
+  --violet-48: #7c3aed7a;
+  --violet-40: #7c3aed66;
+  --violet-24: #7c3aed3d;
+  --violet-20: #7c3aed33;
+  --violet-16: #7c3aed29;
+  --violet-12: #7c3aed1f;
+  --violet-8: #7c3aed14;
+  --violet-4: #7c3aed0a;
+  --violet-hover: #6d28d9;
+  --violet-deep: #5b21b6;
+
+  --tier-plain: 262 93% 68%;
+  --tier-tls: 258 90% 66%;
+  --tier-lightpanda: 263 83% 58%;
+  --tier-chromium: 265 69% 42%;
+
+  --shadow-card: 0 40px 48px -20px rgba(0, 0, 0, 0.02), 0 32px 32px -20px rgba(0, 0, 0, 0.03), 0 16px 24px -12px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  --shadow-card-sm: 0 8px 16px -8px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  --shadow-btn: inset 0 -6px 12px rgba(91, 33, 182, 0.2), 0 2px 4px rgba(124, 58, 237, 0.12), 0 1px 1px rgba(124, 58, 237, 0.12), 0 0.5px 0.5px rgba(124, 58, 237, 0.16), 0 0.25px 0.25px rgba(124, 58, 237, 0.2);
+  --shadow-btn-hover: inset 0 -6px 12px rgba(91, 33, 182, 0.2), 0 4px 8px rgba(124, 58, 237, 0.12), 0 1px 1px rgba(124, 58, 237, 0.12), 0 0.5px 0.5px rgba(124, 58, 237, 0.16), 0 0.25px 0.25px rgba(124, 58, 237, 0.2);
+  --ring-cutout: 0 0 0 8px #f9f9f9;
+
+  color-scheme: light;
+  background: var(--m-bg);
+  color: var(--m-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-surface] *, [data-surface] *::before, [data-surface] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

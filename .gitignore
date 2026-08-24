@@ -38,3 +38,4 @@ research/firecrawl-capture/out/
 research/firecrawl-capture/node_modules/
 graphify-out/*.html
 apps/dashboard/.screenshots/
+.worktrees/

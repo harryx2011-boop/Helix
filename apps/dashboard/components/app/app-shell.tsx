@@ -4,6 +4,7 @@ import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from './sidebar';
 import { TopBar } from './top-bar';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const TITLES: Record<string, string> = {
   '/app': 'Overview',
@@ -30,12 +31,14 @@ export function AppShell({ selectedEndpoints, children }: { selectedEndpoints: r
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
-      <Sidebar selectedEndpoints={selectedEndpoints} mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar title={titleFor(pathname)} onOpenMobileNav={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+    <TooltipProvider delayDuration={200}>
+      <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+        <Sidebar selectedEndpoints={selectedEndpoints} mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopBar title={titleFor(pathname)} onOpenMobileNav={() => setMobileOpen(true)} />
+          <main className="flex-1 overflow-y-auto">{children}</main>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

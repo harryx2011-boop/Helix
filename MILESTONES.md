@@ -57,6 +57,14 @@ The unclaimed structural gap: web pages and documents under one API.
 - ☑ DOCX, PPTX, XLSX with heading and table preservation
 - ☑ Page markers in output so a citation stays locatable
 - ☑ 19 tests against real generated PDFs
+- ☑ `POST /v1/parse`: multipart `file` or `url`, `ocr: auto|force|off`, `formats: markdown|json`
+      with `jsonOptions` (schema or prompt) resolved by the operator's model
+- ☑ Gateway upload ceiling (`HELIX_PARSE_MAX_UPLOAD_MB`) enforced before a byte reaches Python; HTTP 413
+- ☑ File-type classification by signature, then declared type, then extension; HTML answers `unsupported_type`
+- ☑ Parsed-output cache keyed by content hash plus the options that change the output
+- ☑ 34 route and classifier tests
+- ☐ Image OCR (`png`, `jpg`): accepted at the gateway, the Python service answers `unsupported_type` until an OCR path lands
+- ☐ Separate OCR queue so long scans do not hold text-layer parses
 
 Implemented the classification directly rather than depending on
 `@firecrawl/pdf-inspector`: the routing decision is four rules over pypdfium2

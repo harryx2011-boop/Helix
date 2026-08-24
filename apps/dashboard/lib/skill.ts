@@ -102,6 +102,21 @@ ${failureEnvelope}
 Failure reasons:
 
 ${FAILURE_REASONS.map((reason) => `- \`${reason}\` — ${FAILURE_REASON_NOTES[reason]}`).join('\n')}
+${lifecycleNotes(endpoint)}`;
+}
+
+/** Endpoints that do not finish inline need their poll/cancel loop spelled out. */
+function lifecycleNotes(endpoint: EndpointDef): string {
+  if (endpoint.id !== 'crawl') return '';
+  return `
+Lifecycle:
+
+- The call answers \`202\` with \`{ "success": true, "id": "<jobId>", "jobId": "<jobId>", "url": "/v1/crawl/<jobId>" }\`; the crawl runs in the background.
+- Poll \`GET /v1/crawl/<jobId>\`. \`status\` is \`queued\`, then \`running\`, then \`completed\`, \`failed\` or \`cancelled\`. \`data\` holds the pages read so far, each \`{ url, markdown, metadata }\`; follow \`next\` until it is absent.
+- \`DELETE /v1/crawl/<jobId>\` cancels a queued or running crawl and keeps what was already read.
+- Per-page failures do not fail the job; read them at \`GET /v1/jobs/<jobId>/errors\`.
+- \`includePaths\` and \`excludePaths\` are globs over the path (\`/blog/*\`); exclusion wins. \`limit\` and \`maxDepth\` are capped by the operator, and a request above the cap is rejected.
+- Set \`webhook\` to a URL to receive \`started\`, \`page\`, \`completed\` and \`failed\` events instead of polling.
 `;
 }
 
@@ -114,7 +129,7 @@ function reachWhen(endpoint: EndpointDef): string {
     case 'search':
       return "you don't have a URL yet and need to find and read relevant pages in one call.";
     case 'crawl':
-      return 'you need many pages from one site and do not already have the list of URLs.';
+      return 'you need many pages from one site and do not already have the list of URLs. Send `estimate: true` first to see the projected page count.';
     case 'interact':
       return 'reaching the content requires clicking, typing, or scrolling first — a single fetch will not see it.';
     case 'monitor':
@@ -133,7 +148,7 @@ function reachNotWhen(endpoint: EndpointDef): string {
     case 'search':
       return 'you already know the exact URL (use Scrape directly instead of searching for it).';
     case 'crawl':
-      return "you only need one page (use Scrape) or you're just listing URLs without reading them.";
+      return "you only need one page (use Scrape) or you're just listing URLs without reading them (use Map).";
     case 'interact':
       return 'a plain fetch already returns the content (use Scrape; Interact costs more and is slower).';
     case 'monitor':
@@ -153,7 +168,7 @@ function exampleDataShape(id: EndpointDef['id']): Record<string, unknown> {
     case 'map':
       return { urls: ['...'] };
     case 'crawl':
-      return { jobId: '...', status: 'running' };
+      return { id: '<jobId>', jobId: '<jobId>', url: '/v1/crawl/<jobId>' };
     case 'interact':
       return { sessionId: '...', markdown: '...' };
     case 'monitor':

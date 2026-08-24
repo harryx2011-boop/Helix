@@ -53,10 +53,10 @@ export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
   },
   crawl: {
     id: 'crawl',
-    purpose: 'Discover and read every page under a starting URL, with depth, page-count and path controls. Asynchronous — returns a job you poll.',
-    whenToUse: 'Reach for Crawl when you need many pages from one site and do not have their URLs ahead of time. For a known, bounded set of URLs, `/batch/scrape` (planned) is cheaper. For a single page, use Scrape.',
-    responseShape: 'Start: `{ success, jobId, url }`. Poll `GET /v1/crawl/{jobId}`: `{ status, total, completed, data: [...] }`, `status` one of `scraping | completed | failed | cancelled`.',
-    failureReasons: ['robots_denied', 'timeout', 'service_unavailable'],
+    purpose: 'Discover and read every page under a starting URL, with depth, page-count and glob path controls. Asynchronous: the call returns a job id, and pages arrive as the crawl walks the site. Pass `estimate: true` to see the projected page count before anything is fetched.',
+    whenToUse: 'Reach for Crawl when you need many pages from one site and do not have their URLs ahead of time. For a single page, use Scrape. To list URLs without reading them, use Map. If you only need to know when pages change later, Monitor is the better fit once it ships.',
+    responseShape: 'Start: `202 { success, id, jobId, url }` where `url` is `/v1/crawl/{jobId}`. Poll `GET /v1/crawl/{jobId}`: `{ status, total, completed, failed, data: [{ url, markdown, metadata }], next, usage }`, `status` one of `queued | running | completed | failed | cancelled`; follow `next` for the remaining pages. `DELETE /v1/crawl/{jobId}` cancels and keeps finished results. With `webhook` set, `started`, `page`, `completed` and `failed` events are POSTed with retries.',
+    failureReasons: ['robots_denied', 'blocked', 'challenge', 'timeout', 'http_error', 'service_unavailable'],
   },
   interact: {
     id: 'interact',

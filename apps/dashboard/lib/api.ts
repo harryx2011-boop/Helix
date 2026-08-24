@@ -145,18 +145,37 @@ export interface SearchResponse {
 
 // --- Crawl ---
 
+export type WebhookEvent = 'started' | 'page' | 'changed' | 'completed' | 'failed';
+
+export interface WebhookConfig {
+  url: string;
+  headers?: Record<string, string>;
+  events?: WebhookEvent[];
+  metadata?: Record<string, unknown>;
+}
+
 export interface CrawlRequest extends ScrapeOptions {
   url: string;
   estimate?: boolean;
   limit?: number;
   maxDepth?: number;
+  /** Globs over the pathname, e.g. `/blog/*`. */
   includePaths?: string[];
   excludePaths?: string[];
   allowSubdomains?: boolean;
   allowExternal?: boolean;
+  /** Alias of `allowExternal`, as the spec writes it. */
+  allowExternalLinks?: boolean;
   sitemap?: 'include' | 'skip' | 'only';
   respectRobots?: boolean;
+  politeness?: 'adaptive' | 'fixed';
+  maxConcurrency?: number;
+  delay?: number;
   incremental?: boolean;
+  ignoreQueryParameters?: boolean;
+  scrapeOptions?: Pick<ScrapeOptions, 'formats' | 'tier' | 'extractor' | 'onlyMainContent'>;
+  /** A bare URL subscribes to every event. */
+  webhook?: string | WebhookConfig;
 }
 
 export interface Estimate {
@@ -172,13 +191,21 @@ export interface Estimate {
 export interface JobAccepted {
   success: boolean;
   id: string;
+  jobId?: string;
   url?: string;
+}
+
+export interface JobCancelled {
+  id: string;
+  jobId?: string;
+  status: 'cancelled';
 }
 
 export type CrawlResponse = Estimate | JobAccepted;
 
 export interface Job {
   id: string;
+  jobId?: string;
   type?: 'crawl' | 'batch_scrape' | 'enrich';
   status?: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
   total?: number;
@@ -427,6 +454,15 @@ export class HelixClient {
     return this.post<CrawlResponse>('/crawl', request, signal);
   }
 
+  /** `GET /v1/crawl/{jobId}`: the same view as `job()`, restricted to crawls. */
+  async crawlJob(id: string, signal?: AbortSignal): Promise<Job> {
+    return this.get<Job>(`/crawl/${id}`, signal);
+  }
+
+  async cancelCrawl(id: string, signal?: AbortSignal): Promise<JobCancelled> {
+    return this.delete<JobCancelled>(`/crawl/${id}`, signal);
+  }
+
   async parse(request: ParseRequest | FormData, signal?: AbortSignal): Promise<ParseResponse> {
     return this.post<ParseResponse>('/parse', request, signal);
   }
@@ -447,6 +483,24 @@ export class HelixClient {
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
+        headers: { Authorization: `Bearer ${this.apiKey}` },
+        ...(signal ? { signal } : {}),
+      });
+    } catch (error) {
+      throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+    }
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => undefined)) as ApiErrorBody | undefined;
+      throw new HelixApiError(errorBody?.message ?? `Request failed with status ${response.status}`, response.status, errorBody);
+    }
+    return response.json() as Promise<T>;
+  }
+
+  private async delete<T>(path: string, signal?: AbortSignal): Promise<T> {
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        method: 'DELETE',
         headers: { Authorization: `Bearer ${this.apiKey}` },
         ...(signal ? { signal } : {}),
       });

@@ -172,6 +172,15 @@ paths:
         or latency spikes.
 
         Pass `estimate: true` to get projected pages, time and cost without crawling.
+
+        `includePaths` and `excludePaths` take globs (`/blog/*`); a pattern using
+        regular-expression syntax (`^/blog`) is treated as one. Exclusion wins
+        when both match. `limit` defaults to `HELIX_CRAWL_DEFAULT_LIMIT` and,
+        together with `maxDepth`, is capped by the operator. A request above the
+        cap is rejected rather than silently clamped.
+
+        With `webhook` set, `started`, `page`, `completed` and `failed` events are
+        POSTed to it (see `WebhookPayload`). Cancellation emits nothing.
       operationId: crawl
       requestBody:
         required: true
@@ -185,6 +194,16 @@ paths:
               estimate:
                 summary: What would this cost?
                 value: { url: 'https://docs.example.com', estimate: true }
+              filtered:
+                summary: One section, with a webhook
+                value:
+                  url: 'https://example.com'
+                  limit: 100
+                  maxDepth: 3
+                  includePaths: ['/blog/*']
+                  excludePaths: ['/blog/tag/*']
+                  scrapeOptions: { formats: [markdown] }
+                  webhook: 'https://myapp.example/webhooks/helix'
               toVectors:
                 summary: Crawl straight into a vector store
                 value:
@@ -200,6 +219,48 @@ paths:
         '202': { $ref: '#/components/responses/JobAccepted' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /crawl/{jobId}:
+    parameters:
+      - { name: jobId, in: path, required: true, schema: { type: string, format: uuid } }
+      - name: cursor
+        in: query
+        schema: { type: string }
+        description: Continue a paginated result set.
+    get:
+      tags: [Crawl, Jobs]
+      summary: Poll a crawl
+      description: |
+        The same view as `GET /jobs/{id}`, restricted to crawl jobs. Results are
+        paginated by `next`; `status` is `queued` until a worker claims the job,
+        then `running`, then one of `completed`, `failed` or `cancelled`.
+      operationId: getCrawl
+      responses:
+        '200':
+          description: Job state, with results so far.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Crawl, Jobs]
+      summary: Cancel a crawl
+      description: |
+        Stops the crawl. Already-completed results stay retrievable. Cancellation
+        does not emit a failure webhook per queued URL.
+      operationId: cancelCrawl
+      responses:
+        '200':
+          description: Cancelled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobCancelled' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The job had already finished.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /search:
     post:
@@ -657,13 +718,16 @@ components:
       type: object
       required: [url]
       description: |
-        Signed with HMAC-SHA256 over `{timestamp}.{body}`, sent as
-        `Helix-Signature: t=<unix>,v1=<hex>`. Compare in constant time and reject
-        timestamps outside a five-minute window.
+        When `HELIX_WEBHOOK_SECRET` is set, deliveries are signed with HMAC-SHA256
+        over `{timestamp}.{body}` and sent as `Helix-Signature: t=<unix>,v1=<hex>`.
+        Compare in constant time and reject timestamps outside a five-minute
+        window. Every delivery also carries `Helix-Event` and `Helix-Delivery-Id`.
 
-        Delivery retries with exponential backoff for up to three days. Ordering is
-        not guaranteed — make your handler idempotent. Exhausted deliveries land in
-        a dead-letter queue you can replay.
+        Delivery retries with exponential backoff (one minute, doubling, capped at
+        six hours) for `HELIX_WEBHOOK_MAX_ATTEMPTS` attempts, about three days at
+        the default of 20. Ordering is not guaranteed; make your handler
+        idempotent. Exhausted deliveries are kept as dead letters in
+        `webhook_deliveries`.
       properties:
         url: { type: string, format: uri }
         headers:
@@ -671,10 +735,30 @@ components:
           additionalProperties: { type: string }
         events:
           type: array
+          description: Subscribe to a subset. Omitted means every event. `changed` is emitted by monitors only.
           items: { type: string, enum: [started, page, changed, completed, failed] }
         metadata:
           type: object
           description: Echoed back in every delivery.
+
+    WebhookPayload:
+      type: object
+      description: The JSON body of every webhook delivery.
+      properties:
+        id: { type: string, description: 'Delivery id, also sent as Helix-Delivery-Id.' }
+        event: { type: string, enum: [started, page, changed, completed, failed] }
+        jobId: { type: [string, 'null'], format: uuid }
+        monitorId: { type: [string, 'null'], format: uuid }
+        timestamp: { type: string, format: date-time }
+        data:
+          type: object
+          description: |
+            Per event. `started`: `{ url, limit, maxDepth }`. `page`: `{ url, markdown,
+            metadata }`. `completed`: `{ total, completed, failed, unchanged }`.
+            `failed`: `{ error }`.
+        metadata:
+          type: [object, 'null']
+          description: The `metadata` given in the webhook config.
 
     MapRequest:
       type: object
@@ -716,16 +800,27 @@ components:
               type: boolean
               default: false
               description: Return projected work instead of crawling.
-            limit: { type: integer, default: 1000 }
-            maxDepth: { type: integer }
+            limit:
+              type: integer
+              minimum: 1
+              description: Maximum pages. Defaults to `HELIX_CRAWL_DEFAULT_LIMIT` (1000); rejected above `HELIX_CRAWL_MAX_LIMIT` (100000).
+            maxDepth:
+              type: integer
+              minimum: 0
+              description: Link depth from the seed. Rejected above `HELIX_CRAWL_MAX_DEPTH` (50).
             includePaths:
               type: array
+              description: Globs over the pathname, e.g. `/blog/*`. Only matching URLs are crawled.
               items: { type: string }
             excludePaths:
               type: array
+              description: Globs over the pathname, e.g. `/blog/tag/*`. Wins over `includePaths`.
               items: { type: string }
             allowSubdomains: { type: boolean, default: false }
             allowExternal: { type: boolean, default: false }
+            allowExternalLinks:
+              type: boolean
+              description: Alias of `allowExternal`.
             sitemap: { type: string, enum: [include, skip, only], default: include }
             respectRobots:
               type: boolean
@@ -747,8 +842,23 @@ components:
               type: boolean
               default: false
               description: Skip pages whose content hash is unchanged since the last crawl of this site.
+            ignoreQueryParameters: { type: boolean, default: false }
+            scrapeOptions:
+              description: Per-page options in the nested form the spec uses. Overrides the same fields given at the top level.
+              type: object
+              properties:
+                formats:
+                  type: array
+                  items: { $ref: '#/components/schemas/Format' }
+                tier: { $ref: '#/components/schemas/Tier' }
+                extractor: { type: string, enum: [trafilatura, readability, auto] }
+                onlyMainContent: { type: boolean }
             destination: { $ref: '#/components/schemas/Destination' }
-            webhook: { $ref: '#/components/schemas/WebhookConfig' }
+            webhook:
+              description: A bare URL subscribes to every event; the object form adds headers, an event filter and metadata.
+              oneOf:
+                - { type: string, format: uri }
+                - $ref: '#/components/schemas/WebhookConfig'
         - $ref: '#/components/schemas/ScrapeOptions'
 
     SearchRequest:
@@ -998,12 +1108,21 @@ components:
       properties:
         success: { type: boolean }
         id: { type: string, format: uuid }
-        url: { type: string, format: uri, description: Where to poll. }
+        jobId: { type: string, format: uuid, description: Same as `id`. }
+        url: { type: string, format: uri, description: 'Where to poll: /v1/crawl/{jobId}.' }
+
+    JobCancelled:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        status: { type: string, enum: [cancelled] }
 
     Job:
       type: object
       properties:
         id: { type: string, format: uuid }
+        jobId: { type: string, format: uuid, description: Same as `id`. }
         type: { type: string, enum: [crawl, batch_scrape, enrich] }
         status: { type: string, enum: [queued, running, completed, failed, cancelled] }
         total: { type: integer }
@@ -1013,12 +1132,16 @@ components:
         startedAt: { type: string, format: date-time }
         finishedAt: { type: string, format: date-time }
         expiresAt: { type: string, format: date-time }
+        error: { type: [string, 'null'] }
         next: { type: string, format: uri, description: Cursor for the next page of results. }
         data:
           type: array
           items:
-            oneOf:
+            allOf:
               - $ref: '#/components/schemas/Document'
+              - type: object
+                properties:
+                  url: { type: string, format: uri, description: The URL as crawled. Also in `metadata.sourceUrl`. }
         usage: { $ref: '#/components/schemas/Usage' }
 
     Usage:

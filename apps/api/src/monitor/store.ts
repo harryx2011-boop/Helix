@@ -61,6 +61,8 @@ export interface MonitorRecord {
   updatedAt: Date;
   lastCheckedAt: Date | null;
   nextCheckAt: Date | null;
+  /** When the current claim was taken; null once the check ends. */
+  claimedAt: Date | null;
   lastChangeAt: Date | null;
   lastError: string | null;
   checks: number;
@@ -88,6 +90,12 @@ export interface MonitorPatch {
   sensitivity?: Sensitivity;
   webhook?: MonitorWebhook | null;
   status?: MonitorStatus;
+  /**
+   * How a check ended. `ok` clears `error` back to `active`; `error` marks the
+   * monitor `error`. Neither touches a paused monitor: a pause that lands
+   * while a check is running must survive the check's final write.
+   */
+  checkOutcome?: 'ok' | 'error';
   nextCheckAt?: Date | null;
   lastCheckedAt?: Date;
   lastChangeAt?: Date;
@@ -170,8 +178,13 @@ export interface MonitorStore {
    * time back when the check ends, whatever the outcome.
    */
   claimDue(now: Date, limit: number): Promise<MonitorRecord[]>;
-  /** Monitors whose claim was never released (a crash mid-check). */
-  listStuck(): Promise<MonitorRecord[]>;
+  /**
+   * Claim one monitor for a check outside the schedule. Undefined when it is
+   * paused, missing, or already claimed by a running check.
+   */
+  claim(id: string, now: Date): Promise<MonitorRecord | undefined>;
+  /** Monitors claimed before `before` and never released: a crash mid-check. */
+  listStuck(before: Date): Promise<MonitorRecord[]>;
   bumpCounters(id: string, counters: CheckCounters): Promise<void>;
 
   latestSnapshot(monitorId: string): Promise<SnapshotRecord | undefined>;
@@ -180,11 +193,13 @@ export interface MonitorStore {
   pruneSnapshots(monitorId: string, keep: number, maxAgeDays: number): Promise<number>;
 
   recordCheck(input: NewCheck): Promise<CheckRecord>;
+  pruneChecks(monitorId: string, keep: number, maxAgeDays: number): Promise<number>;
   history(monitorId: string, options: { limit: number; before?: number | undefined }): Promise<CheckRecord[]>;
 
   /** Returns undefined when the dedupe key already exists. */
   enqueueDelivery(input: NewDelivery): Promise<DeliveryRecord | undefined>;
-  claimDeliveries(now: Date, limit: number): Promise<DeliveryRecord[]>;
+  /** Claimed rows are not due again until `now + leaseMs`, so a concurrent tick skips them. */
+  claimDeliveries(now: Date, limit: number, leaseMs: number): Promise<DeliveryRecord[]>;
   markDelivered(id: number, responseStatus: number | null): Promise<void>;
   markRetry(id: number, attempts: number, nextRetryAt: Date, error: string, responseStatus: number | null): Promise<void>;
   markDead(id: number, attempts: number, error: string, responseStatus: number | null): Promise<void>;
@@ -223,6 +238,7 @@ export class MemoryMonitorStore implements MonitorStore {
       updatedAt: now,
       lastCheckedAt: null,
       nextCheckAt: input.nextCheckAt,
+      claimedAt: null,
       lastChangeAt: null,
       lastError: null,
       checks: 0,
@@ -256,7 +272,13 @@ export class MemoryMonitorStore implements MonitorStore {
     if (patch.sensitivity !== undefined) next.sensitivity = patch.sensitivity;
     if (patch.webhook !== undefined) next.webhook = patch.webhook;
     if (patch.status !== undefined) next.status = patch.status;
-    if (patch.nextCheckAt !== undefined) next.nextCheckAt = patch.nextCheckAt;
+    if (patch.checkOutcome !== undefined && next.status !== 'paused') {
+      next.status = patch.checkOutcome === 'error' ? 'error' : 'active';
+    }
+    if (patch.nextCheckAt !== undefined) {
+      next.nextCheckAt = patch.nextCheckAt;
+      if (patch.nextCheckAt !== null) next.claimedAt = null;
+    }
     if (patch.lastCheckedAt !== undefined) next.lastCheckedAt = patch.lastCheckedAt;
     if (patch.lastChangeAt !== undefined) next.lastChangeAt = patch.lastChangeAt;
     if (patch.lastError !== undefined) next.lastError = patch.lastError;
@@ -273,14 +295,26 @@ export class MemoryMonitorStore implements MonitorStore {
       .filter((m) => (m.status === 'active' || m.status === 'error') && m.nextCheckAt !== null && m.nextCheckAt.getTime() <= now.getTime())
       .sort((a, b) => a.nextCheckAt!.getTime() - b.nextCheckAt!.getTime())
       .slice(0, limit);
-    for (const m of due) {
-      this.monitors.set(m.id, { ...m, nextCheckAt: null });
-    }
-    return due.map((m) => ({ ...m }));
+    const claimed = due.map((m) => ({ ...m, nextCheckAt: null, claimedAt: now }));
+    for (const m of claimed) this.monitors.set(m.id, m);
+    return claimed.map((m) => ({ ...m }));
   }
 
-  async listStuck(): Promise<MonitorRecord[]> {
-    return [...this.monitors.values()].filter((m) => (m.status === 'active' || m.status === 'error') && m.nextCheckAt === null);
+  async claim(id: string, now: Date): Promise<MonitorRecord | undefined> {
+    const record = this.monitors.get(id);
+    if (!record || record.status === 'paused' || record.nextCheckAt === null) return undefined;
+    const claimed = { ...record, nextCheckAt: null, claimedAt: now };
+    this.monitors.set(id, claimed);
+    return { ...claimed };
+  }
+
+  async listStuck(before: Date): Promise<MonitorRecord[]> {
+    return [...this.monitors.values()].filter(
+      (m) =>
+        (m.status === 'active' || m.status === 'error') &&
+        m.nextCheckAt === null &&
+        (m.claimedAt === null || m.claimedAt.getTime() < before.getTime()),
+    );
   }
 
   async bumpCounters(id: string, counters: CheckCounters): Promise<void> {
@@ -335,6 +369,18 @@ export class MemoryMonitorStore implements MonitorStore {
     return record;
   }
 
+  async pruneChecks(monitorId: string, keep: number, maxAgeDays: number): Promise<number> {
+    const cutoff = Date.now() - maxAgeDays * 86_400_000;
+    const mine = this.checks.filter((c) => c.monitorId === monitorId).sort((a, b) => b.id - a.id);
+    const doomed = new Set(
+      mine.filter((c, index) => index >= Math.max(1, keep) || (index > 0 && c.checkedAt.getTime() < cutoff)).map((c) => c.id),
+    );
+    for (let i = this.checks.length - 1; i >= 0; i -= 1) {
+      if (doomed.has(this.checks[i]!.id)) this.checks.splice(i, 1);
+    }
+    return doomed.size;
+  }
+
   async history(monitorId: string, options: { limit: number; before?: number | undefined }): Promise<CheckRecord[]> {
     return [...this.checks]
       .filter((c) => c.monitorId === monitorId && (options.before === undefined || c.id < options.before))
@@ -359,13 +405,12 @@ export class MemoryMonitorStore implements MonitorStore {
     return { ...record };
   }
 
-  async claimDeliveries(now: Date, limit: number): Promise<DeliveryRecord[]> {
+  async claimDeliveries(now: Date, limit: number, leaseMs: number): Promise<DeliveryRecord[]> {
     const due = this.deliveries
       .filter((d) => d.status === 'pending' && d.nextRetryAt.getTime() <= now.getTime())
       .sort((a, b) => a.nextRetryAt.getTime() - b.nextRetryAt.getTime())
       .slice(0, limit);
-    // Push the retry time out so a concurrent tick skips them while in flight.
-    for (const d of due) d.nextRetryAt = new Date(now.getTime() + 60_000);
+    for (const d of due) d.nextRetryAt = new Date(now.getTime() + leaseMs);
     return due.map((d) => ({ ...d }));
   }
 
@@ -437,6 +482,7 @@ interface MonitorRow {
   updated_at: Date;
   last_checked_at: Date | null;
   next_check_at: Date | null;
+  claimed_at: Date | null;
   last_change_at: Date | null;
   last_error: string | null;
   checks: number;
@@ -445,8 +491,13 @@ interface MonitorRow {
 }
 
 const MONITOR_COLUMNS = `id, api_key_id, urls, schedule, diff_config, trigger_config, scrape_options,
-  webhook, sensitivity, status, created_at, updated_at, last_checked_at, next_check_at,
+  webhook, sensitivity, status, created_at, updated_at, last_checked_at, next_check_at, claimed_at,
   last_change_at, last_error, checks, changes, pages_unchanged`;
+
+const CLAIMED_COLUMNS = `m.id, m.api_key_id, m.urls, m.schedule, m.diff_config, m.trigger_config,
+  m.scrape_options, m.webhook, m.sensitivity, m.status, m.created_at, m.updated_at,
+  m.last_checked_at, m.next_check_at, m.claimed_at, m.last_change_at, m.last_error, m.checks,
+  m.changes, m.pages_unchanged`;
 
 function rowToMonitor(row: MonitorRow): MonitorRecord {
   return {
@@ -464,6 +515,7 @@ function rowToMonitor(row: MonitorRow): MonitorRecord {
     updatedAt: row.updated_at,
     lastCheckedAt: row.last_checked_at,
     nextCheckAt: row.next_check_at,
+    claimedAt: row.claimed_at,
     lastChangeAt: row.last_change_at,
     lastError: row.last_error,
     checks: row.checks,
@@ -615,7 +667,14 @@ export class PgMonitorStore implements MonitorStore {
     if (patch.sensitivity !== undefined) push('sensitivity', patch.sensitivity);
     if (patch.webhook !== undefined) push('webhook', patch.webhook ? JSON.stringify(patch.webhook) : null);
     if (patch.status !== undefined) push('status', patch.status);
-    if (patch.nextCheckAt !== undefined) push('next_check_at', patch.nextCheckAt);
+    if (patch.checkOutcome !== undefined) {
+      values.push(patch.checkOutcome === 'error' ? 'error' : 'active');
+      sets.push(`status = CASE WHEN status = 'paused' THEN status ELSE $${values.length} END`);
+    }
+    if (patch.nextCheckAt !== undefined) {
+      push('next_check_at', patch.nextCheckAt);
+      if (patch.nextCheckAt !== null) sets.push('claimed_at = NULL');
+    }
     if (patch.lastCheckedAt !== undefined) push('last_checked_at', patch.lastCheckedAt);
     if (patch.lastChangeAt !== undefined) push('last_change_at', patch.lastChangeAt);
     if (patch.lastError !== undefined) push('last_error', patch.lastError);
@@ -642,21 +701,31 @@ export class PgMonitorStore implements MonitorStore {
             LIMIT $2
             FOR UPDATE SKIP LOCKED
          )
-         UPDATE monitors m SET next_check_at = NULL
+         UPDATE monitors m SET next_check_at = NULL, claimed_at = $1
            FROM due WHERE m.id = due.id
-         RETURNING m.id, m.api_key_id, m.urls, m.schedule, m.diff_config, m.trigger_config,
-                   m.scrape_options, m.webhook, m.sensitivity, m.status, m.created_at, m.updated_at,
-                   m.last_checked_at, m.next_check_at, m.last_change_at, m.last_error, m.checks,
-                   m.changes, m.pages_unchanged`,
+         RETURNING ${CLAIMED_COLUMNS}`,
         [now, limit],
       );
       return rows.map(rowToMonitor);
     });
   }
 
-  async listStuck(): Promise<MonitorRecord[]> {
+  async claim(id: string, now: Date): Promise<MonitorRecord | undefined> {
     const { rows } = await this.#pool.query<MonitorRow>(
-      `SELECT ${MONITOR_COLUMNS} FROM monitors WHERE status IN ('active', 'error') AND next_check_at IS NULL`,
+      `UPDATE monitors m SET next_check_at = NULL, claimed_at = $2
+        WHERE m.id = $1 AND m.status <> 'paused' AND m.next_check_at IS NOT NULL
+        RETURNING ${CLAIMED_COLUMNS}`,
+      [id, now],
+    );
+    return rows[0] ? rowToMonitor(rows[0]) : undefined;
+  }
+
+  async listStuck(before: Date): Promise<MonitorRecord[]> {
+    const { rows } = await this.#pool.query<MonitorRow>(
+      `SELECT ${MONITOR_COLUMNS} FROM monitors
+        WHERE status IN ('active', 'error') AND next_check_at IS NULL
+          AND (claimed_at IS NULL OR claimed_at < $1)`,
+      [before],
     );
     return rows.map(rowToMonitor);
   }
@@ -733,6 +802,20 @@ export class PgMonitorStore implements MonitorStore {
     return rowToCheck(rows[0]!);
   }
 
+  async pruneChecks(monitorId: string, keep: number, maxAgeDays: number): Promise<number> {
+    const { rowCount } = await this.#pool.query(
+      `DELETE FROM monitor_checks
+        WHERE monitor_id = $1
+          AND id <> (SELECT id FROM monitor_checks WHERE monitor_id = $1 ORDER BY id DESC LIMIT 1)
+          AND (
+            id NOT IN (SELECT id FROM monitor_checks WHERE monitor_id = $1 ORDER BY id DESC LIMIT $2)
+            OR checked_at < now() - ($3::int * interval '1 day')
+          )`,
+      [monitorId, Math.max(1, keep), maxAgeDays],
+    );
+    return rowCount ?? 0;
+  }
+
   async history(monitorId: string, options: { limit: number; before?: number | undefined }): Promise<CheckRecord[]> {
     const { rows } = await this.#pool.query<CheckRow>(
       `SELECT id, monitor_id, snapshot_id, checked_at, changed, reason, diff, error
@@ -756,7 +839,7 @@ export class PgMonitorStore implements MonitorStore {
     return rows[0] ? rowToDelivery(rows[0]) : undefined;
   }
 
-  async claimDeliveries(now: Date, limit: number): Promise<DeliveryRecord[]> {
+  async claimDeliveries(now: Date, limit: number, leaseMs: number): Promise<DeliveryRecord[]> {
     return transaction(async (client) => {
       const { rows } = await client.query<DeliveryRow>(
         `WITH due AS (
@@ -766,11 +849,11 @@ export class PgMonitorStore implements MonitorStore {
             LIMIT $2
             FOR UPDATE SKIP LOCKED
          )
-         UPDATE webhook_deliveries d SET next_retry_at = $1 + interval '60 seconds'
+         UPDATE webhook_deliveries d SET next_retry_at = $1 + ($3::int * interval '1 millisecond')
            FROM due WHERE d.id = due.id
          RETURNING d.id, d.monitor_id, d.url, d.event_type, d.payload, d.dedupe_key, d.attempts,
                    d.status, d.last_error, d.response_status, d.next_retry_at, d.created_at, d.delivered_at`,
-        [now, limit],
+        [now, limit, leaseMs],
       );
       return rows.map(rowToDelivery);
     });

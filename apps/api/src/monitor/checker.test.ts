@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { runCheck, type FetchOutcome } from './checker.js';
+import { includeSelectorsFor, MAX_DIFF_BYTES, runCheck, type FetchOutcome } from './checker.js';
 import { MemoryMonitorStore, type MonitorRecord, type NewMonitor } from './store.js';
 
-const RETENTION = { keep: 3, maxAgeDays: 90 };
+const RETENTION = { keep: 3, maxAgeDays: 90, keepChecks: 4 };
 
 async function setup(over: Partial<NewMonitor> = {}) {
   const store = new MemoryMonitorStore();
@@ -30,9 +30,9 @@ const pages = (...contents: (string | FetchOutcome)[]) => {
   };
 };
 
-async function check(store: MemoryMonitorStore, id: string, fetchPage: () => Promise<FetchOutcome>) {
+async function check(store: MemoryMonitorStore, id: string, fetchPage: () => Promise<FetchOutcome>, maxContentBytes?: number) {
   const monitor = (await store.get(id)) as MonitorRecord;
-  return runCheck(monitor, { store, fetchPage, retention: RETENTION });
+  return runCheck(monitor, { store, fetchPage, retention: RETENTION, maxContentBytes });
 }
 
 describe('runCheck', () => {
@@ -141,7 +141,7 @@ describe('runCheck', () => {
     expect((await store.get(monitor.id))?.lastError).toBeNull();
   });
 
-  it('prunes old snapshots but always keeps the newest baseline', async () => {
+  it('prunes old snapshots and history rows but always keeps the newest of each', async () => {
     const { store, monitor } = await setup();
     const fetchPage = pages('v1', 'v2', 'v3', 'v4', 'v5');
     for (let i = 0; i < 5; i += 1) await check(store, monitor.id, fetchPage);
@@ -149,7 +149,85 @@ describe('runCheck', () => {
     expect(store.snapshots).toHaveLength(RETENTION.keep);
     expect((await store.latestSnapshot(monitor.id))?.content).toBe('v5');
     // History entries whose snapshot was pruned lose the pointer, not the row.
-    expect(store.checks).toHaveLength(5);
+    expect(store.checks).toHaveLength(RETENTION.keepChecks);
     expect(store.checks[0]?.snapshotId).toBeNull();
+    expect((await store.history(monitor.id, { limit: 1 }))[0]?.reason).toBe('changed');
+  });
+
+  it('sends `checked` on every check, including the one that changed', async () => {
+    const { store, monitor } = await setup({ webhook: { url: 'https://hooks.test/x', events: ['checked'] } });
+    const fetchPage = pages('Standard $29', 'Standard $29', 'Standard $34');
+    await check(store, monitor.id, fetchPage);
+    await check(store, monitor.id, fetchPage);
+    const changed = await check(store, monitor.id, fetchPage);
+
+    expect(changed.check.reason).toBe('changed');
+    expect(changed.webhookQueued).toBe(true);
+    expect(store.deliveries.map((d) => d.eventType)).toEqual(['checked', 'checked', 'checked']);
+    expect(store.deliveries[2]?.payload['changed']).toBe(true);
+    expect(store.deliveries[2]?.payload['event']).toBe('checked');
+  });
+
+  it('sends both `changed` and `checked` to a webhook on both, under separate dedupe keys', async () => {
+    const { store, monitor } = await setup({ webhook: { url: 'https://hooks.test/x', events: ['changed', 'checked'] } });
+    const fetchPage = pages('Standard $29', 'Standard $34');
+    await check(store, monitor.id, fetchPage);
+    await check(store, monitor.id, fetchPage);
+
+    expect(store.deliveries.map((d) => d.eventType)).toEqual(['checked', 'changed', 'checked']);
+    expect(new Set(store.deliveries.map((d) => d.dedupeKey)).size).toBe(3);
+  });
+
+  it('fails a page over the content cap instead of storing it', async () => {
+    const { store, monitor } = await setup({ webhook: { url: 'https://hooks.test/x', events: ['failed'] } });
+    const outcome = await check(store, monitor.id, pages('x'.repeat(2_000)), 1_000);
+
+    expect(outcome.check.reason).toBe('error');
+    expect(outcome.check.error).toContain('too_large');
+    expect(store.snapshots).toHaveLength(0);
+    expect(store.deliveries[0]?.eventType).toBe('failed');
+    expect((await store.get(monitor.id))?.status).toBe('error');
+  });
+
+  it('keeps counts only when a diff is too large to store or deliver', async () => {
+    const { store, monitor } = await setup({ diff: { granularity: 'word', inline: true } });
+    const words = (seed: string) => Array.from({ length: MAX_DIFF_BYTES / 8 }, (_, i) => `${seed}${i}`).join(' ');
+    const fetchPage = pages(words('a'), words('b'));
+    await check(store, monitor.id, fetchPage);
+    const outcome = await check(store, monitor.id, fetchPage);
+
+    expect(outcome.check.diff).toMatchObject({ truncated: true, ops: [], text: '' });
+    expect(outcome.check.diff?.added).toBeGreaterThan(0);
+    const payload = store.deliveries[0]?.payload as { diff: Record<string, unknown> };
+    expect(payload.diff['truncated']).toBe(true);
+    expect(payload.diff['text']).toBeUndefined();
+  });
+
+  it('does not undo a pause that landed while the check was running', async () => {
+    const { store, monitor } = await setup();
+    await check(store, monitor.id, pages('v1'));
+    const outcome = await check(store, monitor.id, async () => {
+      await store.update(monitor.id, { status: 'paused', nextCheckAt: null });
+      return { ok: true, content: 'v2' };
+    });
+
+    expect(outcome.check.reason).toBe('changed');
+    expect((await store.get(monitor.id))?.status).toBe('paused');
+    expect((await store.get(monitor.id))?.nextCheckAt).toBeNull();
+
+    // A failure during a pause does not flip it to error either.
+    await check(store, monitor.id, pages({ ok: false, reason: 'blocked' }));
+    expect((await store.get(monitor.id))?.status).toBe('paused');
+  });
+});
+
+describe('includeSelectorsFor', () => {
+  const base = (over: Partial<MonitorRecord>): MonitorRecord =>
+    ({ scrapeOptions: {}, trigger: {}, ...over }) as MonitorRecord;
+
+  it('reads the whole page by default and narrows to the trigger selector', () => {
+    expect(includeSelectorsFor(base({}))).toEqual([]);
+    expect(includeSelectorsFor(base({ trigger: { selector: 'main' } }))).toEqual(['main']);
+    expect(includeSelectorsFor(base({ scrapeOptions: { includeSelectors: ['#price'] } }))).toEqual(['#price']);
   });
 });

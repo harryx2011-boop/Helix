@@ -1,7 +1,8 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { MemoryMonitorStore, type MonitorRecord } from './store.js';
-import { BACKOFF_SECONDS, MAX_ATTEMPTS, WebhookDispatcher, backoffSeconds, signPayload } from './webhooks.js';
+import { BlockedTargetError } from '../core/webhook-target.js';
+import { BACKOFF_SECONDS, MAX_ATTEMPTS, WebhookDispatcher, backoffSeconds, describeFailure, signPayload } from './webhooks.js';
 
 async function monitorWith(store: MemoryMonitorStore, webhook: MonitorRecord['webhook']): Promise<MonitorRecord> {
   return store.create({
@@ -134,7 +135,7 @@ describe('WebhookDispatcher', () => {
     expect((await dispatcher.tick())[0]?.outcome).toBe('delivered');
   });
 
-  it('treats a thrown fetch as a retryable failure', async () => {
+  it('treats a thrown fetch as a retryable failure and records a category, not the socket error', async () => {
     const store = new MemoryMonitorStore();
     const monitor = await monitorWith(store, { url: 'https://hooks.test/x', events: ['changed'] });
     await store.enqueueDelivery({ monitorId: monitor.id, url: 'https://hooks.test/x', eventType: 'changed', payload: {}, dedupeKey: 'k4' });
@@ -142,12 +143,60 @@ describe('WebhookDispatcher', () => {
     const dispatcher = new WebhookDispatcher({
       store,
       fetch: async () => {
-        throw new Error('ECONNREFUSED');
+        throw new Error('connect ECONNREFUSED 10.0.0.5:9200');
       },
     });
     expect((await dispatcher.tick())[0]?.outcome).toBe('retry');
     const [row] = await store.listDeliveries(monitor.id, 10);
-    expect(row?.lastError).toBe('ECONNREFUSED');
+    expect(row?.lastError).toBe('unreachable');
+
+    const abort = new Error('aborted');
+    abort.name = 'AbortError';
+    expect(describeFailure(abort)).toBe('timeout');
+  });
+
+  it('dead-letters a blocked target at once instead of retrying', async () => {
+    const store = new MemoryMonitorStore();
+    const monitor = await monitorWith(store, { url: 'https://internal.example/x', events: ['changed'] });
+    await store.enqueueDelivery({ monitorId: monitor.id, url: 'https://internal.example/x', eventType: 'changed', payload: {}, dedupeKey: 'k5' });
+
+    const dispatcher = new WebhookDispatcher({
+      store,
+      fetch: async () => {
+        throw new BlockedTargetError('webhook host resolves to a private address');
+      },
+    });
+    expect((await dispatcher.tick())[0]?.outcome).toBe('dead');
+    const [row] = await store.listDeliveries(monitor.id, 10);
+    expect(row?.status).toBe('dead');
+    expect(row?.lastError).toBe('blocked: webhook host resolves to a private address');
+  });
+
+  it('leases a claimed batch for longer than the batch can take to send', async () => {
+    const store = new MemoryMonitorStore();
+    const monitor = await monitorWith(store, { url: 'https://hooks.test/x', events: ['changed'] });
+    for (let i = 0; i < 3; i += 1) {
+      await store.enqueueDelivery({ monitorId: monitor.id, url: 'https://hooks.test/x', eventType: 'changed', payload: {}, dedupeKey: `lease-${i}` });
+    }
+
+    const clock = Date.now() + 1_000;
+    const leases: number[] = [];
+    const dispatcher = new WebhookDispatcher({
+      store,
+      batch: 3,
+      requestTimeoutMs: 15_000,
+      fetch: async () => {
+        // Rows not yet attempted must be leased past this whole batch.
+        const pending = await store.listDeliveries(monitor.id, 10);
+        leases.push(...pending.filter((d) => d.attempts === 0).map((d) => d.nextRetryAt.getTime() - clock));
+        return { status: 200 };
+      },
+      now: () => new Date(clock),
+    });
+
+    expect((await dispatcher.tick()).every((r) => r.outcome === 'delivered')).toBe(true);
+    expect(leases.length).toBeGreaterThan(0);
+    expect(Math.min(...leases)).toBeGreaterThanOrEqual(3 * 15_000);
   });
 
   it('dedupes on the key so an at-least-once queue sends once', async () => {

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Log } from '../core/logger.js';
-import { diffText, type Diff } from './diff.js';
+import { boundedDiff, diffText, type Diff } from './diff.js';
 import { normalizeForComparison } from './sensitivity.js';
 import type { CheckRecord, MonitorEvent, MonitorRecord, MonitorStore, SnapshotRecord } from './store.js';
 import { evaluateTrigger, type TriggerReason } from './triggers.js';
@@ -21,7 +21,9 @@ export type FetchOutcome =
 export interface CheckerDeps {
   store: MonitorStore;
   fetchPage: (monitor: MonitorRecord) => Promise<FetchOutcome>;
-  retention: { keep: number; maxAgeDays: number };
+  retention: { keep: number; maxAgeDays: number; keepChecks: number };
+  /** A page larger than this is a failed check, not a stored snapshot. */
+  maxContentBytes?: number | undefined;
   /** Base path used to build `snapshotUrl`, e.g. `/v1/monitor`. */
   basePath?: string | undefined;
   logger?: Log | undefined;
@@ -34,12 +36,29 @@ export interface CheckOutcome {
   webhookQueued: boolean;
 }
 
+export const DEFAULT_MAX_CONTENT_BYTES = 1_048_576;
+
+/**
+ * A stored or delivered diff past this size keeps its counts and loses its
+ * ops and text. History rows are written on every changed check and never
+ * expire by content size, so the page must not be copied into them whole.
+ */
+export const MAX_DIFF_BYTES = 131_072;
+
 export function hashContent(content: string): string {
   return createHash('sha256').update(content).digest('hex');
 }
 
 export function snapshotUrl(basePath: string, monitorId: string, snapshotId: number): string {
   return `${basePath}/${monitorId}/snapshots/${snapshotId}`;
+}
+
+/** `trigger.selector` is shorthand for `includeSelectors`; the explicit list wins when both are set. */
+export function includeSelectorsFor(monitor: MonitorRecord): string[] {
+  if (monitor.scrapeOptions.includeSelectors && monitor.scrapeOptions.includeSelectors.length > 0) {
+    return monitor.scrapeOptions.includeSelectors;
+  }
+  return monitor.trigger.selector ? [monitor.trigger.selector] : [];
 }
 
 function wants(monitor: MonitorRecord, event: MonitorEvent): boolean {
@@ -52,15 +71,27 @@ function diffForPayload(diff: Diff, inline: boolean): Record<string, unknown> {
     added: diff.added,
     removed: diff.removed,
     changeRatio: diff.changeRatio,
+    ...(diff.coarse ? { coarse: true } : {}),
   };
-  return inline ? { ...summary, text: diff.text, ops: diff.ops } : summary;
+  if (!inline) return summary;
+  const bounded = boundedDiff(diff, MAX_DIFF_BYTES);
+  return bounded.truncated ? { ...summary, truncated: true } : { ...summary, text: bounded.text, ops: bounded.ops };
 }
 
 export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promise<CheckOutcome> {
   const now = deps.now ?? (() => new Date());
   const basePath = deps.basePath ?? '/v1/monitor';
+  const maxContentBytes = deps.maxContentBytes ?? DEFAULT_MAX_CONTENT_BYTES;
   const checkedAt = now();
-  const outcome = await deps.fetchPage(monitor);
+  let outcome = await deps.fetchPage(monitor);
+
+  if (outcome.ok && Buffer.byteLength(outcome.content, 'utf8') > maxContentBytes) {
+    outcome = {
+      ok: false,
+      reason: 'too_large',
+      detail: `The page produced more than ${maxContentBytes} bytes of text; narrow it with includeSelectors or trigger.selector.`,
+    };
+  }
 
   if (!outcome.ok) {
     const message = outcome.detail ? `${outcome.reason}: ${outcome.detail}` : outcome.reason;
@@ -73,8 +104,9 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
       diff: null,
       error: message,
     });
+    await deps.store.pruneChecks(monitor.id, deps.retention.keepChecks, deps.retention.maxAgeDays);
     await deps.store.bumpCounters(monitor.id, { checked: true, changed: false, unchanged: false });
-    await deps.store.update(monitor.id, { lastCheckedAt: checkedAt, lastError: message, status: 'error' });
+    await deps.store.update(monitor.id, { lastCheckedAt: checkedAt, lastError: message, checkOutcome: 'error' });
 
     let webhookQueued = false;
     if (wants(monitor, 'failed')) {
@@ -112,9 +144,10 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
       checkedAt,
       changed: input.changed,
       reason: input.reason,
-      diff: input.diff,
+      diff: input.diff ? boundedDiff(input.diff, MAX_DIFF_BYTES) : null,
       error: null,
     });
+    await deps.store.pruneChecks(monitor.id, deps.retention.keepChecks, deps.retention.maxAgeDays);
 
     await deps.store.bumpCounters(monitor.id, {
       checked: true,
@@ -124,7 +157,7 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
     await deps.store.update(monitor.id, {
       lastCheckedAt: checkedAt,
       lastError: null,
-      status: monitor.status === 'error' ? 'active' : monitor.status,
+      checkOutcome: 'ok',
       ...(input.changed ? { lastChangeAt: checkedAt } : {}),
     });
 
@@ -132,11 +165,16 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
       await deps.store.pruneSnapshots(monitor.id, deps.retention.keep, deps.retention.maxAgeDays);
     }
 
+    // `checked` is every check; `changed` is the subset that fired. A webhook
+    // on both gets both for a change, each under its own dedupe key.
+    const events: MonitorEvent[] = [];
+    if (input.changed && wants(monitor, 'changed')) events.push('changed');
+    if (wants(monitor, 'checked')) events.push('checked');
+
     let webhookQueued = false;
-    const event: MonitorEvent | null = input.changed ? 'changed' : wants(monitor, 'checked') ? 'checked' : null;
-    if (event && wants(monitor, event)) {
-      const current = input.snapshot ?? previous ?? null;
-      webhookQueued = await enqueue(deps.store, monitor, event, check.id, {
+    const current = input.snapshot ?? previous ?? null;
+    for (const event of events) {
+      const queued = await enqueue(deps.store, monitor, event, check.id, {
         event,
         monitorId: monitor.id,
         url: monitor.url,
@@ -153,6 +191,7 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
             : null,
         metadata: monitor.webhook?.metadata ?? null,
       });
+      webhookQueued = webhookQueued || queued;
     }
 
     return { check, snapshot: input.snapshot, webhookQueued };

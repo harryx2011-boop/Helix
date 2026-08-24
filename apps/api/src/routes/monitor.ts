@@ -1,7 +1,9 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { runCheck, snapshotUrl, type CheckerDeps } from '../monitor/checker.js';
+import { webhookTargetProblem } from '../core/webhook-target.js';
+import { snapshotUrl, type CheckOutcome } from '../monitor/checker.js';
 import { assertMinimumInterval, nextRun, normalizeSchedule, ScheduleError } from '../monitor/schedule.js';
+import type { MonitorScheduler } from '../monitor/scheduler.js';
 import type {
   CheckRecord,
   DeliveryRecord,
@@ -16,7 +18,11 @@ import type {
  *
  * Create a watch on one URL, read its state and timeline, adjust or pause it,
  * delete it. Checks run on the scheduler, not in the request; `POST .../check`
- * runs one right now for callers who would rather not wait for the next slot.
+ * asks the scheduler for one right now, under the same claim and budget.
+ *
+ * Every monitor belongs to the API key that created it. A key that holds
+ * another key's monitor id gets 404, the same answer as for an id that does
+ * not exist.
  */
 
 const BASE_PATH = '/v1/monitor';
@@ -98,9 +104,8 @@ const PatchSchema = z
 
 export interface MonitorRouteDeps {
   store: MonitorStore;
-  fetchPage: CheckerDeps['fetchPage'];
+  scheduler: MonitorScheduler<CheckOutcome>;
   minIntervalSeconds: number;
-  retention: { keep: number; maxAgeDays: number };
 }
 
 function invalid(reply: FastifyReply, request: FastifyRequest, message: string, field?: string | undefined) {
@@ -133,16 +138,14 @@ function toWebhook(input: z.infer<typeof WebhookSchema>): MonitorWebhook {
   };
 }
 
-/** `trigger.selector` narrows the read; it is the same knob as `includeSelectors`. */
-function applySelector(
-  scrapeOptions: z.infer<typeof ScrapeOptionsSchema>,
-  trigger: z.infer<typeof TriggerSchema>,
-): MonitorRecord['scrapeOptions'] {
-  const { formats: _formats, ...rest } = scrapeOptions;
-  if (trigger.selector && !(rest.includeSelectors && rest.includeSelectors.length > 0)) {
-    return { ...rest, includeSelectors: [trigger.selector] };
-  }
+function toScrapeOptions(input: z.infer<typeof ScrapeOptionsSchema>): MonitorRecord['scrapeOptions'] {
+  const { formats: _formats, ...rest } = input;
   return rest;
+}
+
+/** `trigger.selector` and a non-empty `includeSelectors` name the same knob twice. */
+function selectorConflict(scrape: MonitorRecord['scrapeOptions'], trigger: z.infer<typeof TriggerSchema>): boolean {
+  return trigger.selector !== undefined && (scrape.includeSelectors?.length ?? 0) > 0;
 }
 
 function publicWebhook(webhook: MonitorWebhook | null): Record<string, unknown> | null {
@@ -227,13 +230,13 @@ function serializeDelivery(delivery: DeliveryRecord): Record<string, unknown> {
 }
 
 export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDeps): Promise<void> {
-  const checkerDeps = (request: FastifyRequest): CheckerDeps => ({
-    store: deps.store,
-    fetchPage: deps.fetchPage,
-    retention: deps.retention,
-    basePath: BASE_PATH,
-    logger: request.log,
-  });
+  const owner = (request: FastifyRequest): string | null => request.apiKey?.id ?? null;
+
+  /** The monitor, if it exists and belongs to the calling key. */
+  const load = async (request: FastifyRequest<{ Params: { id: string } }>): Promise<MonitorRecord | undefined> => {
+    const monitor = await deps.store.get(request.params.id);
+    return monitor && monitor.apiKeyId === owner(request) ? monitor : undefined;
+  };
 
   const resolveSchedule = (input: z.infer<typeof ScheduleSchema>, reply: FastifyReply, request: FastifyRequest) => {
     try {
@@ -249,6 +252,20 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
     }
   };
 
+  const resolveWebhook = (
+    input: z.infer<typeof WebhookSchema>,
+    reply: FastifyReply,
+    request: FastifyRequest,
+  ): MonitorWebhook | undefined => {
+    const webhook = toWebhook(input);
+    const problem = webhookTargetProblem(webhook.url);
+    if (problem) {
+      void invalid(reply, request, `webhook.url: ${problem}`, 'webhook.url');
+      return undefined;
+    }
+    return webhook;
+  };
+
   app.post('/monitor', async (request, reply) => {
     const parsed = CreateSchema.safeParse(request.body);
     if (!parsed.success) return zodInvalid(reply, request, parsed.error);
@@ -257,16 +274,27 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
     const schedule = resolveSchedule(body.schedule, reply, request);
     if (!schedule) return reply;
 
-    const { selector: _selector, ...trigger } = body.trigger;
+    const scrapeOptions = toScrapeOptions(body.scrapeOptions);
+    if (selectorConflict(scrapeOptions, body.trigger)) {
+      return invalid(reply, request, 'trigger.selector: set this or scrapeOptions.includeSelectors, not both', 'trigger.selector');
+    }
+
+    let webhook: MonitorWebhook | null = null;
+    if (body.webhook !== undefined) {
+      const resolved = resolveWebhook(body.webhook, reply, request);
+      if (!resolved) return reply;
+      webhook = resolved;
+    }
+
     const monitor = await deps.store.create({
-      apiKeyId: request.apiKey?.id ?? null,
+      apiKeyId: owner(request),
       url: body.url,
       schedule,
-      scrapeOptions: applySelector(body.scrapeOptions, body.trigger),
+      scrapeOptions,
       diff: body.diff,
-      trigger,
+      trigger: body.trigger,
       sensitivity: body.sensitivity,
-      webhook: body.webhook !== undefined ? toWebhook(body.webhook) : null,
+      webhook,
       nextCheckAt: nextRun(schedule),
     });
 
@@ -274,19 +302,19 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
   });
 
   app.get('/monitor', async (request, reply) => {
-    const monitors = await deps.store.list(request.apiKey?.id ?? null);
+    const monitors = await deps.store.list(owner(request));
     return reply.send({ success: true, monitors: monitors.map((m) => serializeMonitor(m)) });
   });
 
   app.get<{ Params: { id: string } }>('/monitor/:id', async (request, reply) => {
-    const monitor = await deps.store.get(request.params.id);
+    const monitor = await load(request);
     if (!monitor) return notFound(reply, request);
     const latest = await deps.store.latestSnapshot(monitor.id);
     return reply.send({ success: true, ...serializeMonitor(monitor, latest ?? null) });
   });
 
   app.patch<{ Params: { id: string } }>('/monitor/:id', async (request, reply) => {
-    const existing = await deps.store.get(request.params.id);
+    const existing = await load(request);
     if (!existing) return notFound(reply, request);
 
     const parsed = PatchSchema.safeParse(request.body ?? {});
@@ -295,33 +323,49 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
 
     const patch: Parameters<MonitorStore['update']>[1] = {};
 
+    // A null `nextCheckAt` on a monitor that is not paused is a running
+    // check's claim. Setting a time now would let the scheduler claim it
+    // again before that check ends; the check's own reschedule reads the
+    // new schedule when it finishes.
+    const claimed = existing.status !== 'paused' && existing.nextCheckAt === null;
+
     if (body.schedule !== undefined) {
       const schedule = resolveSchedule(body.schedule, reply, request);
       if (!schedule) return reply;
       patch.schedule = schedule;
-      patch.nextCheckAt = nextRun(schedule);
+      if (!claimed && existing.status !== 'paused') patch.nextCheckAt = nextRun(schedule);
     }
 
     if (body.scrapeOptions !== undefined || body.trigger !== undefined) {
-      const scrape = body.scrapeOptions ?? existing.scrapeOptions;
+      const scrape = body.scrapeOptions !== undefined ? toScrapeOptions(body.scrapeOptions) : existing.scrapeOptions;
       const trigger = body.trigger ?? existing.trigger;
-      patch.scrapeOptions = applySelector(scrape, trigger);
-      if (body.trigger !== undefined) {
-        const { selector: _selector, ...rest } = body.trigger;
-        patch.trigger = rest;
+      if (selectorConflict(scrape, trigger)) {
+        return invalid(reply, request, 'trigger.selector: set this or scrapeOptions.includeSelectors, not both', 'trigger.selector');
       }
+      if (body.scrapeOptions !== undefined) patch.scrapeOptions = scrape;
+      if (body.trigger !== undefined) patch.trigger = body.trigger;
     }
 
     if (body.diff !== undefined) patch.diff = body.diff;
     if (body.sensitivity !== undefined) patch.sensitivity = body.sensitivity;
-    if (body.webhook !== undefined) patch.webhook = body.webhook === null ? null : toWebhook(body.webhook);
+    if (body.webhook !== undefined) {
+      if (body.webhook === null) {
+        patch.webhook = null;
+      } else {
+        const resolved = resolveWebhook(body.webhook, reply, request);
+        if (!resolved) return reply;
+        patch.webhook = resolved;
+      }
+    }
 
     if (body.status !== undefined) {
       patch.status = body.status;
       if (body.status === 'paused') {
         patch.nextCheckAt = null;
-      } else if (existing.status !== 'active' || existing.nextCheckAt === null) {
+      } else if (existing.status === 'paused') {
         patch.nextCheckAt = nextRun(patch.schedule ?? existing.schedule);
+        patch.lastError = null;
+      } else if (existing.status === 'error') {
         patch.lastError = null;
       }
     }
@@ -332,7 +376,9 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
   });
 
   app.delete<{ Params: { id: string } }>('/monitor/:id', async (request, reply) => {
-    const deleted = await deps.store.delete(request.params.id);
+    const monitor = await load(request);
+    if (!monitor) return notFound(reply, request);
+    const deleted = await deps.store.delete(monitor.id);
     if (!deleted) return notFound(reply, request);
     return reply.code(204).send();
   });
@@ -340,7 +386,7 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
   app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(
     '/monitor/:id/history',
     async (request, reply) => {
-      const monitor = await deps.store.get(request.params.id);
+      const monitor = await load(request);
       if (!monitor) return notFound(reply, request);
 
       const limit = Math.min(HISTORY_PAGE, Math.max(1, Number.parseInt(request.query.limit ?? '', 10) || HISTORY_PAGE));
@@ -361,9 +407,11 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
   );
 
   app.get<{ Params: { id: string; snapshotId: string } }>('/monitor/:id/snapshots/:snapshotId', async (request, reply) => {
+    const monitor = await load(request);
+    if (!monitor) return notFound(reply, request);
     const snapshotId = Number.parseInt(request.params.snapshotId, 10);
     if (!Number.isFinite(snapshotId)) return notFound(reply, request, 'snapshot');
-    const snapshot = await deps.store.getSnapshot(request.params.id, snapshotId);
+    const snapshot = await deps.store.getSnapshot(monitor.id, snapshotId);
     if (!snapshot) return notFound(reply, request, 'snapshot');
     return reply.send({
       success: true,
@@ -377,25 +425,48 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
   });
 
   app.post<{ Params: { id: string } }>('/monitor/:id/check', async (request, reply) => {
-    const monitor = await deps.store.get(request.params.id);
+    const monitor = await load(request);
     if (!monitor) return notFound(reply, request);
 
-    const outcome = await runCheck(monitor, checkerDeps(request));
-    const updated = (await deps.store.get(monitor.id)) ?? monitor;
-    if (updated.status !== 'paused' && updated.nextCheckAt === null) {
-      await deps.store.update(monitor.id, { nextCheckAt: nextRun(updated.schedule) });
+    const result = await deps.scheduler.runNow(monitor.id);
+    if (!result.ok) {
+      switch (result.reason) {
+        case 'not_found':
+          return notFound(reply, request);
+        case 'paused':
+          return reply.code(409).send({
+            error: 'monitor_paused',
+            message: 'This monitor is paused. Resume it with `status: active` before checking.',
+            requestId: request.id,
+          });
+        case 'in_progress':
+          return reply.code(409).send({
+            error: 'check_in_progress',
+            message: 'A check of this monitor is already running.',
+            requestId: request.id,
+          });
+        case 'busy':
+          return reply
+            .code(503)
+            .header('retry-after', '15')
+            .send({
+              error: 'busy',
+              message: 'Every check slot on this instance is in use. Retry shortly.',
+              requestId: request.id,
+            });
+      }
     }
 
     return reply.send({
       success: true,
       monitorId: monitor.id,
-      check: serializeCheck(monitor.id, outcome.check),
-      webhookQueued: outcome.webhookQueued,
+      check: serializeCheck(monitor.id, result.outcome.check),
+      webhookQueued: result.outcome.webhookQueued,
     });
   });
 
   app.get<{ Params: { id: string } }>('/monitor/:id/deliveries', async (request, reply) => {
-    const monitor = await deps.store.get(request.params.id);
+    const monitor = await load(request);
     if (!monitor) return notFound(reply, request);
     const deliveries = await deps.store.listDeliveries(monitor.id, 100);
     return reply.send({ success: true, monitorId: monitor.id, deliveries: deliveries.map(serializeDelivery) });
@@ -404,9 +475,11 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
   app.post<{ Params: { id: string; deliveryId: string } }>(
     '/monitor/:id/deliveries/:deliveryId/replay',
     async (request, reply) => {
+      const monitor = await load(request);
+      if (!monitor) return notFound(reply, request);
       const deliveryId = Number.parseInt(request.params.deliveryId, 10);
       if (!Number.isFinite(deliveryId)) return notFound(reply, request, 'delivery');
-      const replayed = await deps.store.replayDelivery(request.params.id, deliveryId);
+      const replayed = await deps.store.replayDelivery(monitor.id, deliveryId);
       if (!replayed) {
         return reply.code(409).send({
           error: 'not_replayable',

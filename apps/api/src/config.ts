@@ -54,6 +54,10 @@ const ConfigSchema = z.object({
   monitorConcurrency: int(2),
   monitorRetainSnapshots: int(30),
   monitorRetainDays: int(90),
+  /** History rows kept per monitor; older ones are pruned as checks run. */
+  monitorRetainChecks: int(2000),
+  /** A page whose text exceeds this many bytes fails the check instead of being stored. */
+  monitorMaxContentBytes: int(1_048_576),
   /** Instance-wide HMAC secret for webhook signatures; a webhook's own `secret` wins. */
   webhookSecret: z.string().optional(),
 
@@ -97,6 +101,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     monitorConcurrency: env.HELIX_MONITOR_CONCURRENCY,
     monitorRetainSnapshots: env.HELIX_MONITOR_RETAIN_SNAPSHOTS,
     monitorRetainDays: env.HELIX_MONITOR_RETAIN_DAYS,
+    monitorRetainChecks: env.HELIX_MONITOR_RETAIN_CHECKS,
+    monitorMaxContentBytes: env.HELIX_MONITOR_MAX_CONTENT_BYTES,
     webhookSecret: env.HELIX_WEBHOOK_SECRET || undefined,
     corsOrigins: env.HELIX_CORS_ORIGINS,
   });

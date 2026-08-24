@@ -9,6 +9,8 @@ import type { Diff } from './diff.js';
 export interface TriggerOptions {
   keywordAppears?: string | undefined;
   keywordDisappears?: string | undefined;
+  /** Watch only this part of the page. Shorthand for `scrapeOptions.includeSelectors`. */
+  selector?: string | undefined;
   /** Ignore changes smaller than this fraction of the content (0–1). */
   minChangeRatio?: number | undefined;
 }

@@ -1,25 +1,41 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { FetchOutcome } from '../monitor/checker.js';
+import { runCheck, type FetchOutcome } from '../monitor/checker.js';
+import { MonitorScheduler } from '../monitor/scheduler.js';
 import { MemoryMonitorStore } from '../monitor/store.js';
 import { registerMonitor } from './monitor.js';
 
 let app: FastifyInstance;
 let store: MemoryMonitorStore;
-let page: FetchOutcome;
+let page: FetchOutcome | (() => Promise<FetchOutcome>);
+
+const KEY_A = '11111111-1111-4111-8111-111111111111';
+const KEY_B = '22222222-2222-4222-8222-222222222222';
+
+const asKey = (id: string) => ({ id, name: id, keyPrefix: 'helix-test', rateLimit: 1000, createdAt: new Date(), lastUsedAt: null, revokedAt: null });
 
 beforeEach(async () => {
   store = new MemoryMonitorStore();
   page = { ok: true, content: 'Standard $29/month' };
   app = Fastify();
+  // Stands in for the API key hook: `x-test-key` names the calling key.
+  app.addHook('onRequest', async (request) => {
+    const key = request.headers['x-test-key'];
+    if (typeof key === 'string') request.apiKey = asKey(key);
+  });
+  const scheduler = new MonitorScheduler({
+    store,
+    concurrency: 2,
+    check: (monitor) =>
+      runCheck(monitor, {
+        store,
+        fetchPage: async () => (typeof page === 'function' ? page() : page),
+        retention: { keep: 30, maxAgeDays: 90, keepChecks: 100 },
+      }),
+  });
   await app.register(
     async (instance) => {
-      await registerMonitor(instance, {
-        store,
-        fetchPage: async () => page,
-        minIntervalSeconds: 3600,
-        retention: { keep: 30, maxAgeDays: 90 },
-      });
+      await registerMonitor(instance, { store, scheduler, minIntervalSeconds: 3600 });
     },
     { prefix: '/v1' },
   );
@@ -73,8 +89,8 @@ describe('POST /v1/monitor', () => {
     expect(response.statusCode).toBe(201);
     const body = response.json();
     expect(body.schedule).toEqual({ cron: '0 */6 * * *', timezone: 'Europe/London', every: '6h' });
-    expect(body.trigger).toEqual({ keywordDisappears: 'Out of stock' });
-    expect(body.scrapeOptions.includeSelectors).toEqual(['main']);
+    expect(body.trigger).toEqual({ keywordDisappears: 'Out of stock', selector: 'main' });
+    expect(body.scrapeOptions.includeSelectors).toBeUndefined();
     expect(body.webhook.signed).toBe(true);
     expect(body.webhook.headers).toEqual(['x-token']);
     expect(JSON.stringify(body)).not.toContain('supersecret');
@@ -97,6 +113,35 @@ describe('POST /v1/monitor', () => {
     const noSchedule = await create({ url: 'https://example.com' });
     expect(noSchedule.statusCode).toBe(400);
     expect(noSchedule.json().field).toBe('schedule');
+  });
+
+  it('rejects a trigger selector alongside includeSelectors', async () => {
+    const response = await create({
+      url: 'https://example.com',
+      schedule: '0 * * * *',
+      scrapeOptions: { includeSelectors: ['#price'] },
+      trigger: { selector: 'main' },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('trigger.selector');
+  });
+
+  it('refuses webhooks aimed inside the deployment', async () => {
+    for (const url of [
+      'http://127.0.0.1:7400/internal/keys',
+      'http://localhost:7401/',
+      'http://10.0.0.5:9200/',
+      'http://169.254.169.254/latest/meta-data/',
+      'http://[::1]:7400/',
+      'http://[::ffff:192.168.1.1]/',
+      'ftp://example.com/x',
+    ]) {
+      const response = await create({ url: 'https://example.com', schedule: '0 * * * *', webhook: url });
+      expect(response.statusCode, url).toBe(400);
+      expect(response.json().field).toBe('webhook.url');
+    }
+    const ok = await create({ url: 'https://example.com', schedule: '0 * * * *', webhook: { url: 'https://hooks.test/x' } });
+    expect(ok.statusCode).toBe(201);
   });
 });
 
@@ -140,6 +185,42 @@ describe('PATCH /v1/monitor/:id', () => {
     expect(typeof resumed.json().nextCheckAt).toBe('string');
   });
 
+  it('keeps a trigger selector when only scrapeOptions are patched', async () => {
+    const { id } = (await create({ url: 'https://example.com', schedule: '0 * * * *', trigger: { selector: 'main' } })).json();
+
+    const patched = await app.inject({ method: 'PATCH', url: `/v1/monitor/${id}`, payload: { scrapeOptions: { tier: 'chromium' } } });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().trigger).toEqual({ selector: 'main' });
+    expect(patched.json().scrapeOptions).toEqual({ tier: 'chromium' });
+
+    const conflict = await app.inject({
+      method: 'PATCH',
+      url: `/v1/monitor/${id}`,
+      payload: { scrapeOptions: { includeSelectors: ['#price'] } },
+    });
+    expect(conflict.statusCode).toBe(400);
+    expect(conflict.json().field).toBe('trigger.selector');
+
+    const bad = await app.inject({ method: 'PATCH', url: `/v1/monitor/${id}`, payload: { webhook: 'http://192.168.0.1/' } });
+    expect(bad.statusCode).toBe(400);
+  });
+
+  it('does not re-arm a monitor whose check is running when the schedule changes', async () => {
+    const { id } = (await create({ url: 'https://example.com', schedule: '0 * * * *' })).json();
+    await store.claim(id, new Date());
+
+    const patched = await app.inject({ method: 'PATCH', url: `/v1/monitor/${id}`, payload: { schedule: { every: '1d' } } });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().schedule.cron).toBe('0 0 * * *');
+    expect(patched.json().nextCheckAt).toBeNull();
+
+    // Pausing during the run sticks; resuming sets a time again.
+    const paused = await app.inject({ method: 'PATCH', url: `/v1/monitor/${id}`, payload: { status: 'paused' } });
+    expect(paused.json().nextCheckAt).toBeNull();
+    const resumed = await app.inject({ method: 'PATCH', url: `/v1/monitor/${id}`, payload: { status: 'active' } });
+    expect(typeof resumed.json().nextCheckAt).toBe('string');
+  });
+
   it('updates the schedule and sensitivity, and validates the new schedule', async () => {
     const { id } = (await create({ url: 'https://example.com', schedule: '0 * * * *' })).json();
 
@@ -167,6 +248,49 @@ describe('DELETE /v1/monitor/:id', () => {
     expect((await app.inject({ method: 'DELETE', url: `/v1/monitor/${id}` })).statusCode).toBe(204);
     expect((await app.inject({ method: 'GET', url: `/v1/monitor/${id}` })).statusCode).toBe(404);
     expect((await app.inject({ method: 'DELETE', url: `/v1/monitor/${id}` })).statusCode).toBe(404);
+  });
+});
+
+describe('ownership', () => {
+  it('hides every monitor route from a key that did not create it', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/monitor',
+      headers: { 'x-test-key': KEY_A },
+      payload: { url: 'https://example.com', schedule: '0 * * * *', webhook: 'https://hooks.test/x' },
+    });
+    const id = created.json().id as string;
+    await app.inject({ method: 'POST', url: `/v1/monitor/${id}/check`, headers: { 'x-test-key': KEY_A } });
+    const delivery = await store.enqueueDelivery({ monitorId: id, url: 'https://hooks.test/x', eventType: 'changed', payload: {}, dedupeKey: 'own' });
+    const snapshotId = (await store.latestSnapshot(id))?.id;
+
+    const mine = await app.inject({ method: 'GET', url: '/v1/monitor', headers: { 'x-test-key': KEY_B } });
+    expect(mine.json().monitors).toHaveLength(0);
+
+    const attempts: [string, string][] = [
+      ['GET', `/v1/monitor/${id}`],
+      ['PATCH', `/v1/monitor/${id}`],
+      ['DELETE', `/v1/monitor/${id}`],
+      ['GET', `/v1/monitor/${id}/history`],
+      ['GET', `/v1/monitor/${id}/snapshots/${snapshotId}`],
+      ['POST', `/v1/monitor/${id}/check`],
+      ['GET', `/v1/monitor/${id}/deliveries`],
+      ['POST', `/v1/monitor/${id}/deliveries/${delivery!.id}/replay`],
+    ];
+    for (const [method, url] of attempts) {
+      const response = await app.inject({
+        method: method as 'GET',
+        url,
+        headers: { 'x-test-key': KEY_B },
+        ...(method === 'PATCH' ? { payload: { webhook: 'https://attacker.test/x' } } : {}),
+      });
+      expect(response.statusCode, `${method} ${url}`).toBe(404);
+    }
+
+    // Nothing changed for the owner.
+    const still = await app.inject({ method: 'GET', url: `/v1/monitor/${id}`, headers: { 'x-test-key': KEY_A } });
+    expect(still.statusCode).toBe(200);
+    expect(still.json().webhook.url).toBe('https://hooks.test/x');
   });
 });
 
@@ -205,6 +329,34 @@ describe('history, snapshots, check and deliveries', () => {
     const deliveries = await app.inject({ method: 'GET', url: `/v1/monitor/${id}/deliveries` });
     expect(deliveries.json().deliveries).toHaveLength(1);
     expect(deliveries.json().deliveries[0]).toMatchObject({ event: 'changed', status: 'pending', attempts: 0 });
+  });
+
+  it('refuses to check a paused monitor or one already mid-check', async () => {
+    const { id } = (await create({ url: 'https://example.com', schedule: '0 * * * *' })).json();
+
+    await app.inject({ method: 'PATCH', url: `/v1/monitor/${id}`, payload: { status: 'paused' } });
+    const paused = await app.inject({ method: 'POST', url: `/v1/monitor/${id}/check` });
+    expect(paused.statusCode).toBe(409);
+    expect(paused.json().error).toBe('monitor_paused');
+    expect(store.checks).toHaveLength(0);
+
+    await app.inject({ method: 'PATCH', url: `/v1/monitor/${id}`, payload: { status: 'active' } });
+    let release!: () => void;
+    const gate = new Promise<FetchOutcome>((resolve) => {
+      release = () => resolve({ ok: true, content: 'slow page' });
+    });
+    page = () => gate;
+
+    const first = app.inject({ method: 'POST', url: `/v1/monitor/${id}/check` });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const second = await app.inject({ method: 'POST', url: `/v1/monitor/${id}/check` });
+    expect(second.statusCode).toBe(409);
+    expect(second.json().error).toBe('check_in_progress');
+
+    release();
+    expect((await first).statusCode).toBe(200);
+    expect(store.checks).toHaveLength(1);
+    expect(typeof (await app.inject({ method: 'GET', url: `/v1/monitor/${id}` })).json().nextCheckAt).toBe('string');
   });
 
   it('records a failed check as an error entry and flags the monitor', async () => {

@@ -9,33 +9,45 @@ import type { MonitorRecord, MonitorStore } from './store.js';
  * a restart picks up where it left off and two API processes share the work
  * without a broker. Cron parsing and "when next" come from croner; the tick
  * is a plain interval that asks the store what is due.
+ *
+ * A check outside the schedule (`POST /monitor/:id/check`) goes through the
+ * same claim and the same in-flight budget, so one monitor never runs two
+ * checks at once and a burst of manual checks cannot exceed the cap.
  */
 
-export interface SchedulerOptions {
+export interface SchedulerOptions<T> {
   store: MonitorStore;
-  check: (monitor: MonitorRecord) => Promise<unknown>;
+  check: (monitor: MonitorRecord) => Promise<T>;
   /** Checks running at once across all monitors. */
   concurrency?: number | undefined;
   tickMs?: number | undefined;
+  /** A claim older than this with no check running is treated as a crash. */
+  stuckAfterMs?: number | undefined;
   logger?: Log | undefined;
   now?: (() => Date) | undefined;
 }
 
-export class MonitorScheduler {
+export type RunNowResult<T> =
+  | { ok: true; outcome: T }
+  | { ok: false; reason: 'not_found' | 'paused' | 'in_progress' | 'busy' };
+
+export class MonitorScheduler<T = unknown> {
   readonly #store: MonitorStore;
-  readonly #check: (monitor: MonitorRecord) => Promise<unknown>;
+  readonly #check: (monitor: MonitorRecord) => Promise<T>;
   readonly #concurrency: number;
   readonly #tickMs: number;
+  readonly #stuckAfterMs: number;
   readonly #logger: Log | undefined;
   readonly #now: () => Date;
   #timer: NodeJS.Timeout | undefined;
   #inFlight = 0;
 
-  constructor(options: SchedulerOptions) {
+  constructor(options: SchedulerOptions<T>) {
     this.#store = options.store;
     this.#check = options.check;
     this.#concurrency = Math.max(1, options.concurrency ?? 2);
     this.#tickMs = options.tickMs ?? 15_000;
+    this.#stuckAfterMs = options.stuckAfterMs ?? 30 * 60_000;
     this.#logger = options.logger;
     this.#now = options.now ?? (() => new Date());
   }
@@ -57,11 +69,14 @@ export class MonitorScheduler {
   }
 
   /**
-   * A monitor whose claim was never released was mid-check when the process
+   * A monitor whose claim was never released was mid-check when its process
    * died. Give it a next time again rather than leaving it silent forever.
+   * Only claims older than `stuckAfterMs` qualify: a fresh one belongs to a
+   * check that is running right now, possibly in another process.
    */
   async releaseStuck(): Promise<number> {
-    const stuck = await this.#store.listStuck();
+    const before = new Date(this.#now().getTime() - this.#stuckAfterMs);
+    const stuck = await this.#store.listStuck(before);
     for (const monitor of stuck) {
       await this.#store.update(monitor.id, { nextCheckAt: nextRun(monitor.schedule, this.#now()) });
     }
@@ -71,6 +86,8 @@ export class MonitorScheduler {
 
   /** Run every due check, up to the concurrency cap. Returns how many ran. */
   async tick(): Promise<number> {
+    await this.releaseStuck().catch((error) => this.#logger?.error({ error }, 'could not release stuck monitors'));
+
     const slots = this.#concurrency - this.#inFlight;
     if (slots <= 0) return 0;
 
@@ -86,14 +103,30 @@ export class MonitorScheduler {
     return due.length;
   }
 
-  async #run(monitor: MonitorRecord): Promise<void> {
+  /** Check one monitor now, under the same claim and budget as the schedule. */
+  async runNow(id: string): Promise<RunNowResult<T>> {
+    const monitor = await this.#store.get(id);
+    if (!monitor) return { ok: false, reason: 'not_found' };
+    if (monitor.status === 'paused') return { ok: false, reason: 'paused' };
+    if (this.#inFlight >= this.#concurrency) return { ok: false, reason: 'busy' };
+
+    const claimed = await this.#store.claim(id, this.#now());
+    if (!claimed) return { ok: false, reason: 'in_progress' };
+
+    const outcome = await this.#run(claimed);
+    if (outcome === undefined) throw new Error('monitor check threw');
+    return { ok: true, outcome: outcome.value };
+  }
+
+  async #run(monitor: MonitorRecord): Promise<{ value: T } | undefined> {
     this.#inFlight += 1;
+    let result: { value: T } | undefined;
     try {
-      await this.#check(monitor);
+      result = { value: await this.#check(monitor) };
     } catch (error) {
       this.#logger?.error({ error, monitorId: monitor.id }, 'monitor check threw');
       await this.#store
-        .update(monitor.id, { lastError: error instanceof Error ? error.message : String(error), status: 'error' })
+        .update(monitor.id, { lastError: error instanceof Error ? error.message : String(error), checkOutcome: 'error' })
         .catch(() => undefined);
     } finally {
       this.#inFlight -= 1;
@@ -107,5 +140,6 @@ export class MonitorScheduler {
           .catch((error) => this.#logger?.error({ error, monitorId: monitor.id }, 'could not reschedule monitor'));
       }
     }
+    return result;
   }
 }

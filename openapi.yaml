@@ -408,7 +408,13 @@ paths:
     post:
       tags: [Monitors]
       summary: Check now
-      description: Runs one check immediately, outside the schedule, and returns the resulting history entry. The regular schedule is unaffected.
+      description: |
+        Runs one check immediately, outside the schedule, and returns the
+        resulting history entry. The regular schedule is unaffected. The check
+        takes the same lock and the same instance-wide slot as a scheduled one:
+        a monitor already mid-check answers 409 `check_in_progress`, a paused
+        monitor 409 `monitor_paused`, and an instance with every slot busy 503
+        `busy` with `Retry-After`.
       operationId: checkMonitor
       responses:
         '200':
@@ -423,6 +429,16 @@ paths:
                   check: { $ref: '#/components/schemas/MonitorHistoryEntry' }
                   webhookQueued: { type: boolean }
         '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Paused (`monitor_paused`) or already running (`check_in_progress`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: Every check slot is in use (`busy`). Retry after the `Retry-After` seconds.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /monitor/{id}/deliveries:
     parameters:
@@ -999,7 +1015,11 @@ components:
             timestamps ("3 minutes ago"), clock times, dates and tracking parameters,
             so a page whose only difference is noise counts as unchanged.
         webhook:
-          description: A URL, or an object with headers, events and a signing secret.
+          description: |
+            A URL, or an object with headers, events and a signing secret. Must
+            be a public http(s) address: loopback, private-network, link-local
+            and metadata addresses are rejected with `field: webhook.url`, and a
+            hostname that resolves to one at send time dead-letters the delivery.
           oneOf:
             - { type: string, format: uri }
             - $ref: '#/components/schemas/MonitorWebhook'
@@ -1149,11 +1169,19 @@ components:
 
     MonitorDiff:
       type: object
+      description: |
+        Exact at the monitor's granularity for ordinary edits. A rewrite too
+        large to trace word by word is reported at `line` granularity instead;
+        past that it is one delete and one insert, flagged `coarse`. A diff
+        whose ops and text exceed 128 KB is stored and delivered with counts
+        only, flagged `truncated`.
       properties:
-        granularity: { type: string, enum: [word, line, character] }
+        granularity: { type: string, enum: [word, line, character], description: The granularity that applied, which may be `line` on a large rewrite. }
         added: { type: integer, description: Tokens inserted at the chosen granularity. }
         removed: { type: integer }
         changeRatio: { type: number, description: Changed tokens over the larger side, 0 to 1. }
+        coarse: { type: boolean, description: Present and true when the changed region is one delete and one insert. }
+        truncated: { type: boolean, description: Present and true when `ops` and `text` were dropped for size. }
         text:
           type: string
           description: 'Line diffs use `+`/`-` prefixes; word and character diffs are inline: `[-old-]{+new+}`.'

@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
 import type { Log } from '../core/logger.js';
+import { assertPublicTarget, BlockedTargetError } from '../core/webhook-target.js';
 import type { DeliveryRecord, MonitorStore } from './store.js';
 
 /**
@@ -7,8 +8,13 @@ import type { DeliveryRecord, MonitorStore } from './store.js';
  *
  * Stripe-shaped: exponential backoff over roughly three days, then a dead
  * letter the caller can replay. Not three retries over twenty minutes. Every
- * delivery is a row, claimed with SKIP LOCKED, so a restart resumes and two
- * processes never send the same one.
+ * delivery is a row, claimed with SKIP LOCKED under a lease that outlasts the
+ * whole batch, so a restart resumes and two processes never send the same one.
+ *
+ * The target is resolved before every send and refused when it is not a
+ * public address; a refusal dead-letters at once, since retrying it would
+ * only probe the network again. Failure text is a category (`timeout`,
+ * `unreachable`, `HTTP 503`), never the resolver's or socket's own words.
  */
 
 /** Seconds to wait before attempt N+1, after N failures. Sums to ~3 days. */
@@ -30,6 +36,25 @@ export function signPayload(secret: string, timestamp: number, body: string): st
 }
 
 export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal }) => Promise<{ status: number }>;
+
+/**
+ * The default sender. Redirects are not followed: a public host answering
+ * 302 to a private one is the same hole as naming the private one directly.
+ * The response body is drained so the socket goes back to the pool.
+ */
+export const postWebhook: FetchLike = async (url, init) => {
+  await assertPublicTarget(url);
+  const response = await fetch(url, { ...init, redirect: 'manual' });
+  await response.body?.cancel().catch(() => undefined);
+  return { status: response.status };
+};
+
+/** How a failed attempt is recorded. */
+export function describeFailure(error: unknown): string {
+  if (error instanceof BlockedTargetError) return `blocked: ${error.message}`;
+  if (error instanceof Error && error.name === 'AbortError') return 'timeout';
+  return 'unreachable';
+}
 
 export interface DispatcherOptions {
   store: MonitorStore;
@@ -63,7 +88,7 @@ export class WebhookDispatcher {
 
   constructor(options: DispatcherOptions) {
     this.#store = options.store;
-    this.#fetch = options.fetch ?? ((url, init) => fetch(url, init));
+    this.#fetch = options.fetch ?? postWebhook;
     this.#defaultSecret = options.defaultSecret;
     this.#tickMs = options.tickMs ?? 5_000;
     this.#batch = options.batch ?? 20;
@@ -88,7 +113,11 @@ export class WebhookDispatcher {
     if (this.#ticking) return [];
     this.#ticking = true;
     try {
-      const due = await this.#store.claimDeliveries(this.#now(), this.#batch);
+      // Attempts run one after another, so the lease must cover the whole
+      // batch at its slowest plus a margin, or a second process re-claims
+      // rows this one has not reached yet.
+      const lease = this.#batch * this.#timeoutMs + 30_000;
+      const due = await this.#store.claimDeliveries(this.#now(), this.#batch, lease);
       const results: DeliveryAttempt[] = [];
       for (const delivery of due) {
         results.push(await this.#attempt(delivery));
@@ -124,6 +153,7 @@ export class WebhookDispatcher {
 
     let status: number | null = null;
     let error: string | undefined;
+    let blocked = false;
     try {
       const response = await this.#fetch(delivery.url, {
         method: 'POST',
@@ -134,7 +164,8 @@ export class WebhookDispatcher {
       status = response.status;
       if (status < 200 || status >= 300) error = `HTTP ${status}`;
     } catch (caught) {
-      error = caught instanceof Error ? caught.message : String(caught);
+      error = describeFailure(caught);
+      blocked = caught instanceof BlockedTargetError;
     } finally {
       clearTimeout(timer);
     }
@@ -145,7 +176,7 @@ export class WebhookDispatcher {
     }
 
     const attempts = delivery.attempts + 1;
-    const wait = backoffSeconds(attempts);
+    const wait = blocked ? null : backoffSeconds(attempts);
 
     if (wait === null) {
       await this.#store.markDead(delivery.id, attempts, error, status);

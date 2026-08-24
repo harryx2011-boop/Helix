@@ -236,7 +236,7 @@ export interface Job {
 export interface ParseJsonOptions {
   schema?: Record<string, unknown>;
   prompt?: string;
-  provider?: string;
+  /** Overrides the server's default model. The provider is fixed per instance (HELIX_LLM_PROVIDER). */
   model?: string;
 }
 
@@ -244,25 +244,40 @@ export interface ParseRequest {
   url?: string;
   formats?: ('markdown' | 'json')[];
   ocr?: 'auto' | 'force' | 'off';
+  maxPages?: number;
+  tables?: 'auto' | 'high-fidelity';
+  /** Remote fetch budget in ms; `url` path only. */
+  timeout?: number;
   jsonOptions?: ParseJsonOptions;
 }
 
 export interface ParseMetadata {
   filename?: string;
-  pageCount?: number;
-  fileType?: 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'png' | 'jpg';
-  ocrUsed?: boolean;
+  pageCount: number;
+  fileType: 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'png' | 'jpg';
+  ocrUsed: boolean;
+  needsOcr: boolean;
+  suspectedGarbledText: boolean;
+  parser: string;
+  sizeBytes: number;
+  contentHash: string;
+  sourceUrl?: string;
+  fetchedAt: string;
+  timingMs: number;
+  fromCache: boolean;
 }
 
 export interface ParseData {
   markdown?: string;
   json?: Record<string, unknown>;
-  metadata?: ParseMetadata;
+  usage?: { tokens?: { input?: number; output?: number }; model?: string };
+  metadata: ParseMetadata;
 }
 
 export interface ParseResponseSuccess {
   success: true;
   data: ParseData;
+  warnings?: string[];
 }
 
 export interface ParseResponseFailure {

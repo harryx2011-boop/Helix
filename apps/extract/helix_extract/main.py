@@ -9,7 +9,7 @@ stack have no real equivalent in another ecosystem.
 
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from . import chunking, documents, embeddings, extraction, llm
@@ -87,14 +87,6 @@ async def extract(request: ExtractRequest) -> ExtractResponse:
     )
 
 
-class DocumentRequest(BaseModel):
-    content_base64: str
-    content_type: str
-    ocr: str = Field(default="auto", pattern="^(auto|never|always)$")
-    max_pages: int | None = None
-    tables: str = Field(default="auto", pattern="^(auto|high-fidelity)$")
-
-
 class DocumentResponse(BaseModel):
     markdown: str
     pages: int
@@ -108,25 +100,34 @@ class DocumentResponse(BaseModel):
 
 
 @app.post("/document", response_model=DocumentResponse)
-async def parse_document(request: DocumentRequest) -> DocumentResponse:
-    import base64
-    import binascii
-
-    try:
-        data = base64.b64decode(request.content_base64, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise HTTPException(status_code=400, detail=f"content_base64 is not valid base64: {exc}") from exc
+async def parse_document(
+    request: Request,
+    ocr: str = Query(default="auto", pattern="^(auto|never|always)$"),
+    max_pages: int | None = Query(default=None, ge=1),
+    tables: str = Query(default="auto", pattern="^(auto|high-fidelity)$"),
+) -> DocumentResponse:
+    # The file is the raw body and its kind is the Content-Type header. No
+    # base64, no JSON envelope: the gateway already holds the bytes once and
+    # should not need two more copies of a 25 MB upload to hand them over.
+    content_type = request.headers.get("content-type", "")
+    data = await request.body()
+    if not data:
+        raise HTTPException(status_code=400, detail="the request body is empty")
 
     try:
         result = documents.parse(
             data=data,
-            content_type=request.content_type,
-            ocr=request.ocr,
-            max_pages=request.max_pages,
-            tables=request.tables,
+            content_type=content_type,
+            ocr=ocr,
+            max_pages=max_pages,
+            tables=tables,
         )
     except ValueError as exc:
         raise HTTPException(status_code=415, detail=str(exc)) from exc
+    except documents.DocumentError as exc:
+        # The parser opened the bytes and refused them: the caller's file, not
+        # the service, is what failed.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return DocumentResponse(
         markdown=result.markdown,

@@ -57,6 +57,8 @@ security:
 tags:
   - name: Scrape
     description: Single-resource read. Web pages and documents share one envelope.
+  - name: Parse
+    description: Documents by upload or URL, returned in the Scrape envelope.
   - name: Crawl
     description: Multi-page discovery and read.
   - name: Search
@@ -134,6 +136,95 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/RateLimited' }
+
+  /parse:
+    post:
+      tags: [Parse]
+      summary: Parse a document
+      description: |
+        Converts a PDF, DOCX, PPTX or XLSX into markdown (and, with `jsonOptions`,
+        structured JSON) — the same envelope `/scrape` returns for web pages.
+
+        Two ways to send the file. A JSON body with `url` makes Helix fetch the
+        file first (binary-safe, honouring `timeout` and the upload ceiling). A
+        `multipart/form-data` body with a `file` part uploads it directly; the
+        other fields ride along as form fields (`formats` comma-separated,
+        `jsonOptions` as a JSON string).
+
+        PDFs are classified before parsing: `ocr: auto` runs OCR only when the
+        text layer is missing or garbled, `force` always runs it, `off` never
+        does and reports `needsOcr` in the metadata instead. Output is cached by
+        content hash, so the same file sent twice parses once.
+
+        Synchronous. The upload ceiling is set by the operator
+        (`HELIX_PARSE_MAX_UPLOAD_MB`, default 25) and answered with `413`.
+        The `url` path only fetches from public hosts over http or https:
+        localhost, private, link-local and internal addresses are refused
+        with `400`, on the first request and on every redirect. An instance
+        holds at most `HELIX_PARSE_MAX_INFLIGHT` parses in memory (default 8)
+        and answers `503` with `Retry-After` beyond that.
+      operationId: parse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ParseRequest' }
+            examples:
+              url:
+                summary: Fetch and parse a remote file
+                value:
+                  url: 'https://example.com/files/report.pdf'
+                  formats: [markdown]
+                  ocr: auto
+              structured:
+                summary: Extract fields with your own model
+                value:
+                  url: 'https://example.com/files/invoice.pdf'
+                  formats: [markdown, json]
+                  jsonOptions:
+                    schema:
+                      type: object
+                      properties:
+                        invoiceTotal: { type: number }
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/ParseUpload' }
+            encoding:
+              file: { contentType: 'application/pdf, application/vnd.openxmlformats-officedocument.*, image/png, image/jpeg' }
+      responses:
+        '200':
+          description: |
+            The parse resolved. Check `success` — a remote fetch failure, an
+            unsupported file type or an unreachable parser is reported here as a
+            typed failure rather than as an HTTP error.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ParseResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: The file (uploaded or fetched) exceeds this instance's upload ceiling.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '415':
+          description: The request body is neither JSON nor `multipart/form-data`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: This instance is already holding `HELIX_PARSE_MAX_INFLIGHT` parses in memory. Retry after the `Retry-After` header.
+          headers:
+            Retry-After:
+              schema: { type: integer }
+              description: Seconds to wait before retrying.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /map:
     post:
@@ -719,6 +810,134 @@ components:
           type: object
           description: Echoed back in every delivery.
 
+    ParseJsonOptions:
+      type: object
+      description: |
+        Structured extraction over the parsed content, using the operator's
+        configured model. Needs a `schema` or a `prompt`. Length keywords
+        (`minItems`, `maxItems`) are rejected for the same reason as in
+        `ExtractConfig`. A `provider` override is not accepted: the instance's
+        `HELIX_LLM_PROVIDER` applies to every call.
+      additionalProperties: false
+      properties:
+        schema: { type: object }
+        prompt: { type: string }
+        model:
+          type: string
+          description: Override the server's default model. Must be configured on the server.
+
+    ParseOptions:
+      type: object
+      properties:
+        formats:
+          type: array
+          items: { type: string, enum: [markdown, json] }
+          default: [markdown]
+        ocr:
+          type: string
+          enum: [auto, force, off]
+          default: auto
+          description: '`auto` runs OCR only when the text layer is missing or garbled; `force` always; `off` never (the metadata still reports `needsOcr`).'
+        maxPages: { type: integer, minimum: 1 }
+        tables:
+          type: string
+          enum: [auto, high-fidelity]
+          default: auto
+          description: '`high-fidelity` routes PDFs to a table-specialised parser when one is installed.'
+        timeout:
+          type: integer
+          minimum: 1000
+          maximum: 300000
+          default: 30000
+          description: Remote fetch budget in milliseconds. Applies to the `url` path only.
+        jsonOptions: { $ref: '#/components/schemas/ParseJsonOptions' }
+
+    ParseRequest:
+      allOf:
+        - $ref: '#/components/schemas/ParseOptions'
+        - type: object
+          required: [url]
+          properties:
+            url:
+              type: string
+              format: uri
+              description: The file to fetch. An HTML page here is a typed `unsupported_type` failure — use `/scrape` for pages.
+
+    ParseUpload:
+      allOf:
+        - type: object
+          required: [file]
+          properties:
+            file: { type: string, format: binary }
+            formats:
+              type: string
+              description: Comma-separated, e.g. `markdown,json`. Repeated `formats` fields also work.
+            jsonOptions:
+              type: string
+              description: A `ParseJsonOptions` object encoded as a JSON string.
+        - type: object
+          properties:
+            ocr: { type: string, enum: [auto, force, off] }
+            maxPages: { type: integer }
+            tables: { type: string, enum: [auto, high-fidelity] }
+
+    ParseMetadata:
+      type: object
+      required: [filename, pageCount, fileType, ocrUsed, needsOcr, suspectedGarbledText, parser, sizeBytes, contentHash, fetchedAt, timingMs, fromCache]
+      properties:
+        filename: { type: string, nullable: true }
+        pageCount:
+          type: integer
+          description: Pages for PDF, slides for PPTX; `0` for DOCX and XLSX, which have no fixed pagination.
+        fileType:
+          type: string
+          enum: [pdf, docx, pptx, xlsx, png, jpg]
+        ocrUsed: { type: boolean }
+        needsOcr:
+          type: boolean
+          description: The classifier judged the text layer missing or unusable, whether or not OCR then ran.
+        suspectedGarbledText: { type: boolean }
+        parser:
+          type: string
+          description: Which parser produced the markdown, e.g. `pypdfium2`, `marker`, `python-docx`.
+        sizeBytes: { type: integer }
+        contentHash: { type: string, description: SHA-256 of the file bytes; the cache key. }
+        sourceUrl: { type: string, format: uri, description: Present on the `url` path only. }
+        fetchedAt: { type: string, format: date-time }
+        timingMs: { type: integer }
+        fromCache: { type: boolean }
+
+    ParseDocument:
+      type: object
+      required: [metadata]
+      properties:
+        markdown: { type: string }
+        json:
+          type: object
+          description: Present when `formats` includes `json` and the model step succeeded.
+        usage:
+          type: object
+          properties:
+            tokens:
+              type: object
+              properties:
+                input: { type: integer }
+                output: { type: integer }
+            model: { type: string }
+        metadata: { $ref: '#/components/schemas/ParseMetadata' }
+
+    ParseResponse:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/ParseDocument' }
+        failure: { $ref: '#/components/schemas/FetchFailure' }
+        warnings:
+          type: array
+          items: { type: string }
+          description: 'Non-fatal notes: a missing text layer with OCR off, or a failed model step when the parse itself succeeded.'
+
     MapRequest:
       type: object
       required: [url]
@@ -1095,7 +1314,7 @@ components:
         url: { type: string, format: uri }
         reason:
           type: string
-          enum: [blocked, challenge, timeout, dns, tls, http_error, empty, robots_denied, unsupported_type]
+          enum: [blocked, challenge, timeout, dns, tls, http_error, empty, robots_denied, unsupported_type, service_unavailable]
         detail: { type: string }
         statusCode: { type: integer }
         detectedBy:

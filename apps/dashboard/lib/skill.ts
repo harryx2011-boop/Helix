@@ -110,7 +110,7 @@ function reachWhen(endpoint: EndpointDef): string {
     case 'scrape':
       return 'you have one specific URL and need its content as markdown, JSON, or a screenshot.';
     case 'parse':
-      return 'the source is a document file (PDF, DOCX, PPTX, XLSX) rather than a web page.';
+      return 'the source is a document file (PDF, DOCX, PPTX, XLSX) rather than a web page — upload it as a multipart `file` part, or pass a `url` that serves the file. Add `formats: ["json"]` with `jsonOptions.schema` or `jsonOptions.prompt` for structured fields; leave `ocr` on `auto` unless you know the scan needs forcing.';
     case 'search':
       return "you don't have a URL yet and need to find and read relevant pages in one call. Omit `scrapeOptions` for url, title and description only; set it to read each page. Narrow with `lang`, `country` and `tbs` (qdr:d / qdr:w / qdr:m / qdr:y). A page that cannot be read keeps its row with a `failure` and a `warnings` line; the call still succeeds.";
     case 'crawl':
@@ -129,7 +129,7 @@ function reachNotWhen(endpoint: EndpointDef): string {
     case 'scrape':
       return "the source is a document file (use Parse) or you don't have the URL yet (use Search).";
     case 'parse':
-      return "the source is a live web page (use Scrape) — Parse is for uploaded or linked files.";
+      return 'the source is a live web page (use Scrape; Parse answers `unsupported_type` for HTML) or the file is larger than the instance upload ceiling (HTTP 413).';
     case 'search':
       return 'you already know the exact URL (use Scrape directly instead of searching for it).';
     case 'crawl':
@@ -146,8 +146,9 @@ function reachNotWhen(endpoint: EndpointDef): string {
 function exampleDataShape(id: EndpointDef['id']): Record<string, unknown> {
   switch (id) {
     case 'scrape':
-    case 'parse':
       return { markdown: '...', metadata: { title: '...', statusCode: 200 } };
+    case 'parse':
+      return { markdown: '...', json: {}, metadata: { filename: '...', pageCount: 0, fileType: 'pdf', ocrUsed: false, fromCache: false } };
     case 'search':
       return { web: [{ url: '...', title: '...', description: '...', position: 1, markdown: '...', metadata: { statusCode: 200 } }] };
     case 'map':

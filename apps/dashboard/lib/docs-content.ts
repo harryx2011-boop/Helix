@@ -39,10 +39,10 @@ export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
   },
   parse: {
     id: 'parse',
-    purpose: 'Convert an uploaded or linked document — PDF, DOCX, PPTX, XLSX — into the same markdown-or-JSON envelope Scrape returns for web pages.',
-    whenToUse: 'Reach for Parse when the input is a file rather than a live page. If the file is reachable at a URL, Scrape on that URL returns the same shape — Parse exists for the multipart-upload path and explicit OCR control.',
-    responseShape: '`{ success, data: { markdown, json, metadata: { filename, pageCount, fileType, ocrUsed } } }`.',
-    failureReasons: ['unsupported_type', 'timeout', 'empty', 'service_unavailable'],
+    purpose: 'Convert a document (PDF, DOCX, PPTX, XLSX) into markdown, and optionally into JSON against a schema or prompt, in the same envelope Scrape returns for web pages. Send the file as a multipart `file` part or point at a `url` and Helix fetches it first.',
+    whenToUse: 'Reach for Parse when the input is a file: an upload from your own system, or a URL that serves a document rather than a page. Use Scrape for HTML pages (Parse refuses them with `unsupported_type` and says so). `ocr: auto` runs OCR only when the text layer is missing or garbled; `force` and `off` override that call. The same file sent twice parses once, keyed by content hash.',
+    responseShape: '`{ success, data: { markdown, json, usage, metadata: { filename, pageCount, fileType, ocrUsed, needsOcr, suspectedGarbledText, parser, sizeBytes, contentHash, sourceUrl, fromCache } }, warnings }` on success. A remote fetch problem, an unsupported type or an unreachable parser is `{ success: false, failure: { reason, detail, statusCode } }`; a file over the operator\'s upload ceiling is HTTP 413. A missing `jsonOptions` with `formats: [json]` is HTTP 400.',
+    failureReasons: ['unsupported_type', 'http_error', 'dns', 'tls', 'timeout', 'empty', 'service_unavailable'],
   },
   search: {
     id: 'search',

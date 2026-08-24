@@ -13,6 +13,7 @@ import { ExtractClient } from './extract/client.js';
 import { BrowserPool } from './browser/pool.js';
 import { registerHealth } from './routes/health.js';
 import { registerScrape } from './routes/scrape.js';
+import { registerParse } from './routes/parse.js';
 import { registerKeys } from './routes/keys.js';
 import { registerMap } from './routes/map.js';
 import { registerCrawl } from './routes/crawl.js';
@@ -52,7 +53,7 @@ const app = Fastify({
 const pool = createPool(config.databaseUrl, app.log);
 
 const fetchClient = new FetchClient(config.fetchUrl, app.log);
-const extractClient = new ExtractClient(config.extractUrl, app.log);
+const extractClient = new ExtractClient(config.extractUrl);
 
 const browserPool = new BrowserPool({
   size: config.browserPoolSize,
@@ -153,6 +154,12 @@ await app.register(
   async (instance) => {
     await registerHealth(instance, { fetchClient, extractClient, browserPool });
     await registerScrape(instance, { fetchClient, extractClient, browserPool });
+    await registerParse(instance, {
+      extractClient,
+      maxUploadBytes: config.parseMaxUploadMb * 1024 * 1024,
+      maxInFlight: config.parseMaxInflight,
+      userAgent: config.userAgent,
+    });
     await registerKeys(instance);
     await registerMap(instance, { fetchClient, extractClient, userAgent: config.userAgent });
     await registerCrawl(instance, {
@@ -178,7 +185,7 @@ await app.register(
 
 await registerInternal(app, { adminToken: config.internalAdminToken });
 
-// TODO(M7+): /monitor, /parse, /interact
+// TODO(M7+): /monitor, /interact
 
 const start = async (): Promise<void> => {
   try {

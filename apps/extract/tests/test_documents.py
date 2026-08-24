@@ -7,6 +7,7 @@ import io
 import pytest
 
 from helix_extract.documents import (
+    DocumentError,
     DocumentKind,
     assess_pdf,
     classify_content_type,
@@ -158,3 +159,26 @@ class TestParse:
     def test_rejects_an_unsupported_type(self) -> None:
         with pytest.raises(ValueError, match="unsupported content type"):
             parse(b"\x89PNG", "image/png")
+
+
+class TestCorruptFiles:
+    # A zip signature followed by nothing is what a truncated upload looks like.
+    ZIP_STUB = b"PK\x03\x04" + b"\x00" * 32
+
+    @pytest.mark.parametrize(
+        ("content_type", "kind"),
+        [
+            ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"),
+            ("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx"),
+            ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
+        ],
+    )
+    def test_reports_a_broken_office_container_as_the_files_fault(self, content_type: str, kind: str) -> None:
+        with pytest.raises(DocumentError, match=f"could not be parsed as {kind}"):
+            parse(self.ZIP_STUB, content_type)
+
+    def test_reports_an_unopenable_pdf_when_ocr_is_declined(self) -> None:
+        # With OCR off the text-layer parser has to open the bytes itself, and
+        # a PDF header on garbage is a bad file, not a service outage.
+        with pytest.raises(DocumentError, match="could not be parsed as pdf"):
+            parse(b"%PDF-garbage", "application/pdf", ocr="never")

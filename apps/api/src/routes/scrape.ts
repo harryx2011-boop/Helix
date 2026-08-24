@@ -2,26 +2,64 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { runPipeline } from '../core/pipeline.js';
 import type { FetchClient } from '../fetch/client.js';
-import type { ExtractClient } from '../extract/client.js';
+import { StructuredError, type ExtractClient } from '../extract/client.js';
+import { sanitizeHtml } from '../extract/sanitize.js';
 import type { BrowserPool } from '../browser/pool.js';
 
-const FORMATS = [
-  'markdown',
-  'html',
-  'rawHtml',
-  'text',
-  'links',
-  'images',
-  'screenshot',
-  'pdf',
-  'json',
-  'chunks',
-  'summary',
+/**
+ * Scrape: one URL in, one document out.
+ *
+ * Every format here is produced by code that exists. Formats the spec lists but
+ * nothing serves yet (`images`, `pdf`, `summary`) are rejected at validation
+ * rather than accepted and silently dropped.
+ */
+
+const FORMATS = ['markdown', 'html', 'rawHtml', 'text', 'links', 'screenshot', 'json', 'chunks'] as const;
+
+export type ScrapeFormat = (typeof FORMATS)[number];
+
+/** Providers helix-extract can route to. A request may pick one; the key must already be configured. */
+const PROVIDERS = [
+  'anthropic',
+  'openai',
+  'openrouter',
+  'google',
+  'gemini',
+  'ollama',
+  'vllm',
+  'openai-compatible',
 ] as const;
+
+const ExtractSchema = z.object({
+  schema: z.record(z.unknown()).optional(),
+  prompt: z.string().max(4_000).optional(),
+  provider: z.enum(PROVIDERS).optional(),
+  model: z.string().max(200).optional(),
+  includeSources: z.boolean().default(false),
+});
+
+const ProxyObjectSchema = z.object({
+  url: z.string().min(1),
+  sessionId: z.string().optional(),
+  geo: z.string().length(2).optional(),
+});
+
+/**
+ * `auto` uses the operator's proxy when one is configured and goes direct
+ * otherwise. `stealth` insists on the operator's proxy. `none` goes direct even
+ * when one is configured. An object is the caller's own proxy for this request.
+ */
+const ProxySchema = z.union([z.enum(['auto', 'stealth', 'none']), ProxyObjectSchema]);
+
+const ChunkSchema = z.object({
+  strategy: z.enum(['semantic', 'heading', 'fixed']).default('semantic'),
+  maxTokens: z.number().int().min(64).max(4_096).default(512),
+  overlap: z.number().int().min(0).max(1_024).default(64),
+});
 
 const ScrapeRequestSchema = z.object({
   url: z.string().url(),
-  formats: z.array(z.enum(FORMATS)).default(['markdown']),
+  formats: z.array(z.enum(FORMATS)).min(1).default(['markdown']),
   tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium']).default('auto'),
   onlyMainContent: z.boolean().default(true),
   includeSelectors: z.array(z.string()).default([]),
@@ -29,30 +67,25 @@ const ScrapeRequestSchema = z.object({
   extractor: z.enum(['trafilatura', 'readability', 'auto']).default('trafilatura'),
   waitFor: z.number().int().min(0).max(30_000).optional(),
   timeout: z.number().int().min(1_000).max(300_000).default(30_000),
+  mobile: z.boolean().default(false),
   headers: z.record(z.string()).optional(),
   profile: z.string().optional(),
-  proxy: z
-    .object({
-      url: z.string(),
-      sessionId: z.string().optional(),
-      geo: z.string().length(2).optional(),
-    })
-    .optional(),
+  proxy: ProxySchema.optional(),
   actions: z.array(z.unknown()).max(50).optional(),
-  extract: z
-    .object({
-      schema: z.record(z.unknown()).optional(),
-      prompt: z.string().optional(),
-      model: z.string().optional(),
-      includeSources: z.boolean().default(false),
-    })
-    .optional(),
+  extract: ExtractSchema.optional(),
+  /** The spec's name for `extract`. Either key is accepted; not both. */
+  jsonOptions: ExtractSchema.optional(),
+  chunk: ChunkSchema.optional(),
 });
+
+export type ScrapeRequest = z.infer<typeof ScrapeRequestSchema>;
 
 export interface ScrapeRouteDeps {
   fetchClient: FetchClient;
   extractClient: ExtractClient;
-  browserPool?: BrowserPool;
+  browserPool?: BrowserPool | undefined;
+  /** The operator's proxy (`HELIX_PROXY_URL`), used by `proxy: "auto" | "stealth"`. */
+  proxyUrl?: string | undefined;
 }
 
 /**
@@ -63,7 +96,7 @@ export interface ScrapeRouteDeps {
  * the request through anyway. Refusing it with an explanation is better than a
  * confidently wrong answer.
  */
-function rejectFabricationKeywords(schema: Record<string, unknown>, path = 'extract.schema'): void {
+function rejectFabricationKeywords(schema: Record<string, unknown>, path: string): void {
   for (const keyword of ['minItems', 'maxItems'] as const) {
     if (keyword in schema) {
       throw Object.assign(new Error(`\`${keyword}\` is not supported in extraction schemas.`), {
@@ -91,6 +124,27 @@ function rejectFabricationKeywords(schema: Record<string, unknown>, path = 'extr
   }
 }
 
+type ProxyResolution =
+  | { ok: true; url: string | undefined }
+  | { ok: false; message: string };
+
+function resolveProxy(proxy: ScrapeRequest['proxy'], operatorProxy: string | undefined): ProxyResolution {
+  if (proxy === undefined || proxy === 'auto') return { ok: true, url: operatorProxy };
+  if (proxy === 'none') return { ok: true, url: undefined };
+  if (proxy === 'stealth') {
+    if (!operatorProxy) {
+      return {
+        ok: false,
+        message:
+          '`proxy: "stealth"` needs a proxy configured on this instance. Set HELIX_PROXY_URL, ' +
+          'or pass your own as `proxy: { url }`.',
+      };
+    }
+    return { ok: true, url: operatorProxy };
+  }
+  return { ok: true, url: proxy.url };
+}
+
 export async function registerScrape(
   app: FastifyInstance,
   deps: ScrapeRouteDeps,
@@ -110,9 +164,21 @@ export async function registerScrape(
 
     const body = parsed.data;
 
-    if (body.extract?.schema) {
+    if (body.extract && body.jsonOptions) {
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: '`extract` and `jsonOptions` are the same option under two names. Send one of them.',
+        field: 'jsonOptions',
+        requestId: request.id,
+      });
+    }
+
+    const extraction = body.extract ?? body.jsonOptions;
+    const extractionField = body.jsonOptions ? 'jsonOptions' : 'extract';
+
+    if (extraction?.schema) {
       try {
-        rejectFabricationKeywords(body.extract.schema);
+        rejectFabricationKeywords(extraction.schema, `${extractionField}.schema`);
       } catch (error) {
         const e = error as Error & { field?: string; hint?: string };
         return reply.code(400).send({
@@ -124,20 +190,47 @@ export async function registerScrape(
       }
     }
 
-    if (body.formats.includes('json') && !body.extract) {
+    const wantsJson = body.formats.includes('json');
+
+    if (wantsJson && !extraction?.schema) {
+      // A prompt alone gives the model nothing to fill. Constrained decoding
+      // needs a shape, and an empty shape returns an empty object.
       return reply.code(400).send({
         error: 'invalid_request',
-        message: 'The `json` format requires an `extract` block with a schema or prompt.',
-        field: 'formats',
+        message:
+          'The `json` format requires `jsonOptions.schema` (a JSON Schema describing the fields to return). ' +
+          'A `prompt` can accompany it but cannot replace it.',
+        field: extraction ? `${extractionField}.schema` : 'jsonOptions',
         requestId: request.id,
       });
+    }
+
+    const proxy = resolveProxy(body.proxy, deps.proxyUrl);
+    if (!proxy.ok) {
+      return reply.code(400).send({
+        error: 'proxy_unavailable',
+        message: proxy.message,
+        field: 'proxy',
+        requestId: request.id,
+      });
+    }
+
+    // A phone layout only exists in a browser. Forcing the tier here keeps the
+    // caller's `tier: "auto"` honest instead of returning the desktop HTML with
+    // `mobile: true` quietly ignored.
+    const tier = body.mobile && body.tier === 'auto' ? 'chromium' : body.tier;
+
+    const warnings: string[] = [];
+
+    if (body.mobile && (tier === 'plain' || tier === 'tls')) {
+      warnings.push(`mobile: the ${tier} tier has no viewport, so the page was fetched as-is.`);
     }
 
     const result = await runPipeline(
       {
         url: body.url,
         formats: body.formats,
-        tier: body.tier,
+        tier,
         onlyMainContent: body.onlyMainContent,
         includeSelectors: body.includeSelectors,
         excludeSelectors: body.excludeSelectors,
@@ -146,8 +239,9 @@ export async function registerScrape(
         timeout: body.timeout,
         headers: body.headers,
         profile: body.profile,
-        proxy: body.proxy?.url,
+        proxy: proxy.url,
         actions: body.actions,
+        mobile: body.mobile,
       },
       {
         fetchClient: deps.fetchClient,
@@ -173,18 +267,80 @@ export async function registerScrape(
           profile: result.profileUsed,
           escalationAvailable: result.escalationAvailable,
         },
+        warnings,
       });
     }
 
     const { content } = result;
     const data: Record<string, unknown> = {};
+    let usage: Record<string, unknown> | undefined;
 
     if (body.formats.includes('markdown')) data['markdown'] = content.markdown;
     if (body.formats.includes('text')) data['text'] = content.text;
-    if (body.formats.includes('rawHtml')) data['rawHtml'] = content.rawHtml;
     if (body.formats.includes('links')) data['links'] = content.links;
-    if (body.formats.includes('screenshot') && content.screenshot) {
-      data['screenshot'] = content.screenshot;
+    if (body.formats.includes('rawHtml')) data['rawHtml'] = content.rawHtml;
+    if (body.formats.includes('html')) data['html'] = sanitizeHtml(content.rawHtml ?? '');
+    if (body.formats.includes('screenshot')) {
+      data['screenshot'] = content.screenshot ? `data:image/png;base64,${content.screenshot}` : null;
+      if (!content.screenshot) {
+        warnings.push('screenshot: no image was captured at the tier that succeeded.');
+      }
+    }
+
+    if (wantsJson && extraction?.schema) {
+      try {
+        const structured = await deps.extractClient.structured({
+          content: content.markdown,
+          schema: extraction.schema,
+          prompt: extraction.prompt,
+          provider: extraction.provider,
+          model: extraction.model,
+          includeSources: extraction.includeSources,
+        });
+        data['json'] = structured.data;
+        if (extraction.includeSources) data['jsonSources'] = structured.sources;
+        usage = {
+          model: structured.modelUsed,
+          tokens: { input: structured.tokensInput, output: structured.tokensOutput },
+          blocksKept: structured.blocksKept,
+          blocksTotal: structured.blocksTotal,
+          // Tokens are billed by the caller's provider. Helix does not carry a
+          // price table, so the amount is reported as unknown rather than zero.
+          providerCost: { amount: null, currency: 'USD' },
+        };
+      } catch (error) {
+        if (error instanceof StructuredError && error.status === 400) {
+          return reply.code(400).send({
+            error: 'invalid_schema',
+            message: error.message,
+            field: `${extractionField}.schema`,
+            requestId: request.id,
+          });
+        }
+        // The page was read; only the model step failed. `null` with the reason
+        // beside it, rather than a failed request that hides the content.
+        const detail = error instanceof Error ? error.message : 'structured extraction failed';
+        request.log.warn({ error, url: body.url }, 'structured extraction failed');
+        data['json'] = null;
+        warnings.push(`json: ${detail}`);
+      }
+    }
+
+    if (body.formats.includes('chunks')) {
+      try {
+        data['chunks'] = await deps.extractClient.chunk({
+          text: content.markdown,
+          url: body.url,
+          strategy: body.chunk?.strategy,
+          maxTokens: body.chunk?.maxTokens,
+          overlap: body.chunk?.overlap,
+        });
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : 'chunking failed';
+        request.log.warn({ error, url: body.url }, 'chunking failed');
+        data['chunks'] = null;
+        warnings.push(`chunks: ${detail}`);
+      }
     }
 
     data['metadata'] = {
@@ -199,10 +355,16 @@ export async function registerScrape(
       tiersAttempted: result.tiersAttempted,
       profile: result.profileUsed,
       extractor: content.extractorUsed,
+      mobile: body.mobile,
       timingMs: result.timingMs,
       fromCache: false,
     };
 
-    return reply.code(200).send({ success: true, data });
+    return reply.code(200).send({
+      success: true,
+      data,
+      warnings,
+      ...(usage ? { usage } : {}),
+    });
   });
 }

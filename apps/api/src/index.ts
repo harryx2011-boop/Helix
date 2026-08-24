@@ -152,7 +152,12 @@ app.addHook('onRequest', async (request, reply) => {
 await app.register(
   async (instance) => {
     await registerHealth(instance, { fetchClient, extractClient, browserPool });
-    await registerScrape(instance, { fetchClient, extractClient, browserPool });
+    await registerScrape(instance, {
+      fetchClient,
+      extractClient,
+      browserPool,
+      proxyUrl: config.proxyUrl,
+    });
     await registerKeys(instance);
     await registerMap(instance, { fetchClient, extractClient, userAgent: config.userAgent });
     await registerCrawl(instance, {

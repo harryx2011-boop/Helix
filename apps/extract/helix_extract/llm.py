@@ -35,10 +35,10 @@ class ProviderError(RuntimeError):
     """A provider call failed, or none was configured."""
 
 
-def _resolve(model: str | None) -> tuple[str, str]:
+def _resolve(model: str | None, provider: str | None = None) -> tuple[str, str]:
     """The provider and model this request will use."""
-    provider = settings.helix_llm_provider.lower()
-    return provider, model or settings.helix_llm_model
+    resolved_provider = (provider or settings.helix_llm_provider).lower()
+    return resolved_provider, model or settings.helix_llm_model
 
 
 async def _call_openai(
@@ -181,6 +181,7 @@ async def extract_structured(
     prompt: str | None = None,
     model: str | None = None,
     max_input_tokens: int = 8_000,
+    provider: str | None = None,
 ) -> ExtractionResult:
     """Extract structured data using the operator's configured provider.
 
@@ -188,7 +189,7 @@ async def extract_structured(
     scores worse, because the fields being asked about end up buried in the
     middle where attention is weakest.
     """
-    provider, resolved_model = _resolve(model)
+    provider, resolved_model = _resolve(model, provider)
 
     trimmed, kept, total = relevance.trim_to_budget(
         content, schema, prompt, max_tokens=max_input_tokens

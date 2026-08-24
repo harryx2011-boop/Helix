@@ -16,6 +16,13 @@ import type { Log } from '../core/logger.js';
 
 export type Engine = 'chromium' | 'lightpanda';
 
+/** A current phone-class viewport. Device scale stays at 1 so screenshots stay small. */
+const MOBILE_CONTEXT = {
+  viewport: { width: 390, height: 844 },
+  isMobile: true,
+  hasTouch: true,
+} as const;
+
 export interface RenderOptions {
   url: string;
   engine?: Engine | undefined;
@@ -26,6 +33,8 @@ export interface RenderOptions {
   screenshot?: boolean | undefined;
   fullPage?: boolean | undefined;
   actions?: unknown[] | undefined;
+  /** Phone-sized viewport with touch events, for pages that serve a different layout to phones. */
+  mobile?: boolean | undefined;
 }
 
 export interface RenderResult {
@@ -171,6 +180,7 @@ export class BrowserPool {
       context = await pooled.browser.newContext({
         ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
         ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
+        ...(options.mobile ? MOBILE_CONTEXT : {}),
       });
 
       page = await context.newPage();

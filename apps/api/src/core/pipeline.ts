@@ -36,6 +36,7 @@ export interface PipelineOptions {
   profile?: string | undefined;
   proxy?: string | undefined;
   actions?: unknown[] | undefined;
+  mobile?: boolean | undefined;
 }
 
 export interface PipelineSuccess {
@@ -134,6 +135,7 @@ async function attemptTier(
     proxy: options.proxy,
     screenshot: options.formats.includes('screenshot'),
     actions: options.actions,
+    mobile: options.mobile,
   });
 
   return {
@@ -234,7 +236,10 @@ export async function runPipeline(
           success: true,
           content: {
             ...extracted,
-            rawHtml: options.formats.includes('rawHtml') ? attempt.facts.body : undefined,
+            rawHtml:
+              options.formats.includes('rawHtml') || options.formats.includes('html')
+                ? attempt.facts.body
+                : undefined,
             screenshot: attempt.screenshot,
           },
           tier,

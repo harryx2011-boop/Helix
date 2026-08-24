@@ -142,6 +142,9 @@ class StructuredRequest(BaseModel):
     content: str
     schema_: dict = Field(alias="schema")
     prompt: str | None = None
+    # Per-request override of the instance default. The key for that provider
+    # must already be configured; Helix never accepts credentials over the API.
+    provider: str | None = None
     model: str | None = None
     include_sources: bool = False
 
@@ -165,6 +168,7 @@ async def structured(request: StructuredRequest) -> StructuredResponse:
             content=request.content,
             schema=request.schema_,
             prompt=request.prompt,
+            provider=request.provider,
             model=request.model,
         )
     except SchemaError as exc:

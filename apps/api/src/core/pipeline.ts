@@ -36,6 +36,8 @@ export interface PipelineOptions {
   profile?: string | undefined;
   proxy?: string | undefined;
   actions?: unknown[] | undefined;
+  /** Cancels the read between and during tier attempts; the reason becomes the failure detail. */
+  signal?: AbortSignal | undefined;
 }
 
 export interface PipelineSuccess {
@@ -84,6 +86,10 @@ function capabilitiesFor(options: PipelineOptions): Capabilities {
   return caps;
 }
 
+function abortDetail(signal: AbortSignal): string {
+  return signal.reason instanceof Error ? signal.reason.message : 'the read was cancelled';
+}
+
 interface TierAttempt {
   facts: ResponseFacts;
   profileUsed?: string | undefined;
@@ -105,6 +111,7 @@ async function attemptTier(
       proxy: options.proxy,
       headers: options.headers,
       timeoutMs: options.timeout,
+      signal: options.signal,
     });
 
     return {
@@ -134,6 +141,7 @@ async function attemptTier(
     proxy: options.proxy,
     screenshot: options.formats.includes('screenshot'),
     actions: options.actions,
+    signal: options.signal,
   });
 
   return {
@@ -165,6 +173,20 @@ export async function runPipeline(
 
   // Bounded by the ladder length; escalation only ever moves upward.
   for (let step = 0; step < TIER_ORDER.length; step++) {
+    if (options.signal?.aborted) {
+      return {
+        success: false,
+        url: options.url,
+        reason: 'timeout',
+        detail: abortDetail(options.signal),
+        detectedBy: [],
+        tier,
+        tiersAttempted,
+        escalationAvailable: true,
+        timingMs: Date.now() - started,
+      };
+    }
+
     tiersAttempted.push(tier);
     const attempt = await attemptTier(tier, options, deps);
     last = attempt;

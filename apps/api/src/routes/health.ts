@@ -59,7 +59,7 @@ export async function registerHealth(app: FastifyInstance, deps: HealthDeps): Pr
         model: env['HELIX_EMBEDDING_MODEL'] ?? 'local',
       },
       proxy: { configured: Boolean(env['HELIX_PROXY_URL']) },
-      search: { configured: Boolean(env['SERPER_API_KEY'] ?? env['SERPAPI_KEY']) },
+      search: { configured: Boolean(env['SEARXNG_URL'] || env['SERPER_API_KEY'] || env['SERPAPI_KEY']) },
     };
 
     const statuses = Object.values(services).map((s) => s.status);

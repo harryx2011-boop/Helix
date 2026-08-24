@@ -118,29 +118,60 @@ export interface MapResponse {
 
 // --- Search ---
 
+export type SearchFormat = 'markdown' | 'text' | 'rawHtml' | 'links' | 'screenshot';
+
+/** The subset of ScrapeOptions a per-result read accepts (`SearchScrapeOptions` in openapi.yaml). */
+export interface SearchScrapeOptions {
+  formats?: SearchFormat[];
+  tier?: Tier;
+  onlyMainContent?: boolean;
+  includeSelectors?: string[];
+  excludeSelectors?: string[];
+  extractor?: Extractor;
+  waitFor?: number;
+  timeout?: number;
+  headers?: Record<string, string>;
+  profile?: string;
+}
+
 export interface SearchRequest {
   query: string;
   limit?: number;
+  lang?: string;
+  country?: string;
+  /** Google-style time filter: qdr:d, qdr:w, qdr:m, qdr:y. */
+  tbs?: string;
+  freshness?: string;
   sources?: ('web' | 'news' | 'images')[];
   categories?: ('github' | 'research' | 'pdf' | 'docs')[];
   includeDomains?: string[];
   excludeDomains?: string[];
-  freshness?: string;
-  country?: string;
-  scrape?: ScrapeOptions;
+  scrapeOptions?: SearchScrapeOptions;
 }
 
 export interface SearchResultItem extends Document {
-  title?: string;
-  url?: string;
-  snippet?: string;
-  position?: number;
+  url: string;
+  title: string;
+  description?: string;
+  position: number;
   publishedAt?: string;
+  imageUrl?: string;
+  /** Present when this result page could not be read; the search itself still succeeded. */
+  failure?: FetchFailure;
 }
 
 export interface SearchResponse {
   success: boolean;
-  results?: SearchResultItem[];
+  data: {
+    web: SearchResultItem[];
+    news?: SearchResultItem[];
+    images?: SearchResultItem[];
+  };
+  warnings: string[];
+  metadata?: {
+    backend?: 'searxng' | 'serper' | 'serpapi';
+    fromCache?: boolean;
+  };
 }
 
 // --- Crawl ---

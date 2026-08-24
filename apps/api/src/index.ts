@@ -167,6 +167,10 @@ await app.register(
       fetchClient,
       extractClient,
       browserPool,
+      maxResults: config.searchMaxResults,
+      scrapeConcurrency: config.searchScrapeConcurrency,
+      cacheTtlMs: config.searchCacheTtlMs,
+      maxDurationMs: config.searchMaxDurationMs,
     });
   },
   { prefix: '/v1' },

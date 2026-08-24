@@ -17,6 +17,7 @@ export interface FetchOptions {
   proxy?: string | undefined;
   headers?: Record<string, string> | undefined;
   timeoutMs?: number | undefined;
+  signal?: AbortSignal | undefined;
 }
 
 export interface FetchResult {
@@ -41,6 +42,10 @@ export class FetchClient {
   async fetch(options: FetchOptions): Promise<FetchResult> {
     const started = Date.now();
     const timeoutMs = options.timeoutMs ?? 30_000;
+    // A little headroom over the inner timeout, so the service can report
+    // its own failure rather than being cut off mid-answer.
+    const timeout = AbortSignal.timeout(timeoutMs + 5_000);
+    const signal = options.signal ? AbortSignal.any([timeout, options.signal]) : timeout;
 
     try {
       const response = await fetch(`${this.#baseUrl}/fetch`, {
@@ -54,9 +59,7 @@ export class FetchClient {
           headers: options.headers,
           timeout_ms: timeoutMs,
         }),
-        // A little headroom over the inner timeout, so the service can report
-        // its own failure rather than being cut off mid-answer.
-        signal: AbortSignal.timeout(timeoutMs + 5_000),
+        signal,
       });
 
       if (!response.ok) {

@@ -7,11 +7,15 @@ export const metadata: Metadata = {
   description: 'One call returns ranked results with their content attached. SearXNG or your own SERP key.',
 };
 
+/* Request and response mirror the examples on POST /search in openapi.yaml. */
 const REQUEST = `POST /v1/search
 {
   "query": "transactional email APIs",
   "limit": 5,
-  "scrapeOptions": { "formats": ["markdown"] }
+  "lang": "en",
+  "country": "us",
+  "tbs": "qdr:m",
+  "scrapeOptions": { "formats": ["markdown"], "onlyMainContent": true }
 }`;
 
 const RESPONSE = `{
@@ -22,10 +26,14 @@ const RESPONSE = `{
         "url": "https://example.com/best-email-apis",
         "title": "13 Best Transactional Email APIs",
         "description": "A comparison of...",
-        "markdown": "# 13 Best...\\n..."
+        "position": 1,
+        "markdown": "# 13 Best...\\n...",
+        "metadata": { "statusCode": 200, "tier": "plain" }
       }
     ]
-  }
+  },
+  "warnings": [],
+  "metadata": { "backend": "searxng", "fromCache": false }
 }`;
 
 export default function SearchPage() {
@@ -38,17 +46,23 @@ export default function SearchPage() {
         chrome: 'terminal',
         label: '$ helix search',
         code: `$ curl -X POST localhost:7400/v1/search \\
-    -d '{"query":"transactional email APIs","limit":5}'
+    -H 'Authorization: Bearer helix-...' \\
+    -d '{"query":"transactional email APIs","limit":5,"scrapeOptions":{"formats":["markdown"]}}'
 
-{ "success": true, "data": { "web": [ 5 results ] } }`,
+{
+  "success": true,
+  "data": { "web": [ { "url": "...", "title": "...", "description": "...", "markdown": "..." }, ... ] },
+  "warnings": [],
+  "metadata": { "backend": "searxng", "fromCache": false }
+}`,
       }}
       features={[
-        { icon: Search, title: 'Search and read in one call', body: 'No separate scrape step. Every result comes back with its page content already attached.' },
-        { icon: Server, title: 'Bring your own backend', body: 'A self-hostable SearXNG instance works with zero external keys. Serper and SerpAPI plug in the same way for hosted search.' },
-        { icon: ListChecks, title: 'Partial success, not hard failure', body: 'If two of five result pages fail to scrape, the three that succeeded come back with a warnings array, not an error.' },
-        { icon: Filter, title: 'Time and region filters', body: 'Narrow by language, country and a time window without a second request.' },
-        { icon: Gauge, title: 'Bounded concurrency', body: 'Result pages are scraped in parallel up to a cap, so one search call cannot monopolize the fetch pool.' },
-        { icon: Globe, title: 'Same read options as Scrape', body: '`scrapeOptions` accepts the same formats and settings as a direct Scrape call.' },
+        { icon: Search, title: 'Search and read in one call', body: 'Set scrapeOptions and every result comes back with its page content attached. Leave it out for url, title and description only.' },
+        { icon: Server, title: 'Bring your own backend', body: 'A self-hosted SearXNG instance needs no key. Serper and SerpAPI plug in with yours. HELIX_SEARCH_PROVIDER=auto picks whichever is configured.' },
+        { icon: ListChecks, title: 'Partial success, not hard failure', body: 'A result page that cannot be read keeps its row with a typed failure and adds a line to warnings. The search still returns success: true.' },
+        { icon: Filter, title: 'Language, country and time filters', body: 'lang, country and a tbs window (past day, week, month or year) narrow the search without a second request.' },
+        { icon: Gauge, title: 'Bounded concurrency', body: 'Result pages are read in parallel up to an operator-set cap, so one search call cannot monopolize the fetch pool.' },
+        { icon: Globe, title: 'Same read options as Scrape', body: 'scrapeOptions takes the formats, tier, extractor, selectors and timeout a direct Scrape call takes.' },
       ]}
       request={REQUEST}
       response={RESPONSE}

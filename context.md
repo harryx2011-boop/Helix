@@ -21,7 +21,7 @@ Self-hostable, BYOK web-data API (scrape · parse · search · crawl · interact
 ## Layout
 
 - `apps/dashboard` — one Next.js app: marketing (light), Clerk auth, onboarding, `/app` dashboard (dark). Port 3400. `HELIX_HOSTED=1` selects hosted mode.
-- `apps/api` — routes: scrape, map, crawl, search, jobs, keys, health. Port 7400.
+- `apps/api` — routes: scrape, map, crawl, search, jobs, keys, health. Port 7400. Search backends: SearXNG (`SEARXNG_URL`, no key), Serper, SerpAPI; `HELIX_SEARCH_PROVIDER=auto` picks the first configured.
 - `packages/` — profiles, schema, sdk-ts (empty), cli (planned, `@helix/cli`).
 - `supabase/` — migrations for the hosted app (profiles, api_keys, instances, runs, usage_daily).
 - `graphify-out/` — knowledge graph; regenerate after structural changes.

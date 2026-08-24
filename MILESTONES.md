@@ -98,6 +98,14 @@ what `assess_pdf` returns.
 - ☑ `POST /search` with Serper (default) and SerpAPI adapters, domain operators,
       freshness windows, category shorthands, and search-then-scrape in one call
 - ☑ One failed result does not fail the search — failures travel per-row
+- ☑ `/search` contract aligned with the spec: `scrapeOptions` (`scrape` kept as
+      an alias), `lang`, `country`, `tbs`, `limit` default 5 with an operator
+      ceiling, `data.web[]` with `url`/`title`/`description`, a `warnings` array,
+      and `metadata.backend`
+- ☑ SearXNG adapter as the zero-key backend; `HELIX_SEARCH_PROVIDER=auto` picks
+      SearXNG, then Serper, then SerpAPI, whichever has credentials
+- ☑ Bounded per-call scrape concurrency and a short-TTL cache on identical queries
+- ☑ Route tests over Fastify inject (20) plus backend and cache tests
 - ☐ Prompt caching where the provider supports it
 - ☐ Live provider calls unverified — no API keys available in this environment
 

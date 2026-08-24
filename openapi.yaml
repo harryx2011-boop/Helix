@@ -206,22 +206,65 @@ paths:
       tags: [Search]
       summary: Search the web, optionally reading the results
       description: |
-        Runs a web search and, when `scrape` is set, reads each result in the same
-        call — so one request goes from question to page content.
+        Runs a web search against the instance's configured backend (SearXNG,
+        Serper or SerpAPI) and, when `scrapeOptions` is set, reads each result in
+        the same call — so one request goes from question to page content.
+
+        A result page that cannot be read does not fail the search: its row keeps
+        `url`, `title` and `description`, carries a typed `failure`, and a line is
+        added to `warnings`. One call is bounded by `HELIX_SEARCH_MAX_DURATION_MS`
+        (default 120000): pages not read before the budget is spent carry a
+        `timeout` failure, and all reads stop when the client disconnects.
+
+        A source the backend cannot answer is reported, not hidden: when every
+        requested source fails the call is a 502 `search_failed`; when some
+        answer, their results are returned with a `warnings` line per failed
+        source and the list is not cached.
       operationId: search
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/SearchRequest' }
+            example:
+              query: transactional email APIs
+              limit: 5
+              lang: en
+              country: us
+              tbs: qdr:m
+              scrapeOptions:
+                formats: [markdown]
+                onlyMainContent: true
       responses:
         '200':
-          description: Search results, with page content when `scrape` was set.
+          description: Search results, with page content when `scrapeOptions` was set.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SearchResponse' }
+              example:
+                success: true
+                data:
+                  web:
+                    - url: https://example.com/best-email-apis
+                      title: 13 Best Transactional Email APIs
+                      description: A comparison of...
+                      position: 1
+                      markdown: "# 13 Best...\n..."
+                      metadata: { statusCode: 200, tier: plain }
+                warnings: []
+                metadata: { backend: searxng, fromCache: false }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '502':
+          description: The search backend failed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: No search backend is configured on this instance.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /monitor:
     get:
@@ -477,7 +520,7 @@ components:
 
     ScrapeOptions:
       type: object
-      description: Shared read options. Reused by scrape, batch, crawl and search.
+      description: Shared read options. Reused by scrape and crawl; search takes the `SearchScrapeOptions` subset.
       properties:
         formats:
           type: array
@@ -751,48 +794,149 @@ components:
             webhook: { $ref: '#/components/schemas/WebhookConfig' }
         - $ref: '#/components/schemas/ScrapeOptions'
 
+    SearchScrapeOptions:
+      type: object
+      description: |
+        Read options applied to every result page. The subset of `ScrapeOptions`
+        that a per-result read supports; `extract`, `actions` and `proxy` are not
+        accepted here.
+      properties:
+        formats:
+          type: array
+          items: { type: string, enum: [markdown, text, rawHtml, links, screenshot] }
+          default: [markdown]
+        tier: { $ref: '#/components/schemas/Tier' }
+        onlyMainContent: { type: boolean, default: true }
+        includeSelectors:
+          type: array
+          items: { type: string }
+        excludeSelectors:
+          type: array
+          items: { type: string }
+        extractor:
+          type: string
+          enum: [trafilatura, readability, auto]
+          default: trafilatura
+        waitFor: { type: integer, minimum: 0, maximum: 30000 }
+        timeout: { type: integer, default: 20000, minimum: 1000, maximum: 120000 }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+        profile: { type: string }
+
     SearchRequest:
       type: object
       required: [query]
       properties:
-        query: { type: string, maxLength: 500 }
-        limit: { type: integer, default: 10, maximum: 100 }
+        query: { type: string, minLength: 1, maxLength: 500 }
+        limit:
+          type: integer
+          default: 5
+          minimum: 1
+          description: Results per source. The instance ceiling is `HELIX_SEARCH_MAX_RESULTS` (default 50).
+        lang:
+          type: string
+          minLength: 2
+          maxLength: 2
+          description: Two-letter UI language, e.g. `en`.
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          description: Two-letter country, e.g. `us`.
+        tbs:
+          type: string
+          pattern: '^qdr:[hdwmy][0-9]*$'
+          description: 'Time filter in Google `tbs` form: `qdr:d` (day), `qdr:w`, `qdr:m`, `qdr:y`. Wins over `freshness`.'
+        freshness:
+          type: string
+          pattern: '^[0-9]{1,4}[hdwmy]$'
+          description: 'Relative window, e.g. `24h`, `7d`, `1y`. Converted to `tbs`.'
         sources:
           type: array
           items: { type: string, enum: [web, news, images] }
+          maxItems: 3
+          uniqueItems: true
           default: [web]
+          description: Each source is one backend call and `limit` more pages to read; repeats are collapsed.
         categories:
           type: array
           items: { type: string, enum: [github, research, pdf, docs] }
+          description: Shorthands expanded into search operators.
         includeDomains:
           type: array
-          items: { type: string }
+          maxItems: 20
+          items: { $ref: '#/components/schemas/SearchDomain' }
         excludeDomains:
           type: array
-          items: { type: string }
-        freshness: { type: string, description: 'Relative window, e.g. `24h`, `7d`, `1y`.' }
-        country: { type: string, minLength: 2, maxLength: 2 }
+          maxItems: 20
+          items: { $ref: '#/components/schemas/SearchDomain' }
+        scrapeOptions:
+          allOf:
+            - $ref: '#/components/schemas/SearchScrapeOptions'
+          description: Read every result in the same call. Omit for url, title and description only.
         scrape:
           allOf:
-            - $ref: '#/components/schemas/ScrapeOptions'
-          description: Read every result in the same call. Omit for metadata only.
+            - $ref: '#/components/schemas/SearchScrapeOptions'
+          deprecated: true
+          description: Alias of `scrapeOptions`, kept for early callers.
+
+    SearchDomain:
+      type: string
+      maxLength: 253
+      pattern: '^[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$'
+      description: A hostname as a `site:` operator accepts it, e.g. `docs.example.com`. No scheme, no path.
+
+    SearchResult:
+      type: object
+      required: [url, title, position]
+      properties:
+        url: { type: string, format: uri }
+        title: { type: string }
+        description: { type: string, description: The backend's snippet. }
+        position: { type: integer }
+        publishedAt: { type: string }
+        imageUrl: { type: string, format: uri, description: Image results only. }
+        markdown: { type: string }
+        text: { type: string }
+        rawHtml: { type: string }
+        links:
+          type: array
+          items: { type: string, format: uri }
+        screenshot: { type: string }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+        failure:
+          allOf:
+            - $ref: '#/components/schemas/FetchFailure'
+          description: Present when this result page could not be read. The search still succeeds.
 
     SearchResponse:
       type: object
+      required: [success, data, warnings]
       properties:
         success: { type: boolean }
-        results:
+        data:
+          type: object
+          required: [web]
+          properties:
+            web:
+              type: array
+              items: { $ref: '#/components/schemas/SearchResult' }
+            news:
+              type: array
+              items: { $ref: '#/components/schemas/SearchResult' }
+            images:
+              type: array
+              items: { $ref: '#/components/schemas/SearchResult' }
+        warnings:
           type: array
-          items:
-            allOf:
-              - type: object
-                properties:
-                  title: { type: string }
-                  url: { type: string, format: uri }
-                  snippet: { type: string }
-                  position: { type: integer }
-                  publishedAt: { type: string, format: date-time }
-              - $ref: '#/components/schemas/Document'
+          items: { type: string }
+          description: One line per result page that could not be read, or a note that the backend returned nothing.
+        metadata:
+          type: object
+          properties:
+            backend: { type: string, enum: [searxng, serper, serpapi] }
+            fromCache: { type: boolean, description: The ranked list came from the short-TTL query cache; pages are always read fresh. }
 
     MonitorRequest:
       type: object

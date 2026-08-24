@@ -21,6 +21,7 @@ import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerInternal } from './routes/internal.js';
 import { createSearchProvider } from './search/providers.js';
+import { WebhookDispatcher } from './webhooks/dispatcher.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -70,6 +71,13 @@ const crawlWorker = new CrawlWorker({
   extractClient,
   browserPool,
   userAgent: config.userAgent,
+  logger: app.log,
+});
+
+const webhookDispatcher = new WebhookDispatcher({
+  db: pool,
+  secret: config.webhookSecret,
+  maxAttempts: config.webhookMaxAttempts,
   logger: app.log,
 });
 
@@ -160,6 +168,11 @@ await app.register(
       extractClient,
       userAgent: config.userAgent,
       defaultModel: process.env['HELIX_LLM_MODEL'] ?? 'unset',
+      limits: {
+        defaultLimit: config.crawlDefaultLimit,
+        maxLimit: config.crawlMaxLimit,
+        maxDepth: config.crawlMaxDepth,
+      },
     });
     await registerJobs(instance);
     await registerSearch(instance, {
@@ -200,6 +213,7 @@ const start = async (): Promise<void> => {
     // Runs in-process. A separate worker deployment would scale further, but
     // one process is the right default for a self-hosted tool.
     void crawlWorker.start();
+    void webhookDispatcher.start();
 
     await app.listen({ port: config.port, host: '0.0.0.0' });
     app.log.info(
@@ -222,6 +236,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 
     void (async () => {
       crawlWorker.stop();
+      webhookDispatcher.stop();
       await app.close().catch(() => undefined);
       await browserPool.close().catch(() => undefined);
       await closePool().catch(() => undefined);
@@ -230,5 +245,4 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
-void pool;
 await start();

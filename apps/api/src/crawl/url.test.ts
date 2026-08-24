@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { depthFrom, isSameSite, matchesAnyPattern, normaliseUrl, siteOf } from './url.js';
+import { depthFrom, globToRegExp, isGlobPattern, isSameSite, matchesAnyPattern, normaliseUrl, siteOf } from './url.js';
 
 describe('normaliseUrl', () => {
   it('collapses the variants of one page into a single key', () => {
@@ -95,5 +95,42 @@ describe('matchesAnyPattern', () => {
 
   it('reports false for an empty pattern list', () => {
     expect(matchesAnyPattern('https://s.com/x', [])).toBe(false);
+  });
+});
+
+describe('glob path patterns', () => {
+  it('tells globs from regular expressions', () => {
+    expect(isGlobPattern('/blog/*')).toBe(true);
+    expect(isGlobPattern('/docs/**/api')).toBe(true);
+    expect(isGlobPattern('/page-?')).toBe(true);
+    expect(isGlobPattern('^/blog')).toBe(false);
+    expect(isGlobPattern('/blog/.*')).toBe(false);
+    expect(isGlobPattern('/(a|b)/*')).toBe(false);
+    expect(isGlobPattern('/internal')).toBe(false);
+  });
+
+  it('matches everything under a prefix with a trailing star', () => {
+    // The spec's own example: include /blog/*, exclude /blog/tag/*.
+    expect(matchesAnyPattern('https://s.com/blog/post-1', ['/blog/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/blog/2024/post-1', ['/blog/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/blog/tag/x', ['/blog/tag/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/pricing', ['/blog/*'])).toBe(false);
+    expect(matchesAnyPattern('https://s.com/blogroll', ['/blog/*'])).toBe(false);
+  });
+
+  it('anchors globs to the whole path and tolerates a trailing slash', () => {
+    expect(matchesAnyPattern('https://s.com/docs/', ['/docs'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/docs/api/', ['/docs/*'])).toBe(true);
+    expect(matchesAnyPattern('https://s.com/docs/api/v2', ['/docs/?pi'])).toBe(false);
+    expect(matchesAnyPattern('https://s.com/docs/api', ['/docs/?pi'])).toBe(true);
+  });
+
+  it('matches anywhere when the glob has no leading slash', () => {
+    expect(matchesAnyPattern('https://s.com/a/b/draft-1', ['draft-*'])).toBe(true);
+  });
+
+  it('escapes regex metacharacters inside a glob', () => {
+    expect(globToRegExp('/files/*.pdf').test('/files/report.pdf')).toBe(true);
+    expect(globToRegExp('/files/*.pdf').test('/files/reportxpdf')).toBe(false);
   });
 });

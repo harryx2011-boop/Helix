@@ -7,6 +7,7 @@ import { RobotsCache } from './robots.js';
 import { SitemapFetcher } from './sitemap.js';
 import { siteOf } from './url.js';
 import type { Log } from '../core/logger.js';
+import { enqueueDelivery, type WebhookConfig, type WebhookEvent } from '../webhooks/deliveries.js';
 
 /**
  * The crawl worker.
@@ -38,6 +39,7 @@ export interface CrawlJobRequest {
   tier: 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium';
   extractor: 'trafilatura' | 'readability' | 'auto';
   onlyMainContent: boolean;
+  webhook?: WebhookConfig | undefined;
 }
 
 export interface WorkerDeps extends PipelineDeps {
@@ -96,10 +98,12 @@ export class CrawlWorker {
       await this.#crawl(job.id, job.request);
     } catch (error) {
       this.#logger?.error({ error, jobId: job.id }, 'crawl failed');
+      const message = error instanceof Error ? error.message : String(error);
       await getPool().query(
         `UPDATE jobs SET status = 'failed', finished_at = now(), error = $2 WHERE id = $1`,
-        [job.id, error instanceof Error ? error.message : String(error)],
+        [job.id, message],
       );
+      await this.#emit(job.id, job.request, 'failed', undefined, { error: message });
     }
 
     return true;
@@ -136,6 +140,14 @@ export class CrawlWorker {
 
     const freshStart = resumed.restored === 0 && resumed.alreadyDone === 0;
     if (freshStart) frontier.add(request.url, 0);
+
+    // Dedupe keys make this safe on resume: a restarted crawl does not announce
+    // itself twice.
+    await this.#emit(jobId, request, 'started', undefined, {
+      url: request.url,
+      limit: request.limit,
+      maxDepth: request.maxDepth ?? null,
+    });
 
     // Previous visits to this site, for incremental mode.
     const seedSite = siteOf(request.url);
@@ -274,6 +286,17 @@ export class CrawlWorker {
           if (!contentUnchanged) {
             await this.#recordDocument(jobId, item.url, result);
             completed++;
+            await this.#emit(jobId, request, 'page', item.url, {
+              url: item.url,
+              markdown: result.content.markdown,
+              metadata: {
+                title: result.content.title,
+                sourceUrl: item.url,
+                finalUrl: result.finalUrl ?? item.url,
+                statusCode: result.statusCode ?? null,
+                tier: result.tier,
+              },
+            });
           } else {
             unchanged++;
           }
@@ -340,6 +363,33 @@ export class CrawlWorker {
       { jobId, completed, failed, unchanged, rejections: frontier.rejections() },
       'crawl finished',
     );
+
+    await this.#emit(jobId, request, 'completed', undefined, {
+      total: frontier.enqueued,
+      completed,
+      failed,
+      unchanged,
+    });
+  }
+
+  /**
+   * Queue a webhook event. A queue failure is logged, never thrown: the crawl's
+   * results are already durable, and losing one notification is recoverable
+   * where losing the crawl is not.
+   */
+  async #emit(
+    jobId: string,
+    request: CrawlJobRequest,
+    event: WebhookEvent,
+    key: string | undefined,
+    data: unknown,
+  ): Promise<void> {
+    if (!request.webhook) return;
+    try {
+      await enqueueDelivery(getPool(), { config: request.webhook, event, jobId, key, data });
+    } catch (error) {
+      this.#logger?.warn({ error, jobId, event }, 'webhook enqueue failed');
+    }
   }
 
   async #recordDocument(

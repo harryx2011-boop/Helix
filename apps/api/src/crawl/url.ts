@@ -141,6 +141,44 @@ export function depthFrom(base: string, target: string): number | undefined {
   }
 }
 
+/**
+ * A path pattern is a glob when it uses `*` or `?` and nothing that only a
+ * regular expression would: anchors, groups, classes, escapes, alternation.
+ * `/blog/*` is what the spec documents; `^/blog` keeps working for callers who
+ * already send regular expressions.
+ */
+export function isGlobPattern(pattern: string): boolean {
+  return /[*?]/.test(pattern) && !/^\^|\$$|\.\*|[\\()|+[\]{}]/.test(pattern);
+}
+
+/**
+ * Glob to anchored RegExp over the pathname. `*` and `**` match any run of
+ * characters including `/` — `/blog/*` means "everything under /blog", which is
+ * what the include/exclude use reads as — and `?` matches one character.
+ * A pattern without a leading slash matches anywhere in the path.
+ */
+export function globToRegExp(pattern: string): RegExp {
+  const source = pattern
+    .split(/(\*+|\?)/)
+    .map((part) => {
+      if (part.startsWith('*')) return '.*';
+      if (part === '?') return '[^/]';
+      return part.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+    })
+    .join('');
+  const prefix = pattern.startsWith('/') ? '^' : '^.*';
+  return new RegExp(`${prefix}${source}/?$`);
+}
+
+/** Compile a path pattern, or undefined when it is a regular expression that does not parse. */
+export function compilePathPattern(pattern: string): RegExp | undefined {
+  try {
+    return isGlobPattern(pattern) ? globToRegExp(pattern) : new RegExp(pattern);
+  } catch {
+    return undefined;
+  }
+}
+
 export function matchesAnyPattern(url: string, patterns: string[]): boolean {
   if (patterns.length === 0) return false;
 
@@ -151,12 +189,6 @@ export function matchesAnyPattern(url: string, patterns: string[]): boolean {
     return false;
   }
 
-  return patterns.some((pattern) => {
-    try {
-      return new RegExp(pattern).test(pathname);
-    } catch {
-      // An invalid pattern must not match everything by accident.
-      return false;
-    }
-  });
+  // An invalid pattern must not match everything by accident.
+  return patterns.some((pattern) => compilePathPattern(pattern)?.test(pathname) ?? false);
 }

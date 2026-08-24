@@ -33,6 +33,8 @@ export type FailureReason =
   | 'empty'
   | 'robots_denied'
   | 'unsupported_type'
+  | 'unsafe_url'
+  | 'session_closed'
   // A Helix service was unreachable — our infrastructure, not the target site.
   | 'service_unavailable';
 

@@ -4,11 +4,14 @@ import { classifyTransportError } from '../core/block-detection.js';
 import type { ExtractClient } from '../extract/client.js';
 import {
   ActionError,
+  guardPage,
   parseInteractActions,
   runInteractActions,
   type InteractAction,
   type InteractOutcome,
 } from '../browser/interact-actions.js';
+import type { Lookup } from '../core/url-guard.js';
+import { sseSink } from './sse.js';
 import {
   SessionBusyError,
   SessionLimitError,
@@ -58,9 +61,16 @@ export interface InteractRouteDeps {
   publicUrl: string;
   /** Overridable for tests; the default opens a CDP session on the page. */
   castFactory?: ((session: Session) => CastSessionFactory) | undefined;
+  /** DNS for the URL guard; tests supply a fake. */
+  lookup?: Lookup | undefined;
 }
 
 const SSE_HEARTBEAT_MS = 15_000;
+/** Streams one session may fan out to. A leaked link cannot become unbounded work. */
+const MAX_LIVE_VIEWERS = 4;
+
+/** Playwright's wording when the page went away under a running call. */
+const CLOSED_UNDER_RUN = /has been closed|target closed|session closed/i;
 
 export async function registerInteract(app: FastifyInstance, deps: InteractRouteDeps): Promise<void> {
   const publicUrl = deps.publicUrl.replace(/\/$/, '');
@@ -92,11 +102,27 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
   const invalid = (reply: FastifyReply, requestId: string, message: string, field?: string) =>
     reply.code(400).send({ error: 'invalid_request', message, field, requestId });
 
+  /**
+   * Open a session and fence its page. The guard is part of opening: a page
+   * that can reach the instance's own network must never be handed out.
+   */
+  const openGuarded = async (apiKeyId: string, options: { headers?: Record<string, string> | undefined; viewport?: { width: number; height: number } | undefined }) => {
+    const session = await deps.sessions.open(apiKeyId, options);
+    try {
+      await guardPage(session.page, deps.lookup);
+    } catch (error) {
+      await deps.sessions.close(session.id, apiKeyId);
+      throw error;
+    }
+    return session;
+  };
+
   const failureEnvelope = (
     session: Session | undefined,
     sessionOpen: boolean,
     error: unknown,
     initialNavigation: boolean,
+    closedUnderRun = false,
   ): Record<string, unknown> => {
     if (error instanceof ActionError) {
       // The implicit navigation from `url` sits ahead of the caller's list.
@@ -107,7 +133,7 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
         sessionOpen,
         failure: {
           url: session?.page.url(),
-          reason: error.reason,
+          reason: closedUnderRun && CLOSED_UNDER_RUN.test(error.message) ? 'session_closed' : error.reason,
           detail: actionIndex < 0 ? error.message.replace(/^actions\[-?\d+\] \(navigate\): /, 'initial navigation: ') : error.message,
           statusCode: error.statusCode,
           detectedBy: error.detectedBy,
@@ -126,7 +152,7 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
       sessionOpen,
       failure: {
         url: session?.page.url(),
-        reason: classifyTransportError(text),
+        reason: closedUnderRun && CLOSED_UNDER_RUN.test(text) ? 'session_closed' : classifyTransportError(text),
         detail: text,
         tier: 'chromium',
         tiersAttempted: ['chromium'],
@@ -207,7 +233,7 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
       session = found;
     } else {
       try {
-        session = await deps.sessions.open(apiKeyId, { headers: body.headers, viewport: body.viewport });
+        session = await openGuarded(apiKeyId, { headers: body.headers, viewport: body.viewport });
         opened = true;
       } catch (error) {
         return sendOpenFailure(reply, request.id, error);
@@ -227,26 +253,34 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
     const steps: InteractAction[] = body.url ? [{ type: 'navigate', url: body.url }, ...actions] : actions;
     const initialNavigation = Boolean(body.url);
 
+    // `sessionOpen` answers for the registry, not for what the caller asked:
+    // a DELETE or the hard timeout can take the page away under a run.
+    const stillOpen = () => deps.sessions.get(session.id, apiKeyId) !== undefined;
+
     try {
       const outcome = await runInteractActions(session.page, steps, {
         extractClient: deps.extractClient,
         logger: request.log,
+        lookup: deps.lookup,
       });
       if (initialNavigation) outcome.actionsRun -= 1;
       release();
 
-      const sessionOpen = body.keepSessionOpen;
-      if (!sessionOpen) await deps.sessions.close(session.id, apiKeyId);
+      if (!body.keepSessionOpen) await deps.sessions.close(session.id, apiKeyId);
+      const sessionOpen = body.keepSessionOpen && stillOpen();
 
       return reply.code(200).send(successEnvelope(session, sessionOpen, outcome, Date.now() - started));
     } catch (error) {
       release();
+      const closedUnderRun = !stillOpen();
       // A failed run on a session the caller wants to keep stays open so the
-      // caller can inspect it, retry, or close it. A one-shot run is cleaned up.
-      const sessionOpen = body.keepSessionOpen;
-      if (!sessionOpen) await deps.sessions.close(session.id, apiKeyId);
-      request.log.warn({ error, sessionId: session.id, opened }, 'interact run failed');
-      return reply.code(200).send(failureEnvelope(session, sessionOpen, error, initialNavigation));
+      // caller can inspect it, retry, or close it. A one-shot run is cleaned
+      // up, and so is a page whose script never came back.
+      const unresponsive = error instanceof ActionError && error.pageUnresponsive;
+      if (!body.keepSessionOpen || unresponsive) await deps.sessions.close(session.id, apiKeyId);
+      const sessionOpen = body.keepSessionOpen && stillOpen();
+      request.log.warn({ error, sessionId: session.id, opened, closedUnderRun }, 'interact run failed');
+      return reply.code(200).send(failureEnvelope(session, sessionOpen, error, initialNavigation, closedUnderRun));
     }
   });
 
@@ -267,7 +301,7 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
 
     let session: Session;
     try {
-      session = await deps.sessions.open(apiKeyId, { headers: body.headers, viewport: body.viewport });
+      session = await openGuarded(apiKeyId, { headers: body.headers, viewport: body.viewport });
     } catch (error) {
       return sendOpenFailure(reply, request.id, error);
     }
@@ -278,12 +312,14 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
         await runInteractActions(session.page, [{ type: 'navigate', url: body.url }], {
           extractClient: deps.extractClient,
           logger: request.log,
+          lookup: deps.lookup,
         });
         release();
       } catch (error) {
         release();
+        const closedUnderRun = deps.sessions.get(session.id, apiKeyId) === undefined;
         await deps.sessions.close(session.id, apiKeyId);
-        return reply.code(200).send(failureEnvelope(session, false, error, true));
+        return reply.code(200).send(failureEnvelope(session, false, error, true, closedUnderRun));
       }
     }
 
@@ -342,6 +378,15 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
         });
       }
 
+      const cast = castFor(session);
+      if (cast.viewers >= MAX_LIVE_VIEWERS) {
+        return reply.code(429).send({
+          error: 'too_many_viewers',
+          message: `This session already has ${MAX_LIVE_VIEWERS} viewers. Close one to open another.`,
+          requestId: request.id,
+        });
+      }
+
       reply.hijack();
       const res = reply.raw;
       res.writeHead(200, {
@@ -351,17 +396,14 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
         'x-accel-buffering': 'no',
       });
 
-      const write = (event: string, data: string) => {
-        if (!res.writableEnded) res.write(`event: ${event}\ndata: ${data}\n\n`);
-      };
+      // Frames go through a sink that honours socket backpressure: a viewer
+      // that stops reading gets the newest frame when it resumes, and the
+      // process never buffers the ones it missed.
+      const sink = sseSink(res);
+      sink.event('session', JSON.stringify({ sessionId: session.id, url: session.page.url() }));
 
-      write('session', JSON.stringify({ sessionId: session.id, url: session.page.url() }));
-
-      const cast = castFor(session);
-      const unsubscribe = cast.subscribe((frame) => write('frame', frame.data));
-      const heartbeat = setInterval(() => {
-        if (!res.writableEnded) res.write(': ping\n\n');
-      }, SSE_HEARTBEAT_MS);
+      const unsubscribe = cast.subscribe((frame) => sink.frame(frame.data));
+      const heartbeat = setInterval(() => sink.comment('ping'), SSE_HEARTBEAT_MS);
       heartbeat.unref();
 
       let done = false;
@@ -374,7 +416,7 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
       };
 
       const offClose = session.onClose((reason) => {
-        write('closed', reason);
+        sink.event('closed', reason);
         cleanup();
         res.end();
       });

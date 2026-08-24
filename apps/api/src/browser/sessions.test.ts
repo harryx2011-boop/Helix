@@ -56,6 +56,48 @@ describe('SessionRegistry', () => {
     expect(reg.count()).toBe(1);
   });
 
+  it('holds the cap when opens arrive together, before any lease has resolved', async () => {
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { reg, leases } = registry({
+      maxSessions: 2,
+      lease: async () => {
+        await gate;
+        const lease = fakeLease();
+        leases.push(lease);
+        return lease;
+      },
+    });
+
+    const attempts = Array.from({ length: 10 }, () => reg.open('key_a').then(() => 'open', (error: Error) => error.name));
+    await Promise.resolve();
+    release?.();
+    const results = await Promise.all(attempts);
+
+    expect(results.filter((r) => r === 'open')).toHaveLength(2);
+    expect(results.filter((r) => r === 'SessionLimitError')).toHaveLength(8);
+    expect(reg.count()).toBe(2);
+    expect(leases).toHaveLength(2);
+  });
+
+  it('gives the slot back when the lease fails', async () => {
+    let fail = true;
+    const { reg } = registry({
+      maxSessions: 1,
+      lease: async () => {
+        if (fail) throw new Error('browser did not start');
+        return fakeLease();
+      },
+    });
+
+    await expect(reg.open('key_a')).rejects.toThrow('browser did not start');
+    expect(reg.count()).toBe(0);
+    fail = false;
+    await expect(reg.open('key_a')).resolves.toBeDefined();
+  });
+
   it('scopes sessions to the API key that opened them', async () => {
     const { reg } = registry();
     const session = await reg.open('key_a');

@@ -19,6 +19,8 @@ const FAILURE_REASON_NOTES: Record<FailureReason, string> = {
   empty: 'The page loaded but produced no usable content. Try a different `extractor` or check `onlyMainContent`.',
   robots_denied: 'robots.txt disallows this path. Helix will not override robots; this is not retryable.',
   unsupported_type: 'The content type is not one Helix can process (e.g. binary the parser does not handle).',
+  unsafe_url: 'The URL points at the Helix instance or a private network. Only public http(s) addresses open; not retryable.',
+  session_closed: 'The interact session was closed (DELETE or timeout) while the run was in progress. Open a new session.',
   service_unavailable: 'A Helix-side dependency was unreachable. Not the target site — safe to retry.',
 };
 

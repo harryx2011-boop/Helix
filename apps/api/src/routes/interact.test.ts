@@ -7,6 +7,9 @@ import type { PageLease } from '../browser/pool.js';
 import type { ExtractClient } from '../extract/client.js';
 import type { CastSession } from '../browser/screencast.js';
 import type { ApiKey } from '../core/api-keys.js';
+import type { Lookup } from '../core/url-guard.js';
+
+const lookup: Lookup = async () => [{ address: '93.184.216.34', family: 4 }];
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -26,6 +29,8 @@ interface FakePage {
   fill: ReturnType<typeof vi.fn>;
   keyboard: { press: ReturnType<typeof vi.fn>; type: ReturnType<typeof vi.fn> };
   evaluate: ReturnType<typeof vi.fn>;
+  evaluateHandle: ReturnType<typeof vi.fn>;
+  route: ReturnType<typeof vi.fn>;
   waitForTimeout: ReturnType<typeof vi.fn>;
   waitForSelector: ReturnType<typeof vi.fn>;
   screenshot: ReturnType<typeof vi.fn>;
@@ -44,6 +49,12 @@ function fakePage(overrides: Partial<FakePage> = {}): FakePage {
     fill: vi.fn(async () => undefined),
     keyboard: { press: vi.fn(async () => undefined), type: vi.fn(async () => undefined) },
     evaluate: vi.fn(async () => 'from-page'),
+    evaluateHandle: vi.fn(async () => ({
+      evaluate: async () => 11,
+      jsonValue: async () => 'from-page',
+      dispose: async () => undefined,
+    })),
+    route: vi.fn(async () => undefined),
     waitForTimeout: vi.fn(async () => undefined),
     waitForSelector: vi.fn(async () => undefined),
     screenshot: vi.fn(async () => Buffer.from('png')),
@@ -79,11 +90,12 @@ interface Harness {
   cdp: ReturnType<typeof fakeCdp>;
 }
 
-async function harness(options: { maxSessions?: number; page?: () => FakePage } = {}): Promise<Harness> {
+async function harness(options: { maxSessions?: number; page?: () => FakePage; leaseDelay?: boolean } = {}): Promise<Harness> {
   const pages: FakePage[] = [];
   const leases: Harness['leases'] = [];
   const sessions = new SessionRegistry({
     lease: async () => {
+      if (options.leaseDelay) await new Promise((resolve) => setTimeout(resolve, 5));
       const page = options.page ? options.page() : fakePage();
       pages.push(page);
       const lease = {
@@ -125,6 +137,7 @@ async function harness(options: { maxSessions?: number; page?: () => FakePage } 
         extractClient,
         publicUrl: 'http://helix.local:7400/',
         castFactory: () => async () => cdp.session,
+        lookup,
       });
     },
     { prefix: '/v1' },
@@ -191,6 +204,7 @@ describe('POST /v1/interact', () => {
     expect(body.screenshot).toMatch(/^data:image\/png;base64,/);
     expect(body.liveViewUrl).toBeUndefined();
     expect(h.pages[0]?.goto).toHaveBeenCalledWith('https://example.com/shop', expect.objectContaining({ waitUntil: 'domcontentloaded' }));
+    expect(h.pages[0]?.route).toHaveBeenCalledWith('**/*', expect.any(Function));
     expect(h.pages[0]?.click).toHaveBeenCalledWith('#accept-cookies', { timeout: 10_000 });
     expect(h.sessions.count()).toBe(0);
     expect(h.leases[0]?.close).toHaveBeenCalledTimes(1);
@@ -347,6 +361,45 @@ describe('POST /v1/interact', () => {
     expect(h.sessions.get(body.sessionId, 'key_a')).toBeDefined();
   });
 
+  it('reports sessionOpen false when the session was closed under the run', async () => {
+    await h.app.close();
+    const ref: { sessions?: SessionRegistry } = {};
+    h = await harness({
+      page: () =>
+        fakePage({
+          // The page is torn out from under the run: the session goes, then the
+          // action fails as Playwright would once the target is gone.
+          click: vi.fn(async () => {
+            await ref.sessions!.closeAll();
+            throw new Error('Target page, context or browser has been closed');
+          }),
+        }),
+    });
+    ref.sessions = h.sessions;
+
+    const res = await h.app.inject({
+      method: 'POST',
+      url: '/v1/interact',
+      payload: { url: 'https://example.com', actions: [{ type: 'click', selector: '#slow' }], keepSessionOpen: true },
+    });
+    const body = res.json();
+    expect(body).toMatchObject({ success: false, sessionOpen: false, failure: { reason: 'session_closed', actionIndex: 0 } });
+    expect(body.liveViewUrl).toBeUndefined();
+    expect(h.sessions.count()).toBe(0);
+  });
+
+  it('refuses a url that points at the instance or its network', async () => {
+    const res = await h.app.inject({
+      method: 'POST',
+      url: '/v1/interact',
+      payload: { url: 'http://127.0.0.1:7402/health', actions: [{ type: 'screenshot' }] },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ success: false, sessionOpen: false, failure: { reason: 'unsafe_url', actionIndex: null } });
+    expect(h.pages[0]?.goto).not.toHaveBeenCalled();
+    expect(h.sessions.count()).toBe(0);
+  });
+
   it('marks a failed initial navigation with a null action index', async () => {
     await h.app.close();
     h = await harness({
@@ -386,6 +439,26 @@ describe('POST /v1/interact', () => {
     });
     expect(second.statusCode).toBe(429);
     expect(second.json()).toMatchObject({ error: 'session_limit_reached' });
+  });
+
+  it('holds the cap under a burst of concurrent opens', async () => {
+    await h.app.close();
+    h = await harness({ maxSessions: 2, leaseDelay: true });
+
+    const results = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        h.app.inject({
+          method: 'POST',
+          url: '/v1/interact',
+          payload: { url: 'https://example.com', actions: [{ type: 'screenshot' }], keepSessionOpen: true },
+        }),
+      ),
+    );
+    const codes = results.map((r) => r.statusCode);
+    expect(codes.filter((c) => c === 200)).toHaveLength(2);
+    expect(codes.filter((c) => c === 429)).toHaveLength(8);
+    expect(h.sessions.count()).toBe(2);
+    expect(h.leases).toHaveLength(2);
   });
 });
 
@@ -497,5 +570,24 @@ describe('live view', () => {
     await readUntil('event: closed\ndata: closed');
     const tail = await reader.read();
     expect(tail.done).toBe(true);
+  });
+
+  it('caps the viewers on one session', async () => {
+    const opened = await h.app.inject({ method: 'POST', url: '/v1/interact/session' });
+    const { sessionId, liveViewUrl } = opened.json();
+    const token = new URL(liveViewUrl).searchParams.get('token');
+    const address = await h.app.listen({ port: 0, host: '127.0.0.1' });
+    const streamUrl = `${address}/v1/interact/live/${sessionId}/stream?token=${token}`;
+
+    const controllers = Array.from({ length: 4 }, () => new AbortController());
+    const viewers = await Promise.all(controllers.map((c) => fetch(streamUrl, { signal: c.signal })));
+    expect(viewers.map((v) => v.status)).toEqual([200, 200, 200, 200]);
+
+    const fifth = await fetch(streamUrl);
+    expect(fifth.status).toBe(429);
+    expect((await fifth.json()).error).toBe('too_many_viewers');
+
+    for (const c of controllers) c.abort();
+    await h.sessions.close(sessionId, 'key_a');
   });
 });

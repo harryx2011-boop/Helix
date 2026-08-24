@@ -4,6 +4,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { loadConfig } from './config.js';
+import { redactUrlToken } from './core/logger.js';
 import { RateLimiter, rateLimitHeaders } from './core/rate-limit.js';
 import { ensureBootstrapKey, verifyApiKey, type ApiKey } from './core/api-keys.js';
 import { closePool, createPool } from './db/pool.js';
@@ -36,15 +37,18 @@ const app = Fastify({
   logger: {
     level: config.logLevel,
     redact: {
-      // Provider credentials must never reach a log line.
+      // Provider credentials must never reach a log line. Neither must the
+      // live-view token, which rides in the query string of its own route.
       paths: [
         'req.headers.authorization',
         'req.headers["x-api-key"]',
+        'req.url',
         '*.apiKey',
         '*.api_key',
         '*.proxy',
       ],
-      censor: '[redacted]',
+      censor: (value: unknown, path: string[]) =>
+        path[path.length - 1] === 'url' && typeof value === 'string' ? redactUrlToken(value) : '[redacted]',
     },
   },
   trustProxy: true,

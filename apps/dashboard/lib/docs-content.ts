@@ -63,7 +63,7 @@ export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
     purpose: 'Drive a stateful browser session: navigate, click, type, press, scroll, wait, screenshot, run JavaScript, then extract with your model. With `keepSessionOpen`, the next call continues on the same live page.',
     whenToUse: 'Reach for Interact when reading the page requires acting on it first (a login wall, a search box, a feed that loads on scroll) or when one call has to build on the last. If a single scripted sequence before one read is enough, Scrape with `actions` is cheaper. Sessions are bounded by the operator: a cap on open sessions, an idle timeout and a hard timeout.',
     responseShape: '`{ success, sessionId, sessionOpen, url, output, data, screenshot, javascriptReturns, actionsRun, usage, timingMs }`, plus `liveViewUrl`, `expiresAt` and `idleExpiresAt` while the session is open. On failure `{ success: false, sessionId, sessionOpen, failure: { reason, detail, actionIndex, actionType } }`; `actionIndex` is `null` when the initial navigation failed. Open a session without acting via `POST /v1/interact/session`; close one with `DELETE /v1/interact/session/{sessionId}`.',
-    failureReasons: ['timeout', 'blocked', 'challenge', 'http_error', 'dns', 'tls', 'service_unavailable'],
+    failureReasons: ['timeout', 'blocked', 'challenge', 'http_error', 'dns', 'tls', 'unsafe_url', 'session_closed', 'service_unavailable'],
   },
   monitor: {
     id: 'monitor',

@@ -239,6 +239,11 @@ paths:
         content to the operator's configured provider and returns the answer
         as `output`.
 
+        The page only reaches public `http` and `https` addresses. A URL that
+        points at the instance itself, a private network, or a link-local
+        address fails with reason `unsafe_url`; the same check applies to
+        redirects, subresources and anything a script fetches.
+
         Sessions are bounded by the operator: a cap on open sessions
         (`HELIX_INTERACT_MAX_SESSIONS`), an idle timeout
         (`HELIX_INTERACT_IDLE_TIMEOUT_SECONDS`) and a hard timeout
@@ -389,7 +394,10 @@ paths:
         A read-only page showing the session as it runs, fed by Chrome's
         screencast over `GET /interact/live/{sessionId}/stream` (server-sent
         events; `frame` events carry base64 JPEG, `closed` announces the end).
-        Nothing is loaded from outside the instance.
+        Nothing is loaded from outside the instance. A viewer that falls
+        behind receives the newest frame once it catches up rather than every
+        frame in between. At most 4 viewers may stream one session at a time
+        (`too_many_viewers`, 429).
       operationId: interactLiveView
       security: []
       responses:
@@ -994,7 +1002,7 @@ components:
         amount: { type: integer, minimum: 1, maximum: 20000, description: '`scroll` only. Pixels; omitted means one viewport.' }
         milliseconds: { type: integer, minimum: 0, maximum: 30000, description: '`wait` only. Total waiting per request is capped at 60s.' }
         fullPage: { type: boolean, default: false, description: '`screenshot` only.' }
-        script: { type: string, description: '`executeJavascript` only. Its return value lands in `javascriptReturns`.' }
+        script: { type: string, description: '`executeJavascript` only. Its return value lands in `javascriptReturns`; the script has 10s to settle and its serialized return is capped at 1,000,000 characters. A script that never yields closes the session.' }
         prompt: { type: string, maxLength: 4000, description: '`extract` only. What to find on the page.' }
         schema:
           type: object
@@ -1077,7 +1085,7 @@ components:
       properties:
         success: { type: boolean }
         sessionId: { type: string }
-        sessionOpen: { type: boolean, description: Whether the session is still open for a follow-up call. }
+        sessionOpen: { type: boolean, description: Whether the session is still open for a follow-up call. Reflects the registry after the run, so a session closed or expired mid-run reports `false` (with failure reason `session_closed`). }
         url: { type: string, description: URL of the page after the last action. }
         output:
           type: string
@@ -1265,7 +1273,7 @@ components:
         url: { type: string, format: uri }
         reason:
           type: string
-          enum: [blocked, challenge, timeout, dns, tls, http_error, empty, robots_denied, unsupported_type]
+          enum: [blocked, challenge, timeout, dns, tls, http_error, empty, robots_denied, unsupported_type, unsafe_url, session_closed, service_unavailable]
         detail: { type: string }
         statusCode: { type: integer }
         detectedBy:

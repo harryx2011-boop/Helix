@@ -67,6 +67,8 @@ export class SessionRegistry {
   readonly #options: SessionRegistryOptions;
   readonly #logger: Log | undefined;
   readonly #sessions = new Map<string, SessionRecord>();
+  /** Opens that hold a slot while their lease is still being created. */
+  #pending = 0;
   #sweeper: NodeJS.Timeout | undefined;
 
   constructor(options: SessionRegistryOptions) {
@@ -94,11 +96,19 @@ export class SessionRegistry {
     // Expired sessions still on the books must not count against the caller.
     await this.sweep();
 
-    if (this.#sessions.size >= this.#options.maxSessions) {
+    // The slot is taken before the lease is awaited: a burst of opens that all
+    // read the size first would each pass the check and together overshoot it.
+    if (this.#sessions.size + this.#pending >= this.#options.maxSessions) {
       throw new SessionLimitError(this.#options.maxSessions);
     }
+    this.#pending++;
 
-    const lease = await this.#options.lease(options);
+    let lease: PageLease;
+    try {
+      lease = await this.#options.lease(options);
+    } finally {
+      this.#pending--;
+    }
     const now = Date.now();
     const listeners = new Set<(reason: CloseReason) => void>();
 

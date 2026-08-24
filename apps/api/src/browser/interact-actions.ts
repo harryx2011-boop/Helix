@@ -1,6 +1,7 @@
 import type { Page } from 'playwright';
 import { z } from 'zod';
 import { classifyTransportError, detectBlock, type FailureReason } from '../core/block-detection.js';
+import { UnsafeUrlError, assertPublicUrl, type Lookup } from '../core/url-guard.js';
 import type { ExtractClient } from '../extract/client.js';
 import type { Log } from '../core/logger.js';
 
@@ -19,6 +20,8 @@ import type { Log } from '../core/logger.js';
 const MAX_TOTAL_WAIT_MS = 60_000;
 const ACTION_TIMEOUT_MS = 10_000;
 const NAVIGATE_TIMEOUT_MS = 30_000;
+/** Serialized size of one `executeJavascript` return value. */
+const MAX_JS_RETURN_CHARS = 1_000_000;
 
 export const InteractActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('navigate'), url: z.string().url() }),
@@ -63,6 +66,8 @@ export interface InteractOutcome {
 export interface InteractActionDeps {
   extractClient: ExtractClient;
   logger?: Log | undefined;
+  /** DNS for the URL guard; tests supply a fake. */
+  lookup?: Lookup | undefined;
 }
 
 /**
@@ -76,6 +81,12 @@ export class ActionError extends Error {
   readonly reason: FailureReason;
   readonly statusCode: number | undefined;
   readonly detectedBy: string[];
+  /**
+   * The page's main thread did not come back. Chromium cannot interrupt a
+   * script that never yields, so the only way to reclaim the session is to
+   * close it; the route does that whatever the caller asked for.
+   */
+  readonly pageUnresponsive: boolean;
 
   constructor(input: {
     index: number;
@@ -84,6 +95,7 @@ export class ActionError extends Error {
     message: string;
     statusCode?: number | undefined;
     detectedBy?: string[] | undefined;
+    pageUnresponsive?: boolean | undefined;
   }) {
     super(`actions[${input.index}] (${input.action.type}): ${input.message}`);
     this.name = 'ActionError';
@@ -92,7 +104,52 @@ export class ActionError extends Error {
     this.reason = input.reason;
     this.statusCode = input.statusCode;
     this.detectedBy = input.detectedBy ?? [];
+    this.pageUnresponsive = input.pageUnresponsive ?? false;
   }
+}
+
+class EvaluateTimeoutError extends Error {
+  constructor(ms: number) {
+    super(`Timeout ${ms}ms exceeded. The page did not return from the script.`);
+    this.name = 'EvaluateTimeoutError';
+  }
+}
+
+/** `page.evaluate` has no timeout of its own; a script that never settles must not hold the request. */
+async function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new EvaluateTimeoutError(ms)), ms);
+  });
+  try {
+    return await Promise.race([work, deadline]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/**
+ * Keeps every request the page makes on the public internet: navigations,
+ * redirects, subresources, and anything a script fetches. The `navigate`
+ * check gives a clear answer for the URL the caller named; this catches the
+ * rest. Each host is resolved once per page.
+ */
+export async function guardPage(page: Page, lookup?: Lookup): Promise<void> {
+  const verdicts = new Map<string, Promise<boolean>>();
+  await page.route('**/*', async (route, request) => {
+    const url = request.url();
+    if (!/^https?:/i.test(url)) return route.continue();
+    const host = new URL(url).host;
+    let verdict = verdicts.get(host);
+    if (!verdict) {
+      verdict = assertPublicUrl(url, lookup).then(
+        () => true,
+        () => false,
+      );
+      verdicts.set(host, verdict);
+    }
+    return (await verdict) ? route.continue() : route.abort('blockedbyclient');
+  });
 }
 
 export interface InvalidActionError extends Error {
@@ -180,6 +237,14 @@ async function runOne(
 ): Promise<void> {
   switch (action.type) {
     case 'navigate': {
+      try {
+        await assertPublicUrl(action.url, deps.lookup);
+      } catch (error) {
+        if (error instanceof UnsafeUrlError) {
+          throw new ActionError({ index, action, reason: 'unsafe_url', message: `${action.url}: ${error.message}` });
+        }
+        throw error;
+      }
       const response = await page.goto(action.url, {
         timeout: NAVIGATE_TIMEOUT_MS,
         waitUntil: 'domcontentloaded',
@@ -224,9 +289,12 @@ async function runOne(
 
     case 'scroll': {
       const sign = action.direction === 'up' ? -1 : 1;
-      await page.evaluate(
-        ([s, amount]) => window.scrollBy(0, s * (amount ?? window.innerHeight)),
-        [sign, action.amount] as [number, number | undefined],
+      await withTimeout(
+        page.evaluate(
+          ([s, amount]) => window.scrollBy(0, s * (amount ?? window.innerHeight)),
+          [sign, action.amount] as [number, number | undefined],
+        ),
+        ACTION_TIMEOUT_MS,
       );
       return;
     }
@@ -234,8 +302,18 @@ async function runOne(
     case 'wait': {
       const remaining = Math.max(0, MAX_TOTAL_WAIT_MS - wait.total);
       if (action.selector) {
+        // Playwright reads a timeout of 0 as no timeout at all, so an exhausted
+        // budget has to fail here rather than be passed on.
+        if (remaining <= 0) {
+          throw new ActionError({
+            index,
+            action,
+            reason: 'timeout',
+            message: `the ${MAX_TOTAL_WAIT_MS / 1000}s waiting budget for this request is spent`,
+          });
+        }
         const started = Date.now();
-        await page.waitForSelector(action.selector, { timeout: Math.min(remaining, 30_000) });
+        await page.waitForSelector(action.selector, { timeout: Math.max(1, Math.min(remaining, 30_000)) });
         wait.total += Date.now() - started;
       } else {
         const ms = Math.min(action.milliseconds ?? 1_000, remaining);
@@ -254,10 +332,44 @@ async function runOne(
     }
 
     case 'executeJavascript': {
-      // Runs in page context. Only reachable by an authenticated caller who
-      // already controls what this instance fetches.
-      const value: unknown = await page.evaluate(action.script);
-      outcome.javascriptReturns.push(value);
+      // Runs in page context. The value stays in the page as a handle until
+      // its size is known, so a script cannot push hundreds of megabytes
+      // through CDP into the response.
+      try {
+        const value = await withTimeout(
+          (async () => {
+            const handle = await page.evaluateHandle(action.script);
+            try {
+              const size = await handle.evaluate((v) => {
+                try {
+                  const json = JSON.stringify(v);
+                  return json === undefined ? 0 : json.length;
+                } catch {
+                  return 0;
+                }
+              });
+              if (size > MAX_JS_RETURN_CHARS) {
+                throw new ActionError({
+                  index,
+                  action,
+                  reason: 'http_error',
+                  message: `return value is ${size} characters serialized; the limit is ${MAX_JS_RETURN_CHARS}`,
+                });
+              }
+              return (await handle.jsonValue()) as unknown;
+            } finally {
+              await handle.dispose().catch(() => undefined);
+            }
+          })(),
+          ACTION_TIMEOUT_MS,
+        );
+        outcome.javascriptReturns.push(value);
+      } catch (error) {
+        if (error instanceof EvaluateTimeoutError) {
+          throw new ActionError({ index, action, reason: 'timeout', message: error.message, pageUnresponsive: true });
+        }
+        throw error;
+      }
       return;
     }
 

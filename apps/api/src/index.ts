@@ -53,7 +53,7 @@ const app = Fastify({
 const pool = createPool(config.databaseUrl, app.log);
 
 const fetchClient = new FetchClient(config.fetchUrl, app.log);
-const extractClient = new ExtractClient(config.extractUrl);
+const extractClient = new ExtractClient(config.extractUrl, app.log);
 
 const browserPool = new BrowserPool({
   size: config.browserPoolSize,
@@ -153,7 +153,13 @@ app.addHook('onRequest', async (request, reply) => {
 await app.register(
   async (instance) => {
     await registerHealth(instance, { fetchClient, extractClient, browserPool });
-    await registerScrape(instance, { fetchClient, extractClient, browserPool });
+    await registerScrape(instance, {
+      fetchClient,
+      extractClient,
+      browserPool,
+      proxyUrl: config.proxyUrl,
+      allowPrivateUrls: config.allowPrivateUrls,
+    });
     await registerParse(instance, {
       extractClient,
       maxUploadBytes: config.parseMaxUploadMb * 1024 * 1024,

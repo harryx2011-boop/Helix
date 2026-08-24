@@ -50,6 +50,8 @@ export async function registerHealth(app: FastifyInstance, deps: HealthDeps): Pr
           env['OPENAI_API_KEY'] ??
             env['ANTHROPIC_API_KEY'] ??
             env['GEMINI_API_KEY'] ??
+            env['GOOGLE_API_KEY'] ??
+            env['OPENROUTER_API_KEY'] ??
             env['OPENAI_COMPATIBLE_API_KEY'],
         ),
         model: env['HELIX_LLM_MODEL'] ?? 'unset',

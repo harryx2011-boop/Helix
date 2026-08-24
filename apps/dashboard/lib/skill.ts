@@ -76,13 +76,15 @@ function endpointSection(endpoint: EndpointDef, ctx: { apiKey?: string; baseUrl:
   const successEnvelope = JSON.stringify({ success: true, data: exampleDataShape(endpoint.id), warnings: [] }, null, 2);
   const failureEnvelope = JSON.stringify({ success: false, failure: { reason: 'blocked', signals: ['string[]'] }, warnings: [] }, null, 2);
 
+  const notes = requestNotes(endpoint);
+
   return `${heading}${endpoint.tagline}
 
 **Reach for this when** ${reachWhen(endpoint)}
 **Not when** ${reachNotWhen(endpoint)}
 
 Request: \`${endpoint.method} ${endpoint.path}\`
-
+${notes ? `\n${notes}\n` : ''}
 \`\`\`bash
 ${curl}
 \`\`\`
@@ -103,6 +105,23 @@ Failure reasons:
 
 ${FAILURE_REASONS.map((reason) => `- \`${reason}\` — ${FAILURE_REASON_NOTES[reason]}`).join('\n')}
 `;
+}
+
+/** Parameter notes an agent needs to form a correct request. Only for endpoints whose contract is settled. */
+function requestNotes(endpoint: EndpointDef): string | undefined {
+  switch (endpoint.id) {
+    case 'scrape':
+      return [
+        '- `formats`: any of `markdown` (default), `html` (sanitised), `rawHtml`, `text`, `links`, `screenshot`, `json`, `chunks`. Only requested formats appear in `data`.',
+        '- `json` needs `jsonOptions.schema` (a JSON Schema). `prompt` may accompany it; `provider` and `model` override the instance default per request. Do not use `minItems`/`maxItems`; they are rejected.',
+        '- `tier`: `auto` (default) escalates plain → tls → lightpanda → chromium on evidence. Set it only to pin one tier.',
+        '- `mobile: true` renders the phone layout and forces Chromium. `actions` (click, write, press, scroll, wait, screenshot, executeJavascript) also force Chromium.',
+        '- `proxy`: `auto` (instance proxy if configured), `stealth` (instance proxy required), `none`, or `{ url, sessionId, geo }` for your own.',
+        '- On success, `usage` is present only when a model ran. A `null` format value plus a `warnings` entry means that step failed after the page was read.',
+      ].join('\n');
+    default:
+      return undefined;
+  }
 }
 
 function reachWhen(endpoint: EndpointDef): string {
@@ -146,7 +165,7 @@ function reachNotWhen(endpoint: EndpointDef): string {
 function exampleDataShape(id: EndpointDef['id']): Record<string, unknown> {
   switch (id) {
     case 'scrape':
-      return { markdown: '...', metadata: { title: '...', statusCode: 200 } };
+      return { markdown: '...', metadata: { title: '...', sourceUrl: '...', statusCode: 200, tier: 'plain', tiersAttempted: ['plain'] } };
     case 'parse':
       return { markdown: '...', json: {}, metadata: { filename: '...', pageCount: 0, fileType: 'pdf', ocrUsed: false, fromCache: false } };
     case 'search':

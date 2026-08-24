@@ -99,7 +99,7 @@ paths:
                 value:
                   url: 'https://example.com/pricing'
                   formats: [markdown, json]
-                  extract:
+                  jsonOptions:
                     schema:
                       type: object
                       properties:
@@ -110,6 +110,16 @@ paths:
                             properties:
                               name: { type: string }
                               monthlyPrice: { type: number }
+                    prompt: Extract every pricing plan on the page.
+                    provider: anthropic
+                    model: claude-sonnet-4-5
+              mobile:
+                summary: The phone layout, through your own proxy
+                value:
+                  url: 'https://example.com'
+                  formats: [markdown, screenshot]
+                  mobile: true
+                  proxy: { url: 'http://user:pass@proxy.example:3128', geo: DE }
               rendered:
                 summary: Force a browser and act on the page
                 value:
@@ -558,7 +568,15 @@ components:
                   `minItems` is not supported in extraction schemas. Length
                   constraints make models invent entries to satisfy them. Describe
                   the expectation in the field description instead.
-                field: extract.schema.properties.plans
+                field: jsonOptions.schema.properties.plans.minItems
+            proxyUnavailable:
+              summary: stealth asked for a proxy the instance does not have
+              value:
+                error: proxy_unavailable
+                message: >-
+                  `proxy: "stealth"` needs a proxy configured on this instance. Set
+                  HELIX_PROXY_URL, or pass your own as `proxy: { url }`.
+                field: proxy
     Unauthorized:
       description: Missing or invalid API key.
       content:
@@ -591,11 +609,12 @@ components:
       description: |
         An output representation.
 
-        `markdown` is clean prose. `html` is sanitised, `rawHtml` untouched.
-        `json` requires `extract` and returns schema-conforming data. `screenshot`
-        and `pdf` force the Chromium tier. `chunks` returns semantically split text
-        with stable anchors for citation.
-      enum: [markdown, html, rawHtml, text, links, images, screenshot, pdf, json, chunks, summary]
+        `markdown` is clean prose. `html` is the page with scripts, styles,
+        comments and inline handlers stripped; `rawHtml` is untouched. `json`
+        requires `jsonOptions.schema` and returns schema-conforming data.
+        `screenshot` forces the Chromium tier. `chunks` returns split text with
+        stable anchors for citation.
+      enum: [markdown, html, rawHtml, text, links, screenshot, json, chunks]
 
     Tier:
       type: string
@@ -645,6 +664,18 @@ components:
           default: 30000
           minimum: 1000
           maximum: 300000
+          description: |
+            Milliseconds for the whole fetch. On the browser tiers this is one
+            budget shared by navigation, `waitFor`, `actions` and the screenshot,
+            not a per-step allowance.
+        mobile:
+          type: boolean
+          default: false
+          description: |
+            Render in a phone viewport (390x844, touch enabled). Forces the Chromium
+            tier when `tier` is `auto`. With `plain`, `tls` or `lightpanda` no
+            viewport exists, so the page is fetched as-is, a warning says so, and
+            `metadata.mobile` is `false`.
         actions:
           type: array
           maxItems: 50
@@ -656,27 +687,29 @@ components:
         profile:
           type: string
           description: Browser identity to present. Omit for an automatic choice.
-        proxy: { $ref: '#/components/schemas/ProxyConfig' }
-        location:
-          type: object
-          properties:
-            country: { type: string, minLength: 2, maxLength: 2 }
-            languages:
-              type: array
-              items: { type: string }
-        extract: { $ref: '#/components/schemas/ExtractConfig' }
+        proxy:
+          description: |
+            `auto` uses the instance's `HELIX_PROXY_URL` when one is set and goes
+            direct otherwise. `stealth` requires it and is a 400 `proxy_unavailable`
+            when none is set. `none` goes direct regardless. An object is your own
+            proxy for this one request. Helix ships no pool.
+
+            A proxied request never uses the `lightpanda` tier: `auto` skips it, and
+            asking for it explicitly is a failure rather than a fetch from the
+            instance's own address.
+          oneOf:
+            - type: string
+              enum: [auto, stealth, none]
+            - $ref: '#/components/schemas/ProxyConfig'
+        extract:
+          allOf:
+            - $ref: '#/components/schemas/ExtractConfig'
+          description: 'Same option as `jsonOptions`. Send one of the two, not both.'
+        jsonOptions:
+          allOf:
+            - $ref: '#/components/schemas/ExtractConfig'
+          description: 'Structured extraction for the `json` format. `schema` is required when `json` is requested.'
         chunk: { $ref: '#/components/schemas/ChunkConfig' }
-        document: { $ref: '#/components/schemas/DocumentConfig' }
-        cache:
-          type: object
-          properties:
-            maxAge:
-              type: integer
-              description: Serve a cached copy if newer than this many milliseconds. 0 forces a fresh read.
-              default: 0
-            store:
-              type: boolean
-              default: true
 
     ScrapeRequest:
       allOf:
@@ -717,15 +750,34 @@ components:
       properties:
         schema:
           type: object
-          description: A JSON Schema. Over ~30 fields, split into several calls — accuracy degrades measurably.
-        prompt: { type: string }
+          description: 'A JSON Schema. Required for the `json` format. Over ~30 fields, split into several calls.'
+        prompt:
+          type: string
+          maxLength: 4000
+          description: 'Guidance for the model. Accompanies a schema; it cannot replace one.'
+        provider:
+          type: string
+          enum: [anthropic, openai, openrouter, google, gemini, ollama, vllm, openai-compatible]
+          description: |
+            Override the instance default provider. Its key must already be
+            configured (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
+            `GEMINI_API_KEY` or `GOOGLE_API_KEY`, `OPENAI_COMPATIBLE_BASE_URL`);
+            Helix never accepts credentials over the API.
         model:
           type: string
-          description: Override the server's default model. Must be configured on the server.
+          maxLength: 200
+          description: |
+            Override the instance default model. When `provider` differs from the
+            instance default and `model` is omitted, a standard model for that
+            provider is used; `ollama`, `vllm` and `openai-compatible` have none,
+            so `model` is required there (400 with `field: jsonOptions.model`).
         includeSources:
           type: boolean
           default: false
-          description: Return the passage that grounded each field.
+          description: |
+            Return the passages that reached the model as `jsonSources`: each with
+            its `text`, its `index` in page order, and the relevance `score` that
+            selected it.
 
     ChunkConfig:
       type: object
@@ -735,12 +787,8 @@ components:
           type: string
           enum: [semantic, heading, fixed]
           default: semantic
-        maxTokens: { type: integer, default: 512 }
-        overlap: { type: integer, default: 64 }
-        contextual:
-          type: boolean
-          default: false
-          description: Prepend a short generated summary to each chunk for retrieval accuracy. Costs one model call per chunk.
+        maxTokens: { type: integer, default: 512, minimum: 64, maximum: 4096 }
+        overlap: { type: integer, default: 64, minimum: 0, maximum: 1024 }
 
     DocumentConfig:
       type: object
@@ -885,7 +933,7 @@ components:
       type: object
       required: [filename, pageCount, fileType, ocrUsed, needsOcr, suspectedGarbledText, parser, sizeBytes, contentHash, fetchedAt, timingMs, fromCache]
       properties:
-        filename: { type: string, nullable: true }
+        filename: { type: [string, 'null'] }
         pageCount:
           type: integer
           description: Pages for PDF, slides for PPTX; `0` for DOCX and XLSX, which have no fixed pagination.
@@ -1230,35 +1278,39 @@ components:
       description: The read content of one resource. Identical in shape for web pages and documents.
       properties:
         markdown: { type: string }
-        html: { type: string }
+        html: { type: string, description: 'Scripts, styles, comments, inline handlers and `javascript:` URLs removed.' }
         rawHtml: { type: string }
         text: { type: string }
-        summary: { type: string }
         links:
           type: array
           items: { type: string, format: uri }
-        images:
+        screenshot:
+          type: [string, 'null']
+          description: 'A `data:image/png;base64,...` URI. `null` with a warning when no image was captured.'
+        json:
+          type: [object, 'null']
+          description: 'Schema-conforming extraction, present when `json` was requested. `null` with a warning when the model step failed after the page was read.'
+        jsonSources:
           type: array
           items:
             type: object
             properties:
-              url: { type: string, format: uri }
-              alt: { type: string }
-        screenshot: { type: string, description: 'Signed URL, expires in 24 hours.' }
-        json:
-          type: object
-          description: Schema-conforming extraction, present when `json` was requested.
+              text: { type: string }
+              index: { type: integer, description: 'Position of the passage in page order.' }
+              score: { type: number, description: 'Relevance to the schema and prompt; 0 when the whole page fit the budget.' }
+          description: 'Present when `includeSources` was set. The passages that reached the model, in page order.'
         chunks:
-          type: array
+          type: [array, 'null']
           items:
             type: object
             properties:
               text: { type: string }
               anchor: { type: string, description: 'Stable across re-crawls, so citations keep resolving.' }
               tokens: { type: integer }
-              embedding:
+              headingPath:
                 type: array
-                items: { type: number }
+                items: { type: string }
+              index: { type: integer }
         metadata: { $ref: '#/components/schemas/Metadata' }
 
     Metadata:
@@ -1278,6 +1330,9 @@ components:
           type: array
           items: { $ref: '#/components/schemas/Tier' }
         profile: { type: string }
+        extractor: { type: string, description: 'The HTML-to-text engine that ran.' }
+        mobile: { type: boolean }
+        timingMs: { type: integer, description: 'Wall-clock for the fetch ladder, in milliseconds.' }
         fromCache: { type: boolean }
         document:
           type: object
@@ -1295,7 +1350,7 @@ components:
 
     ScrapeResponse:
       type: object
-      required: [success]
+      required: [success, warnings]
       properties:
         success: { type: boolean }
         data: { $ref: '#/components/schemas/Document' }
@@ -1303,6 +1358,30 @@ components:
         warnings:
           type: array
           items: { type: string }
+          description: 'Always present. Each entry names the format it concerns, e.g. `json: No LLM credentials configured.`'
+        usage: { $ref: '#/components/schemas/ExtractionUsage' }
+
+    ExtractionUsage:
+      type: object
+      description: 'Present only when a model ran. Tokens are billed by your provider, not by Helix.'
+      properties:
+        model: { type: string }
+        tokens:
+          type: object
+          properties:
+            input: { type: integer }
+            output: { type: integer }
+        blocksKept:
+          type: integer
+          description: Content blocks that reached the model after relevance trimming.
+        blocksTotal: { type: integer }
+        providerCost:
+          type: object
+          properties:
+            amount:
+              type: [number, 'null']
+              description: '`null`: Helix carries no price table, so the amount is unknown rather than zero.'
+            currency: { type: string }
 
     FetchFailure:
       type: object

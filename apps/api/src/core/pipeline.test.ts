@@ -260,3 +260,31 @@ describe('runPipeline', () => {
     expect(result.detail).toContain('no browser pool');
   });
 });
+
+describe('runPipeline with a proxy', () => {
+  it('never routes a proxied request through lightpanda', async () => {
+    const browserPool = browserPoolReturning(ARTICLE);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], proxy: 'http://proxy.local:8080' },
+      deps({
+        fetchClient: fetchClientReturning([{ status: 200, body: SPA_SHELL }]),
+        extractClient: {
+          extract: vi.fn(async ({ html }: { html: string }) =>
+            html === SPA_SHELL
+              ? { markdown: '', text: '', links: [], extractorUsed: 'trafilatura', contentHash: 'empty' }
+              : { markdown: ARTICLE_TEXT, text: ARTICLE_TEXT, links: [], extractorUsed: 'trafilatura', contentHash: 'abc' },
+          ),
+          health: vi.fn(async () => true),
+        } as unknown as ExtractClient,
+        browserPool,
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.tiersAttempted).not.toContain('lightpanda');
+    expect(result.tiersAttempted).toContain('chromium');
+    expect(browserPool.render).toHaveBeenCalledWith(
+      expect.objectContaining({ engine: 'chromium', proxy: 'http://proxy.local:8080' }),
+    );
+  });
+});

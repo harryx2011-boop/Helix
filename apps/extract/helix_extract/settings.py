@@ -22,7 +22,11 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     openai_base_url: str | None = None
     anthropic_api_key: str | None = None
+    # Either name works for Gemini; the spec documents GOOGLE_API_KEY.
     gemini_api_key: str | None = None
+    google_api_key: str | None = None
+    openrouter_api_key: str | None = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openai_compatible_api_key: str | None = None
     openai_compatible_base_url: str | None = None
 
@@ -41,7 +45,10 @@ class Settings(BaseSettings):
                 self.openai_api_key,
                 self.anthropic_api_key,
                 self.gemini_api_key,
+                self.google_api_key,
+                self.openrouter_api_key,
                 self.openai_compatible_api_key,
+                self.openai_compatible_base_url,
             ]
         )
 

@@ -18,6 +18,8 @@ export interface FetchOptions {
   headers?: Record<string, string> | undefined;
   timeoutMs?: number | undefined;
   signal?: AbortSignal | undefined;
+  /** Operator opt-in: follow redirects onto private addresses. */
+  allowPrivate?: boolean | undefined;
 }
 
 export interface FetchResult {
@@ -58,6 +60,7 @@ export class FetchClient {
           proxy: options.proxy,
           headers: options.headers,
           timeout_ms: timeoutMs,
+          allow_private: options.allowPrivate ?? false,
         }),
         signal,
       });

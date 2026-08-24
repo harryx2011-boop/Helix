@@ -15,6 +15,7 @@ export default [
     },
     plugins: { '@typescript-eslint': tsPlugin },
     rules: {
+      ...tsPlugin.configs['eslint-recommended'].overrides[0].rules,
       ...tsPlugin.configs.recommended.rules,
       'no-undef': 'off',
       'no-unused-vars': 'off',

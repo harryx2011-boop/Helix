@@ -1,3 +1,4 @@
+import type { Log } from '../core/logger.js';
 
 /**
  * Client for helix-extract.
@@ -48,15 +49,38 @@ export interface StructuredOptions {
   content: string;
   schema?: Record<string, unknown> | undefined;
   prompt?: string | undefined;
+  /** Per-request provider override; the key must be configured on the instance. */
+  provider?: string | undefined;
   model?: string | undefined;
+  includeSources?: boolean | undefined;
   timeoutMs?: number | undefined;
 }
 
 export interface StructuredResult {
   data: Record<string, unknown>;
+  sources: Record<string, unknown>[];
   tokensInput: number;
   tokensOutput: number;
   modelUsed: string;
+  /** How much of the page reached the model, so a missing field can be told apart from a trimmed-away one. */
+  blocksKept: number;
+  blocksTotal: number;
+}
+
+export interface ChunkOptions {
+  text: string;
+  url: string;
+  strategy?: 'semantic' | 'heading' | 'fixed' | undefined;
+  maxTokens?: number | undefined;
+  overlap?: number | undefined;
+}
+
+export interface Chunk {
+  text: string;
+  anchor: string;
+  tokens: number;
+  headingPath: string[];
+  index: number;
 }
 
 /** helix-extract answered with a status the caller can act on (400 schema, 415 type, 503 provider). */
@@ -69,6 +93,26 @@ export class ExtractHttpError extends Error {
     this.name = 'ExtractHttpError';
     this.status = status;
     this.detail = detail;
+  }
+}
+
+/**
+ * A structured-extraction failure. It carries the upstream status like any
+ * other, plus the request field at fault when helix-extract named one, so a
+ * route can tell a schema problem (the caller's) from missing credentials (the
+ * operator's). It extends ExtractHttpError so callers that only care about the
+ * status still catch it.
+ */
+export class StructuredError extends ExtractHttpError {
+  /** The request field at fault, when helix-extract named one. */
+  readonly field: string | undefined;
+
+  constructor(status: number, message: string, field?: string) {
+    super(status, message);
+    this.name = 'StructuredError';
+    // The upstream message is the whole story here; the generic prefix is not.
+    this.message = message;
+    this.field = field;
   }
 }
 
@@ -85,9 +129,11 @@ async function detailOf(response: Response): Promise<string> {
 
 export class ExtractClient {
   readonly #baseUrl: string;
+  readonly #logger: Log | undefined;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, logger?: Log) {
     this.#baseUrl = baseUrl.replace(/\/$/, '');
+    this.#logger = logger;
   }
 
   async extract(options: ExtractOptions): Promise<ExtractResult> {
@@ -107,7 +153,7 @@ export class ExtractClient {
 
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
-      this.#logger?.warn({ status: response.status, url: options.url }, 'helix-extract call failed');
+      this.#logger?.warn({ status: response.status, url: options.url }, 'helix-extract /extract failed');
       throw new Error(`helix-extract returned HTTP ${response.status}: ${detail.slice(0, 200)}`);
     }
 
@@ -179,28 +225,84 @@ export class ExtractClient {
         content: options.content,
         schema: options.schema ?? {},
         prompt: options.prompt ?? null,
+        provider: options.provider ?? null,
         model: options.model ?? null,
+        include_sources: options.includeSources ?? false,
       }),
       signal: AbortSignal.timeout(options.timeoutMs ?? 120_000),
     });
 
     if (!response.ok) {
-      throw new ExtractHttpError(response.status, await detailOf(response));
+      const detail = await detailOf(response);
+      let message = detail.slice(0, 500);
+      let field: string | undefined;
+      try {
+        const parsed = JSON.parse(detail) as { detail?: unknown };
+        if (parsed.detail && typeof parsed.detail === 'object') {
+          const structured = parsed.detail as { message?: unknown; field?: unknown };
+          if (typeof structured.message === 'string') message = structured.message;
+          if (typeof structured.field === 'string') field = structured.field;
+        }
+      } catch {
+        // Not JSON; `detailOf` already returned the best text available.
+      }
+      this.#logger?.warn({ status: response.status }, 'helix-extract /structured failed');
+      throw new StructuredError(response.status, message || `helix-extract returned HTTP ${response.status}`, field);
     }
 
     const body = (await response.json()) as {
       data: Record<string, unknown>;
+      sources?: Record<string, unknown>[];
       tokens_input: number;
       tokens_output: number;
       model_used: string;
+      blocks_kept?: number;
+      blocks_total?: number;
     };
 
     return {
       data: body.data,
+      sources: body.sources ?? [],
       tokensInput: body.tokens_input,
       tokensOutput: body.tokens_output,
       modelUsed: body.model_used,
+      blocksKept: body.blocks_kept ?? 0,
+      blocksTotal: body.blocks_total ?? 0,
     };
+  }
+
+  async chunk(options: ChunkOptions): Promise<Chunk[]> {
+    const response = await fetch(`${this.#baseUrl}/chunk`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        text: options.text,
+        url: options.url,
+        strategy: options.strategy ?? 'semantic',
+        max_tokens: options.maxTokens ?? 512,
+        overlap: options.overlap ?? 64,
+        embed: false,
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      this.#logger?.warn({ status: response.status, url: options.url }, 'helix-extract /chunk failed');
+      throw new Error(`helix-extract returned HTTP ${response.status}: ${detail.slice(0, 200)}`);
+    }
+
+    const body = (await response.json()) as {
+      chunks: { text: string; anchor: string; tokens: number; heading_path?: string[]; index?: number }[];
+    };
+
+    return body.chunks.map((c) => ({
+      text: c.text,
+      anchor: c.anchor,
+      tokens: c.tokens,
+      headingPath: c.heading_path ?? [],
+      index: c.index ?? 0,
+    }));
   }
 
   async health(): Promise<boolean> {

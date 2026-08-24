@@ -44,6 +44,14 @@ const ConfigSchema = z.object({
   lightpandaUrl: z.string().default('http://localhost:9222'),
 
   proxyUrl: z.string().optional(),
+  /**
+   * Off by default: a caller-chosen URL must not reach loopback, link-local or
+   * private-range addresses, or an API key becomes a door to the instance's
+   * network and cloud metadata. Turn on only for an instance that scrapes its
+   * own intranet and trusts every key it issues.
+   */
+  allowPrivateUrls: bool(false),
+
   /** `auto` picks SearXNG, then Serper, then SerpAPI, whichever has credentials. */
   searchProvider: z.enum(['auto', 'searxng', 'serper', 'serpapi', 'none']).default('auto'),
   searchMaxResults: int(50),
@@ -94,6 +102,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     lightpandaEnabled: env.HELIX_LIGHTPANDA_ENABLED,
     lightpandaUrl: env.HELIX_LIGHTPANDA_URL,
     proxyUrl: env.HELIX_PROXY_URL || undefined,
+    allowPrivateUrls: env.HELIX_ALLOW_PRIVATE_URLS,
     searchProvider: env.HELIX_SEARCH_PROVIDER,
     searchMaxResults: env.HELIX_SEARCH_MAX_RESULTS,
     searchScrapeConcurrency: env.HELIX_SEARCH_SCRAPE_CONCURRENCY,

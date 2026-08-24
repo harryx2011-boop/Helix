@@ -143,12 +143,17 @@ class StructuredRequest(BaseModel):
     content: str
     schema_: dict = Field(alias="schema")
     prompt: str | None = None
+    # Per-request override of the instance default. The key for that provider
+    # must already be configured; Helix never accepts credentials over the API.
+    provider: str | None = None
     model: str | None = None
     include_sources: bool = False
 
 
 class StructuredResponse(BaseModel):
     data: dict
+    # The passages that reached the model, in page order, with the relevance
+    # score that selected them. Only filled when `include_sources` was set.
     sources: list[dict] = Field(default_factory=list)
     tokens_input: int
     tokens_output: int
@@ -166,18 +171,26 @@ async def structured(request: StructuredRequest) -> StructuredResponse:
             content=request.content,
             schema=request.schema_,
             prompt=request.prompt,
+            provider=request.provider,
             model=request.model,
+            include_sources=request.include_sources,
         )
     except SchemaError as exc:
         # A schema problem is the caller's to fix, and the hint says how.
         detail = f"{exc.message} {exc.hint}".strip() if exc.hint else exc.message
         raise HTTPException(status_code=400, detail=detail) from exc
+    except llm.RequestError as exc:
+        # Also the caller's, but a different field than the schema.
+        raise HTTPException(
+            status_code=400, detail={"message": exc.message, "field": exc.field}
+        ) from exc
     except llm.ProviderError as exc:
         # No credentials, or the provider refused. Not the caller's fault.
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     return StructuredResponse(
         data=result.data,
+        sources=result.sources,
         tokens_input=result.tokens_input,
         tokens_output=result.tokens_output,
         model_used=result.model_used,

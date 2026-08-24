@@ -19,6 +19,7 @@ import { registerCrawl } from './routes/crawl.js';
 import { registerJobs } from './routes/jobs.js';
 import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
+import { registerInternal } from './routes/internal.js';
 import { createSearchProvider } from './search/providers.js';
 
 declare module 'fastify' {
@@ -104,7 +105,7 @@ app.addHook('onRequest', async (request, reply) => {
   if (!token) {
     return reply.code(401).send({
       error: 'unauthorized',
-      message: 'Missing API key. Send `Authorization: Bearer hx_...`.',
+      message: 'Missing API key. Send `Authorization: Bearer helix-...`.',
       requestId: request.id,
     });
   }
@@ -171,7 +172,9 @@ await app.register(
   { prefix: '/v1' },
 );
 
-// TODO(M7+): /monitors, /enrich
+await registerInternal(app, { adminToken: config.internalAdminToken });
+
+// TODO(M7+): /monitor, /parse, /interact
 
 const start = async (): Promise<void> => {
   try {

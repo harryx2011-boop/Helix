@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomInt, timingSafeEqual } from 'node:crypto';
 import { getPool } from '../db/pool.js';
 
 /**
@@ -12,8 +12,10 @@ import { getPool } from '../db/pool.js';
  * creation, and cannot be recovered afterwards.
  */
 
-const PREFIX = 'hx_';
-const KEY_BYTES = 32;
+const PREFIX = 'helix-';
+const KEY_LENGTH = 16;
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const PREFIX_VISIBLE = 4;
 
 export interface ApiKey {
   id: string;
@@ -48,12 +50,14 @@ export function safeEqual(a: string, b: string): boolean {
 }
 
 export function generateKey(): { key: string; hash: string; prefix: string } {
-  const key = PREFIX + randomBytes(KEY_BYTES).toString('hex');
+  let body = '';
+  for (let i = 0; i < KEY_LENGTH; i++) body += ALPHABET[randomInt(ALPHABET.length)];
+  const key = PREFIX + body;
   return {
     key,
     hash: hashKey(key),
     // Enough to identify a key in a list without revealing it.
-    prefix: key.slice(0, PREFIX.length + 8),
+    prefix: key.slice(0, PREFIX.length + PREFIX_VISIBLE),
   };
 }
 
@@ -118,6 +122,32 @@ export async function verifyApiKey(key: string): Promise<ApiKey | undefined> {
   return toApiKey(row);
 }
 
+/**
+ * Register a key minted elsewhere (the hosted website mints `helix-` keys and
+ * mirrors them here so this instance can validate them by hash). Idempotent.
+ */
+export async function importApiKey(plaintext: string, name: string, rateLimit = 1000): Promise<ApiKey> {
+  if (!plaintext.startsWith(PREFIX)) throw new Error('key must start with ' + PREFIX);
+  const { rows } = await getPool().query<KeyRow>(
+    `INSERT INTO api_keys (name, key_hash, key_prefix, rate_limit)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (key_hash) DO UPDATE SET name = EXCLUDED.name, rate_limit = EXCLUDED.rate_limit, revoked_at = NULL
+     RETURNING id, name, key_prefix, rate_limit, created_at, last_used_at, revoked_at`,
+    [name, hashKey(plaintext), plaintext.slice(0, PREFIX.length + PREFIX_VISIBLE), rateLimit],
+  );
+  const row = rows[0];
+  if (!row) throw new Error('failed to import API key');
+  return toApiKey(row);
+}
+
+export async function revokeApiKeyByHash(plaintextHash: string): Promise<boolean> {
+  const { rowCount } = await getPool().query(
+    'UPDATE api_keys SET revoked_at = now() WHERE key_hash = $1 AND revoked_at IS NULL',
+    [plaintextHash],
+  );
+  return (rowCount ?? 0) > 0;
+}
+
 export async function listApiKeys(): Promise<ApiKey[]> {
   const { rows } = await getPool().query<KeyRow>(
     `SELECT id, name, key_prefix, rate_limit, created_at, last_used_at, revoked_at
@@ -143,7 +173,7 @@ export async function revokeApiKey(id: string): Promise<boolean> {
  */
 export async function ensureBootstrapKey(plaintext: string): Promise<void> {
   const hash = hashKey(plaintext);
-  const prefix = plaintext.slice(0, PREFIX.length + 8);
+  const prefix = plaintext.slice(0, PREFIX.length + PREFIX_VISIBLE);
 
   await getPool().query(
     `INSERT INTO api_keys (name, key_hash, key_prefix, rate_limit)

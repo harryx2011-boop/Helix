@@ -65,7 +65,7 @@ export function KeyMenu() {
               <Label htmlFor="new-api-key">New key</Label>
               <Input
                 id="new-api-key"
-                placeholder="hx_..."
+                placeholder="helix-..."
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 spellCheck={false}

@@ -1,7 +1,7 @@
 import 'server-only';
 import { supabaseAdmin } from './supabase/server';
 import type { ProfileRow, ApiKeyRow } from './supabase/types';
-import { encryptApiKey, generateApiKey, hashApiKey, keyLast3, keyPrefix } from './keys';
+import { decryptApiKey, encryptApiKey, generateApiKey, hashApiKey, keyLast3, keyPrefix } from './keys';
 
 /** Find or create the profile for a Clerk user. Idempotent; safe from the webhook and from first request. */
 export async function ensureProfile(input: { clerkUserId: string; email: string; name?: string | null; avatarUrl?: string | null }): Promise<ProfileRow> {
@@ -54,8 +54,15 @@ export async function listApiKeys(profileId: string): Promise<ApiKeyRow[]> {
 }
 
 export async function revokeApiKey(profileId: string, keyId: string): Promise<void> {
-  const { error } = await supabaseAdmin().from('api_keys').update({ revoked_at: new Date().toISOString() }).eq('id', keyId).eq('profile_id', profileId);
+  const db = supabaseAdmin();
+  const { data: row } = await db.from('api_keys').select('*').eq('id', keyId).eq('profile_id', profileId).maybeSingle();
+  const { error } = await db.from('api_keys').update({ revoked_at: new Date().toISOString() }).eq('id', keyId).eq('profile_id', profileId);
   if (error) throw error;
+  if (row) {
+    const r = row as ApiKeyRow;
+    const key = decryptApiKey(byteaToBuffer(r.key_ciphertext), byteaToBuffer(r.key_iv));
+    await hostedApiRequest('DELETE', { key }).catch(() => undefined);
+  }
 }
 
 /** Postgres bytea comes back as `\xHEX` text through PostgREST. */
@@ -69,12 +76,17 @@ export function byteaToBuffer(value: string): Buffer {
  * logged by the caller, never surfaced to the user, and retried on next use.
  */
 async function syncKeyToHostedApi(key: string, name: string, rateLimitPerMin: number | null): Promise<void> {
+  await hostedApiRequest('POST', { key, name, rateLimitPerMin });
+}
+
+async function hostedApiRequest(method: 'POST' | 'DELETE', body: Record<string, unknown>): Promise<void> {
   const base = process.env.HELIX_HOSTED_API_URL;
   const token = process.env.HELIX_INTERNAL_ADMIN_TOKEN;
   if (!base || !token) return;
-  await fetch(`${base}/internal/keys`, {
-    method: 'POST',
+  const res = await fetch(`${base}/internal/keys`, {
+    method,
     headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-    body: JSON.stringify({ key, name, rateLimitPerMin }),
+    body: JSON.stringify(body),
   });
+  if (!res.ok) throw new Error(`hosted API key sync failed: ${res.status}`);
 }

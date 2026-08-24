@@ -4,7 +4,7 @@ import { generateKey, hashKey, safeEqual } from './api-keys.js';
 describe('API key generation', () => {
   it('produces prefixed, high-entropy keys', () => {
     const { key } = generateKey();
-    expect(key).toMatch(/^hx_[0-9a-f]{64}$/);
+    expect(key).toMatch(/^helix-[A-Za-z0-9]{16}$/);
   });
 
   it('never repeats', () => {
@@ -16,8 +16,8 @@ describe('API key generation', () => {
     const { key, prefix } = generateKey();
     expect(key.startsWith(prefix)).toBe(true);
     // Short enough to be useless to an attacker, long enough to pick out of a list.
-    expect(prefix.length).toBe(11);
-    expect(prefix.length).toBeLessThan(key.length / 4);
+    expect(prefix.length).toBe(10);
+    expect(prefix.length).toBeLessThan(key.length / 2);
   });
 
   it('hashes deterministically, and the hash is not the key', () => {
@@ -28,8 +28,8 @@ describe('API key generation', () => {
   });
 
   it('gives unrelated hashes to keys differing by one character', () => {
-    const a = hashKey('hx_aaaa');
-    const b = hashKey('hx_aaab');
+    const a = hashKey('helix-aaaa');
+    const b = hashKey('helix-aaab');
     expect(a).not.toBe(b);
 
     // Sanity-check the avalanche property rather than trusting SHA-256 blindly.

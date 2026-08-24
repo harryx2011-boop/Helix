@@ -45,7 +45,7 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
             <Label htmlFor="api-key">API key</Label>
             <Input
               id="api-key"
-              placeholder="hx_..."
+              placeholder="helix-..."
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               autoFocus

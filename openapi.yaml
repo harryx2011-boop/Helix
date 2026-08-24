@@ -773,8 +773,7 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/MonitorHistoryEntry' }
                   next:
-                    type: string
-                    nullable: true
+                    type: [string, 'null']
                     description: Path of the next page, or null on the last page.
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -1735,8 +1734,7 @@ components:
           format: uri
           description: Loaded before the actions. Required when `sessionId` is absent; with one, navigates that session first.
         sessionId:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: Continue on an open session from an earlier call or from `/interact/session`.
         actions:
           type: array
@@ -1779,7 +1777,7 @@ components:
         url: { type: string, description: Current URL of the page. }
         createdAt: { type: string, format: date-time }
         lastActivityAt: { type: string, format: date-time }
-        expiresAt: { type: string, format: date-time, description: Hard deadline, regardless of activity. }
+        expiresAt: { type: string, format: date-time, description: 'Hard deadline, regardless of activity.' }
         idleExpiresAt: { type: string, format: date-time, description: When the session closes if nothing else happens. }
         liveViewUrl: { type: string, format: uri, description: Read-only live view; carries its own token. }
         idleTimeoutSeconds: { type: integer }
@@ -1791,8 +1789,7 @@ components:
         - type: object
           properties:
             actionIndex:
-              type: integer
-              nullable: true
+              type: [integer, 'null']
               description: Index into `actions` of the step that failed; `null` when the initial navigation from `url` failed.
             actionType: { type: string }
 
@@ -1802,17 +1799,15 @@ components:
       properties:
         success: { type: boolean }
         sessionId: { type: string }
-        sessionOpen: { type: boolean, description: Whether the session is still open for a follow-up call. Reflects the registry after the run, so a session closed or expired mid-run reports `false` (with failure reason `session_closed`). }
+        sessionOpen: { type: boolean, description: 'Whether the session is still open for a follow-up call. Reflects the registry after the run, so a session closed or expired mid-run reports `false` (with failure reason `session_closed`).' }
         url: { type: string, description: URL of the page after the last action. }
         output:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: The last `extract` result; the answer string, or the JSON of a schema result.
         data:
-          type: object
-          nullable: true
+          type: [object, 'null']
           description: The last `extract` result as an object.
-        screenshot: { type: string, nullable: true, description: 'Last `screenshot` as a `data:image/png;base64,...` URL.' }
+        screenshot: { type: [string, 'null'], description: 'Last `screenshot` as a `data:image/png;base64,...` URL.' }
         javascriptReturns:
           type: array
           items: {}
@@ -1829,7 +1824,7 @@ components:
               properties:
                 input: { type: integer }
                 output: { type: integer }
-            model: { type: string, nullable: true }
+            model: { type: [string, 'null'] }
         timingMs: { type: integer }
         failure: { $ref: '#/components/schemas/InteractFailure' }
 
@@ -1888,7 +1883,6 @@ components:
         trigger: { $ref: '#/components/schemas/MonitorTrigger' }
         sensitivity: { type: string, enum: [any, significant] }
         webhook:
-          nullable: true
           oneOf:
             - { type: string, format: uri }
             - $ref: '#/components/schemas/MonitorWebhook'
@@ -1978,12 +1972,11 @@ components:
         trigger: { $ref: '#/components/schemas/MonitorTrigger' }
         sensitivity: { type: string, enum: [any, significant] }
         webhook:
-          type: object
-          nullable: true
+          type: [object, 'null']
           properties:
             url: { type: string, format: uri }
             events: { type: array, items: { type: string } }
-            metadata: { type: object, nullable: true }
+            metadata: { type: [object, 'null'] }
             headers: { type: array, items: { type: string }, description: Header names only. }
             signed: { type: boolean }
         status:
@@ -1992,10 +1985,10 @@ components:
           description: '`error` after a failed check; clears on the next successful one. Checks keep running.'
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
-        lastCheckedAt: { type: string, format: date-time, nullable: true }
-        nextCheckAt: { type: string, format: date-time, nullable: true, description: Null while paused. }
-        lastChangeAt: { type: string, format: date-time, nullable: true }
-        lastError: { type: string, nullable: true }
+        lastCheckedAt: { type: [string, 'null'], format: date-time }
+        nextCheckAt: { type: [string, 'null'], format: date-time, description: Null while paused. }
+        lastChangeAt: { type: [string, 'null'], format: date-time }
+        lastError: { type: [string, 'null'] }
         stats:
           type: object
           properties:
@@ -2006,7 +1999,6 @@ components:
               description: Checks that found no change. They store nothing and send nothing.
         latestSnapshot:
           description: Present on `GET /monitor/{id}`; null until the first check.
-          nullable: true
           allOf:
             - $ref: '#/components/schemas/MonitorSnapshot'
 
@@ -2030,10 +2022,10 @@ components:
         whose ops and text exceed 128 KB is stored and delivered with counts
         only, flagged `truncated`.
       properties:
-        granularity: { type: string, enum: [word, line, character], description: The granularity that applied, which may be `line` on a large rewrite. }
+        granularity: { type: string, enum: [word, line, character], description: 'The granularity that applied, which may be `line` on a large rewrite.' }
         added: { type: integer, description: Tokens inserted at the chosen granularity. }
         removed: { type: integer }
-        changeRatio: { type: number, description: Changed tokens over the larger side, 0 to 1. }
+        changeRatio: { type: number, description: 'Changed tokens over the larger side, 0 to 1.' }
         coarse: { type: boolean, description: Present and true when the changed region is one delete and one insert. }
         truncated: { type: boolean, description: Present and true when `ops` and `text` were dropped for size. }
         text:
@@ -2061,11 +2053,10 @@ components:
             sensitivity setting ignores. `trigger_not_met` changed but the keyword
             or ratio trigger did not fire; the baseline still moved.
         diff:
-          nullable: true
           allOf:
             - $ref: '#/components/schemas/MonitorDiff'
-        error: { type: string, nullable: true }
-        snapshotUrl: { type: string, nullable: true, description: Null when the snapshot was pruned. }
+        error: { type: [string, 'null'] }
+        snapshotUrl: { type: [string, 'null'], description: Null when the snapshot was pruned. }
 
     WebhookDelivery:
       type: object
@@ -2075,11 +2066,11 @@ components:
         url: { type: string, format: uri }
         status: { type: string, enum: [pending, delivered, dead] }
         attempts: { type: integer }
-        lastError: { type: string, nullable: true }
-        responseStatus: { type: integer, nullable: true }
-        nextRetryAt: { type: string, format: date-time, nullable: true }
+        lastError: { type: [string, 'null'] }
+        responseStatus: { type: [integer, 'null'] }
+        nextRetryAt: { type: [string, 'null'], format: date-time }
         createdAt: { type: string, format: date-time }
-        deliveredAt: { type: string, format: date-time, nullable: true }
+        deliveredAt: { type: [string, 'null'], format: date-time }
 
     Document:
       type: object

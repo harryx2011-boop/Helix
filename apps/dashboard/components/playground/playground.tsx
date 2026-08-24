@@ -180,7 +180,7 @@ export function Playground({ initialTab }: PlaygroundProps) {
           {activeDef.id === 'interact' && (
             <InteractForm
               loading={loading}
-              onSubmit={(request: InteractRequest) => run('interact', 'interact', request as unknown as Record<string, unknown>, request.keepSessionOpen === true)}
+              onSubmit={(request: InteractRequest) => run('interact', 'interact', request as unknown as Record<string, unknown>, false)}
               onGetCode={(body) => openCode('interact', body)}
             />
           )}

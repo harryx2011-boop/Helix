@@ -53,6 +53,7 @@ export class ExtractClient {
 
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
+      this.#logger?.warn({ url: options.url, status: response.status }, 'helix-extract request failed');
       throw new Error(`helix-extract returned HTTP ${response.status}: ${detail.slice(0, 200)}`);
     }
 
@@ -83,7 +84,8 @@ export class ExtractClient {
         signal: AbortSignal.timeout(2_000),
       });
       return response.ok;
-    } catch {
+    } catch (err) {
+      this.#logger?.debug({ err }, 'helix-extract health check failed');
       return false;
     }
   }

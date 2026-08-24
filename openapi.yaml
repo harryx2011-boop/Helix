@@ -725,21 +725,32 @@ components:
 
         Delivery retries with exponential backoff (one minute, doubling, capped at
         six hours) for `HELIX_WEBHOOK_MAX_ATTEMPTS` attempts, about three days at
-        the default of 20. Ordering is not guaranteed; make your handler
-        idempotent. Exhausted deliveries are kept as dead letters in
-        `webhook_deliveries`.
+        the default of 20. Only a 5xx, a 408/429 or a network failure is retried;
+        a 4xx, a redirect or an unsendable request dead-letters on the first
+        attempt. Ordering is not guaranteed; make your handler idempotent.
+        Exhausted deliveries are kept as dead letters in `webhook_deliveries`
+        for `HELIX_RESULT_TTL_HOURS`.
+
+        The URL must be `http` or `https` on a public hostname or address:
+        loopback, private and link-local targets, bare service names and
+        `localhost` are rejected, and the name is resolved again before each
+        send. Redirects are not followed.
       properties:
         url: { type: string, format: uri }
         headers:
           type: object
           additionalProperties: { type: string }
+          description: |
+            Sent with every delivery, at most 16. `Content-Type`, `Host`,
+            `User-Agent` and the `Helix-*` headers are set by Helix and cannot
+            be overridden.
         events:
           type: array
           description: Subscribe to a subset. Omitted means every event. `changed` is emitted by monitors only.
           items: { type: string, enum: [started, page, changed, completed, failed] }
         metadata:
           type: object
-          description: Echoed back in every delivery.
+          description: Echoed back in every delivery. At most 4096 bytes serialised.
 
     WebhookPayload:
       type: object

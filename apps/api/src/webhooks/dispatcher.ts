@@ -1,16 +1,41 @@
 import type { Log } from '../core/logger.js';
-import { retryDelayMs, type Queryable, type WebhookEvent, type WebhookPayload } from './deliveries.js';
+import {
+  purgeSettledDeliveries,
+  retryDelayMs,
+  type Queryable,
+  type WebhookEvent,
+  type WebhookPayload,
+} from './deliveries.js';
 import { signPayload } from './signature.js';
+import { resolvedTargetProblem, type Resolver } from './target.js';
 
 /**
  * Delivers queued webhooks.
  *
  * Claims due rows by pushing their `next_retry_at` forward as a lease, so a
  * crashed dispatcher leaves nothing stuck: the lease expires and the row is
- * simply due again. A 2xx marks the row delivered. Anything else schedules a
- * retry with backoff until the attempt ceiling, after which the row is dead —
- * kept, not deleted, so it can be inspected and replayed.
+ * simply due again. A 2xx marks the row delivered. A failure that another
+ * attempt could fix (a 5xx, a timeout, a dropped connection) schedules a retry
+ * with backoff until the attempt ceiling. One that will not change (a 4xx, a
+ * redirect, a private target) dead-letters at once: twenty attempts over three
+ * days at a receiver answering 404 is not persistence, it is a flood. Dead rows
+ * are kept for the retention window so they can be inspected and replayed.
  */
+
+const PURGE_INTERVAL_MS = 60 * 60 * 1000;
+
+/** Statuses a later attempt may turn into a 2xx. */
+function isRetryableStatus(status: number): boolean {
+  return status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+/**
+ * Undici wraps network failures (refused, reset, DNS) in a TypeError carrying a
+ * `cause`; a TypeError without one is the request itself being unsendable.
+ */
+function isPermanentError(error: unknown): boolean {
+  return error instanceof TypeError && (error as { cause?: unknown }).cause === undefined;
+}
 
 export interface DeliveryRow {
   id: number | string;
@@ -38,6 +63,9 @@ export interface DispatcherDeps {
   batchSize?: number;
   requestTimeoutMs?: number;
   leaseSeconds?: number;
+  /** Delivered and dead rows older than this are deleted. Omitted means never. */
+  retentionHours?: number | undefined;
+  resolve?: Resolver;
   logger?: Log | undefined;
   now?: () => number;
 }
@@ -58,10 +86,13 @@ export class WebhookDispatcher {
   readonly #batchSize: number;
   readonly #requestTimeoutMs: number;
   readonly #leaseSeconds: number;
+  readonly #retentionHours: number | undefined;
+  readonly #resolve: Resolver | undefined;
   readonly #logger: Log | undefined;
   readonly #now: () => number;
   #running = false;
   #stopping = false;
+  #lastPurge = 0;
 
   constructor(deps: DispatcherDeps) {
     this.#db = deps.db;
@@ -71,6 +102,8 @@ export class WebhookDispatcher {
     this.#batchSize = deps.batchSize ?? 20;
     this.#requestTimeoutMs = deps.requestTimeoutMs ?? 10_000;
     this.#leaseSeconds = deps.leaseSeconds ?? 60;
+    this.#retentionHours = deps.retentionHours;
+    this.#resolve = deps.resolve;
     this.#logger = deps.logger;
     this.#now = deps.now ?? Date.now;
   }
@@ -99,7 +132,37 @@ export class WebhookDispatcher {
     return outcomes;
   }
 
+  /**
+   * A `page` event carries the page's markdown, which lives in `documents`.
+   * It is read at send time rather than copied into the queue row, so a crawl
+   * with a webhook stores each page once. A page purged before delivery sends
+   * `null`.
+   */
+  async #hydrate(row: DeliveryRow): Promise<unknown> {
+    const data = row.payload.data;
+    if (row.payload.event !== 'page' || !row.job_id || typeof data !== 'object' || data === null) {
+      return data;
+    }
+    const page = data as Record<string, unknown>;
+    if (typeof page['url'] !== 'string' || 'markdown' in page) return page;
+
+    const { rows } = await this.#db.query<{ markdown: string | null }>(
+      `SELECT content->>'markdown' AS markdown
+         FROM documents
+        WHERE job_id = $1 AND url = $2
+        ORDER BY fetched_at DESC
+        LIMIT 1`,
+      [row.job_id, page['url']],
+    );
+    return { url: page['url'], markdown: rows[0]?.markdown ?? null, ...page };
+  }
+
   async deliver(row: DeliveryRow): Promise<DeliveryOutcome> {
+    const targetProblem = await resolvedTargetProblem(row.url, this.#resolve);
+    if (targetProblem) {
+      return this.#settle(row, row.attempts + 1, `target ${targetProblem}`, true, undefined);
+    }
+
     const timestamp = Math.floor(this.#now() / 1000);
     const body: WebhookPayload = {
       id: String(row.id),
@@ -107,38 +170,54 @@ export class WebhookDispatcher {
       jobId: row.payload.jobId,
       monitorId: row.payload.monitorId,
       timestamp: new Date(timestamp * 1000).toISOString(),
-      data: row.payload.data,
+      data: await this.#hydrate(row),
       metadata: row.payload.metadata,
     };
     const serialised = JSON.stringify(body);
 
+    // Caller headers first, so the ones Helix promises cannot be replaced.
     const headers: Record<string, string> = {
+      ...(row.payload.headers ?? {}),
       'content-type': 'application/json',
       'user-agent': 'Helix-Webhooks/1',
       'helix-event': row.payload.event,
       'helix-delivery-id': String(row.id),
-      ...(row.payload.headers ?? {}),
     };
     if (this.#secret) headers['helix-signature'] = signPayload(this.#secret, timestamp, serialised);
 
     let statusCode: number | undefined;
     let error: string | undefined;
+    let permanent = false;
 
     try {
+      // A redirect is not followed: the target was checked, its Location was not.
       const response = await this.#fetch(row.url, {
         method: 'POST',
         headers,
         body: serialised,
+        redirect: 'manual',
         signal: AbortSignal.timeout(this.#requestTimeoutMs),
       });
       statusCode = response.status;
-      if (!response.ok) error = `HTTP ${response.status}`;
+      if (!response.ok) {
+        error = `HTTP ${response.status}`;
+        permanent = !isRetryableStatus(response.status);
+      }
     } catch (caught) {
       error = caught instanceof Error ? caught.message : String(caught);
+      permanent = isPermanentError(caught);
     }
 
-    const attempts = row.attempts + 1;
+    return this.#settle(row, row.attempts + 1, error, permanent, statusCode);
+  }
 
+  async #settle(
+    row: DeliveryRow,
+    attempts: number,
+    error: string | undefined,
+    permanent: boolean,
+    statusCode: number | undefined,
+  ): Promise<DeliveryOutcome> {
     if (error === undefined) {
       await this.#db.query(
         `UPDATE webhook_deliveries
@@ -149,14 +228,17 @@ export class WebhookDispatcher {
       return { id: row.id, status: 'delivered', attempts, statusCode };
     }
 
-    if (attempts >= this.#maxAttempts) {
+    if (permanent || attempts >= this.#maxAttempts) {
       await this.#db.query(
         `UPDATE webhook_deliveries
             SET status = 'dead', attempts = $2, last_error = $3
           WHERE id = $1`,
         [row.id, attempts, error],
       );
-      this.#logger?.warn({ deliveryId: row.id, url: row.url, attempts, error }, 'webhook dead-lettered');
+      this.#logger?.warn(
+        { deliveryId: row.id, url: row.url, attempts, error, permanent },
+        'webhook dead-lettered',
+      );
       return { id: row.id, status: 'dead', attempts, statusCode, error };
     }
 
@@ -171,6 +253,17 @@ export class WebhookDispatcher {
     return { id: row.id, status: 'retry', attempts, statusCode, error };
   }
 
+  /** Delete settled rows past retention, at most once an hour. */
+  async purgeIfDue(): Promise<number> {
+    if (this.#retentionHours === undefined) return 0;
+    const now = this.#now();
+    if (now - this.#lastPurge < PURGE_INTERVAL_MS) return 0;
+    this.#lastPurge = now;
+    const purged = await purgeSettledDeliveries(this.#db, this.#retentionHours);
+    if (purged > 0) this.#logger?.info({ purged }, 'webhook deliveries purged');
+    return purged;
+  }
+
   /** Poll for due deliveries until stopped. */
   async start(intervalMs = 5_000): Promise<void> {
     if (this.#running) return;
@@ -179,6 +272,7 @@ export class WebhookDispatcher {
 
     while (!this.#stopping) {
       try {
+        await this.purgeIfDue();
         const outcomes = await this.runOnce();
         if (outcomes.length === 0) {
           await new Promise((resolve) => setTimeout(resolve, intervalMs));

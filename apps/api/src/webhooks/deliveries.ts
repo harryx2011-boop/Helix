@@ -97,3 +97,18 @@ export async function enqueueDelivery(db: Queryable, input: EnqueueInput): Promi
 
   return (rowCount ?? 0) > 0;
 }
+
+/**
+ * Drop delivered and dead rows older than the retention window. Dead letters
+ * stay inspectable for as long as the results they refer to; after that the
+ * table would only grow.
+ */
+export async function purgeSettledDeliveries(db: Queryable, olderThanHours: number): Promise<number> {
+  const { rowCount } = await db.query(
+    `DELETE FROM webhook_deliveries
+      WHERE status IN ('delivered', 'dead')
+        AND created_at < now() - ($1::int * interval '1 hour')`,
+    [olderThanHours],
+  );
+  return rowCount ?? 0;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { dedupeKey, enqueueDelivery, retryDelayMs, wantsEvent, type Queryable } from './deliveries.js';
+import { dedupeKey, enqueueDelivery, purgeSettledDeliveries, retryDelayMs, wantsEvent, type Queryable } from './deliveries.js';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -75,5 +75,17 @@ describe('enqueueDelivery', () => {
   it('reports false when the row already existed', async () => {
     const db = fakeDb(0);
     expect(await enqueueDelivery(db, { config, event: 'completed', jobId: 'job-1', data: {} })).toBe(false);
+  });
+});
+
+describe('purgeSettledDeliveries', () => {
+  it('deletes only delivered and dead rows older than the window', async () => {
+    const db = fakeDb(12);
+    expect(await purgeSettledDeliveries(db, 168)).toBe(12);
+
+    const [text, values] = db.calls[0]!;
+    expect(text).toContain("status IN ('delivered', 'dead')");
+    expect(text).toContain('created_at <');
+    expect(values).toEqual([168]);
   });
 });

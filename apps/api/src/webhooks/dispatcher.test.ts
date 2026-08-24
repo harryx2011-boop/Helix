@@ -24,17 +24,34 @@ function row(over: Partial<DeliveryRow> = {}): DeliveryRow {
   };
 }
 
-function fakeDb(claimed: DeliveryRow[]): Queryable & { updates: { text: string; values: unknown[] }[] } {
+function fakeDb(
+  claimed: DeliveryRow[],
+  documents: Record<string, string> = {},
+): Queryable & { updates: { text: string; values: unknown[] }[]; reads: unknown[][] } {
   const updates: { text: string; values: unknown[] }[] = [];
+  const reads: unknown[][] = [];
   return {
     updates,
+    reads,
     query: vi.fn(async (text: string, values?: unknown[]) => {
       if (text.includes('RETURNING id, job_id')) return { rows: claimed as never[], rowCount: claimed.length };
+      if (text.includes('FROM documents')) {
+        reads.push(values ?? []);
+        const markdown = documents[String(values?.[1])];
+        return { rows: markdown === undefined ? [] : ([{ markdown }] as never[]), rowCount: 1 };
+      }
+      if (text.startsWith('DELETE FROM webhook_deliveries')) {
+        updates.push({ text, values: values ?? [] });
+        return { rows: [], rowCount: 3 };
+      }
       updates.push({ text, values: values ?? [] });
       return { rows: [], rowCount: 1 };
     }) as Queryable['query'],
   };
 }
+
+/** Every test target resolves publicly; DNS is not what is under test. */
+const resolve = async () => ['93.184.216.34'];
 
 function fakeFetch(status: number | Error): typeof fetch & { calls: { url: string; init: RequestInit }[] } {
   const calls: { url: string; init: RequestInit }[] = [];
@@ -51,7 +68,7 @@ describe('WebhookDispatcher', () => {
   it('posts the payload with event headers and marks a 2xx delivered', async () => {
     const db = fakeDb([row()]);
     const fetchFn = fakeFetch(200);
-    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, now: () => 1_700_000_000_000 });
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, resolve, now: () => 1_700_000_000_000 });
 
     const outcomes = await dispatcher.runOnce();
 
@@ -81,7 +98,7 @@ describe('WebhookDispatcher', () => {
     const db = fakeDb([row()]);
     const fetchFn = fakeFetch(204);
     const now = 1_700_000_000_000;
-    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, secret: 'whsec_x', now: () => now });
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, secret: 'whsec_x', resolve, now: () => now });
 
     await dispatcher.runOnce();
 
@@ -92,7 +109,7 @@ describe('WebhookDispatcher', () => {
 
   it('schedules a retry with backoff on a non-2xx', async () => {
     const db = fakeDb([row({ attempts: 2 })]);
-    const dispatcher = new WebhookDispatcher({ db, fetch: fakeFetch(503) });
+    const dispatcher = new WebhookDispatcher({ db, fetch: fakeFetch(503), resolve });
 
     const [outcome] = await dispatcher.runOnce();
 
@@ -104,16 +121,119 @@ describe('WebhookDispatcher', () => {
 
   it('treats a network failure like a failed attempt', async () => {
     const db = fakeDb([row()]);
-    const dispatcher = new WebhookDispatcher({ db, fetch: fakeFetch(new Error('ECONNREFUSED')) });
+    const refused = new TypeError('fetch failed', { cause: Object.assign(new Error('connect'), { code: 'ECONNREFUSED' }) });
+    const dispatcher = new WebhookDispatcher({ db, fetch: fakeFetch(refused), resolve });
 
     const [outcome] = await dispatcher.runOnce();
 
-    expect(outcome).toMatchObject({ status: 'retry', attempts: 1, error: 'ECONNREFUSED' });
+    expect(outcome).toMatchObject({ status: 'retry', attempts: 1, error: 'fetch failed' });
+  });
+
+  it('dead-letters a request fetch refuses to send instead of retrying it twenty times', async () => {
+    const db = fakeDb([row({ payload: { ...row().payload, headers: { 'bad header': 'x' } } })]);
+    const dispatcher = new WebhookDispatcher({ db, fetch: fakeFetch(new TypeError('invalid header name')), resolve });
+
+    const [outcome] = await dispatcher.runOnce();
+
+    expect(outcome).toMatchObject({ status: 'dead', attempts: 1, error: 'invalid header name' });
+    expect(db.updates[0]!.text).toContain("status = 'dead'");
+  });
+
+  it('dead-letters a 4xx on the first attempt but retries a 429', async () => {
+    const gone = new WebhookDispatcher({ db: fakeDb([row()]), fetch: fakeFetch(410), resolve });
+    expect((await gone.runOnce())[0]).toMatchObject({ status: 'dead', attempts: 1, statusCode: 410 });
+
+    const throttled = new WebhookDispatcher({ db: fakeDb([row()]), fetch: fakeFetch(429), resolve });
+    expect((await throttled.runOnce())[0]).toMatchObject({ status: 'retry', attempts: 1, statusCode: 429 });
+  });
+
+  it('does not follow a redirect, and dead-letters it', async () => {
+    const db = fakeDb([row()]);
+    const fetchFn = fakeFetch(302);
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, resolve });
+
+    const [outcome] = await dispatcher.runOnce();
+
+    expect(fetchFn.calls[0]!.init.redirect).toBe('manual');
+    expect(outcome).toMatchObject({ status: 'dead', statusCode: 302 });
+  });
+
+  it('refuses a target that resolves to a private address without sending', async () => {
+    const db = fakeDb([row()]);
+    const fetchFn = fakeFetch(200);
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, resolve: async () => ['10.0.0.5'] });
+
+    const [outcome] = await dispatcher.runOnce();
+
+    expect(fetchFn.calls).toHaveLength(0);
+    expect(outcome).toMatchObject({ status: 'dead', attempts: 1, error: 'target resolves to a private or loopback address' });
+  });
+
+  it('never lets a caller header replace the ones Helix sets', async () => {
+    const db = fakeDb([
+      row({ payload: { ...row().payload, headers: { 'content-type': 'text/plain', 'helix-event': 'completed', host: 'x' } } }),
+    ]);
+    const fetchFn = fakeFetch(200);
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, resolve });
+
+    await dispatcher.runOnce();
+
+    const headers = fetchFn.calls[0]!.init.headers as Record<string, string>;
+    expect(headers['content-type']).toBe('application/json');
+    expect(headers['helix-event']).toBe('page');
+  });
+
+  it('reads the page markdown from documents at send time', async () => {
+    const queued = row({ payload: { ...row().payload, data: { url: 'https://s.com/a', metadata: { title: 'A' } } } });
+    const db = fakeDb([queued], { 'https://s.com/a': '# A from documents' });
+    const fetchFn = fakeFetch(200);
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, resolve });
+
+    await dispatcher.runOnce();
+
+    expect(db.reads[0]).toEqual(['job-1', 'https://s.com/a']);
+    const body = JSON.parse(String(fetchFn.calls[0]!.init.body)) as { data: Record<string, unknown> };
+    expect(body.data).toEqual({ url: 'https://s.com/a', markdown: '# A from documents', metadata: { title: 'A' } });
+  });
+
+  it('sends null markdown for a page that is no longer stored', async () => {
+    const queued = row({ payload: { ...row().payload, data: { url: 'https://s.com/gone' } } });
+    const db = fakeDb([queued]);
+    const fetchFn = fakeFetch(200);
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, resolve });
+
+    await dispatcher.runOnce();
+
+    const body = JSON.parse(String(fetchFn.calls[0]!.init.body)) as { data: Record<string, unknown> };
+    expect(body.data['markdown']).toBeNull();
+  });
+
+  it('purges settled rows past retention, at most once an hour', async () => {
+    const db = fakeDb([]);
+    let now = 1_700_000_000_000;
+    const dispatcher = new WebhookDispatcher({ db, fetch: fakeFetch(200), resolve, retentionHours: 168, now: () => now });
+
+    expect(await dispatcher.purgeIfDue()).toBe(3);
+    expect(db.updates[0]!.text).toContain('DELETE FROM webhook_deliveries');
+    expect(db.updates[0]!.values).toEqual([168]);
+
+    now += 30 * 60 * 1000;
+    expect(await dispatcher.purgeIfDue()).toBe(0);
+    now += 31 * 60 * 1000;
+    expect(await dispatcher.purgeIfDue()).toBe(3);
+  });
+
+  it('never purges when no retention is configured', async () => {
+    const db = fakeDb([]);
+    const dispatcher = new WebhookDispatcher({ db, fetch: fakeFetch(200), resolve });
+
+    expect(await dispatcher.purgeIfDue()).toBe(0);
+    expect(db.updates).toHaveLength(0);
   });
 
   it('dead-letters after the attempt ceiling instead of retrying forever', async () => {
     const db = fakeDb([row({ attempts: 4 })]);
-    const dispatcher = new WebhookDispatcher({ db, fetch: fakeFetch(500), maxAttempts: 5 });
+    const dispatcher = new WebhookDispatcher({ db, fetch: fakeFetch(500), maxAttempts: 5, resolve });
 
     const [outcome] = await dispatcher.runOnce();
 
@@ -124,7 +244,7 @@ describe('WebhookDispatcher', () => {
   it('does nothing when nothing is due', async () => {
     const db = fakeDb([]);
     const fetchFn = fakeFetch(200);
-    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn });
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, resolve });
 
     expect(await dispatcher.runOnce()).toEqual([]);
     expect(fetchFn.calls).toHaveLength(0);

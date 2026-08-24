@@ -4,6 +4,7 @@ import { getPool } from '../db/pool.js';
 import { compilePathPattern } from '../crawl/url.js';
 import type { CrawlJobRequest } from '../crawl/worker.js';
 import { WEBHOOK_EVENTS } from '../webhooks/deliveries.js';
+import { MAX_WEBHOOK_BYTES, webhookHeadersProblem, webhookTargetProblem } from '../webhooks/target.js';
 import { discoverUrls, type MapRouteDeps } from './map.js';
 import { cancelJob, fetchJobView } from './jobs.js';
 
@@ -48,22 +49,42 @@ const ScrapeOptionsSchema = z.object({
   onlyMainContent: z.boolean().optional(),
 });
 
-const WebhookObjectSchema = z.object({
-  url: z.string().url(),
-  headers: z.record(z.string()).optional(),
-  events: z.array(z.enum(WEBHOOK_EVENTS)).optional(),
-  metadata: z.record(z.unknown()).optional(),
-});
+// The dispatcher POSTs from the server's own network, so the target is
+// checked here before the job exists, and the headers it will send are checked
+// against what fetch accepts: a header fetch rejects fails every attempt.
+const WebhookUrlSchema = z
+  .string()
+  .url()
+  .superRefine((url, ctx) => {
+    const problem = webhookTargetProblem(url);
+    if (problem) ctx.addIssue({ code: z.ZodIssueCode.custom, message: problem });
+  });
+
+const WebhookObjectSchema = z
+  .object({
+    url: WebhookUrlSchema,
+    headers: z.record(z.string()).optional(),
+    events: z.array(z.enum(WEBHOOK_EVENTS)).optional(),
+    metadata: z.record(z.unknown()).optional(),
+  })
+  .superRefine((webhook, ctx) => {
+    const headerProblem = webhook.headers ? webhookHeadersProblem(webhook.headers) : undefined;
+    if (headerProblem) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['headers'], message: headerProblem });
+    }
+    // Copied into every delivery row, so bounded like the headers.
+    if (webhook.metadata && Buffer.byteLength(JSON.stringify(webhook.metadata)) > MAX_WEBHOOK_BYTES) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['metadata'],
+        message: `must serialise to at most ${MAX_WEBHOOK_BYTES} bytes`,
+      });
+    }
+  });
 
 // The spec writes `webhook` as a bare URL; the fuller object form carries
 // headers, an event filter and metadata. Both normalise to the object.
-const WebhookSchema = z.union([
-  z
-    .string()
-    .url()
-    .transform((url) => ({ url })),
-  WebhookObjectSchema,
-]);
+const WebhookSchema = z.union([WebhookUrlSchema.transform((url) => ({ url })), WebhookObjectSchema]);
 
 function crawlRequestSchema(limits: CrawlLimits) {
   return z.object({

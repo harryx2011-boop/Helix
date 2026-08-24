@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diffText, tokenize } from './diff.js';
+import { boundedDiff, diffText, tokenize } from './diff.js';
 
 describe('tokenize', () => {
   it('keeps whitespace tokens at word granularity so the text re-joins verbatim', () => {
@@ -78,5 +78,73 @@ describe('diffText', () => {
     expect(Date.now() - started).toBeLessThan(2_000);
     expect(diff.removed).toBeGreaterThan(0);
     expect(diff.added).toBeGreaterThan(0);
+  });
+});
+
+describe('diffText on large rewrites', () => {
+  const words = (count: number, seed: string) => Array.from({ length: count }, (_, i) => `${seed}${i}`).join(' ');
+
+  it('stays within a small memory budget when a long page is replaced wholesale', () => {
+    const before = words(20_000, 'old');
+    const after = words(20_000, 'new');
+    const heapBefore = process.memoryUsage().heapUsed;
+    const started = Date.now();
+    const diff = diffText(before, after, 'word');
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(process.memoryUsage().heapUsed - heapBefore).toBeLessThan(64 * 1024 * 1024);
+    // One line replaced by one line: the line-granularity stage answered.
+    expect(diff.granularity).toBe('line');
+    expect(diff.added).toBe(1);
+    expect(diff.removed).toBe(1);
+    expect(diff.changeRatio).toBe(1);
+  });
+
+  it('falls back to line granularity, then to one delete and one insert', () => {
+    const lines = Array.from({ length: 4_000 }, (_, i) => `line ${i} of the page`);
+    const before = lines.join('\n');
+    const after = lines.map((line, i) => (i % 2 === 0 ? `line ${i} rewritten entirely` : line)).join('\n');
+
+    const fromWord = diffText(before, after, 'word');
+    expect(fromWord.granularity).toBe('line');
+    expect(fromWord.added).toBe(2_000);
+    expect(fromWord.coarse).toBeUndefined();
+
+    const rewritten = Array.from({ length: 6_000 }, (_, i) => `entirely different line ${i}`).join('\n');
+    const coarse = diffText(before, rewritten, 'line');
+    expect(coarse.coarse).toBe(true);
+    expect(coarse.ops.map((o) => o.op)).toEqual(['delete', 'insert']);
+    expect(coarse.removed).toBe(4_000);
+    expect(coarse.added).toBe(6_000);
+    const rebuiltBefore = coarse.ops.filter((o) => o.op !== 'insert').map((o) => o.text).join('\n');
+    expect(rebuiltBefore).toBe(before);
+  });
+
+  it('character diffs of a page-sized replacement finish quickly', () => {
+    const started = Date.now();
+    const diff = diffText('x'.repeat(40_000), 'y'.repeat(40_000), 'character');
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(diff.added).toBeGreaterThan(0);
+  });
+
+  it('keeps an exact diff for a scattered edit across a long page', () => {
+    const lines = Array.from({ length: 3_000 }, (_, i) => `line ${i} content here`);
+    const before = lines.join('\n');
+    for (let i = 0; i < lines.length; i += 50) lines[i] = `line ${i} edited`;
+    const after = lines.join('\n');
+    const diff = diffText(before, after, 'word');
+    expect(diff.granularity).toBe('word');
+    expect(diff.added).toBe(60);
+    expect(diff.removed).toBe(120);
+    expect(diff.ops.filter((o) => o.op !== 'insert').map((o) => o.text).join('')).toBe(before);
+    expect(diff.ops.filter((o) => o.op !== 'delete').map((o) => o.text).join('')).toBe(after);
+  });
+});
+
+describe('boundedDiff', () => {
+  it('drops ops and text past the byte cap and keeps the counts', () => {
+    const diff = diffText('a b c', 'a x c', 'word');
+    expect(boundedDiff(diff, 10_000)).toBe(diff);
+    const bounded = boundedDiff(diff, 10);
+    expect(bounded).toMatchObject({ added: 1, removed: 1, ops: [], text: '', truncated: true });
   });
 });

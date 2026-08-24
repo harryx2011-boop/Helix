@@ -1,3 +1,4 @@
+import * as React from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -5,12 +6,12 @@ import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { CodePanel, CodeBlock } from '@/components/marketing/code-panel';
 import { PillButton } from '@/components/marketing/pill-button';
 import { ENDPOINTS, type EndpointDef } from '@/lib/catalog';
-import { docsEndpointOrThrow, docsCurlExample, type EndpointDocs } from '@/lib/docs-content';
+import { docsEndpointOrThrow, docsCurlExample, agentSurfaceDocs, isAgentSurfaceSlug, type EndpointDocs, type DocSectionContent } from '@/lib/docs-content';
+import { MCP_URL, SITE_URL } from '@/lib/mode';
 import { generateCode } from '@/lib/codegen';
 import type { Endpoint } from '@/lib/supabase/types';
 
 const STATIC_SLUGS = ['getting-started', 'mcp', 'cli', 'skills'] as const;
-type StaticSlug = (typeof STATIC_SLUGS)[number];
 
 export function generateStaticParams() {
   const endpointSlugs = ENDPOINTS.filter((e) => e.product).map((e) => ({ slug: e.id }));
@@ -27,20 +28,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 function titleFor(slug: string): string | undefined {
   const endpoint = docsEndpointOrThrow(slug);
   if (endpoint) return endpoint.def.productName;
-  const titles: Record<StaticSlug, string> = {
-    'getting-started': 'Getting started',
-    mcp: 'MCP',
-    cli: 'CLI',
-    skills: 'Skills',
-  };
-  return STATIC_SLUGS.includes(slug as StaticSlug) ? titles[slug as StaticSlug] : undefined;
+  if (slug === 'getting-started') return 'Getting started';
+  if (isAgentSurfaceSlug(slug)) return agentSurfaceDocs({ mcpUrl: MCP_URL, siteUrl: SITE_URL })[slug].title;
+  return undefined;
 }
 
 export default async function DocsSlugPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const endpoint = docsEndpointOrThrow(slug);
   if (endpoint) return <EndpointDoc def={endpoint.def} docs={endpoint.docs} />;
-  if (STATIC_SLUGS.includes(slug as StaticSlug)) return <StaticDoc slug={slug as StaticSlug} />;
+  if (isAgentSurfaceSlug(slug)) return <AgentSurfaceDoc slug={slug} />;
+  if (slug === 'getting-started') return <GettingStartedDoc />;
   notFound();
 }
 
@@ -119,87 +117,82 @@ function DocSection({ title, children }: { title: string; children: React.ReactN
   );
 }
 
-function StaticDoc({ slug }: { slug: StaticSlug }) {
-  const content: Record<StaticSlug, { h1: string; body: React.ReactNode }> = {
-    'getting-started': {
-      h1: 'Getting started',
-      body: (
-        <>
-          <DocSection title="1. Sign up">
-            <p className="text-[15px] leading-relaxed text-m-ink/72">
-              Create an account at <Link href="/sign-up" className="text-violet underline decoration-violet-40 underline-offset-4">/sign-up</Link>. A default API key is minted for you automatically.
-            </p>
-          </DocSection>
-          <DocSection title="2. Get your key">
-            <p className="text-[15px] leading-relaxed text-m-ink/72">
-              Find it under <Link href="/app/keys" className="text-violet underline decoration-violet-40 underline-offset-4">/app/keys</Link>. Keys look like <code className="font-mono text-[13px]">helix-a7K2mQ9xP4wR8sT1</code>.
-            </p>
-          </DocSection>
-          <DocSection title="3. Make a request">
-            <CodePanel chrome="terminal" label="curl">
-              <CodeBlock dark>{generateCode('curl', { endpoint: 'scrape', body: { url: 'https://example.com' } })}</CodeBlock>
-            </CodePanel>
-          </DocSection>
-        </>
-      ),
-    },
-    mcp: {
-      h1: 'MCP',
-      body: (
-        <DocSection title="Connect">
-          <p className="text-[15px] leading-relaxed text-m-ink/72">
-            Helix exposes an MCP server at <code className="font-mono text-[13px]">https://mcp.helix.dev/v1</code> over streamable HTTP.
-            Tools mirror the endpoint catalog, generated from openapi.yaml so descriptions cannot drift.
-          </p>
-          <div className="mt-4">
-            <CodePanel chrome="terminal" label="claude mcp add">
-              <CodeBlock dark>{generateCode('mcp', { endpoint: 'scrape', body: { url: 'https://example.com' } })}</CodeBlock>
-            </CodePanel>
-          </div>
-        </DocSection>
-      ),
-    },
-    cli: {
-      h1: 'CLI',
-      body: (
-        <DocSection title="Install">
-          <p className="text-[15px] leading-relaxed text-m-ink/72">
-            The CLI detects installed agent harnesses and writes their MCP config plus your SKILL.md in one step.
-          </p>
-          <div className="mt-4">
-            <CodePanel chrome="terminal" label="terminal" copyText="npx -y @helix/cli@latest init --all -k helix-YOUR_KEY">
-              <CodeBlock dark>npx -y @helix/cli@latest init --all -k helix-YOUR_KEY</CodeBlock>
-            </CodePanel>
-          </div>
-        </DocSection>
-      ),
-    },
-    skills: {
-      h1: 'Skills',
-      body: (
-        <DocSection title="SKILL.md">
-          <p className="text-[15px] leading-relaxed text-m-ink/72">
-            A SKILL.md is generated per account from the endpoints you selected in onboarding — purpose, request/response
-            and failure reasons for each one. The public, ungated version covering every endpoint lives at{' '}
-            <Link href="/agent-onboarding/SKILL.md" className="text-violet underline decoration-violet-40 underline-offset-4">
-              /agent-onboarding/SKILL.md
-            </Link>
-            .
-          </p>
-        </DocSection>
-      ),
-    },
-  };
+/** Renders a docs-content body: text with backtick spans as inline code. */
+function InlineCode({ text }: { text: string }) {
+  const parts = text.split('`');
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <code key={i} className="font-mono text-[13px] text-m-ink">
+            {part}
+          </code>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        ),
+      )}
+    </>
+  );
+}
 
-  const { h1, body } = content[slug];
+function ContentSection({ section }: { section: DocSectionContent }) {
+  return (
+    <DocSection title={section.title}>
+      <p className="text-[15px] leading-relaxed text-m-ink/72">
+        <InlineCode text={section.body} />
+      </p>
+      {section.code && (
+        <div className="mt-4">
+          <CodePanel chrome="terminal" label={section.code.label} copyText={section.code.text}>
+            <CodeBlock dark>{section.code.text}</CodeBlock>
+          </CodePanel>
+        </div>
+      )}
+    </DocSection>
+  );
+}
 
+function StaticShell({ h1, children }: { h1: string; children: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-container px-4 pb-24 pt-16 lg:pt-24">
       <div className="mx-auto max-w-[720px] animate-fade-up">
         <SectionEyebrow step="DOCS" label={h1.toUpperCase()} sub="reference" />
         <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">{h1}</h1>
       </div>
-      <div className="mx-auto mt-14 max-w-[720px] animate-fade-up [animation-delay:60ms] space-y-12">{body}</div>
+      <div className="mx-auto mt-14 max-w-[720px] animate-fade-up [animation-delay:60ms] space-y-12">{children}</div>
     </div>
+  );
+}
+
+function AgentSurfaceDoc({ slug }: { slug: 'mcp' | 'cli' | 'skills' }) {
+  const doc = agentSurfaceDocs({ mcpUrl: MCP_URL, siteUrl: SITE_URL })[slug];
+  return (
+    <StaticShell h1={doc.title}>
+      {doc.sections.map((section) => (
+        <ContentSection key={section.title} section={section} />
+      ))}
+    </StaticShell>
+  );
+}
+
+function GettingStartedDoc() {
+  return (
+    <StaticShell h1="Getting started">
+      <DocSection title="1. Sign up">
+        <p className="text-[15px] leading-relaxed text-m-ink/72">
+          Create an account at <Link href="/sign-up" className="text-violet underline decoration-violet-40 underline-offset-4">/sign-up</Link>. A default API key is minted for you automatically.
+        </p>
+      </DocSection>
+      <DocSection title="2. Get your key">
+        <p className="text-[15px] leading-relaxed text-m-ink/72">
+          Find it under <Link href="/app/keys" className="text-violet underline decoration-violet-40 underline-offset-4">/app/keys</Link>. Keys look like <code className="font-mono text-[13px]">helix-a7K2mQ9xP4wR8sT1</code>.
+        </p>
+      </DocSection>
+      <DocSection title="3. Make a request">
+        <CodePanel chrome="terminal" label="curl">
+          <CodeBlock dark>{generateCode('curl', { endpoint: 'scrape', body: { url: 'https://example.com' } })}</CodeBlock>
+        </CodePanel>
+      </DocSection>
+    </StaticShell>
   );
 }

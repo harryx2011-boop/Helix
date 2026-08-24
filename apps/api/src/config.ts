@@ -43,6 +43,12 @@ const ConfigSchema = z.object({
   lightpandaEnabled: bool(false),
   lightpandaUrl: z.string().default('http://localhost:9222'),
 
+  /** Where callers reach this instance from outside; live-view URLs are built on it. */
+  publicUrl: z.string().default('http://localhost:7400'),
+  interactMaxSessions: int(4),
+  interactIdleTimeoutSeconds: int(300),
+  interactHardTimeoutSeconds: int(900),
+
   proxyUrl: z.string().optional(),
   searchProvider: z.enum(['serper', 'serpapi', 'none']).default('none'),
 
@@ -81,6 +87,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     browserRecycleAfter: env.HELIX_BROWSER_RECYCLE_AFTER,
     lightpandaEnabled: env.HELIX_LIGHTPANDA_ENABLED,
     lightpandaUrl: env.HELIX_LIGHTPANDA_URL,
+    publicUrl: env.HELIX_PUBLIC_URL,
+    interactMaxSessions: env.HELIX_INTERACT_MAX_SESSIONS,
+    interactIdleTimeoutSeconds: env.HELIX_INTERACT_IDLE_TIMEOUT_SECONDS,
+    interactHardTimeoutSeconds: env.HELIX_INTERACT_HARD_TIMEOUT_SECONDS,
     proxyUrl: env.HELIX_PROXY_URL || undefined,
     searchProvider: env.HELIX_SEARCH_PROVIDER,
     resultTtlHours: env.HELIX_RESULT_TTL_HOURS,

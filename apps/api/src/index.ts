@@ -11,6 +11,7 @@ import { migrate } from './db/migrate.js';
 import { FetchClient } from './fetch/client.js';
 import { ExtractClient } from './extract/client.js';
 import { BrowserPool } from './browser/pool.js';
+import { SessionRegistry } from './browser/sessions.js';
 import { registerHealth } from './routes/health.js';
 import { registerScrape } from './routes/scrape.js';
 import { registerKeys } from './routes/keys.js';
@@ -20,6 +21,7 @@ import { registerJobs } from './routes/jobs.js';
 import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerInternal } from './routes/internal.js';
+import { registerInteract } from './routes/interact.js';
 import { createSearchProvider } from './search/providers.js';
 
 declare module 'fastify' {
@@ -63,6 +65,14 @@ const browserPool = new BrowserPool({
   logger: app.log,
 });
 
+const sessions = new SessionRegistry({
+  lease: (options) => browserPool.lease(options),
+  maxSessions: config.interactMaxSessions,
+  idleTimeoutMs: config.interactIdleTimeoutSeconds * 1_000,
+  hardTimeoutMs: config.interactHardTimeoutSeconds * 1_000,
+  logger: app.log,
+});
+
 const searchProvider = createSearchProvider(config.searchProvider, process.env, app.log);
 
 const crawlWorker = new CrawlWorker({
@@ -95,9 +105,13 @@ await app.register(cors, { origin: config.corsOrigins });
  *
  * `/health` stays open: an unauthenticated liveness probe is what orchestrators
  * need, and it reveals only whether providers are configured, never key material.
+ *
+ * The live view is opened from a link in a browser tab, which cannot send a
+ * bearer header; the route checks the per-session token in the URL instead.
  */
 app.addHook('onRequest', async (request, reply) => {
   if (request.url.startsWith('/v1/health')) return;
+  if (request.url.startsWith('/v1/interact/live/')) return;
 
   const header = request.headers.authorization;
   const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : undefined;
@@ -168,13 +182,14 @@ await app.register(
       extractClient,
       browserPool,
     });
+    await registerInteract(instance, { sessions, extractClient, publicUrl: config.publicUrl });
   },
   { prefix: '/v1' },
 );
 
 await registerInternal(app, { adminToken: config.internalAdminToken });
 
-// TODO(M7+): /monitor, /parse, /interact
+// TODO(M7+): /monitor, /parse
 
 const start = async (): Promise<void> => {
   try {
@@ -200,6 +215,7 @@ const start = async (): Promise<void> => {
     // Runs in-process. A separate worker deployment would scale further, but
     // one process is the right default for a self-hosted tool.
     void crawlWorker.start();
+    sessions.startSweeper();
 
     await app.listen({ port: config.port, host: '0.0.0.0' });
     app.log.info(
@@ -222,6 +238,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 
     void (async () => {
       crawlWorker.stop();
+      await sessions.closeAll().catch(() => undefined);
       await app.close().catch(() => undefined);
       await browserPool.close().catch(() => undefined);
       await closePool().catch(() => undefined);

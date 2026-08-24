@@ -38,6 +38,23 @@ export interface RenderResult {
   timingMs: number;
 }
 
+/**
+ * A page held open across requests. Interact sessions lease a page instead of
+ * rendering once: the same context (cookies, storage, focus) survives until the
+ * lease is closed, and the pool accounts for it exactly like an in-flight render.
+ */
+export interface PageLease {
+  page: Page;
+  context: BrowserContext;
+  close(): Promise<void>;
+}
+
+export interface LeaseOptions {
+  headers?: Record<string, string> | undefined;
+  proxy?: string | undefined;
+  viewport?: { width: number; height: number } | undefined;
+}
+
 export interface BrowserPoolOptions {
   size: number;
   maxContexts: number;
@@ -141,6 +158,40 @@ export class BrowserPool {
 
     void drain();
     await replacement;
+  }
+
+  async lease(options: LeaseOptions = {}): Promise<PageLease> {
+    if (!this.#started) await this.start();
+
+    const pooled = await this.#acquire();
+    pooled.activeContexts++;
+
+    try {
+      const context = await pooled.browser.newContext({
+        ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
+        ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
+        ...(options.viewport ? { viewport: options.viewport } : {}),
+      });
+      const page = await context.newPage();
+
+      let closed = false;
+      return {
+        page,
+        context,
+        close: async () => {
+          if (closed) return;
+          closed = true;
+          await page.close().catch(() => undefined);
+          await context.close().catch(() => undefined);
+          pooled.pagesServed++;
+          pooled.activeContexts--;
+          void this.#maybeRecycle(pooled);
+        },
+      };
+    } catch (error) {
+      pooled.activeContexts--;
+      throw error;
+    }
   }
 
   async render(options: RenderOptions): Promise<RenderResult> {

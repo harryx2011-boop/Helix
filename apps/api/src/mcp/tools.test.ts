@@ -6,6 +6,9 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { deref, flattenAllOf, loadSpec, parseSpec, type OpenApiSpec } from './spec.js';
 import { generateTools, planRequest, toolName } from './tools.js';
 import { registerMcp } from './server.js';
+import { InternalTickets, registerAuth } from '../core/auth.js';
+import { RateLimiter } from '../core/rate-limit.js';
+import type { ApiKey } from '../core/api-keys.js';
 
 const MINI_SPEC = parseSpec(`
 openapi: 3.1.0
@@ -204,6 +207,134 @@ describe('/mcp over streamable HTTP', () => {
       expect((missing.content as { text: string }[])[0]!.text).toContain('no job nope');
     } finally {
       await client.close();
+      await app.close();
+    }
+  });
+});
+
+describe('/mcp behind the auth hook', () => {
+  const KEY: ApiKey = {
+    id: 'key-1',
+    name: 'test',
+    keyPrefix: 'helix-tes',
+    rateLimit: 4,
+    createdAt: new Date(),
+    lastUsedAt: null,
+    revokedAt: null,
+  };
+
+  async function boot() {
+    const app = Fastify();
+    const verified: string[] = [];
+    const seen: { apiKeyId?: string | undefined; ticket?: string | undefined }[] = [];
+    const tickets = new InternalTickets();
+    registerAuth(app, {
+      verifyApiKey: async (token) => {
+        verified.push(token);
+        return token === 'helix-testkey' ? KEY : undefined;
+      },
+      limiter: new RateLimiter({ limit: 1000, windowMs: 60_000 }),
+      tickets,
+    });
+    await app.register(
+      async (instance) => {
+        instance.post('/scrape', async (request) => {
+          seen.push({ apiKeyId: request.apiKey?.id, ticket: request.headers['x-helix-internal-ticket'] as string | undefined });
+          return { success: true, data: { markdown: '# hi' }, warnings: [] };
+        });
+      },
+      { prefix: '/v1' },
+    );
+    await registerMcp(app, { spec: MINI_SPEC, tickets });
+    await app.listen({ port: 0, host: '127.0.0.1' });
+    const address = app.server.address();
+    const port = typeof address === 'object' && address ? address.port : 0;
+    return { app, url: `http://127.0.0.1:${port}/mcp`, verified, seen, tickets };
+  }
+
+  const rpc = (url: string, authorization: string | undefined, body: unknown) =>
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        ...(authorization ? { authorization } : {}),
+        accept: 'application/json, text/event-stream',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+  it('verifies the key once per MCP request, and the replay rides a ticket', async () => {
+    const { app, url, verified, seen, tickets } = await boot();
+    try {
+      const call = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name: 'helix_scrape', arguments: { url: 'https://example.com' } },
+      };
+      const response = await rpc(url, 'Bearer helix-testkey', call);
+      expect(await response.text()).toContain('# hi');
+      expect(verified).toEqual(['helix-testkey']);
+      expect(seen).toHaveLength(1);
+      expect(seen[0]!.apiKeyId).toBe(KEY.id);
+      expect(seen[0]!.ticket).toMatch(/^[0-9a-f-]{36}$/);
+      expect(tickets.size).toBe(0);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('carries X-RateLimit-* on MCP responses and counts one token per request', async () => {
+    const { app, url } = await boot();
+    try {
+      const list = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} };
+      const first = await rpc(url, 'Bearer helix-testkey', list);
+      await first.text();
+      expect(first.status).toBe(200);
+      expect(first.headers.get('x-ratelimit-limit')).toBe('4');
+      expect(first.headers.get('x-ratelimit-remaining')).toBe('3');
+      expect(first.headers.get('x-ratelimit-reset')).toMatch(/^\d+$/);
+
+      const call = {
+        jsonrpc: '2.0',
+        id: 2,
+        method: 'tools/call',
+        params: { name: 'helix_scrape', arguments: { url: 'https://example.com' } },
+      };
+      const second = await rpc(url, 'Bearer helix-testkey', call);
+      expect((await second.text())).toContain('# hi');
+      expect(second.headers.get('x-ratelimit-remaining')).toBe('2');
+
+      await (await rpc(url, 'Bearer helix-testkey', call)).text();
+      await (await rpc(url, 'Bearer helix-testkey', call)).text();
+      const limited = await rpc(url, 'Bearer helix-testkey', call);
+      expect(limited.status).toBe(429);
+      expect(limited.headers.get('retry-after')).toBeTruthy();
+      expect(await limited.json()).toMatchObject({ error: 'rate_limited' });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('rejects a missing or unknown key before any tool runs', async () => {
+    const { app, url, seen } = await boot();
+    try {
+      const call = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name: 'helix_scrape', arguments: { url: 'https://example.com' } },
+      };
+      const anonymous = await rpc(url, undefined, call);
+      expect(anonymous.status).toBe(401);
+      const unknown = await rpc(url, 'Bearer helix-nope', call);
+      expect(unknown.status).toBe(401);
+      expect(await unknown.json()).toMatchObject({ error: 'unauthorized' });
+      expect(seen).toHaveLength(0);
+
+      const forged = await rpc(url, undefined, { ...call, id: 2 });
+      expect(forged.status).toBe(401);
+    } finally {
       await app.close();
     }
   });

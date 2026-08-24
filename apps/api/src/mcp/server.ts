@@ -3,6 +3,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { INTERNAL_TICKET_HEADER, type InternalTickets } from '../core/auth.js';
 import { loadSpec, type OpenApiSpec } from './spec.js';
 import { generateTools, planRequest, type HttpMethod, type ToolDef } from './tools.js';
 
@@ -10,9 +11,11 @@ import { generateTools, planRequest, type HttpMethod, type ToolDef } from './too
  * MCP over streamable HTTP at `/mcp`.
  *
  * Every tool call is replayed as an in-process HTTP request against the same
- * Fastify instance, carrying the caller's bearer key. Auth, rate limiting, zod
- * validation and the typed failure envelope are therefore identical whether an
- * agent arrives over MCP or curl: there is one code path, not two.
+ * Fastify instance. Zod validation and the typed failure envelope are therefore
+ * identical whether an agent arrives over MCP or curl: there is one code path,
+ * not two. The key is verified and charged once, on the outer POST; the replay
+ * carries a single-use ticket bound to that key so the auth hook does not
+ * verify or charge it a second time (an MCP call costs exactly one HTTP call).
  *
  * The transport is stateless (no session ids). Each POST gets a fresh Server
  * and transport, which is what the SDK recommends when nothing is kept between
@@ -24,6 +27,8 @@ export interface McpDeps {
   /** Route prefix the spec's paths are served under. */
   prefix?: string;
   version?: string;
+  /** Issues the replay's ticket; without it the bearer header is forwarded and charged again. */
+  tickets?: InternalTickets;
 }
 
 const SPEC_TO_FASTIFY = (path: string): string => path.replace(/\{([^}]+)\}/g, ':$1');
@@ -85,15 +90,20 @@ export async function registerMcp(app: FastifyInstance, deps: McpDeps = {}): Pro
       const headers: Record<string, string> = {};
       if (request.headers.authorization) headers['authorization'] = request.headers.authorization;
       if (planned.body !== undefined) headers['content-type'] = 'application/json';
+      const ticket = deps.tickets && request.apiKey ? deps.tickets.issue(request.apiKey) : undefined;
+      if (ticket) headers[INTERNAL_TICKET_HEADER] = ticket;
 
-      const response = await app.inject({
-        method: planned.method,
-        url: planned.url,
-        headers,
-        ...(planned.body !== undefined ? { payload: planned.body } : {}),
-      });
-
-      return contentFromResponse(response.statusCode, response.body);
+      try {
+        const response = await app.inject({
+          method: planned.method,
+          url: planned.url,
+          headers,
+          ...(planned.body !== undefined ? { payload: planned.body } : {}),
+        });
+        return contentFromResponse(response.statusCode, response.body);
+      } finally {
+        if (ticket) deps.tickets?.revoke(ticket);
+      }
     });
 
     return server;
@@ -107,6 +117,12 @@ export async function registerMcp(app: FastifyInstance, deps: McpDeps = {}): Pro
       // No sessionIdGenerator: stateless mode.
       const transport = new StreamableHTTPServerTransport({});
 
+      // Hijacking hands the socket to the SDK transport, so headers queued on the
+      // Fastify reply (X-RateLimit-*, CORS, helmet) must move to the raw response
+      // first or they never leave the process.
+      for (const [name, value] of Object.entries(reply.getHeaders())) {
+        if (value !== undefined) reply.raw.setHeader(name, value);
+      }
       reply.hijack();
       reply.raw.on('close', () => {
         void transport.close();

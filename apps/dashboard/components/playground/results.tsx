@@ -9,6 +9,7 @@ import type {
   InteractResponse,
   JobAccepted,
   MapResponse,
+  MonitorResponse,
   ParseResponse,
   ScrapeResponse,
   SearchResponse,
@@ -28,7 +29,7 @@ export type PlaygroundResult =
   | { kind: 'crawl'; response: CrawlResponse }
   | { kind: 'parse'; response: ParseResponse }
   | { kind: 'interact'; response: InteractResponse }
-  | { kind: 'monitor'; response: unknown }
+  | { kind: 'monitor'; response: MonitorResponse }
   | { kind: 'handoff'; jobId: string }
   | { kind: 'coming' };
 
@@ -355,11 +356,39 @@ export function Results({ result, loading, timingMs, error }: ResultsProps) {
       );
     }
 
-    case 'monitor':
+    case 'monitor': {
+      const response = result.response;
+      if (!response.success || !response.id) {
+        return (
+          <div className={wrapperClass}>
+            <JsonView data={response} />
+          </div>
+        );
+      }
       return (
         <div className={wrapperClass}>
-          <JsonView data={result.response} />
+          <div className="flex flex-col gap-3 rounded-card border border-border p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-foreground">Monitor created</span>
+              <Badge variant="secondary" className="font-mono text-[11px]">
+                {response.status}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Stat label="Schedule" value={response.schedule.every ?? response.schedule.cron} />
+              <Stat label="Timezone" value={response.schedule.timezone} />
+              <Stat label="Sensitivity" value={response.sensitivity} />
+              <Stat label="Diff" value={response.diff.granularity} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              First check at {response.nextCheckAt ? new Date(response.nextCheckAt).toLocaleString() : 'the next scheduled slot'}.
+              {response.webhook ? ' Changes are posted to your webhook.' : ' No webhook set: read changes from the history endpoint.'}
+            </p>
+            <span className="font-mono text-xs text-muted-foreground">GET /v1/monitor/{response.id}/history</span>
+          </div>
+          <JsonView data={response} />
         </div>
       );
+    }
   }
 }

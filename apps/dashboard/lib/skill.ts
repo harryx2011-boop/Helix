@@ -60,7 +60,7 @@ Every response is JSON with either \`{"success": true, "data": {...}, "warnings"
 
 Rate limits are reported on every response via \`X-RateLimit-Limit\`, \`X-RateLimit-Remaining\` and \`X-RateLimit-Reset\` headers. Back off when \`X-RateLimit-Remaining\` reaches 0.
 
-Any request that supports \`estimate: true\` returns a cost and time estimate instead of running — use it before a large crawl or monitor job.
+Any request that supports \`estimate: true\` returns a cost and time estimate instead of running — use it before a large crawl.
 `;
 }
 
@@ -99,10 +99,28 @@ Failure response:
 ${failureEnvelope}
 \`\`\`
 
-Failure reasons:
+${usageNotes(endpoint)}Failure reasons:
 
 ${FAILURE_REASONS.map((reason) => `- \`${reason}\` — ${FAILURE_REASON_NOTES[reason]}`).join('\n')}
 `;
+}
+
+/** Endpoint-specific follow-up calls an agent needs after the first request. */
+function usageNotes(endpoint: EndpointDef): string {
+  switch (endpoint.id) {
+    case 'monitor':
+      return `Notes:
+
+- Create returns 201 at once; the first check runs at \`nextCheckAt\`. Checks cannot run more often than the instance minimum (hourly by default), so a faster \`schedule\` is rejected with \`field: schedule\`.
+- \`schedule\` is a cron string or \`{ "every": "6h", "timezone": "Europe/London" }\`.
+- \`sensitivity: "significant"\` ignores relative timestamps, clock times, dates and tracking parameters. \`trigger.keywordAppears\` / \`trigger.keywordDisappears\` fire only on that phrase.
+- Read the timeline with \`GET ${endpoint.path}/{id}/history\` (entries carry \`changed\`, \`reason\`, \`diff\`, \`snapshotUrl\`). \`POST ${endpoint.path}/{id}/check\` runs one check now. \`PATCH\` with \`{ "status": "paused" }\` pauses; \`DELETE\` removes.
+- With a \`webhook\`, each change is posted as \`{ event, monitorId, url, checkedAt, changed, diff, snapshot, previousSnapshot }\`, signed in \`Helix-Signature\` when a secret is set, retried with backoff and dead-lettered after ten attempts (\`GET ${endpoint.path}/{id}/deliveries\`).
+
+`;
+    default:
+      return '';
+  }
 }
 
 function reachWhen(endpoint: EndpointDef): string {
@@ -157,7 +175,7 @@ function exampleDataShape(id: EndpointDef['id']): Record<string, unknown> {
     case 'interact':
       return { sessionId: '...', markdown: '...' };
     case 'monitor':
-      return { id: '...', status: 'active' };
+      return { id: '...', monitorId: '...', status: 'active', nextCheckAt: '...', stats: { checks: 0, changes: 0, pagesUnchanged: 0 } };
     default:
       return {};
   }

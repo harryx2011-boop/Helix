@@ -227,6 +227,7 @@ paths:
     get:
       tags: [Monitors]
       summary: List monitors
+      description: Monitors created with the calling API key, newest first.
       operationId: listMonitors
       responses:
         '200':
@@ -236,6 +237,7 @@ paths:
               schema:
                 type: object
                 properties:
+                  success: { type: boolean }
                   monitors:
                     type: array
                     items: { $ref: '#/components/schemas/Monitor' }
@@ -244,13 +246,23 @@ paths:
       tags: [Monitors]
       summary: Create a monitor
       description: |
-        Watches URLs on a schedule and tells you what changed.
+        Watches one URL on a schedule and tells you what changed.
 
-        Diffs arrive inline in the webhook payload — word, line or character
-        granularity — so you never need a second request to find out what moved.
+        Each check re-reads the page through the same fetch ladder as `/scrape`
+        and compares the markdown with the last snapshot. An unchanged page
+        stores no new snapshot and sends nothing. A changed page stores a
+        snapshot, records a diff at word, line or character granularity, and
+        queues a webhook with the diff inline.
 
-        Unchanged pages are free. Keyword triggers fire without an LLM call at all,
-        and scheduling windows keep monitors off overnight A/B flicker.
+        `sensitivity: significant` strips relative timestamps, clock times,
+        dates and tracking parameters before comparing, so rotating noise does
+        not count as a change. Keyword triggers narrow it further without a
+        model call.
+
+        The schedule is a cron expression or an interval (`15m`, `6h`, `1d`).
+        The operator sets the minimum gap between checks
+        (`HELIX_MONITOR_MIN_INTERVAL`, hourly by default); a schedule under it
+        is rejected with `field: schedule`.
       operationId: createMonitor
       requestBody:
         required: true
@@ -259,25 +271,43 @@ paths:
             schema: { $ref: '#/components/schemas/MonitorRequest' }
             examples:
               pricing:
-                summary: Watch a pricing page on weekday mornings
+                summary: Watch a pricing page every hour
                 value:
-                  urls: ['https://example.com/pricing']
-                  schedule: { cron: '0 9 * * 1-5', timezone: 'Europe/London' }
-                  diff: { granularity: word }
-                  webhook: { url: 'https://your.app/hooks/helix' }
+                  url: 'https://example.com/pricing'
+                  schedule: '0 * * * *'
+                  sensitivity: significant
+                  webhook: 'https://your.app/webhooks/helix'
               restock:
                 summary: Only tell me when a phrase disappears
                 value:
-                  urls: ['https://example.com/product/123']
-                  schedule: { every: '15m' }
+                  url: 'https://example.com/product/123'
+                  schedule: { every: '6h', timezone: 'Europe/London' }
                   trigger: { keywordDisappears: 'Out of stock' }
-                  webhook: { url: 'https://your.app/hooks/helix' }
+                  webhook: { url: 'https://your.app/webhooks/helix', secret: 'a-shared-secret' }
       responses:
         '201':
-          description: Monitor created.
+          description: Monitor created. The first check runs at `nextCheckAt`.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Monitor' }
+              example:
+                success: true
+                id: 'f2a1c6e0-4b7d-4c1e-9a3b-2d5e8f7a1b23'
+                monitorId: 'f2a1c6e0-4b7d-4c1e-9a3b-2d5e8f7a1b23'
+                url: 'https://example.com/pricing'
+                schedule: { cron: '0 * * * *', timezone: 'UTC' }
+                sensitivity: significant
+                diff: { granularity: word, inline: true }
+                trigger: {}
+                webhook: { url: 'https://your.app/webhooks/helix', events: [changed], metadata: null, headers: [], signed: false }
+                status: active
+                createdAt: '2026-08-24T12:30:00.000Z'
+                updatedAt: '2026-08-24T12:30:00.000Z'
+                lastCheckedAt: null
+                nextCheckAt: '2026-08-24T13:00:00.000Z'
+                lastChangeAt: null
+                lastError: null
+                stats: { checks: 0, changes: 0, pagesUnchanged: 0 }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
@@ -287,6 +317,7 @@ paths:
     get:
       tags: [Monitors]
       summary: Get a monitor
+      description: Status, stats and the latest snapshot (markdown) once a check has run.
       operationId: getMonitor
       responses:
         '200':
@@ -295,13 +326,151 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Monitor' }
         '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Monitors]
+      summary: Update a monitor
+      description: |
+        Change the schedule, read options, diff, trigger, sensitivity or webhook,
+        or pause and resume with `status`. A new schedule is validated against the
+        instance minimum and resets `nextCheckAt`. Send `webhook: null` to remove it.
+      operationId: updateMonitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MonitorPatch' }
+      responses:
+        '200':
+          description: The updated monitor.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Monitor' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
     delete:
       tags: [Monitors]
       summary: Delete a monitor
+      description: Stops the schedule and removes the monitor, its snapshots, history and pending deliveries.
       operationId: deleteMonitor
       responses:
         '204': { description: Deleted. }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /monitor/{id}/history:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: cursor, in: query, required: false, schema: { type: integer }, description: Return entries older than this id. Taken from `next`. }
+      - { name: limit, in: query, required: false, schema: { type: integer, default: 50, maximum: 50 } }
+    get:
+      tags: [Monitors]
+      summary: Change timeline
+      description: Every check, newest first, including the quiet ones. Paginated by cursor.
+      operationId: monitorHistory
+      responses:
+        '200':
+          description: The timeline.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  monitorId: { type: string, format: uuid }
+                  entries:
+                    type: array
+                    items: { $ref: '#/components/schemas/MonitorHistoryEntry' }
+                  next:
+                    type: string
+                    nullable: true
+                    description: Path of the next page, or null on the last page.
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /monitor/{id}/snapshots/{snapshotId}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: snapshotId, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [Monitors]
+      summary: Read a snapshot
+      description: The markdown captured by one check. `snapshotUrl` in history entries and webhook payloads points here.
+      operationId: monitorSnapshot
+      responses:
+        '200':
+          description: The snapshot.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MonitorSnapshot' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /monitor/{id}/check:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Monitors]
+      summary: Check now
+      description: Runs one check immediately, outside the schedule, and returns the resulting history entry. The regular schedule is unaffected.
+      operationId: checkMonitor
+      responses:
+        '200':
+          description: The check that ran.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  monitorId: { type: string, format: uuid }
+                  check: { $ref: '#/components/schemas/MonitorHistoryEntry' }
+                  webhookQueued: { type: boolean }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /monitor/{id}/deliveries:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Monitors]
+      summary: Webhook deliveries
+      description: The last 100 deliveries for this monitor with their attempt count, last error and next retry. Dead-lettered ones can be replayed.
+      operationId: monitorDeliveries
+      responses:
+        '200':
+          description: Deliveries, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  monitorId: { type: string, format: uuid }
+                  deliveries:
+                    type: array
+                    items: { $ref: '#/components/schemas/WebhookDelivery' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /monitor/{id}/deliveries/{deliveryId}/replay:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: deliveryId, in: path, required: true, schema: { type: integer } }
+    post:
+      tags: [Monitors]
+      summary: Replay a dead-lettered delivery
+      description: Puts a dead delivery back on the queue with a fresh attempt count. Pending and delivered rows are refused with 409.
+      operationId: replayMonitorDelivery
+      responses:
+        '200':
+          description: Queued again.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  delivery: { $ref: '#/components/schemas/WebhookDelivery' }
+        '409':
+          description: Not dead-lettered.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /jobs/{id}:
     parameters:
@@ -796,63 +965,163 @@ components:
 
     MonitorRequest:
       type: object
-      required: [urls, schedule]
+      required: [url, schedule]
       properties:
-        urls:
-          type: array
-          minItems: 1
-          maxItems: 50
-          items: { type: string, format: uri }
-        schedule: { $ref: '#/components/schemas/Schedule' }
-        diff:
+        url: { type: string, format: uri, description: The one page to watch. }
+        schedule: { $ref: '#/components/schemas/MonitorSchedule' }
+        scrapeOptions:
           type: object
+          description: Read options for each check. Same knobs as `/scrape`, minus formats (checks always read markdown).
           properties:
-            granularity: { type: string, enum: [word, line, character], default: word }
-            inline:
-              type: boolean
-              default: true
-              description: Include the diff in the webhook body so no follow-up request is needed.
-        trigger:
-          type: object
+            tier: { $ref: '#/components/schemas/Tier' }
+            onlyMainContent: { type: boolean, default: true }
+            includeSelectors: { type: array, items: { type: string } }
+            excludeSelectors: { type: array, items: { type: string } }
+            extractor: { type: string, enum: [trafilatura, readability, auto] }
+            waitFor: { type: integer, minimum: 0, maximum: 30000 }
+            timeout: { type: integer, minimum: 1000, maximum: 300000 }
+            headers: { type: object, additionalProperties: { type: string } }
+            profile: { type: string }
+            proxy:
+              type: object
+              properties:
+                url: { type: string }
+                sessionId: { type: string }
+                geo: { type: string, minLength: 2, maxLength: 2 }
+        diff: { $ref: '#/components/schemas/MonitorDiffOptions' }
+        trigger: { $ref: '#/components/schemas/MonitorTrigger' }
+        sensitivity:
+          type: string
+          enum: [any, significant]
+          default: any
           description: |
-            Narrow what counts as a change. Keyword triggers need no model call — far
-            cheaper than semantic judgement, and enough for most watches.
-          properties:
-            keywordAppears: { type: string }
-            keywordDisappears: { type: string }
-            selector: { type: string, description: Watch only this part of the page. }
-            minChangeRatio: { type: number, description: Ignore changes smaller than this fraction of the content. }
-        webhook: { $ref: '#/components/schemas/WebhookConfig' }
-        scrapeOptions: { $ref: '#/components/schemas/ScrapeOptions' }
+            `any` compares the text verbatim. `significant` first strips relative
+            timestamps ("3 minutes ago"), clock times, dates and tracking parameters,
+            so a page whose only difference is noise counts as unchanged.
+        webhook:
+          description: A URL, or an object with headers, events and a signing secret.
+          oneOf:
+            - { type: string, format: uri }
+            - $ref: '#/components/schemas/MonitorWebhook'
 
-    Schedule:
+    MonitorPatch:
       type: object
-      description: A cron expression, or a plain interval. Windows keep checks inside the hours you care about.
+      description: Any subset of the create request, plus `status`. At least one field.
       properties:
-        cron: { type: string }
-        every: { type: string, description: 'Interval such as `15m`, `6h`, `1d`.' }
-        timezone: { type: string, default: UTC }
-        window:
-          type: object
+        schedule: { $ref: '#/components/schemas/MonitorSchedule' }
+        scrapeOptions: { type: object }
+        diff: { $ref: '#/components/schemas/MonitorDiffOptions' }
+        trigger: { $ref: '#/components/schemas/MonitorTrigger' }
+        sensitivity: { type: string, enum: [any, significant] }
+        webhook:
+          nullable: true
+          oneOf:
+            - { type: string, format: uri }
+            - $ref: '#/components/schemas/MonitorWebhook'
+        status:
+          type: string
+          enum: [active, paused]
+          description: Pausing clears `nextCheckAt`; resuming computes it from the schedule.
+
+    MonitorSchedule:
+      description: |
+        A cron expression as a string, or an object with `cron` or `every`
+        (`15m`, `6h`, `1d`) and an optional IANA `timezone` (default UTC).
+        Business-hours windows are written in cron: `0 9-17 * * 1-5`.
+      oneOf:
+        - { type: string, example: '0 * * * *' }
+        - type: object
           properties:
-            days:
-              type: array
-              items: { type: string, enum: [mon, tue, wed, thu, fri, sat, sun] }
-            startHour: { type: integer, minimum: 0, maximum: 23 }
-            endHour: { type: integer, minimum: 0, maximum: 23 }
+            cron: { type: string }
+            every: { type: string, description: 'Interval such as `15m`, `6h`, `1d`.' }
+            timezone: { type: string, default: UTC }
+
+    MonitorDiffOptions:
+      type: object
+      properties:
+        granularity: { type: string, enum: [word, line, character], default: word }
+        inline:
+          type: boolean
+          default: true
+          description: Include the diff text and ops in the webhook body. Off sends counts only.
+
+    MonitorTrigger:
+      type: object
+      description: |
+        Narrow what counts as a change. Keyword triggers are string searches on the
+        two snapshots and need no model call.
+      properties:
+        keywordAppears: { type: string, description: Fire only when this phrase appears (case-insensitive). }
+        keywordDisappears: { type: string, description: Fire only when this phrase disappears. }
+        selector: { type: string, description: Watch only this part of the page. Shorthand for `scrapeOptions.includeSelectors`. }
+        minChangeRatio:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Ignore changes smaller than this fraction of the content's tokens.
+
+    MonitorWebhook:
+      type: object
+      required: [url]
+      description: |
+        Signed with HMAC-SHA256 over `{timestamp}.{body}` when a `secret` is set
+        here or `HELIX_WEBHOOK_SECRET` is set on the instance, sent as
+        `Helix-Signature: t=<unix>,v1=<hex>`. `Helix-Event`, `Helix-Delivery-Id`
+        and `Helix-Monitor-Id` headers accompany every delivery.
+
+        Delivery retries with backoff (1m, 5m, 30m, 2h, 6h, 12h, then daily)
+        for ten attempts over roughly four days, then lands in a dead letter you
+        can replay. Ordering is not guaranteed; make the handler idempotent.
+      properties:
+        url: { type: string, format: uri }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+          description: Sent with every delivery. Never echoed back; only the header names are.
+        events:
+          type: array
+          default: [changed]
+          items: { type: string, enum: [changed, checked, failed] }
+          description: '`changed` on a real change, `checked` on every check, `failed` when a check could not read the page.'
+        metadata: { type: object, description: Echoed back in every delivery. }
+        secret: { type: string, minLength: 8, description: Per-webhook signing secret. Never echoed back. }
 
     Monitor:
       type: object
       properties:
+        success: { type: boolean }
         id: { type: string, format: uuid }
-        urls:
-          type: array
-          items: { type: string, format: uri }
-        schedule: { $ref: '#/components/schemas/Schedule' }
+        monitorId: { type: string, format: uuid, description: Same as `id`. }
+        url: { type: string, format: uri }
+        schedule:
+          type: object
+          properties:
+            cron: { type: string }
+            timezone: { type: string }
+            every: { type: string }
+        scrapeOptions: { type: object }
+        diff: { $ref: '#/components/schemas/MonitorDiffOptions' }
+        trigger: { $ref: '#/components/schemas/MonitorTrigger' }
+        sensitivity: { type: string, enum: [any, significant] }
+        webhook:
+          type: object
+          nullable: true
+          properties:
+            url: { type: string, format: uri }
+            events: { type: array, items: { type: string } }
+            metadata: { type: object, nullable: true }
+            headers: { type: array, items: { type: string }, description: Header names only. }
+            signed: { type: boolean }
+        status:
+          type: string
+          enum: [active, paused, error]
+          description: '`error` after a failed check; clears on the next successful one. Checks keep running.'
         createdAt: { type: string, format: date-time }
-        lastCheckedAt: { type: string, format: date-time }
-        nextCheckAt: { type: string, format: date-time }
-        status: { type: string, enum: [active, paused, failing] }
+        updatedAt: { type: string, format: date-time }
+        lastCheckedAt: { type: string, format: date-time, nullable: true }
+        nextCheckAt: { type: string, format: date-time, nullable: true, description: Null while paused. }
+        lastChangeAt: { type: string, format: date-time, nullable: true }
+        lastError: { type: string, nullable: true }
         stats:
           type: object
           properties:
@@ -860,7 +1129,75 @@ components:
             changes: { type: integer }
             pagesUnchanged:
               type: integer
-              description: Unchanged pages, which cost nothing.
+              description: Checks that found no change. They store nothing and send nothing.
+        latestSnapshot:
+          description: Present on `GET /monitor/{id}`; null until the first check.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MonitorSnapshot'
+
+    MonitorSnapshot:
+      type: object
+      properties:
+        id: { type: integer }
+        monitorId: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        capturedAt: { type: string, format: date-time }
+        contentHash: { type: string, description: SHA-256 of the markdown. }
+        markdown: { type: string }
+        snapshotUrl: { type: string }
+
+    MonitorDiff:
+      type: object
+      properties:
+        granularity: { type: string, enum: [word, line, character] }
+        added: { type: integer, description: Tokens inserted at the chosen granularity. }
+        removed: { type: integer }
+        changeRatio: { type: number, description: Changed tokens over the larger side, 0 to 1. }
+        text:
+          type: string
+          description: 'Line diffs use `+`/`-` prefixes; word and character diffs are inline: `[-old-]{+new+}`.'
+        ops:
+          type: array
+          items:
+            type: object
+            properties:
+              op: { type: string, enum: [equal, insert, delete] }
+              text: { type: string }
+
+    MonitorHistoryEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        checkedAt: { type: string, format: date-time }
+        changed: { type: boolean }
+        reason:
+          type: string
+          enum: [first, changed, unchanged, filtered, trigger_not_met, error]
+          description: |
+            `first` stored the baseline. `filtered` differed only by noise the
+            sensitivity setting ignores. `trigger_not_met` changed but the keyword
+            or ratio trigger did not fire; the baseline still moved.
+        diff:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MonitorDiff'
+        error: { type: string, nullable: true }
+        snapshotUrl: { type: string, nullable: true, description: Null when the snapshot was pruned. }
+
+    WebhookDelivery:
+      type: object
+      properties:
+        id: { type: integer }
+        event: { type: string, enum: [changed, checked, failed] }
+        url: { type: string, format: uri }
+        status: { type: string, enum: [pending, delivered, dead] }
+        attempts: { type: integer }
+        lastError: { type: string, nullable: true }
+        responseStatus: { type: integer, nullable: true }
+        nextRetryAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        deliveredAt: { type: string, format: date-time, nullable: true }
 
     Document:
       type: object

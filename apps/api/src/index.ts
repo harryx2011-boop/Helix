@@ -170,6 +170,7 @@ await app.register(
       maxResults: config.searchMaxResults,
       scrapeConcurrency: config.searchScrapeConcurrency,
       cacheTtlMs: config.searchCacheTtlMs,
+      maxDurationMs: config.searchMaxDurationMs,
     });
   },
   { prefix: '/v1' },

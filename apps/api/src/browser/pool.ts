@@ -26,6 +26,22 @@ export interface RenderOptions {
   screenshot?: boolean | undefined;
   fullPage?: boolean | undefined;
   actions?: unknown[] | undefined;
+  /** Closes the page mid-render when it fires, so the slot is freed at once. */
+  signal?: AbortSignal | undefined;
+}
+
+function abortMessage(signal: AbortSignal): string {
+  return signal.reason instanceof Error ? signal.reason.message : 'render cancelled';
+}
+
+/** Playwright has no cancellation token; closing the page rejects whatever is awaiting it. */
+function abortClosesPage(page: Page, signal: AbortSignal | undefined): void {
+  if (!signal) return;
+  const close = (): void => {
+    void page.close().catch(() => undefined);
+  };
+  signal.addEventListener('abort', close, { once: true });
+  page.once('close', () => signal.removeEventListener('abort', close));
 }
 
 export interface RenderResult {
@@ -146,6 +162,10 @@ export class BrowserPool {
   async render(options: RenderOptions): Promise<RenderResult> {
     const started = Date.now();
 
+    if (options.signal?.aborted) {
+      return { headers: {}, timingMs: 0, error: abortMessage(options.signal) };
+    }
+
     if (options.engine === 'lightpanda') {
       if (!this.#options.lightpandaEnabled) {
         return {
@@ -174,6 +194,7 @@ export class BrowserPool {
       });
 
       page = await context.newPage();
+      abortClosesPage(page, options.signal);
 
       const response = await page.goto(options.url, {
         timeout: options.timeout ?? 30_000,
@@ -215,7 +236,11 @@ export class BrowserPool {
       return {
         headers: {},
         timingMs: Date.now() - started,
-        error: error instanceof Error ? error.message : 'render failed',
+        error: options.signal?.aborted
+          ? abortMessage(options.signal)
+          : error instanceof Error
+            ? error.message
+            : 'render failed',
       };
     } finally {
       await page?.close().catch(() => undefined);
@@ -243,6 +268,7 @@ export class BrowserPool {
       try {
         const context = await browser.newContext();
         const page = await context.newPage();
+        abortClosesPage(page, options.signal);
         const response = await page.goto(options.url, {
           timeout: options.timeout ?? 30_000,
           waitUntil: 'domcontentloaded',
@@ -266,7 +292,11 @@ export class BrowserPool {
       return {
         headers: {},
         timingMs: Date.now() - started,
-        error: error instanceof Error ? error.message : 'lightpanda unreachable',
+        error: options.signal?.aborted
+          ? abortMessage(options.signal)
+          : error instanceof Error
+            ? error.message
+            : 'lightpanda unreachable',
       };
     }
   }

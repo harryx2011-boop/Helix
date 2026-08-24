@@ -141,7 +141,7 @@ describe('SearxngProvider', () => {
       );
     }) as typeof fetch;
 
-    const hits = await new SearxngProvider('http://searxng:8080/').search({
+    const { hits, failures } = await new SearxngProvider('http://searxng:8080/').search({
       query: 'web scraping',
       limit: 2,
       sources: ['web'],
@@ -159,16 +159,68 @@ describe('SearxngProvider', () => {
     expect(url.searchParams.get('time_range')).toBe('month');
     expect(url.searchParams.get('q')).toBe('web scraping -site:spam.com');
 
+    expect(failures).toEqual([]);
     expect(hits).toEqual([
       { title: 'A', url: 'https://a.test/1', snippet: 'first', position: 1, source: 'web', publishedAt: '2026-01-02', imageUrl: undefined },
       { title: 'B', url: 'https://b.test/2', snippet: undefined, position: 2, source: 'web', publishedAt: undefined, imageUrl: undefined },
     ]);
   });
 
-  it('returns an empty list rather than throwing when the instance refuses JSON', async () => {
+  it('reports a refused JSON format as a source failure, not as no results', async () => {
     globalThis.fetch = vi.fn(async () => new Response('forbidden', { status: 403 })) as typeof fetch;
-    const hits = await new SearxngProvider('http://searxng:8080').search({ query: 'x', limit: 5, sources: ['web'] });
-    expect(hits).toEqual([]);
+    const result = await new SearxngProvider('http://searxng:8080').search({ query: 'x', limit: 5, sources: ['web'] });
+
+    expect(result.hits).toEqual([]);
+    expect(result.failures).toEqual([
+      { source: 'web', message: expect.stringMatching(/HTTP 403.*search\.formats/) },
+    ]);
+  });
+
+  it('reports an unreachable instance as a source failure', async () => {
+    globalThis.fetch = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    }) as typeof fetch;
+    const result = await new SearxngProvider('http://searxng:8080').search({ query: 'x', limit: 5, sources: ['web'] });
+
+    expect(result.hits).toEqual([]);
+    expect(result.failures).toEqual([{ source: 'web', message: 'searxng request for web fetch failed' }]);
+  });
+
+  it('keeps the sources that answered when another one fails', async () => {
+    globalThis.fetch = vi.fn(async (input: string | URL | Request) =>
+      String(input).includes('categories=news')
+        ? new Response('down', { status: 502 })
+        : new Response(JSON.stringify({ results: [{ url: 'https://a.test/1', title: 'A' }] }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+    ) as typeof fetch;
+    const result = await new SearxngProvider('http://searxng:8080').search({
+      query: 'x',
+      limit: 5,
+      sources: ['web', 'news'],
+    });
+
+    expect(result.hits.map((h) => h.url)).toEqual(['https://a.test/1']);
+    expect(result.failures).toEqual([{ source: 'news', message: 'searxng answered HTTP 502 for news' }]);
+  });
+
+  it('forwards the caller signal so an abandoned search stops at the backend', async () => {
+    const seen: (AbortSignal | null | undefined)[] = [];
+    globalThis.fetch = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      seen.push(init?.signal);
+      return new Response(JSON.stringify({ results: [] }), { status: 200 });
+    }) as typeof fetch;
+    const controller = new AbortController();
+    controller.abort(new Error('gone'));
+
+    const result = await new SearxngProvider('http://searxng:8080').search(
+      { query: 'x', limit: 5, sources: ['web'] },
+      controller.signal,
+    );
+
+    expect(seen[0]?.aborted).toBe(true);
+    expect(result.failures).toEqual([]);
   });
 });
 

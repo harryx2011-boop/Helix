@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerSearch, mapWithLimit, type SearchRouteDeps } from './search.js';
-import type { SearchHit, SearchProvider, SearchQuery } from '../search/providers.js';
+import type { ProviderResult, SearchHit, SearchProvider, SearchQuery } from '../search/providers.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient } from '../extract/client.js';
 
@@ -12,13 +12,19 @@ function hit(url: string, position: number, source: SearchHit['source'] = 'web')
   return { title: `Title ${position}`, url, snippet: `Snippet ${position}`, position, source };
 }
 
-function providerReturning(hits: SearchHit[] | ((query: SearchQuery) => SearchHit[])): SearchProvider & {
-  search: ReturnType<typeof vi.fn>;
-} {
+function providerReturning(
+  hits: SearchHit[] | ((query: SearchQuery) => SearchHit[]),
+  failures: ProviderResult['failures'] = [],
+): SearchProvider & { search: ReturnType<typeof vi.fn> } {
   return {
     name: 'fake',
     configured: () => true,
-    search: vi.fn(async (query: SearchQuery) => (typeof hits === 'function' ? hits(query) : hits)),
+    search: vi.fn(
+      async (query: SearchQuery): Promise<ProviderResult> => ({
+        hits: typeof hits === 'function' ? hits(query) : hits,
+        failures,
+      }),
+    ),
   };
 }
 
@@ -129,6 +135,95 @@ describe('POST /search', () => {
     expect(body.message).toBe('upstream down');
   });
 
+  it('answers 502 when every requested source failed at the backend', async () => {
+    const provider = providerReturning([], [
+      { source: 'web', message: 'searxng answered HTTP 403 for web' },
+      { source: 'news', message: 'searxng answered HTTP 403 for news' },
+    ]);
+    const app = await build({ provider, cacheTtlMs: 60_000 });
+    const { status, body } = await post(app, { query: 'x', sources: ['web', 'news'] });
+
+    expect(status).toBe(502);
+    expect(body.error).toBe('search_failed');
+    expect(body.message).toBe('searxng answered HTTP 403 for web; searxng answered HTTP 403 for news');
+
+    // A failed call must not be served from the cache once the backend recovers.
+    provider.search.mockResolvedValueOnce({ hits: [hit('https://a.test/1', 1)], failures: [] });
+    const second = await post(app, { query: 'x', sources: ['web', 'news'] });
+    expect(second.status).toBe(200);
+    expect(second.body.metadata.fromCache).toBe(false);
+    expect(provider.search).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the sources that answered, warns about the one that failed, and does not cache the partial list', async () => {
+    const provider = providerReturning([hit('https://a.test/1', 1)], [
+      { source: 'news', message: 'serper answered HTTP 429 for news' },
+    ]);
+    const app = await build({ provider, cacheTtlMs: 60_000 });
+    const { status, body } = await post(app, { query: 'x', sources: ['web', 'news'] });
+
+    expect(status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.web).toHaveLength(1);
+    expect(body.warnings).toEqual(['news: serper answered HTTP 429 for news']);
+
+    await post(app, { query: 'x', sources: ['web', 'news'] });
+    expect(provider.search).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not cache an empty answer', async () => {
+    const provider = providerReturning([]);
+    const app = await build({ provider, cacheTtlMs: 60_000 });
+    await post(app, { query: 'x' });
+    await post(app, { query: 'x' });
+
+    expect(provider.search).toHaveBeenCalledTimes(2);
+  });
+
+  it('collapses repeated sources into one backend call each', async () => {
+    const provider = providerReturning([hit('https://a.test/1', 1)]);
+    const app = await build({ provider });
+    const { status } = await post(app, { query: 'x', sources: ['web', 'web', 'web'], scrapeOptions: {} });
+
+    expect(status).toBe(200);
+    expect(provider.search).toHaveBeenCalledWith(expect.objectContaining({ sources: ['web'] }), expect.anything());
+    expect(pipeline.runPipeline).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects more sources than exist', async () => {
+    const app = await build();
+    const { status, body } = await post(app, { query: 'x', sources: ['web', 'web', 'web', 'web'] });
+
+    expect(status).toBe(400);
+    expect(body.field).toBe('sources');
+  });
+
+  it('bounds domain filters to hostnames and to twenty entries', async () => {
+    const app = await build();
+
+    const tooMany = await post(app, { query: 'x', includeDomains: Array.from({ length: 21 }, (_, i) => `d${i}.test`) });
+    expect(tooMany.status).toBe(400);
+    expect(tooMany.body.field).toBe('includeDomains');
+
+    const notAHost = await post(app, { query: 'x', excludeDomains: ['https://spam.test/path'] });
+    expect(notAHost.status).toBe(400);
+    expect(notAHost.body.field).toBe('excludeDomains.0');
+
+    const tooLong = await post(app, { query: 'x', includeDomains: [`${'a'.repeat(250)}.test`] });
+    expect(tooLong.status).toBe(400);
+
+    const fine = await post(app, { query: 'x', includeDomains: ['docs.example.com', 'sub-domain.co.uk'] });
+    expect(fine.status).toBe(200);
+  });
+
+  it('rejects a freshness window it cannot convert', async () => {
+    const app = await build();
+    const { status, body } = await post(app, { query: 'x', freshness: 'last tuesday' });
+
+    expect(status).toBe(400);
+    expect(body.field).toBe('freshness');
+  });
+
   it('returns data.web with url, title, description when scrapeOptions is omitted', async () => {
     const app = await build();
     const { status, body } = await post(app, { query: 'x' });
@@ -151,6 +246,7 @@ describe('POST /search', () => {
 
     expect(provider.search).toHaveBeenCalledWith(
       expect.objectContaining({ query: 'x', limit: 5, lang: 'en', country: 'us', tbs: 'qdr:m', sources: ['web'] }),
+      expect.anything(),
     );
   });
 
@@ -159,7 +255,7 @@ describe('POST /search', () => {
     const app = await build({ provider });
     await post(app, { query: 'zod', categories: ['github'] });
 
-    expect(provider.search).toHaveBeenCalledWith(expect.objectContaining({ query: 'zod site:github.com' }));
+    expect(provider.search).toHaveBeenCalledWith(expect.objectContaining({ query: 'zod site:github.com' }), expect.anything());
   });
 
   it('warns rather than failing when the backend returns nothing', async () => {
@@ -262,6 +358,48 @@ describe('POST /search', () => {
 
     expect(peak).toBe(2);
     expect(body.data.web.map((row: { position: number }) => row.position)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('passes one abort signal through to every page read', async () => {
+    const app = await build();
+    await post(app, { query: 'x', scrapeOptions: {} });
+
+    const signals = pipeline.runPipeline.mock.calls.map((call) => (call[0] as { signal: AbortSignal }).signal);
+    expect(signals).toHaveLength(2);
+    expect(signals[0]).toBeInstanceOf(AbortSignal);
+    expect(signals[0]).toBe(signals[1]);
+    expect(signals[0]!.aborted).toBe(false);
+  });
+
+  it('stops reading pages once the call budget is spent and says so', async () => {
+    const hits = Array.from({ length: 4 }, (_, i) => hit(`https://h.test/${i}`, i + 1));
+    pipeline.runPipeline.mockImplementation(
+      (options: { url: string; signal: AbortSignal }) =>
+        new Promise((resolve) => {
+          if (options.url.endsWith('/0')) {
+            resolve(success(options.url));
+            return;
+          }
+          // The rest hang until the signal cuts them, as a stalled host would.
+          options.signal.addEventListener('abort', () =>
+            resolve({ ...failure(options.url), reason: 'timeout' as const, detail: 'cut' }),
+          );
+        }),
+    );
+
+    const app = await build({ provider: providerReturning(hits), scrapeConcurrency: 2, maxDurationMs: 50 });
+    const { status, body } = await post(app, { query: 'x', limit: 4, scrapeOptions: {} });
+
+    expect(status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.web).toHaveLength(4);
+    expect(body.data.web[0].markdown).toBe('# https://h.test/0');
+    expect(body.data.web[1].failure.reason).toBe('timeout');
+    expect(body.data.web[3].failure).toMatchObject({
+      reason: 'timeout',
+      detail: expect.stringContaining('50ms budget'),
+    });
+    expect(body.warnings.at(-1)).toMatch(/not read: search timed out/);
   });
 
   it('serves identical queries from the cache within the window', async () => {

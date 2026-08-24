@@ -212,7 +212,14 @@ paths:
 
         A result page that cannot be read does not fail the search: its row keeps
         `url`, `title` and `description`, carries a typed `failure`, and a line is
-        added to `warnings`.
+        added to `warnings`. One call is bounded by `HELIX_SEARCH_MAX_DURATION_MS`
+        (default 120000): pages not read before the budget is spent carry a
+        `timeout` failure, and all reads stop when the client disconnects.
+
+        A source the backend cannot answer is reported, not hidden: when every
+        requested source fails the call is a 502 `search_failed`; when some
+        answer, their results are returned with a `warnings` line per failed
+        source and the list is not cached.
       operationId: search
       requestBody:
         required: true
@@ -843,21 +850,27 @@ components:
           description: 'Time filter in Google `tbs` form: `qdr:d` (day), `qdr:w`, `qdr:m`, `qdr:y`. Wins over `freshness`.'
         freshness:
           type: string
+          pattern: '^[0-9]{1,4}[hdwmy]$'
           description: 'Relative window, e.g. `24h`, `7d`, `1y`. Converted to `tbs`.'
         sources:
           type: array
           items: { type: string, enum: [web, news, images] }
+          maxItems: 3
+          uniqueItems: true
           default: [web]
+          description: Each source is one backend call and `limit` more pages to read; repeats are collapsed.
         categories:
           type: array
           items: { type: string, enum: [github, research, pdf, docs] }
           description: Shorthands expanded into search operators.
         includeDomains:
           type: array
-          items: { type: string }
+          maxItems: 20
+          items: { $ref: '#/components/schemas/SearchDomain' }
         excludeDomains:
           type: array
-          items: { type: string }
+          maxItems: 20
+          items: { $ref: '#/components/schemas/SearchDomain' }
         scrapeOptions:
           allOf:
             - $ref: '#/components/schemas/SearchScrapeOptions'
@@ -867,6 +880,12 @@ components:
             - $ref: '#/components/schemas/SearchScrapeOptions'
           deprecated: true
           description: Alias of `scrapeOptions`, kept for early callers.
+
+    SearchDomain:
+      type: string
+      maxLength: 253
+      pattern: '^[a-zA-Z0-9-]{1,63}(\.[a-zA-Z0-9-]{1,63})+$'
+      description: A hostname as a `site:` operator accepts it, e.g. `docs.example.com`. No scheme, no path.
 
     SearchResult:
       type: object

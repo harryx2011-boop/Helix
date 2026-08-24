@@ -50,6 +50,8 @@ const ConfigSchema = z.object({
   searchScrapeConcurrency: int(5),
   /** Provider-hit cache lifetime for identical queries; 0 disables it. */
   searchCacheTtlMs: int(60_000),
+  /** Wall-clock budget for one search call, backend query and page reads included. */
+  searchMaxDurationMs: int(120_000),
 
   resultTtlHours: int(168),
 
@@ -91,6 +93,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     searchMaxResults: env.HELIX_SEARCH_MAX_RESULTS,
     searchScrapeConcurrency: env.HELIX_SEARCH_SCRAPE_CONCURRENCY,
     searchCacheTtlMs: env.HELIX_SEARCH_CACHE_TTL_MS,
+    searchMaxDurationMs: env.HELIX_SEARCH_MAX_DURATION_MS,
     resultTtlHours: env.HELIX_RESULT_TTL_HOURS,
     corsOrigins: env.HELIX_CORS_ORIGINS,
   });

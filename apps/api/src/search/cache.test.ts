@@ -26,6 +26,13 @@ describe('SearchCache', () => {
     expect(cache.size).toBe(0);
   });
 
+  it('never stores an empty hit list', () => {
+    const cache = new SearchCache(60_000);
+    cache.set(base, []);
+    expect(cache.get(base)).toBeUndefined();
+    expect(cache.size).toBe(0);
+  });
+
   it('keys on the full query, not just the text', () => {
     const cache = new SearchCache(60_000);
     cache.set(base, hits);

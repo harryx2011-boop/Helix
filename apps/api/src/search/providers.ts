@@ -40,10 +40,42 @@ export interface SearchHit {
   imageUrl?: string | undefined;
 }
 
+/** One requested source the backend could not answer. */
+export interface SourceFailure {
+  source: SearchSource;
+  message: string;
+}
+
+/**
+ * What a backend call produced. A source that fails is reported, not hidden:
+ * an operator problem (bad key, quota, a down instance) must reach the caller
+ * as a failure rather than as "the web has no answer".
+ */
+export interface ProviderResult {
+  hits: SearchHit[];
+  failures: SourceFailure[];
+}
+
 export interface SearchProvider {
   readonly name: string;
-  search(query: SearchQuery): Promise<SearchHit[]>;
+  search(query: SearchQuery, signal?: AbortSignal): Promise<ProviderResult>;
   configured(): boolean;
+}
+
+const BACKEND_TIMEOUT_MS = 20_000;
+
+function backendSignal(signal: AbortSignal | undefined): AbortSignal {
+  const timeout = AbortSignal.timeout(BACKEND_TIMEOUT_MS);
+  return signal ? AbortSignal.any([timeout, signal]) : timeout;
+}
+
+function describeError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.name === 'TimeoutError'
+      ? `timed out after ${BACKEND_TIMEOUT_MS / 1000}s`
+      : error.message;
+  }
+  return 'request failed';
 }
 
 /** Domain filters as Google search operators, which every backend passes through. */
@@ -112,7 +144,7 @@ export class SerperProvider implements SearchProvider {
     return Boolean(this.#apiKey);
   }
 
-  async search(query: SearchQuery): Promise<SearchHit[]> {
+  async search(query: SearchQuery, signal?: AbortSignal): Promise<ProviderResult> {
     if (!this.#apiKey) {
       throw new Error('SERPER_API_KEY is not set.');
     }
@@ -124,6 +156,7 @@ export class SerperProvider implements SearchProvider {
     };
 
     const hits: SearchHit[] = [];
+    const failures: SourceFailure[] = [];
 
     // Each source is a separate endpoint, and the limit applies per source.
     for (const source of query.sources) {
@@ -145,14 +178,12 @@ export class SerperProvider implements SearchProvider {
             'content-type': 'application/json',
           },
           body: JSON.stringify(body),
-          signal: AbortSignal.timeout(20_000),
+          signal: backendSignal(signal),
         });
 
         if (!response.ok) {
-          this.#logger?.warn(
-            { status: response.status, source },
-            'serper request failed',
-          );
+          this.#logger?.warn({ status: response.status, source }, 'serper request failed');
+          failures.push({ source, message: `serper answered HTTP ${response.status} for ${source}` });
           continue;
         }
 
@@ -180,10 +211,11 @@ export class SerperProvider implements SearchProvider {
       } catch (error) {
         // One source failing should not lose the results from the others.
         this.#logger?.warn({ error, source }, 'serper request errored');
+        failures.push({ source, message: `serper request for ${source} ${describeError(error)}` });
       }
     }
 
-    return hits;
+    return { hits, failures };
   }
 }
 
@@ -201,12 +233,13 @@ export class SerpApiProvider implements SearchProvider {
     return Boolean(this.#apiKey);
   }
 
-  async search(query: SearchQuery): Promise<SearchHit[]> {
+  async search(query: SearchQuery, signal?: AbortSignal): Promise<ProviderResult> {
     if (!this.#apiKey) {
       throw new Error('SERPAPI_KEY is not set.');
     }
 
     const hits: SearchHit[] = [];
+    const failures: SourceFailure[] = [];
 
     for (const source of query.sources) {
       const params = new URLSearchParams({
@@ -226,11 +259,12 @@ export class SerpApiProvider implements SearchProvider {
 
       try {
         const response = await fetch(`https://serpapi.com/search?${params}`, {
-          signal: AbortSignal.timeout(20_000),
+          signal: backendSignal(signal),
         });
 
         if (!response.ok) {
           this.#logger?.warn({ status: response.status, source }, 'serpapi request failed');
+          failures.push({ source, message: `serpapi answered HTTP ${response.status} for ${source}` });
           continue;
         }
 
@@ -261,10 +295,11 @@ export class SerpApiProvider implements SearchProvider {
         });
       } catch (error) {
         this.#logger?.warn({ error, source }, 'serpapi request errored');
+        failures.push({ source, message: `serpapi request for ${source} ${describeError(error)}` });
       }
     }
 
-    return hits;
+    return { hits, failures };
   }
 }
 
@@ -288,7 +323,7 @@ export class SearxngProvider implements SearchProvider {
     return Boolean(this.#baseUrl);
   }
 
-  async search(query: SearchQuery): Promise<SearchHit[]> {
+  async search(query: SearchQuery, signal?: AbortSignal): Promise<ProviderResult> {
     if (!this.#baseUrl) {
       throw new Error('SEARXNG_URL is not set.');
     }
@@ -300,6 +335,7 @@ export class SearxngProvider implements SearchProvider {
     };
 
     const hits: SearchHit[] = [];
+    const failures: SourceFailure[] = [];
 
     for (const source of query.sources) {
       const params = new URLSearchParams({
@@ -324,16 +360,16 @@ export class SearxngProvider implements SearchProvider {
       try {
         const response = await fetch(`${this.#baseUrl}/search?${params}`, {
           headers: { accept: 'application/json' },
-          signal: AbortSignal.timeout(20_000),
+          signal: backendSignal(signal),
         });
 
         if (!response.ok) {
-          this.#logger?.warn(
-            { status: response.status, source },
+          const message =
             response.status === 403
-              ? 'searxng refused the JSON format; enable json under search.formats in settings.yml'
-              : 'searxng request failed',
-          );
+              ? `searxng refused the JSON format for ${source} (HTTP 403); enable json under search.formats in settings.yml`
+              : `searxng answered HTTP ${response.status} for ${source}`;
+          this.#logger?.warn({ status: response.status, source }, message);
+          failures.push({ source, message });
           continue;
         }
 
@@ -362,10 +398,11 @@ export class SearxngProvider implements SearchProvider {
         });
       } catch (error) {
         this.#logger?.warn({ error, source }, 'searxng request errored');
+        failures.push({ source, message: `searxng request for ${source} ${describeError(error)}` });
       }
     }
 
-    return hits;
+    return { hits, failures };
   }
 }
 

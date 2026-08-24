@@ -21,6 +21,7 @@ import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerInternal } from './routes/internal.js';
 import { createSearchProvider } from './search/providers.js';
+import { registerMcp } from './mcp/server.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -173,6 +174,10 @@ await app.register(
 );
 
 await registerInternal(app, { adminToken: config.internalAdminToken });
+
+// Tools are generated from openapi.yaml for the routes registered above; the
+// bearer key on the MCP request is the same key the HTTP API takes.
+await registerMcp(app, { prefix: '/v1' });
 
 // TODO(M7+): /monitor, /parse, /interact
 

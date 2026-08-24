@@ -37,6 +37,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/dist ./dist
 COPY --from=build /app/apps/api/package.json ./package.json
 COPY --from=build /app/apps/api/migrations ./migrations
+COPY --from=build /app/openapi.yaml ./openapi.yaml
 
 RUN npx playwright install chromium --with-deps 2>/dev/null || npx playwright install chromium
 

@@ -3,3 +3,4 @@ packages:
   - 'apps/dashboard'
   - 'packages/schema'
   - 'packages/sdk-ts'
+  - 'packages/cli'

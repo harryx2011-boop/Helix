@@ -14,6 +14,7 @@ COPY package.json pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/schema/package.json ./packages/schema/
 COPY packages/sdk-ts/package.json ./packages/sdk-ts/
+COPY packages/cli/package.json ./packages/cli/
 RUN pnpm install --frozen-lockfile || pnpm install
 
 FROM deps AS build

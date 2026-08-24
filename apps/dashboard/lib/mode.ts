@@ -14,4 +14,5 @@ export const PUBLIC_API_URL = process.env.NEXT_PUBLIC_HELIX_API_URL ?? 'http://l
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3400';
 
-export const MCP_URL = process.env.NEXT_PUBLIC_HELIX_MCP_URL ?? 'https://mcp.helix.dev/v1';
+/** The API serves MCP at `/mcp` on its own host; a hosted deployment may front it with `https://mcp.helix.dev/v1`. */
+export const MCP_URL = process.env.NEXT_PUBLIC_HELIX_MCP_URL ?? `${PUBLIC_API_URL}/mcp`;

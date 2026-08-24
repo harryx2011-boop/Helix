@@ -5,10 +5,8 @@ import { Check, Copy } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { MCP_URL } from '@/lib/mode';
-
-const CLIENTS = ['Claude Code', 'Cursor', 'Codex', 'Windsurf', 'Generic'] as const;
-type Client = (typeof CLIENTS)[number];
+import { MCP_URL, SITE_URL } from '@/lib/mode';
+import { CONNECT_CLIENTS, cliInitCommand, mcpSnippet, type ConnectClient } from '@/lib/connect';
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = React.useState(false);
@@ -35,24 +33,27 @@ function CodeBlock({ lines }: { lines: string[] }) {
   );
 }
 
-function ClientPanel({ client, apiKey }: { client: Client; apiKey: string }) {
-  const mcpLines = [`claude mcp add --transport http helix ${MCP_URL}`, `claude mcp login helix`];
+function ClientPanel({ client, apiKey }: { client: ConnectClient; apiKey: string }) {
+  const snippet = mcpSnippet(client, { apiKey, mcpUrl: MCP_URL });
+  const cli = cliInitCommand({ apiKey, mcpUrl: MCP_URL, siteUrl: SITE_URL });
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">MCP · {client}</span>
-          <CopyButton text={mcpLines.join('\n')} label="MCP command" />
+          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+            MCP · {client} · {snippet.target}
+          </span>
+          <CopyButton text={snippet.lines.join('\n')} label={`${client} MCP config`} />
         </div>
-        <CodeBlock lines={mcpLines} />
+        <CodeBlock lines={snippet.lines} />
       </div>
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">CLI</span>
-          <CopyButton text={`npx -y @helix/cli@latest init --all -k ${apiKey}`} label="CLI command" />
+          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">CLI · writes the same, plus SKILL.md</span>
+          <CopyButton text={cli} label="CLI command" />
         </div>
-        <CodeBlock lines={[`npx -y @helix/cli@latest init --all -k ${apiKey}`]} />
+        <CodeBlock lines={[cli]} />
       </div>
     </div>
   );
@@ -64,17 +65,17 @@ export function ConnectSheet({ open, onOpenChange, apiKey }: { open: boolean; on
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Set up an agent</DialogTitle>
-          <DialogDescription>Connect an agent harness to Helix over MCP, or install with the CLI.</DialogDescription>
+          <DialogDescription>Connect an agent harness to Helix over MCP, or let the CLI write the config for every harness it finds.</DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue={CLIENTS[0]} className="w-full">
+        <Tabs defaultValue={CONNECT_CLIENTS[0]} className="w-full">
           <TabsList className="grid w-full grid-cols-5 rounded-pill">
-            {CLIENTS.map((c) => (
+            {CONNECT_CLIENTS.map((c) => (
               <TabsTrigger key={c} value={c} className="rounded-pill text-xs">
                 {c}
               </TabsTrigger>
             ))}
           </TabsList>
-          {CLIENTS.map((c) => (
+          {CONNECT_CLIENTS.map((c) => (
             <TabsContent key={c} value={c} className="pt-3">
               <ClientPanel client={c} apiKey={apiKey} />
             </TabsContent>

@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { CharChart } from '@/components/app/char-chart';
 import { ConnectSheet } from '@/components/app/connect-sheet';
-import { HOSTED } from '@/lib/mode';
+import { HOSTED, MCP_URL, SITE_URL } from '@/lib/mode';
+import { claudeMcpAddCommand, cliInitCommand } from '@/lib/connect';
 import { endpointById } from '@/lib/catalog';
 
 interface EndpointSummary {
@@ -169,12 +170,12 @@ function ApiKeyPanel({ keyMasked, revealedKey, welcome }: { keyMasked: string | 
   );
 }
 
-function AgentIntegrations({ apiKey }: { apiKey: string }) {
-  const [open, setOpen] = React.useState(false);
+function AgentIntegrations({ apiKey, initialOpen }: { apiKey: string; initialOpen: boolean }) {
+  const [open, setOpen] = React.useState(initialOpen);
   const [copiedRow, setCopiedRow] = React.useState<string | null>(null);
 
-  const cliCmd = `npx -y @helix/cli@latest init --all -k ${apiKey}`;
-  const mcpCmd = `claude mcp add --transport http helix`;
+  const cliCmd = cliInitCommand({ apiKey, mcpUrl: MCP_URL, siteUrl: SITE_URL });
+  const mcpCmd = claudeMcpAddCommand({ apiKey, mcpUrl: MCP_URL }).join('\n');
 
   const copyRow = (id: string, text: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -230,11 +231,13 @@ export function OverviewClient({
   keyMasked,
   revealedKey,
   welcome,
+  connect,
 }: {
   endpoints: EndpointSummary[];
   keyMasked: string | null;
   revealedKey: string | null;
   welcome: boolean;
+  connect: boolean;
 }) {
   return (
     <div className="flex flex-col gap-4 p-4 lg:p-6">
@@ -243,7 +246,7 @@ export function OverviewClient({
         <RequestsChart />
         <ApiKeyPanel keyMasked={keyMasked} revealedKey={revealedKey} welcome={welcome} />
       </div>
-      <AgentIntegrations apiKey={revealedKey ?? keyMasked ?? 'helix-YOUR_KEY'} />
+      <AgentIntegrations apiKey={revealedKey ?? keyMasked ?? 'helix-YOUR_KEY'} initialOpen={connect} />
       {endpoints.some((e) => e.id === 'interact' && e.status === 'live') && (
         <Card>
           <CardHeader className="flex-row items-center gap-2">

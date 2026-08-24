@@ -112,7 +112,7 @@ function reachWhen(endpoint: EndpointDef): string {
     case 'parse':
       return 'the source is a document file (PDF, DOCX, PPTX, XLSX) rather than a web page.';
     case 'search':
-      return "you don't have a URL yet and need to find and read relevant pages in one call.";
+      return "you don't have a URL yet and need to find and read relevant pages in one call. Omit `scrapeOptions` for url, title and description only; set it to read each page. Narrow with `lang`, `country` and `tbs` (qdr:d / qdr:w / qdr:m / qdr:y). A page that cannot be read keeps its row with a `failure` and a `warnings` line; the call still succeeds.";
     case 'crawl':
       return 'you need many pages from one site and do not already have the list of URLs.';
     case 'interact':
@@ -149,7 +149,7 @@ function exampleDataShape(id: EndpointDef['id']): Record<string, unknown> {
     case 'parse':
       return { markdown: '...', metadata: { title: '...', statusCode: 200 } };
     case 'search':
-      return { results: [{ url: '...', title: '...', markdown: '...' }] };
+      return { web: [{ url: '...', title: '...', description: '...', position: 1, markdown: '...', metadata: { statusCode: 200 } }] };
     case 'map':
       return { urls: ['...'] };
     case 'crawl':

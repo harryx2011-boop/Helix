@@ -47,8 +47,9 @@ OPENAI_COMPATIBLE_BASE_URL=`;
 const ENV_OTHER = `# proxies — bring your own, blank fetches direct
 HELIX_PROXY_URL=
 
-# search — /search needs a SERP provider
-HELIX_SEARCH_PROVIDER=serper
+# search — a self-hosted SearXNG needs no key; Serper and SerpAPI are BYOK
+HELIX_SEARCH_PROVIDER=auto
+SEARXNG_URL=
 SERPER_API_KEY=
 SERPAPI_KEY=
 

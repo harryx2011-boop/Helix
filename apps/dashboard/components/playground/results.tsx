@@ -306,23 +306,36 @@ export function Results({ result, loading, timingMs, error }: ResultsProps) {
 
     case 'search': {
       const response = result.response;
-      const results = response.results ?? [];
+      const results = [...(response.data?.web ?? []), ...(response.data?.news ?? []), ...(response.data?.images ?? [])];
+      const warnings = response.warnings ?? [];
       return (
         <div className={wrapperClass}>
-          <span className="text-xs text-muted-foreground">{results.length} result{results.length === 1 ? '' : 's'}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{results.length} result{results.length === 1 ? '' : 's'}</span>
+            {response.metadata?.backend && <Badge variant="secondary">{response.metadata.backend}</Badge>}
+            {response.metadata?.fromCache && <Badge variant="secondary">cached</Badge>}
+          </div>
           <div className="flex flex-col gap-3">
             {results.map((item, i) => (
               <div key={`${item.url}-${i}`} className="flex flex-col gap-1 rounded-card border border-border p-3">
                 <a href={item.url} target="_blank" rel="noreferrer" className="text-sm font-medium text-primary hover:underline">
-                  {item.title ?? item.url}
+                  {item.title || item.url}
                 </a>
                 <span className="truncate font-mono text-xs text-muted-foreground">{item.url}</span>
-                {item.snippet && <p className="text-sm text-muted-foreground leading-relaxed">{item.snippet}</p>}
+                {item.description && <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>}
+                {item.failure && <FailurePanel failure={item.failure} />}
                 {item.markdown && <MarkdownView content={item.markdown} />}
               </div>
             ))}
             {results.length === 0 && <span className="text-sm text-muted-foreground">No results.</span>}
           </div>
+          {warnings.length > 0 && (
+            <ul className="flex flex-col gap-1 font-mono text-xs text-muted-foreground">
+              {warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          )}
         </div>
       );
     }

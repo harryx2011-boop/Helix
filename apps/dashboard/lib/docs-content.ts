@@ -46,10 +46,10 @@ export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
   },
   search: {
     id: 'search',
-    purpose: 'Search the web and read every result in the same call, instead of searching then scraping each URL yourself.',
-    whenToUse: 'Reach for Search when you have a query, not a URL. Once you have the URL you want, a direct Scrape call is cheaper for that one page.',
-    responseShape: '`{ success, data: { web: [{ url, title, description, markdown, metadata }] } }`. Partial failures return the results that succeeded with a `warnings` array.',
-    failureReasons: ['timeout', 'service_unavailable', 'empty'],
+    purpose: 'Search the web and read every result in the same call, instead of searching then scraping each URL yourself. The backend is yours: a self-hosted SearXNG instance, or a Serper or SerpAPI key.',
+    whenToUse: 'Reach for Search when you have a query, not a URL. Omit `scrapeOptions` to get url, title and description only; set it to read each page with the same formats Scrape offers. Once you have the URL you want, a direct Scrape call is cheaper for that one page. Narrow with `lang`, `country` and `tbs` (qdr:d, qdr:w, qdr:m, qdr:y) instead of a second request.',
+    responseShape: '`{ success, data: { web: [{ url, title, description, position, markdown, metadata }] }, warnings, metadata: { backend, fromCache } }`. A result page that cannot be read keeps its row with a typed `failure` and adds a line to `warnings`; the search itself still succeeds. No backend configured is a 503 `search_unavailable`; a backend error is a 502 `search_failed`.',
+    failureReasons: ['blocked', 'challenge', 'timeout', 'dns', 'tls', 'http_error', 'empty', 'service_unavailable'],
   },
   crawl: {
     id: 'crawl',

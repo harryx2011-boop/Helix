@@ -19,6 +19,8 @@ const FAILURE_REASON_NOTES: Record<FailureReason, string> = {
   empty: 'The page loaded but produced no usable content. Try a different `extractor` or check `onlyMainContent`.',
   robots_denied: 'robots.txt disallows this path. Helix will not override robots; this is not retryable.',
   unsupported_type: 'The content type is not one Helix can process (e.g. binary the parser does not handle).',
+  unsafe_url: 'The URL points at the Helix instance or a private network. Only public http(s) addresses open; not retryable.',
+  session_closed: 'The interact session was closed (DELETE or timeout) while the run was in progress. Open a new session.',
   service_unavailable: 'A Helix-side dependency was unreachable. Not the target site — safe to retry.',
 };
 
@@ -73,8 +75,8 @@ function endpointSection(endpoint: EndpointDef, ctx: { apiKey?: string; baseUrl:
 
   const body = EXAMPLE_REQUEST[endpoint.id];
   const curl = generateCode('curl', { endpoint: endpoint.id, body, ...(ctx.apiKey !== undefined ? { apiKey: ctx.apiKey } : {}), baseUrl: ctx.baseUrl, mcpUrl: ctx.mcpUrl });
-  const successEnvelope = JSON.stringify({ success: true, data: exampleDataShape(endpoint.id), warnings: [] }, null, 2);
-  const failureEnvelope = JSON.stringify({ success: false, failure: { reason: 'blocked', signals: ['string[]'] }, warnings: [] }, null, 2);
+  const successEnvelope = JSON.stringify(exampleSuccessEnvelope(endpoint.id), null, 2);
+  const failureEnvelope = JSON.stringify(exampleFailureEnvelope(endpoint.id), null, 2);
 
   const notes = requestNotes(endpoint);
 
@@ -104,7 +106,7 @@ ${failureEnvelope}
 ${usageNotes(endpoint)}Failure reasons:
 
 ${FAILURE_REASONS.map((reason) => `- \`${reason}\` — ${FAILURE_REASON_NOTES[reason]}`).join('\n')}
-${lifecycleNotes(endpoint)}`;
+${lifecycleNotes(endpoint)}${endpointNotes(endpoint)}`;
 }
 
 /** Endpoints that do not finish inline need their poll/cancel loop spelled out. */
@@ -157,6 +159,53 @@ function usageNotes(endpoint: EndpointDef): string {
   }
 }
 
+/** Endpoint-specific mechanics an agent needs beyond the envelope. */
+function endpointNotes(endpoint: EndpointDef): string {
+  if (endpoint.id !== 'interact') return '';
+  return `
+Sessions:
+
+- Actions: \`navigate\`, \`click\`, \`type\`, \`press\`, \`scroll\`, \`wait\`, \`screenshot\`, \`executeJavascript\`, \`extract\`. Every action names its target with a CSS selector; \`extract\` is the only one that calls a model and returns its answer as \`output\` (an object in \`data\` when you pass a JSON \`schema\`).
+- Send \`keepSessionOpen: true\` to get a \`sessionId\` back, then pass \`sessionId\` (and omit \`url\`) to continue on the same page. Pass both to navigate that session somewhere else first.
+- \`POST ${endpoint.path}/session\` opens a session without acting; \`DELETE ${endpoint.path}/session/{sessionId}\` closes one. Close sessions you are done with: the operator caps how many can be open, and a \`429 session_limit_reached\` means that cap is full.
+- Sessions close on their own after an idle timeout and, whatever happens, at \`expiresAt\`. A \`404\` on a \`sessionId\` means it has gone; open a new one rather than retrying.
+- \`409 session_busy\` means another request is running on that session. Wait for it to return.
+- \`failure.actionIndex\` says which action failed (\`null\` for the initial navigation). Earlier actions already ran; on a kept session the page is left where it stopped.
+- \`liveViewUrl\` is a read-only page a person can open to watch the session. It carries its own token and needs no API key.
+`;
+}
+
+function exampleSuccessEnvelope(id: EndpointDef['id']): Record<string, unknown> {
+  if (id === 'interact') {
+    return {
+      success: true,
+      sessionId: 'sess_...',
+      sessionOpen: false,
+      url: '...',
+      output: '...',
+      data: { answer: '...' },
+      screenshot: 'data:image/png;base64,...',
+      javascriptReturns: [],
+      actionsRun: 3,
+      usage: { tokens: { input: 0, output: 0 }, model: '...' },
+      timingMs: 0,
+    };
+  }
+  return { success: true, data: exampleDataShape(id), warnings: [] };
+}
+
+function exampleFailureEnvelope(id: EndpointDef['id']): Record<string, unknown> {
+  if (id === 'interact') {
+    return {
+      success: false,
+      sessionId: 'sess_...',
+      sessionOpen: false,
+      failure: { reason: 'timeout', detail: '...', actionIndex: 1, actionType: 'click' },
+    };
+  }
+  return { success: false, failure: { reason: 'blocked', signals: ['string[]'] }, warnings: [] };
+}
+
 function reachWhen(endpoint: EndpointDef): string {
   switch (endpoint.id) {
     case 'scrape':
@@ -168,7 +217,7 @@ function reachWhen(endpoint: EndpointDef): string {
     case 'crawl':
       return 'you need many pages from one site and do not already have the list of URLs. Send `estimate: true` first to see the projected page count.';
     case 'interact':
-      return 'reaching the content requires clicking, typing, or scrolling first — a single fetch will not see it.';
+      return 'reaching the content requires clicking, typing, or scrolling first, or one call has to build on the page state left by the last.';
     case 'monitor':
       return 'you need to know when a page changes over time, not just its current state.';
     default:
@@ -187,7 +236,7 @@ function reachNotWhen(endpoint: EndpointDef): string {
     case 'crawl':
       return "you only need one page (use Scrape) or you're just listing URLs without reading them (use Map).";
     case 'interact':
-      return 'a plain fetch already returns the content (use Scrape; Interact costs more and is slower).';
+      return 'a plain fetch already returns the content (use Scrape), or one scripted sequence before a single read is enough (use Scrape with `actions`).';
     case 'monitor':
       return 'you only need the current state once (use Scrape; Monitor is for repeated checks).';
     default:

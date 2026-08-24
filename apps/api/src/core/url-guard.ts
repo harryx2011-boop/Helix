@@ -100,6 +100,8 @@ function isPrivateV6(ip: string): boolean {
   if ((first & 0xfe00) === 0xfc00) return true;
   if ((first & 0xffc0) === 0xfe80) return true;
   if ((first & 0xff00) === 0xff00) return true;
+  // 2001:db8::/32 is reserved for documentation and routes nowhere.
+  if (first === 0x2001 && g[1] === 0x0db8) return true;
   return false;
 }
 
@@ -176,4 +178,67 @@ export async function checkUrl(raw: string, options: UrlGuardOptions = {}): Prom
   }
 
   return { ok: true };
+}
+
+/**
+ * The interact surface, over the same address rules.
+ *
+ * `checkUrl` answers a verdict a route turns into a 400; the browser actions
+ * want a throw they can catch per navigation, and a resolver shaped like
+ * `dns.lookup`'s `all` form. Both are the one blocklist above; a change to the
+ * ranges reaches every caller.
+ */
+
+export type Lookup = (hostname: string) => Promise<{ address: string; family: number }[]>;
+
+export const systemLookup: Lookup = (hostname) => lookup(hostname, { all: true, verbatim: true });
+
+export class UnsafeUrlError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnsafeUrlError';
+  }
+}
+
+/** True when the literal address is routable on the public internet. */
+export function isPublicAddress(address: string): boolean {
+  return !isPrivateAddress(address);
+}
+
+/** Throws unless the URL is http(s) to a publicly routable address, name resolution included. */
+export async function assertPublicUrl(raw: string, lookupFn: Lookup = systemLookup): Promise<void> {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new UnsafeUrlError('not a valid URL');
+  }
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new UnsafeUrlError(`${url.protocol.replace(/:$/, '')} URLs cannot be opened; only http and https`);
+  }
+
+  const host = bareHostname(url.hostname);
+  if (isLocalName(host)) {
+    throw new UnsafeUrlError('this instance cannot be told to open its own host');
+  }
+
+  if (isIP(host) !== 0) {
+    if (isPrivateAddress(host)) throw new UnsafeUrlError(`${host} is not a public address`);
+    return;
+  }
+
+  let addresses: { address: string; family: number }[];
+  try {
+    addresses = await lookupFn(host);
+  } catch {
+    throw new UnsafeUrlError(`${host} did not resolve`);
+  }
+  if (addresses.length === 0) throw new UnsafeUrlError(`${host} did not resolve`);
+
+  for (const { address } of addresses) {
+    if (isPrivateAddress(address)) {
+      throw new UnsafeUrlError(`${host} resolves to ${address}, which is not a public address`);
+    }
+  }
 }

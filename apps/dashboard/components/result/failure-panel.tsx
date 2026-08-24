@@ -80,6 +80,19 @@ const REASON_COPY: Record<FailureReason, ReasonCopy> = {
     explanation: 'The resource at this URL is not a type Helix knows how to read.',
     nextStep: () => 'Confirm the URL points at an HTML page or a supported document type (PDF, Office).',
   },
+  unsafe_url: {
+    icon: Ban,
+    title: 'URL not allowed',
+    explanation:
+      'The URL points at the Helix instance itself, a private network, or a link-local address. The browser only opens public http and https addresses.',
+    nextStep: () => 'Use a publicly routable hostname. Redirects and subresources to private addresses are dropped as well.',
+  },
+  session_closed: {
+    icon: ServerOff,
+    title: 'Session closed during the run',
+    explanation: 'The session was closed, by a DELETE or by its timeout, while these actions were still running.',
+    nextStep: () => 'Open a new session. Check `expiresAt` before sending a long run; the hard timeout closes a session even mid-request.',
+  },
   service_unavailable: {
     icon: ServerOff,
     title: 'Service unavailable',

@@ -162,6 +162,28 @@ what `assess_pdf` returns.
 - ☐ Field-level JSON diffs (`jsonOptions`) — needs the extraction pipeline on the check path
 - ☐ Multi-page monitors over a crawl scope (spec §7 open question; v1 is one URL per monitor)
 
+## M7b — Interact ◐
+
+Spec: `research/api-specs/browser-interaction-api.md`. Endpoint shape from the spec, runtime on the Playwright pool (no Rust session workers).
+
+- ☑ `POST /interact`: the spec's action union (navigate, click, type, press, scroll, wait,
+      screenshot, executeJavascript, extract) against a page that persists between calls
+- ☑ Session registry over the pool: `keepSessionOpen`, `sessionId` resume, per-key scoping,
+      one request at a time per session (409), operator cap (429), idle and hard timeouts
+- ☑ `POST /interact/session`, `GET` and `DELETE /interact/session/{sessionId}`
+- ☑ `extract` through helix-extract `/structured` with the operator's model; page content
+      boilerplate-stripped first, visible text as the fallback
+- ☑ Typed failures inside a 200 with `actionIndex` and `actionType`; a challenge page on
+      navigate is a failure, never content
+- ☑ Live view: CDP screencast fanned out over server-sent events to a token-authenticated
+      viewer page, started with the first viewer and stopped with the last (42 tests across
+      registry, actions, screencast and routes)
+- ☐ Live view over WebSocket (no `ws` dependency available in this pass; SSE carries the
+      same frames one way)
+- ☐ Interactive live view (human takeover) — cut from this pass
+- ☐ Prompt-resolved actions without a selector (`"click the checkout button"`) — open question
+      in the spec, deliberately not started
+
 ## M8 — Enrich ☐
 
 Last, because the hard part is not the loop — it is calibration and knowing when to say nothing.

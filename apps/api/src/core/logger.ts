@@ -13,3 +13,13 @@ export interface Log {
   warn(obj: unknown, msg?: string): void;
   error(obj: unknown, msg?: string): void;
 }
+
+/**
+ * Request URLs go into the access log. The live-view token travels in the
+ * query string, since a browser tab cannot send a header, so it is scrubbed
+ * before the URL is logged: a log line must never be enough to attach to a
+ * running session.
+ */
+export function redactUrlToken(url: string): string {
+  return url.replace(/([?&]token=)[^&#]*/gi, '$1[redacted]');
+}

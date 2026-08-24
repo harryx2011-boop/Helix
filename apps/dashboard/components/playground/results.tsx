@@ -83,6 +83,21 @@ function EstimateCard({ estimate }: { estimate: Estimate }) {
   );
 }
 
+function SessionStrip({ sessionId, sessionOpen, url, timingMs }: { sessionId?: string | undefined; sessionOpen?: boolean | undefined; url?: string | undefined; timingMs?: number | undefined }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground">
+      {sessionId && <span>{sessionId}</span>}
+      {sessionOpen !== undefined && (
+        <Badge variant={sessionOpen ? 'default' : 'secondary'} className="font-mono text-[10px] uppercase tracking-wide">
+          {sessionOpen ? 'open' : 'closed'}
+        </Badge>
+      )}
+      {url && <span className="truncate">{url}</span>}
+      {timingMs !== undefined && <span>{timingMs}ms round-trip</span>}
+    </div>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string | number | undefined }) {
   return (
     <div className="flex flex-col gap-0.5">
@@ -312,26 +327,49 @@ export function Results({ result, loading, timingMs, error }: ResultsProps) {
     case 'interact': {
       const response = result.response;
       if (!response.success) {
+        const { actionIndex, actionType } = response.failure;
         return (
           <div className={wrapperClass}>
+            <SessionStrip sessionId={response.sessionId} sessionOpen={response.sessionOpen} />
+            <p className="text-xs text-muted-foreground">
+              {actionIndex === null || actionIndex === undefined
+                ? 'Failed during the initial navigation, before any action ran.'
+                : `Failed at action ${actionIndex}${actionType ? ` (${actionType})` : ''}. Earlier actions already ran.`}
+            </p>
             <FailurePanel failure={response.failure} />
           </div>
         );
       }
       return (
         <div className={wrapperClass}>
-          {response.output && <p className="text-sm leading-relaxed">{response.output}</p>}
-          {response.screenshot && (
-            /* eslint-disable-next-line @next/next/no-img-element -- signed, expiring URL from the API */
-            <img src={response.screenshot} alt="Page screenshot" className="rounded-card border border-border" />
+          <SessionStrip sessionId={response.sessionId} sessionOpen={response.sessionOpen} url={response.url} timingMs={timingMs} />
+          {response.output && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Output</span>
+              <p className="text-sm leading-relaxed">{response.output}</p>
+            </div>
           )}
-          {response.liveViewUrl && (
-            <Button variant="secondary" size="sm" className="w-fit gap-1.5" asChild>
-              <a href={response.liveViewUrl} target="_blank" rel="noreferrer">
-                <ExternalLink className="h-3.5 w-3.5" />
-                Open live view
-              </a>
-            </Button>
+          {response.screenshot && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Screenshot</span>
+              {/* eslint-disable-next-line @next/next/no-img-element -- inline data URL from the API */}
+              <img src={response.screenshot} alt="Page screenshot" className="rounded-card border border-border" />
+            </div>
+          )}
+          {response.sessionOpen && response.liveViewUrl && (
+            <div className="flex flex-col gap-2 rounded-card border border-border bg-card p-4">
+              <span className="text-sm font-medium text-foreground">Session open</span>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Paste the session ID into the form to continue on this page.
+                {response.idleExpiresAt ? ` Closes at ${new Date(response.idleExpiresAt).toLocaleTimeString()} if nothing else happens.` : ''}
+              </p>
+              <Button variant="secondary" size="sm" className="w-fit gap-1.5" asChild>
+                <a href={response.liveViewUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open live view
+                </a>
+              </Button>
+            </div>
           )}
           <JsonView data={response} />
         </div>

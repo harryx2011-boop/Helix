@@ -23,6 +23,8 @@ export type FailureReason =
   | 'empty'
   | 'robots_denied'
   | 'unsupported_type'
+  | 'unsafe_url'
+  | 'session_closed'
   // A Helix service was unreachable — our infrastructure, not the target site.
   | 'service_unavailable';
 
@@ -75,18 +77,19 @@ export interface ScrapeRequest extends ScrapeOptions {
   url: string;
 }
 
-// --- Action (browser-interaction discriminated union; also used by scrape/interact) ---
+// --- Action (InteractAction in openapi.yaml; the /interact discriminated union) ---
 
-export type ActionType = 'navigate' | 'click' | 'type' | 'press' | 'scroll' | 'wait' | 'screenshot' | 'extract';
+export type ActionType = 'navigate' | 'click' | 'type' | 'press' | 'scroll' | 'wait' | 'screenshot' | 'executeJavascript' | 'extract';
 
 export interface NavigateAction { type: 'navigate'; url: string }
 export interface ClickAction { type: 'click'; selector: string }
 export interface TypeAction { type: 'type'; selector: string; text: string }
 export interface PressAction { type: 'press'; key: string }
 export interface ScrollAction { type: 'scroll'; direction: 'up' | 'down'; amount?: number }
-export interface WaitAction { type: 'wait'; milliseconds: number }
-export interface ScreenshotAction { type: 'screenshot' }
-export interface ExtractAction { type: 'extract'; prompt: string; schema?: Record<string, unknown>; provider?: string }
+export interface WaitAction { type: 'wait'; milliseconds?: number; selector?: string }
+export interface ScreenshotAction { type: 'screenshot'; fullPage?: boolean }
+export interface ExecuteJavascriptAction { type: 'executeJavascript'; script: string }
+export interface ExtractAction { type: 'extract'; prompt: string; schema?: Record<string, unknown>; model?: string }
 
 export type Action =
   | NavigateAction
@@ -96,6 +99,7 @@ export type Action =
   | ScrollAction
   | WaitAction
   | ScreenshotAction
+  | ExecuteJavascriptAction
   | ExtractAction;
 
 // --- Map ---
@@ -328,21 +332,40 @@ export interface InteractRequest {
   sessionId?: string | null;
   actions: Action[];
   keepSessionOpen?: boolean;
+  headers?: Record<string, string>;
+  viewport?: { width: number; height: number };
 }
 
 export interface InteractResponseSuccess {
   success: true;
-  sessionId?: string;
-  output?: string;
-  screenshot?: string;
+  sessionId: string;
+  sessionOpen: boolean;
+  url?: string;
+  output?: string | null;
+  data?: Record<string, unknown> | null;
+  /** `data:image/png;base64,...` */
+  screenshot?: string | null;
+  javascriptReturns?: unknown[];
+  actionsRun?: number;
+  /** Present while the session is open. */
   liveViewUrl?: string;
-  interactiveLiveViewUrl?: string;
-  sessionOpen?: boolean;
+  expiresAt?: string;
+  idleExpiresAt?: string;
+  usage?: { tokens?: { input?: number; output?: number }; model?: string | null };
+  timingMs?: number;
+}
+
+export interface InteractFailure extends FetchFailure {
+  /** Index into `actions`; `null` when the initial navigation from `url` failed. */
+  actionIndex?: number | null;
+  actionType?: ActionType;
 }
 
 export interface InteractResponseFailure {
   success: false;
-  failure: FetchFailure;
+  sessionId?: string;
+  sessionOpen?: boolean;
+  failure: InteractFailure;
 }
 
 export type InteractResponse = InteractResponseSuccess | InteractResponseFailure;

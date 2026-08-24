@@ -21,6 +21,10 @@ export type FailureReason =
   | 'empty'
   | 'robots_denied'
   | 'unsupported_type'
+  // The caller pointed the browser at this host or the network it sits on.
+  | 'unsafe_url'
+  // The session was closed, by the caller or a timeout, while the run was still on it.
+  | 'session_closed'
   // The fetch could not even be attempted — a Helix service was unreachable.
   // This is our own infrastructure failing, not the target site, and must never
   // be reported as a block or challenge: those name something the site did.

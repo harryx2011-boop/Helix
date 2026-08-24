@@ -4,6 +4,7 @@ import Fastify, { type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { loadConfig } from './config.js';
+import { redactUrlToken } from './core/logger.js';
 import { RateLimiter } from './core/rate-limit.js';
 import { ensureBootstrapKey, verifyApiKey } from './core/api-keys.js';
 import { InternalTickets, registerAuth } from './core/auth.js';
@@ -12,6 +13,7 @@ import { migrate } from './db/migrate.js';
 import { FetchClient } from './fetch/client.js';
 import { ExtractClient } from './extract/client.js';
 import { BrowserPool } from './browser/pool.js';
+import { SessionRegistry } from './browser/sessions.js';
 import { registerHealth } from './routes/health.js';
 import { registerScrape } from './routes/scrape.js';
 import { registerParse } from './routes/parse.js';
@@ -22,6 +24,7 @@ import { registerJobs } from './routes/jobs.js';
 import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerInternal } from './routes/internal.js';
+import { registerInteract } from './routes/interact.js';
 import { createSearchProvider } from './search/providers.js';
 import { WebhookDispatcher as CrawlWebhookDispatcher } from './webhooks/dispatcher.js';
 import { registerMcp } from './mcp/server.js';
@@ -39,15 +42,18 @@ const app = Fastify({
   logger: {
     level: config.logLevel,
     redact: {
-      // Provider credentials must never reach a log line.
+      // Provider credentials must never reach a log line. Neither must the
+      // live-view token, which rides in the query string of its own route.
       paths: [
         'req.headers.authorization',
         'req.headers["x-api-key"]',
+        'req.url',
         '*.apiKey',
         '*.api_key',
         '*.proxy',
       ],
-      censor: '[redacted]',
+      censor: (value: unknown, path: string[]) =>
+        path[path.length - 1] === 'url' && typeof value === 'string' ? redactUrlToken(value) : '[redacted]',
     },
   },
   trustProxy: true,
@@ -85,6 +91,14 @@ const browserPool = new BrowserPool({
   recycleAfter: config.browserRecycleAfter,
   lightpandaEnabled: config.lightpandaEnabled,
   lightpandaUrl: config.lightpandaUrl,
+  logger: app.log,
+});
+
+const sessions = new SessionRegistry({
+  lease: (options) => browserPool.lease(options),
+  maxSessions: config.interactMaxSessions,
+  idleTimeoutMs: config.interactIdleTimeoutSeconds * 1_000,
+  hardTimeoutMs: config.interactHardTimeoutSeconds * 1_000,
   logger: app.log,
 });
 
@@ -178,7 +192,7 @@ await app.register(helmet, { contentSecurityPolicy: false });
 // bearer key rather than cookies, so credentials mode stays off.
 await app.register(cors, { origin: config.corsOrigins });
 
-registerAuth(app, { verifyApiKey, limiter, tickets });
+registerAuth(app, { verifyApiKey, limiter, tickets, open: ['/v1/health', '/v1/interact/live/'] });
 
 await app.register(
   async (instance) => {
@@ -225,6 +239,7 @@ await app.register(
       scheduler: monitorScheduler,
       minIntervalSeconds: config.monitorMinIntervalSeconds,
     });
+    await registerInteract(instance, { sessions, extractClient, publicUrl: config.publicUrl });
   },
   { prefix: '/v1' },
 );
@@ -235,8 +250,6 @@ await registerInternal(app, { adminToken: config.internalAdminToken });
 // bearer key on the MCP request is the same key the HTTP API takes, verified
 // and rate limited once on the way in; the replayed tool call rides a ticket.
 await registerMcp(app, { prefix: '/v1', tickets });
-
-// TODO(M7+): /interact
 
 const start = async (): Promise<void> => {
   try {
@@ -265,6 +278,7 @@ const start = async (): Promise<void> => {
     void crawlWebhookDispatcher.start();
     await monitorScheduler.start();
     monitorWebhookDispatcher.start();
+    sessions.startSweeper();
 
     await app.listen({ port: config.port, host: '0.0.0.0' });
     app.log.info(
@@ -290,6 +304,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
       monitorScheduler.stop();
       monitorWebhookDispatcher.stop();
       crawlWebhookDispatcher.stop();
+      await sessions.closeAll().catch(() => undefined);
       await app.close().catch(() => undefined);
       await browserPool.close().catch(() => undefined);
       await closePool().catch(() => undefined);

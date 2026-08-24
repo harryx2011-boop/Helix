@@ -61,6 +61,8 @@ tags:
     description: Multi-page discovery and read.
   - name: Search
     description: Web search, optionally scraping each result.
+  - name: Interact
+    description: Stateful browser sessions an agent can drive, with a live view.
   - name: Monitors
     description: Scheduled re-reads with change detection.
   - name: Jobs
@@ -222,6 +224,184 @@ paths:
               schema: { $ref: '#/components/schemas/SearchResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /interact:
+    post:
+      tags: [Interact]
+      summary: Run actions in a browser session
+      description: |
+        Runs a list of actions against a live page. With no `sessionId` a new
+        session is opened and `url` is loaded first; with a `sessionId` the
+        actions continue on that session's page, cookies and storage intact.
+
+        Every action names its target with a selector; nothing is inferred.
+        The one model call is `extract`, which sends the page's stripped
+        content to the operator's configured provider and returns the answer
+        as `output`.
+
+        Sessions are bounded by the operator: a cap on open sessions
+        (`HELIX_INTERACT_MAX_SESSIONS`), an idle timeout
+        (`HELIX_INTERACT_IDLE_TIMEOUT_SECONDS`) and a hard timeout
+        (`HELIX_INTERACT_HARD_TIMEOUT_SECONDS`). Set `keepSessionOpen` to
+        keep the page for a follow-up call; otherwise it closes when the
+        response is sent.
+      operationId: interact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InteractRequest' }
+            examples:
+              oneShot:
+                summary: Accept cookies, search, read the price
+                value:
+                  url: 'https://example.com/shop'
+                  actions:
+                    - { type: click, selector: '#accept-cookies' }
+                    - { type: type, selector: '#search', text: 'wireless keyboard' }
+                    - { type: press, key: Enter }
+                    - { type: wait, selector: '.results' }
+                    - { type: screenshot }
+                    - { type: extract, prompt: 'Get the price of the first result' }
+              resume:
+                summary: Continue on an open session
+                value:
+                  sessionId: sess_9f2c1a7b3e4d5c60
+                  actions:
+                    - { type: click, selector: '.next-page' }
+                    - { type: extract, prompt: 'List the product names on this page' }
+                  keepSessionOpen: true
+      responses:
+        '200':
+          description: |
+            The run finished. Check `success`: a failed action (a selector that
+            never appeared, a bot challenge on navigation, the model service
+            being down) is reported here with the index of the action that
+            failed, not as an HTTP error.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InteractResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: No open session with that id for this key. It may have been closed or timed out.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: The session is running another request (`session_busy`). Wait for it to return.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: |
+            Either the key's rate limit (`rate_limited`) or the operator's cap on
+            open sessions (`session_limit_reached`). Close a session or wait.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: A browser could not be started for the session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /interact/session:
+    post:
+      tags: [Interact]
+      summary: Open a reusable session
+      description: |
+        Opens a session without running actions, optionally loading `url`.
+        Returns the id to pass as `sessionId` to `/interact`, the live-view
+        link, and when the session will close if nothing else happens.
+      operationId: openInteractSession
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InteractSessionRequest' }
+      responses:
+        '201':
+          description: Session open.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InteractSession' }
+        '200':
+          description: The first navigation failed; the session was closed again.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InteractResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429':
+          description: The operator's cap on open sessions (`session_limit_reached`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: A browser could not be started for the session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /interact/session/{sessionId}:
+    parameters:
+      - { name: sessionId, in: path, required: true, schema: { type: string }, example: sess_9f2c1a7b3e4d5c60 }
+    get:
+      tags: [Interact]
+      summary: Session status
+      operationId: getInteractSession
+      responses:
+        '200':
+          description: The session, its current URL and deadlines.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/InteractSession'
+                  - type: object
+                    properties:
+                      busy: { type: boolean, description: Whether a request is running on it right now. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Interact]
+      summary: Close a session
+      description: Closes the page and frees its slot. A second call for the same id is a 404.
+      operationId: closeInteractSession
+      responses:
+        '204': { description: Closed. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /interact/live/{sessionId}:
+    parameters:
+      - { name: sessionId, in: path, required: true, schema: { type: string } }
+      - name: token
+        in: query
+        required: true
+        schema: { type: string }
+        description: The per-session token embedded in `liveViewUrl`. Stands in for the API key, since a browser tab cannot send one.
+    get:
+      tags: [Interact]
+      summary: Live view
+      description: |
+        A read-only page showing the session as it runs, fed by Chrome's
+        screencast over `GET /interact/live/{sessionId}/stream` (server-sent
+        events; `frame` events carry base64 JPEG, `closed` announces the end).
+        Nothing is loaded from outside the instance.
+      operationId: interactLiveView
+      security: []
+      responses:
+        '200':
+          description: The viewer.
+          content:
+            text/html: {}
+        '401':
+          description: No open session matches the link.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /monitor:
     get:
@@ -793,6 +973,140 @@ components:
                   position: { type: integer }
                   publishedAt: { type: string, format: date-time }
               - $ref: '#/components/schemas/Document'
+
+    InteractAction:
+      type: object
+      required: [type]
+      discriminator: { propertyName: type }
+      description: |
+        One step. `navigate`, `click`, `type`, `press`, `scroll`, `wait`,
+        `screenshot` and `executeJavascript` need no model; `extract` sends the
+        page's stripped content to your configured provider.
+      properties:
+        type:
+          type: string
+          enum: [navigate, click, type, press, scroll, wait, screenshot, executeJavascript, extract]
+        url: { type: string, format: uri, description: '`navigate` only.' }
+        selector: { type: string, description: 'CSS selector: `click`, `type`, and optionally `wait`.' }
+        text: { type: string, description: '`type` only. Replaces the current value of the field.' }
+        key: { type: string, description: '`press` only, e.g. `Enter`, `Tab`, `ArrowDown`.' }
+        direction: { type: string, enum: [up, down], default: down, description: '`scroll` only.' }
+        amount: { type: integer, minimum: 1, maximum: 20000, description: '`scroll` only. Pixels; omitted means one viewport.' }
+        milliseconds: { type: integer, minimum: 0, maximum: 30000, description: '`wait` only. Total waiting per request is capped at 60s.' }
+        fullPage: { type: boolean, default: false, description: '`screenshot` only.' }
+        script: { type: string, description: '`executeJavascript` only. Its return value lands in `javascriptReturns`.' }
+        prompt: { type: string, maxLength: 4000, description: '`extract` only. What to find on the page.' }
+        schema:
+          type: object
+          description: '`extract` only. JSON Schema for the result; without it the answer is one string.'
+        model: { type: string, description: '`extract` only. Overrides the instance default model.' }
+
+    InteractRequest:
+      type: object
+      required: [actions]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Loaded before the actions. Required when `sessionId` is absent; with one, navigates that session first.
+        sessionId:
+          type: string
+          nullable: true
+          description: Continue on an open session from an earlier call or from `/interact/session`.
+        actions:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: '#/components/schemas/InteractAction' }
+        keepSessionOpen:
+          type: boolean
+          default: false
+          description: Keep the page after the response so a later call can continue. Idle and hard timeouts still apply.
+        headers:
+          type: object
+          additionalProperties: { type: string }
+          description: Extra request headers for a new session.
+        viewport:
+          type: object
+          properties:
+            width: { type: integer, minimum: 320, maximum: 3840 }
+            height: { type: integer, minimum: 240, maximum: 2160 }
+
+    InteractSessionRequest:
+      type: object
+      properties:
+        url: { type: string, format: uri, description: Loaded on open. Omit for a blank page. }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+        viewport:
+          type: object
+          properties:
+            width: { type: integer, minimum: 320, maximum: 3840 }
+            height: { type: integer, minimum: 240, maximum: 2160 }
+
+    InteractSession:
+      type: object
+      required: [success, sessionId, liveViewUrl, expiresAt, idleExpiresAt]
+      properties:
+        success: { type: boolean }
+        sessionId: { type: string, example: sess_9f2c1a7b3e4d5c60 }
+        url: { type: string, description: Current URL of the page. }
+        createdAt: { type: string, format: date-time }
+        lastActivityAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time, description: Hard deadline, regardless of activity. }
+        idleExpiresAt: { type: string, format: date-time, description: When the session closes if nothing else happens. }
+        liveViewUrl: { type: string, format: uri, description: Read-only live view; carries its own token. }
+        idleTimeoutSeconds: { type: integer }
+        hardTimeoutSeconds: { type: integer }
+
+    InteractFailure:
+      allOf:
+        - $ref: '#/components/schemas/FetchFailure'
+        - type: object
+          properties:
+            actionIndex:
+              type: integer
+              nullable: true
+              description: Index into `actions` of the step that failed; `null` when the initial navigation from `url` failed.
+            actionType: { type: string }
+
+    InteractResponse:
+      type: object
+      required: [success, sessionId, sessionOpen]
+      properties:
+        success: { type: boolean }
+        sessionId: { type: string }
+        sessionOpen: { type: boolean, description: Whether the session is still open for a follow-up call. }
+        url: { type: string, description: URL of the page after the last action. }
+        output:
+          type: string
+          nullable: true
+          description: The last `extract` result; the answer string, or the JSON of a schema result.
+        data:
+          type: object
+          nullable: true
+          description: The last `extract` result as an object.
+        screenshot: { type: string, nullable: true, description: 'Last `screenshot` as a `data:image/png;base64,...` URL.' }
+        javascriptReturns:
+          type: array
+          items: {}
+          description: Return values of `executeJavascript` actions, in order.
+        actionsRun: { type: integer, description: How many of `actions` completed. }
+        liveViewUrl: { type: string, format: uri, description: Present while the session is open. }
+        expiresAt: { type: string, format: date-time, description: Present while the session is open. }
+        idleExpiresAt: { type: string, format: date-time, description: Present while the session is open. }
+        usage:
+          type: object
+          properties:
+            tokens:
+              type: object
+              properties:
+                input: { type: integer }
+                output: { type: integer }
+            model: { type: string, nullable: true }
+        timingMs: { type: integer }
+        failure: { $ref: '#/components/schemas/InteractFailure' }
 
     MonitorRequest:
       type: object

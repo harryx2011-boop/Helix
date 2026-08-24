@@ -53,6 +53,7 @@ export class ExtractClient {
 
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
+      this.#logger?.warn({ url: options.url, status: response.status }, 'helix-extract request failed');
       throw new Error(`helix-extract returned HTTP ${response.status}: ${detail.slice(0, 200)}`);
     }
 

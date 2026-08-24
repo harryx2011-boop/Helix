@@ -66,8 +66,10 @@ components:
 
 describe('spec helpers', () => {
   it('inlines $refs and stops at cycles', () => {
-    const resolved = deref(MINI_SPEC.components!.schemas!['Options'], MINI_SPEC) as Record<string, any>;
-    expect(resolved['properties'].formats.items).toEqual({ type: 'string', enum: ['markdown', 'html'] });
+    const resolved = deref(MINI_SPEC.components!.schemas!['Options'], MINI_SPEC) as {
+      properties: { formats: { items: unknown } };
+    };
+    expect(resolved.properties.formats.items).toEqual({ type: 'string', enum: ['markdown', 'html'] });
     expect(JSON.stringify(resolved)).not.toContain('$ref');
   });
 

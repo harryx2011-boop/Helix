@@ -105,6 +105,7 @@ export class ExtractClient {
 
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
+      this.#logger?.warn({ status: response.status, url: options.url }, 'helix-extract /extract failed');
       throw new Error(`helix-extract returned HTTP ${response.status}: ${detail.slice(0, 200)}`);
     }
 
@@ -153,6 +154,7 @@ export class ExtractClient {
       } catch {
         // Not JSON; the raw text is the best detail available.
       }
+      this.#logger?.warn({ status: response.status }, 'helix-extract /structured failed');
       throw new StructuredError(response.status, message || `helix-extract returned HTTP ${response.status}`);
     }
 
@@ -194,6 +196,7 @@ export class ExtractClient {
 
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
+      this.#logger?.warn({ status: response.status, url: options.url }, 'helix-extract /chunk failed');
       throw new Error(`helix-extract returned HTTP ${response.status}: ${detail.slice(0, 200)}`);
     }
 

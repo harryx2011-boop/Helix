@@ -235,15 +235,43 @@ export function Results({ result, loading, timingMs, error }: ResultsProps) {
           </div>
         );
       }
+      const meta = response.data.metadata;
       return (
         <div className={wrapperClass}>
-          <DocumentResult
-            data={{
-              ...(response.data.markdown !== undefined ? { markdown: response.data.markdown } : {}),
-              ...(response.data.json !== undefined ? { json: response.data.json } : {}),
-            }}
-            timingMs={timingMs}
-          />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-border pb-3 text-xs text-muted-foreground">
+              {meta.filename && <span className="font-mono text-foreground">{meta.filename}</span>}
+              <Badge variant="outline" className="font-mono">
+                {meta.fileType}
+              </Badge>
+              {meta.pageCount > 0 && <span className="font-mono">{meta.pageCount} {meta.pageCount === 1 ? 'page' : 'pages'}</span>}
+              <span className="font-mono">{meta.ocrUsed ? 'ocr' : 'text layer'}</span>
+              <span className="font-mono">{meta.parser}</span>
+              <span className="font-mono">{meta.timingMs}ms</span>
+              {meta.fromCache && (
+                <Badge variant="outline" className="font-mono">
+                  cached
+                </Badge>
+              )}
+              <span className="font-mono text-[11px] text-muted-foreground/70" title={meta.contentHash}>
+                {meta.contentHash.slice(0, 12)}
+              </span>
+            </div>
+            {response.warnings && response.warnings.length > 0 && (
+              <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
+                {response.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            )}
+            <DocumentResult
+              data={{
+                ...(response.data.markdown !== undefined ? { markdown: response.data.markdown } : {}),
+                ...(response.data.json !== undefined ? { json: response.data.json } : {}),
+              }}
+              timingMs={timingMs}
+            />
+          </div>
         </div>
       );
     }

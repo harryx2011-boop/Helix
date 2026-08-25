@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FormFooter } from './form-footer';
 
 interface SearchFormProps {
+  query: string;
   onSubmit: (request: SearchRequest) => void;
   onGetCode: (body: Record<string, unknown>) => void;
   loading: boolean;
@@ -26,8 +27,7 @@ const TIME_WINDOWS: { value: string; label: string }[] = [
 
 const FORMAT_OPTIONS: SearchFormat[] = ['markdown', 'text', 'links', 'rawHtml', 'screenshot'];
 
-export function SearchForm({ onSubmit, onGetCode, loading }: SearchFormProps) {
-  const [query, setQuery] = React.useState('');
+export function SearchForm({ query, onSubmit, onGetCode, loading }: SearchFormProps) {
   const [limit, setLimit] = React.useState(5);
   const [lang, setLang] = React.useState('');
   const [country, setCountry] = React.useState('');
@@ -60,18 +60,6 @@ export function SearchForm({ onSubmit, onGetCode, loading }: SearchFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex h-full flex-col gap-5 overflow-y-auto p-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="search-query">Query</Label>
-        <Input
-          id="search-query"
-          type="text"
-          placeholder="transactional email APIs"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          required
-        />
-      </div>
-
       <div className="grid grid-cols-3 gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="search-limit">Limit</Label>

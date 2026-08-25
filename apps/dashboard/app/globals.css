@@ -255,6 +255,31 @@ kbd {
   }
 }
 
+/*
+ * AnimatedCode + prompt-box motion (research/17-firecrawl-code-animation-prompt-box.md):
+ * cursor-blink for the type-mode cursor, fade-in-up for reveal-mode lines,
+ * text-swap for the rotating placeholder.
+ */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes text-swap-out {
+  0% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  100% { opacity: 0; transform: translateY(calc(-1 * var(--text-swap-translate-y, 4px))); filter: blur(var(--text-swap-blur, 2px)); }
+}
+
+@keyframes text-swap-in {
+  0% { opacity: 0; transform: translateY(var(--text-swap-translate-y, 4px)); filter: blur(var(--text-swap-blur, 2px)); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
 /* ARCHITECTURE.md prose column (WEBSITE.md marketing /architecture route). */
 .prose-helix h1,
 .prose-helix h2,

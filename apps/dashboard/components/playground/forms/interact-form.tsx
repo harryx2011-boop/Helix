@@ -58,14 +58,14 @@ function actionComplete(action: Action): boolean {
 }
 
 interface InteractFormProps {
+  url: string;
   onSubmit: (request: InteractRequest) => void;
   onGetCode: (body: Record<string, unknown>) => void;
   loading: boolean;
 }
 
 /** Form for POST /v1/interact, built from the InteractRequest schema in openapi.yaml. */
-export function InteractForm({ onSubmit, onGetCode, loading }: InteractFormProps) {
-  const [url, setUrl] = React.useState('');
+export function InteractForm({ url, onSubmit, onGetCode, loading }: InteractFormProps) {
   const [sessionId, setSessionId] = React.useState('');
   const [actions, setActions] = React.useState<Action[]>([
     { type: 'click', selector: '#accept-cookies' },
@@ -95,19 +95,6 @@ export function InteractForm({ onSubmit, onGetCode, loading }: InteractFormProps
 
   return (
     <form onSubmit={handleSubmit} className="flex h-full flex-col gap-5 overflow-y-auto p-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="interact-url">URL</Label>
-        <Input
-          id="interact-url"
-          type="url"
-          placeholder="https://example.com/shop"
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          required={sessionId.trim().length === 0}
-        />
-        <p className="text-xs text-muted-foreground">Loaded before the actions. Optional when resuming a session.</p>
-      </div>
-
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="interact-session">Session ID</Label>
         <Input

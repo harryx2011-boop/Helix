@@ -29,13 +29,13 @@ const GRANULARITY_OPTIONS: { value: MonitorGranularity; label: string }[] = [
 ];
 
 interface MonitorFormProps {
+  url: string;
   onSubmit: (request: MonitorRequest) => void;
   onGetCode: (body: Record<string, unknown>) => void;
   loading: boolean;
 }
 
-export function MonitorForm({ onSubmit, onGetCode, loading }: MonitorFormProps) {
-  const [url, setUrl] = React.useState('');
+export function MonitorForm({ url, onSubmit, onGetCode, loading }: MonitorFormProps) {
   const [preset, setPreset] = React.useState(SCHEDULE_PRESETS[0]!.value);
   const [customSchedule, setCustomSchedule] = React.useState('0 * * * *');
   const [sensitivity, setSensitivity] = React.useState<Sensitivity>('significant');
@@ -61,18 +61,6 @@ export function MonitorForm({ onSubmit, onGetCode, loading }: MonitorFormProps) 
 
   return (
     <form onSubmit={handleSubmit} className="flex h-full flex-col gap-5 overflow-y-auto p-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="monitor-url">URL</Label>
-        <Input
-          id="monitor-url"
-          type="url"
-          placeholder="https://example.com/pricing"
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          required
-        />
-      </div>
-
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="monitor-schedule">Schedule</Label>
         <Select value={preset} onValueChange={setPreset}>

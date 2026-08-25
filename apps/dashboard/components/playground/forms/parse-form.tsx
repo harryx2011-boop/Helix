@@ -24,6 +24,7 @@ const TABLE_OPTIONS: { value: NonNullable<ParseRequest['tables']>; label: string
 const ACCEPT = '.pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg';
 
 interface ParseFormProps {
+  url: string;
   onSubmit: (request: ParseRequest | FormData) => void;
   onGetCode: (body: Record<string, unknown>) => void;
   loading: boolean;
@@ -46,8 +47,7 @@ function jsonOptionsFrom(instruction: string): ParseJsonOptions | undefined {
   return { prompt: trimmed };
 }
 
-export function ParseForm({ onSubmit, onGetCode, loading }: ParseFormProps) {
-  const [url, setUrl] = React.useState('');
+export function ParseForm({ url, onSubmit, onGetCode, loading }: ParseFormProps) {
   const [file, setFile] = React.useState<File | null>(null);
   const [ocr, setOcr] = React.useState<NonNullable<ParseRequest['ocr']>>('auto');
   const [tables, setTables] = React.useState<NonNullable<ParseRequest['tables']>>('auto');
@@ -94,26 +94,9 @@ export function ParseForm({ onSubmit, onGetCode, loading }: ParseFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex h-full flex-col gap-5 overflow-y-auto p-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="parse-url">File URL</Label>
-        <Input
-          id="parse-url"
-          type="url"
-          placeholder="https://example.com/files/report.pdf"
-          value={url}
-          onChange={(event) => {
-            setUrl(event.target.value);
-            if (event.target.value) setFile(null);
-          }}
-          disabled={file !== null}
-        />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <div className="h-px flex-1 bg-border" />
-        <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">or</span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
+      <p className="text-xs text-muted-foreground">
+        {file ? 'A file is selected below; it takes priority over the URL in the prompt box.' : 'Reads the URL from the prompt box above, or upload a file instead.'}
+      </p>
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="parse-file">Upload a file</Label>
@@ -126,7 +109,6 @@ export function ParseForm({ onSubmit, onGetCode, loading }: ParseFormProps) {
           onChange={(event) => {
             const selected = event.target.files?.[0] ?? null;
             setFile(selected);
-            if (selected) setUrl('');
           }}
         />
         <div className="flex items-center gap-2">

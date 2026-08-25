@@ -78,13 +78,13 @@ export function CodePanel({ chrome, label, tabs, children, className, copyText }
 }
 
 const TOKEN_CLASS: Record<'key' | 'string' | 'punct' | 'plain', string> = {
-  key: 'text-m-ink/72',
-  string: 'text-violet',
-  punct: 'text-m-ink/40',
-  plain: 'text-m-ink',
+  key: 'text-m-ink/72 dark:text-foreground',
+  string: 'text-violet dark:text-primary',
+  punct: 'text-m-ink/40 dark:text-muted-foreground',
+  plain: 'text-m-ink dark:text-foreground',
 };
 
-/** One syntax token in the shared 4-token palette (key / string / punctuation / plain). Strings are always violet. */
+/** One syntax token in the shared 4-token palette (key / string / punctuation / plain). Strings are always violet. Reads `.dark` from an ancestor terminal-chrome CodePanel. */
 export function CodeToken({ kind, children }: { kind: keyof typeof TOKEN_CLASS; children: React.ReactNode }) {
   return <span className={TOKEN_CLASS[kind]}>{children}</span>;
 }

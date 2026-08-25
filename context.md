@@ -28,6 +28,11 @@ Interact (`apps/api/src/routes/interact.ts`, `browser/sessions.ts`, `browser/int
 - `supabase/` — migrations for the hosted app (profiles, api_keys, instances, runs, usage_daily).
 - `graphify-out/` — knowledge graph; regenerate after structural changes.
 
+## Motion and prompt box (2026-08-25)
+
+- `components/marketing/animated-code.tsx`: `scramble` (JSON values cycle glyphs and resolve independently; keys static), `type` (14ms/char, blinking cursor), `reveal` (per-line fade-in-up), `static`; `playOnView`, reduced-motion renders the settled frame. Used by the hero panel (request types → response scrambles, loops), the capabilities code sample, and every capability-page mock. Evidence: research/17.
+- Prompt box: hero input and `/app` playground (`components/playground/prompt-box.tsx`) — icon, input with rotating placeholder (text-swap 150ms/4px/2px blur), endpoint pills inside the box, toolbar (Options · Source · Get code · Run).
+
 ## Conventions
 
 - Tokens: WEBSITE.md §3. Marketing = Firecrawl-structured light theme in violet; app = DESIGN.md dark.

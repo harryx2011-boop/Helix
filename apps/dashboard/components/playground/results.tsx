@@ -22,6 +22,22 @@ import { MetadataStrip } from '@/components/result/metadata-strip';
 import { MarkdownView } from '@/components/result/markdown-view';
 import { JsonView } from '@/components/result/json-view';
 import { FailurePanel } from '@/components/result/failure-panel';
+import { AnimatedCode } from '@/components/marketing/animated-code';
+
+/**
+ * A one-shot reveal (never `scramble` — that mode is reserved for decorative
+ * idle widgets, not real response data the user is meant to read, per
+ * research/17-firecrawl-code-animation-prompt-box.md §1/§4) of a fresh result's
+ * JSON, keyed so it replays whenever a new response lands.
+ */
+function AnimatedJsonView({ data }: { data: unknown }) {
+  const text = JSON.stringify(data, null, 2);
+  return (
+    <pre className="overflow-x-auto rounded-md bg-secondary p-3 font-mono text-xs leading-relaxed">
+      <AnimatedCode key={text} code={text} mode="reveal" lineMs={45} playOnView={false} />
+    </pre>
+  );
+}
 
 export type PlaygroundResult =
   | { kind: 'scrape'; response: ScrapeResponse }
@@ -170,7 +186,7 @@ function DocumentResult({
               </span>
             )}
           </div>
-          <JsonView data={data.json} />
+          <AnimatedJsonView data={data.json} />
         </div>
       )}
       {mode === 'rendered' && hasMarkdown && data.markdown && <MarkdownView content={data.markdown} />}

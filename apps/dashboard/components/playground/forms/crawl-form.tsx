@@ -18,6 +18,7 @@ function parseLines(value: string): string[] {
 type SitemapMode = NonNullable<CrawlRequest['sitemap']>;
 
 interface CrawlFormProps {
+  url: string;
   onSubmit: (request: CrawlRequest) => void;
   onGetCode: (body: Record<string, unknown>) => void;
   loading: boolean;
@@ -26,8 +27,7 @@ interface CrawlFormProps {
 const TEXTAREA_CLASS =
   'flex w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
-export function CrawlForm({ onSubmit, onGetCode, loading }: CrawlFormProps) {
-  const [url, setUrl] = React.useState('');
+export function CrawlForm({ url, onSubmit, onGetCode, loading }: CrawlFormProps) {
   const [limit, setLimit] = React.useState(100);
   const [maxDepth, setMaxDepth] = React.useState<number | ''>('');
   const [includePaths, setIncludePaths] = React.useState('');
@@ -60,18 +60,6 @@ export function CrawlForm({ onSubmit, onGetCode, loading }: CrawlFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex h-full flex-col gap-5 overflow-y-auto p-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="crawl-url">URL</Label>
-        <Input
-          id="crawl-url"
-          type="url"
-          placeholder="https://docs.example.com"
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          required
-        />
-      </div>
-
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="crawl-limit">Page limit</Label>

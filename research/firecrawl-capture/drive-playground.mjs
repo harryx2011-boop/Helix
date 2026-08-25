@@ -13,7 +13,7 @@ await clerk.signIn({ page, signInParams: { strategy: 'email_code', identifier: '
 await page.goto('http://localhost:3400/app/playground?tab=scrape', { waitUntil: 'load' }); await page.waitForTimeout(1500);
 const url = page.locator('input[placeholder*="example.com"], input[name="url"], input[type="url"]').first();
 await url.fill('https://example.com');
-const run = page.getByRole('button', { name: /^run$/i }).first();
+const run = page.getByRole('button', { name: /^run/i }).first();
 const [resp] = await Promise.all([
   page.waitForResponse((r) => r.url().includes('/api/app/playground/'), { timeout: 120000 }).catch(() => null),
   run.click(),

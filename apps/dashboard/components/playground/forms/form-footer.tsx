@@ -14,7 +14,7 @@ interface FormFooterProps {
 export function FormFooter({ loading, disabled, comingSoon, onGetCode }: FormFooterProps) {
   return (
     <div className="mt-auto flex items-center gap-2 pt-2">
-      <Button type="button" variant="secondary" size="sm" className="gap-1.5" onClick={onGetCode}>
+      <Button type="button" data-playground-get-code variant="secondary" size="sm" className="gap-1.5" onClick={onGetCode}>
         <Code2 className="h-3.5 w-3.5" />
         Get code
       </Button>

@@ -2,9 +2,21 @@ import type { LucideIcon } from 'lucide-react';
 import { ArrowRight } from 'lucide-react';
 import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { PillButton } from '@/components/marketing/pill-button';
-import { CodePanel, CodeBlock } from '@/components/marketing/code-panel';
+import { CodePanel } from '@/components/marketing/code-panel';
+import { AnimatedCode, type AnimatedCodeMode } from '@/components/marketing/animated-code';
 import { endpointById } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/supabase/types';
+
+/** Per-endpoint mock animation: type = content composing, reveal = results listing. */
+const MOCK_MODE: Record<Endpoint, AnimatedCodeMode> = {
+  scrape: 'type',
+  parse: 'type',
+  search: 'reveal',
+  map: 'reveal',
+  crawl: 'reveal',
+  interact: 'reveal',
+  monitor: 'reveal',
+};
 
 export interface FeatureCardCopy {
   icon: LucideIcon;
@@ -74,7 +86,14 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
       <section className="relative mx-auto mt-14 max-w-[880px] animate-fade-up [animation-delay:60ms]">
         <div className="pointer-events-none absolute inset-0 rounded-panel shadow-cutout" aria-hidden />
         <CodePanel chrome={mock.chrome} label={mock.label}>
-          <CodeBlock dark={mock.chrome === 'terminal'}>{mock.code}</CodeBlock>
+          <AnimatedCode
+            code={mock.code}
+            mode={MOCK_MODE[endpoint]}
+            charMs={14}
+            lineMs={55}
+            playOnView
+            {...(mock.chrome === 'terminal' ? { className: 'text-foreground' } : {})}
+          />
         </CodePanel>
       </section>
 
@@ -90,10 +109,10 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
         <SectionEyebrow step="REQUEST" label="WIRE FORMAT" sub={isComing ? 'planned shape' : 'from openapi.yaml'} />
         <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
           <CodePanel chrome="terminal" label={`${def.method} ${def.path}`} copyText={request}>
-            <CodeBlock dark>{request}</CodeBlock>
+            <AnimatedCode code={request} mode="static" className="text-foreground" />
           </CodePanel>
           <CodePanel chrome="terminal" label="response">
-            <CodeBlock dark>{response}</CodeBlock>
+            <AnimatedCode code={response} mode="scramble" resolveMs={2200} playOnView className="text-foreground" />
           </CodePanel>
         </div>
       </section>

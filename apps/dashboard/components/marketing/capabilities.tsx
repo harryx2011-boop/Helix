@@ -5,12 +5,27 @@ import Link from 'next/link';
 import { ENDPOINTS, PRODUCTS } from '@/lib/catalog';
 import { generateCode, LANGS, type Lang } from '@/lib/codegen';
 import { SectionEyebrow } from './section-eyebrow';
-import { CodePanel, CodeToken } from './code-panel';
+import { CodePanel } from './code-panel';
+import { AnimatedCode } from './animated-code';
 
 const THREE_UP = PRODUCTS.filter((p) => ['scrape', 'crawl', 'search'].includes(p.id));
 const ROW = ENDPOINTS.filter((e) => ['parse', 'interact', 'monitor'].includes(e.id));
 
 /** WEBSITE.md §4.3: 3-up cards, coming row, browser-chrome code sample. */
+const RESPONSE = `{
+  "success": true,
+  "data": {
+    "markdown": "# Example Domain\\n\\nThis domain is for use in illustrative examples.",
+    "metadata": {
+      "title": "Example Domain",
+      "sourceUrl": "https://example.com",
+      "statusCode": 200,
+      "tier": "plain"
+    }
+  },
+  "warnings": []
+}`;
+
 export function Capabilities() {
   const [lang, setLang] = React.useState<Lang>('python');
   const code = generateCode(lang, { endpoint: 'scrape', body: { url: 'https://example.com', formats: ['markdown'] } });
@@ -65,28 +80,30 @@ export function Capabilities() {
           })}
         </div>
 
-        <CodePanel
-          chrome="browser"
-          label="api.helix.dev"
-          className="mt-8"
-          copyText={code}
-          tabs={LANGS.filter((l) => l.id !== 'mcp').map((l) => (
-            <button
-              key={l.id}
-              type="button"
-              onClick={() => setLang(l.id)}
-              className={`rounded-pill px-2.5 py-1 font-mono text-[12px] transition-colors duration-150 ease-out ${
-                lang === l.id ? 'bg-m-bg text-m-ink' : 'text-m-ink/48 hover:text-m-ink/72'
-              }`}
-            >
-              {l.label}
-            </button>
-          ))}
-        >
-          <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed sm:whitespace-pre sm:break-normal">
-            <CodeToken kind="plain">{code}</CodeToken>
-          </pre>
-        </CodePanel>
+        <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <CodePanel
+            chrome="browser"
+            label="api.helix.dev"
+            copyText={code}
+            tabs={LANGS.filter((l) => l.id !== 'mcp').map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => setLang(l.id)}
+                className={`rounded-pill px-2.5 py-1 font-mono text-[12px] transition-colors duration-150 ease-out ${
+                  lang === l.id ? 'bg-m-bg text-m-ink' : 'text-m-ink/48 hover:text-m-ink/72'
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          >
+            <AnimatedCode key={lang} code={code} mode="reveal" lineMs={50} playOnView />
+          </CodePanel>
+          <CodePanel chrome="browser" label="[ RESPONSE ]">
+            <AnimatedCode code={RESPONSE} mode="scramble" resolveMs={2200} playOnView />
+          </CodePanel>
+        </div>
       </div>
     </section>
   );

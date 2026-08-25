@@ -21,8 +21,8 @@ import type {
 } from '@/lib/api';
 import { runEndpoint } from '@/lib/run-endpoint';
 import { useAppSession } from '@/components/app/session-provider';
-import { ENDPOINTS, TAB_GROUPS, endpointById } from '@/lib/catalog';
-import type { Endpoint } from '@/lib/supabase/types';
+import { endpointById } from '@/lib/catalog';
+import type { Endpoint, InstanceRow } from '@/lib/supabase/types';
 import { cn } from '@/lib/utils';
 import { ScrapeForm } from './forms/scrape-form';
 import { MapForm } from './forms/map-form';
@@ -34,6 +34,7 @@ import { MonitorForm } from './forms/monitor-form';
 import { GetCodeDialog } from './get-code-dialog';
 import { Results, type PlaygroundResult } from './results';
 import { RecentRuns } from './recent-runs';
+import { PromptBox } from './prompt-box';
 
 interface PlaygroundProps {
   initialTab: string;
@@ -47,29 +48,40 @@ export function Playground({ initialTab }: PlaygroundProps) {
   const router = useRouter();
   const { apiKey } = useAppSession();
   const [activeId, setActiveId] = React.useState<string>(endpointById(initialTab) ? initialTab : 'scrape');
+  const [promptValue, setPromptValue] = React.useState('');
+  const [optionsOpen, setOptionsOpen] = React.useState(false);
+  const [source, setSource] = React.useState('hosted');
+  const [instances, setInstances] = React.useState<InstanceRow[]>([]);
   const [result, setResult] = React.useState<PlaygroundResult | undefined>(undefined);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | undefined>(undefined);
   const [timingMs, setTimingMs] = React.useState<number | undefined>(undefined);
   const [codeDialog, setCodeDialog] = React.useState<{ endpoint: Endpoint; body: Record<string, unknown> } | undefined>(undefined);
 
-  const activeDef = endpointById(activeId) ?? ENDPOINTS[0]!;
+  const activeDef = endpointById(activeId) ?? endpointById('scrape')!;
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch('/api/app/instances')
+      .then((response) => (response.ok ? (response.json() as Promise<{ instances: InstanceRow[] }>) : { instances: [] }))
+      .then((data) => {
+        if (!cancelled) setInstances(data.instances);
+      })
+      .catch(() => {
+        if (!cancelled) setInstances([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const selectTab = (id: string) => {
     setActiveId(id);
+    setPromptValue('');
     setResult(undefined);
     setError(undefined);
     setTimingMs(undefined);
     router.replace(`/app/playground?tab=${id}`, { scroll: false });
-  };
-
-  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-    event.preventDefault();
-    const ids = ENDPOINTS.map((e) => e.id);
-    const currentIndex = ids.indexOf(activeId as Endpoint);
-    const nextIndex = event.key === 'ArrowRight' ? (currentIndex + 1) % ids.length : (currentIndex - 1 + ids.length) % ids.length;
-    selectTab(ids[nextIndex]!);
   };
 
   const run = React.useCallback(
@@ -99,51 +111,48 @@ export function Playground({ initialTab }: PlaygroundProps) {
 
   const openCode = (endpoint: Endpoint, body: Record<string, unknown>) => setCodeDialog({ endpoint, body });
 
+  // Each form owns its own submit-ready state (schema validity, actions, etc.); the
+  // prompt box's Run button proxies to the mounted form's native submit so that
+  // validation stays colocated with the fields that produce it. The form stays
+  // mounted (visually collapsed via sr-only) whether or not Options is expanded,
+  // so this always finds the current endpoint's form.
+  const formsContainerRef = React.useRef<HTMLDivElement>(null);
+  const submitActiveForm = () => {
+    formsContainerRef.current?.querySelector('form')?.requestSubmit();
+  };
+  const submitGetCode = () => {
+    formsContainerRef.current?.querySelector<HTMLButtonElement>('[data-playground-get-code]')?.click();
+  };
+
+  const promptDisabled = promptValue.trim().length === 0;
+
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-6">
-      <div className="flex flex-col items-center gap-3">
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
-          {TAB_GROUPS.map((group) => {
-            const groupEndpoints = ENDPOINTS.filter((e) => e.group === group);
-            return (
-              <div key={group} className="flex flex-col items-center gap-1.5">
-                <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">{group}</span>
-                <div role="tablist" aria-label={group} onKeyDown={handleTabKeyDown} className="flex items-center gap-1 rounded-pill bg-muted p-1">
-                  {groupEndpoints.map((def) => {
-                    const Icon = def.icon;
-                    const active = def.id === activeId;
-                    return (
-                      <button
-                        key={def.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={active}
-                        tabIndex={active ? 0 : -1}
-                        onClick={() => selectTab(def.id)}
-                        className={cn(
-                          'flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors duration-150 ease-out',
-                          active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
-                        )}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                        {def.name}
-                        {def.status === 'coming' && (
-                          <span className="font-mono text-[10px] uppercase tracking-wide opacity-70">coming</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <PromptBox
+        activeId={activeDef.id}
+        onSelectTab={selectTab}
+        value={promptValue}
+        onValueChange={setPromptValue}
+        onSubmit={submitActiveForm}
+        loading={loading}
+        disabled={promptDisabled}
+        optionsOpen={optionsOpen}
+        onToggleOptions={() => setOptionsOpen((open) => !open)}
+        onGetCode={submitGetCode}
+        getCodeDisabled={promptDisabled}
+        instances={instances}
+        source={source}
+        onSourceChange={setSource}
+      />
 
-      <div className="grid min-h-[420px] flex-1 grid-cols-1 overflow-hidden rounded-card border border-border md:grid-cols-[360px_1px_1fr]">
-        <div className="overflow-y-auto">
+      <div className={cn('rounded-card border border-border bg-card', !optionsOpen && 'sr-only')} aria-hidden={!optionsOpen}>
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+          <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">Options &mdash; {activeDef.name}</span>
+        </div>
+        <div ref={formsContainerRef} className="max-h-[520px] overflow-y-auto">
           {activeDef.id === 'scrape' && (
             <ScrapeForm
+              url={promptValue}
               loading={loading}
               onSubmit={(request: ScrapeRequest) => run('scrape', 'scrape', request as unknown as Record<string, unknown>, false)}
               onGetCode={(body) => openCode('scrape', body)}
@@ -151,6 +160,7 @@ export function Playground({ initialTab }: PlaygroundProps) {
           )}
           {activeDef.id === 'map' && (
             <MapForm
+              url={promptValue}
               loading={loading}
               onSubmit={(request: MapRequest) => run('map', 'map', request as unknown as Record<string, unknown>, false)}
               onGetCode={(body) => openCode('map', body)}
@@ -158,6 +168,7 @@ export function Playground({ initialTab }: PlaygroundProps) {
           )}
           {activeDef.id === 'search' && (
             <SearchForm
+              query={promptValue}
               loading={loading}
               onSubmit={(request: SearchRequest) => run('search', 'search', request as unknown as Record<string, unknown>, false)}
               onGetCode={(body) => openCode('search', body)}
@@ -165,6 +176,7 @@ export function Playground({ initialTab }: PlaygroundProps) {
           )}
           {activeDef.id === 'crawl' && (
             <CrawlForm
+              url={promptValue}
               loading={loading}
               onSubmit={(request: CrawlRequest) => run('crawl', 'crawl', request as unknown as Record<string, unknown>, !request.estimate)}
               onGetCode={(body) => openCode('crawl', body)}
@@ -172,6 +184,7 @@ export function Playground({ initialTab }: PlaygroundProps) {
           )}
           {activeDef.id === 'parse' && (
             <ParseForm
+              url={promptValue}
               loading={loading}
               onSubmit={(request: ParseRequest | FormData) => run('parse', 'parse', request instanceof FormData ? request : (request as unknown as Record<string, unknown>), false)}
               onGetCode={(body) => openCode('parse', body)}
@@ -179,6 +192,7 @@ export function Playground({ initialTab }: PlaygroundProps) {
           )}
           {activeDef.id === 'interact' && (
             <InteractForm
+              url={promptValue}
               loading={loading}
               onSubmit={(request: InteractRequest) => run('interact', 'interact', request as unknown as Record<string, unknown>, false)}
               onGetCode={(body) => openCode('interact', body)}
@@ -186,16 +200,17 @@ export function Playground({ initialTab }: PlaygroundProps) {
           )}
           {activeDef.id === 'monitor' && (
             <MonitorForm
+              url={promptValue}
               loading={loading}
               onSubmit={(request: MonitorRequest) => run('monitor', 'monitor', request as unknown as Record<string, unknown>, false)}
               onGetCode={(body) => openCode('monitor', body)}
             />
           )}
         </div>
-        <div className="hidden bg-border md:block" />
-        <div className="min-h-[300px] overflow-x-auto">
-          <Results result={result} loading={loading} timingMs={timingMs} error={error} />
-        </div>
+      </div>
+
+      <div className="min-h-[300px] overflow-x-auto rounded-card border border-border">
+        <Results result={result} loading={loading} timingMs={timingMs} error={error} />
       </div>
 
       <RecentRuns />

@@ -15,13 +15,13 @@ const SITEMAP_OPTIONS: { value: NonNullable<MapRequest['sitemap']>; label: strin
 ];
 
 interface MapFormProps {
+  url: string;
   onSubmit: (request: MapRequest) => void;
   onGetCode: (body: Record<string, unknown>) => void;
   loading: boolean;
 }
 
-export function MapForm({ onSubmit, onGetCode, loading }: MapFormProps) {
-  const [url, setUrl] = React.useState('');
+export function MapForm({ url, onSubmit, onGetCode, loading }: MapFormProps) {
   const [search, setSearch] = React.useState('');
   const [sitemap, setSitemap] = React.useState<NonNullable<MapRequest['sitemap']>>('include');
   const [includeSubdomains, setIncludeSubdomains] = React.useState(false);
@@ -40,18 +40,6 @@ export function MapForm({ onSubmit, onGetCode, loading }: MapFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex h-full flex-col gap-5 overflow-y-auto p-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="map-url">URL</Label>
-        <Input
-          id="map-url"
-          type="url"
-          placeholder="https://example.com"
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          required
-        />
-      </div>
-
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="map-search">Rank by relevance to (optional)</Label>
         <Input

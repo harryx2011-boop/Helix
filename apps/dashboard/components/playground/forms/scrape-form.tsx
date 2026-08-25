@@ -62,6 +62,7 @@ const DEFAULT_SCHEMA = `{
 }`;
 
 interface ScrapeFormProps {
+  url: string;
   onSubmit: (request: ScrapeRequest) => void;
   onGetCode: (body: Record<string, unknown>) => void;
   loading: boolean;
@@ -76,8 +77,7 @@ function parseSchema(text: string): Record<string, unknown> | undefined {
   }
 }
 
-export function ScrapeForm({ onSubmit, onGetCode, loading }: ScrapeFormProps) {
-  const [url, setUrl] = React.useState('');
+export function ScrapeForm({ url, onSubmit, onGetCode, loading }: ScrapeFormProps) {
   const [formats, setFormats] = React.useState<Set<Format>>(new Set(['markdown']));
   const [tier, setTier] = React.useState<Tier>('auto');
   const [extractor, setExtractor] = React.useState<Extractor>('trafilatura');
@@ -132,18 +132,6 @@ export function ScrapeForm({ onSubmit, onGetCode, loading }: ScrapeFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex h-full flex-col gap-5 overflow-y-auto p-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="scrape-url">URL</Label>
-        <Input
-          id="scrape-url"
-          type="url"
-          placeholder="https://example.com"
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          required
-        />
-      </div>
-
       <div className="flex flex-col gap-2">
         <Label>Formats</Label>
         <div className="grid grid-cols-2 gap-2">

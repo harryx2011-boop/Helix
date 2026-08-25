@@ -10,6 +10,9 @@ import { AnimatedCode, randomGlyphString, usePrefersReducedMotion } from './anim
 import { CodeToken } from './code-panel';
 import { LadderExplainer } from './ladder-explainer';
 
+/** Deterministic fill for the pre-mount scramble placeholder — same glyph on server and client. */
+const NOISE_GLYPH = '░';
+
 /**
  * WEBSITE.md §4.2 hero panel + research/17 prompt-box anatomy: URL input row,
  * endpoint pill tabs inside the box, generated request (type-mode) and a
@@ -154,7 +157,8 @@ const PLACEHOLDER_ROTATION = [
 
 /** research/17 §2: --text-swap-dur .15s, translateY 4px, blur 2px, ease-in-out. */
 function RotatingPlaceholder({ endpoint }: { endpoint: Endpoint }) {
-  const [index, setIndex] = React.useState(() => Math.max(0, PLACEHOLDER_ROTATION.indexOf(PLACEHOLDERS[endpoint])));
+  // Deterministic first paint: always start at index 0 (server and client agree).
+  const [index, setIndex] = React.useState(0);
   const [reducedMotion, setReducedMotion] = React.useState(false);
 
   React.useEffect(() => {
@@ -189,17 +193,23 @@ function RotatingPlaceholder({ endpoint }: { endpoint: Endpoint }) {
 function ScrambledPlaceholder({ code }: { code: string }) {
   const reducedMotion = usePrefersReducedMotion();
   const lines = React.useMemo(() => code.split('\n'), [code]);
+  // First paint (server + client) must be deterministic or React flags a
+  // hydration mismatch on the random glyphs. Render a fixed seed on mount,
+  // only randomize afterwards.
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const randomize = mounted && !reducedMotion;
 
   return (
     <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed sm:whitespace-pre sm:break-normal">
       {lines.map((line, i) => (
-        <div key={i}>{reducedMotion ? line : noiseLine(line)}</div>
+        <div key={i}>{reducedMotion ? line : noiseLine(line, randomize)}</div>
       ))}
     </pre>
   );
 }
 
-function noiseLine(line: string): React.ReactNode {
+function noiseLine(line: string, randomize: boolean): React.ReactNode {
   const parts = line.split(/("(?:[^"\\]|\\.)*")(\s*:)?/g);
   const nodes: React.ReactNode[] = [];
   for (let i = 0; i < parts.length; i += 3) {
@@ -218,9 +228,11 @@ function noiseLine(line: string): React.ReactNode {
         nodes.push(colon);
       } else {
         const inner = quoted.slice(1, -1);
+        const len = Math.max(1, inner.length);
+        const noise = randomize ? randomGlyphString(len) : NOISE_GLYPH.repeat(len);
         nodes.push(
           <CodeToken key={i} kind="string">
-            {`"${randomGlyphString(Math.max(1, inner.length))}"`}
+            {`"${noise}"`}
           </CodeToken>,
         );
       }

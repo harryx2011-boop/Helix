@@ -5,7 +5,13 @@
 -- the single most-cited self-host complaint about comparable tools.
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS vector;
+-- pgvector is optional: the chunks table below is created only when the extension
+-- is available, so a Postgres without it still boots (the pgvector sink reports unavailable).
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'vector') THEN
+    CREATE EXTENSION IF NOT EXISTS vector;
+  END IF;
+END $$;
 
 -- ---------------------------------------------------------------- auth
 
@@ -192,7 +198,9 @@ CREATE INDEX webhook_deliveries_pending ON webhook_deliveries (next_retry_at) WH
 
 -- pgvector sink. Point IDs are deterministic (UUID v5 from the URL) so a re-crawl
 -- updates in place instead of duplicating vectors.
-CREATE TABLE chunks (
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN
+    EXECUTE $sql$CREATE TABLE chunks (
   id          uuid PRIMARY KEY,
   document_id uuid        REFERENCES documents(id) ON DELETE CASCADE,
   collection  text        NOT NULL DEFAULT 'default',
@@ -200,14 +208,16 @@ CREATE TABLE chunks (
   anchor      text        NOT NULL,   -- stable across re-crawls, so citations keep resolving
   text        text        NOT NULL,
   tokens      integer,
-  embedding   vector(384),            -- default local model; ALTER for other dimensions
+  embedding   vector(384),            -- default local model$sql$;
+    EXECUTE $sql$ALTER for other dimensions
   metadata    jsonb       NOT NULL DEFAULT '{}',
   created_at  timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE INDEX chunks_collection ON chunks (collection);
-CREATE INDEX chunks_url        ON chunks (url);
-CREATE INDEX chunks_embedding  ON chunks USING hnsw (embedding vector_cosine_ops);
+)$sql$;
+    EXECUTE $sql$CREATE INDEX chunks_collection ON chunks (collection)$sql$;
+    EXECUTE $sql$CREATE INDEX chunks_url        ON chunks (url)$sql$;
+    EXECUTE $sql$CREATE INDEX chunks_embedding  ON chunks USING hnsw (embedding vector_cosine_ops)$sql$;
+  END IF;
+END $$;
 
 -- ---------------------------------------------------------------- enrichment
 

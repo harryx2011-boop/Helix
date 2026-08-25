@@ -83,7 +83,7 @@ export function Nav() {
             className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink"
           >
             <Github className="h-4 w-4" aria-hidden />
-            helix
+            Helix
           </Link>
           {HOSTED ? (
             <PillButton href="/sign-in" variant="secondary">

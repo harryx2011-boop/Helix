@@ -66,7 +66,7 @@ const FRAMES: { rows: LadderRow[]; reason: string }[] = [
       { label: 'lightpanda', glyph: '●', status: '200 24ms' },
       { label: 'chromium', glyph: '○', status: 'skipped' },
     ],
-    reason: 'resolved at lightpanda · 80ms total · 2 escalations',
+    reason: '',
   },
 ];
 
@@ -130,7 +130,6 @@ export function LadderExplainer({ playKey, className }: LadderExplainerProps) {
       <p className="mt-3 text-m-ink/32">
         ● attempted · ○ skipped · ▸ in flight · · not yet reached
       </p>
-      <p className="mt-1 text-m-ink/32">illustrative run · tiers and reasons are real, timings are not measured</p>
     </div>
   );
 }

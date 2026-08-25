@@ -68,7 +68,7 @@ export function Footer() {
 
       <div className="mx-auto mt-12 flex max-w-container items-center justify-between border-t border-m-border-faint py-6">
         <div className="flex items-center gap-4">
-          <Logo className="h-5 w-auto text-m-ink/56" />
+          <Logo className="h-10 w-auto text-m-ink/56" />
           <p className="font-mono text-[12px] text-m-ink/40">
             © 2026 Helix ·{' '}
             <Link href="/terms" className="hover:text-m-ink/72">

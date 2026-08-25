@@ -42,18 +42,13 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
   return (
     <div className="mx-auto max-w-container px-4 pb-24 pt-16 lg:pt-24">
       <section className="mx-auto max-w-[720px] animate-fade-up text-center">
-        <div className="inline-flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-pill border border-m-border-muted bg-m-surface px-3 py-1 font-mono text-[12px] tracking-wide text-m-ink/56">
-            {def.productName} <span className="text-m-ink/32">·</span> part of the Helix API
+        {isComing && (
+          <span className="rounded-pill bg-violet-12 px-2.5 py-1 font-mono text-[12px] tracking-wide text-violet">
+            coming
           </span>
-          {isComing && (
-            <span className="rounded-pill bg-violet-12 px-2.5 py-1 font-mono text-[12px] tracking-wide text-violet">
-              coming
-            </span>
-          )}
-        </div>
+        )}
 
-        <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
+        <h1 className="mt-2 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
           <span className="block">{h1[0]}</span>
           <span className="block text-violet">{h1[1]}</span>
         </h1>

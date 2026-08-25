@@ -7,8 +7,9 @@ import { SITE_URL } from '@/lib/mode';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: 'Helix', template: '%s · Helix' },
-  description: 'The web-data API you run yourself. Scrape, parse, search, crawl, interact and monitor with your own keys. Apache-2.0.',
+  title: { default: 'Helix - The API for agents to scour the web, completely open source.', template: '%s · Helix' },
+  applicationName: 'Helix',
+  description: 'The API for agents to scour the web, completely open source. Scrape, parse, search, crawl, interact and monitor with your own keys.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -21,7 +21,7 @@ export function Nav() {
         <span aria-hidden="true" className="absolute right-0 top-0 h-3 w-3 border-b border-r border-violet/40" />
 
         <Link href="/" aria-label="Helix home" className="flex items-center">
-          <Logo className="h-6 w-auto text-m-ink" />
+          <Logo className="h-12 w-auto text-m-ink" />
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">

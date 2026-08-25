@@ -7,7 +7,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
     <div data-surface="marketing" className="min-h-screen bg-m-bg font-sans text-m-ink">
       <header className="mx-auto flex h-16 w-full max-w-container items-center px-4">
         <Link href="/" aria-label="Helix home">
-          <Logo className="h-7 w-auto text-m-ink" />
+          <Logo className="h-14 w-auto text-m-ink" />
         </Link>
       </header>
       <main className="mx-auto w-full max-w-container px-4 pb-24 pt-4">{children}</main>

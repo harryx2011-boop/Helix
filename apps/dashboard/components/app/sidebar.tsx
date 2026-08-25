@@ -19,7 +19,7 @@ function SidebarBody({ collapsed, selectedEndpoints }: { collapsed: boolean; sel
     <>
       <div className={cn('flex h-14 shrink-0 items-center border-b border-border', collapsed ? 'justify-center px-0' : 'px-4')}>
         <Link href="/app" aria-label="Helix — overview" className="flex items-center">
-          <Logo className={cn('h-6 w-auto text-foreground', collapsed && 'h-6 w-6 overflow-hidden')} />
+          {collapsed ? <Logo markOnly className="h-9 w-auto text-foreground" /> : <Logo className="h-12 w-auto text-foreground" />}
         </Link>
       </div>
       <SidebarNav selectedEndpoints={selectedEndpoints} collapsed={collapsed} />

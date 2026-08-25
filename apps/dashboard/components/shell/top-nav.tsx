@@ -20,7 +20,7 @@ export function TopNav() {
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
       <div className="flex items-center gap-6">
         <Link href="/" aria-label="Helix — playground">
-          <Logo className="h-7 w-auto text-foreground" />
+          <Logo className="h-14 w-auto text-foreground" />
         </Link>
         <nav className="flex items-center gap-1">
           {LINKS.map((link) => {

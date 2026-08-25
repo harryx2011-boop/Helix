@@ -24,6 +24,8 @@ export interface AnimatedCodeProps {
   playOnView?: boolean;
   /** 'scramble' mode: total window over which values resolve (default 2200ms). */
   resolveMs?: number;
+  /** Fires once when a non-looping run completes (or immediately, for 'static'/reduced-motion). */
+  onDone?: () => void;
   className?: string;
 }
 
@@ -69,7 +71,7 @@ function tokenizePlain(part: string, tokens: Token[]): void {
   }
 }
 
-function usePrefersReducedMotion(): boolean {
+export function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = React.useState(false);
   React.useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -94,7 +96,7 @@ function useInView(ref: React.RefObject<Element | null>, enabled: boolean) {
   return inView;
 }
 
-function randomGlyphString(length: number): string {
+export function randomGlyphString(length: number): string {
   let out = '';
   for (let i = 0; i < length; i++) {
     out += SCRAMBLE_GLYPHS[Math.floor(Math.random() * SCRAMBLE_GLYPHS.length)];
@@ -102,14 +104,20 @@ function randomGlyphString(length: number): string {
   return out;
 }
 
-export function AnimatedCode({ code, mode, charMs = 15, lineMs = 50, loop = false, playOnView = true, resolveMs = 2200, className }: AnimatedCodeProps) {
+export function AnimatedCode({ code, mode, charMs = 15, lineMs = 50, loop = false, playOnView = true, resolveMs = 2200, onDone, className }: AnimatedCodeProps) {
   const lines = React.useMemo<Token[][]>(() => (typeof code === 'string' ? tokenizeLines(code) : code), [code]);
   const reducedMotion = usePrefersReducedMotion();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inView = useInView(containerRef, playOnView && !reducedMotion);
   const shouldAnimate = !reducedMotion && (playOnView ? inView : true) && mode !== 'static';
+  const isSettled = mode === 'static' || reducedMotion;
 
-  if (mode === 'static' || reducedMotion) {
+  React.useEffect(() => {
+    if (isSettled) onDone?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSettled]);
+
+  if (isSettled) {
     return (
       <div ref={containerRef} className={cn('min-w-0 max-w-full', className)}>
         <StaticLines lines={lines} />
@@ -128,7 +136,7 @@ export function AnimatedCode({ code, mode, charMs = 15, lineMs = 50, loop = fals
   if (mode === 'type') {
     return (
       <div ref={containerRef} className={cn('min-w-0 max-w-full', className)}>
-        <TypeCode lines={lines} active={shouldAnimate} loop={loop} charMs={charMs} />
+        <TypeCode lines={lines} active={shouldAnimate} loop={loop} charMs={charMs} onDone={onDone} />
       </div>
     );
   }
@@ -264,7 +272,7 @@ function ScrambleCode({ lines, active, loop, resolveMs }: { lines: Token[][]; ac
 /* type: character-by-character typewriter with a blinking block cursor.  */
 /* ---------------------------------------------------------------------- */
 
-function TypeCode({ lines, active, loop, charMs }: { lines: Token[][]; active: boolean; loop: boolean; charMs: number }) {
+function TypeCode({ lines, active, loop, charMs, onDone }: { lines: Token[][]; active: boolean; loop: boolean; charMs: number; onDone?: (() => void) | undefined }) {
   const fullText = React.useMemo(() => lines.map((l) => l.map((t) => t.text).join('')).join('\n'), [lines]);
   const [visibleChars, setVisibleChars] = React.useState(0);
   const [done, setDone] = React.useState(false);
@@ -282,6 +290,7 @@ function TypeCode({ lines, active, loop, charMs }: { lines: Token[][]; active: b
       setVisibleChars(i);
       if (i >= fullText.length) {
         setDone(true);
+        onDone?.();
         if (loop) {
           setTimeout(() => {
             if (!cancelled) setRunId((k) => k + 1);
@@ -298,6 +307,7 @@ function TypeCode({ lines, active, loop, charMs }: { lines: Token[][]; active: b
       cancelled = true;
       window.clearTimeout(t);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, fullText, charMs, loop, runId]);
 
   const visible = fullText.slice(0, visibleChars);

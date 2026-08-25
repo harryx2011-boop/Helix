@@ -17,6 +17,15 @@ interface CodePanelProps {
   copyText?: string;
 }
 
+/**
+ * Explicit terminal/light flag for CodeToken, read via context rather than the
+ * ambient `.dark` CSS class — the site's ThemeProvider toggles `.dark` on
+ * `<html>` globally (dark-by-default operator console), so a `dark:` Tailwind
+ * variant would leak into every light marketing panel too. Only this
+ * CodePanel's own local wrapper decides terminal vs light for its children.
+ */
+const CodePanelToneContext = React.createContext(false);
+
 export function CodePanel({ chrome, label, tabs, children, className, copyText }: CodePanelProps) {
   const [copied, setCopied] = React.useState(false);
   const isTerminal = chrome === 'terminal';
@@ -72,21 +81,38 @@ export function CodePanel({ chrome, label, tabs, children, className, copyText }
           </button>
         )}
       </div>
-      <div className="w-full min-w-0 max-w-full overflow-x-auto px-4 py-4">{children}</div>
+      <div className="w-full min-w-0 max-w-full overflow-x-auto px-4 py-4">
+        <CodePanelToneContext.Provider value={isTerminal}>{children}</CodePanelToneContext.Provider>
+      </div>
     </div>
   );
 }
 
-const TOKEN_CLASS: Record<'key' | 'string' | 'punct' | 'plain', string> = {
-  key: 'text-m-ink/72 dark:text-foreground',
-  string: 'text-violet dark:text-primary',
-  punct: 'text-m-ink/40 dark:text-muted-foreground',
-  plain: 'text-m-ink dark:text-foreground',
+const TOKEN_CLASS_LIGHT: Record<'key' | 'string' | 'punct' | 'plain', string> = {
+  key: 'text-m-ink',
+  string: 'text-violet',
+  punct: 'text-m-ink/40',
+  plain: 'text-m-ink',
 };
 
-/** One syntax token in the shared 4-token palette (key / string / punctuation / plain). Strings are always violet. Reads `.dark` from an ancestor terminal-chrome CodePanel. */
-export function CodeToken({ kind, children }: { kind: keyof typeof TOKEN_CLASS; children: React.ReactNode }) {
-  return <span className={TOKEN_CLASS[kind]}>{children}</span>;
+const TOKEN_CLASS_DARK: Record<'key' | 'string' | 'punct' | 'plain', string> = {
+  key: 'text-foreground',
+  string: 'text-primary',
+  punct: 'text-muted-foreground',
+  plain: 'text-foreground',
+};
+
+/**
+ * One syntax token in the shared 4-token palette (key / string / punctuation
+ * / plain). Strings are always violet on light, `text-primary` on dark. Tone
+ * comes from the nearest ancestor CodePanel via context, not the ambient
+ * `.dark` class (see CodePanelToneContext above) — falls back to light when
+ * used outside a CodePanel.
+ */
+export function CodeToken({ kind, children }: { kind: keyof typeof TOKEN_CLASS_LIGHT; children: React.ReactNode }) {
+  const isTerminal = React.useContext(CodePanelToneContext);
+  const cls = isTerminal ? TOKEN_CLASS_DARK[kind] : TOKEN_CLASS_LIGHT[kind];
+  return <span className={cls}>{children}</span>;
 }
 
 /** Plain pre-formatted code block, coloured by CSS class rather than a tokenizer — matches the reference's static highlighting. */

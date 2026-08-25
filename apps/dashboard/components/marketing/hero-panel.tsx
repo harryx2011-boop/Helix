@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils';
 import { generateCode, type Lang } from '@/lib/codegen';
 import { EXAMPLE_REQUEST } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/supabase/types';
-import { AnimatedCode } from './animated-code';
+import { AnimatedCode, randomGlyphString, usePrefersReducedMotion } from './animated-code';
+import { CodeToken } from './code-panel';
 import { LadderExplainer } from './ladder-explainer';
 
 /**
@@ -20,20 +21,27 @@ export function HeroPanel({ id }: { id?: string }) {
   const [endpoint, setEndpoint] = React.useState<Endpoint>('scrape');
   const [playKey, setPlayKey] = React.useState<number | undefined>(undefined);
   const [requestKey, setRequestKey] = React.useState(0);
+  // Response scramble only starts once the request finishes typing (research/17):
+  // gated by requestDone, and re-keyed only when the request itself re-types.
+  const [requestDone, setRequestDone] = React.useState(false);
 
   const lang: Lang = 'curl';
   const body = { ...EXAMPLE_REQUEST[endpoint], ...(url ? { url } : {}) };
   const code = generateCode(lang, { endpoint, body });
   const response = RESPONSE_PREVIEW[endpoint];
 
+  const handleRequestDone = React.useCallback(() => setRequestDone(true), []);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setPlayKey((k) => (k ?? 0) + 1);
+    setRequestDone(false);
     setRequestKey((k) => k + 1);
   }
 
   function selectEndpoint(id: Endpoint) {
     setEndpoint(id);
+    setRequestDone(false);
     setRequestKey((k) => k + 1);
   }
 
@@ -98,13 +106,17 @@ export function HeroPanel({ id }: { id?: string }) {
       </form>
 
       <div className="w-full min-w-0 max-w-full overflow-x-auto px-4 py-4">
-        <AnimatedCode key={`req-${requestKey}`} code={code} mode="type" charMs={14} playOnView={false} />
+        <AnimatedCode key={`req-${requestKey}`} code={code} mode="type" charMs={14} playOnView={false} onDone={handleRequestDone} />
       </div>
 
       <div className="min-w-0 max-w-full border-t border-m-border-faint px-4 py-4">
         <p className="mb-2 font-mono text-[11px] tracking-wide text-m-ink/48">[ RESPONSE ]</p>
         <div className="w-full min-w-0 max-w-full overflow-x-auto">
-          <AnimatedCode key={`res-${endpoint}`} code={response} mode="scramble" resolveMs={2200} loop playOnView />
+          {requestDone ? (
+            <AnimatedCode key={`res-${requestKey}`} code={response} mode="scramble" resolveMs={2200} loop playOnView />
+          ) : (
+            <ScrambledPlaceholder code={response} />
+          )}
         </div>
       </div>
 
@@ -166,6 +178,55 @@ function RotatingPlaceholder({ endpoint }: { endpoint: Endpoint }) {
       {text}
     </span>
   );
+}
+
+/**
+ * Pre-gate placeholder for the response panel: every quoted JSON value (not
+ * keys) renders as glyph noise, matching ScrambleCode's mid-flight look, so
+ * nothing readable leaks before the request finishes typing (research/17).
+ * Reduced motion renders the real, settled response immediately instead.
+ */
+function ScrambledPlaceholder({ code }: { code: string }) {
+  const reducedMotion = usePrefersReducedMotion();
+  const lines = React.useMemo(() => code.split('\n'), [code]);
+
+  return (
+    <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed sm:whitespace-pre sm:break-normal">
+      {lines.map((line, i) => (
+        <div key={i}>{reducedMotion ? line : noiseLine(line)}</div>
+      ))}
+    </pre>
+  );
+}
+
+function noiseLine(line: string): React.ReactNode {
+  const parts = line.split(/("(?:[^"\\]|\\.)*")(\s*:)?/g);
+  const nodes: React.ReactNode[] = [];
+  for (let i = 0; i < parts.length; i += 3) {
+    const plain = parts[i];
+    const quoted = parts[i + 1];
+    const colon = parts[i + 2];
+    if (plain) nodes.push(plain);
+    if (quoted) {
+      if (colon) {
+        // JSON key: stays static, ink-coloured, never scrambles.
+        nodes.push(
+          <CodeToken key={i} kind="key">
+            {quoted}
+          </CodeToken>,
+        );
+        nodes.push(colon);
+      } else {
+        const inner = quoted.slice(1, -1);
+        nodes.push(
+          <CodeToken key={i} kind="string">
+            {`"${randomGlyphString(Math.max(1, inner.length))}"`}
+          </CodeToken>,
+        );
+      }
+    }
+  }
+  return nodes;
 }
 
 /** Endpoint response preview shapes (lib/docs-content.ts response envelopes, trimmed for the hero). */

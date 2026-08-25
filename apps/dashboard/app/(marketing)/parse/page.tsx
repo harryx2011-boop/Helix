@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { FileScan, ScanEye, Table2, FileStack, UploadCloud, Fingerprint } from 'lucide-react';
+import { ScanEye, Table2, FileStack, Fingerprint } from 'lucide-react';
 import { CapabilityPage } from '@/components/marketing/pages/capability-page';
 
 export const metadata: Metadata = {
@@ -72,12 +72,10 @@ export default function ParsePage() {
 }`,
       }}
       features={[
-        { icon: FileStack, title: 'Four formats, one contract', body: 'PDF, DOCX, PPTX and XLSX return the same markdown-or-JSON envelope Scrape uses for web pages. Point Parse at an HTML page and it says so rather than guessing.' },
-        { icon: UploadCloud, title: 'Upload or URL', body: 'Send a multipart file part directly, or pass a URL and Helix fetches the bytes first. The operator sets the upload ceiling; anything over it is a 413, not a silent truncation.' },
-        { icon: ScanEye, title: 'OCR only when needed', body: 'Every PDF is classified before parsing. Under `ocr: auto`, scanned or garbled pages route to OCR and text-layer documents skip it. `force` and `off` override the call, and the metadata reports what was decided.' },
-        { icon: Table2, title: 'Tables survive the trip', body: 'Spreadsheet rows, slides and PDF tables convert to markdown tables. `tables: high-fidelity` routes PDFs to a table-specialised parser when one is installed.' },
-        { icon: Fingerprint, title: 'Parsed once per file', body: 'Output is cached by content hash, not URL. The same invoice uploaded twice, or fetched from two mirrors, parses once and comes back with `fromCache: true`.' },
-        { icon: FileScan, title: 'Schema extraction on documents', body: 'Add `formats: ["json"]` with a schema or a prompt in `jsonOptions` and the parsed text goes through your own configured model. If the model step fails, the markdown still comes back with a warning.' },
+        { icon: FileStack, eyebrow: 'Docs to data', lead: 'Four formats, one envelope.', body: 'PDF, DOCX, PPTX and XLSX come back exactly like a scraped page.', evidence: 'https://example.com/files/invoice.pdf' },
+        { icon: ScanEye, eyebrow: 'Knows when to look', lead: 'OCR only when needed.', body: 'Scanned pages route to OCR; text-layer documents skip it.', evidence: '"ocr": "auto"  ·  "ocrUsed": false' },
+        { icon: Table2, eyebrow: 'Structure kept', lead: 'Tables survive the trip.', body: 'Spreadsheet rows, slides and PDF tables land as markdown tables.', evidence: '| Item | Qty | Price |' },
+        { icon: Fingerprint, eyebrow: 'Parsed once', lead: 'Cached by content hash.', body: 'The same file from two mirrors parses once.', evidence: '"fromCache": true' },
       ]}
       request={REQUEST}
       response={RESPONSE}

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Network, GitBranch, ShieldHalf, Gauge, Webhook, Calculator } from 'lucide-react';
+import { GitBranch, ShieldHalf, Gauge, Calculator } from 'lucide-react';
 import { CapabilityPage } from '@/components/marketing/pages/capability-page';
 
 export const metadata: Metadata = {
@@ -59,12 +59,10 @@ export default function CrawlPage() {
 42 / 100 pages · status: running`,
       }}
       features={[
-        { icon: GitBranch, title: 'BFS discovery, predictable depth', body: 'Breadth-first traversal, so `maxDepth: 3` means three links from the seed. Sitemaps seed the frontier too, so pages nothing links to are still found.' },
-        { icon: ShieldHalf, title: 'Robots-aware', body: 'robots.txt is honoured by default, longest-match rules and `Crawl-delay` included. Disallowed URLs are reported as `robots_denied`, not silently dropped.' },
-        { icon: Gauge, title: 'Adaptive politeness', body: 'Per-host concurrency ramps while a site stays healthy and backs off on 429s and latency spikes. Pin a fixed `delay` when you would rather not adapt.' },
-        { icon: Calculator, title: 'Estimate before you run', body: '`estimate: true` returns the projected page count, time and provider tokens with its assumptions listed. Nothing is fetched.' },
-        { icon: Webhook, title: 'Webhooks per page', body: 'Point `webhook` at a URL for `started`, `page`, `completed` and `failed` events. Retried with backoff for days, signed when you configure a secret, dead-lettered rather than lost.' },
-        { icon: Network, title: 'Path filters as globs', body: '`includePaths: ["/blog/*"]` and `excludePaths: ["/blog/tag/*"]`, exclusion winning. Subdomains and external links stay out unless you opt in.' },
+        { icon: GitBranch, eyebrow: 'Predictable depth', lead: 'BFS discovery.', body: 'maxDepth: 3 means three links from the seed; sitemaps seed the frontier too.', evidence: '"maxDepth": 3, "limit": 100' },
+        { icon: ShieldHalf, eyebrow: 'Robots-aware', lead: 'robots.txt is honoured by default.', body: 'Disallowed URLs are reported as robots_denied, not silently dropped.', evidence: '"status": "robots_denied"' },
+        { icon: Gauge, eyebrow: 'Adaptive politeness', lead: 'Per-host concurrency ramps and backs off.', body: 'Pin a fixed delay when you would rather not adapt.', evidence: '429 → concurrency reduced, retried' },
+        { icon: Calculator, eyebrow: 'Estimate before you run', lead: 'Nothing is fetched.', body: 'estimate: true returns projected pages, time and tokens.', evidence: '"estimate": true' },
       ]}
       request={REQUEST}
       response={RESPONSE}

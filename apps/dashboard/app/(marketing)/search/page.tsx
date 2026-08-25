@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Search, ListChecks, Server, Gauge, Filter, Globe } from 'lucide-react';
+import { Search, ListChecks, Server, Filter } from 'lucide-react';
 import { CapabilityPage } from '@/components/marketing/pages/capability-page';
 
 export const metadata: Metadata = {
@@ -57,12 +57,10 @@ export default function SearchPage() {
 }`,
       }}
       features={[
-        { icon: Search, title: 'Search and read in one call', body: 'Set scrapeOptions and every result comes back with its page content attached. Leave it out for url, title and description only.' },
-        { icon: Server, title: 'Bring your own backend', body: 'A self-hosted SearXNG instance needs no key. Serper and SerpAPI plug in with yours. HELIX_SEARCH_PROVIDER=auto picks whichever is configured.' },
-        { icon: ListChecks, title: 'Partial success, not hard failure', body: 'A result page that cannot be read keeps its row with a typed failure and adds a line to warnings. The search still returns success: true.' },
-        { icon: Filter, title: 'Language, country and time filters', body: 'lang, country and a tbs window (past day, week, month or year) narrow the search without a second request.' },
-        { icon: Gauge, title: 'Bounded concurrency', body: 'Result pages are read in parallel up to an operator-set cap, so one search call cannot monopolize the fetch pool.' },
-        { icon: Globe, title: 'Same read options as Scrape', body: 'scrapeOptions takes the formats, tier, extractor, selectors and timeout a direct Scrape call takes.' },
+        { icon: Search, eyebrow: 'Search and read', lead: 'Results arrive with content.', body: 'Set scrapeOptions and every result carries its page markdown.', evidence: '"scrapeOptions": { "formats": ["markdown"] }' },
+        { icon: Server, eyebrow: 'Bring your own backend', lead: 'No key required.', body: 'A self-hosted SearXNG instance works out of the box; Serper and SerpAPI plug in with yours.', evidence: 'HELIX_SEARCH_PROVIDER=auto' },
+        { icon: ListChecks, eyebrow: 'Partial success', lead: 'One bad result won’t fail the call.', body: 'An unreadable page keeps its row with a typed failure in warnings.', evidence: '"success": true, "warnings": [...]' },
+        { icon: Filter, eyebrow: 'Narrow without a second call', lead: 'Language, country and time filters.', body: 'lang, country and a tbs window scope the search up front.', evidence: '"tbs": "qdr:m"' },
       ]}
       request={REQUEST}
       response={RESPONSE}

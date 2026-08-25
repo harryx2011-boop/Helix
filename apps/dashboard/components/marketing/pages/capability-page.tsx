@@ -20,8 +20,10 @@ const MOCK_MODE: Record<Endpoint, AnimatedCodeMode> = {
 
 export interface FeatureCardCopy {
   icon: LucideIcon;
-  title: string;
+  eyebrow: string;
+  lead: string;
   body: string;
+  evidence?: string;
 }
 
 export interface CapabilityPageCopy {
@@ -98,9 +100,9 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
       </section>
 
       <section className="mx-auto mt-20 max-w-[960px]">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm sm:grid-cols-2">
           {features.map((feature, i) => (
-            <FeatureCard key={feature.title} {...feature} delay={i * 60} />
+            <FeatureCard key={feature.eyebrow} {...feature} delay={i * 60} />
           ))}
         </div>
       </section>
@@ -120,15 +122,29 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
   );
 }
 
-function FeatureCard({ icon: Icon, title, body, delay }: FeatureCardCopy & { delay: number }) {
+function FeatureCard({ icon: Icon, eyebrow, lead, body, evidence, delay }: FeatureCardCopy & { delay: number }) {
   return (
     <div
-      className="group animate-fade-up rounded-card border border-m-border-muted bg-m-surface p-5 shadow-card-sm transition-colors duration-200 ease-out hover:bg-m-ink/[0.031]"
+      className="flex flex-col animate-fade-up border-b border-m-border-faint p-6 transition-colors duration-200 ease-out hover:bg-m-ink/[0.031] last:border-b-0 sm:[&:nth-child(2n)]:border-l sm:[&:nth-last-child(-n+2)]:border-b-0"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <Icon className="h-5 w-5 text-violet" strokeWidth={1.75} aria-hidden />
-      <h3 className="mt-3 text-[20px] font-normal leading-tight tracking-tight text-m-ink">{title}</h3>
-      <p className="mt-1.5 text-[14px] leading-relaxed text-m-ink/72">{body}</p>
+      <div className="flex items-center gap-1.5 font-mono text-[12px] text-m-ink/56">
+        <Icon className="h-3.5 w-3.5 text-violet" strokeWidth={1.75} aria-hidden />
+        {eyebrow}
+      </div>
+      <p className="mt-3 text-[18px] leading-snug tracking-tight sm:text-[20px]">
+        <span className="font-medium text-m-ink">{lead}</span> <span className="text-m-ink/64">{body}</span>
+      </p>
+      {evidence && (
+        <div className="mt-auto flex items-center gap-1.5 pt-5">
+          <span className="ml-1 h-2 w-2 shrink-0 rounded-full bg-m-ink/12" aria-hidden />
+          <span className="h-2 w-2 shrink-0 rounded-full bg-m-ink/12" aria-hidden />
+          <span className="h-2 w-2 shrink-0 rounded-full bg-m-ink/12" aria-hidden />
+          <span className="ml-1 flex-1 truncate rounded-card bg-m-bg px-2 py-1 font-mono text-[12px] text-m-ink/56">
+            {evidence}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

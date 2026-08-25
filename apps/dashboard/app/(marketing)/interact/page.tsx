@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { MousePointerClick, Eye, KeyRound, Timer, ScanSearch, ListX } from 'lucide-react';
+import { MousePointerClick, Eye, Timer, ScanSearch } from 'lucide-react';
 import { CapabilityPage } from '@/components/marketing/pages/capability-page';
 
 export const metadata: Metadata = {
@@ -54,12 +54,10 @@ export default function InteractPage() {
 → Keyboard available at $49.99`,
       }}
       features={[
-        { icon: MousePointerClick, title: 'A real action set', body: 'Navigate, click, type, press, scroll, wait, screenshot and run JavaScript, in sequence, against one live page. Every action names its target; nothing is guessed.' },
-        { icon: Timer, title: 'Sessions persist', body: 'Set keepSessionOpen and get a session ID back. The next call continues on the same page with cookies, storage and focus intact, until you close it or a timeout does.' },
-        { icon: Eye, title: 'Watch it happen', body: 'Every open session has a read-only live view fed by the browser’s own screencast. Open the link in a tab and watch the actions land.' },
-        { icon: ScanSearch, title: 'Extract with your model', body: 'An extract action sends the page’s stripped content to the provider you configured and returns the answer as the run output, as a string or against your JSON Schema.' },
-        { icon: KeyRound, title: 'Bounded by design', body: 'A cap on open sessions, an idle timeout and a hard timeout are operator settings. With no per-minute billing, the limits are what keep a stuck agent from holding a browser forever.' },
-        { icon: ListX, title: 'Failures name the step', body: 'A selector that never appeared, a bot challenge on navigation or an unreachable model comes back as a typed failure with the index of the action that failed.' },
+        { icon: MousePointerClick, eyebrow: 'Interact with pages', lead: 'A real action set.', body: 'Navigate, click, type, press, scroll, wait and screenshot, in sequence.', evidence: '{ "type": "press", "key": "Enter" }' },
+        { icon: Timer, eyebrow: 'Sessions persist', lead: 'The page stays open between calls.', body: 'Cookies, storage and focus carry over until you close it.', evidence: '"sessionId": "sess_9f2c1a7b3e4d5c60"' },
+        { icon: Eye, eyebrow: 'Knows the moment', lead: 'Watch it happen.', body: 'A read-only live view streams the session’s own screencast.', evidence: '"sessionOpen": true' },
+        { icon: ScanSearch, eyebrow: 'Extract with your model', lead: 'One action reads the page.', body: 'Returns a string or fills your JSON Schema.', evidence: '{ "type": "extract", "prompt": "..." }' },
       ]}
       request={REQUEST}
       response={RESPONSE}

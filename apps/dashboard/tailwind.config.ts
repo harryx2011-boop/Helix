@@ -90,6 +90,10 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateY(4px)', filter: 'blur(2px)' },
           '100%': { opacity: '1', transform: 'translateY(0)', filter: 'blur(0)' },
         },
+        sparkle: {
+          '0%, 100%': { opacity: '0.55', transform: 'scale(0.9) rotate(0deg)' },
+          '50%': { opacity: '1', transform: 'scale(1) rotate(45deg)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 150ms cubic-bezier(0, 0, 0.2, 1)',
@@ -99,6 +103,7 @@ const config: Config = {
         'fade-in-up': 'fade-in-up 300ms cubic-bezier(0, 0, 0.2, 1) both',
         'text-swap-out': 'text-swap-out 150ms ease-in-out both',
         'text-swap-in': 'text-swap-in 150ms ease-in-out both',
+        sparkle: 'sparkle 2400ms cubic-bezier(0, 0, 0.2, 1) infinite',
       },
     },
   },

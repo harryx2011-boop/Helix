@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { GitCompareArrows, CalendarClock, BellRing, SlidersHorizontal, History, Webhook } from 'lucide-react';
+import { GitCompareArrows, CalendarClock, BellRing, SlidersHorizontal } from 'lucide-react';
 import { CapabilityPage } from '@/components/marketing/pages/capability-page';
 
 export const metadata: Metadata = {
@@ -45,12 +45,10 @@ export default function MonitorPage() {
   $79/month. Includes priority support.`,
       }}
       features={[
-        { icon: CalendarClock, title: 'Cron or interval scheduling', body: 'A cron string, or `every: "6h"` with a timezone. The operator sets the minimum gap between checks, hourly by default, and a faster schedule is refused up front.' },
-        { icon: GitCompareArrows, title: 'Diffs inline', body: 'Word, line or character diffs ship inside the webhook payload and the history entry. No second call to learn what moved.' },
-        { icon: SlidersHorizontal, title: 'Sensitivity and keyword triggers', body: '`significant` strips relative timestamps, clock times, dates and tracking parameters before comparing. Keyword triggers fire only when a phrase appears or disappears, with no model call.' },
-        { icon: BellRing, title: 'Unchanged costs nothing', body: 'A check that finds no change stores no snapshot and sends no webhook. The history records that it looked, and that is all.' },
-        { icon: History, title: 'A real change timeline', body: 'Every check is an entry with its reason and a link to the snapshot it produced. Retention is set per instance by count and age.' },
-        { icon: Webhook, title: 'Webhooks that keep trying', body: 'HMAC-signed deliveries retried with backoff over ten attempts, then dead-lettered where you can inspect and replay them.' },
+        { icon: CalendarClock, eyebrow: 'Cron or interval', lead: 'Scheduled re-reads.', body: 'A cron string or every: "6h", with a timezone attached.', evidence: '"schedule": "0 * * * *"' },
+        { icon: GitCompareArrows, eyebrow: 'Diffs inline', lead: 'No second call to learn what moved.', body: 'Word, line or character diffs ship in the webhook payload.', evidence: '"diff": { "granularity": "word" }' },
+        { icon: SlidersHorizontal, eyebrow: 'Sensitivity and triggers', lead: 'Noise gets filtered out.', body: 'significant strips timestamps and tracking params before comparing.', evidence: '"sensitivity": "significant"' },
+        { icon: BellRing, eyebrow: 'Unchanged costs nothing', lead: 'No snapshot, no webhook.', body: 'A check with no change just records that it looked.', evidence: '"stats": { "checks": 12, "changes": 0 }' },
       ]}
       request={REQUEST}
       response={RESPONSE}

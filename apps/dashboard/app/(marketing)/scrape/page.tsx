@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { FileText, Globe2, ScanText, Code2, ShieldCheck, Smartphone } from 'lucide-react';
+import { FileText, Globe2, Code2, ShieldCheck } from 'lucide-react';
 import { CapabilityPage } from '@/components/marketing/pages/capability-page';
 
 export const metadata: Metadata = {
@@ -86,12 +86,10 @@ $29/month, billed annually.
 $79/month. Includes priority support.`,
       }}
       features={[
-        { icon: FileText, title: 'Eight formats, one call', body: 'Markdown, sanitised HTML, raw HTML, text, links, a screenshot, schema-shaped JSON and citation-ready chunks. Ask for several; each comes back under its own key.' },
-        { icon: Globe2, title: 'Cheapest tier first', body: 'Plain fetch, then TLS identity, then a lightweight browser, then Chromium. Helix escalates on evidence, never on a framework guess.' },
-        { icon: ScanText, title: 'JSON with your own model', body: 'Send a JSON Schema in jsonOptions and pick the provider and model per request. Keys stay on your instance; the response reports the tokens spent.' },
-        { icon: Code2, title: 'Act before you read', body: 'Click, type, scroll, wait and run JavaScript, then extract. Actions force the Chromium tier automatically.' },
-        { icon: Smartphone, title: 'Mobile and proxied', body: 'mobile: true renders the phone layout in a 390-wide viewport. proxy takes auto, stealth, none or your own proxy for that one request.' },
-        { icon: ShieldCheck, title: 'A block is a typed failure', body: 'A challenge page returning 200 comes back as a FetchFailure with the signals that fired, never as markdown.' },
+        { icon: FileText, eyebrow: 'One call, many shapes', lead: 'Eight formats, one call.', body: 'Markdown, HTML, links, a screenshot and schema JSON, each under its own key.', evidence: '"formats": ["markdown", "json", "screenshot"]' },
+        { icon: Globe2, eyebrow: 'Cheapest path first', lead: 'Escalates on evidence.', body: 'Plain fetch, then TLS identity, then a light browser, then Chromium.', evidence: '"tier": "plain", "tiersAttempted": ["plain"]' },
+        { icon: Code2, eyebrow: 'Act, then read', lead: 'Actions run before extraction.', body: 'Click, type, scroll and wait, then the page is scraped.', evidence: '{ "type": "click", "selector": "#accept" }' },
+        { icon: ShieldCheck, eyebrow: 'Honest about blocks', lead: 'A block is a typed failure.', body: 'A challenge page returning 200 never comes back as markdown.', evidence: '"error": "FetchFailure", "signals": [...]' },
       ]}
       request={REQUEST}
       response={RESPONSE}

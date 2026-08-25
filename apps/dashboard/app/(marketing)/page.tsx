@@ -1,19 +1,19 @@
 import { Hero } from '@/components/marketing/hero';
 import { Capabilities } from '@/components/marketing/capabilities';
-import { ObjectionA } from '@/components/marketing/objection-a';
+import { Integrations } from '@/components/marketing/integrations';
 import { SelfHostPromise } from '@/components/marketing/self-host-promise';
-import { ObjectionB } from '@/components/marketing/objection-b';
 import { UseCases } from '@/components/marketing/use-cases';
+import { ClosingCta } from '@/components/marketing/closing-cta';
 
 export default function LandingPage() {
   return (
     <>
       <Hero />
       <Capabilities />
-      <ObjectionA />
+      <Integrations />
       <SelfHostPromise />
-      <ObjectionB />
       <UseCases />
+      <ClosingCta />
     </>
   );
 }

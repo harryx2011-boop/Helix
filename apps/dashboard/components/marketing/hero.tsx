@@ -1,7 +1,7 @@
 import { HeroPanel } from './hero-panel';
 import { CharGrid } from './char-grid';
 import { PillButton } from './pill-button';
-import { LadderReplayLink } from './ladder-replay-link';
+import { GithubMark } from './github-mark';
 
 const BRACKETS = [
   { label: '[ plain ]', className: 'left-6 top-24' },
@@ -27,37 +27,38 @@ export function Hero() {
           {b.label}
         </span>
       ))}
-      <span aria-hidden="true" className="absolute left-[18%] top-16 hidden text-violet sm:block">
-        ✦
-      </span>
-      <span aria-hidden="true" className="absolute right-[18%] top-40 hidden text-violet sm:block">
-        ✦
-      </span>
 
       <div className="mx-auto flex min-w-0 max-w-container flex-col items-center px-4 text-center">
-        <span className="inline-flex items-center gap-2 rounded-pill bg-m-ink/[0.039] px-4 py-1.5 font-mono text-[13px] text-m-ink/72">
+        <span data-reveal className="inline-flex items-center gap-2 rounded-pill bg-m-ink/[0.039] px-4 py-1.5 font-mono text-[13px] text-m-ink/72">
           Apache-2.0 · self-hosted · bring your own keys
           <span aria-hidden>→</span>
         </span>
 
-        <h1 className="mt-6 max-w-[720px] text-[40px] font-normal leading-[1.05] tracking-tightest sm:text-[56px]">
+        <h1
+          data-reveal
+          style={{ transitionDelay: '60ms' }}
+          className="mt-6 max-w-[760px] text-[44px] font-normal leading-[1.03] tracking-tightest sm:text-[64px]"
+        >
           The web-data API
           <br />
           <span className="text-violet">you run yourself</span>
         </h1>
 
-        <p className="mt-5 max-w-[560px] text-[18px] leading-relaxed text-m-ink/72">
+        <p data-reveal style={{ transitionDelay: '120ms' }} className="mt-5 max-w-[560px] text-[18px] leading-relaxed text-m-ink/72">
           An API built for agents to scour the web. Completely open source, and available for you to run locally.
         </p>
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <div data-reveal style={{ transitionDelay: '180ms' }} className="mt-8 flex flex-col gap-3 sm:flex-row">
           <PillButton href="/sign-up" variant="primary">
-            Get an API key
+            Get started
           </PillButton>
-          <LadderReplayLink />
+          <PillButton href="https://github.com/helix-dev/helix" variant="secondary">
+            <GithubMark className="h-4 w-4" />
+            View on GitHub
+          </PillButton>
         </div>
 
-        <div className="relative mt-16 w-full min-w-0 max-w-full sm:max-w-[720px]">
+        <div data-reveal style={{ transitionDelay: '240ms' }} className="relative mt-16 w-full min-w-0 max-w-full">
           <CharGrid className="pointer-events-none absolute -inset-8 -z-10 hidden lg:block" />
           <HeroPanel id="ladder" />
         </div>

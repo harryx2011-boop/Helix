@@ -345,3 +345,16 @@ kbd {
   padding-left: 1em;
   color: rgba(11, 18, 32, 0.56);
 }
+
+/* Scroll-reveal convention driven by components/marketing/scroll-motion.tsx.
+   Hidden until GSAP measures and reveals them; reduced-motion and no-JS both
+   fall back to visible (the `visibility` default here, flipped only by the
+   inline script below once we know JS + full motion are both active). */
+[data-reveal],
+[data-reveal-item] {
+  visibility: visible;
+}
+html.has-motion [data-reveal],
+html.has-motion [data-reveal-item] {
+  visibility: hidden;
+}

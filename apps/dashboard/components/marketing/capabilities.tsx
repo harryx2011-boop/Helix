@@ -2,106 +2,177 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ENDPOINTS, PRODUCTS } from '@/lib/catalog';
-import { generateCode, LANGS, type Lang } from '@/lib/codegen';
+import { ArrowRight } from 'lucide-react';
+import { ENDPOINTS } from '@/lib/catalog';
 import { SectionEyebrow } from './section-eyebrow';
 import { CodePanel } from './code-panel';
 import { AnimatedCode } from './animated-code';
+import type { Endpoint } from '@/lib/supabase/types';
 
-const THREE_UP = PRODUCTS.filter((p) => ['scrape', 'crawl', 'search'].includes(p.id));
-const ROW = ENDPOINTS.filter((e) => ['parse', 'interact', 'monitor'].includes(e.id));
+const TABS = ENDPOINTS.filter((e) => e.product);
 
-/** WEBSITE.md §4.3: 3-up cards, coming row, browser-chrome code sample. */
-const RESPONSE = `{
+/** Verbatim request/response pairs, one per tab — matched to each capability page's openapi-sourced examples. */
+const REQUEST: Record<Endpoint, string> = {
+  scrape: `POST /v1/scrape
+{
+  "url": "https://example.com/pricing",
+  "formats": ["markdown", "json"],
+  "jsonOptions": {
+    "prompt": "Extract every pricing plan on the page."
+  }
+}`,
+  parse: `POST /v1/parse
+{
+  "url": "https://example.com/files/invoice.pdf",
+  "formats": ["markdown", "json"],
+  "ocr": "auto",
+  "jsonOptions": { "prompt": "the invoice total" }
+}`,
+  search: `POST /v1/search
+{
+  "query": "transactional email APIs",
+  "limit": 5,
+  "scrapeOptions": { "formats": ["markdown"] }
+}`,
+  map: `POST /v1/map
+{
+  "url": "https://example.com"
+}`,
+  crawl: `POST /v1/crawl
+{
+  "url": "https://example.com",
+  "limit": 100,
+  "maxDepth": 3,
+  "estimate": true
+}`,
+  interact: `POST /v1/interact
+{
+  "url": "https://example.com/shop",
+  "actions": [
+    { "type": "click", "selector": "#accept-cookies" },
+    { "type": "type", "selector": "#search", "text": "wireless keyboard" },
+    { "type": "extract", "prompt": "Get the price of the first result" }
+  ]
+}`,
+  monitor: `POST /v1/monitor
+{
+  "url": "https://example.com/pricing",
+  "schedule": "0 * * * *",
+  "sensitivity": "significant"
+}`,
+};
+
+const RESPONSE: Record<Endpoint, string> = {
+  scrape: `{
   "success": true,
   "data": {
-    "markdown": "# Example Domain\\n\\nThis domain is for use in illustrative examples.",
-    "metadata": {
-      "title": "Example Domain",
-      "sourceUrl": "https://example.com",
-      "statusCode": 200,
-      "tier": "plain"
-    }
+    "markdown": "# Pricing\\n...",
+    "json": { "plans": [{ "name": "Pro", "monthlyPrice": 79 }] },
+    "metadata": { "statusCode": 200, "tier": "plain" }
   },
   "warnings": []
-}`;
+}`,
+  parse: `{
+  "success": true,
+  "data": {
+    "markdown": "# Invoice 0142\\n...",
+    "json": { "invoiceTotal": 4820.0 },
+    "metadata": { "fileType": "pdf", "ocrUsed": false, "fromCache": false }
+  }
+}`,
+  search: `{
+  "success": true,
+  "data": {
+    "web": [
+      { "url": "https://example.com/best-email-apis", "title": "13 Best Transactional Email APIs", "position": 1 }
+    ]
+  },
+  "warnings": []
+}`,
+  map: `{
+  "success": true,
+  "data": {
+    "urls": ["https://example.com/", "https://example.com/pricing"]
+  }
+}`,
+  crawl: `202 Accepted
+{
+  "success": true,
+  "id": "6f1c…",
+  "jobId": "6f1c…",
+  "url": "/v1/crawl/6f1c…"
+}`,
+  interact: `{
+  "success": true,
+  "sessionId": "sess_9f2c1a7b",
+  "output": "Keyboard available at $49.99",
+  "actionsRun": 3
+}`,
+  monitor: `{
+  "success": true,
+  "monitorId": "f2a1c6e0…",
+  "status": "active",
+  "nextCheckAt": "2026-08-24T13:00:00.000Z",
+  "stats": { "checks": 0, "changes": 0 }
+}`,
+};
 
+/** One tabbed request/response panel covering all six capabilities, each tab linking to its own page. */
 export function Capabilities() {
-  const [lang, setLang] = React.useState<Lang>('python');
-  const code = generateCode(lang, { endpoint: 'scrape', body: { url: 'https://example.com', formats: ['markdown'] } });
+  const [active, setActive] = React.useState<Endpoint>('scrape');
+  const def = TABS.find((t) => t.id === active) ?? TABS[0]!;
 
   return (
-    <section className="px-4 py-20">
+    <section className="border-t border-m-border-faint px-4 py-20">
       <div className="mx-auto max-w-container">
-        <SectionEyebrow step="01 / 05" label="CAPABILITIES" sub="Six endpoints" />
-        <h2 className="mt-4 max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
-          Read, search, and act on the web.
-        </h2>
-        <p className="mt-3 max-w-[520px] text-[16px] leading-relaxed text-m-ink/72">
-          One envelope for every endpoint. Web pages and documents come back the same shape.
-        </p>
-
-        <div className="mt-10 grid gap-5 sm:grid-cols-3">
-          {THREE_UP.map((p, i) => {
-            const Icon = p.icon;
-            return (
-              <Link
-                key={p.id}
-                href={p.route}
-                style={{ animationDelay: `${i * 60}ms` }}
-                className="group animate-fade-up rounded-card border border-m-border-muted bg-m-surface p-5 shadow-card-sm transition-colors duration-200 ease-out hover:bg-m-ink/[0.031]"
-              >
-                <Icon className="h-5 w-5 text-violet" aria-hidden />
-                <h3 className="mt-3 text-[20px] font-medium leading-tight tracking-tight">{p.name}</h3>
-                <p className="mt-1.5 text-[14px] leading-relaxed text-m-ink/64">{p.tagline}</p>
-                <span className="mt-3 block h-[1.2em] text-[13px] font-medium text-violet opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100">
-                  Learn more →
-                </span>
-              </Link>
-            );
-          })}
+        <div data-reveal>
+          <SectionEyebrow step="01 / 04" label="CAPABILITIES" sub="Six endpoints" />
+          <h2 className="mt-4 max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
+            Read, search, and act on the web.
+          </h2>
+          <p className="mt-3 max-w-[520px] text-[16px] leading-relaxed text-m-ink/72">
+            One envelope for every endpoint. Pick a capability below to see its wire format.
+          </p>
         </div>
 
-        <div className="mt-5 grid divide-y divide-m-border-faint overflow-hidden rounded-panel border border-m-border-muted bg-m-surface sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          {ROW.map((e) => {
-            const Icon = e.icon;
+        <div data-reveal className="mt-10 flex flex-wrap gap-1 rounded-pill border border-m-border-muted bg-m-surface p-1">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            const isActive = t.id === active;
             return (
-              <div key={e.id} className="p-5">
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-m-ink/56" aria-hidden />
-                  <h3 className="text-[16px] font-medium">{e.name}</h3>
-                  <span className="rounded-pill bg-violet-12 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-violet">
-                    coming
-                  </span>
-                </div>
-                <p className="mt-2 text-[14px] leading-relaxed text-m-ink/64">{e.tagline}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <CodePanel
-            chrome="browser"
-            label="api.helix.dev"
-            copyText={code}
-            tabs={LANGS.filter((l) => l.id !== 'mcp').map((l) => (
               <button
-                key={l.id}
+                key={t.id}
                 type="button"
-                onClick={() => setLang(l.id)}
-                className={`rounded-pill px-2.5 py-1 font-mono text-[12px] transition-colors duration-150 ease-out ${
-                  lang === l.id ? 'bg-m-bg text-m-ink' : 'text-m-ink/48 hover:text-m-ink/72'
+                onClick={() => setActive(t.id)}
+                aria-pressed={isActive}
+                className={`flex items-center gap-1.5 rounded-pill px-3.5 py-2 font-mono text-[13px] transition-colors duration-150 ease-out ${
+                  isActive ? 'bg-violet-12 text-violet' : 'text-m-ink/56 hover:text-m-ink/80'
                 }`}
               >
-                {l.label}
+                <Icon className="h-3.5 w-3.5" aria-hidden />
+                {t.name}
               </button>
-            ))}
+            );
+          })}
+        </div>
+
+        <div data-reveal className="mt-5 flex flex-col gap-3 rounded-panel border border-m-border-muted bg-m-surface p-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="max-w-[560px] text-[14px] leading-relaxed text-m-ink/72">{def.tagline}</p>
+          <Link
+            href={def.route}
+            className="group flex shrink-0 items-center gap-1.5 font-mono text-[13px] font-medium text-violet transition-colors duration-150 ease-out hover:text-violet-hover"
           >
-            <AnimatedCode key={lang} code={code} mode="reveal" lineMs={50} playOnView />
+            {def.name} docs
+            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 ease-out group-hover:translate-x-0.5" aria-hidden />
+          </Link>
+        </div>
+
+        <div data-reveal className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <CodePanel chrome="terminal" label={def.path} copyText={REQUEST[active]}>
+            <AnimatedCode key={`req-${active}`} code={REQUEST[active]} mode="reveal" lineMs={45} playOnView className="text-foreground" />
           </CodePanel>
-          <CodePanel chrome="browser" label="[ RESPONSE ]">
-            <AnimatedCode code={RESPONSE} mode="scramble" resolveMs={2200} playOnView />
+          <CodePanel chrome="terminal" label="response">
+            <AnimatedCode key={`res-${active}`} code={RESPONSE[active]} mode="scramble" resolveMs={1800} playOnView className="text-foreground" />
           </CodePanel>
         </div>
       </div>

@@ -33,6 +33,12 @@ Interact (`apps/api/src/routes/interact.ts`, `browser/sessions.ts`, `browser/int
 - `components/marketing/animated-code.tsx`: `scramble` (JSON values cycle glyphs and resolve independently; keys static), `type` (14ms/char, blinking cursor), `reveal` (per-line fade-in-up), `static`; `playOnView`, reduced-motion renders the settled frame. Used by the hero panel (request types → response scrambles, loops), the capabilities code sample, and every capability-page mock. Evidence: research/17.
 - Prompt box: hero input and `/app` playground (`components/playground/prompt-box.tsx`) — icon, input with rotating placeholder (text-swap 150ms/4px/2px blur), endpoint pills inside the box, toolbar (Options · Source · Get code · Run).
 
+## Landing page rebuild (2026-08-25)
+
+Full rebuild of `/` per `landing-revamp-plan.md`'s Helix section. Sections: Nav (Capabilities dropdown, Docs, GitHub, Sign in) → Hero (two-column request/response demo, `Get started` + `View on GitHub` CTAs) → Capabilities (one tabbed code panel, 6 tabs: scrape/parse/search/crawl/interact/monitor, each linking to its page) → Integrations (SDK/MCP/CLI copyable install snippets) → Self-host promise (rewritten copy, ambient `CharGrid` texture) → Use cases (rewritten) → Closing CTA. `objection-a.tsx`, `objection-b.tsx`, `ladder-replay-link.tsx` removed (folded out or superseded). No social proof, stats, pricing, or testimonials, per spec.
+
+Added `gsap` + `lenis` to `apps/dashboard` (`components/marketing/scroll-motion.tsx`, mounted in `(marketing)/layout.tsx`): Lenis smooth scroll driven by the GSAP ticker, plus a `[data-reveal]` / `[data-reveal-group] > [data-reveal-item]` convention for scroll-triggered section reveals (`power3.out`, 500ms, 60ms stagger, `once: true`). `html.has-motion` gates the CSS visibility hook in `globals.css`; reduced-motion skips Lenis and reveals everything immediately via `clearProps`. Ambient background code motion stays on `char-grid.tsx`/`animated-code.tsx` (unchanged primitives), now also used behind the self-host section.
+
 ## Conventions
 
 - Tokens: WEBSITE.md §3. Marketing = Firecrawl-structured light theme in violet; app = DESIGN.md dark.

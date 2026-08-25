@@ -3,6 +3,7 @@ import { SectionEyebrow } from './section-eyebrow';
 import { PillButton } from './pill-button';
 import { CodePanel, CodeToken } from './code-panel';
 import { TerminalReplay } from './terminal-replay';
+import { CharGrid } from './char-grid';
 
 const COMPOSE_LINES: { text: string; callout?: string }[] = [
   { text: 'services:' },
@@ -45,24 +46,27 @@ const ROWS: { label: string; helix: string; norm: string }[] = [
 /** WEBSITE.md §4.5: the centerpiece section. Terminal replay, compose file + architecture diagram, comparison table. */
 export function SelfHostPromise() {
   return (
-    <section className="border-t border-m-border-faint bg-m-bg-lighter px-4 py-24">
-      <div className="mx-auto max-w-container">
-        <SectionEyebrow step="03 / 05" label="SELF-HOST" sub="The whole product" />
-        <h2 className="mt-4 max-w-[600px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
-          Run it yourself. All of it.
-        </h2>
-        <p className="mt-3 max-w-[600px] text-[16px] leading-relaxed text-m-ink/72">
-          The self-host build is the product. There is no cloud-only tier, no held-back stealth layer, no licence
-          that stops you embedding it.
-        </p>
+    <section className="relative overflow-hidden border-t border-m-border-faint bg-m-bg-lighter px-4 py-24">
+      <CharGrid className="pointer-events-none absolute -right-12 top-16 -z-0 hidden opacity-50 lg:block" />
+      <div className="relative mx-auto max-w-container">
+        <div data-reveal>
+          <SectionEyebrow step="03 / 04" label="SELF-HOST" sub="Bring your own keys" />
+          <h2 className="mt-4 max-w-[600px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
+            Run it yourself. All of it.
+          </h2>
+          <p className="mt-3 max-w-[600px] text-[16px] leading-relaxed text-m-ink/72">
+            The self-host build is the product, not a stripped-down trial of the hosted one. Every tier, every
+            capability, every line of it, under Apache-2.0.
+          </p>
+        </div>
 
-        <div className="mt-12">
+        <div data-reveal className="mt-12">
           <TerminalReplay />
         </div>
 
-        <div className="mt-8 grid gap-5 lg:grid-cols-2">
+        <div data-reveal-group className="mt-8 grid gap-5 lg:grid-cols-2">
           <CodePanel chrome="browser" label="docker-compose.yml">
-            <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed">
+            <pre data-reveal-item className="whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed">
               {COMPOSE_LINES.map((line, i) => (
                 <div key={i} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                   <CodeToken kind={line.text.trim().endsWith(':') && !line.text.includes('  ') ? 'key' : 'plain'}>
@@ -76,7 +80,7 @@ export function SelfHostPromise() {
             </pre>
           </CodePanel>
 
-          <div className="min-w-0 max-w-full rounded-panel border border-m-border-muted bg-m-surface p-5 shadow-card-sm">
+          <div data-reveal-item className="min-w-0 max-w-full rounded-panel border border-m-border-muted bg-m-surface p-5 shadow-card-sm">
             <p className="font-mono text-[12px] uppercase tracking-wide text-m-ink/48">Three runtimes</p>
             <div className="w-full min-w-0 max-w-full overflow-hidden">
               <pre className="mt-3 whitespace-pre font-mono text-[8.5px] leading-relaxed tracking-tighter text-m-ink/64 sm:text-[12px] sm:tracking-normal">
@@ -86,7 +90,7 @@ export function SelfHostPromise() {
           </div>
         </div>
 
-        <div className="mt-8 min-w-0 max-w-full rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm">
+        <div data-reveal className="mt-8 min-w-0 max-w-full rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm">
           <div className="hidden overflow-x-auto sm:block">
             <table className="w-full min-w-[520px] border-collapse text-[14px]">
               <thead>

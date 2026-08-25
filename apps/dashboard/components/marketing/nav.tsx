@@ -2,10 +2,11 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ChevronDown, Github, Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import { Logo } from '@/components/shell/logo';
 import { PRODUCTS } from '@/lib/catalog';
 import { PillButton } from './pill-button';
+import { GithubMark } from './github-mark';
 
 const HOSTED = process.env.NEXT_PUBLIC_HELIX_HOSTED === '1';
 
@@ -41,7 +42,7 @@ export function Nav() {
             </button>
             {capabilitiesOpen && (
               <div className="absolute left-1/2 top-full w-[320px] -translate-x-1/2 pt-2">
-                <div className="grid gap-1 rounded-panel border border-m-border-muted bg-m-surface p-2 shadow-card">
+                <div className="grid origin-top animate-fade-in-up gap-1 rounded-panel border border-m-border-muted bg-m-surface p-2 shadow-card">
                   {PRODUCTS.map((p) => {
                     const Icon = p.icon;
                     return (
@@ -72,18 +73,16 @@ export function Nav() {
           <Link href="/docs" className="rounded-md px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink">
             Docs
           </Link>
-          <Link href="/architecture" className="rounded-md px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink">
-            Architecture
-          </Link>
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
           <Link
             href="https://github.com/helix-dev/helix"
+            aria-label="Helix on GitHub"
             className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink"
           >
-            <Github className="h-4 w-4" aria-hidden />
-            Helix
+            <GithubMark className="h-4 w-4" />
+            GitHub
           </Link>
           {HOSTED ? (
             <PillButton href="/sign-in" variant="secondary">
@@ -124,10 +123,11 @@ export function Nav() {
             <Link href="/docs" onClick={() => setMobileOpen(false)} className="rounded-card px-3 py-2 text-[14px] text-m-ink/72 hover:bg-m-ink/[0.039]">
               Docs
             </Link>
-            <Link href="/architecture" onClick={() => setMobileOpen(false)} className="rounded-card px-3 py-2 text-[14px] text-m-ink/72 hover:bg-m-ink/[0.039]">
-              Architecture
-            </Link>
-            <Link href="https://github.com/helix-dev/helix" className="rounded-card px-3 py-2 text-[14px] text-m-ink/72 hover:bg-m-ink/[0.039]">
+            <Link
+              href="https://github.com/helix-dev/helix"
+              className="flex items-center gap-2 rounded-card px-3 py-2 text-[14px] text-m-ink/72 hover:bg-m-ink/[0.039]"
+            >
+              <GithubMark className="h-4 w-4" />
               GitHub
             </Link>
             <div className="mt-2">

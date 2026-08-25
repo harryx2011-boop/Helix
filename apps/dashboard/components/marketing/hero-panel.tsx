@@ -57,7 +57,7 @@ export function HeroPanel({ id }: { id?: string }) {
   }, []);
 
   return (
-    <div id={id} className="w-full min-w-0 max-w-full overflow-hidden rounded-panel bg-m-surface shadow-card ring-8 ring-m-bg sm:max-w-[720px]">
+    <div id={id} className="mx-auto w-full min-w-0 max-w-full overflow-hidden rounded-panel bg-m-surface shadow-card ring-8 ring-m-bg lg:max-w-[960px]">
       <form onSubmit={handleSubmit} className="min-w-0 border-b border-m-border-faint p-3">
         <div className="flex min-w-0 items-center gap-2 rounded-card border border-m-border-muted bg-m-bg px-3 py-2">
           <Globe className="h-4 w-4 shrink-0 text-m-ink/40" aria-hidden />
@@ -108,18 +108,21 @@ export function HeroPanel({ id }: { id?: string }) {
         </div>
       </form>
 
-      <div className="w-full min-w-0 max-w-full overflow-x-auto px-4 py-4">
-        <AnimatedCode key={`req-${requestKey}`} code={code} mode="type" charMs={14} playOnView={false} onDone={handleRequestDone} />
-      </div>
+      <div className="grid min-w-0 max-w-full grid-cols-1 divide-m-border-faint lg:grid-cols-2 lg:divide-x">
+        <div className="w-full min-w-0 max-w-full overflow-x-auto border-b border-m-border-faint px-4 py-4 lg:border-b-0">
+          <p className="mb-2 font-mono text-[11px] tracking-wide text-m-ink/48">[ REQUEST ]</p>
+          <AnimatedCode key={`req-${requestKey}`} code={code} mode="type" charMs={14} playOnView={false} onDone={handleRequestDone} />
+        </div>
 
-      <div className="min-w-0 max-w-full border-t border-m-border-faint px-4 py-4">
-        <p className="mb-2 font-mono text-[11px] tracking-wide text-m-ink/48">[ RESPONSE ]</p>
-        <div className="w-full min-w-0 max-w-full overflow-x-auto">
-          {requestDone ? (
-            <AnimatedCode key={`res-${requestKey}`} code={response} mode="scramble" resolveMs={2200} loop playOnView />
-          ) : (
-            <ScrambledPlaceholder code={response} />
-          )}
+        <div className="min-w-0 max-w-full px-4 py-4">
+          <p className="mb-2 font-mono text-[11px] tracking-wide text-m-ink/48">[ RESPONSE ]</p>
+          <div className="w-full min-w-0 max-w-full overflow-x-auto">
+            {requestDone ? (
+              <AnimatedCode key={`res-${requestKey}`} code={response} mode="scramble" resolveMs={2200} loop playOnView />
+            ) : (
+              <ScrambledPlaceholder code={response} />
+            )}
+          </div>
         </div>
       </div>
 

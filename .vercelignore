@@ -1,0 +1,13 @@
+.pgdata
+.worktrees
+videos
+research
+graphify-out
+.claude
+**/node_modules
+**/.next
+**/.screenshots
+**/target
+**/.venv
+**/__pycache__
+apps/dashboard/.vercel

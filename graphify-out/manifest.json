@@ -30,19 +30,19 @@
     "semantic_hash": "08d0b7bb588b36ec5cdc54df39deb56e"
   },
   "E:\\Helix\\apps\\api\\src\\config.ts": {
-    "mtime": 1787614842.0,
-    "ast_hash": "3ffa779aa18dbf9283e9ad97babe96e8",
-    "semantic_hash": "3ffa779aa18dbf9283e9ad97babe96e8"
+    "mtime": 1787706506.0,
+    "ast_hash": "b94f069086183f599b6f53222fed934a",
+    "semantic_hash": "b94f069086183f599b6f53222fed934a"
   },
   "E:\\Helix\\apps\\api\\src\\index.ts": {
-    "mtime": 1787704676.0,
-    "ast_hash": "7ac57ff4e877ab3b382b928f43733bb6",
-    "semantic_hash": "7ac57ff4e877ab3b382b928f43733bb6"
+    "mtime": 1787706488.0,
+    "ast_hash": "f7c2ff88e58ee06b88b4eca71489beed",
+    "semantic_hash": "f7c2ff88e58ee06b88b4eca71489beed"
   },
   "E:\\Helix\\apps\\api\\src\\routes\\scrape.ts": {
-    "mtime": 1787614170.0,
-    "ast_hash": "b7fbcc389a93479eade5e15b972efb45",
-    "semantic_hash": "b7fbcc389a93479eade5e15b972efb45"
+    "mtime": 1787706446.0,
+    "ast_hash": "bfdd11db3283aff205ce00b6ed95775f",
+    "semantic_hash": "bfdd11db3283aff205ce00b6ed95775f"
   },
   "E:\\Helix\\apps\\api\\src\\routes\\keys.ts": {
     "mtime": 1787525602.0,
@@ -150,9 +150,9 @@
     "semantic_hash": "a2c41cc2cf2242c00da488ced96c7840"
   },
   "E:\\Helix\\apps\\api\\src\\extract\\client.ts": {
-    "mtime": 1787704632.0,
-    "ast_hash": "1d2f7e5787b45345f6edaa9eb957535c",
-    "semantic_hash": "1d2f7e5787b45345f6edaa9eb957535c"
+    "mtime": 1787706392.0,
+    "ast_hash": "fb1b416765a6d222e9be881d6bf3555e",
+    "semantic_hash": "fb1b416765a6d222e9be881d6bf3555e"
   },
   "E:\\Helix\\apps\\api\\src\\crawl\\robots.ts": {
     "mtime": 1787527218.0,
@@ -255,9 +255,9 @@
     "semantic_hash": "50cb26994fbd4bd164d150c71b248062"
   },
   "E:\\Helix\\apps\\extract\\helix_extract\\main.py": {
-    "mtime": 1787704336.0,
-    "ast_hash": "dc9ff12c8a566d964c1787538491b5a2",
-    "semantic_hash": "dc9ff12c8a566d964c1787538491b5a2"
+    "mtime": 1787706934.0,
+    "ast_hash": "c0e88a9d46a140df8eff8a9accb10a7b",
+    "semantic_hash": "c0e88a9d46a140df8eff8a9accb10a7b"
   },
   "E:\\Helix\\apps\\extract\\helix_extract\\settings.py": {
     "mtime": 1787614040.0,
@@ -285,9 +285,9 @@
     "semantic_hash": "5d86f21c5a211bdf39de865605b8caba"
   },
   "E:\\Helix\\apps\\extract\\helix_extract\\llm.py": {
-    "mtime": 1787614040.0,
-    "ast_hash": "d37d2c47af4e66ab4a276f203d6d641a",
-    "semantic_hash": "d37d2c47af4e66ab4a276f203d6d641a"
+    "mtime": 1787706876.0,
+    "ast_hash": "d5a17c86897faf4a0fb1eb6801b86c9a",
+    "semantic_hash": "d5a17c86897faf4a0fb1eb6801b86c9a"
   },
   "E:\\Helix\\apps\\extract\\helix_extract\\relevance.py": {
     "mtime": 1787614040.0,
@@ -335,7 +335,7 @@
     "semantic_hash": "274b19dd257c6770ee482a88fd28aef6"
   },
   "E:\\Helix\\apps\\dashboard\\package.json": {
-    "mtime": 1787697794.0,
+    "mtime": 1787706620.0,
     "ast_hash": "d239144a9a94a3f3cf56a7a6f5ffa848",
     "semantic_hash": "d239144a9a94a3f3cf56a7a6f5ffa848"
   },
@@ -355,7 +355,7 @@
     "semantic_hash": "c56b5f3c12f777a86e2513f45daab56a"
   },
   "E:\\Helix\\apps\\dashboard\\next.config.ts": {
-    "mtime": 1787607804.0,
+    "mtime": 1787706620.0,
     "ast_hash": "af632abf1e038e513357cfa6b8d65cb3",
     "semantic_hash": "af632abf1e038e513357cfa6b8d65cb3"
   },
@@ -385,9 +385,9 @@
     "semantic_hash": "dc758e5edee3636d076bfa2c6f52b0ef"
   },
   "E:\\Helix\\apps\\dashboard\\lib\\api.ts": {
-    "mtime": 1787704326.0,
-    "ast_hash": "fde9e497123677c992e9f85f2e2e6c5d",
-    "semantic_hash": "fde9e497123677c992e9f85f2e2e6c5d"
+    "mtime": 1787706296.0,
+    "ast_hash": "68164f5aa6fbfe82c97a5df32bd10382",
+    "semantic_hash": "68164f5aa6fbfe82c97a5df32bd10382"
   },
   "E:\\Helix\\apps\\dashboard\\app\\layout.tsx": {
     "mtime": 1787619848.0,
@@ -550,9 +550,9 @@
     "semantic_hash": "490f9f0a633deafb00359d39fa2b0520"
   },
   "E:\\Helix\\openapi.yaml": {
-    "mtime": 1787704776.0,
-    "ast_hash": "789c6a24dcdec5b9884af96068f3889d",
-    "semantic_hash": "789c6a24dcdec5b9884af96068f3889d"
+    "mtime": 1787707122.0,
+    "ast_hash": "e3fafb0aa31795094895829db6295388",
+    "semantic_hash": "e3fafb0aa31795094895829db6295388"
   },
   "E:\\Helix\\FRONTEND.md": {
     "mtime": 1787532284.0,
@@ -575,9 +575,9 @@
     "semantic_hash": "355b4dfeb0069b8218036054cf68c160"
   },
   "E:\\Helix\\context.md": {
-    "mtime": 1787705306.0,
-    "ast_hash": "a43fb12e827cfd5816f648e838581b63",
-    "semantic_hash": "a43fb12e827cfd5816f648e838581b63"
+    "mtime": 1787707298.0,
+    "ast_hash": "f44e59a68598da6a789414d6681f5541",
+    "semantic_hash": "f44e59a68598da6a789414d6681f5541"
   },
   "E:\\Helix\\research\\01-firecrawl-teardown.md": {
     "mtime": 1787521616.0,
@@ -790,9 +790,9 @@
     "semantic_hash": "c15e47981ae3435a60c0e1ce4fd220ca"
   },
   "E:\\Helix\\apps\\api\\src\\routes\\parse.ts": {
-    "mtime": 1787614024.0,
-    "ast_hash": "9e7ec00becc1a4db607e8a452560fe14",
-    "semantic_hash": "9e7ec00becc1a4db607e8a452560fe14"
+    "mtime": 1787706464.0,
+    "ast_hash": "985f31c112d9aed76102b19637b8dcff",
+    "semantic_hash": "985f31c112d9aed76102b19637b8dcff"
   },
   "E:\\Helix\\apps\\api\\src\\routes\\scrape.test.ts": {
     "mtime": 1787614040.0,
@@ -1105,9 +1105,9 @@
     "semantic_hash": "75892d1b2c954c85ec41b20ad199bc19"
   },
   "E:\\Helix\\apps\\extract\\tests\\test_llm.py": {
-    "mtime": 1787614040.0,
-    "ast_hash": "48d2c3cc5822c76788af0f7f4793875c",
-    "semantic_hash": "48d2c3cc5822c76788af0f7f4793875c"
+    "mtime": 1787707060.0,
+    "ast_hash": "960657d32ebcf3c6da523aa1df07d588",
+    "semantic_hash": "960657d32ebcf3c6da523aa1df07d588"
   },
   "E:\\Helix\\apps\\dashboard\\middleware.ts": {
     "mtime": 1787614548.0,
@@ -1250,9 +1250,9 @@
     "semantic_hash": "89d1118b6167cc847c4471c67eee514d"
   },
   "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\settings\\settings-client.tsx": {
-    "mtime": 1787705192.0,
-    "ast_hash": "cb3648ffd3eb3527698576b164ba8109",
-    "semantic_hash": "cb3648ffd3eb3527698576b164ba8109"
+    "mtime": 1787706470.0,
+    "ast_hash": "ba45298b712d4d6395de431693048049",
+    "semantic_hash": "ba45298b712d4d6395de431693048049"
   },
   "E:\\Helix\\apps\\dashboard\\app\\(auth)\\sign-in\\[[...sign-in]]\\page.tsx": {
     "mtime": 1787610092.0,
@@ -1270,9 +1270,9 @@
     "semantic_hash": "e96a903e516f0d72b23a3c89f8e6cfc0"
   },
   "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\page.tsx": {
-    "mtime": 1787701678.0,
-    "ast_hash": "f9499687bab900c5d385861c5a6cd3bc",
-    "semantic_hash": "f9499687bab900c5d385861c5a6cd3bc"
+    "mtime": 1787706510.0,
+    "ast_hash": "032fa7054b6246de397c24e20c0f7127",
+    "semantic_hash": "032fa7054b6246de397c24e20c0f7127"
   },
   "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\scrape\\page.tsx": {
     "mtime": 1787701526.0,
@@ -1510,9 +1510,9 @@
     "semantic_hash": "8461c9b2638e37399e925c114b79e8f8"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\hero.tsx": {
-    "mtime": 1787704860.0,
-    "ast_hash": "14530b88bf9f354072d9c3d6188676f1",
-    "semantic_hash": "14530b88bf9f354072d9c3d6188676f1"
+    "mtime": 1787706536.0,
+    "ast_hash": "3c5ec852e44658dc317dd4a10ed4b3e7",
+    "semantic_hash": "3c5ec852e44658dc317dd4a10ed4b3e7"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\ladder-explainer.tsx": {
     "mtime": 1787619848.0,
@@ -1520,14 +1520,14 @@
     "semantic_hash": "253c3448db4dccee1a575889bae6c98c"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\self-host-promise.tsx": {
-    "mtime": 1787704278.0,
-    "ast_hash": "ba4c3aeeffb25a1a58d787a4e2247206",
-    "semantic_hash": "ba4c3aeeffb25a1a58d787a4e2247206"
+    "mtime": 1787706924.0,
+    "ast_hash": "329be6fa0e9f74e3fafd184dc9449c83",
+    "semantic_hash": "329be6fa0e9f74e3fafd184dc9449c83"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\use-cases.tsx": {
-    "mtime": 1787704294.0,
-    "ast_hash": "a904fac7d9fefc05f605ed8b37a156f6",
-    "semantic_hash": "a904fac7d9fefc05f605ed8b37a156f6"
+    "mtime": 1787706520.0,
+    "ast_hash": "26076f8fcf34056cd52d506a12b618e3",
+    "semantic_hash": "26076f8fcf34056cd52d506a12b618e3"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\nav.tsx": {
     "mtime": 1787698428.0,
@@ -1535,9 +1535,9 @@
     "semantic_hash": "92401a3c658d00e16f2a274dbcb2e364"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\capabilities.tsx": {
-    "mtime": 1787704746.0,
-    "ast_hash": "8497da51d67c952874baa57cdbf02d45",
-    "semantic_hash": "8497da51d67c952874baa57cdbf02d45"
+    "mtime": 1787706552.0,
+    "ast_hash": "8622da8ecc71cc8602aebca323e7e296",
+    "semantic_hash": "8622da8ecc71cc8602aebca323e7e296"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\animated-code.tsx": {
     "mtime": 1787621370.0,
@@ -1575,9 +1575,9 @@
     "semantic_hash": "abaf4556604eac65b5aaf757880d8351"
   },
   "E:\\Helix\\apps\\dashboard\\components\\app\\sidebar.tsx": {
-    "mtime": 1787704216.0,
-    "ast_hash": "955aee67fd648d85c5a1b10c90895a6d",
-    "semantic_hash": "955aee67fd648d85c5a1b10c90895a6d"
+    "mtime": 1787706040.0,
+    "ast_hash": "0defaa7ad03f9ba7048a24dfd6bd2436",
+    "semantic_hash": "0defaa7ad03f9ba7048a24dfd6bd2436"
   },
   "E:\\Helix\\apps\\dashboard\\components\\app\\budget-field.tsx": {
     "mtime": 1787609008.0,
@@ -1610,9 +1610,9 @@
     "semantic_hash": "8b8da4482123ad45ae839ec73531770d"
   },
   "E:\\Helix\\apps\\dashboard\\components\\app\\app-shell.tsx": {
-    "mtime": 1787704250.0,
-    "ast_hash": "470bfee2d0bdca0c2b14bc757f9773f2",
-    "semantic_hash": "470bfee2d0bdca0c2b14bc757f9773f2"
+    "mtime": 1787706282.0,
+    "ast_hash": "44ae7cc23261587b6074432bff0ba0e5",
+    "semantic_hash": "44ae7cc23261587b6074432bff0ba0e5"
   },
   "E:\\Helix\\apps\\dashboard\\components\\app\\sidebar-nav.tsx": {
     "mtime": 1787704928.0,
@@ -1815,9 +1815,9 @@
     "semantic_hash": "9a66e035f3d9f95925a822a9d8a20565"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\closing-cta.tsx": {
-    "mtime": 1787704318.0,
-    "ast_hash": "89f3a83a145b7d278583879d118e5f30",
-    "semantic_hash": "89f3a83a145b7d278583879d118e5f30"
+    "mtime": 1787706566.0,
+    "ast_hash": "78191b65cbf718ef85207751414893e4",
+    "semantic_hash": "78191b65cbf718ef85207751414893e4"
   },
   "E:\\Helix\\.claude\\rules\\always-on-skills.md": {
     "mtime": 1787696842.0,
@@ -1825,34 +1825,34 @@
     "semantic_hash": "f476fdb25a25e8927bccdcdb0949b675"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\setup-guides.tsx": {
-    "mtime": 1787704256.0,
-    "ast_hash": "05a1d66b8f4fcf9d0f92fafa8c227fb8",
-    "semantic_hash": "05a1d66b8f4fcf9d0f92fafa8c227fb8"
+    "mtime": 1787706516.0,
+    "ast_hash": "a1eede1d5527b04fadedd50ca8967ef6",
+    "semantic_hash": "a1eede1d5527b04fadedd50ca8967ef6"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\ambient.tsx": {
-    "mtime": 1787704860.0,
-    "ast_hash": "cb98269d6677d4c8f1db2f4535a6a16d",
-    "semantic_hash": "cb98269d6677d4c8f1db2f4535a6a16d"
+    "mtime": 1787706302.0,
+    "ast_hash": "4b12ba61dc970b75c81f6d39ba1d325d",
+    "semantic_hash": "4b12ba61dc970b75c81f6d39ba1d325d"
   },
   "E:\\Helix\\apps\\api\\src\\routes\\agent.ts": {
-    "mtime": 1787704672.0,
-    "ast_hash": "6575bffa8f5660a0012e5dc350cba95c",
-    "semantic_hash": "6575bffa8f5660a0012e5dc350cba95c"
+    "mtime": 1787706472.0,
+    "ast_hash": "1cb47e7168aeccfb5de21d7e636aacab",
+    "semantic_hash": "1cb47e7168aeccfb5de21d7e636aacab"
   },
   "E:\\Helix\\apps\\api\\src\\routes\\agent.test.ts": {
-    "mtime": 1787704698.0,
-    "ast_hash": "03b590a19ba53329d1c9ac5597ab6b00",
-    "semantic_hash": "03b590a19ba53329d1c9ac5597ab6b00"
+    "mtime": 1787706600.0,
+    "ast_hash": "c2522fd722376f4e7e1ad6920861bd26",
+    "semantic_hash": "c2522fd722376f4e7e1ad6920861bd26"
   },
   "E:\\Helix\\apps\\extract\\helix_extract\\schema_gen.py": {
-    "mtime": 1787704326.0,
-    "ast_hash": "fc80fadb9273621a87e24e340aed1d0a",
-    "semantic_hash": "fc80fadb9273621a87e24e340aed1d0a"
+    "mtime": 1787706912.0,
+    "ast_hash": "6f0da0952b7049b3ada7170dca148980",
+    "semantic_hash": "6f0da0952b7049b3ada7170dca148980"
   },
   "E:\\Helix\\apps\\extract\\tests\\test_schema_gen.py": {
-    "mtime": 1787704362.0,
-    "ast_hash": "a3f6079a6c1aa02083b22088dc14fa5a",
-    "semantic_hash": "a3f6079a6c1aa02083b22088dc14fa5a"
+    "mtime": 1787707002.0,
+    "ast_hash": "f65422ce3624d9627d6b7767a5c98baa",
+    "semantic_hash": "f65422ce3624d9627d6b7767a5c98baa"
   },
   "E:\\Helix\\apps\\dashboard\\lib\\agent.ts": {
     "mtime": 1787705384.0,
@@ -1865,9 +1865,9 @@
     "semantic_hash": "440e11c1923b85110c944ec33a1cd6ba"
   },
   "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\agent\\agent-client.tsx": {
-    "mtime": 1787705150.0,
-    "ast_hash": "10eabbf50b3b98a08398bf82faf646f0",
-    "semantic_hash": "10eabbf50b3b98a08398bf82faf646f0"
+    "mtime": 1787706372.0,
+    "ast_hash": "8dba812ed6ed936adb7239cf95b2b5a2",
+    "semantic_hash": "8dba812ed6ed936adb7239cf95b2b5a2"
   },
   "E:\\Helix\\apps\\dashboard\\app\\api\\app\\agent\\schema\\route.ts": {
     "mtime": 1787704338.0,
@@ -1875,14 +1875,14 @@
     "semantic_hash": "b081e65dec82d3f76ce5336cc2d5f7d2"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\section-frame.tsx": {
-    "mtime": 1787704746.0,
-    "ast_hash": "87d83379119b342a72e3ec9d99cb582d",
-    "semantic_hash": "87d83379119b342a72e3ec9d99cb582d"
+    "mtime": 1787706544.0,
+    "ast_hash": "486857f6db347c27517de29500faa204",
+    "semantic_hash": "486857f6db347c27517de29500faa204"
   },
   "E:\\Helix\\apps\\dashboard\\components\\app\\page-frame.tsx": {
-    "mtime": 1787703996.0,
-    "ast_hash": "7c48c37115a1cb0f2cce0d05e79a8a3b",
-    "semantic_hash": "7c48c37115a1cb0f2cce0d05e79a8a3b"
+    "mtime": 1787706278.0,
+    "ast_hash": "4ced8ac8f34f11833563202afba4f2c3",
+    "semantic_hash": "4ced8ac8f34f11833563202afba4f2c3"
   },
   "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\schema-json.tsx": {
     "mtime": 1787704368.0,
@@ -1895,9 +1895,9 @@
     "semantic_hash": "4432a82ea90f2cfd0db892bc9d24d293"
   },
   "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\output-toggle.tsx": {
-    "mtime": 1787704382.0,
-    "ast_hash": "c7cb7cee848ae14f30e2aeb70907b676",
-    "semantic_hash": "c7cb7cee848ae14f30e2aeb70907b676"
+    "mtime": 1787707526.0,
+    "ast_hash": "6fad888d13f15da5caf6220a35c841f1",
+    "semantic_hash": "6fad888d13f15da5caf6220a35c841f1"
   },
   "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\schema-panel.tsx": {
     "mtime": 1787704396.0,
@@ -1910,13 +1910,118 @@
     "semantic_hash": "6cd15b87ff6fa03e94a473e6c107ef4e"
   },
   "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\composer.tsx": {
-    "mtime": 1787704438.0,
-    "ast_hash": "f35c616cf7386e3ea9407e2482cff160",
-    "semantic_hash": "f35c616cf7386e3ea9407e2482cff160"
+    "mtime": 1787707526.0,
+    "ast_hash": "f4a0fa2b66085cc7f8bd02072fe4a73f",
+    "semantic_hash": "f4a0fa2b66085cc7f8bd02072fe4a73f"
   },
   "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\refine-bar.tsx": {
-    "mtime": 1787704448.0,
-    "ast_hash": "a6c8d18ad14ca3a71f0f2c302575e888",
-    "semantic_hash": "a6c8d18ad14ca3a71f0f2c302575e888"
+    "mtime": 1787707526.0,
+    "ast_hash": "10102df7c378e2423654dcab92a0f466",
+    "semantic_hash": "10102df7c378e2423654dcab92a0f466"
+  },
+  "E:\\Helix\\apps\\api\\src\\routes\\providers.ts": {
+    "mtime": 1787706374.0,
+    "ast_hash": "770e794b538c1c96592f13e2f4e34444",
+    "semantic_hash": "770e794b538c1c96592f13e2f4e34444"
+  },
+  "E:\\Helix\\apps\\api\\src\\routes\\providers.test.ts": {
+    "mtime": 1787706574.0,
+    "ast_hash": "21def52625f44e03a413cdf979532b36",
+    "semantic_hash": "21def52625f44e03a413cdf979532b36"
+  },
+  "E:\\Helix\\apps\\api\\src\\providers\\repository.ts": {
+    "mtime": 1787706362.0,
+    "ast_hash": "0361a059202cb70e25694290b1551964",
+    "semantic_hash": "0361a059202cb70e25694290b1551964"
+  },
+  "E:\\Helix\\apps\\api\\src\\providers\\resolve.ts": {
+    "mtime": 1787706410.0,
+    "ast_hash": "7376d6da4f33e1fc9e847f7f1c6de0cf",
+    "semantic_hash": "7376d6da4f33e1fc9e847f7f1c6de0cf"
+  },
+  "E:\\Helix\\apps\\api\\src\\providers\\crypto.ts": {
+    "mtime": 1787706516.0,
+    "ast_hash": "0204e5e7d42ce27462ede440b1a85900",
+    "semantic_hash": "0204e5e7d42ce27462ede440b1a85900"
+  },
+  "E:\\Helix\\apps\\api\\src\\providers\\crypto.test.ts": {
+    "mtime": 1787706586.0,
+    "ast_hash": "23a1d0dd588ff98389700b8903b59d27",
+    "semantic_hash": "23a1d0dd588ff98389700b8903b59d27"
+  },
+  "E:\\Helix\\apps\\api\\src\\providers\\resolve.test.ts": {
+    "mtime": 1787706592.0,
+    "ast_hash": "1e2b0e652f59cfd7ee9aa56fee584b9b",
+    "semantic_hash": "1e2b0e652f59cfd7ee9aa56fee584b9b"
+  },
+  "E:\\Helix\\apps\\api\\src\\providers\\integration.test.ts": {
+    "mtime": 1787706794.0,
+    "ast_hash": "2fa783021d14483028d8f7b99acb32b5",
+    "semantic_hash": "2fa783021d14483028d8f7b99acb32b5"
+  },
+  "E:\\Helix\\apps\\api\\migrations\\005_provider_keys.sql": {
+    "mtime": 1787706288.0,
+    "ast_hash": "56f188ebe3164466f134d0f8a8b65bc0",
+    "semantic_hash": "56f188ebe3164466f134d0f8a8b65bc0"
+  },
+  "E:\\Helix\\apps\\extract\\tests\\test_structured_endpoint.py": {
+    "mtime": 1787707026.0,
+    "ast_hash": "346cb6cf25da3aa6df3dbffc428aca06",
+    "semantic_hash": "346cb6cf25da3aa6df3dbffc428aca06"
+  },
+  "E:\\Helix\\apps\\dashboard\\lib\\providers.ts": {
+    "mtime": 1787706556.0,
+    "ast_hash": "7427aba570a4ca1adc70d9c0324ee3c0",
+    "semantic_hash": "7427aba570a4ca1adc70d9c0324ee3c0"
+  },
+  "E:\\Helix\\apps\\dashboard\\app\\api\\app\\providers\\route.ts": {
+    "mtime": 1787706366.0,
+    "ast_hash": "a4ad473a83b56b90d8a68e5aa80aee10",
+    "semantic_hash": "a4ad473a83b56b90d8a68e5aa80aee10"
+  },
+  "E:\\Helix\\apps\\dashboard\\app\\api\\app\\providers\\[provider]\\route.ts": {
+    "mtime": 1787706374.0,
+    "ast_hash": "f0d1e66754caf7fbf81b153a471a0c3b",
+    "semantic_hash": "f0d1e66754caf7fbf81b153a471a0c3b"
+  },
+  "E:\\Helix\\apps\\dashboard\\components\\marketing\\hard-parts.tsx": {
+    "mtime": 1787706490.0,
+    "ast_hash": "6377fe59c3a35c55734179dcc75755ca",
+    "semantic_hash": "6377fe59c3a35c55734179dcc75755ca"
+  },
+  "E:\\Helix\\apps\\dashboard\\components\\app\\app-grid.tsx": {
+    "mtime": 1787706264.0,
+    "ast_hash": "5d1dd479f1c3dda16c1304192f4020fc",
+    "semantic_hash": "5d1dd479f1c3dda16c1304192f4020fc"
+  },
+  "E:\\Helix\\apps\\dashboard\\components\\app\\providers\\providers-panel.tsx": {
+    "mtime": 1787706486.0,
+    "ast_hash": "7accf9ac15833afac2806b7576a7e071",
+    "semantic_hash": "7accf9ac15833afac2806b7576a7e071"
+  },
+  "E:\\Helix\\apps\\dashboard\\components\\app\\providers\\provider-row.tsx": {
+    "mtime": 1787706526.0,
+    "ast_hash": "5ac134a0c4d95b523300fae2452d1188",
+    "semantic_hash": "5ac134a0c4d95b523300fae2452d1188"
+  },
+  "E:\\Helix\\apps\\dashboard\\public\\providers\\anthropic.png": {
+    "mtime": 1787706042.0,
+    "ast_hash": "69958d39f9b5572e140eedb22d7effce",
+    "semantic_hash": "69958d39f9b5572e140eedb22d7effce"
+  },
+  "E:\\Helix\\apps\\dashboard\\public\\providers\\openai.png": {
+    "mtime": 1787706042.0,
+    "ast_hash": "1b355da1a80bc6122bfcea646606e175",
+    "semantic_hash": "1b355da1a80bc6122bfcea646606e175"
+  },
+  "E:\\Helix\\apps\\dashboard\\public\\providers\\gemini.png": {
+    "mtime": 1787706042.0,
+    "ast_hash": "2192d7220b5168824229d7b8d267ae55",
+    "semantic_hash": "2192d7220b5168824229d7b8d267ae55"
+  },
+  "E:\\Helix\\apps\\dashboard\\public\\providers\\openrouter.png": {
+    "mtime": 1787706042.0,
+    "ast_hash": "b6d485ae1ec900187f8553bfbfad4621",
+    "semantic_hash": "b6d485ae1ec900187f8553bfbfad4621"
   }
 }

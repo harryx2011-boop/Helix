@@ -63,6 +63,42 @@ Dev speed: Turbopack (`next dev --turbopack`) panics with "Next.js package not f
 
 `https://helixapi-dev.vercel.app` (project `helixapi-dev`, team harryx2011-boop, Root Directory `apps/dashboard`, linked from the repo root via `.vercel/`). Production env: Clerk dev keys, `HELIX_HOSTED=1`, `NEXT_PUBLIC_HELIX_HOSTED=1`, `NEXT_PUBLIC_SITE_URL`, the Clerk sign-in/sign-up URL vars, `HELIX_BOOTSTRAP_KEY`, `HELIX_KEY_ENCRYPTION_KEY`, `HELIX_INTERNAL_ADMIN_TOKEN`. No Supabase and no hosted API behind it yet, so `/app` runs on the local stubs and playground calls fail gracefully. Deploy with `vercel --prod --yes` from the repo root; `.vercelignore` keeps `.pgdata`, `research/`, `graphify-out/`, build outputs and virtualenvs out of the upload. `outputFileTracingRoot` must be the monorepo root or hoisted `next` internals are missing from the function (`Cannot find module 'next/dist/compiled/source-map'`). Project settings are patched with `vercel api -X PATCH /v9/projects/<id> -f rootDirectory=apps/dashboard` (the `-f` flag; `-d` is silently ignored).
 
+## GitHub connections (2026-08-26)
+
+Settings → Integrations connects a user's GitHub account so Helix can read what
+they already have access to. Deliberately SEPARATE from the GitHub sign-in
+Clerk offers: Clerk's external-account token carries the scopes sign-in asked
+for, and users who signed in with Google or email have no GitHub token at all,
+so a distinct OAuth App means everyone can connect and the scopes are ours.
+
+`supabase/migrations/0002_github_connections.sql` holds one row per
+(profile, github_login) — AES-256-GCM `token_ciphertext`/`token_iv` under the
+existing `HELIX_KEY_ENCRYPTION_KEY`, plus `token_last4` for display, RLS'd with
+the same `current_clerk_user_id()` policy shape as every other table. Its own
+table rather than a widened `provider_keys`: that one lives in the API's
+Postgres, is keyed on `api_key_id`, and CHECK-constrains `provider` to the four
+LLM vendors, while a GitHub grant belongs to a person and carries expiry and
+scopes.
+
+`lib/github.ts` owns the flow and is the only module that decrypts a token —
+routes get `GithubConnectionMeta` (no ciphertext), and `authorizationFor`
+returns HEADERS, refusing on unknown connection, agent-use-not-granted, an
+origin other than `api.github.com`, or expiry. Routes under
+`app/api/app/github/`: `connect` (mints `state`, httpOnly cookie scoped to
+`/api/app/github`, `sameSite: lax` because the callback is a top-level
+navigation), `callback` (clears the cookie on every path, `timingSafeEqual` on
+state, never echoes provider error text into the redirect URL), `[id]` PATCH /
+DELETE (both scoped by `profile_id` as well as id).
+
+`agent_may_use` starts FALSE and is not touched by the upsert, so reconnecting
+an account never silently re-grants agent use the user turned off.
+
+New env: `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` (the secret is required
+at token exchange even with PKCE — GitHub does not distinguish public from
+confidential clients, which is why the exchange must stay server-side). Absent,
+the Integrations tab renders and the Connect button is inert rather than
+missing.
+
 ## Instance settings and the live BYOK path (2026-08-26)
 
 `/settings` on the API (migration 006) is the self-host operator's own surface: `HELIX_INTERNAL_ADMIN_TOKEN`, not an API key, which is why it sits in `registerAuth`'s `open` prefixes and enforces its own gate. `apps/api/src/settings/registry.ts` is the whole catalogue — a setting absent from it cannot be written, so `databaseUrl`, `port` and the admin token itself are unreachable by construction. Each entry declares its effect: **live** (5, applied through new `BrowserPool.setLimits` / `SessionRegistry.setLimits`), **restart** (21), **guarded** (2 — `allowPrivateUrls` and `lightpandaEnabled`, each refused without a `confirm` naming that exact key, so a blanket confirmation cannot slip one through). Stored overrides merge into `config` immediately after the pool is created and before any consumer is constructed, so "restart required" is truthful — verified live: an override of `crawlMaxDepth: 7` survived a restart and made the API reject `maxDepth: 20`, which the env default of 50 allows.

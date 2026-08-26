@@ -78,6 +78,28 @@ export interface UsageDailyRow {
   est_provider_cost_usd: number;
 }
 
+export interface GithubConnectionRow {
+  id: string;
+  profile_id: string;
+  github_login: string;
+  github_user_id: number | null;
+  avatar_url: string | null;
+  /** bytea, round-tripped by PostgREST as a `\x…` hex string. */
+  token_ciphertext: string;
+  token_iv: string;
+  token_last4: string;
+  refresh_ciphertext: string | null;
+  refresh_iv: string | null;
+  scopes: string[];
+  expires_at: string | null;
+  /** Off until the user says otherwise — connecting authorizes Helix to reach
+      the account, letting a run act with it is a second decision. */
+  agent_may_use: boolean;
+  last_used_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = { Row: Row; Insert: Insert; Update: Update; Relationships: [] };
 
 export interface Database {
@@ -88,6 +110,7 @@ export interface Database {
       instances: Table<InstanceRow>;
       runs: Table<RunRow>;
       usage_daily: Table<UsageDailyRow>;
+      github_connections: Table<GithubConnectionRow>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

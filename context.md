@@ -63,6 +63,18 @@ Dev speed: Turbopack (`next dev --turbopack`) panics with "Next.js package not f
 
 `https://helixapi-dev.vercel.app` (project `helixapi-dev`, team harryx2011-boop, Root Directory `apps/dashboard`, linked from the repo root via `.vercel/`). Production env: Clerk dev keys, `HELIX_HOSTED=1`, `NEXT_PUBLIC_HELIX_HOSTED=1`, `NEXT_PUBLIC_SITE_URL`, the Clerk sign-in/sign-up URL vars, `HELIX_BOOTSTRAP_KEY`, `HELIX_KEY_ENCRYPTION_KEY`, `HELIX_INTERNAL_ADMIN_TOKEN`. No Supabase and no hosted API behind it yet, so `/app` runs on the local stubs and playground calls fail gracefully. Deploy with `vercel --prod --yes` from the repo root; `.vercelignore` keeps `.pgdata`, `research/`, `graphify-out/`, build outputs and virtualenvs out of the upload. `outputFileTracingRoot` must be the monorepo root or hoisted `next` internals are missing from the function (`Cannot find module 'next/dist/compiled/source-map'`). Project settings are patched with `vercel api -X PATCH /v9/projects/<id> -f rootDirectory=apps/dashboard` (the `-f` flag; `-d` is silently ignored).
 
+## Instance settings and the live BYOK path (2026-08-26)
+
+`/settings` on the API (migration 006) is the self-host operator's own surface: `HELIX_INTERNAL_ADMIN_TOKEN`, not an API key, which is why it sits in `registerAuth`'s `open` prefixes and enforces its own gate. `apps/api/src/settings/registry.ts` is the whole catalogue — a setting absent from it cannot be written, so `databaseUrl`, `port` and the admin token itself are unreachable by construction. Each entry declares its effect: **live** (5, applied through new `BrowserPool.setLimits` / `SessionRegistry.setLimits`), **restart** (21), **guarded** (2 — `allowPrivateUrls` and `lightpandaEnabled`, each refused without a `confirm` naming that exact key, so a blanket confirmation cannot slip one through). Stored overrides merge into `config` immediately after the pool is created and before any consumer is constructed, so "restart required" is truthful — verified live: an override of `crawlMaxDepth: 7` survived a restart and made the API reject `maxDepth: 20`, which the env default of 50 allows.
+
+Rotating the encryption key used to orphan every stored provider key (`decryptSecret` takes one key; rows carried no version). `provider_keys.key_version` plus `rotate.ts` now re-encrypt inside one transaction, decrypting everything before writing anything, so a wrong key aborts with nothing changed. Verified against real Postgres, not only mocks.
+
+The self-host dashboard is a **static export served by Fastify** — there is no dashboard server, so a Next route handler with `force-dynamic` throws there. The settings screen therefore calls the API directly from the browser with the admin token in `localStorage` (`helix.adminToken`), mirroring how `helix.apiKey` already works. Screenshot harness: `research/firecrawl-capture/shoot-self-host-settings.mjs`.
+
+BYOK is proven live end to end: probing extract `/schema` with a caller-supplied invalid OpenAI key returned a genuine OpenAI 401, so provider selection, model defaulting and credential forwarding all work against the network. Still unverified — a *successful* generation, which needs a real key. Note `apps/api/src/routes/agent.ts:35` forwards helix-extract's `detail` verbatim, so a provider's masked-key echo reaches the caller.
+
+`HELIX_RESPECT_ROBOTS` and `HELIX_MAX_HOST_CONCURRENCY` were parsed but never read; both are now wired (the latter replaced a hardcoded `?? 8` in the crawl worker).
+
 ## Conventions
 
 - Tokens: WEBSITE.md §3. Marketing = Firecrawl-structured light theme in violet; app = DESIGN.md dark.

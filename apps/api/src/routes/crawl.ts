@@ -26,12 +26,15 @@ export interface CrawlLimits {
   /** A request above this is rejected, not clamped: silent clamping hides the ceiling. */
   maxLimit: number;
   maxDepth: number;
+  /** Applied when the request omits `respectRobots`. The operator sets the instance's stance. */
+  respectRobots: boolean;
 }
 
 export const DEFAULT_CRAWL_LIMITS: CrawlLimits = {
   defaultLimit: 1000,
   maxLimit: 100_000,
   maxDepth: 50,
+  respectRobots: true,
 };
 
 export interface CrawlRouteDeps extends MapRouteDeps {
@@ -98,7 +101,7 @@ function crawlRequestSchema(limits: CrawlLimits) {
     allowExternal: z.boolean().optional(),
     allowExternalLinks: z.boolean().optional(),
     sitemap: z.enum(['include', 'skip', 'only']).default('include'),
-    respectRobots: z.boolean().default(true),
+    respectRobots: z.boolean().default(limits.respectRobots),
     politeness: z.enum(['adaptive', 'fixed']).default('adaptive'),
     maxConcurrency: z.number().int().min(1).max(64).optional(),
     delay: z.number().min(0).max(60).optional(),

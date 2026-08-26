@@ -46,7 +46,7 @@ vi.mock('./map.js', () => ({ discoverUrls }));
 
 import { registerCrawl } from './crawl.js';
 
-function buildApp(limits?: { defaultLimit?: number; maxLimit?: number; maxDepth?: number }) {
+function buildApp(limits?: { defaultLimit?: number; maxLimit?: number; maxDepth?: number; respectRobots?: boolean }) {
   const app = Fastify();
   return app
     .register(
@@ -83,6 +83,33 @@ afterEach(() => {
 });
 
 describe('POST /v1/crawl', () => {
+  it('takes respectRobots from the instance configuration when the request omits it', async () => {
+    const app = await buildApp({ respectRobots: false });
+    const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { url: 'https://example.com' } });
+
+    expect(response.statusCode).toBe(202);
+    expect(storedRequest().respectRobots).toBe(false);
+  });
+
+  it('lets the request override the configured respectRobots default', async () => {
+    const app = await buildApp({ respectRobots: false });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/crawl',
+      payload: { url: 'https://example.com', respectRobots: true },
+    });
+
+    expect(response.statusCode).toBe(202);
+    expect(storedRequest().respectRobots).toBe(true);
+  });
+
+  it('defaults respectRobots to true when the instance configures nothing', async () => {
+    const app = await buildApp();
+    await app.inject({ method: 'POST', url: '/v1/crawl', payload: { url: 'https://example.com' } });
+
+    expect(storedRequest().respectRobots).toBe(true);
+  });
+
   it('accepts a crawl and answers with the job under /v1/crawl/{jobId}', async () => {
     const app = await buildApp();
     const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { url: 'https://example.com' } });

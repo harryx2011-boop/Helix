@@ -44,6 +44,8 @@ export interface CrawlJobRequest {
 
 export interface WorkerDeps extends PipelineDeps {
   userAgent: string;
+  /** Ceiling for adaptive per-host concurrency when a request names none. */
+  maxHostConcurrency?: number | undefined;
   logger?: Log | undefined;
 }
 
@@ -122,7 +124,7 @@ export class CrawlWorker {
     });
 
     const politeness = new PolitenessController({
-      maxConcurrency: request.maxConcurrency ?? 8,
+      maxConcurrency: request.maxConcurrency ?? this.#deps.maxHostConcurrency ?? 8,
       fixedDelayMs: request.delay !== undefined ? request.delay * 1000 : undefined,
     });
 

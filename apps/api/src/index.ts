@@ -121,6 +121,7 @@ const crawlWorker = new CrawlWorker({
   extractClient,
   browserPool,
   userAgent: config.userAgent,
+  maxHostConcurrency: config.maxHostConcurrency,
   logger: app.log,
 });
 
@@ -236,6 +237,7 @@ await app.register(
         defaultLimit: config.crawlDefaultLimit,
         maxLimit: config.crawlMaxLimit,
         maxDepth: config.crawlMaxDepth,
+        respectRobots: config.respectRobots,
       },
     });
     await registerJobs(instance);

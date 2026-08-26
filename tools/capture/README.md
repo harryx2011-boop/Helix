@@ -52,6 +52,21 @@ Run with `--headed` on a machine with real graphics. Better still, use
 than Playwright's bundled build — that also avoids the version warning, since
 the bundled Chromium runs ahead of the identities `apps/fetch` presents.
 
+## Known blocker: no browser here can record chrome-137
+
+`apps/fetch` presents `chrome-137` as its newest identity. Playwright's bundled
+Chromium and system Chrome are both **151**. Nothing on this machine can produce
+a Chrome 137 JS surface, so every capture warns about a version mismatch and
+would pair a 151 user-agent with a 137 handshake.
+
+That is why `packages/profiles/definitions` still holds only `verified: false`
+entries: the tool works, but shipping its output today would encode the exact
+contradiction the profile system exists to prevent.
+
+The fix is upstream of this tool — add the newer `Emulation` variants that
+`wreq-util` offers to `available()` and `resolve()` in
+`apps/fetch/src/profile.rs`, then record against a matching browser.
+
 ## Output
 
 Written to `packages/profiles/definitions/<id>-<platform>.json`, with

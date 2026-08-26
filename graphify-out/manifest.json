@@ -575,9 +575,9 @@
     "semantic_hash": "355b4dfeb0069b8218036054cf68c160"
   },
   "E:\\Helix\\context.md": {
-    "mtime": 1787702224.0,
-    "ast_hash": "71d7fa0b29a70a91d652ed50d082433a",
-    "semantic_hash": "71d7fa0b29a70a91d652ed50d082433a"
+    "mtime": 1787702990.0,
+    "ast_hash": "4731b78cf34c57fb31fe296d1cd07760",
+    "semantic_hash": "4731b78cf34c57fb31fe296d1cd07760"
   },
   "E:\\Helix\\research\\01-firecrawl-teardown.md": {
     "mtime": 1787521616.0,
@@ -1510,9 +1510,9 @@
     "semantic_hash": "8461c9b2638e37399e925c114b79e8f8"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\hero.tsx": {
-    "mtime": 1787702058.0,
-    "ast_hash": "50c9925d2cb73f3450a124e9d575be45",
-    "semantic_hash": "50c9925d2cb73f3450a124e9d575be45"
+    "mtime": 1787702914.0,
+    "ast_hash": "f165b0a41c18b0e66902ac9839e8e4b4",
+    "semantic_hash": "f165b0a41c18b0e66902ac9839e8e4b4"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\ladder-explainer.tsx": {
     "mtime": 1787619848.0,
@@ -1815,9 +1815,9 @@
     "semantic_hash": "9a66e035f3d9f95925a822a9d8a20565"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\closing-cta.tsx": {
-    "mtime": 1787701588.0,
-    "ast_hash": "cc38bf69b184ec77a687222aaa7b490a",
-    "semantic_hash": "cc38bf69b184ec77a687222aaa7b490a"
+    "mtime": 1787702794.0,
+    "ast_hash": "0b9a1aec452b9dfb9941f5b5f7f227d8",
+    "semantic_hash": "0b9a1aec452b9dfb9941f5b5f7f227d8"
   },
   "E:\\Helix\\.claude\\rules\\always-on-skills.md": {
     "mtime": 1787696842.0,
@@ -1830,8 +1830,8 @@
     "semantic_hash": "f8e634192de9a85d2a42ae6982ab75d4"
   },
   "E:\\Helix\\apps\\dashboard\\components\\marketing\\ambient.tsx": {
-    "mtime": 1787702296.0,
-    "ast_hash": "17c94c3cf98a3e18c2ee7e93a778759b",
-    "semantic_hash": "17c94c3cf98a3e18c2ee7e93a778759b"
+    "mtime": 1787702970.0,
+    "ast_hash": "f0663f66b819c93ae739806341962d50",
+    "semantic_hash": "f0663f66b819c93ae739806341962d50"
   }
 }

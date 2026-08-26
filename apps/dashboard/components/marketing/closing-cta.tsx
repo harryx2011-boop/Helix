@@ -8,7 +8,7 @@ import { FrameBand } from './section-frame';
 export function ClosingCta() {
   return (
     <section className="relative min-h-[480px] overflow-hidden px-6 py-16 sm:px-10">
-      <FrameBand step="05" total="05" label="GET STARTED" sub="Run it now" />
+      <FrameBand step="06" total="06" label="GET STARTED" sub="Run it now" />
 
       <GridCells
         cell={100}
@@ -16,8 +16,8 @@ export function ClosingCta() {
         density={10}
         labels={{ tl: '[ SEARCH ]', tr: '[ INTERACT ]', bl: '[ SCRAPE ]', br: '[ CRAWL ]' }}
         clusters={[
-          { col: 2, row: 1, size: 3 },
-          { col: 9, row: 3, size: 4, accent: true },
+          { col: 2, row: 1, size: 3, assemble: true },
+          { col: 9, row: 3, size: 4, accent: true, assemble: true },
         ]}
         crosshairs
       />

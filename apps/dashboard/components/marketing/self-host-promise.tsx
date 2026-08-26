@@ -40,14 +40,14 @@ const CLAIMS: {
 export function SelfHostPromise() {
   return (
     <section className="relative overflow-hidden bg-m-bg-lighter px-6 py-16 sm:px-10">
-      <FrameBand step="03" total="05" label="SELF-HOST" sub="Bring your own keys" />
+      <FrameBand step="04" total="06" label="SELF-HOST" sub="Bring your own keys" />
 
       <div className="relative py-16">
         <div data-reveal className="relative mx-auto max-w-[760px] px-6 py-6 text-center">
           <AmbientCode
             count={16}
             seed={23}
-            className="hidden -inset-y-12 -inset-x-48 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_38%,black_58%,transparent_100%)]"
+            className="hidden -inset-y-12 -inset-x-32 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_58%,black_74%,transparent_100%)]"
           />
           <CodeRain
             cols={14}

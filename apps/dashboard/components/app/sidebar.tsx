@@ -58,7 +58,7 @@ function SidebarBody({
   return (
     <>
       <div className={cn('flex h-14 shrink-0 items-center border-b border-border', collapsed ? 'justify-center px-0' : 'px-4')}>
-        <Link href="/app" aria-label="Helix — overview" className="flex items-center">
+        <Link href="/" aria-label="Helix home" className="flex items-center">
           {collapsed ? <Logo markOnly className="h-9 w-auto text-foreground" /> : <Logo className="h-12 w-auto text-foreground" />}
         </Link>
       </div>

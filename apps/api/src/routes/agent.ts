@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { ExtractHttpError, StructuredError, type ExtractClient } from '../extract/client.js';
+import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 
 /**
  * POST /v1/agent/schema — turns a plain-language data request into a JSON
@@ -26,6 +27,8 @@ const AgentSchemaRequestSchema = z.object({
 
 export interface AgentRouteDeps {
   extractClient: ExtractClient;
+  /** Decrypts the caller's stored provider keys, when present, so schema design can use them. */
+  encryptionKey?: Buffer | undefined;
 }
 
 function providerFailure(error: ExtractHttpError): { reason: 'service_unavailable'; detail: string } {
@@ -49,11 +52,17 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
     const body = parsed.data;
 
     try {
+      const apiKeyId = request.apiKey?.id;
+      const resolved = apiKeyId && deps.encryptionKey ? await resolveProviderKeys(apiKeyId, deps.encryptionKey) : {};
+      const { providerKeys, providerModels } = toClientKeys(resolved);
+
       const result = await deps.extractClient.schema({
         prompt: body.prompt,
         urls: body.urls,
         hint: body.hint,
         instruction: body.instruction,
+        providerKeys,
+        providerModels,
       });
 
       return reply.send({

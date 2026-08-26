@@ -125,7 +125,7 @@ export function Capabilities() {
 
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="01" total="05" label="CAPABILITIES" sub="Six endpoints" />
+      <FrameBand step="01" total="06" label="CAPABILITIES" sub="Six endpoints" />
 
       <div className="py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
@@ -134,7 +134,7 @@ export function Capabilities() {
             rows={6}
             density={0.45}
             seed={41}
-            className="hidden -inset-y-10 -inset-x-24 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_40%,black_62%,transparent_100%)]"
+            className="hidden -inset-y-10 -inset-x-24 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_46%,black_66%,transparent_100%)]"
           />
           <div className="relative">
             <h2 className="mx-auto max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">

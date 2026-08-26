@@ -71,6 +71,8 @@ tags:
     description: Scheduled re-reads with change detection.
   - name: Jobs
     description: Status, results and cancellation for asynchronous work.
+  - name: Providers
+    description: Your own LLM provider keys, used instead of the instance's environment credentials.
   - name: System
     description: Health, profiles and capability discovery.
 
@@ -996,6 +998,115 @@ paths:
                     type: array
                     items: { type: string, format: uri }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /providers:
+    get:
+      tags: [Providers]
+      summary: List your provider keys
+      description: |
+        Status for all four supported providers (`anthropic`, `openai`, `gemini`,
+        `openrouter`) under the calling API key. `configured` is true whenever a
+        call can use that provider at all; `source` says whether that comes from
+        a key you stored (`key`) or the instance's own environment credentials
+        (`instance`), or neither (`none`).
+
+        The plaintext of a stored key is never returned — only `last4`.
+      operationId: listProviders
+      responses:
+        '200':
+          description: Provider status for the calling key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  providers:
+                    type: array
+                    items: { $ref: '#/components/schemas/ProviderStatus' }
+              example:
+                success: true
+                providers:
+                  - provider: anthropic
+                    configured: true
+                    source: key
+                    last4: '9f2c'
+                    model: claude-sonnet-4-5
+                    updatedAt: '2026-08-24T12:30:00.000Z'
+                  - provider: openai
+                    configured: true
+                    source: instance
+                  - provider: gemini
+                    configured: false
+                    source: none
+                  - provider: openrouter
+                    configured: false
+                    source: none
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /providers/{provider}:
+    parameters:
+      - { name: provider, in: path, required: true, schema: { type: string, enum: [anthropic, openai, gemini, openrouter] } }
+    put:
+      tags: [Providers]
+      summary: Store your key for a provider
+      description: |
+        Upserts your own credential for this provider. Every LLM-backed request
+        made with this Helix API key — `/scrape` and `/parse`'s `jsonOptions`,
+        and `/agent/schema` — then uses it instead of this instance's
+        environment credentials.
+
+        The plaintext is accepted once and never returned again; only its last
+        4 characters (`last4`) come back, here and from `GET /providers`.
+      operationId: putProvider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [apiKey]
+              properties:
+                apiKey:
+                  type: string
+                  minLength: 8
+                  maxLength: 512
+                  description: Trimmed before storage.
+                model:
+                  type: string
+                  maxLength: 200
+                  description: Used for calls made with this provider when the request names no model.
+            example: { apiKey: 'sk-ant-...', model: claude-sonnet-4-5 }
+      responses:
+        '200':
+          description: Stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  provider: { type: string, enum: [anthropic, openai, gemini, openrouter] }
+                  last4: { type: string }
+                  model: { type: [string, 'null'] }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [Providers]
+      summary: Remove your key for a provider
+      description: 'Idempotent — deleting a provider you never stored still answers `success: true`.'
+      operationId: deleteProvider
+      responses:
+        '200':
+          description: Removed (or already absent).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /health:
     get:
@@ -2402,6 +2513,29 @@ components:
           properties:
             amount: { type: number }
             currency: { type: string }
+
+    ProviderStatus:
+      type: object
+      required: [provider, configured, source]
+      properties:
+        provider: { type: string, enum: [anthropic, openai, gemini, openrouter] }
+        configured:
+          type: boolean
+          description: Whether a call for this provider can use a key at all, yours or the instance's.
+        source:
+          type: string
+          enum: [key, instance, none]
+          description: '`key`: yours, stored here. `instance`: the environment credential, no key of yours stored. `none`: neither.'
+        last4:
+          type: string
+          description: Present only when `source` is `key`.
+        model:
+          type: [string, 'null']
+          description: Your stored default model for this provider, when you set one.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Present only when `source` is `key`.
 
     Health:
       type: object

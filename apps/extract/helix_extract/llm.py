@@ -60,6 +60,10 @@ DEFAULT_MODELS: dict[str, str] = {
 _LOCAL_OPENAI_WIRE = frozenset({"ollama", "vllm", "openai-compatible"})
 _GEMINI = frozenset({"gemini", "google"})
 
+# Caller-supplied provider keys are tried in this order when the request names
+# no provider and the instance default has no key of its own to fall back on.
+_CALLER_KEY_PRIORITY = ("anthropic", "openai", "gemini", "openrouter")
+
 
 def _same_family(a: str, b: str) -> bool:
     if a == b:
@@ -67,13 +71,62 @@ def _same_family(a: str, b: str) -> bool:
     return (a in _LOCAL_OPENAI_WIRE and b in _LOCAL_OPENAI_WIRE) or (a in _GEMINI and b in _GEMINI)
 
 
-def _resolve(model: str | None, provider: str | None = None) -> tuple[str, str]:
-    """The provider and model this request will use."""
+def _instance_has_key(provider: str) -> bool:
+    if provider == "anthropic":
+        return bool(settings.anthropic_api_key)
+    if provider in _GEMINI:
+        return bool(settings.gemini_api_key or settings.google_api_key)
+    if provider == "openrouter":
+        return bool(settings.openrouter_api_key)
+    if provider in _LOCAL_OPENAI_WIRE:
+        return bool(settings.openai_compatible_base_url)
+    if provider == "openai":
+        return bool(settings.openai_api_key or settings.openai_compatible_base_url)
+    return False
+
+
+def _auto_pick_caller_provider(provider_keys: dict[str, str] | None) -> str | None:
+    """The first configured caller key, in priority order, or None if the caller stored none."""
+    if not provider_keys:
+        return None
+    for candidate in _CALLER_KEY_PRIORITY:
+        if provider_keys.get(candidate):
+            return candidate
+    return None
+
+
+def _resolve(
+    model: str | None,
+    provider: str | None = None,
+    provider_keys: dict[str, str] | None = None,
+    provider_models: dict[str, str] | None = None,
+) -> tuple[str, str]:
+    """The provider and model this request will use.
+
+    When the request names no provider and the instance's default provider has
+    no key configured, a caller who supplied their own provider keys has one
+    picked for them (anthropic, then openai, then gemini, then openrouter)
+    rather than failing on missing instance credentials the caller has already
+    worked around.
+    """
     default_provider = settings.helix_llm_provider.lower()
     resolved_provider = (provider or default_provider).lower()
 
+    if provider is None and not _instance_has_key(default_provider):
+        auto = _auto_pick_caller_provider(provider_keys)
+        if auto is not None:
+            resolved_provider = auto
+            if model:
+                return resolved_provider, model
+            caller_model = (provider_models or {}).get(auto)
+            return resolved_provider, caller_model or DEFAULT_MODELS[auto]
+
     if model:
         return resolved_provider, model
+
+    if provider_models and provider_models.get(resolved_provider):
+        return resolved_provider, provider_models[resolved_provider]
+
     if _same_family(resolved_provider, default_provider):
         return resolved_provider, settings.helix_llm_model
 
@@ -87,14 +140,18 @@ def _resolve(model: str | None, provider: str | None = None) -> tuple[str, str]:
     return resolved_provider, fallback
 
 
-def _openai_wire_credentials(provider: str) -> tuple[str, str | None]:
+def _openai_wire_credentials(provider: str, caller_key: str | None = None) -> tuple[str, str | None]:
     """Key and base URL for a provider that speaks the OpenAI wire format.
 
     Each provider reads its own settings: OpenRouter's key must never be sent to
     api.openai.com, and a local runtime's base URL must not be borrowed by a
-    request that asked for OpenAI.
+    request that asked for OpenAI. `caller_key`, when given, overrides the
+    instance's own credential for that provider; the base URL is unaffected,
+    since a caller supplies a key, not a different runtime to call.
     """
     if provider == "openrouter":
+        if caller_key:
+            return caller_key, settings.openrouter_base_url
         if not settings.openrouter_api_key:
             raise ProviderError("OPENROUTER_API_KEY is not set.")
         return settings.openrouter_api_key, settings.openrouter_base_url
@@ -105,8 +162,10 @@ def _openai_wire_credentials(provider: str) -> tuple[str, str | None]:
                 f"OPENAI_COMPATIBLE_BASE_URL is not set; provider \"{provider}\" needs a runtime to call."
             )
         # A local runtime needs no real key, but the SDK requires the field.
-        return settings.openai_compatible_api_key or "not-needed", settings.openai_compatible_base_url
+        return caller_key or settings.openai_compatible_api_key or "not-needed", settings.openai_compatible_base_url
 
+    if caller_key:
+        return caller_key, settings.openai_base_url
     if settings.openai_api_key:
         return settings.openai_api_key, settings.openai_base_url
     if settings.openai_compatible_base_url:
@@ -124,10 +183,11 @@ async def _call_openai(
     model: str,
     *,
     provider: str = "openai",
+    caller_key: str | None = None,
 ) -> ExtractionResult:
     from openai import AsyncOpenAI
 
-    key, url = _openai_wire_credentials(provider)
+    key, url = _openai_wire_credentials(provider, caller_key)
 
     client = AsyncOpenAI(api_key=key, base_url=url) if url else AsyncOpenAI(api_key=key)
 
@@ -163,13 +223,16 @@ async def _call_anthropic(
     schema: dict[str, Any],
     prompt: str | None,
     model: str,
+    *,
+    caller_key: str | None = None,
 ) -> ExtractionResult:
     from anthropic import AsyncAnthropic
 
-    if not settings.anthropic_api_key:
+    api_key = caller_key or settings.anthropic_api_key
+    if not api_key:
         raise ProviderError("ANTHROPIC_API_KEY is not set.")
 
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    client = AsyncAnthropic(api_key=api_key)
     compiled = compile_anthropic(schema)
 
     response = await client.messages.create(
@@ -206,11 +269,13 @@ async def _call_gemini(
     schema: dict[str, Any],
     prompt: str | None,
     model: str,
+    *,
+    caller_key: str | None = None,
 ) -> ExtractionResult:
     from google import genai
     from google.genai import types
 
-    api_key = settings.gemini_api_key or settings.google_api_key
+    api_key = caller_key or settings.gemini_api_key or settings.google_api_key
     if not api_key:
         raise ProviderError("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set.")
 
@@ -258,25 +323,33 @@ async def extract_structured(
     max_input_tokens: int = 8_000,
     provider: str | None = None,
     include_sources: bool = False,
+    provider_keys: dict[str, str] | None = None,
+    provider_models: dict[str, str] | None = None,
 ) -> ExtractionResult:
     """Extract structured data using the operator's configured provider.
 
-    Content is relevance-trimmed first. Sending a whole page costs more and
-    scores worse, because the fields being asked about end up buried in the
-    middle where attention is weakest.
+    `provider_keys` carries a caller's own credentials, decrypted, keyed by
+    provider name; when the provider ultimately used has one, it overrides the
+    instance's environment credential for that call. Content is
+    relevance-trimmed first. Sending a whole page costs more and scores worse,
+    because the fields being asked about end up buried in the middle where
+    attention is weakest.
     """
-    provider, resolved_model = _resolve(model, provider)
+    provider, resolved_model = _resolve(model, provider, provider_keys, provider_models)
+    caller_key = (provider_keys or {}).get(provider)
 
     selection = relevance.select(content, schema, prompt, max_tokens=max_input_tokens)
     trimmed = selection.text
 
     try:
         if provider == "anthropic":
-            result = await _call_anthropic(trimmed, schema, prompt, resolved_model)
+            result = await _call_anthropic(trimmed, schema, prompt, resolved_model, caller_key=caller_key)
         elif provider in _GEMINI:
-            result = await _call_gemini(trimmed, schema, prompt, resolved_model)
+            result = await _call_gemini(trimmed, schema, prompt, resolved_model, caller_key=caller_key)
         elif provider == "openai" or provider == "openrouter" or provider in _LOCAL_OPENAI_WIRE:
-            result = await _call_openai(trimmed, schema, prompt, resolved_model, provider=provider)
+            result = await _call_openai(
+                trimmed, schema, prompt, resolved_model, provider=provider, caller_key=caller_key
+            )
         else:
             raise ProviderError(f"Unknown provider: {provider}")
     except (ProviderError, SchemaError):

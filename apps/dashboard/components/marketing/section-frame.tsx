@@ -44,7 +44,14 @@ export function FrameBand({ step, total, label, sub, className }: FrameBandProps
 
       <div className="relative hidden flex-1 items-center overflow-hidden px-6 lg:flex lg:px-8">
         <CodeRain cols={18} rows={2} density={0.45} seed={(step ? step.charCodeAt(0) : 5) * 13 + 3} />
-        <PixelSquares size={4} scale="md" accent seed={(step ? step.charCodeAt(1) ?? 1 : 1) * 17 + 2} className="ml-auto grid" />
+        <PixelSquares
+          size={4}
+          scale="md"
+          accent
+          mode="assemble"
+          seed={(step ? step.charCodeAt(1) ?? 1 : 1) * 17 + 2}
+          className="ml-auto grid"
+        />
       </div>
     </div>
   );

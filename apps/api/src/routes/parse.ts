@@ -6,6 +6,7 @@ import { classifyFile, CONTENT_TYPE_FOR, type FileType } from '../parse/file-typ
 import { contentHash, ParseCache } from '../parse/cache.js';
 import { assertPublicUrl, defaultLookup, HostNotAllowedError, type Lookup } from '../parse/remote.js';
 import { rejectFabricationKeywords } from './scrape.js';
+import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 
 /**
  * POST /v1/parse — documents by upload or URL, same envelope as /scrape.
@@ -59,6 +60,8 @@ export interface ParseRouteDeps {
   /** Parses held in memory at once before the route answers 503. */
   maxInFlight?: number | undefined;
   cache?: ParseCache<DocumentResult> | undefined;
+  /** Decrypts the caller's stored provider keys, when present, for `jsonOptions`. */
+  encryptionKey?: Buffer | undefined;
 }
 
 const DEFAULT_MAX_IN_FLIGHT = 8;
@@ -611,11 +614,18 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
 
       if (options.formats.includes('json') && options.jsonOptions) {
         try {
+          const apiKeyId = request.apiKey?.id;
+          const resolved =
+            apiKeyId && deps.encryptionKey ? await resolveProviderKeys(apiKeyId, deps.encryptionKey) : {};
+          const { providerKeys, providerModels } = toClientKeys(resolved);
+
           const structured = await deps.extractClient.structured({
             content: parsed.markdown,
             schema: options.jsonOptions.schema,
             prompt: options.jsonOptions.prompt,
             model: options.jsonOptions.model,
+            providerKeys,
+            providerModels,
           });
           data['json'] = structured.data;
           data['usage'] = {

@@ -18,6 +18,9 @@ import { registerHealth } from './routes/health.js';
 import { registerScrape } from './routes/scrape.js';
 import { registerParse } from './routes/parse.js';
 import { registerKeys } from './routes/keys.js';
+import { registerProviders } from './routes/providers.js';
+import { deriveEncryptionKey } from './providers/crypto.js';
+import type { Provider } from './providers/repository.js';
 import { registerMap } from './routes/map.js';
 import { registerCrawl } from './routes/crawl.js';
 import { registerJobs } from './routes/jobs.js';
@@ -104,6 +107,14 @@ const sessions = new SessionRegistry({
 });
 
 const searchProvider = createSearchProvider(config.searchProvider, process.env, app.log);
+
+const providerEncryptionKey = deriveEncryptionKey(config.encryptionKey, config.bootstrapKey);
+const instanceConfigured: Record<Provider, boolean> = {
+  anthropic: Boolean(process.env['ANTHROPIC_API_KEY']),
+  openai: Boolean(process.env['OPENAI_API_KEY']),
+  gemini: Boolean(process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY']),
+  openrouter: Boolean(process.env['OPENROUTER_API_KEY']),
+};
 
 const crawlWorker = new CrawlWorker({
   fetchClient,
@@ -204,14 +215,17 @@ await app.register(
       browserPool,
       proxyUrl: config.proxyUrl,
       allowPrivateUrls: config.allowPrivateUrls,
+      encryptionKey: providerEncryptionKey,
     });
     await registerParse(instance, {
       extractClient,
       maxUploadBytes: config.parseMaxUploadMb * 1024 * 1024,
       maxInFlight: config.parseMaxInflight,
       userAgent: config.userAgent,
+      encryptionKey: providerEncryptionKey,
     });
     await registerKeys(instance);
+    await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured });
     await registerMap(instance, { fetchClient, extractClient, userAgent: config.userAgent });
     await registerCrawl(instance, {
       fetchClient,
@@ -241,7 +255,7 @@ await app.register(
       minIntervalSeconds: config.monitorMinIntervalSeconds,
     });
     await registerInteract(instance, { sessions, extractClient, publicUrl: config.publicUrl });
-    await registerAgent(instance, { extractClient });
+    await registerAgent(instance, { extractClient, encryptionKey: providerEncryptionKey });
   },
   { prefix: '/v1' },
 );

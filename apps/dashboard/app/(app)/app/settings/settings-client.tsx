@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { UserProfile, useClerk } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { User, SlidersHorizontal, BarChart3, Settings2, Check, Copy } from 'lucide-react';
+import { User, SlidersHorizontal, KeyRound, BarChart3, Settings2, Check, Copy } from 'lucide-react';
 import { PageFrame, FrameRow, FrameHeading } from '@/components/app/page-frame';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -12,6 +12,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { CharChart } from '@/components/app/char-chart';
+import { ProvidersPanel } from '@/components/app/providers/providers-panel';
 import { ENDPOINTS } from '@/lib/catalog';
 import { PUBLIC_API_URL } from '@/lib/mode';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,7 @@ const DEPLOY_INTENTS = ['Hosted', 'Self-host', 'Both'] as const;
 const TABS = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
+  { id: 'providers', label: 'Providers', icon: KeyRound },
   { id: 'statistics', label: 'Statistics', icon: BarChart3 },
   { id: 'advanced', label: 'Advanced', icon: Settings2 },
 ] as const;
@@ -424,6 +426,7 @@ export function SettingsClient({ profile }: { profile: ProfileRow }) {
               </div>
             )}
             {active === 'preferences' && <PreferencesPanel profile={profile} />}
+            {active === 'providers' && <ProvidersPanel />}
             {active === 'statistics' && <StatisticsPanel />}
             {active === 'advanced' && <AdvancedPanel profile={profile} />}
           </div>

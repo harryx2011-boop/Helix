@@ -46,31 +46,30 @@
 }
 
 .dark {
-  /* Surface built up from the logo's near-black (#0B1220). Deliberately
-     blue-cast rather than neutral grey — it keeps the violet from looking
-     stranded. */
-  --background: 222 48% 9%;
-  --foreground: 220 33% 96%;
-  --card: 222 39% 12%;
-  --card-foreground: 220 33% 96%;
-  --popover: 222 38% 15%;
-  --popover-foreground: 220 33% 96%;
+  /* Neutral black surface (2026-08-25, was the logo's blue-cast #0B1220):
+     the violet reads as the only colour on it. */
+  --background: 0 0% 3%;
+  --foreground: 0 0% 96%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 96%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 96%;
   --primary: 258 90% 66%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 222 32% 18%;
-  --secondary-foreground: 220 33% 96%;
-  --muted: 222 32% 18%;
-  --muted-foreground: 220 17% 66%;
-  --accent: 262 46% 22%;
+  --secondary: 0 0% 10%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 64%;
+  --accent: 262 40% 16%;
   --accent-foreground: 258 90% 76%;
   --destructive: 0 91% 71%;
-  --destructive-foreground: 222 48% 9%;
+  --destructive-foreground: 0 0% 3%;
   --success: 142 69% 58%;
-  --success-foreground: 222 48% 9%;
+  --success-foreground: 0 0% 3%;
   --warning: 43 96% 56%;
-  --warning-foreground: 222 48% 9%;
-  --border: 222 32% 20%;
-  --input: 222 32% 20%;
+  --warning-foreground: 0 0% 3%;
+  --border: 0 0% 14%;
+  --input: 0 0% 14%;
   --ring: 258 90% 66%;
 
   /* On a dark ground the scale runs the other way: lighter = cheaper.
@@ -83,28 +82,28 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --background: 222 48% 9%;
-    --foreground: 220 33% 96%;
-    --card: 222 39% 12%;
-    --card-foreground: 220 33% 96%;
-    --popover: 222 38% 15%;
-    --popover-foreground: 220 33% 96%;
+    --background: 0 0% 3%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 96%;
     --primary: 258 90% 66%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 222 32% 18%;
-    --secondary-foreground: 220 33% 96%;
-    --muted: 222 32% 18%;
-    --muted-foreground: 220 17% 66%;
-    --accent: 262 46% 22%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 64%;
+    --accent: 262 40% 16%;
     --accent-foreground: 258 90% 76%;
     --destructive: 0 91% 71%;
-    --destructive-foreground: 222 48% 9%;
+    --destructive-foreground: 0 0% 3%;
     --success: 142 69% 58%;
-    --success-foreground: 222 48% 9%;
+    --success-foreground: 0 0% 3%;
     --warning: 43 96% 56%;
-    --warning-foreground: 222 48% 9%;
-    --border: 222 32% 20%;
-    --input: 222 32% 20%;
+    --warning-foreground: 0 0% 3%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
     --ring: 258 90% 66%;
     --tier-plain: 253 100% 92%;
     --tier-tls: 262 93% 85%;

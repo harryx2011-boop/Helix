@@ -1,5 +1,5 @@
 import { HeroPanel } from './hero-panel';
-import { GridCells, AsciiHelix } from './ambient';
+import { GridCells, AsciiHelix, CodeRain } from './ambient';
 import { PillButton } from './pill-button';
 import { GithubMark } from './github-mark';
 
@@ -12,12 +12,27 @@ export function Hero() {
         sparkles={[[3, 2], [10, 2]]}
         clusters={[
           { col: 1, row: 2, size: 4 },
-          { col: 0, row: 4, size: 3 },
+          { col: 0, row: 4, size: 3, assemble: true },
           { col: 9, row: 1, size: 3, accent: true },
-          { col: 10, row: 4, size: 4 },
+          { col: 10, row: 4, size: 4, assemble: true },
         ]}
         crosshairs
         fade="bottom"
+      />
+
+      <CodeRain
+        cols={8}
+        rows={6}
+        density={0.35}
+        seed={71}
+        className="absolute left-6 top-1/2 hidden max-w-[160px] -translate-y-1/2 xl:block"
+      />
+      <CodeRain
+        cols={8}
+        rows={6}
+        density={0.35}
+        seed={83}
+        className="absolute right-6 top-1/2 hidden max-w-[160px] -translate-y-1/2 xl:block"
       />
 
       <div className="mx-auto flex min-w-0 max-w-container flex-col items-center px-4 text-center">

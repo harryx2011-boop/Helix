@@ -68,7 +68,7 @@ export interface GridCellsProps {
   quiet?: boolean;
   className?: string;
   /** Cells that carry a small pixel-square cluster, centred in the cell. */
-  clusters?: { col: number; row: number; size?: 3 | 4; accent?: boolean }[];
+  clusters?: { col: number; row: number; size?: 3 | 4; accent?: boolean; assemble?: boolean }[];
   /** Draw a small `+` crosshair at every grid intersection (lg+ only). */
   crosshairs?: boolean;
 }
@@ -213,7 +213,14 @@ export function GridCells({
           className="absolute hidden -translate-x-1/2 -translate-y-1/2 lg:block"
           style={{ left: offsetX + cl.col * cell + cell / 2, top: cl.row * cell + cell / 2 }}
         >
-          <PixelSquares size={cl.size ?? 4} scale="md" seed={seed * 31 + i * 7 + 1} accent={cl.accent ?? false} quiet={quiet ?? false} />
+          <PixelSquares
+            size={cl.size ?? 4}
+            scale="md"
+            seed={seed * 31 + i * 7 + 1}
+            accent={cl.accent ?? false}
+            quiet={quiet ?? false}
+            mode={cl.assemble ? 'assemble' : 'flip'}
+          />
         </div>
       ))}
     </div>
@@ -234,6 +241,8 @@ export interface PixelSquaresProps {
   scale?: 'sm' | 'md';
   quiet?: boolean;
   className?: string;
+  /** 'flip': one random cell toggles at a time (default). 'assemble': cells fill in a seeded order, hold, then clear and repeat. */
+  mode?: 'flip' | 'assemble';
 }
 
 function initialCells(n: number, seed: number): boolean[] {
@@ -241,24 +250,40 @@ function initialCells(n: number, seed: number): boolean[] {
   return Array.from({ length: n * n }, () => rng() < 0.42);
 }
 
-export function PixelSquares({ size = 4, seed = 1, accent, scale = 'sm', quiet, className }: PixelSquaresProps) {
+/** Deterministic shuffled fill order for 'assemble' mode (Fisher-Yates over a seeded rng). */
+function assembleOrder(n: number, seed: number): number[] {
+  const rng = mulberry32(seed);
+  const order = Array.from({ length: n * n }, (_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const tmp = order[i]!;
+    order[i] = order[j]!;
+    order[j] = tmp;
+  }
+  return order;
+}
+
+export function PixelSquares({ size = 4, seed = 1, accent, scale = 'sm', quiet, className, mode = 'flip' }: PixelSquaresProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const inView = useInView(ref);
   const n = size;
-  const [cells, setCells] = React.useState<boolean[]>(() => initialCells(n, seed));
+  const [cells, setCells] = React.useState<boolean[]>(() => (mode === 'assemble' ? Array(n * n).fill(false) : initialCells(n, seed)));
   const rngRef = React.useRef(mulberry32(seed + 1));
+  const orderRef = React.useRef(assembleOrder(n, seed));
   const accentIndex = React.useMemo(() => Math.floor(mulberry32(seed + 2)() * n * n), [seed, n]);
   const running = inView && !reduced && !quiet;
   const dim = scale === 'sm' ? 3 : 6;
   const gap = 3;
 
   React.useEffect(() => {
-    setCells(initialCells(n, seed));
+    orderRef.current = assembleOrder(n, seed);
+    setCells(mode === 'assemble' ? Array(n * n).fill(false) : initialCells(n, seed));
     rngRef.current = mulberry32(seed + 1);
-  }, [n, seed]);
+  }, [n, seed, mode]);
 
   React.useEffect(() => {
+    if (mode !== 'flip') return;
     if (!running) return;
     const rng = rngRef.current;
     const id = setInterval(() => {
@@ -270,7 +295,48 @@ export function PixelSquares({ size = 4, seed = 1, accent, scale = 'sm', quiet, 
       });
     }, 700);
     return () => clearInterval(id);
-  }, [running]);
+  }, [running, mode]);
+
+  React.useEffect(() => {
+    if (mode !== 'assemble') return;
+    if (!running) {
+      if (reduced) setCells(Array(n * n).fill(true));
+      return;
+    }
+    let cancelled = false;
+    let fillTimer: ReturnType<typeof setInterval> | undefined;
+    let holdTimer: ReturnType<typeof setTimeout> | undefined;
+    const order = orderRef.current;
+
+    function runCycle() {
+      let i = 0;
+      setCells(Array(n * n).fill(false));
+      fillTimer = setInterval(() => {
+        if (cancelled) return;
+        if (i >= order.length) {
+          clearInterval(fillTimer);
+          holdTimer = setTimeout(() => {
+            if (!cancelled) runCycle();
+          }, 1800);
+          return;
+        }
+        const idx = order[i]!;
+        i += 1;
+        setCells((prev) => {
+          const next = prev.slice();
+          next[idx] = true;
+          return next;
+        });
+      }, 350);
+    }
+    runCycle();
+
+    return () => {
+      cancelled = true;
+      if (fillTimer) clearInterval(fillTimer);
+      if (holdTimer) clearTimeout(holdTimer);
+    };
+  }, [running, mode, n, reduced]);
 
   return (
     <div

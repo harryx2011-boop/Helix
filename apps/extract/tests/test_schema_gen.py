@@ -142,6 +142,62 @@ class TestGenerateSchema:
         assert result.model_used == "gpt-test"
         assert len(calls) == 1
 
+    @pytest.mark.asyncio
+    async def test_passes_the_callers_key_for_the_resolved_provider(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen: dict[str, object] = {}
+
+        async def stub(user_prompt: str, model_arg: str, *, caller_key: str | None = None):
+            seen["caller_key"] = caller_key
+            return VALID_SCHEMA, 10, 5, model_arg
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(settings, "helix_llm_model", "claude-sonnet-4-5")
+        monkeypatch.setattr(schema_gen, "_call_anthropic_json", stub)
+
+        await schema_gen.generate_schema(prompt="anything", provider_keys={"anthropic": "sk-ant-caller"})
+        assert seen["caller_key"] == "sk-ant-caller"
+
+    @pytest.mark.asyncio
+    async def test_auto_picks_a_caller_provider_when_the_instance_has_none(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        seen: dict[str, object] = {}
+
+        async def stub(user_prompt: str, model_arg: str, *, caller_key: str | None = None):
+            seen["caller_key"] = caller_key
+            seen["model"] = model_arg
+            return VALID_SCHEMA, 10, 5, model_arg
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "openai")
+        monkeypatch.setattr(settings, "openai_api_key", None)
+        monkeypatch.setattr(settings, "openai_compatible_base_url", None)
+        monkeypatch.setattr(schema_gen, "_call_anthropic_json", stub)
+
+        result = await schema_gen.generate_schema(prompt="anything", provider_keys={"anthropic": "sk-ant-caller"})
+
+        assert seen["caller_key"] == "sk-ant-caller"
+        assert seen["model"] == llm.DEFAULT_MODELS["anthropic"]
+        assert result.schema == VALID_SCHEMA
+
+    @pytest.mark.asyncio
+    async def test_caller_key_carries_through_a_repair_attempt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen_keys: list[str | None] = []
+
+        async def stub(user_prompt: str, model_arg: str, *, caller_key: str | None = None):
+            seen_keys.append(caller_key)
+            if len(seen_keys) == 1:
+                return {"not": "a schema"}, 10, 5, model_arg
+            return VALID_SCHEMA, 10, 5, model_arg
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(settings, "helix_llm_model", "claude-sonnet-4-5")
+        monkeypatch.setattr(schema_gen, "_call_anthropic_json", stub)
+
+        result = await schema_gen.generate_schema(prompt="anything", provider_keys={"anthropic": "sk-ant-caller"})
+
+        assert result.schema == VALID_SCHEMA
+        assert seen_keys == ["sk-ant-caller", "sk-ant-caller"]
+
 
 class TestSummarise:
     def test_names_the_fields_and_counts_them(self) -> None:

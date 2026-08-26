@@ -1,5 +1,6 @@
 import { Hero } from '@/components/marketing/hero';
 import { Capabilities } from '@/components/marketing/capabilities';
+import { HardParts } from '@/components/marketing/hard-parts';
 import { SetupGuides } from '@/components/marketing/setup-guides';
 import { SelfHostPromise } from '@/components/marketing/self-host-promise';
 import { UseCases } from '@/components/marketing/use-cases';
@@ -10,6 +11,7 @@ export default function LandingPage() {
     <>
       <Hero />
       <Capabilities />
+      <HardParts />
       <SetupGuides />
       <SelfHostPromise />
       <UseCases />

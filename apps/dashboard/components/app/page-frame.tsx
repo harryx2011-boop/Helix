@@ -1,16 +1,23 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { AppGrid } from '@/components/app/app-grid';
 
 /*
  * The /app page skeleton: a centred column whose vertical hairlines run the
  * full height of the page, with horizontal hairlines that bleed past the
- * column edges so rows read as one grid rather than stacked cards. Every
- * app screen composes these; nothing here fetches.
+ * column edges so rows read as one grid rather than stacked cards. The
+ * column itself has no solid background, so the AppGrid layer mounted in
+ * the outer gutters shows through the empty space around and between rows;
+ * FrameRow defaults to a solid background so text never sits on a grid
+ * line, and opts out via `transparent` for rows that want the grid to
+ * show through (e.g. spacer rows). Every app screen composes these;
+ * nothing here fetches.
  */
 
 export function PageFrame({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn('relative min-h-full overflow-x-hidden px-4 lg:px-10', className)}>
+      <AppGrid className="mx-auto max-w-[1180px]" clusters={[{ col: 1, row: 2, size: 3 }, { col: 9, row: 3, size: 4 }]} />
       <div className="relative mx-auto min-h-full max-w-[1180px] border-x border-border">{children}</div>
     </div>
   );
@@ -23,11 +30,13 @@ interface FrameRowProps {
   bleed?: boolean;
   /** Skip the bottom hairline (last row before the page ends). */
   flush?: boolean;
+  /** Opt out of the default solid background, letting the AppGrid layer show through. */
+  transparent?: boolean;
 }
 
-export function FrameRow({ children, className, bleed = true, flush }: FrameRowProps) {
+export function FrameRow({ children, className, bleed = true, flush, transparent }: FrameRowProps) {
   return (
-    <div className={cn('relative', !flush && 'border-b border-border', className)}>
+    <div className={cn('relative', !transparent && 'bg-background', !flush && 'border-b border-border', className)}>
       {bleed && !flush && <span aria-hidden className="pointer-events-none absolute -left-[100vw] -right-[100vw] bottom-[-1px] h-px bg-border" />}
       {children}
     </div>

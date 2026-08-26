@@ -57,6 +57,8 @@ describe('POST /v1/agent/schema', () => {
       urls: undefined,
       hint: undefined,
       instruction: undefined,
+      providerKeys: undefined,
+      providerModels: undefined,
     });
   });
 
@@ -76,6 +78,8 @@ describe('POST /v1/agent/schema', () => {
       urls: ['https://example.com/shop'],
       hint: { type: 'object', properties: { name: { type: 'string' } } },
       instruction: 'also capture SKU',
+      providerKeys: undefined,
+      providerModels: undefined,
     });
   });
 

@@ -87,10 +87,12 @@ def _is_usable_schema(candidate: Any) -> bool:
     )
 
 
-async def _call_openai_json(user_prompt: str, model: str, *, provider: str = "openai") -> tuple[dict[str, Any], int, int, str]:
+async def _call_openai_json(
+    user_prompt: str, model: str, *, provider: str = "openai", caller_key: str | None = None
+) -> tuple[dict[str, Any], int, int, str]:
     from openai import AsyncOpenAI
 
-    key, url = _openai_wire_credentials(provider)
+    key, url = _openai_wire_credentials(provider, caller_key)
     client = AsyncOpenAI(api_key=key, base_url=url) if url else AsyncOpenAI(api_key=key)
 
     response = await client.chat.completions.create(
@@ -113,15 +115,18 @@ async def _call_openai_json(user_prompt: str, model: str, *, provider: str = "op
     )
 
 
-async def _call_anthropic_json(user_prompt: str, model: str) -> tuple[dict[str, Any], int, int, str]:
+async def _call_anthropic_json(
+    user_prompt: str, model: str, *, caller_key: str | None = None
+) -> tuple[dict[str, Any], int, int, str]:
     from anthropic import AsyncAnthropic
 
     from .settings import settings
 
-    if not settings.anthropic_api_key:
+    api_key = caller_key or settings.anthropic_api_key
+    if not api_key:
         raise ProviderError("ANTHROPIC_API_KEY is not set.")
 
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    client = AsyncAnthropic(api_key=api_key)
     compiled = compile_anthropic(META_SCHEMA, name="schema_design")
 
     response = await client.messages.create(
@@ -142,13 +147,15 @@ async def _call_anthropic_json(user_prompt: str, model: str) -> tuple[dict[str, 
     return data, response.usage.input_tokens, response.usage.output_tokens, response.model
 
 
-async def _call_gemini_json(user_prompt: str, model: str) -> tuple[dict[str, Any], int, int, str]:
+async def _call_gemini_json(
+    user_prompt: str, model: str, *, caller_key: str | None = None
+) -> tuple[dict[str, Any], int, int, str]:
     from google import genai
     from google.genai import types
 
     from .settings import settings
 
-    api_key = settings.gemini_api_key or settings.google_api_key
+    api_key = caller_key or settings.gemini_api_key or settings.google_api_key
     if not api_key:
         raise ProviderError("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set.")
 
@@ -177,13 +184,15 @@ _GEMINI_PROVIDERS = frozenset({"gemini", "google"})
 _LOCAL_OPENAI_WIRE = frozenset({"ollama", "vllm", "openai-compatible"})
 
 
-async def _run(user_prompt: str, provider: str, model: str) -> tuple[dict[str, Any], int, int, str]:
+async def _run(
+    user_prompt: str, provider: str, model: str, caller_key: str | None = None
+) -> tuple[dict[str, Any], int, int, str]:
     if provider == "anthropic":
-        return await _call_anthropic_json(user_prompt, model)
+        return await _call_anthropic_json(user_prompt, model, caller_key=caller_key)
     if provider in _GEMINI_PROVIDERS:
-        return await _call_gemini_json(user_prompt, model)
+        return await _call_gemini_json(user_prompt, model, caller_key=caller_key)
     if provider == "openai" or provider == "openrouter" or provider in _LOCAL_OPENAI_WIRE:
-        return await _call_openai_json(user_prompt, model, provider=provider)
+        return await _call_openai_json(user_prompt, model, provider=provider, caller_key=caller_key)
     raise ProviderError(f"Unknown provider: {provider}")
 
 
@@ -204,18 +213,25 @@ async def generate_schema(
     instruction: str | None = None,
     model: str | None = None,
     provider: str | None = None,
+    provider_keys: dict[str, str] | None = None,
+    provider_models: dict[str, str] | None = None,
 ) -> SchemaGenResult:
     """Design a JSON Schema for the data described in `prompt`.
 
-    Raises `llm.ProviderError` when no provider is configured or the provider
-    call fails, mirroring `/structured`'s error semantics exactly — the
-    dashboard treats a schema-generation failure the same way.
+    `provider_keys` carries a caller's own credentials, decrypted, keyed by
+    provider name, the same as `llm.extract_structured`. Raises
+    `llm.ProviderError` when no provider is configured or the provider call
+    fails, mirroring `/structured`'s error semantics exactly — the dashboard
+    treats a schema-generation failure the same way.
     """
-    resolved_provider, resolved_model = _resolve(model, provider)
+    resolved_provider, resolved_model = _resolve(model, provider, provider_keys, provider_models)
+    caller_key = (provider_keys or {}).get(resolved_provider)
     user_prompt = _user_prompt(prompt, urls, hint, instruction)
 
     try:
-        schema, tokens_input, tokens_output, model_used = await _run(user_prompt, resolved_provider, resolved_model)
+        schema, tokens_input, tokens_output, model_used = await _run(
+            user_prompt, resolved_provider, resolved_model, caller_key
+        )
     except (ProviderError, SchemaError):
         raise
     except Exception as exc:
@@ -226,7 +242,7 @@ async def generate_schema(
         # failing outright on a model that returned close-but-not-quite JSON.
         try:
             schema, repair_input, repair_output, model_used = await _run(
-                user_prompt + REPAIR_SUFFIX, resolved_provider, resolved_model
+                user_prompt + REPAIR_SUFFIX, resolved_provider, resolved_model, caller_key
             )
             tokens_input += repair_input
             tokens_output += repair_output

@@ -1,5 +1,7 @@
 'use client';
 
+import { Braces, Table2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 export type AgentOutputFormat = 'json' | 'csv';
@@ -14,21 +16,22 @@ export function OutputToggle({
   className?: string;
 }) {
   return (
-    <div className={cn('inline-flex items-center gap-1 rounded-pill bg-secondary p-1', className)}>
-      {(['json', 'csv'] as const).map((format) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
         <button
-          key={format}
           type="button"
-          aria-pressed={value === format}
-          onClick={() => onChange(format)}
+          aria-pressed={value === 'csv'}
+          aria-label={`Output format: ${value === 'json' ? 'JSON' : 'CSV'}`}
+          onClick={() => onChange(value === 'json' ? 'csv' : 'json')}
           className={cn(
-            'rounded-pill px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide transition-colors duration-150 ease-out',
-            value === format ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-muted-foreground transition-colors duration-150 ease-out hover:bg-secondary hover:text-foreground',
+            className,
           )}
         >
-          {format}
+          {value === 'json' ? <Braces className="h-4 w-4" /> : <Table2 className="h-4 w-4" />}
         </button>
-      ))}
-    </div>
+      </TooltipTrigger>
+      <TooltipContent>Output: {value === 'json' ? 'JSON' : 'CSV'}</TooltipContent>
+    </Tooltip>
   );
 }

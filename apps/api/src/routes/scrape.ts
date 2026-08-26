@@ -6,6 +6,7 @@ import { StructuredError, type ExtractClient } from '../extract/client.js';
 import { sanitizeHtml } from '../extract/sanitize.js';
 import type { BrowserPool } from '../browser/pool.js';
 import { checkUrl, type HostResolver } from '../core/url-guard.js';
+import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 
 /**
  * Scrape: one URL in, one document out.
@@ -91,6 +92,8 @@ export interface ScrapeRouteDeps {
   allowPrivateUrls?: boolean | undefined;
   /** DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver. */
   resolveHost?: HostResolver | undefined;
+  /** Decrypts the caller's stored provider keys, when present, for `jsonOptions`. */
+  encryptionKey?: Buffer | undefined;
 }
 
 /**
@@ -313,6 +316,11 @@ export async function registerScrape(
 
     if (wantsJson && extraction?.schema) {
       try {
+        const apiKeyId = request.apiKey?.id;
+        const resolved =
+          apiKeyId && deps.encryptionKey ? await resolveProviderKeys(apiKeyId, deps.encryptionKey) : {};
+        const { providerKeys, providerModels } = toClientKeys(resolved);
+
         const structured = await deps.extractClient.structured({
           content: content.markdown,
           schema: extraction.schema,
@@ -320,6 +328,8 @@ export async function registerScrape(
           provider: extraction.provider,
           model: extraction.model,
           includeSources: extraction.includeSources,
+          providerKeys,
+          providerModels,
         });
         data['json'] = structured.data;
         if (extraction.includeSources) data['jsonSources'] = structured.sources;

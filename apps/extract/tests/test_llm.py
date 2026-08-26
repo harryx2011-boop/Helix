@@ -53,6 +53,75 @@ class TestResolve:
         assert excinfo.value.field == "model"
         assert "ollama" in excinfo.value.message
 
+    def test_auto_picks_the_callers_anthropic_key_when_instance_default_has_none(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "helix_llm_provider", "openai")
+        monkeypatch.setattr(settings, "openai_api_key", None)
+        monkeypatch.setattr(settings, "openai_compatible_base_url", None)
+        provider, model = llm._resolve(None, None, provider_keys={"anthropic": "sk-ant-caller"})
+        assert provider == "anthropic"
+        assert model == llm.DEFAULT_MODELS["anthropic"]
+
+    def test_auto_pick_follows_priority_order(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "helix_llm_provider", "openai")
+        monkeypatch.setattr(settings, "openai_api_key", None)
+        monkeypatch.setattr(settings, "openai_compatible_base_url", None)
+        provider, _ = llm._resolve(
+            None, None, provider_keys={"openrouter": "sk-or-caller", "gemini": "g-caller"}
+        )
+        assert provider == "gemini"
+
+    def test_auto_pick_uses_the_callers_stored_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "helix_llm_provider", "openai")
+        monkeypatch.setattr(settings, "openai_api_key", None)
+        monkeypatch.setattr(settings, "openai_compatible_base_url", None)
+        provider, model = llm._resolve(
+            None,
+            None,
+            provider_keys={"anthropic": "sk-ant-caller"},
+            provider_models={"anthropic": "claude-opus-4"},
+        )
+        assert provider == "anthropic"
+        assert model == "claude-opus-4"
+
+    def test_no_auto_pick_when_instance_default_is_already_configured(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(settings, "helix_llm_model", "claude-sonnet-4-5")
+        monkeypatch.setattr(settings, "anthropic_api_key", "sk-ant-instance")
+        provider, model = llm._resolve(None, None, provider_keys={"openai": "sk-openai-caller"})
+        assert provider == "anthropic"
+        assert model == "claude-sonnet-4-5"
+
+    def test_no_auto_pick_when_the_request_names_a_provider_explicitly(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "helix_llm_provider", "openai")
+        monkeypatch.setattr(settings, "openai_api_key", None)
+        monkeypatch.setattr(settings, "openai_compatible_base_url", None)
+        provider, model = llm._resolve(None, "openai", provider_keys={"anthropic": "sk-ant-caller"})
+        assert provider == "openai"
+        assert model == llm.DEFAULT_MODELS["openai"]
+
+    def test_no_auto_pick_when_the_caller_stored_no_keys(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "helix_llm_provider", "openai")
+        monkeypatch.setattr(settings, "openai_api_key", None)
+        monkeypatch.setattr(settings, "openai_compatible_base_url", None)
+        provider, model = llm._resolve(None, None, provider_keys=None)
+        assert provider == "openai"
+        assert model == llm.DEFAULT_MODELS["openai"]
+
+    def test_explicit_provider_with_a_caller_stored_model_uses_it(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(settings, "helix_llm_model", "claude-sonnet-4-5")
+        provider, model = llm._resolve(
+            None, "openai", provider_models={"openai": "gpt-4.1-caller-choice"}
+        )
+        assert provider == "openai"
+        assert model == "gpt-4.1-caller-choice"
+
 
 class TestOpenAiWireCredentials:
     def test_openrouter_uses_its_own_key_and_host(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -83,6 +152,26 @@ class TestOpenAiWireCredentials:
         with pytest.raises(llm.ProviderError, match="OPENAI_API_KEY"):
             llm._openai_wire_credentials("openai")
 
+    def test_caller_key_overrides_the_instance_openai_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "openai_api_key", "sk-instance")
+        key, url = llm._openai_wire_credentials("openai", caller_key="sk-caller")
+        assert key == "sk-caller"
+        assert url == settings.openai_base_url
+
+    def test_caller_key_overrides_the_instance_openrouter_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "openrouter_api_key", "sk-or-instance")
+        key, url = llm._openai_wire_credentials("openrouter", caller_key="sk-or-caller")
+        assert key == "sk-or-caller"
+        assert url is not None and "openrouter.ai" in url
+
+    def test_caller_key_works_with_no_instance_openai_credentials_at_all(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "openai_api_key", None)
+        monkeypatch.setattr(settings, "openai_compatible_base_url", None)
+        key, url = llm._openai_wire_credentials("openai", caller_key="sk-caller-only")
+        assert key == "sk-caller-only"
+
 
 class TestExtractStructured:
     @pytest.mark.asyncio
@@ -110,7 +199,13 @@ class TestExtractStructured:
         seen: dict[str, object] = {}
 
         async def openai_stub(
-            _content: str, _schema: dict, _prompt: str | None, model: str, *, provider: str = "openai"
+            _content: str,
+            _schema: dict,
+            _prompt: str | None,
+            model: str,
+            *,
+            provider: str = "openai",
+            caller_key: str | None = None,
         ) -> llm.ExtractionResult:
             seen["model"] = model
             seen["provider"] = provider
@@ -123,6 +218,72 @@ class TestExtractStructured:
         result = await llm.extract_structured("content", SCHEMA, provider="openrouter")
         assert seen == {"model": llm.DEFAULT_MODELS["openrouter"], "provider": "openrouter"}
         assert result.data == {"title": "T"}
+
+    @pytest.mark.asyncio
+    async def test_passes_the_callers_key_for_the_resolved_provider(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen: dict[str, object] = {}
+
+        async def anthropic_stub(
+            _content: str, _schema: dict, _prompt: str | None, model: str, *, caller_key: str | None = None
+        ) -> llm.ExtractionResult:
+            seen["caller_key"] = caller_key
+            return _result(model)
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(settings, "helix_llm_model", "claude-sonnet-4-5")
+        monkeypatch.setattr(llm, "_call_anthropic", anthropic_stub)
+
+        await llm.extract_structured(
+            "content", SCHEMA, provider_keys={"anthropic": "sk-ant-caller", "openai": "sk-openai-caller"}
+        )
+        assert seen["caller_key"] == "sk-ant-caller"
+
+    @pytest.mark.asyncio
+    async def test_auto_picks_a_caller_provider_when_the_instance_has_none(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        seen: dict[str, object] = {}
+
+        async def openai_stub(
+            _content: str,
+            _schema: dict,
+            _prompt: str | None,
+            model: str,
+            *,
+            provider: str = "openai",
+            caller_key: str | None = None,
+        ) -> llm.ExtractionResult:
+            seen["provider"] = provider
+            seen["caller_key"] = caller_key
+            seen["model"] = model
+            return _result(model)
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "openai")
+        monkeypatch.setattr(settings, "openai_api_key", None)
+        monkeypatch.setattr(settings, "openai_compatible_base_url", None)
+        monkeypatch.setattr(llm, "_call_openai", openai_stub)
+
+        result = await llm.extract_structured("content", SCHEMA, provider_keys={"openai": "sk-openai-caller"})
+
+        assert seen == {"provider": "openai", "caller_key": "sk-openai-caller", "model": llm.DEFAULT_MODELS["openai"]}
+        assert result.data == {"title": "T"}
+
+    @pytest.mark.asyncio
+    async def test_behaviour_is_unchanged_with_no_caller_keys(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen: dict[str, object] = {}
+
+        async def anthropic_stub(
+            _content: str, _schema: dict, _prompt: str | None, model: str, *, caller_key: str | None = None
+        ) -> llm.ExtractionResult:
+            seen["caller_key"] = caller_key
+            return _result(model)
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(settings, "helix_llm_model", "claude-sonnet-4-5")
+        monkeypatch.setattr(llm, "_call_anthropic", anthropic_stub)
+
+        await llm.extract_structured("content", SCHEMA)
+        assert seen["caller_key"] is None
 
     @pytest.mark.asyncio
     async def test_sources_are_the_passages_that_reached_the_model(self, monkeypatch: pytest.MonkeyPatch) -> None:

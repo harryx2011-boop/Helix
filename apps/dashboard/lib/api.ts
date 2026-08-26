@@ -557,6 +557,40 @@ export interface AgentSchemaResponseFailure {
 
 export type AgentSchemaResponse = AgentSchemaResponseSuccess | AgentSchemaResponseFailure;
 
+// --- Providers (GET/PUT/DELETE /v1/providers) ---
+
+export type ProviderName = 'anthropic' | 'openai' | 'gemini' | 'openrouter';
+
+export interface ProviderStatus {
+  provider: ProviderName;
+  configured: boolean;
+  source: 'key' | 'instance' | 'none';
+  last4?: string;
+  model?: string | null;
+  updatedAt?: string;
+}
+
+export interface ListProvidersResponse {
+  success: true;
+  providers: ProviderStatus[];
+}
+
+export interface SaveProviderRequest {
+  apiKey: string;
+  model?: string;
+}
+
+export interface SaveProviderResponse {
+  success: true;
+  provider: ProviderName;
+  last4: string;
+  model?: string | null;
+}
+
+export interface RemoveProviderResponse {
+  success: true;
+}
+
 export interface HelixClientOptions {
   baseUrl?: string;
   apiKey: string;
@@ -637,6 +671,18 @@ export class HelixClient {
     return this.post<AgentSchemaResponse>('/agent/schema', request, signal);
   }
 
+  async listProviders(signal?: AbortSignal): Promise<ListProvidersResponse> {
+    return this.get<ListProvidersResponse>('/providers', signal);
+  }
+
+  async saveProvider(provider: ProviderName, request: SaveProviderRequest, signal?: AbortSignal): Promise<SaveProviderResponse> {
+    return this.put<SaveProviderResponse>(`/providers/${provider}`, request, signal);
+  }
+
+  async removeProvider(provider: ProviderName, signal?: AbortSignal): Promise<RemoveProviderResponse> {
+    return this.delete<RemoveProviderResponse>(`/providers/${provider}`, signal);
+  }
+
   async job(id: string, signal?: AbortSignal): Promise<Job> {
     return this.get<Job>(`/jobs/${id}`, signal);
   }
@@ -646,6 +692,25 @@ export class HelixClient {
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
         headers: { Authorization: `Bearer ${this.apiKey}` },
+        ...(signal ? { signal } : {}),
+      });
+    } catch (error) {
+      throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+    }
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => undefined)) as ApiErrorBody | undefined;
+      throw new HelixApiError(errorBody?.message ?? `Request failed with status ${response.status}`, response.status, errorBody);
+    }
+    return response.json() as Promise<T>;
+  }
+
+  private async put<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
+        body: JSON.stringify(body),
         ...(signal ? { signal } : {}),
       });
     } catch (error) {

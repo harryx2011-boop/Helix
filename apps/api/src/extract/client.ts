@@ -45,15 +45,34 @@ export interface DocumentResult {
   parserUsed: string;
 }
 
+/** Caller-supplied provider keys, decrypted, keyed by provider name. */
+export interface ProviderKeyMap {
+  anthropic?: string | undefined;
+  openai?: string | undefined;
+  gemini?: string | undefined;
+  openrouter?: string | undefined;
+}
+
+/** The caller's stored model per provider, sent alongside `providerKeys`. */
+export interface ProviderModelMap {
+  anthropic?: string | undefined;
+  openai?: string | undefined;
+  gemini?: string | undefined;
+  openrouter?: string | undefined;
+}
+
 export interface StructuredOptions {
   content: string;
   schema?: Record<string, unknown> | undefined;
   prompt?: string | undefined;
-  /** Per-request provider override; the key must be configured on the instance. */
+  /** Per-request provider override; the key must be configured on the instance or supplied via `providerKeys`. */
   provider?: string | undefined;
   model?: string | undefined;
   includeSources?: boolean | undefined;
   timeoutMs?: number | undefined;
+  /** The caller's own provider keys, when they have any stored. Override the instance's environment credentials. */
+  providerKeys?: ProviderKeyMap | undefined;
+  providerModels?: ProviderModelMap | undefined;
 }
 
 export interface StructuredResult {
@@ -74,6 +93,9 @@ export interface SchemaOptions {
   hint?: Record<string, unknown> | undefined;
   instruction?: string | undefined;
   timeoutMs?: number | undefined;
+  /** The caller's own provider keys, when they have any stored. Override the instance's environment credentials. */
+  providerKeys?: ProviderKeyMap | undefined;
+  providerModels?: ProviderModelMap | undefined;
 }
 
 export interface SchemaResult {
@@ -245,6 +267,8 @@ export class ExtractClient {
         provider: options.provider ?? null,
         model: options.model ?? null,
         include_sources: options.includeSources ?? false,
+        provider_keys: options.providerKeys ?? null,
+        provider_models: options.providerModels ?? null,
       }),
       signal: AbortSignal.timeout(options.timeoutMs ?? 120_000),
     });
@@ -298,6 +322,8 @@ export class ExtractClient {
         urls: options.urls ?? [],
         hint: options.hint ?? null,
         instruction: options.instruction ?? null,
+        provider_keys: options.providerKeys ?? null,
+        provider_models: options.providerModels ?? null,
       }),
       signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
     });

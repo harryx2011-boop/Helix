@@ -26,6 +26,8 @@ const ConfigSchema = z.object({
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
   bootstrapKey: z.string().optional(),
   internalAdminToken: z.string().optional(),
+  /** AES-256-GCM key for stored provider keys, as 32 bytes of hex or base64. Unset derives it from HELIX_BOOTSTRAP_KEY (SHA-256), so self-host stays zero-config. */
+  encryptionKey: z.string().optional(),
 
   databaseUrl: z.string().min(1, 'DATABASE_URL is required'),
   fetchUrl: z.string().default('http://localhost:7401'),
@@ -116,6 +118,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     logLevel: env.HELIX_LOG_LEVEL,
     bootstrapKey: env.HELIX_BOOTSTRAP_KEY,
     internalAdminToken: env.HELIX_INTERNAL_ADMIN_TOKEN,
+    encryptionKey: env.HELIX_ENCRYPTION_KEY || undefined,
     databaseUrl: env.DATABASE_URL,
     fetchUrl: env.HELIX_FETCH_URL,
     extractUrl: env.HELIX_EXTRACT_URL,

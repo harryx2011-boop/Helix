@@ -144,10 +144,15 @@ class StructuredRequest(BaseModel):
     schema_: dict = Field(alias="schema")
     prompt: str | None = None
     # Per-request override of the instance default. The key for that provider
-    # must already be configured; Helix never accepts credentials over the API.
+    # must already be configured, or supplied via `provider_keys` below.
     provider: str | None = None
     model: str | None = None
     include_sources: bool = False
+    # The caller's own provider keys, decrypted by the gateway, keyed by
+    # provider name. Present only when the caller has stored at least one;
+    # overrides the instance's environment credential for that provider.
+    provider_keys: dict[str, str] | None = None
+    provider_models: dict[str, str] | None = None
 
 
 class StructuredResponse(BaseModel):
@@ -174,6 +179,8 @@ async def structured(request: StructuredRequest) -> StructuredResponse:
             provider=request.provider,
             model=request.model,
             include_sources=request.include_sources,
+            provider_keys=request.provider_keys,
+            provider_models=request.provider_models,
         )
     except SchemaError as exc:
         # A schema problem is the caller's to fix, and the hint says how.
@@ -206,6 +213,10 @@ class SchemaRequest(BaseModel):
     # starting fresh.
     hint: dict | None = None
     instruction: str | None = None
+    # The caller's own provider keys, decrypted by the gateway, keyed by
+    # provider name. Same semantics as StructuredRequest's.
+    provider_keys: dict[str, str] | None = None
+    provider_models: dict[str, str] | None = None
 
 
 class SchemaResponse(BaseModel):
@@ -226,6 +237,8 @@ async def generate_schema(request: SchemaRequest) -> SchemaResponse:
             urls=request.urls,
             hint=request.hint,
             instruction=request.instruction,
+            provider_keys=request.provider_keys,
+            provider_models=request.provider_models,
         )
     except llm.RequestError as exc:
         raise HTTPException(

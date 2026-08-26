@@ -42,10 +42,10 @@ export interface CrawlRouteDeps extends MapRouteDeps {
   limits?: Partial<CrawlLimits> | undefined;
 }
 
-const TIERS = ['auto', 'plain', 'tls', 'lightpanda', 'chromium'] as const;
-const EXTRACTORS = ['trafilatura', 'readability', 'auto'] as const;
+export const TIERS = ['auto', 'plain', 'tls', 'lightpanda', 'chromium'] as const;
+export const EXTRACTORS = ['trafilatura', 'readability', 'auto'] as const;
 
-const ScrapeOptionsSchema = z.object({
+export const ScrapeOptionsSchema = z.object({
   formats: z.array(z.string()).optional(),
   tier: z.enum(TIERS).optional(),
   extractor: z.enum(EXTRACTORS).optional(),
@@ -87,7 +87,7 @@ const WebhookObjectSchema = z
 
 // The spec writes `webhook` as a bare URL; the fuller object form carries
 // headers, an event filter and metadata. Both normalise to the object.
-const WebhookSchema = z.union([WebhookUrlSchema.transform((url) => ({ url })), WebhookObjectSchema]);
+export const WebhookSchema = z.union([WebhookUrlSchema.transform((url) => ({ url })), WebhookObjectSchema]);
 
 function crawlRequestSchema(limits: CrawlLimits) {
   return z.object({

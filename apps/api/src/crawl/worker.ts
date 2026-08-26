@@ -72,7 +72,7 @@ export class CrawlWorker {
           SET status = 'running', started_at = now()
         WHERE id = (
           SELECT id FROM jobs
-           WHERE status = 'queued' AND type = 'crawl'
+           WHERE status = 'queued' AND type IN ('crawl', 'batch_scrape')
            ORDER BY created_at
            FOR UPDATE SKIP LOCKED
            LIMIT 1

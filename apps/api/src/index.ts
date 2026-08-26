@@ -23,6 +23,7 @@ import { deriveEncryptionKey } from './providers/crypto.js';
 import type { Provider } from './providers/repository.js';
 import { registerMap } from './routes/map.js';
 import { registerCrawl } from './routes/crawl.js';
+import { registerBatch } from './routes/batch.js';
 import { registerJobs } from './routes/jobs.js';
 import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
@@ -258,6 +259,7 @@ await app.register(
         respectRobots: config.respectRobots,
       },
     });
+    await registerBatch(instance);
     await registerJobs(instance);
     await registerSearch(instance, {
       provider: searchProvider,

@@ -1,9 +1,9 @@
 # Helix — Batch Scrape API Spec
 
-> **Status: proposed, not implemented.** `/batch/scrape` was removed from
-> `openapi.yaml` under the spec-first rule (WEBSITE.md §650): the spec must not
-> describe routes the code does not serve. This document is the surface put up
-> for review *before* any route exists. Nothing here is live.
+> **Status: shipped (2026-08-26).** Reviewed and built as specified, with the
+> open questions below resolved: the path stayed `/v1/batch/scrape`, the
+> synchronous form was dropped so there is one execution path, and the ceiling
+> is 10,000. Route `apps/api/src/routes/batch.ts`, 14 tests, three MCP tools.
 
 ## 1. Goal
 Scrape many URLs in one call, with one job to poll, instead of making the caller
@@ -83,10 +83,22 @@ than rejecting the whole request.
 Robots and the URL guard (`allowPrivateUrls`) apply per URL exactly as in
 `/scrape`. A batch is not a way to bypass either.
 
-## 6. Open questions for review
-1. **Path shape.** `/v1/batch/scrape` matches the removed-from-openapi name.
-   `/v1/scrape/batch` would nest under the primitive it extends. Which?
-2. **Sync threshold.** Is 10 the right ceiling for the synchronous form, or
-   should the route be async-only to keep one execution path?
-3. **`HELIX_BATCH_MAX_URLS` default.** 1000 mirrors `crawlDefaultLimit`; a
-   batch is caller-supplied rather than discovered, so a higher ceiling may fit.
+## 6. Resolved questions
+1. **Path shape** — kept `/v1/batch/scrape`. It is the name already removed from
+   `openapi.yaml`, and it matches what callers coming from Firecrawl expect.
+2. **Sync threshold** — dropped. A synchronous form would be a second execution
+   path for work that outlives a request timeout at any interesting size.
+3. **Ceiling** — 10,000, not the 1,000 that mirrors `crawlDefaultLimit`. A
+   supplied list is bounded by the caller; a crawl frontier is not.
+
+## 7. What shipped differs from §3 in one place
+
+The synchronous form described there does not exist. Everything else matches:
+the request shape, the 202, the job views under `/v1/batch/scrape/{jobId}`, and
+per-item failure semantics.
+
+Batch semantics come from options the frontier already understood rather than
+new worker code — `maxDepth: 0` rejects every discovered link as too deep and
+`sitemap: 'skip'` removes the other source of unasked-for URLs. Verified live
+against two hosts: `example.com` links to `iana.org`, and the job finished with
+exactly the two supplied tasks.

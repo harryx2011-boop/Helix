@@ -369,6 +369,97 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
+  /batch/scrape:
+    post:
+      tags: [Scrape, Jobs]
+      summary: Scrape many URLs as one job
+      description: |
+        Reads a supplied list of URLs and returns one job to poll, instead of
+        making the caller fan out `/scrape` and reassemble the results.
+
+        This is `/scrape` run on the crawl machinery, so per-host politeness and
+        `robots.txt` apply exactly as they do there. Nothing is discovered: links
+        a page yields are not followed, and no sitemap is read. The list may span
+        hosts.
+
+        Asynchronous. Poll `GET /batch/scrape/{jobId}`, or set `webhook` to have
+        `started`, `page`, `completed` and `failed` events POSTed to you.
+
+        A batch does not fail because one URL did: each item carries its own
+        outcome and the job reports `completed` and `failed` counts.
+      operationId: batchScrape
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchScrapeRequest' }
+            examples:
+              basic:
+                summary: Read three pages
+                value:
+                  urls:
+                    - 'https://example.com/a'
+                    - 'https://example.com/b'
+                    - 'https://other.example/c'
+              formats:
+                summary: With scrape options and a webhook
+                value:
+                  urls: ['https://example.com/a', 'https://example.com/b']
+                  scrapeOptions: { formats: [markdown, links], onlyMainContent: true }
+                  webhook: 'https://caller.example/hooks/batch'
+              lenient:
+                summary: Skip unparseable URLs instead of rejecting the batch
+                value:
+                  urls: ['https://example.com/a', 'not a url']
+                  ignoreInvalidURLs: true
+      responses:
+        '202':
+          description: Job accepted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BatchAccepted' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /batch/scrape/{jobId}:
+    parameters:
+      - { name: jobId, in: path, required: true, schema: { type: string, format: uuid } }
+      - name: cursor
+        in: query
+        schema: { type: string }
+        description: Continue a paginated result set.
+    get:
+      tags: [Scrape, Jobs]
+      summary: Poll a batch
+      description: |
+        The same view as `GET /jobs/{id}`, restricted to batch jobs. Each item in
+        `data` carries the `/scrape` document shape plus the `url` it came from.
+      operationId: getBatchScrape
+      responses:
+        '200':
+          description: Job state, with results so far.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Scrape, Jobs]
+      summary: Cancel a batch
+      description: |
+        Stops the batch. Already-completed results stay retrievable.
+      operationId: cancelBatchScrape
+      responses:
+        '200':
+          description: Cancelled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobCancelled' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The job had already finished.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
   /search:
     post:
       tags: [Search]
@@ -1653,6 +1744,71 @@ components:
                 format: date-time
                 description: From the sitemap where present. Frequently stale or fabricated — treat as a hint.
         truncated: { type: boolean }
+
+    BatchScrapeRequest:
+      type: object
+      required: [urls]
+      properties:
+        urls:
+          type: array
+          minItems: 1
+          maxItems: 10000
+          description: |
+            The URLs to read, http(s) only. Duplicates are dropped. The ceiling is
+            `HELIX_BATCH_MAX_URLS` (10000).
+          items: { type: string, format: uri }
+        ignoreInvalidURLs:
+          type: boolean
+          default: false
+          description: |
+            Drop unparseable URLs and report them in `invalidURLs`, instead of
+            rejecting the whole batch with a 400.
+        scrapeOptions:
+          type: object
+          description: Applied to every URL in the batch.
+          properties:
+            formats:
+              type: array
+              items: { type: string }
+            tier: { type: string, enum: [auto, plain, tls, lightpanda, chromium] }
+            extractor: { type: string, enum: [trafilatura, readability, auto] }
+            onlyMainContent: { type: boolean }
+        formats:
+          type: array
+          description: Top-level alias of `scrapeOptions.formats`.
+          items: { type: string }
+        tier: { type: string, enum: [auto, plain, tls, lightpanda, chromium] }
+        extractor: { type: string, enum: [trafilatura, readability, auto] }
+        onlyMainContent: { type: boolean }
+        maxConcurrency:
+          type: integer
+          minimum: 1
+          maximum: 64
+          description: Per-host ceiling, capped by `HELIX_MAX_HOST_CONCURRENCY`.
+        delay:
+          type: number
+          minimum: 0
+          maximum: 60
+          description: Fixed delay between requests to one host, in seconds.
+        webhook:
+          oneOf:
+            - { type: string, format: uri }
+            - { $ref: '#/components/schemas/WebhookConfig' }
+
+    BatchAccepted:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        id: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        total:
+          type: integer
+          description: URLs actually queued, after duplicates and any skipped invalid ones.
+        invalidURLs:
+          type: array
+          description: Present only when `ignoreInvalidURLs` skipped something.
+          items: { type: string }
+        url: { type: string, example: '/v1/batch/scrape/0d9f7c1e-1a3c-4d21-9f0e-5b6a2c8d4e11' }
 
     CrawlRequest:
       allOf:

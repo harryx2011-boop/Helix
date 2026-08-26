@@ -83,11 +83,12 @@ function ExploreRow({ endpoints }: { endpoints: EndpointSummary[] }) {
   );
 }
 
-function RequestsChart() {
-  const [series, setSeries] = React.useState<RequestsSeries | null>(null);
-  const [loading, setLoading] = React.useState(true);
+function RequestsChart({ initialSeries }: { initialSeries: RequestsSeries | null }) {
+  const [series, setSeries] = React.useState<RequestsSeries | null>(initialSeries);
+  const [loading, setLoading] = React.useState(initialSeries === null);
 
   React.useEffect(() => {
+    if (initialSeries) return;
     let cancelled = false;
     fetch('/api/app/usage?days=7')
       .then((r) => (r.ok ? r.json() : null))
@@ -108,7 +109,7 @@ function RequestsChart() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialSeries]);
 
   const total = series?.values.reduce((a, b) => a + b, 0) ?? 0;
 
@@ -300,12 +301,14 @@ export function OverviewClient({
   revealedKey,
   welcome,
   connect,
+  requestsSeries = null,
 }: {
   endpoints: EndpointSummary[];
   keyMasked: string | null;
   revealedKey: string | null;
   welcome: boolean;
   connect: boolean;
+  requestsSeries?: RequestsSeries | null;
 }) {
   const interactLive = endpoints.some((e) => e.id === 'interact' && e.status === 'live');
 
@@ -318,7 +321,7 @@ export function OverviewClient({
       <FrameRow flush={!interactLive}>
         <div className="grid min-w-0 lg:grid-cols-[1.4fr_1fr] lg:divide-x lg:divide-border">
           <div className="flex min-w-0 flex-col divide-y divide-border">
-            <RequestsChart />
+            <RequestsChart initialSeries={requestsSeries} />
             {interactLive && <ActiveBrowsersRow />}
           </div>
           <div className="flex min-w-0 flex-col divide-y divide-border">

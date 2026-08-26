@@ -3,6 +3,7 @@ import { requireOnboardedProfile } from '@/lib/session';
 import { listApiKeys, byteaToBuffer } from '@/lib/profiles';
 import { decryptApiKey, maskApiKey } from '@/lib/keys';
 import { ENDPOINTS, orderBySelection } from '@/lib/catalog';
+import { fetchUsageSeries } from '@/lib/usage';
 import { OverviewClient } from './overview-client';
 
 export default async function OverviewPage({
@@ -28,7 +29,7 @@ export default async function OverviewPage({
   }
 
   const profile = await requireOnboardedProfile();
-  const keys = await listApiKeys(profile.id);
+  const [keys, usage] = await Promise.all([listApiKeys(profile.id), fetchUsageSeries(profile.id, 7)]);
   const defaultKey = keys.find((k) => !k.revoked_at) ?? keys[0];
   const keyMasked = defaultKey ? maskApiKey(defaultKey.prefix, defaultKey.last3) : null;
 
@@ -51,6 +52,7 @@ export default async function OverviewPage({
       revealedKey={revealedKey}
       welcome={welcome}
       connect={connect}
+      requestsSeries={{ labels: usage.labels, values: usage.requests }}
     />
   );
 }

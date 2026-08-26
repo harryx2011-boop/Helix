@@ -9,10 +9,12 @@ import { RefineBar } from '@/components/app/agent/refine-bar';
 import { SchemaPanel } from '@/components/app/agent/schema-panel';
 import { ResultsPanel } from '@/components/app/agent/results-panel';
 import type { AgentOutputFormat } from '@/components/app/agent/output-toggle';
+import Link from 'next/link';
 import { useOptionalApiKey } from '@/components/shell/api-key-provider';
 import { requestAgentSchema, scrapeUrlsForSchema, scrapeForSchema, searchForSchema } from '@/lib/agent';
 import type { AgentPageResult } from '@/lib/agent';
 import { HelixApiError } from '@/lib/api';
+import { listProviders } from '@/lib/providers';
 
 type Stage = 'idle' | 'schema-loading' | 'schema-ready' | 'running' | 'done';
 
@@ -35,7 +37,20 @@ export function AgentClient() {
   const [refineValue, setRefineValue] = React.useState('');
   const [refining, setRefining] = React.useState(false);
   const [run, setRun] = React.useState<RunState | null>(null);
+  const [noProvider, setNoProvider] = React.useState(false);
   const transcriptEndRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    listProviders(apiKey)
+      .then(({ providers }) => {
+        if (!cancelled) setNoProvider(providers.every((p) => p.source === 'none'));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [apiKey]);
 
   const scrollToEnd = React.useCallback(() => {
     requestAnimationFrame(() => transcriptEndRef.current?.scrollIntoView({ block: 'end' }));
@@ -177,9 +192,22 @@ export function AgentClient() {
             placeholder="Describe the data you want"
             className="w-full items-center"
           />
-          <p className="font-mono text-[11px] text-muted-foreground">
-            [ research preview ]  Generates a schema first, then searches and reads the pages that match.
-          </p>
+          {noProvider ? (
+            <p className="font-mono text-[11px] text-muted-foreground">
+              [ research preview ]  Needs a model key —{' '}
+              <Link
+                href="/app/settings?tab=providers"
+                className="text-foreground underline underline-offset-2 transition-colors duration-150 ease-out hover:text-muted-foreground"
+              >
+                connect a provider
+              </Link>{' '}
+              to run.
+            </p>
+          ) : (
+            <p className="font-mono text-[11px] text-muted-foreground">
+              [ research preview ]  Generates a schema first, then searches and reads the pages that match.
+            </p>
+          )}
         </div>
       </div>
     );

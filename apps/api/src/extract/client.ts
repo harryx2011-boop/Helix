@@ -1,4 +1,4 @@
-import type { Log } from '../core/logger.js';
+import { redactSecrets, type Log } from '../core/logger.js';
 
 /**
  * Client for helix-extract.
@@ -128,10 +128,13 @@ export class ExtractHttpError extends Error {
   readonly detail: string;
 
   constructor(status: number, detail: string) {
-    super(`helix-extract returned HTTP ${status}: ${detail.slice(0, 200)}`);
+    // Redacted here rather than at each route: the detail is quoted back to the
+    // caller, and a provider's message may echo the key it rejected.
+    const safe = redactSecrets(detail);
+    super(`helix-extract returned HTTP ${status}: ${safe.slice(0, 200)}`);
     this.name = 'ExtractHttpError';
     this.status = status;
-    this.detail = detail;
+    this.detail = safe;
   }
 }
 
@@ -150,7 +153,7 @@ export class StructuredError extends ExtractHttpError {
     super(status, message);
     this.name = 'StructuredError';
     // The upstream message is the whole story here; the generic prefix is not.
-    this.message = message;
+    this.message = redactSecrets(message);
     this.field = field;
   }
 }

@@ -11,11 +11,9 @@ export default async function OverviewPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
-  const welcome = params.welcome === '1';
-  // `helix init --browser` lands here with the connect sheet already open.
-  const connect = params.connect === '1';
-
+  // Self-host is a static export, where awaiting `searchParams` forces dynamic
+  // rendering and fails the build. `connect` is only a UI flag, so that branch
+  // reads it from the URL in the browser instead.
   if (!HOSTED) {
     return (
       <OverviewClient
@@ -23,10 +21,14 @@ export default async function OverviewPage({
         keyMasked={null}
         revealedKey={null}
         welcome={false}
-        connect={connect}
       />
     );
   }
+
+  const params = await searchParams;
+  const welcome = params.welcome === '1';
+  // `helix init --browser` lands here with the connect sheet already open.
+  const connect = params.connect === '1';
 
   const profile = await requireOnboardedProfile();
   const [keys, usage] = await Promise.all([listApiKeys(profile.id), fetchUsageSeries(profile.id, 7)]);

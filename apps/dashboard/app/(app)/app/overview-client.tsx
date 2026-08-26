@@ -307,9 +307,18 @@ export function OverviewClient({
   keyMasked: string | null;
   revealedKey: string | null;
   welcome: boolean;
-  connect: boolean;
+  /** Omitted by the static-export build, which cannot read searchParams on the server. */
+  connect?: boolean;
   requestsSeries?: RequestsSeries | null;
 }) {
+  const [urlConnect, setUrlConnect] = React.useState(false);
+
+  React.useEffect(() => {
+    if (connect !== undefined) return;
+    setUrlConnect(new URLSearchParams(window.location.search).get('connect') === '1');
+  }, [connect]);
+
+  const connectOpen = connect ?? urlConnect;
   const interactLive = endpoints.some((e) => e.id === 'interact' && e.status === 'live');
 
   return (
@@ -326,7 +335,7 @@ export function OverviewClient({
           </div>
           <div className="flex min-w-0 flex-col divide-y divide-border">
             <ApiKeyRow keyMasked={keyMasked} revealedKey={revealedKey} welcome={welcome} />
-            <AgentIntegrations apiKey={revealedKey ?? keyMasked ?? 'helix-YOUR_KEY'} initialOpen={connect} />
+            <AgentIntegrations apiKey={revealedKey ?? keyMasked ?? 'helix-YOUR_KEY'} initialOpen={connectOpen} />
           </div>
         </div>
       </FrameRow>

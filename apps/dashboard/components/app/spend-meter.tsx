@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { HOSTED } from '@/lib/mode';
 
 interface UsageSummary {
   monthToDateUsd: number;
@@ -13,12 +14,18 @@ interface UsageSummary {
  * user-set budget when one exists (WEBSITE.md §7.1). Fetches
  * GET /api/app/usage/summary; renders zeros if the request fails so the
  * shell never breaks on a transient error.
+ *
+ * Hosted only. Spend is aggregated from Supabase, which a self-host instance
+ * does not have, and self-host serves this app as a static export where the
+ * route cannot run at all — so it is not mounted rather than fetched and
+ * silently zeroed.
  */
 export function SpendMeter({ collapsed }: { collapsed: boolean }) {
   const [summary, setSummary] = React.useState<UsageSummary>({ monthToDateUsd: 0, budgetUsd: null });
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
+    if (!HOSTED) return;
     let cancelled = false;
     fetch('/api/app/usage/summary')
       .then((r) => (r.ok ? r.json() : null))
@@ -35,6 +42,8 @@ export function SpendMeter({ collapsed }: { collapsed: boolean }) {
       cancelled = true;
     };
   }, []);
+
+  if (!HOSTED) return null;
 
   const pct = summary.budgetUsd ? Math.min(100, (summary.monthToDateUsd / summary.budgetUsd) * 100) : 0;
 

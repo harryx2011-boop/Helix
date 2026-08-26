@@ -1,8 +1,18 @@
 # Helix — Profiles API Spec
 
-> **Status: proposed, not implemented.** `/profiles` was removed from
-> `openapi.yaml` under the spec-first rule (WEBSITE.md §650). This document is
-> the surface put up for review *before* any route exists.
+> **Status: deferred, and §2 below was partly wrong about why.**
+>
+> Reviewed 2026-08-26. The endpoint is still unbuilt, but the reason changed on
+> inspection: it is not only that the definitions are placeholders, it is that
+> the *transport* layer never read them at all. `apps/fetch`'s `resolve()` maps
+> a profile name onto a `wreq-util` `Emulation` preset — real fingerprints,
+> maintained upstream — while `load_all()` is a stub that never opens the JSON.
+>
+> What the definitions genuinely carry is the JS layer, and as of 2026-08-26
+> the Playwright tier applies it (`apps/api/src/browser/profiles.ts`). So a
+> `/profiles` listing would now describe something real rather than nothing.
+> It stays deferred until `tools/capture` exists, because every definition is
+> still `verified: false` — plausible values, not recorded ones.
 
 ## 1. Goal
 Let a caller discover which browser identity profiles an instance can apply, so
@@ -82,6 +92,10 @@ this route does not change resolution, only discovery.
    it makes `/profiles` fail when fetch is down.
 2. **Expose `tls.ja4`?** Useful for debugging, and a caller can read it from any
    real browser anyway — but it invites treating the value as configurable.
-3. **Is this worth building before real captures exist?** With one sample
-   profile the endpoint returns almost nothing of value. It may be better
-   sequenced after `tools/capture` produces genuine definitions.
+3. **Is this worth building before real captures exist?** Resolved: no. Build
+   `tools/capture` first, then this. Two things changed the answer — the JS
+   layer is now actually applied, so a listing would mean something; and the
+   naming trap surfaced (`chrome-149-macos` names an identity `resolve()` falls
+   back from, silently serving chrome-137). A discovery endpoint that lists a
+   name the transport tier does not know would advertise that bug rather than
+   fix it. `available()` in `apps/fetch/src/profile.rs` is the real list.

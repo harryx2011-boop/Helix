@@ -47,10 +47,10 @@ Three checks run before anything is written, and any one of them stops it:
 `--force` overrides them. Do not use it: the file is still written with
 `verified: true`, so the lie survives the person who told it.
 
-Run with `--headed` on a machine with real graphics. Better still, use
-`--channel chrome` so the recording comes from an actual Chrome install rather
-than Playwright's bundled build — that also avoids the version warning, since
-the bundled Chromium runs ahead of the identities `apps/fetch` presents.
+Run with `--headed` on a machine with real graphics. `--channel chrome` records
+from an actual Chrome install rather than Playwright's bundled build, which is
+generally preferable — though on this machine both are version 151, so it does
+not settle the version gap described below.
 
 ## Known blocker: no browser here can record chrome-137
 

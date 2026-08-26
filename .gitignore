@@ -40,3 +40,6 @@ graphify-out/*.html
 apps/dashboard/.screenshots/
 .worktrees/
 .pgdata/
+
+.vercel
+.env*

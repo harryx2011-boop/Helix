@@ -30,6 +30,7 @@ const db = vi.hoisted(() => {
 vi.mock('../db/pool.js', () => ({ getPool: () => ({ query: db.query }) }));
 
 import { registerSettings } from './settings.js';
+import { registerAuth } from '../core/auth.js';
 
 const TOKEN = 'admin-token-for-tests';
 
@@ -84,6 +85,42 @@ describe('settings auth', () => {
     const response = await app.inject({ method: 'GET', url: '/settings', headers: { authorization: 'Bearer nope' } });
 
     expect(response.statusCode).toBe(401);
+  });
+});
+
+describe('the API-key auth hook', () => {
+  /**
+   * `/settings` is listed in `registerAuth`'s `open` prefixes so the admin-token
+   * gate is the one that answers. Dropping it from that list makes every
+   * settings request fail as "Invalid API key", and adding a route under a
+   * prefix the hook does not know about is easy to get wrong in the other
+   * direction too — so pin both halves: exempt from the key check, still
+   * refused without the admin token.
+   */
+  it('lets a settings request past the key check and into the admin gate', async () => {
+    const app = Fastify();
+    registerAuth(app, {
+      verifyApiKey: async () => undefined,
+      limiter: { check: () => ({ allowed: true, remaining: 1, resetAt: 0 }) } as never,
+      tickets: { redeem: () => undefined } as never,
+      open: ['/v1/health', '/settings'],
+    });
+    await registerSettings(app, {
+      adminToken: TOKEN,
+      envValues: { browserMaxContexts: 20 },
+      live: targets(),
+      encryptionKey: Buffer.alloc(32, 7),
+    });
+    await app.ready();
+
+    const rejected = await app.inject({ method: 'GET', url: '/settings' });
+    expect(rejected.statusCode).toBe(401);
+    expect(rejected.json()).toMatchObject({ error: 'unauthorized' });
+    // Not the key check's message: the admin gate answered.
+    expect(JSON.stringify(rejected.json())).not.toContain('API key');
+
+    const accepted = await app.inject({ method: 'GET', url: '/settings', headers: auth });
+    expect(accepted.statusCode).toBe(200);
   });
 });
 

@@ -221,7 +221,9 @@ await app.register(helmet, { contentSecurityPolicy: false });
 // bearer key rather than cookies, so credentials mode stays off.
 await app.register(cors, { origin: config.corsOrigins });
 
-registerAuth(app, { verifyApiKey, limiter, tickets, open: ['/v1/health', '/v1/interact/live/'] });
+// `/settings` is exempt from API-key auth because it enforces a stricter gate
+// of its own: the operator's admin token, not any caller's key.
+registerAuth(app, { verifyApiKey, limiter, tickets, open: ['/v1/health', '/v1/interact/live/', '/settings'] });
 
 await app.register(
   async (instance) => {

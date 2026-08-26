@@ -147,6 +147,7 @@ async function attemptTier(
     screenshot: options.formats.includes('screenshot'),
     actions: options.actions,
     mobile: options.mobile,
+    profile: options.profile,
     allowPrivate: options.allowPrivate,
     signal: options.signal,
   });
@@ -159,6 +160,9 @@ async function attemptTier(
     },
     finalUrl: rendered.finalUrl,
     screenshot: rendered.screenshot,
+    // Reported the same way the fetch tiers report it, so a caller can tell
+    // whether the identity they asked for was actually applied.
+    profileUsed: rendered.profileUsed,
     transportError: rendered.error,
   };
 }

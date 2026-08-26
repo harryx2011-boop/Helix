@@ -1,5 +1,6 @@
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import type { Log } from '../core/logger.js';
+import { fingerprintScript, getProfile, type BrowserProfile } from './profiles.js';
 import { isPrivateHost } from '../core/url-guard.js';
 import { captureScreenshot } from './screenshot.js';
 
@@ -37,6 +38,8 @@ export interface RenderOptions {
   actions?: unknown[] | undefined;
   /** Phone-sized viewport with touch events, for pages that serve a different layout to phones. */
   mobile?: boolean | undefined;
+  /** Browser identity to present to the page's own JavaScript. Unknown names are ignored. */
+  profile?: string | undefined;
   /** Operator opt-in: let the page, its redirects and its subresources reach private addresses. */
   allowPrivate?: boolean | undefined;
   /** Closes the page mid-render when it fires, so the slot is freed at once. */
@@ -63,6 +66,8 @@ export interface RenderResult {
   headers: Record<string, string>;
   finalUrl?: string | undefined;
   screenshot?: string | undefined;
+  /** The identity actually applied. Absent when the requested name matched nothing. */
+  profileUsed?: string | undefined;
   error?: string | undefined;
   timingMs: number;
 }
@@ -82,6 +87,7 @@ export interface LeaseOptions {
   headers?: Record<string, string> | undefined;
   proxy?: string | undefined;
   viewport?: { width: number; height: number } | undefined;
+  profile?: string | undefined;
 }
 
 export interface BrowserPoolOptions {
@@ -156,6 +162,26 @@ async function drivePage(
     finalUrl: page.url(),
     screenshot,
   };
+}
+
+/**
+ * Context options a profile contributes, plus the init script.
+ *
+ * Timezone and locale are Playwright's own context options rather than
+ * script overrides: a page can read the real values through Intl in ways a
+ * getter patch does not cover.
+ */
+function profileContextOptions(profile: BrowserProfile | undefined): Record<string, unknown> {
+  if (!profile) return {};
+  const options: Record<string, unknown> = {};
+  if (profile.js.timezone) options['timezoneId'] = profile.js.timezone;
+  if (profile.headers?.acceptLanguage) {
+    options['locale'] = profile.headers.acceptLanguage.split(',')[0];
+  }
+  if (profile.js.screen) {
+    options['screen'] = { width: profile.js.screen.width, height: profile.js.screen.height };
+  }
+  return options;
 }
 
 interface PooledBrowser {
@@ -270,11 +296,14 @@ export class BrowserPool {
     pooled.activeContexts++;
 
     try {
+      const profile = getProfile(options.profile, this.#logger);
       const context = await pooled.browser.newContext({
         ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
         ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
+        ...profileContextOptions(profile),
         ...(options.viewport ? { viewport: options.viewport } : {}),
       });
+      if (profile) await context.addInitScript(fingerprintScript(profile));
       const page = await context.newPage();
 
       let closed = false;
@@ -342,12 +371,17 @@ export class BrowserPool {
     try {
       // A fresh context per request: separate cookies, storage and cache
       // without the cost of a separate process.
+      const profile = getProfile(options.profile, this.#logger);
       context = await pooled.browser.newContext({
         ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
         ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
+        // A mobile viewport is the caller's explicit request; it wins over the
+        // profile's desktop screen.
+        ...profileContextOptions(profile),
         ...(options.mobile ? MOBILE_CONTEXT : {}),
       });
 
+      if (profile) await context.addInitScript(fingerprintScript(profile));
       if (!options.allowPrivate) await blockPrivateHosts(context);
 
       page = await context.newPage();
@@ -364,7 +398,11 @@ export class BrowserPool {
 
       pooled.pagesServed++;
 
-      return { ...result, timingMs: Date.now() - started };
+      return {
+        ...result,
+        ...(profile ? { profileUsed: profile.id } : {}),
+        timingMs: Date.now() - started,
+      };
     } catch (error) {
       pooled.pagesServed++;
       return {

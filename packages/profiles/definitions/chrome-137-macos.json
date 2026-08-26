@@ -1,0 +1,90 @@
+{
+  "$comment": [
+    "JS-layer definition for the identity helix-fetch presents by default.",
+    "",
+    "The transport layer (TLS, HTTP/2) is NOT described here — it comes from",
+    "wreq-util's Chrome137 emulation, which is maintained against real browser",
+    "captures. What this file carries is the surface a page's own JavaScript can",
+    "read, which the Playwright tier applies via addInitScript.",
+    "",
+    "verified:false means these JS values were not captured from a real machine.",
+    "They are internally consistent (an M-series Mac running Chrome on macOS)",
+    "but they are not a recording. tools/capture has not been built yet.",
+    "",
+    "The name matters: profile::resolve() in apps/fetch maps 'chrome-137' onto",
+    "Emulation::Chrome137, so a caller naming this profile gets a transport layer",
+    "and a JS layer that agree about what browser they are."
+  ],
+  "id": "chrome-137",
+  "browser": "chrome",
+  "version": "137",
+  "platform": "macos",
+  "capturedAt": null,
+  "verified": false,
+  "tls": {
+    "$comment": "Documentation only. The handshake actually sent is wreq-util's, not these values.",
+    "ja4": "unset_transport_owned_by_wreq_util",
+    "cipherSuites": ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+    "extensions": [
+      "server_name",
+      "extended_master_secret",
+      "renegotiation_info",
+      "supported_groups",
+      "ec_point_formats",
+      "application_layer_protocol_negotiation",
+      "status_request",
+      "signature_algorithms",
+      "signed_certificate_timestamp",
+      "key_share",
+      "psk_key_exchange_modes",
+      "supported_versions",
+      "compress_certificate"
+    ],
+    "alpn": ["h2", "http/1.1"]
+  },
+  "http2": {
+    "$comment": "Chrome sends 65536; the validator rejects anything else for a chrome profile.",
+    "headerTableSize": 65536,
+    "initialWindowSize": 6291456,
+    "maxConcurrentStreams": 1000,
+    "pseudoHeaderOrder": [":method", ":authority", ":scheme", ":path"]
+  },
+  "headers": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "acceptLanguage": "en-GB,en-US;q=0.9,en;q=0.8",
+    "acceptEncoding": "gzip, deflate, br, zstd",
+    "$comment": "Header ORDER is itself a fingerprint, independent of the values.",
+    "order": [
+      "host",
+      "connection",
+      "sec-ch-ua",
+      "sec-ch-ua-mobile",
+      "sec-ch-ua-platform",
+      "upgrade-insecure-requests",
+      "user-agent",
+      "accept",
+      "sec-fetch-site",
+      "sec-fetch-mode",
+      "sec-fetch-user",
+      "sec-fetch-dest",
+      "accept-encoding",
+      "accept-language"
+    ]
+  },
+  "js": {
+    "$comment": "canvasSeed is derived from the profile id and then held STABLE. Real browsers return an identical canvas hash on every read; randomising per read is itself the tell.",
+    "canvasSeed": "chrome-137-macos",
+    "webglVendor": "Google Inc. (Apple)",
+    "webglRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)",
+    "hardwareConcurrency": 10,
+    "deviceMemory": 8,
+    "timezone": "Europe/London",
+    "screen": {
+      "width": 1728,
+      "height": 1117,
+      "colorDepth": 30
+    },
+    "fonts": ["Helvetica Neue", "Menlo", "Monaco", "SF Pro Text", "Times New Roman"]
+  }
+}

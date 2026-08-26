@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { PillButton } from './pill-button';
 import { GithubMark } from './github-mark';
-import { GridCells, AsciiFlame } from './ambient';
+import { GridCells, AsciiHelix } from './ambient';
 
 /** Final section: repeats the hero's CTA pair over a cell grid, flanked by ASCII flame pillars. No stats, no logos. */
 export function ClosingCta() {
@@ -14,17 +14,19 @@ export function ClosingCta() {
         labels={{ tl: '[ SEARCH ]', tr: '[ INTERACT ]', bl: '[ SCRAPE ]', br: '[ CRAWL ]' }}
       />
 
-      <AsciiFlame
-        shape="plume"
+      <AsciiHelix
+        orientation="vertical"
         cols={22}
         rows={30}
+        pitch={16}
         seed={5}
         className="pointer-events-none absolute bottom-0 left-[8%] hidden lg:block"
       />
-      <AsciiFlame
-        shape="plume"
+      <AsciiHelix
+        orientation="vertical"
         cols={22}
         rows={30}
+        pitch={16}
         seed={9}
         className="pointer-events-none absolute bottom-0 right-[8%] hidden lg:block"
       />

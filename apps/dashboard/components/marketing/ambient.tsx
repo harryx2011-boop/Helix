@@ -182,109 +182,98 @@ export function GridCells({ cell = 100, labels, sparkles = [], density = 12, see
 }
 
 /* ---------------------------------------------------------------------- */
-/* AsciiFlame: classic heat-propagation fire drawn with characters.        */
-/* Three <pre> layers (ink / violet-soft / violet) so a frame is three     */
-/* text updates, not hundreds of spans.                                    */
+/* AsciiHelix: a rotating double helix drawn with characters. Depth picks   */
+/* the glyph and the layer (back strand in ink, front strand in violet),    */
+/* rungs join the strands. Three <pre> layers per frame, no per-cell spans. */
 /* ---------------------------------------------------------------------- */
 
-const FLAME_CHARS = ' .:-=+*#%X';
+const STRAND_BACK = '.:-';
+const STRAND_MID = '+=*';
+const STRAND_FRONT = '#%@';
 
-export interface AsciiFlameProps {
+export interface AsciiHelixProps {
+  /** Cells across the axis (strand swing + margin). */
   cols?: number;
+  /** Cells along the axis. */
   rows?: number;
-  /** 'plume' narrows toward the top; 'cluster' is a soft blob. */
-  shape?: 'plume' | 'cluster';
+  orientation?: 'vertical' | 'horizontal';
+  /** Cells per full turn. */
+  pitch?: number;
   seed?: number;
   fps?: number;
   quiet?: boolean;
   className?: string;
 }
 
-function flameStep(heat: Float32Array, cols: number, rows: number, rng: () => number, shape: 'plume' | 'cluster') {
-  for (let x = 0; x < cols; x++) {
-    const dx = Math.abs(x - (cols - 1) / 2) / (cols / 2);
-    const base = shape === 'plume' ? 1 - dx * dx * 0.9 : 1 - dx * 0.5;
-    heat[(rows - 1) * cols + x] = Math.max(0, base * (0.6 + rng() * 0.4));
-  }
-  for (let y = 0; y < rows - 1; y++) {
-    const ty = y / rows;
-    for (let x = 0; x < cols; x++) {
-      const below = (y + 1) * cols;
-      const l = heat[below + Math.max(0, x - 1)] ?? 0;
-      const c = heat[below + x] ?? 0;
-      const r = heat[below + Math.min(cols - 1, x + 1)] ?? 0;
-      const d = heat[Math.min(rows - 1, y + 2) * cols + x] ?? 0;
-      const decay = shape === 'plume' ? 0.045 + (1 - ty) * 0.02 : 0.08;
-      heat[y * cols + x] = Math.max(0, (l + c + r + d) / 4.03 - decay * rng());
+function helixLayers(
+  span: number,
+  length: number,
+  pitch: number,
+  phase: number,
+  tick: number,
+  seed: number,
+  horizontal: boolean,
+): [string, string, string] {
+  const w = horizontal ? length : span;
+  const h = horizontal ? span : length;
+  const back = Array.from({ length: h }, () => Array<string>(w).fill(' '));
+  const mid = Array.from({ length: h }, () => Array<string>(w).fill(' '));
+  const front = Array.from({ length: h }, () => Array<string>(w).fill(' '));
+  const radius = (span - 3) / 2;
+  const centre = (span - 1) / 2;
+
+  const put = (grid: string[][], along: number, across: number, ch: string) => {
+    const x = horizontal ? along : across;
+    const y = horizontal ? across : along;
+    if (x >= 0 && x < w && y >= 0 && y < h) grid[y]![x] = ch;
+  };
+  const glyph = (set: string, i: number) => set[((Math.imul(i + 1, 2654435761) ^ seed ^ (tick >> 3)) >>> 0) % set.length] ?? set[0]!;
+
+  const pos = (t: number, offset: number) => Math.round(centre + radius * Math.sin((t / pitch) * Math.PI * 2 + phase + offset));
+  for (let t = 0; t < length; t++) {
+    const theta = (t / pitch) * Math.PI * 2 + phase;
+    const a = pos(t, 0);
+    const b = pos(t, Math.PI);
+    const za = Math.cos(theta);
+    const strand = (across: number, next: number, z: number, i: number) => {
+      const lo = Math.min(across, next);
+      const hi = Math.max(across, next);
+      const grid = z > 0.35 ? front : z > -0.35 ? mid : back;
+      const set = z > 0.35 ? STRAND_FRONT : z > -0.35 ? STRAND_MID : STRAND_BACK;
+      for (let x = lo; x <= hi; x++) put(grid, t, x, glyph(set, i + x));
+      put(grid, t, hi + 1, glyph(z > 0.35 ? STRAND_MID : STRAND_BACK, i + 9));
+    };
+    strand(a, pos(t + 1, 0), za, t);
+    strand(b, pos(t + 1, Math.PI), -za, t + 1000);
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
+    if (t % 4 === 2 && hi - lo > 4) {
+      for (let x = lo + 2; x < hi; x += 2) put(back, t, x, horizontal ? ':' : '·');
     }
   }
+  const join = (g: string[][]) => g.map((r) => r.join('')).join('\n');
+  return [join(back), join(mid), join(front)];
 }
 
-function flameLayers(heat: Float32Array, cols: number, rows: number): [string, string, string] {
-  let ink = '';
-  let soft = '';
-  let hot = '';
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const v = heat[y * cols + x] ?? 0;
-      const idx = Math.min(FLAME_CHARS.length - 1, Math.floor(v * FLAME_CHARS.length));
-      const ch = FLAME_CHARS[idx] ?? ' ';
-      if (v < 0.08) {
-        ink += ' ';
-        soft += ' ';
-        hot += ' ';
-      } else if (v < 0.35) {
-        ink += ch;
-        soft += ' ';
-        hot += ' ';
-      } else if (v < 0.65) {
-        ink += ' ';
-        soft += ch;
-        hot += ' ';
-      } else {
-        ink += ' ';
-        soft += ' ';
-        hot += ch;
-      }
-    }
-    if (y < rows - 1) {
-      ink += '\n';
-      soft += '\n';
-      hot += '\n';
-    }
-  }
-  return [ink, soft, hot];
-}
-
-function settledFlame(cols: number, rows: number, seed: number, shape: 'plume' | 'cluster'): [string, string, string] {
-  const rng = mulberry32(seed);
-  const heat = new Float32Array(cols * rows);
-  for (let i = 0; i < rows * 2; i++) flameStep(heat, cols, rows, rng, shape);
-  return flameLayers(heat, cols, rows);
-}
-
-export function AsciiFlame({ cols = 20, rows = 28, shape = 'plume', seed = 3, fps = 9, quiet, className }: AsciiFlameProps) {
+export function AsciiHelix({ cols = 20, rows = 28, orientation = 'vertical', pitch = 16, seed = 3, fps = 12, quiet, className }: AsciiHelixProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const inView = useInView(ref);
-  const [layers, setLayers] = React.useState<[string, string, string]>(() => settledFlame(cols, rows, seed, shape));
-  const heatRef = React.useRef<Float32Array | null>(null);
+  const horizontal = orientation === 'horizontal';
+  const span = horizontal ? rows : cols;
+  const length = horizontal ? cols : rows;
+  const [layers, setLayers] = React.useState<[string, string, string]>(() => helixLayers(span, length, pitch, 0, 0, seed, horizontal));
+  const tickRef = React.useRef(0);
   const running = inView && !reduced && !quiet;
 
   React.useEffect(() => {
     if (!running) return;
-    const rng = mulberry32(seed + 101);
-    if (!heatRef.current) {
-      heatRef.current = new Float32Array(cols * rows);
-      for (let i = 0; i < rows * 2; i++) flameStep(heatRef.current, cols, rows, rng, shape);
-    }
-    const heat = heatRef.current;
     const id = setInterval(() => {
-      flameStep(heat, cols, rows, rng, shape);
-      setLayers(flameLayers(heat, cols, rows));
+      tickRef.current += 1;
+      setLayers(helixLayers(span, length, pitch, tickRef.current * 0.16, tickRef.current, seed, horizontal));
     }, 1000 / fps);
     return () => clearInterval(id);
-  }, [running, cols, rows, seed, shape, fps]);
+  }, [running, span, length, pitch, seed, fps, horizontal]);
 
   return (
     <div ref={ref} aria-hidden="true" className={cn('pointer-events-none relative select-none font-mono text-[11px] leading-[1.15]', className)}>

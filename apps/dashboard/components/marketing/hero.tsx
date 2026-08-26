@@ -1,5 +1,5 @@
 import { HeroPanel } from './hero-panel';
-import { GridCells, AsciiFlame } from './ambient';
+import { GridCells, AsciiHelix } from './ambient';
 import { PillButton } from './pill-button';
 import { GithubMark } from './github-mark';
 
@@ -29,17 +29,19 @@ export function Hero() {
         </h1>
 
         <div className="relative flex flex-col items-center">
-          <AsciiFlame
-            shape="cluster"
-            cols={26}
+          <AsciiHelix
+            orientation="horizontal"
+            cols={32}
             rows={13}
+            pitch={22}
             seed={5}
             className="absolute right-full top-1/2 hidden -translate-x-6 -translate-y-1/2 lg:block"
           />
-          <AsciiFlame
-            shape="cluster"
-            cols={26}
+          <AsciiHelix
+            orientation="horizontal"
+            cols={32}
             rows={13}
+            pitch={22}
             seed={9}
             className="absolute left-full top-1/2 hidden -translate-y-1/2 translate-x-6 lg:block"
           />

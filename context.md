@@ -111,6 +111,18 @@ BYOK is proven live end to end: probing extract `/schema` with a caller-supplied
 
 `HELIX_RESPECT_ROBOTS` and `HELIX_MAX_HOST_CONCURRENCY` were parsed but never read; both are now wired (the latter replaced a hardcoded `?? 8` in the crawl worker).
 
+## Batch scrape and the stealth chain (2026-08-26)
+
+`POST /v1/batch/scrape` takes a list of URLs and returns one job. It runs on the crawl worker rather than beside it, and batch semantics come from options the frontier already understood: `maxDepth: 0` rejects every discovered link as too deep, `sitemap: 'skip'` removes the other source of unasked-for URLs, and `allowExternal` lets the list span hosts. The `jobs` enum already carried `batch_scrape`, so no migration. Async only. Verified live across two hosts - `example.com` links to `iana.org`, and the job finished with exactly the two supplied tasks.
+
+**The stealth chain was not what the docs said.** Three links, and only one was real:
+
+- **Transport - real.** `apps/fetch`'s `resolve()` maps a profile name onto a `wreq-util` `Emulation` preset (13 identities), maintained upstream against actual browser captures. The JSON definitions do not drive this; `load_all()` in `profile.rs` is a stub with a TODO and never reads them.
+- **JS layer - was dead, now applied.** The definitions carried WebGL strings, core count, memory, timezone and screen that *nothing read*. A scrape naming a profile got the right transport identity and the host machine's real fingerprint - the exact contradiction profiles exist to prevent. `apps/api/src/browser/profiles.ts` now injects it via `addInitScript`, and `profileUsed` is reported the way the fetch tiers already did. Canvas is perturbed deterministically from the profile id, because a value that varies between two reads is itself the tell.
+- **Capture - still missing.** `tools/capture` is an empty directory, so every definition is `verified: false`: plausible, not recorded.
+
+A naming trap worth knowing: the pre-existing `chrome-149-macos` names an identity `resolve()` does not know, so it silently falls back to `chrome-137`. `chrome-137-macos` was added so both layers agree. Check `available()` in `apps/fetch/src/profile.rs` before adding a definition.
+
 ## Conventions
 
 - Tokens: WEBSITE.md §3. Marketing = Firecrawl-structured light theme in violet; app = DESIGN.md dark.

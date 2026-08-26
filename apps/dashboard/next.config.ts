@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import type { NextConfig } from 'next';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -10,7 +10,7 @@ const hosted = process.env.HELIX_HOSTED === '1';
 const nextConfig: NextConfig = {
   ...(hosted ? {} : { output: 'export' as const }),
   images: { unoptimized: true },
-  outputFileTracingRoot: currentDir,
+  outputFileTracingRoot: resolve(currentDir, '..', '..'),
   env: { NEXT_PUBLIC_HELIX_HOSTED: hosted ? '1' : '0' },
 };
 

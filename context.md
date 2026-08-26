@@ -59,6 +59,10 @@ Landing additions: `hard-parts.tsx` (band 02: `DocParse` document-parsing animat
 
 Dev speed: Turbopack (`next dev --turbopack`) panics with "Next.js package not found" in this hoisted-`node_modules` exFAT monorepo (tried `experimental.turbo.root`, `turbopack.root`, cwd-derived root, cleared `.next`); `turbopackPersistentCaching` is canary-only on 15.5. Dev stays on webpack. Cold compiles are I/O-bound on the exFAT drive (`/` 13–35s cold, ~1s warm); moving the checkout to NTFS is the remaining lever.
 
+## Vercel deployment (2026-08-25)
+
+`https://helixapi-dev.vercel.app` (project `helixapi-dev`, team harryx2011-boop, Root Directory `apps/dashboard`, linked from the repo root via `.vercel/`). Production env: Clerk dev keys, `HELIX_HOSTED=1`, `NEXT_PUBLIC_HELIX_HOSTED=1`, `NEXT_PUBLIC_SITE_URL`, the Clerk sign-in/sign-up URL vars, `HELIX_BOOTSTRAP_KEY`, `HELIX_KEY_ENCRYPTION_KEY`, `HELIX_INTERNAL_ADMIN_TOKEN`. No Supabase and no hosted API behind it yet, so `/app` runs on the local stubs and playground calls fail gracefully. Deploy with `vercel --prod --yes` from the repo root; `.vercelignore` keeps `.pgdata`, `research/`, `graphify-out/`, build outputs and virtualenvs out of the upload. `outputFileTracingRoot` must be the monorepo root or hoisted `next` internals are missing from the function (`Cannot find module 'next/dist/compiled/source-map'`). Project settings are patched with `vercel api -X PATCH /v9/projects/<id> -f rootDirectory=apps/dashboard` (the `-f` flag; `-d` is silently ignored).
+
 ## Conventions
 
 - Tokens: WEBSITE.md §3. Marketing = Firecrawl-structured light theme in violet; app = DESIGN.md dark.

@@ -110,11 +110,15 @@ async function main() {
   const browser = await launcher.launch({
     headless: !args.headed,
     ...(args.channel ? { channel: args.channel } : {}),
+    // `screen.width` reports the display, but a browser launched into a small
+    // window can report the window instead. Starting maximised, with no forced
+    // viewport below, is what makes the recorded geometry the real monitor's.
+    ...(args.headed && args.browser === 'chromium' ? { args: ['--start-maximized'] } : {}),
   });
 
   let surface;
   try {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ viewport: null });
     const page = await context.newPage();
     // A real origin, not about:blank: some APIs behave differently on an opaque
     // origin, and a recording taken there would not describe normal browsing.

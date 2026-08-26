@@ -232,6 +232,16 @@ importers:
 
   packages/schema: {}
 
+  tools/capture:
+    dependencies:
+      playwright:
+        specifier: ^1.49.0
+        version: 1.62.1
+    devDependencies:
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.20.1)
+
 packages:
 
   '@alloc/quick-lru@5.2.0':

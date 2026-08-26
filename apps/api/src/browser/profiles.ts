@@ -12,9 +12,10 @@ import type { Log } from '../core/logger.js';
  * running on — WebGL strings, core count, memory, timezone, screen, fonts.
  *
  * A definition with `verified: false` was not captured from a real browser. Its
- * JS surface is a plausible guess, and a guess is exactly the kind of detail
- * detection looks for, so an unverified profile is loaded but never applied
- * unless the caller asks for it by name and the operator opted in.
+ * JS surface is plausible rather than measured, which is exactly the kind of
+ * detail detection looks for. It is still applied when a caller names it —
+ * a guessed identity beats leaking the host machine's real one — but it is
+ * logged every time. `tools/capture` records a verified definition.
  */
 
 export interface ProfileScreen {
@@ -41,7 +42,7 @@ export interface BrowserProfile {
   platform: string;
   /** Null until `tools/capture` records it from a real browser. */
   capturedAt: string | null;
-  /** False for a hand-written definition. Nothing unverified is applied by default. */
+  /** False for a hand-written definition. Applied anyway, but logged on every use. */
   verified: boolean;
   headers?: { userAgent?: string; acceptLanguage?: string };
   js: ProfileJs;
@@ -89,7 +90,20 @@ export function resetProfileCache(): void {
 
 export function getProfile(id: string | undefined, logger?: Log): BrowserProfile | undefined {
   if (!id) return undefined;
-  return loadProfiles(logger).get(id);
+  const profile = loadProfiles(logger).get(id);
+
+  // An unverified profile is still applied — it beats presenting the host
+  // machine's real fingerprint, and silently ignoring a caller's explicit
+  // request would be its own surprise. But it is said out loud, because the
+  // values are plausible rather than measured.
+  if (profile && !profile.verified) {
+    logger?.warn(
+      { profile: profile.id },
+      'applying a profile that was never captured from a real browser; run tools/capture to record one',
+    );
+  }
+
+  return profile;
 }
 
 /**

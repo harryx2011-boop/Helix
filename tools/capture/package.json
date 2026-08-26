@@ -1,0 +1,21 @@
+{
+  "name": "@helix/capture",
+  "version": "0.1.0",
+  "description": "Record a real browser's JS surface into a Helix profile definition.",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "capture": "node capture.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
+  }
+}

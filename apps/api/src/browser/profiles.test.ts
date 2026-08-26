@@ -1,7 +1,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fingerprintScript, getProfile, loadProfiles, resetProfileCache, type BrowserProfile } from './profiles.js';
 
 /**
@@ -83,6 +83,32 @@ describe('getProfile', () => {
 
     expect(getProfile('nope')).toBeUndefined();
     expect(getProfile(undefined)).toBeUndefined();
+  });
+});
+
+describe('unverified profiles', () => {
+  it('is applied, but says so every time', () => {
+    const dir = writeDefinitions({ 'a.json': JSON.stringify(profileFixture({ id: 'chrome-guess' })) });
+    loadProfiles(undefined, dir);
+    const warn = vi.fn();
+
+    const profile = getProfile('chrome-guess', { warn } as never);
+
+    // Applied: a guessed identity still beats leaking the host's real one.
+    expect(profile?.id).toBe('chrome-guess');
+    expect(warn).toHaveBeenCalledOnce();
+    expect(JSON.stringify(warn.mock.calls[0])).toContain('never captured');
+  });
+
+  it('says nothing for a recorded one', () => {
+    const dir = writeDefinitions({
+      'a.json': JSON.stringify(profileFixture({ id: 'chrome-real', verified: true, capturedAt: '2026-08-26T00:00:00Z' })),
+    });
+    loadProfiles(undefined, dir);
+    const warn = vi.fn();
+
+    expect(getProfile('chrome-real', { warn } as never)?.verified).toBe(true);
+    expect(warn).not.toHaveBeenCalled();
   });
 });
 

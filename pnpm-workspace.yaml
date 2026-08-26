@@ -4,3 +4,4 @@ packages:
   - 'packages/schema'
   - 'packages/sdk-ts'
   - 'packages/cli'
+  - 'tools/capture'

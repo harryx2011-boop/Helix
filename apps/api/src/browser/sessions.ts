@@ -88,6 +88,17 @@ export class SessionRegistry {
     return this.#options.maxSessions;
   }
 
+  /**
+   * `maxSessions` and `idleTimeoutMs` are read per open and per sweep, so they
+   * take effect immediately. `hardTimeoutMs` is stamped onto a session when it
+   * opens: sessions already running keep the deadline they were given.
+   */
+  setLimits(limits: { maxSessions?: number; idleTimeoutMs?: number; hardTimeoutMs?: number }): void {
+    if (limits.maxSessions !== undefined) this.#options.maxSessions = limits.maxSessions;
+    if (limits.idleTimeoutMs !== undefined) this.#options.idleTimeoutMs = limits.idleTimeoutMs;
+    if (limits.hardTimeoutMs !== undefined) this.#options.hardTimeoutMs = limits.hardTimeoutMs;
+  }
+
   count(): number {
     return this.#sessions.size;
   }

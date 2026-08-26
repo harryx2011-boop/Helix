@@ -178,6 +178,16 @@ export class BrowserPool {
     this.#logger = options.logger;
   }
 
+  /**
+   * Both limits are re-read on every lease and every page close, so a change
+   * takes effect on the next one. `size` is not settable: it is spent launching
+   * the fleet at boot and cannot be revisited without restarting.
+   */
+  setLimits(limits: { maxContexts?: number; recycleAfter?: number }): void {
+    if (limits.maxContexts !== undefined) this.#options.maxContexts = limits.maxContexts;
+    if (limits.recycleAfter !== undefined) this.#options.recycleAfter = limits.recycleAfter;
+  }
+
   async start(): Promise<void> {
     if (this.#started) return;
     this.#started = true;

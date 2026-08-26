@@ -28,6 +28,8 @@ import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerAgent } from './routes/agent.js';
 import { registerInternal } from './routes/internal.js';
+import { registerSettings } from './routes/settings.js';
+import { readOverrides } from './settings/store.js';
 import { registerInteract } from './routes/interact.js';
 import { createSearchProvider } from './search/providers.js';
 import { WebhookDispatcher as CrawlWebhookDispatcher } from './webhooks/dispatcher.js';
@@ -85,6 +87,20 @@ app.setErrorHandler((error: FastifyError, request, reply) => {
 });
 
 const pool = createPool(config.databaseUrl, app.log);
+
+// Stored overrides are merged before anything reads `config`, so a setting the
+// screen reported as "restart required" genuinely takes effect on restart.
+// Migrations have not run yet on a first boot, so a missing table is not an
+// error here — there is nothing to override until one exists.
+try {
+  const stored = await readOverrides();
+  for (const [key, value] of stored) {
+    (config as Record<string, unknown>)[key] = value;
+  }
+  if (stored.size > 0) app.log.info({ count: stored.size }, 'instance setting overrides loaded');
+} catch (error) {
+  app.log.debug({ error }, 'no stored settings to load');
+}
 
 const fetchClient = new FetchClient(config.fetchUrl, app.log);
 const extractClient = new ExtractClient(config.extractUrl, app.log);
@@ -263,6 +279,46 @@ await app.register(
 );
 
 await registerInternal(app, { adminToken: config.internalAdminToken });
+
+// The environment supplies the defaults; a stored override replaces one. Kept
+// beside `config` so the settings screen can show what it overrode.
+const settingsEnvValues: Record<string, unknown> = {
+  browserMaxContexts: config.browserMaxContexts,
+  browserRecycleAfter: config.browserRecycleAfter,
+  interactMaxSessions: config.interactMaxSessions,
+  interactIdleTimeoutSeconds: config.interactIdleTimeoutSeconds,
+  interactHardTimeoutSeconds: config.interactHardTimeoutSeconds,
+  respectRobots: config.respectRobots,
+  maxHostConcurrency: config.maxHostConcurrency,
+  crawlDefaultLimit: config.crawlDefaultLimit,
+  crawlMaxLimit: config.crawlMaxLimit,
+  crawlMaxDepth: config.crawlMaxDepth,
+  searchMaxResults: config.searchMaxResults,
+  searchScrapeConcurrency: config.searchScrapeConcurrency,
+  searchCacheTtlMs: config.searchCacheTtlMs,
+  searchMaxDurationMs: config.searchMaxDurationMs,
+  parseMaxUploadMb: config.parseMaxUploadMb,
+  parseMaxInflight: config.parseMaxInflight,
+  monitorMinIntervalSeconds: config.monitorMinIntervalSeconds,
+  monitorConcurrency: config.monitorConcurrency,
+  monitorRetainSnapshots: config.monitorRetainSnapshots,
+  monitorRetainDays: config.monitorRetainDays,
+  monitorRetainChecks: config.monitorRetainChecks,
+  resultTtlHours: config.resultTtlHours,
+  webhookMaxAttempts: config.webhookMaxAttempts,
+  userAgent: config.userAgent,
+  logLevel: config.logLevel,
+  corsOrigins: config.corsOrigins,
+  allowPrivateUrls: config.allowPrivateUrls,
+  lightpandaEnabled: config.lightpandaEnabled,
+};
+
+await registerSettings(app, {
+  adminToken: config.internalAdminToken,
+  envValues: settingsEnvValues,
+  live: { browserPool, sessions },
+  encryptionKey: providerEncryptionKey,
+});
 
 // Tools are generated from openapi.yaml for the routes registered above; the
 // bearer key on the MCP request is the same key the HTTP API takes, verified

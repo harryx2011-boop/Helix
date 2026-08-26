@@ -29366,51 +29366,6 @@
       "id": "marketing_ambient_gridcells"
     },
     {
-      "label": "AsciiFlameProps",
-      "file_type": "code",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L192",
-      "community": 22,
-      "norm_label": "asciiflameprops",
-      "id": "marketing_ambient_asciiflameprops"
-    },
-    {
-      "label": "flameStep()",
-      "file_type": "code",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L203",
-      "community": 22,
-      "norm_label": "flamestep()",
-      "id": "marketing_ambient_flamestep"
-    },
-    {
-      "label": "flameLayers()",
-      "file_type": "code",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L223",
-      "community": 22,
-      "norm_label": "flamelayers()",
-      "id": "marketing_ambient_flamelayers"
-    },
-    {
-      "label": "settledFlame()",
-      "file_type": "code",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L259",
-      "community": 22,
-      "norm_label": "settledflame()",
-      "id": "marketing_ambient_settledflame"
-    },
-    {
-      "label": "AsciiFlame()",
-      "file_type": "code",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L266",
-      "community": 22,
-      "norm_label": "asciiflame()",
-      "id": "marketing_ambient_asciiflame"
-    },
-    {
       "label": "Fragment",
       "file_type": "code",
       "source_file": "ambient.tsx",
@@ -29505,54 +29460,54 @@
       "file_type": "code",
       "source_file": "hero.tsx",
       "source_location": "L1",
-      "id": "hero_tsx",
       "community": 22,
-      "norm_label": "hero.tsx"
+      "norm_label": "hero.tsx",
+      "id": "hero_tsx"
     },
     {
       "label": "closing-cta.tsx",
       "file_type": "code",
       "source_file": "closing-cta.tsx",
       "source_location": "L1",
-      "id": "closing_cta_tsx",
       "community": 22,
-      "norm_label": "closing-cta.tsx"
+      "norm_label": "closing-cta.tsx",
+      "id": "closing_cta_tsx"
     },
     {
       "label": "ambient.tsx",
       "file_type": "code",
       "source_file": "ambient.tsx",
       "source_location": "L1",
-      "id": "ambient_tsx",
       "community": 22,
-      "norm_label": "ambient.tsx"
+      "norm_label": "ambient.tsx",
+      "id": "ambient_tsx"
     },
     {
       "label": "AsciiHelixProps",
       "file_type": "code",
       "source_file": "ambient.tsx",
       "source_location": "L194",
-      "id": "marketing_ambient_asciihelixprops",
       "community": 22,
-      "norm_label": "asciihelixprops"
+      "norm_label": "asciihelixprops",
+      "id": "marketing_ambient_asciihelixprops"
     },
     {
       "label": "helixLayers()",
       "file_type": "code",
       "source_file": "ambient.tsx",
       "source_location": "L208",
-      "id": "marketing_ambient_helixlayers",
       "community": 22,
-      "norm_label": "helixlayers()"
+      "norm_label": "helixlayers()",
+      "id": "marketing_ambient_helixlayers"
     },
     {
       "label": "AsciiHelix()",
       "file_type": "code",
       "source_file": "ambient.tsx",
       "source_location": "L258",
-      "id": "marketing_ambient_asciihelix",
       "community": 22,
-      "norm_label": "asciihelix()"
+      "norm_label": "asciihelix()",
+      "id": "marketing_ambient_asciihelix"
     },
     {
       "label": "Helix",
@@ -29563,9 +29518,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_helix",
       "community": 14,
-      "norm_label": "helix"
+      "norm_label": "helix",
+      "id": "contextmd_helix"
     },
     {
       "label": "apps/api",
@@ -29576,9 +29531,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_apps_api",
       "community": 14,
-      "norm_label": "apps/api"
+      "norm_label": "apps/api",
+      "id": "contextmd_apps_api"
     },
     {
       "label": "apps/fetch",
@@ -29589,9 +29544,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_apps_fetch",
       "community": 14,
-      "norm_label": "apps/fetch"
+      "norm_label": "apps/fetch",
+      "id": "contextmd_apps_fetch"
     },
     {
       "label": "apps/extract",
@@ -29602,9 +29557,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_apps_extract",
       "community": 14,
-      "norm_label": "apps/extract"
+      "norm_label": "apps/extract",
+      "id": "contextmd_apps_extract"
     },
     {
       "label": "Postgres + pgvector",
@@ -29615,9 +29570,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_postgres_pgvector",
       "community": 14,
-      "norm_label": "postgres + pgvector"
+      "norm_label": "postgres + pgvector",
+      "id": "contextmd_postgres_pgvector"
     },
     {
       "label": "apps/dashboard",
@@ -29628,9 +29583,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_apps_dashboard",
       "community": 14,
-      "norm_label": "apps/dashboard"
+      "norm_label": "apps/dashboard",
+      "id": "contextmd_apps_dashboard"
     },
     {
       "label": "Scrape API",
@@ -29641,9 +29596,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_scrape_api",
       "community": 14,
-      "norm_label": "scrape api"
+      "norm_label": "scrape api",
+      "id": "contextmd_scrape_api"
     },
     {
       "label": "Parse API",
@@ -29654,9 +29609,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_parse_api",
       "community": 14,
-      "norm_label": "parse api"
+      "norm_label": "parse api",
+      "id": "contextmd_parse_api"
     },
     {
       "label": "Search API",
@@ -29667,9 +29622,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_search_api",
       "community": 14,
-      "norm_label": "search api"
+      "norm_label": "search api",
+      "id": "contextmd_search_api"
     },
     {
       "label": "Crawl API",
@@ -29680,9 +29635,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_crawl_api",
       "community": 14,
-      "norm_label": "crawl api"
+      "norm_label": "crawl api",
+      "id": "contextmd_crawl_api"
     },
     {
       "label": "Interact API",
@@ -29693,9 +29648,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_interact_api",
       "community": 14,
-      "norm_label": "interact api"
+      "norm_label": "interact api",
+      "id": "contextmd_interact_api"
     },
     {
       "label": "Monitor API",
@@ -29706,9 +29661,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_monitor_api",
       "community": 14,
-      "norm_label": "monitor api"
+      "norm_label": "monitor api",
+      "id": "contextmd_monitor_api"
     },
     {
       "label": "MCP server (/mcp)",
@@ -29719,9 +29674,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_mcp_server",
       "community": 14,
-      "norm_label": "mcp server (/mcp)"
+      "norm_label": "mcp server (/mcp)",
+      "id": "contextmd_mcp_server"
     },
     {
       "label": "@helix/cli",
@@ -29732,9 +29687,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_helix_cli",
       "community": 14,
-      "norm_label": "@helix/cli"
+      "norm_label": "@helix/cli",
+      "id": "contextmd_helix_cli"
     },
     {
       "label": "apps/api/src/routes/interact.ts",
@@ -29745,9 +29700,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_interact_route",
       "community": 14,
-      "norm_label": "apps/api/src/routes/interact.ts"
+      "norm_label": "apps/api/src/routes/interact.ts",
+      "id": "contextmd_interact_route"
     },
     {
       "label": "browser/sessions.ts",
@@ -29758,9 +29713,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_browser_sessions",
       "community": 14,
-      "norm_label": "browser/sessions.ts"
+      "norm_label": "browser/sessions.ts",
+      "id": "contextmd_browser_sessions"
     },
     {
       "label": "browser/interact-actions.ts",
@@ -29771,9 +29726,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_browser_interact_actions",
       "community": 14,
-      "norm_label": "browser/interact-actions.ts"
+      "norm_label": "browser/interact-actions.ts",
+      "id": "contextmd_browser_interact_actions"
     },
     {
       "label": "browser/screencast.ts",
@@ -29784,9 +29739,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_browser_screencast",
       "community": 14,
-      "norm_label": "browser/screencast.ts"
+      "norm_label": "browser/screencast.ts",
+      "id": "contextmd_browser_screencast"
     },
     {
       "label": "BrowserPool.lease (Playwright pool)",
@@ -29797,9 +29752,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_browserpool_lease",
       "community": 14,
-      "norm_label": "browserpool.lease (playwright pool)"
+      "norm_label": "browserpool.lease (playwright pool)",
+      "id": "contextmd_browserpool_lease"
     },
     {
       "label": "HELIX_INTERACT_MAX_SESSIONS / _IDLE_TIMEOUT_SECONDS / _HARD_TIMEOUT_SECONDS",
@@ -29810,9 +29765,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_interact_env_vars",
       "community": 14,
-      "norm_label": "helix_interact_max_sessions / _idle_timeout_seconds / _hard_timeout_seconds"
+      "norm_label": "helix_interact_max_sessions / _idle_timeout_seconds / _hard_timeout_seconds",
+      "id": "contextmd_interact_env_vars"
     },
     {
       "label": "/v1/interact/live/{id}?token= (live view SSE)",
@@ -29823,9 +29778,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_live_view_endpoint",
       "community": 14,
-      "norm_label": "/v1/interact/live/{id}?token= (live view sse)"
+      "norm_label": "/v1/interact/live/{id}?token= (live view sse)",
+      "id": "contextmd_live_view_endpoint"
     },
     {
       "label": "HELIX_PUBLIC_URL",
@@ -29836,9 +29791,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_helix_public_url",
       "community": 14,
-      "norm_label": "helix_public_url"
+      "norm_label": "helix_public_url",
+      "id": "contextmd_helix_public_url"
     },
     {
       "label": "HELIX_HOSTED=1 (hosted mode)",
@@ -29850,9 +29805,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Selects hosted mode for apps/dashboard vs self-host build mode.",
-      "id": "contextmd_helix_hosted",
       "community": 14,
-      "norm_label": "helix_hosted=1 (hosted mode)"
+      "norm_label": "helix_hosted=1 (hosted mode)",
+      "id": "contextmd_helix_hosted"
     },
     {
       "label": "Clerk auth (GitHub+Google)",
@@ -29863,9 +29818,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_clerk_auth",
       "community": 14,
-      "norm_label": "clerk auth (github+google)"
+      "norm_label": "clerk auth (github+google)",
+      "id": "contextmd_clerk_auth"
     },
     {
       "label": "Port 3400 (dashboard)",
@@ -29876,9 +29831,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_port_3400",
       "community": 14,
-      "norm_label": "port 3400 (dashboard)"
+      "norm_label": "port 3400 (dashboard)",
+      "id": "contextmd_port_3400"
     },
     {
       "label": "Port 7400 (api)",
@@ -29889,9 +29844,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_port_7400",
       "community": 14,
-      "norm_label": "port 7400 (api)"
+      "norm_label": "port 7400 (api)",
+      "id": "contextmd_port_7400"
     },
     {
       "label": "Search backends: SearXNG/Serper/SerpAPI",
@@ -29903,9 +29858,9 @@
       "author": null,
       "contributor": null,
       "rationale": "HELIX_SEARCH_PROVIDER=auto picks the first configured provider.",
-      "id": "contextmd_search_backends",
       "community": 14,
-      "norm_label": "search backends: searxng/serper/serpapi"
+      "norm_label": "search backends: searxng/serper/serpapi",
+      "id": "contextmd_search_backends"
     },
     {
       "label": "packages/ (profiles, schema, sdk-ts, cli)",
@@ -29916,9 +29871,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_packages_dir",
       "community": 14,
-      "norm_label": "packages/ (profiles, schema, sdk-ts, cli)"
+      "norm_label": "packages/ (profiles, schema, sdk-ts, cli)",
+      "id": "contextmd_packages_dir"
     },
     {
       "label": "supabase/ migrations",
@@ -29929,9 +29884,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_supabase_migrations",
       "community": 14,
-      "norm_label": "supabase/ migrations"
+      "norm_label": "supabase/ migrations",
+      "id": "contextmd_supabase_migrations"
     },
     {
       "label": "graphify-out/ knowledge graph",
@@ -29942,9 +29897,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_graphify_out",
       "community": 14,
-      "norm_label": "graphify-out/ knowledge graph"
+      "norm_label": "graphify-out/ knowledge graph",
+      "id": "contextmd_graphify_out"
     },
     {
       "label": "components/marketing/animated-code.tsx",
@@ -29955,9 +29910,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_animated_code",
       "community": 24,
-      "norm_label": "components/marketing/animated-code.tsx"
+      "norm_label": "components/marketing/animated-code.tsx",
+      "id": "contextmd_animated_code"
     },
     {
       "label": "scramble mode",
@@ -29968,9 +29923,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_animated_code_scramble",
       "community": 24,
-      "norm_label": "scramble mode"
+      "norm_label": "scramble mode",
+      "id": "contextmd_animated_code_scramble"
     },
     {
       "label": "type mode (14ms/char, blinking cursor)",
@@ -29981,9 +29936,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_animated_code_type",
       "community": 24,
-      "norm_label": "type mode (14ms/char, blinking cursor)"
+      "norm_label": "type mode (14ms/char, blinking cursor)",
+      "id": "contextmd_animated_code_type"
     },
     {
       "label": "reveal mode (per-line fade-in-up)",
@@ -29994,9 +29949,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_animated_code_reveal",
       "community": 24,
-      "norm_label": "reveal mode (per-line fade-in-up)"
+      "norm_label": "reveal mode (per-line fade-in-up)",
+      "id": "contextmd_animated_code_reveal"
     },
     {
       "label": "static mode",
@@ -30007,9 +29962,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_animated_code_static",
       "community": 24,
-      "norm_label": "static mode"
+      "norm_label": "static mode",
+      "id": "contextmd_animated_code_static"
     },
     {
       "label": "hero-panel.tsx",
@@ -30020,9 +29975,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_hero_panel",
       "community": 24,
-      "norm_label": "hero-panel.tsx"
+      "norm_label": "hero-panel.tsx",
+      "id": "contextmd_hero_panel"
     },
     {
       "label": "components/playground/prompt-box.tsx",
@@ -30033,9 +29988,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_prompt_box",
       "community": 24,
-      "norm_label": "components/playground/prompt-box.tsx"
+      "norm_label": "components/playground/prompt-box.tsx",
+      "id": "contextmd_prompt_box"
     },
     {
       "label": "Landing page rebuild (2026-08-25)",
@@ -30047,9 +30002,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Modelled on Firecrawl's home per landing-revamp-plan.md; grid-cell hero, character fire, tabbed setup guides, no comparison tables; no social proof/stats/pricing/testimonials per spec.",
-      "id": "contextmd_landing_rebuild",
       "community": 24,
-      "norm_label": "landing page rebuild (2026-08-25)"
+      "norm_label": "landing page rebuild (2026-08-25)",
+      "id": "contextmd_landing_rebuild"
     },
     {
       "label": "landing-revamp-plan.md",
@@ -30060,9 +30015,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_landing_revamp_plan",
       "community": 24,
-      "norm_label": "landing-revamp-plan.md"
+      "norm_label": "landing-revamp-plan.md",
+      "id": "contextmd_landing_revamp_plan"
     },
     {
       "label": "Nav section",
@@ -30073,9 +30028,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_nav_section",
       "community": 24,
-      "norm_label": "nav section"
+      "norm_label": "nav section",
+      "id": "contextmd_nav_section"
     },
     {
       "label": "Hero section",
@@ -30086,9 +30041,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_hero_section",
       "community": 24,
-      "norm_label": "hero section"
+      "norm_label": "hero section",
+      "id": "contextmd_hero_section"
     },
     {
       "label": "Capabilities section (tabbed code panel, 6 tabs)",
@@ -30099,9 +30054,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_capabilities_section",
       "community": 24,
-      "norm_label": "capabilities section (tabbed code panel, 6 tabs)"
+      "norm_label": "capabilities section (tabbed code panel, 6 tabs)",
+      "id": "contextmd_capabilities_section"
     },
     {
       "label": "setup-guides.tsx",
@@ -30112,9 +30067,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_setup_guides",
       "community": 24,
-      "norm_label": "setup-guides.tsx"
+      "norm_label": "setup-guides.tsx",
+      "id": "contextmd_setup_guides"
     },
     {
       "label": "Self-host section",
@@ -30125,9 +30080,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_self_host_section",
       "community": 24,
-      "norm_label": "self-host section"
+      "norm_label": "self-host section",
+      "id": "contextmd_self_host_section"
     },
     {
       "label": "Use cases section",
@@ -30138,9 +30093,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_use_cases_section",
       "community": 24,
-      "norm_label": "use cases section"
+      "norm_label": "use cases section",
+      "id": "contextmd_use_cases_section"
     },
     {
       "label": "Closing CTA section",
@@ -30151,9 +30106,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_closing_cta_section",
       "community": 24,
-      "norm_label": "closing cta section"
+      "norm_label": "closing cta section",
+      "id": "contextmd_closing_cta_section"
     },
     {
       "label": "TerminalReplay",
@@ -30164,9 +30119,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_terminal_replay",
       "community": 24,
-      "norm_label": "terminalreplay"
+      "norm_label": "terminalreplay",
+      "id": "contextmd_terminal_replay"
     },
     {
       "label": "components/marketing/ambient.tsx",
@@ -30177,9 +30132,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_ambient_tsx",
       "community": 24,
-      "norm_label": "components/marketing/ambient.tsx"
+      "norm_label": "components/marketing/ambient.tsx",
+      "id": "contextmd_ambient_tsx"
     },
     {
       "label": "GridCells",
@@ -30190,9 +30145,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_gridcells",
       "community": 24,
-      "norm_label": "gridcells"
+      "norm_label": "gridcells",
+      "id": "contextmd_gridcells"
     },
     {
       "label": "AsciiHelix",
@@ -30203,9 +30158,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_asciihelix",
       "community": 24,
-      "norm_label": "asciihelix"
+      "norm_label": "asciihelix",
+      "id": "contextmd_asciihelix"
     },
     {
       "label": "AmbientCode",
@@ -30216,9 +30171,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_ambientcode",
       "community": 24,
-      "norm_label": "ambientcode"
+      "norm_label": "ambientcode",
+      "id": "contextmd_ambientcode"
     },
     {
       "label": "mulberry32 (seeded PRNG)",
@@ -30229,9 +30184,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_mulberry32",
       "community": 24,
-      "norm_label": "mulberry32 (seeded prng)"
+      "norm_label": "mulberry32 (seeded prng)",
+      "id": "contextmd_mulberry32"
     },
     {
       "label": "char-grid.tsx (removed)",
@@ -30242,9 +30197,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_char_grid_removed",
       "community": 24,
-      "norm_label": "char-grid.tsx (removed)"
+      "norm_label": "char-grid.tsx (removed)",
+      "id": "contextmd_char_grid_removed"
     },
     {
       "label": "integrations.tsx (removed)",
@@ -30255,9 +30210,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_integrations_removed",
       "community": 24,
-      "norm_label": "integrations.tsx (removed)"
+      "norm_label": "integrations.tsx (removed)",
+      "id": "contextmd_integrations_removed"
     },
     {
       "label": "pages/capability-page.tsx",
@@ -30268,9 +30223,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_capability_page",
       "community": 24,
-      "norm_label": "pages/capability-page.tsx"
+      "norm_label": "pages/capability-page.tsx",
+      "id": "contextmd_capability_page"
     },
     {
       "label": "components/marketing/scroll-motion.tsx",
@@ -30281,9 +30236,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_scroll_motion",
       "community": 24,
-      "norm_label": "components/marketing/scroll-motion.tsx"
+      "norm_label": "components/marketing/scroll-motion.tsx",
+      "id": "contextmd_scroll_motion"
     },
     {
       "label": "GSAP",
@@ -30294,9 +30249,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_gsap",
       "community": 24,
-      "norm_label": "gsap"
+      "norm_label": "gsap",
+      "id": "contextmd_gsap"
     },
     {
       "label": "Lenis",
@@ -30307,9 +30262,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_lenis",
       "community": 24,
-      "norm_label": "lenis"
+      "norm_label": "lenis",
+      "id": "contextmd_lenis"
     },
     {
       "label": "(marketing)/layout.tsx",
@@ -30320,9 +30275,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_marketing_layout",
       "community": 24,
-      "norm_label": "(marketing)/layout.tsx"
+      "norm_label": "(marketing)/layout.tsx",
+      "id": "contextmd_marketing_layout"
     },
     {
       "label": "[data-reveal] / [data-reveal-group] > [data-reveal-item] convention",
@@ -30334,9 +30289,9 @@
       "author": null,
       "contributor": null,
       "rationale": "power3.out, 500ms, 60ms stagger, once:true; html.has-motion gates CSS visibility hook in globals.css; reduced-motion skips Lenis and reveals everything immediately via clearProps.",
-      "id": "contextmd_data_reveal_convention",
       "community": 24,
-      "norm_label": "[data-reveal] / [data-reveal-group] > [data-reveal-item] convention"
+      "norm_label": "[data-reveal] / [data-reveal-group] > [data-reveal-item] convention",
+      "id": "contextmd_data_reveal_convention"
     },
     {
       "label": "globals.css (html.has-motion hook)",
@@ -30347,9 +30302,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_globals_css",
       "community": 24,
-      "norm_label": "globals.css (html.has-motion hook)"
+      "norm_label": "globals.css (html.has-motion hook)",
+      "id": "contextmd_globals_css"
     },
     {
       "label": "research/firecrawl-capture/shoot-landing.mjs",
@@ -30360,9 +30315,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_shoot_landing_script",
       "community": 14,
-      "norm_label": "research/firecrawl-capture/shoot-landing.mjs"
+      "norm_label": "research/firecrawl-capture/shoot-landing.mjs",
+      "id": "contextmd_shoot_landing_script"
     },
     {
       "label": "WEBSITE.md",
@@ -30373,9 +30328,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_websitemd",
       "community": 14,
-      "norm_label": "website.md"
+      "norm_label": "website.md",
+      "id": "contextmd_websitemd"
     },
     {
       "label": "ARCHITECTURE.md",
@@ -30386,9 +30341,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_architecturemd",
       "community": 14,
-      "norm_label": "architecture.md"
+      "norm_label": "architecture.md",
+      "id": "contextmd_architecturemd"
     },
     {
       "label": "DESIGN.md",
@@ -30399,9 +30354,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_designmd",
       "community": 14,
-      "norm_label": "design.md"
+      "norm_label": "design.md",
+      "id": "contextmd_designmd"
     },
     {
       "label": "FRONTEND.md",
@@ -30412,9 +30367,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_frontendmd",
       "community": 14,
-      "norm_label": "frontend.md"
+      "norm_label": "frontend.md",
+      "id": "contextmd_frontendmd"
     },
     {
       "label": "MILESTONES.md",
@@ -30425,9 +30380,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_milestonesmd",
       "community": 14,
-      "norm_label": "milestones.md"
+      "norm_label": "milestones.md",
+      "id": "contextmd_milestonesmd"
     },
     {
       "label": "openapi.yaml",
@@ -30438,9 +30393,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_openapiyaml",
       "community": 14,
-      "norm_label": "openapi.yaml"
+      "norm_label": "openapi.yaml",
+      "id": "contextmd_openapiyaml"
     },
     {
       "label": "research/ (evidence)",
@@ -30451,9 +30406,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "contextmd_research_dir",
       "community": 210,
-      "norm_label": "research/ (evidence)"
+      "norm_label": "research/ (evidence)",
+      "id": "contextmd_research_dir"
     },
     {
       "label": "Claims guard (WEBSITE.md \u00a711)",
@@ -30465,9 +30420,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Applies to every user-facing string.",
-      "id": "contextmd_claims_guard",
       "community": 14,
-      "norm_label": "claims guard (website.md \u00a711)"
+      "norm_label": "claims guard (website.md \u00a711)",
+      "id": "contextmd_claims_guard"
     }
   ],
   "links": [
@@ -79245,9 +79200,9 @@
       "source_file": "hero.tsx",
       "source_location": "L7",
       "weight": 1.0,
-      "source": "hero_tsx",
-      "target": "marketing_hero_hero",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_hero_hero",
+      "target": "hero_tsx"
     },
     {
       "relation": "contains",
@@ -84213,9 +84168,9 @@
       "source_file": "closing-cta.tsx",
       "source_location": "L7",
       "weight": 1.0,
-      "source": "closing_cta_tsx",
-      "target": "marketing_closing_cta_closingcta",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_closing_cta_closingcta",
+      "target": "closing_cta_tsx"
     },
     {
       "relation": "references",
@@ -84573,17 +84528,6 @@
       "target": "marketing_ambient_gridcells"
     },
     {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/hero.tsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_marketing_hero_tsx",
-      "target": "marketing_ambient_asciiflame"
-    },
-    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -84675,17 +84619,6 @@
       "confidence_score": 1.0,
       "source": "components_marketing_closing_cta_tsx",
       "target": "marketing_ambient_gridcells"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/closing-cta.tsx",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_marketing_closing_cta_tsx",
-      "target": "marketing_ambient_asciiflame"
     },
     {
       "relation": "imports_from",
@@ -84834,56 +84767,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L192",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_marketing_ambient_tsx",
-      "target": "marketing_ambient_asciiflameprops"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L203",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_marketing_ambient_tsx",
-      "target": "marketing_ambient_flamestep"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L223",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_marketing_ambient_tsx",
-      "target": "marketing_ambient_flamelayers"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L259",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_marketing_ambient_tsx",
-      "target": "marketing_ambient_settledflame"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L266",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_marketing_ambient_tsx",
-      "target": "marketing_ambient_asciiflame"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/ambient.tsx",
       "source_location": "L304",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -84958,19 +84841,8 @@
       "source_location": "L92",
       "weight": 1.0,
       "confidence_score": 1.0,
-      "source": "marketing_ambient_gridcells",
-      "target": "marketing_ambient_mulberry32"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L260",
-      "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "marketing_ambient_mulberry32",
-      "target": "marketing_ambient_settledflame"
+      "target": "marketing_ambient_gridcells"
     },
     {
       "relation": "calls",
@@ -84980,8 +84852,8 @@
       "source_location": "L348",
       "weight": 1.0,
       "confidence_score": 1.0,
-      "source": "marketing_ambient_ambientcode",
-      "target": "marketing_ambient_mulberry32"
+      "source": "marketing_ambient_mulberry32",
+      "target": "marketing_ambient_ambientcode"
     },
     {
       "relation": "contains",
@@ -84989,9 +84861,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L14",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_mulberry32",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_mulberry32",
+      "target": "ambient_tsx"
     },
     {
       "relation": "calls",
@@ -85001,19 +84873,8 @@
       "source_location": "L88",
       "weight": 1.0,
       "confidence_score": 1.0,
-      "source": "marketing_ambient_gridcells",
-      "target": "marketing_ambient_usereducedmotion"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L268",
-      "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "marketing_ambient_usereducedmotion",
-      "target": "marketing_ambient_asciiflame"
+      "target": "marketing_ambient_gridcells"
     },
     {
       "relation": "calls",
@@ -85023,8 +84884,8 @@
       "source_location": "L346",
       "weight": 1.0,
       "confidence_score": 1.0,
-      "source": "marketing_ambient_ambientcode",
-      "target": "marketing_ambient_usereducedmotion"
+      "source": "marketing_ambient_usereducedmotion",
+      "target": "marketing_ambient_ambientcode"
     },
     {
       "relation": "contains",
@@ -85032,9 +84893,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L25",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_usereducedmotion",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_usereducedmotion",
+      "target": "ambient_tsx"
     },
     {
       "relation": "calls",
@@ -85043,9 +84904,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L260",
       "weight": 1.0,
-      "source": "marketing_ambient_asciihelix",
-      "target": "marketing_ambient_usereducedmotion",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_usereducedmotion",
+      "target": "marketing_ambient_asciihelix"
     },
     {
       "relation": "calls",
@@ -85055,19 +84916,8 @@
       "source_location": "L89",
       "weight": 1.0,
       "confidence_score": 1.0,
-      "source": "marketing_ambient_gridcells",
-      "target": "marketing_ambient_useinview"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L269",
-      "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "marketing_ambient_useinview",
-      "target": "marketing_ambient_asciiflame"
+      "target": "marketing_ambient_gridcells"
     },
     {
       "relation": "calls",
@@ -85077,8 +84927,8 @@
       "source_location": "L347",
       "weight": 1.0,
       "confidence_score": 1.0,
-      "source": "marketing_ambient_ambientcode",
-      "target": "marketing_ambient_useinview"
+      "source": "marketing_ambient_useinview",
+      "target": "marketing_ambient_ambientcode"
     },
     {
       "relation": "contains",
@@ -85086,9 +84936,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L37",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_useinview",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_useinview",
+      "target": "ambient_tsx"
     },
     {
       "relation": "calls",
@@ -85097,9 +84947,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L261",
       "weight": 1.0,
-      "source": "marketing_ambient_asciihelix",
-      "target": "marketing_ambient_useinview",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_useinview",
+      "target": "marketing_ambient_asciihelix"
     },
     {
       "relation": "contains",
@@ -85107,9 +84957,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L54",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_corner",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_corner",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85117,9 +84967,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L55",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_marker",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_marker",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85127,9 +84977,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L56",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_markers",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_markers",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85137,9 +84987,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L58",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_gridcellsprops",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_gridcellsprops",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85147,9 +84997,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L72",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_corner_class",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_corner_class",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85157,9 +85007,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L80",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_outercol",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_outercol",
+      "target": "ambient_tsx"
     },
     {
       "relation": "imports",
@@ -85168,9 +85018,9 @@
       "source_file": "hero.tsx",
       "source_location": "L2",
       "weight": 1.0,
-      "source": "hero_tsx",
-      "target": "marketing_ambient_gridcells",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_gridcells",
+      "target": "hero_tsx"
     },
     {
       "relation": "imports",
@@ -85179,9 +85029,9 @@
       "source_file": "closing-cta.tsx",
       "source_location": "L4",
       "weight": 1.0,
-      "source": "closing_cta_tsx",
-      "target": "marketing_ambient_gridcells",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_gridcells",
+      "target": "closing_cta_tsx"
     },
     {
       "relation": "contains",
@@ -85189,31 +85039,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L86",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_gridcells",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L262",
-      "weight": 1.0,
       "confidence_score": 1.0,
-      "source": "marketing_ambient_flamestep",
-      "target": "marketing_ambient_settledflame"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "components/marketing/ambient.tsx",
-      "source_location": "L263",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "marketing_ambient_flamelayers",
-      "target": "marketing_ambient_settledflame"
+      "source": "marketing_ambient_gridcells",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85221,9 +85049,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L293",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_fragment",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_fragment",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85231,9 +85059,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L303",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_fragments",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_fragments",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85241,9 +85069,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L325",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_tone_class",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_tone_class",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85251,9 +85079,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L332",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_ambientcodeprops",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_ambientcodeprops",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85261,9 +85089,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L339",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_spawn",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_spawn",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85271,9 +85099,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L344",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_ambientcode",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_ambientcode",
+      "target": "ambient_tsx"
     },
     {
       "relation": "contains",
@@ -85281,9 +85109,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L392",
       "weight": 1.0,
-      "source": "ambient_tsx",
-      "target": "marketing_ambient_resolvetext",
-      "confidence_score": 1.0
+      "confidence_score": 1.0,
+      "source": "marketing_ambient_resolvetext",
+      "target": "ambient_tsx"
     },
     {
       "relation": "imports_from",
@@ -85313,9 +85141,9 @@
       "source_file": "hero.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "hero_tsx",
-      "target": "ambient_tsx",
-      "confidence_score": 1.0
+      "target": "ambient_tsx"
     },
     {
       "relation": "imports",
@@ -85324,9 +85152,9 @@
       "source_file": "hero.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "hero_tsx",
-      "target": "marketing_ambient_asciihelix",
-      "confidence_score": 1.0
+      "target": "marketing_ambient_asciihelix"
     },
     {
       "relation": "imports_from",
@@ -85335,9 +85163,9 @@
       "source_file": "closing-cta.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "closing_cta_tsx",
-      "target": "ambient_tsx",
-      "confidence_score": 1.0
+      "target": "ambient_tsx"
     },
     {
       "relation": "imports",
@@ -85346,9 +85174,9 @@
       "source_file": "closing-cta.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "closing_cta_tsx",
-      "target": "marketing_ambient_asciihelix",
-      "confidence_score": 1.0
+      "target": "marketing_ambient_asciihelix"
     },
     {
       "relation": "contains",
@@ -85356,9 +85184,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L194",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ambient_tsx",
-      "target": "marketing_ambient_asciihelixprops",
-      "confidence_score": 1.0
+      "target": "marketing_ambient_asciihelixprops"
     },
     {
       "relation": "contains",
@@ -85366,9 +85194,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L208",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ambient_tsx",
-      "target": "marketing_ambient_helixlayers",
-      "confidence_score": 1.0
+      "target": "marketing_ambient_helixlayers"
     },
     {
       "relation": "contains",
@@ -85376,9 +85204,9 @@
       "source_file": "ambient.tsx",
       "source_location": "L258",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "ambient_tsx",
-      "target": "marketing_ambient_asciihelix",
-      "confidence_score": 1.0
+      "target": "marketing_ambient_asciihelix"
     },
     {
       "relation": "references",
@@ -85467,8 +85295,8 @@
       "source_file": "context.md",
       "source_location": "L15",
       "weight": 1.0,
-      "source": "contextmd_websitemd",
-      "target": "contextmd_helix"
+      "source": "contextmd_helix",
+      "target": "contextmd_websitemd"
     },
     {
       "relation": "references",
@@ -85477,8 +85305,8 @@
       "source_file": "context.md",
       "source_location": "L16",
       "weight": 1.0,
-      "source": "contextmd_architecturemd",
-      "target": "contextmd_helix"
+      "source": "contextmd_helix",
+      "target": "contextmd_architecturemd"
     },
     {
       "relation": "references",
@@ -85487,8 +85315,8 @@
       "source_file": "context.md",
       "source_location": "L17",
       "weight": 1.0,
-      "source": "contextmd_designmd",
-      "target": "contextmd_helix"
+      "source": "contextmd_helix",
+      "target": "contextmd_designmd"
     },
     {
       "relation": "references",
@@ -85497,8 +85325,8 @@
       "source_file": "context.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "contextmd_milestonesmd",
-      "target": "contextmd_helix"
+      "source": "contextmd_helix",
+      "target": "contextmd_milestonesmd"
     },
     {
       "relation": "implements",
@@ -85597,8 +85425,8 @@
       "source_file": "context.md",
       "source_location": "L20",
       "weight": 1.0,
-      "source": "contextmd_openapiyaml",
-      "target": "contextmd_apps_api"
+      "source": "contextmd_apps_api",
+      "target": "contextmd_openapiyaml"
     },
     {
       "relation": "implements",
@@ -85647,8 +85475,8 @@
       "source_file": "context.md",
       "source_location": "L18",
       "weight": 1.0,
-      "source": "contextmd_frontendmd",
-      "target": "contextmd_apps_dashboard"
+      "source": "contextmd_apps_dashboard",
+      "target": "contextmd_frontendmd"
     },
     {
       "relation": "implements",
@@ -85667,8 +85495,8 @@
       "source_file": "context.md",
       "source_location": "L27",
       "weight": 1.0,
-      "source": "contextmd_helix_cli",
-      "target": "contextmd_mcp_server"
+      "source": "contextmd_mcp_server",
+      "target": "contextmd_helix_cli"
     },
     {
       "relation": "references",
@@ -85677,8 +85505,8 @@
       "source_file": "context.md",
       "source_location": "L27",
       "weight": 1.0,
-      "source": "contextmd_packages_dir",
-      "target": "contextmd_helix_cli"
+      "source": "contextmd_helix_cli",
+      "target": "contextmd_packages_dir"
     },
     {
       "relation": "references",
@@ -85757,8 +85585,8 @@
       "source_file": "context.md",
       "source_location": "L33",
       "weight": 1.0,
-      "source": "contextmd_hero_panel",
-      "target": "contextmd_animated_code"
+      "source": "contextmd_animated_code",
+      "target": "contextmd_hero_panel"
     },
     {
       "relation": "calls",
@@ -85767,8 +85595,8 @@
       "source_file": "context.md",
       "source_location": "L33",
       "weight": 1.0,
-      "source": "contextmd_capability_page",
-      "target": "contextmd_animated_code"
+      "source": "contextmd_animated_code",
+      "target": "contextmd_capability_page"
     },
     {
       "relation": "calls",
@@ -85777,8 +85605,8 @@
       "source_file": "context.md",
       "source_location": "L33",
       "weight": 1.0,
-      "source": "contextmd_capabilities_section",
-      "target": "contextmd_animated_code"
+      "source": "contextmd_animated_code",
+      "target": "contextmd_capabilities_section"
     },
     {
       "relation": "implements",
@@ -85837,8 +85665,8 @@
       "source_file": "context.md",
       "source_location": "L38",
       "weight": 1.0,
-      "source": "contextmd_hero_section",
-      "target": "contextmd_hero_panel"
+      "source": "contextmd_hero_panel",
+      "target": "contextmd_hero_section"
     },
     {
       "relation": "references",
@@ -85957,8 +85785,8 @@
       "source_file": "context.md",
       "source_location": "L42",
       "weight": 1.0,
-      "source": "contextmd_capability_page",
-      "target": "contextmd_capabilities_section"
+      "source": "contextmd_capabilities_section",
+      "target": "contextmd_capability_page"
     },
     {
       "relation": "calls",
@@ -86107,8 +85935,8 @@
       "source_file": "context.md",
       "source_location": "L44",
       "weight": 1.0,
-      "source": "contextmd_marketing_layout",
-      "target": "contextmd_scroll_motion"
+      "source": "contextmd_scroll_motion",
+      "target": "contextmd_marketing_layout"
     },
     {
       "relation": "implements",
@@ -86137,8 +85965,8 @@
       "source_file": "context.md",
       "source_location": "L20",
       "weight": 1.0,
-      "source": "contextmd_openapiyaml",
-      "target": "contextmd_websitemd"
+      "source": "contextmd_websitemd",
+      "target": "contextmd_openapiyaml"
     },
     {
       "relation": "references",
@@ -86147,8 +85975,8 @@
       "source_file": "context.md",
       "source_location": "L49",
       "weight": 1.0,
-      "source": "contextmd_claims_guard",
-      "target": "contextmd_websitemd"
+      "source": "contextmd_websitemd",
+      "target": "contextmd_claims_guard"
     }
   ],
   "hyperedges": [
@@ -86192,5 +86020,5 @@
       "source_file": "context.md"
     }
   ],
-  "built_at_commit": "de68c994385071b1ec2dd16dd3d7021dd1ed2526"
+  "built_at_commit": "069da19866b1a61f458a05dfb8f84cb7c2895499"
 }

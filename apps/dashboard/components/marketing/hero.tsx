@@ -10,18 +10,21 @@ export function Hero() {
       <GridCells
         labels={{ tl: '[ 200 OK ]', tr: '[ SCRAPE ]', bl: '[ .JSON ]', br: '[ .MD ]' }}
         sparkles={[[3, 2], [10, 2]]}
+        clusters={[
+          { col: 1, row: 2, size: 4 },
+          { col: 0, row: 4, size: 3 },
+          { col: 9, row: 1, size: 3, accent: true },
+          { col: 10, row: 4, size: 4 },
+        ]}
+        crosshairs
         fade="bottom"
       />
 
       <div className="mx-auto flex min-w-0 max-w-container flex-col items-center px-4 text-center">
-        <span data-reveal className="inline-block max-w-[320px] rounded-pill bg-m-ink/[0.039] px-4 py-1.5 font-mono text-[12px] leading-snug text-m-ink/72 sm:max-w-none sm:text-[13px]">
-          Apache-2.0 · self-hosted · bring your own keys <span aria-hidden>→</span>
-        </span>
-
         <h1
           data-reveal
           style={{ transitionDelay: '60ms' }}
-          className="mt-6 max-w-[760px] text-[44px] font-normal leading-[1.03] tracking-tightest sm:text-[64px]"
+          className="max-w-[760px] text-[44px] font-normal leading-[1.03] tracking-tightest sm:text-[64px]"
         >
           The web-data API
           <br />

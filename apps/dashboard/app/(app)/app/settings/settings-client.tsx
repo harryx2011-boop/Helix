@@ -1,18 +1,20 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { UserProfile, useClerk } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { AlertTriangle } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { User, SlidersHorizontal, BarChart3, Settings2, Check, Copy } from 'lucide-react';
+import { PageFrame, FrameRow, FrameHeading } from '@/components/app/page-frame';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { CharChart } from '@/components/app/char-chart';
 import { ENDPOINTS } from '@/lib/catalog';
+import { PUBLIC_API_URL } from '@/lib/mode';
+import { cn } from '@/lib/utils';
 import type { ProfileRow } from '@/lib/supabase/types';
 
 const ROLES = ['Engineer', 'Founder', 'Researcher', 'Data/ML', 'Other'] as const;
@@ -20,7 +22,62 @@ const USE_CASES = ['Agent tools', 'Research pipeline', 'RAG / search index', 'Mo
 const PROVIDERS = ['Anthropic', 'OpenAI', 'Google', 'OpenRouter', 'Local (Ollama/vLLM)', 'Not sure yet'] as const;
 const DEPLOY_INTENTS = ['Hosted', 'Self-host', 'Both'] as const;
 
-function PreferencesTab({ profile }: { profile: ProfileRow }) {
+const TABS = [
+  { id: 'profile', label: 'Profile', icon: User },
+  { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
+  { id: 'statistics', label: 'Statistics', icon: BarChart3 },
+  { id: 'advanced', label: 'Advanced', icon: Settings2 },
+] as const;
+
+type TabId = (typeof TABS)[number]['id'];
+
+function isTabId(value: string | null): value is TabId {
+  return TABS.some((t) => t.id === value);
+}
+
+function SubNav({ active, onChange }: { active: TabId; onChange: (id: TabId) => void }) {
+  const refs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+
+  const handleKeyDown = (event: React.KeyboardEvent, index: number) => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    event.preventDefault();
+    const delta = event.key === 'ArrowDown' ? 1 : -1;
+    const next = TABS[(index + delta + TABS.length) % TABS.length]!;
+    onChange(next.id);
+    refs.current[next.id]?.focus();
+  };
+
+  return (
+    <div role="tablist" aria-label="Settings sections" className="flex flex-col gap-0.5 p-2 lg:p-3">
+      {TABS.map((tab, index) => {
+        const Icon = tab.icon;
+        const selected = tab.id === active;
+        return (
+          <button
+            key={tab.id}
+            ref={(el) => {
+              refs.current[tab.id] = el;
+            }}
+            role="tab"
+            aria-selected={selected}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onChange(tab.id)}
+            onKeyDown={(e) => handleKeyDown(e, index)}
+            className={cn(
+              'flex shrink-0 items-center gap-2 rounded-card px-3 py-2 text-left text-[13px] font-medium transition-colors duration-150 ease-out',
+              selected ? 'bg-primary/12 text-primary' : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground',
+            )}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PreferencesPanel({ profile }: { profile: ProfileRow }) {
   const [role, setRole] = React.useState(profile.role ?? '');
   const [useCases, setUseCases] = React.useState<string[]>(profile.use_cases ?? []);
   const [provider, setProvider] = React.useState(profile.llm_provider ?? '');
@@ -60,14 +117,10 @@ function PreferencesTab({ profile }: { profile: ProfileRow }) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Preferences</CardTitle>
-        <CardDescription>Re-edit your onboarding answers. Saving regenerates your SKILL.md.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Label>What best describes you?</Label>
+    <>
+      <FrameRow>
+        <FrameHeading title="Role" description="What best describes you." />
+        <div className="px-6 pb-5">
           <Select value={role} onValueChange={setRole}>
             <SelectTrigger className="max-w-xs">
               <SelectValue placeholder="Select one" />
@@ -81,21 +134,23 @@ function PreferencesTab({ profile }: { profile: ProfileRow }) {
             </SelectContent>
           </Select>
         </div>
+      </FrameRow>
 
-        <div className="flex flex-col gap-2">
-          <Label>What are you building?</Label>
-          <div className="flex flex-wrap gap-3">
-            {USE_CASES.map((uc) => (
-              <label key={uc} className="flex items-center gap-2 text-sm">
-                <Checkbox checked={useCases.includes(uc)} onCheckedChange={() => toggleUseCase(uc)} />
-                {uc}
-              </label>
-            ))}
-          </div>
+      <FrameRow>
+        <FrameHeading title="Use cases" description="What are you building." />
+        <div className="flex flex-wrap gap-3 px-6 pb-5">
+          {USE_CASES.map((uc) => (
+            <label key={uc} className="flex items-center gap-2 text-[13px] text-foreground">
+              <Checkbox checked={useCases.includes(uc)} onCheckedChange={() => toggleUseCase(uc)} />
+              {uc}
+            </label>
+          ))}
         </div>
+      </FrameRow>
 
-        <div className="flex flex-col gap-2">
-          <Label>Which LLM provider will you bring?</Label>
+      <FrameRow>
+        <FrameHeading title="LLM provider" description="Which provider will you bring." />
+        <div className="px-6 pb-5">
           <Select value={provider} onValueChange={setProvider}>
             <SelectTrigger className="max-w-xs">
               <SelectValue placeholder="Select one" />
@@ -109,9 +164,11 @@ function PreferencesTab({ profile }: { profile: ProfileRow }) {
             </SelectContent>
           </Select>
         </div>
+      </FrameRow>
 
-        <div className="flex flex-col gap-2">
-          <Label>How will you run Helix?</Label>
+      <FrameRow>
+        <FrameHeading title="Deployment" description="How will you run Helix." />
+        <div className="px-6 pb-5">
           <Select value={deployIntent} onValueChange={setDeployIntent}>
             <SelectTrigger className="max-w-xs">
               <SelectValue placeholder="Select one" />
@@ -125,26 +182,27 @@ function PreferencesTab({ profile }: { profile: ProfileRow }) {
             </SelectContent>
           </Select>
         </div>
+      </FrameRow>
 
-        <div className="flex flex-col gap-2">
-          <Label>Which endpoints will you use?</Label>
-          <div className="flex flex-col gap-1.5">
-            {ENDPOINTS.filter((e) => e.product).map((e) => (
-              <label key={e.id} className="flex items-center gap-2 text-sm">
-                <Checkbox checked={selected.includes(e.id)} onCheckedChange={() => toggleEndpoint(e.id)} />
-                {e.name}
-                <span className="text-xs text-muted-foreground">{e.tagline}</span>
-              </label>
-            ))}
-          </div>
+      <FrameRow>
+        <FrameHeading title="Endpoints" description="Which endpoints will you use." />
+        <div className="flex flex-col gap-1.5 px-6 pb-5">
+          {ENDPOINTS.filter((e) => e.product).map((e) => (
+            <label key={e.id} className="flex items-center gap-2 text-[13px] text-foreground">
+              <Checkbox checked={selected.includes(e.id)} onCheckedChange={() => toggleEndpoint(e.id)} />
+              {e.name}
+              <span className="text-xs text-muted-foreground">{e.tagline}</span>
+            </label>
+          ))}
         </div>
+      </FrameRow>
 
-        <Button onClick={handleSave} disabled={saving} className="w-fit gap-2">
-          {saving && <span className="h-3.5 w-3.5 animate-spin rounded-pill border-2 border-primary-foreground/40 border-t-primary-foreground" />}
-          Save preferences
+      <FrameRow flush className="flex justify-end px-6 py-5">
+        <Button onClick={handleSave} disabled={saving} className="rounded-pill">
+          {saving ? 'Saving…' : 'Save preferences'}
         </Button>
-      </CardContent>
-    </Card>
+      </FrameRow>
+    </>
   );
 }
 
@@ -158,7 +216,7 @@ interface StatsData {
 
 const EMPTY_STATS: StatsData = { totalRuns: 0, successRate: 0, byEndpoint: [], tierDistribution: [], spendByProvider: [] };
 
-function StatisticsTab() {
+function StatisticsPanel() {
   const [stats, setStats] = React.useState<StatsData | null>(null);
   const [loading, setLoading] = React.useState(true);
 
@@ -176,45 +234,39 @@ function StatisticsTab() {
 
   if (loading || !stats) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-40 w-full" />
-      </div>
+      <FrameRow flush className="flex flex-col gap-3 p-6">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </FrameRow>
     );
   }
 
   const tierTotal = stats.tierDistribution.reduce((sum, t) => sum + t.count, 0);
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-mono text-xs uppercase tracking-wide text-muted-foreground">Runs by endpoint</CardTitle>
-        </CardHeader>
-        <CardContent>
+    <>
+      <FrameRow>
+        <FrameHeading title="Runs by endpoint" />
+        <div className="px-6 pb-5">
           <CharChart
             series={[{ label: 'runs', values: stats.byEndpoint.map((e) => e.total) }]}
             labels={stats.byEndpoint.map((e) => e.endpoint)}
             height={8}
           />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-mono text-xs uppercase tracking-wide text-muted-foreground">Success rate</CardTitle>
-        </CardHeader>
-        <CardContent>
+        </div>
+      </FrameRow>
+
+      <FrameRow>
+        <FrameHeading title="Success rate" />
+        <div className="px-6 pb-5">
           <span className="font-mono text-2xl text-foreground">{(stats.successRate * 100).toFixed(1)}%</span>
           <span className="ml-2 text-sm text-muted-foreground">of {stats.totalRuns} runs</span>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-mono text-xs uppercase tracking-wide text-muted-foreground">Tier distribution</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-1.5">
+        </div>
+      </FrameRow>
+
+      <FrameRow>
+        <FrameHeading title="Tier distribution" />
+        <div className="flex flex-col gap-1.5 px-6 pb-5">
           {stats.tierDistribution.length === 0 ? (
             <span className="text-sm text-muted-foreground">No runs yet.</span>
           ) : (
@@ -225,13 +277,12 @@ function StatisticsTab() {
               </div>
             ))
           )}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-mono text-xs uppercase tracking-wide text-muted-foreground">Spend by provider</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-1.5">
+        </div>
+      </FrameRow>
+
+      <FrameRow flush>
+        <FrameHeading title="Spend by provider" />
+        <div className="flex flex-col gap-1.5 px-6 pb-5">
           {stats.spendByProvider.length === 0 ? (
             <span className="text-sm text-muted-foreground">No spend yet.</span>
           ) : (
@@ -242,16 +293,43 @@ function StatisticsTab() {
               </div>
             ))
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </FrameRow>
+    </>
   );
 }
 
-function DangerZoneTab() {
+function ApiBaseUrlRow() {
+  const [copied, setCopied] = React.useState(false);
+
+  const onCopy = () => {
+    navigator.clipboard.writeText(PUBLIC_API_URL).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <FrameRow>
+      <FrameHeading title="API base URL" description="The base URL your requests are sent to." />
+      <div className="flex items-center gap-2 px-6 pb-5">
+        <span className="flex-1 truncate rounded-card border border-border bg-secondary/40 px-3 py-2 font-mono text-sm text-foreground">
+          {PUBLIC_API_URL}
+        </span>
+        <Button variant="outline" size="icon" onClick={onCopy} aria-label="Copy API base URL">
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        </Button>
+      </div>
+    </FrameRow>
+  );
+}
+
+function AdvancedPanel({ profile }: { profile: ProfileRow }) {
   const { signOut } = useClerk();
   const [confirming, setConfirming] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+
+  const initials = (profile.name || profile.email).slice(0, 2).toUpperCase();
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -266,73 +344,117 @@ function DangerZoneTab() {
   };
 
   return (
-    <Card className="border-destructive/40">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-destructive">
-          <AlertTriangle className="h-4 w-4" />
-          Danger zone
-        </CardTitle>
-        <CardDescription>Deletes your Helix account, API keys, and usage history. This cannot be undone.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {confirming ? (
-          <div className="flex items-center gap-2">
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting} className="gap-2">
-              {deleting && <span className="h-3.5 w-3.5 animate-spin rounded-pill border-2 border-destructive-foreground/40 border-t-destructive-foreground" />}
-              Confirm delete account
-            </Button>
-            <Button variant="outline" onClick={() => setConfirming(false)} disabled={deleting}>
-              Cancel
-            </Button>
+    <>
+      <ApiBaseUrlRow />
+      <FrameRow flush>
+        <FrameHeading title="Delete account" description="Once you delete your account, there is no going back." />
+        <div className="flex items-center justify-between gap-4 px-6 pb-5">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Avatar>
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            <span className="truncate text-sm text-foreground">{profile.email}</span>
           </div>
-        ) : (
-          <Button variant="destructive" onClick={() => setConfirming(true)}>
-            Delete account
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+          {confirming ? (
+            <div className="flex shrink-0 items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setConfirming(false)} disabled={deleting}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-pill bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting ? 'Deleting…' : 'Confirm delete'}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => setConfirming(true)}
+              className="shrink-0 rounded-pill bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </Button>
+          )}
+        </div>
+      </FrameRow>
+    </>
   );
 }
 
 export function SettingsClient({ profile }: { profile: ProfileRow }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const active: TabId = isTabId(tabParam) ? tabParam : 'profile';
+
+  const onChange = (id: TabId) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', id);
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   return (
-    <div className="flex flex-col gap-4 p-4 lg:p-6">
-      <Tabs defaultValue="profile">
-        <TabsList className="rounded-pill">
-          <TabsTrigger value="profile" className="rounded-pill">
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value="preferences" className="rounded-pill">
-            Preferences
-          </TabsTrigger>
-          <TabsTrigger value="statistics" className="rounded-pill">
-            Statistics
-          </TabsTrigger>
-          <TabsTrigger value="danger" className="rounded-pill">
-            Danger zone
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="profile" className="pt-4">
-          <Card>
-            <CardContent className="p-0">
-              <UserProfile
-                routing="hash"
-                appearance={{ elements: { rootBox: 'w-full', card: 'shadow-none border-none bg-transparent w-full' } }}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="preferences" className="pt-4">
-          <PreferencesTab profile={profile} />
-        </TabsContent>
-        <TabsContent value="statistics" className="pt-4">
-          <StatisticsTab />
-        </TabsContent>
-        <TabsContent value="danger" className="pt-4">
-          <DangerZoneTab />
-        </TabsContent>
-      </Tabs>
+    <PageFrame>
+      <FrameRow className="flex h-44 flex-col justify-center px-6">
+        <h1 className="text-[32px] font-medium leading-tight tracking-tight text-foreground">Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Manage your profile, preferences and account</p>
+      </FrameRow>
+
+      <FrameRow flush>
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] lg:divide-x lg:divide-border">
+          <div className="border-b border-border lg:border-b-0">
+            <div className="flex overflow-x-auto lg:hidden">
+              <SubNavMobile active={active} onChange={onChange} />
+            </div>
+            <div className="hidden lg:block">
+              <SubNav active={active} onChange={onChange} />
+            </div>
+          </div>
+
+          <div>
+            {active === 'profile' && (
+              <div className="p-6">
+                <UserProfile
+                  routing="hash"
+                  appearance={{ elements: { rootBox: 'w-full', card: 'shadow-none border-none bg-transparent w-full' } }}
+                />
+              </div>
+            )}
+            {active === 'preferences' && <PreferencesPanel profile={profile} />}
+            {active === 'statistics' && <StatisticsPanel />}
+            {active === 'advanced' && <AdvancedPanel profile={profile} />}
+          </div>
+        </div>
+      </FrameRow>
+    </PageFrame>
+  );
+}
+
+function SubNavMobile({ active, onChange }: { active: TabId; onChange: (id: TabId) => void }) {
+  return (
+    <div role="tablist" aria-label="Settings sections" className="flex gap-1.5 p-3">
+      {TABS.map((tab) => {
+        const Icon = tab.icon;
+        const selected = tab.id === active;
+        return (
+          <button
+            key={tab.id}
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onChange(tab.id)}
+            className={cn(
+              'flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-1.5 text-[13px] font-medium transition-colors duration-150 ease-out',
+              selected ? 'bg-primary/12 text-primary' : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground',
+            )}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

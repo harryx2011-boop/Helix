@@ -40,8 +40,8 @@ export function SpendMeter({ collapsed }: { collapsed: boolean }) {
 
   if (collapsed) {
     return (
-      <div className="flex justify-center px-2 py-2" title={`$${summary.monthToDateUsd.toFixed(2)} est. · month to date`}>
-        <div className="h-1 w-6 rounded-pill bg-muted">
+      <div className="flex justify-center py-2" title={`$${summary.monthToDateUsd.toFixed(2)} est. · month to date`}>
+        <div className="h-1 w-6 rounded-pill bg-secondary">
           {summary.budgetUsd !== null && <div className="h-1 rounded-pill bg-primary" style={{ width: `${pct}%` }} />}
         </div>
       </div>
@@ -49,15 +49,18 @@ export function SpendMeter({ collapsed }: { collapsed: boolean }) {
   }
 
   return (
-    <div className="flex flex-col gap-1.5 px-2.5 py-2">
-      <div className={cn('font-mono text-xs text-muted-foreground', loading && 'animate-pulse')}>
-        <span className="text-foreground">${summary.monthToDateUsd.toFixed(2)}</span> est. · month to date
+    <div className="flex flex-col gap-1.5 px-1 py-2">
+      <div className={cn('text-[13px] text-foreground', loading && 'animate-pulse')}>
+        ${summary.monthToDateUsd.toFixed(2)} est. spend this month
       </div>
-      {summary.budgetUsd !== null && (
-        <div className="h-1 w-full overflow-hidden rounded-pill bg-muted">
+      <div className="h-1 w-full overflow-hidden rounded-pill bg-secondary">
+        {summary.budgetUsd !== null && (
           <div className="h-full rounded-pill bg-primary transition-[width] duration-300 ease-out" style={{ width: `${pct}%` }} />
-        </div>
-      )}
+        )}
+      </div>
+      <div className="font-mono text-[11px] text-muted-foreground">
+        {summary.budgetUsd !== null ? `Budget $${summary.budgetUsd.toFixed(0)}/mo` : 'No budget set'}
+      </div>
     </div>
   );
 }

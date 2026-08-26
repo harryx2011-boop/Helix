@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
-import { Activity, BarChart3, BookOpen, Home, KeyRound, Server, Settings } from 'lucide-react';
+import { Activity, BarChart3, BookOpen, Home, KeyRound, Server, Settings, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ENDPOINTS, orderBySelection } from '@/lib/catalog';
 
@@ -49,6 +49,10 @@ export function buildNavGroups(selectedEndpoints: readonly string[]): NavGroup[]
       }),
     },
     {
+      heading: 'Research preview',
+      rows: [{ href: '/app/agent', label: 'Agent', icon: Sparkles }],
+    },
+    {
       heading: 'Self-host',
       rows: [
         { href: '/app/self-host', label: 'Guide', icon: BookOpen },
@@ -78,7 +82,7 @@ export function SidebarNav({ selectedEndpoints, collapsed }: { selectedEndpoints
   const groups = buildNavGroups(selectedEndpoints);
 
   return (
-    <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-2 py-3" aria-label="App navigation">
+    <nav className={cn('flex flex-1 flex-col gap-4 overflow-y-auto py-3', collapsed ? 'px-0' : 'px-2')} aria-label="App navigation">
       {groups.map((group, gi) => (
         <div key={group.heading ?? `group-${gi}`} className="flex flex-col gap-0.5">
           {group.heading && !collapsed && (

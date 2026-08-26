@@ -67,6 +67,10 @@ export interface GridCellsProps {
   fade?: 'bottom' | 'none';
   quiet?: boolean;
   className?: string;
+  /** Cells that carry a small pixel-square cluster, centred in the cell. */
+  clusters?: { col: number; row: number; size?: 3 | 4; accent?: boolean }[];
+  /** Draw a small `+` crosshair at every grid intersection (lg+ only). */
+  crosshairs?: boolean;
 }
 
 const CORNER_CLASS: Record<Corner, string> = {
@@ -83,7 +87,18 @@ function outerCol(rng: () => number, cols: number): number {
   return rng() < 0.5 ? c : cols - 1 - c;
 }
 
-export function GridCells({ cell = 100, labels, sparkles = [], density = 12, seed = 7, fade = 'bottom', quiet, className }: GridCellsProps) {
+export function GridCells({
+  cell = 100,
+  labels,
+  sparkles = [],
+  density = 12,
+  seed = 7,
+  fade = 'bottom',
+  quiet,
+  className,
+  clusters = [],
+  crosshairs,
+}: GridCellsProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const inView = useInView(ref);
@@ -156,7 +171,7 @@ export function GridCells({ cell = 100, labels, sparkles = [], density = 12, see
       {markers.map((m, i) => (
         <span
           key={i}
-          className="absolute hidden font-mono text-[12px] leading-none text-m-illus-default transition-opacity duration-slow ease-out lg:block"
+          className="absolute hidden font-mono text-[12px] leading-none text-m-illus transition-opacity duration-slow ease-out lg:block"
           style={{ left: offsetX + m.c * cell + cell / 2 - 4, top: m.r * cell + cell / 2 - 6 }}
         >
           {m.m}
@@ -177,6 +192,104 @@ export function GridCells({ cell = 100, labels, sparkles = [], density = 12, see
             {labels[k]}
           </span>
         ))}
+      {crosshairs &&
+        size.w > 0 &&
+        Array.from({ length: (cols + 1) * (rows + 1) }, (_, i) => {
+          const c = i % (cols + 1);
+          const r = Math.floor(i / (cols + 1));
+          return (
+            <span
+              key={`x-${c}-${r}`}
+              className="absolute hidden -translate-x-1/2 -translate-y-1/2 select-none font-mono text-[10px] leading-none text-m-illus lg:block"
+              style={{ left: offsetX + c * cell, top: r * cell }}
+            >
+              +
+            </span>
+          );
+        })}
+      {clusters.map((cl, i) => (
+        <div
+          key={`cl-${i}`}
+          className="absolute hidden -translate-x-1/2 -translate-y-1/2 lg:block"
+          style={{ left: offsetX + cl.col * cell + cell / 2, top: cl.row * cell + cell / 2 }}
+        >
+          <PixelSquares size={cl.size ?? 4} scale="md" seed={seed * 31 + i * 7 + 1} accent={cl.accent ?? false} quiet={quiet ?? false} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* PixelSquares: an n×n cluster of tiny squares, some on some off, one       */
+/* flipping at a time. Deterministic seeded first paint, throttled ticker,  */
+/* paused off-screen, static under reduced motion.                          */
+/* ---------------------------------------------------------------------- */
+
+export interface PixelSquaresProps {
+  size?: 3 | 4;
+  seed?: number;
+  /** Let one square in the cluster render in violet instead of ink grey. */
+  accent?: boolean;
+  scale?: 'sm' | 'md';
+  quiet?: boolean;
+  className?: string;
+}
+
+function initialCells(n: number, seed: number): boolean[] {
+  const rng = mulberry32(seed);
+  return Array.from({ length: n * n }, () => rng() < 0.42);
+}
+
+export function PixelSquares({ size = 4, seed = 1, accent, scale = 'sm', quiet, className }: PixelSquaresProps) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const inView = useInView(ref);
+  const n = size;
+  const [cells, setCells] = React.useState<boolean[]>(() => initialCells(n, seed));
+  const rngRef = React.useRef(mulberry32(seed + 1));
+  const accentIndex = React.useMemo(() => Math.floor(mulberry32(seed + 2)() * n * n), [seed, n]);
+  const running = inView && !reduced && !quiet;
+  const dim = scale === 'sm' ? 3 : 6;
+  const gap = 3;
+
+  React.useEffect(() => {
+    setCells(initialCells(n, seed));
+    rngRef.current = mulberry32(seed + 1);
+  }, [n, seed]);
+
+  React.useEffect(() => {
+    if (!running) return;
+    const rng = rngRef.current;
+    const id = setInterval(() => {
+      setCells((prev) => {
+        const next = prev.slice();
+        const i = Math.floor(rng() * next.length);
+        next[i] = !next[i];
+        return next;
+      });
+    }, 700);
+    return () => clearInterval(id);
+  }, [running]);
+
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      className={cn('grid select-none', className)}
+      style={{ gridTemplateColumns: `repeat(${n}, ${dim}px)`, gap }}
+    >
+      {cells.map((on, i) => (
+        <span
+          key={i}
+          className={cn(
+            'transition-opacity duration-reveal ease-out',
+            accent && i === accentIndex ? 'bg-violet' : 'bg-m-illus',
+            on ? 'opacity-100' : 'opacity-0',
+          )}
+          style={{ width: dim, height: dim }}
+        />
+      ))}
     </div>
   );
 }
@@ -399,4 +512,94 @@ function resolveText(target: string, progress: number, id: number, tick: number)
     out += ch === ' ' ? ' ' : NOISE[h % NOISE.length];
   }
   return out;
+}
+
+/* ---------------------------------------------------------------------- */
+/* CodeRain: a coarse grid of short wire-format tokens fading in and out,   */
+/* laid out as two <pre> layers (ink + violet-48) like AsciiHelix so the    */
+/* DOM cost stays two nodes regardless of grid size. Deterministic first    */
+/* paint, throttled ticker, paused off-screen, static under reduced motion. */
+/* ---------------------------------------------------------------------- */
+
+const RAIN_TOKENS = ['{', '}', '[ ]', '"url":', '200', '->', '0x1f', '·', ':', '='];
+
+export interface CodeRainProps {
+  cols?: number;
+  rows?: number;
+  /** Fraction of cells that carry a token at once (0-1). */
+  density?: number;
+  seed?: number;
+  quiet?: boolean;
+  className?: string;
+}
+
+interface RainCell {
+  token: string;
+  violet: boolean;
+  phase: number;
+}
+
+function rainLayers(cols: number, rows: number, cells: (RainCell | null)[], violetTone: boolean): string {
+  const grid = Array.from({ length: rows }, () => Array<string>(cols).fill(''));
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells[i];
+    if (!cell || cell.violet !== violetTone) continue;
+    const c = i % cols;
+    const r = Math.floor(i / cols);
+    const visible = cell.phase > 0.15 && cell.phase < 0.92;
+    grid[r]![c] = visible ? cell.token.padEnd(6, ' ').slice(0, 6) : ''.padEnd(6, ' ');
+  }
+  return grid.map((row) => row.map((cell) => (cell ? cell : ' '.repeat(6))).join(' ')).join('\n');
+}
+
+function seedRain(cols: number, rows: number, density: number, seed: number): (RainCell | null)[] {
+  const rng = mulberry32(seed);
+  return Array.from({ length: cols * rows }, () => {
+    if (rng() > density) return null;
+    return { token: RAIN_TOKENS[Math.floor(rng() * RAIN_TOKENS.length)]!, violet: rng() < 0.125, phase: rng() };
+  });
+}
+
+export function CodeRain({ cols = 14, rows = 6, density = 0.35, seed = 17, quiet, className }: CodeRainProps) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const inView = useInView(ref);
+  const [cells, setCells] = React.useState<(RainCell | null)[]>(() => seedRain(cols, rows, density, seed));
+  const rngRef = React.useRef(mulberry32(seed + 1));
+  const running = inView && !reduced && !quiet;
+
+  React.useEffect(() => {
+    setCells(seedRain(cols, rows, density, seed));
+    rngRef.current = mulberry32(seed + 1);
+  }, [cols, rows, density, seed]);
+
+  React.useEffect(() => {
+    if (!running) return;
+    const rng = rngRef.current;
+    const id = setInterval(() => {
+      setCells((prev) => {
+        const next = prev.slice();
+        const i = Math.floor(rng() * next.length);
+        const cur = next[i];
+        if (cur && rng() < 0.5) {
+          next[i] = { ...cur, phase: Math.min(1, cur.phase + 0.2 + rng() * 0.3) };
+        } else {
+          next[i] = rng() > density ? null : { token: RAIN_TOKENS[Math.floor(rng() * RAIN_TOKENS.length)]!, violet: rng() < 0.125, phase: 0.2 };
+        }
+        return next;
+      });
+    }, 1000 / 6);
+    return () => clearInterval(id);
+  }, [running, density]);
+
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      className={cn('pointer-events-none relative select-none overflow-hidden font-mono text-[10px] leading-[1.6]', className)}
+    >
+      <pre className="whitespace-pre text-m-illus">{rainLayers(cols, rows, cells, false)}</pre>
+      <pre className="absolute inset-0 whitespace-pre text-violet-48">{rainLayers(cols, rows, cells, true)}</pre>
+    </div>
+  );
 }

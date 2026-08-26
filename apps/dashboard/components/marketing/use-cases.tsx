@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Bot, Search, SquareStack, UserPlus } from 'lucide-react';
-import { SectionEyebrow } from './section-eyebrow';
+import { FrameBand } from './section-frame';
 import { CodePanel } from './code-panel';
 import { AnimatedCode, type Token } from './animated-code';
 
@@ -90,11 +90,12 @@ export function UseCases() {
   const current = CASES[active]!;
 
   return (
-    <section className="border-t border-m-border-faint px-4 py-20">
-      <div className="mx-auto max-w-container">
+    <section className="px-6 py-16 sm:px-10">
+      <FrameBand step="04" total="05" label="USE CASES" sub="What people build" />
+
+      <div className="py-16">
         <div data-reveal className="text-center">
-          <SectionEyebrow step="04 / 04" label="USE CASES" sub="What people build" />
-          <h2 className="mx-auto mt-4 max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
+          <h2 className="mx-auto max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
             Give your agents
             <br />
             <span className="text-violet">the live web.</span>

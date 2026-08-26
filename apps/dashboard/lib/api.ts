@@ -534,6 +534,29 @@ export class HelixApiError extends Error {
   }
 }
 
+// --- Agent schema (POST /v1/agent/schema) ---
+
+export interface AgentSchemaRequest {
+  prompt: string;
+  urls?: string[];
+  hint?: Record<string, unknown>;
+  instruction?: string;
+}
+
+export interface AgentSchemaResponseSuccess {
+  success: true;
+  schema: Record<string, unknown>;
+  summary: string;
+  usage?: { tokens?: { input?: number; output?: number }; model?: string };
+}
+
+export interface AgentSchemaResponseFailure {
+  success: false;
+  failure: { reason: FailureReason | string; message?: string; detail?: string };
+}
+
+export type AgentSchemaResponse = AgentSchemaResponseSuccess | AgentSchemaResponseFailure;
+
 export interface HelixClientOptions {
   baseUrl?: string;
   apiKey: string;
@@ -608,6 +631,10 @@ export class HelixClient {
 
   async monitor(request: MonitorRequest, signal?: AbortSignal): Promise<MonitorResponse> {
     return this.post<MonitorResponse>('/monitor', request, signal);
+  }
+
+  async agentSchema(request: AgentSchemaRequest, signal?: AbortSignal): Promise<AgentSchemaResponse> {
+    return this.post<AgentSchemaResponse>('/agent/schema', request, signal);
   }
 
   async job(id: string, signal?: AbortSignal): Promise<Job> {

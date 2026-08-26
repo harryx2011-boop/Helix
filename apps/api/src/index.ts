@@ -23,6 +23,7 @@ import { registerCrawl } from './routes/crawl.js';
 import { registerJobs } from './routes/jobs.js';
 import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
+import { registerAgent } from './routes/agent.js';
 import { registerInternal } from './routes/internal.js';
 import { registerInteract } from './routes/interact.js';
 import { createSearchProvider } from './search/providers.js';
@@ -240,6 +241,7 @@ await app.register(
       minIntervalSeconds: config.monitorMinIntervalSeconds,
     });
     await registerInteract(instance, { sessions, extractClient, publicUrl: config.publicUrl });
+    await registerAgent(instance, { extractClient });
   },
   { prefix: '/v1' },
 );

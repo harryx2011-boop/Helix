@@ -2,16 +2,24 @@ import Link from 'next/link';
 import { PillButton } from './pill-button';
 import { GithubMark } from './github-mark';
 import { GridCells, AsciiHelix } from './ambient';
+import { FrameBand } from './section-frame';
 
 /** Final section: repeats the hero's CTA pair over a cell grid, flanked by ASCII flame pillars. No stats, no logos. */
 export function ClosingCta() {
   return (
-    <section className="relative min-h-[480px] overflow-hidden border-t border-m-border-faint px-4 py-24">
+    <section className="relative min-h-[480px] overflow-hidden px-6 py-16 sm:px-10">
+      <FrameBand step="05" total="05" label="GET STARTED" sub="Run it now" />
+
       <GridCells
         cell={100}
         fade="none"
         density={10}
         labels={{ tl: '[ SEARCH ]', tr: '[ INTERACT ]', bl: '[ SCRAPE ]', br: '[ CRAWL ]' }}
+        clusters={[
+          { col: 2, row: 1, size: 3 },
+          { col: 9, row: 3, size: 4, accent: true },
+        ]}
+        crosshairs
       />
 
       <AsciiHelix
@@ -31,7 +39,7 @@ export function ClosingCta() {
         className="pointer-events-none absolute bottom-0 right-[8%] hidden lg:block"
       />
 
-      <div data-reveal className="relative mx-auto flex max-w-container flex-col items-center text-center">
+      <div data-reveal className="relative mx-auto flex max-w-container flex-col items-center py-16 text-center">
         <span className="font-mono text-[12px] text-m-ink/56">{'// get started \\\\'}</span>
         <h2 className="mt-4 max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
           Ready to run it?

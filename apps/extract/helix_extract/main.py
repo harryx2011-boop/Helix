@@ -12,7 +12,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from . import chunking, documents, embeddings, extraction, llm
+from . import chunking, documents, embeddings, extraction, llm, schema_gen
 from .schema_compiler import SchemaError
 from .settings import settings
 
@@ -196,6 +196,50 @@ async def structured(request: StructuredRequest) -> StructuredResponse:
         model_used=result.model_used,
         blocks_kept=result.blocks_kept,
         blocks_total=result.blocks_total,
+    )
+
+
+class SchemaRequest(BaseModel):
+    prompt: str
+    urls: list[str] = Field(default_factory=list)
+    # Previous schema JSON, sent back when the caller is refining rather than
+    # starting fresh.
+    hint: dict | None = None
+    instruction: str | None = None
+
+
+class SchemaResponse(BaseModel):
+    schema_: dict = Field(alias="schema")
+    summary: str
+    tokens_input: int
+    tokens_output: int
+    model_used: str
+
+    model_config = {"populate_by_name": True}
+
+
+@app.post("/schema", response_model=SchemaResponse, response_model_by_alias=True)
+async def generate_schema(request: SchemaRequest) -> SchemaResponse:
+    try:
+        result = await schema_gen.generate_schema(
+            prompt=request.prompt,
+            urls=request.urls,
+            hint=request.hint,
+            instruction=request.instruction,
+        )
+    except llm.RequestError as exc:
+        raise HTTPException(
+            status_code=400, detail={"message": exc.message, "field": exc.field}
+        ) from exc
+    except llm.ProviderError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return SchemaResponse(
+        schema=result.schema,
+        summary=result.summary,
+        tokens_input=result.tokens_input,
+        tokens_output=result.tokens_output,
+        model_used=result.model_used,
     )
 
 

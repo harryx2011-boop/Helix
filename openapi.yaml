@@ -63,6 +63,8 @@ tags:
     description: Multi-page discovery and read.
   - name: Search
     description: Web search, optionally scraping each result.
+  - name: Agent
+    description: Model-assisted helpers for building a request, such as schema design.
   - name: Interact
     description: Stateful browser sessions an agent can drive, with a live view.
   - name: Monitors
@@ -429,6 +431,64 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+
+  /agent/schema:
+    post:
+      tags: [Agent]
+      summary: Design a JSON Schema from a plain-language description
+      description: |
+        Turns a description of the data you want into a JSON Schema you can drop
+        straight into `jsonOptions.schema` on `/scrape`, `/parse` or
+        `scrapeOptions.schema` on `/search`. Uses the operator's configured
+        model, the same as `/parse`'s `jsonOptions` step.
+
+        Pass `hint` (the previous schema) and `instruction` to refine an
+        existing schema rather than design one from scratch. `urls` are example
+        pages this schema will run against, used only to inform field choices —
+        they are not fetched.
+
+        A malformed request (an empty prompt, more than 10 URLs, a non-http(s)
+        URL) is a 400. A model that could not be reached, or is not configured
+        on this instance, is reported as a typed failure with `success: false`
+        rather than an HTTP error — the same distinction `/scrape` draws
+        between your mistake and the operator's missing credentials.
+      operationId: agentSchema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AgentSchemaRequest' }
+            examples:
+              fromScratch:
+                summary: Describe the data you want
+                value:
+                  prompt: Every pricing plan on the page, with its name, monthly price and included features.
+              refine:
+                summary: Refine a previous schema
+                value:
+                  prompt: Every pricing plan on the page
+                  hint:
+                    type: object
+                    properties:
+                      plans:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name: { type: string }
+                  instruction: Also capture whether each plan is marked "Most popular".
+      responses:
+        '200':
+          description: |
+            The request was well-formed. Check `success` — a model that is not
+            configured, unreachable, or that could not produce a usable schema
+            is reported here as a typed failure rather than an HTTP error.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentSchemaResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
 
   /interact:
     post:
@@ -1697,6 +1757,55 @@ components:
           properties:
             backend: { type: string, enum: [searxng, serper, serpapi] }
             fromCache: { type: boolean, description: The ranked list came from the short-TTL query cache; pages are always read fresh. }
+
+    AgentSchemaRequest:
+      type: object
+      required: [prompt]
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: What you want extracted, in plain language.
+        urls:
+          type: array
+          maxItems: 10
+          items: { type: string, format: uri }
+          description: Example pages this schema will run against. Used to inform field choices; never fetched.
+        hint:
+          type: object
+          description: A previous schema, sent back when refining rather than starting fresh.
+        instruction:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: How to change `hint`. Only meaningful together with `hint`.
+
+    AgentSchemaResponse:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        schema:
+          type: object
+          description: A JSON Schema, ready to pass as `jsonOptions.schema` or `scrapeOptions.schema`.
+        summary: { type: string, description: One line describing what the schema captures. }
+        usage:
+          type: object
+          properties:
+            tokens:
+              type: object
+              properties:
+                input: { type: integer }
+                output: { type: integer }
+            model: { type: string }
+        failure:
+          type: object
+          description: Present only when `success` is `false` — the model was not configured, unreachable, or timed out.
+          required: [reason]
+          properties:
+            reason: { type: string, enum: [service_unavailable, timeout] }
+            detail: { type: string }
 
     InteractAction:
       type: object

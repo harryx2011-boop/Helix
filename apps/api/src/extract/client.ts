@@ -67,6 +67,23 @@ export interface StructuredResult {
   blocksTotal: number;
 }
 
+export interface SchemaOptions {
+  prompt: string;
+  urls?: string[] | undefined;
+  /** Previous schema JSON, sent back when refining rather than starting fresh. */
+  hint?: Record<string, unknown> | undefined;
+  instruction?: string | undefined;
+  timeoutMs?: number | undefined;
+}
+
+export interface SchemaResult {
+  schema: Record<string, unknown>;
+  summary: string;
+  tokensInput: number;
+  tokensOutput: number;
+  modelUsed: string;
+}
+
 export interface ChunkOptions {
   text: string;
   url: string;
@@ -268,6 +285,55 @@ export class ExtractClient {
       modelUsed: body.model_used,
       blocksKept: body.blocks_kept ?? 0,
       blocksTotal: body.blocks_total ?? 0,
+    };
+  }
+
+  /** Designs a JSON Schema for the data described in `options.prompt`, using the operator's configured model. */
+  async schema(options: SchemaOptions): Promise<SchemaResult> {
+    const response = await fetch(`${this.#baseUrl}/schema`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        prompt: options.prompt,
+        urls: options.urls ?? [],
+        hint: options.hint ?? null,
+        instruction: options.instruction ?? null,
+      }),
+      signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
+    });
+
+    if (!response.ok) {
+      const detail = await detailOf(response);
+      let message = detail.slice(0, 500);
+      let field: string | undefined;
+      try {
+        const parsed = JSON.parse(detail) as { detail?: unknown };
+        if (parsed.detail && typeof parsed.detail === 'object') {
+          const structured = parsed.detail as { message?: unknown; field?: unknown };
+          if (typeof structured.message === 'string') message = structured.message;
+          if (typeof structured.field === 'string') field = structured.field;
+        }
+      } catch {
+        // Not JSON; `detailOf` already returned the best text available.
+      }
+      this.#logger?.warn({ status: response.status }, 'helix-extract /schema failed');
+      throw new StructuredError(response.status, message || `helix-extract returned HTTP ${response.status}`, field);
+    }
+
+    const body = (await response.json()) as {
+      schema: Record<string, unknown>;
+      summary: string;
+      tokens_input: number;
+      tokens_output: number;
+      model_used: string;
+    };
+
+    return {
+      schema: body.schema,
+      summary: body.summary,
+      tokensInput: body.tokens_input,
+      tokensOutput: body.tokens_output,
+      modelUsed: body.model_used,
     };
   }
 

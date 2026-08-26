@@ -42,6 +42,11 @@ export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
   return <ApiKeyContext.Provider value={value}>{children}</ApiKeyContext.Provider>;
 }
 
+/** Hosted mode mounts no provider (the proxy holds the key); callers that run in both modes read null there. */
+export function useOptionalApiKey(): ApiKeyContextValue | null {
+  return React.useContext(ApiKeyContext) ?? null;
+}
+
 export function useApiKey(): ApiKeyContextValue {
   const ctx = React.useContext(ApiKeyContext);
   if (!ctx) throw new Error('useApiKey must be used within ApiKeyProvider');

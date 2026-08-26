@@ -57,9 +57,12 @@ export function HeroPanel({ id }: { id?: string }) {
   }, []);
 
   return (
-    <div id={id} className="mx-auto w-full min-w-0 max-w-full overflow-hidden rounded-panel bg-m-surface shadow-card ring-8 ring-m-bg lg:max-w-[960px]">
-      <form onSubmit={handleSubmit} className="min-w-0 border-b border-m-border-faint p-3">
-        <div className="flex min-w-0 items-center gap-2 rounded-card border border-m-border-muted bg-m-bg px-3 py-2">
+    <div id={id} className="mx-auto w-full min-w-0 max-w-full lg:max-w-[960px]">
+      <form
+        onSubmit={handleSubmit}
+        className="relative z-10 mx-auto -mb-6 w-full min-w-0 max-w-[560px] overflow-hidden rounded-panel bg-m-surface shadow-card"
+      >
+        <div className="flex min-w-0 items-center gap-2 border-b border-m-border-faint px-4 py-3.5">
           <Globe className="h-4 w-4 shrink-0 text-m-ink/40" aria-hidden />
           <div className="relative min-w-0 flex-1">
             <input
@@ -76,58 +79,64 @@ export function HeroPanel({ id }: { id?: string }) {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-2.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-0.5 rounded-pill bg-m-bg p-1">
+            {HERO_ENDPOINTS.map((e, i) => {
+              const Icon = e.icon;
+              const active = endpoint === e.id;
+              return (
+                <React.Fragment key={e.id}>
+                  {i > 0 && <span className="h-4 w-px shrink-0 bg-m-border-muted" aria-hidden />}
+                  <button
+                    type="button"
+                    onClick={() => selectEndpoint(e.id)}
+                    className={cn(
+                      'flex items-center gap-1.5 rounded-pill px-3 py-1.5 font-mono text-[13px] transition-colors duration-150 ease-out',
+                      active ? 'bg-m-surface text-m-ink shadow-card-sm' : 'text-m-ink/56 hover:text-m-ink/80',
+                    )}
+                    aria-pressed={active}
+                  >
+                    <Icon className="h-3.5 w-3.5" aria-hidden />
+                    {e.name}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+          </div>
           <button
             type="submit"
             aria-label="Compose the request"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-violet text-white shadow-btn transition-shadow duration-200 ease-out hover:shadow-btn-hover"
+            className="flex h-9 w-12 shrink-0 items-center justify-center rounded-card bg-violet text-white shadow-btn transition-shadow duration-200 ease-out hover:shadow-btn-hover"
           >
             <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
         </div>
-
-        <div className="mt-2 flex flex-wrap items-center gap-1 rounded-pill bg-m-bg p-1">
-          {HERO_ENDPOINTS.map((e) => {
-            const Icon = e.icon;
-            const active = endpoint === e.id;
-            return (
-              <button
-                key={e.id}
-                type="button"
-                onClick={() => selectEndpoint(e.id)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-pill px-3 py-1.5 font-mono text-[12px] transition-colors duration-150 ease-out',
-                  active ? 'bg-violet-12 text-violet' : 'text-m-ink/48 hover:text-m-ink/72',
-                )}
-                aria-pressed={active}
-              >
-                <Icon className="h-3.5 w-3.5" aria-hidden />
-                {e.name}
-              </button>
-            );
-          })}
-        </div>
       </form>
 
-      <div className="grid min-w-0 max-w-full grid-cols-1 divide-m-border-faint lg:grid-cols-2 lg:divide-x">
-        <div className="w-full min-w-0 max-w-full overflow-x-auto border-b border-m-border-faint px-4 py-4 lg:border-b-0">
-          <p className="mb-2 font-mono text-[11px] tracking-wide text-m-ink/48">[ REQUEST ]</p>
-          <AnimatedCode key={`req-${requestKey}`} code={code} mode="type" charMs={14} playOnView={false} onDone={handleRequestDone} />
-        </div>
+      <div className="min-w-0 max-w-full overflow-hidden rounded-panel bg-m-surface shadow-card ring-8 ring-m-bg">
+        <div className="grid min-w-0 max-w-full grid-cols-1 divide-m-border-faint pt-8 lg:grid-cols-2 lg:divide-x">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto border-b border-m-border-faint px-4 py-4 lg:border-b-0">
+            <p className="mb-2 font-mono text-[11px] tracking-wide text-m-ink/48">[ REQUEST ]</p>
+            <AnimatedCode key={`req-${requestKey}`} code={code} mode="type" charMs={14} playOnView={false} onDone={handleRequestDone} />
+          </div>
 
-        <div className="min-w-0 max-w-full px-4 py-4">
-          <p className="mb-2 font-mono text-[11px] tracking-wide text-m-ink/48">[ RESPONSE ]</p>
-          <div className="w-full min-w-0 max-w-full overflow-x-auto">
-            {requestDone ? (
-              <AnimatedCode key={`res-${requestKey}`} code={response} mode="scramble" resolveMs={2200} loop playOnView />
-            ) : (
-              <ScrambledPlaceholder code={response} />
-            )}
+          <div className="min-w-0 max-w-full px-4 py-4">
+            <p className="mb-2 font-mono text-[11px] tracking-wide text-m-ink/48">[ RESPONSE ]</p>
+            <div className="w-full min-w-0 max-w-full overflow-x-auto">
+              {requestDone ? (
+                <AnimatedCode key={`res-${requestKey}`} code={response} mode="scramble" resolveMs={2200} loop playOnView />
+              ) : (
+                <ScrambledPlaceholder code={response} />
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="min-w-0 max-w-full border-t border-m-border-faint bg-m-bg-lighter px-4 py-4">
-        {playKey === undefined ? <LadderExplainer /> : <LadderExplainer playKey={playKey} />}
+        <div className="min-w-0 max-w-full border-t border-m-border-faint bg-m-bg-lighter px-4 py-4">
+          {playKey === undefined ? <LadderExplainer /> : <LadderExplainer playKey={playKey} />}
+        </div>
       </div>
     </div>
   );
@@ -135,10 +144,10 @@ export function HeroPanel({ id }: { id?: string }) {
 
 const HERO_ENDPOINTS: { id: Endpoint; name: string; icon: typeof Globe }[] = [
   { id: 'scrape', name: 'Scrape', icon: Globe },
-  { id: 'parse', name: 'Parse', icon: FileScan },
   { id: 'search', name: 'Search', icon: Search },
-  { id: 'crawl', name: 'Crawl', icon: Network },
   { id: 'map', name: 'Map', icon: MapIcon },
+  { id: 'crawl', name: 'Crawl', icon: Network },
+  { id: 'parse', name: 'Parse', icon: FileScan },
 ];
 
 const PLACEHOLDERS: Record<Endpoint, string> = {

@@ -4,7 +4,8 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { ENDPOINTS } from '@/lib/catalog';
-import { SectionEyebrow } from './section-eyebrow';
+import { FrameBand } from './section-frame';
+import { CodeRain } from './ambient';
 import { CodePanel } from './code-panel';
 import { AnimatedCode } from './animated-code';
 import type { Endpoint } from '@/lib/supabase/types';
@@ -123,16 +124,26 @@ export function Capabilities() {
   const def = TABS.find((t) => t.id === active) ?? TABS[0]!;
 
   return (
-    <section className="border-t border-m-border-faint px-4 py-20">
-      <div className="mx-auto max-w-container">
-        <div data-reveal>
-          <SectionEyebrow step="01 / 04" label="CAPABILITIES" sub="Six endpoints" />
-          <h2 className="mt-4 max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
-            Read, search, and act on the web.
-          </h2>
-          <p className="mt-3 max-w-[520px] text-[16px] leading-relaxed text-m-ink/72">
-            One envelope for every endpoint. Pick a capability below to see its wire format.
-          </p>
+    <section className="px-6 py-16 sm:px-10">
+      <FrameBand step="01" total="05" label="CAPABILITIES" sub="Six endpoints" />
+
+      <div className="py-16">
+        <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
+          <CodeRain
+            cols={22}
+            rows={6}
+            density={0.45}
+            seed={41}
+            className="hidden -inset-y-10 -inset-x-24 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_40%,black_62%,transparent_100%)]"
+          />
+          <div className="relative">
+            <h2 className="mx-auto max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
+              Read, search, and act on the web.
+            </h2>
+            <p className="mx-auto mt-3 max-w-[480px] text-[16px] leading-relaxed text-m-ink/72">
+              One envelope for every endpoint. Pick a capability below to see its wire format.
+            </p>
+          </div>
         </div>
 
         <div data-reveal className="mt-10 flex flex-wrap gap-1 rounded-pill border border-m-border-muted bg-m-surface p-1">

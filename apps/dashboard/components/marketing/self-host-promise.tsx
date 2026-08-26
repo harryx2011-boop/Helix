@@ -1,8 +1,8 @@
 import { ShieldCheck, KeyRound, Scale, Calculator } from 'lucide-react';
-import { SectionEyebrow } from './section-eyebrow';
+import { FrameBand } from './section-frame';
 import { PillButton } from './pill-button';
 import { TerminalReplay } from './terminal-replay';
-import { AmbientCode } from './ambient';
+import { AmbientCode, CodeRain } from './ambient';
 
 const CLAIMS: {
   icon: typeof ShieldCheck;
@@ -39,17 +39,25 @@ const CLAIMS: {
 /** WEBSITE.md §4.5: centerpiece section. Centered header w/ ambient code texture, terminal replay, 2x2 claim grid. */
 export function SelfHostPromise() {
   return (
-    <section className="relative overflow-hidden border-t border-m-border-faint bg-m-bg-lighter px-4 py-24">
-      <div className="relative mx-auto max-w-container">
-        <div data-reveal className="relative mx-auto max-w-[760px] px-6 py-6 text-center sm:px-10">
+    <section className="relative overflow-hidden bg-m-bg-lighter px-6 py-16 sm:px-10">
+      <FrameBand step="03" total="05" label="SELF-HOST" sub="Bring your own keys" />
+
+      <div className="relative py-16">
+        <div data-reveal className="relative mx-auto max-w-[760px] px-6 py-6 text-center">
           <AmbientCode
             count={16}
             seed={23}
             className="hidden -inset-y-12 -inset-x-48 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_38%,black_58%,transparent_100%)]"
           />
+          <CodeRain
+            cols={14}
+            rows={4}
+            density={0.2}
+            seed={53}
+            className="hidden -inset-y-6 -inset-x-16 lg:block [mask-image:radial-gradient(ellipse_at_center,transparent_45%,black_66%,transparent_100%)]"
+          />
           <div className="relative">
-            <SectionEyebrow step="03 / 04" label="SELF-HOST" sub="Bring your own keys" />
-            <h2 className="mx-auto mt-4 max-w-[520px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
+            <h2 className="mx-auto max-w-[520px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
               Fast, self-hosted, Apache-2.0.
               <br />
               <span className="text-violet">And it&rsquo;s all yours.</span>

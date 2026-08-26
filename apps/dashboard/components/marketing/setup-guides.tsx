@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Braces, Code2, SquareTerminal, Terminal } from 'lucide-react';
-import { SectionEyebrow } from './section-eyebrow';
+import { FrameBand } from './section-frame';
 import { CodePanel, CodeBlock } from './code-panel';
 import { AnimatedCode } from './animated-code';
 
@@ -84,11 +84,12 @@ export function SetupGuides() {
   const wireSnippet = wireMode === 'skill' ? CLI_INIT_SNIPPET : MCP_SNIPPET;
 
   return (
-    <section className="border-t border-m-border-faint bg-m-bg-lighter px-4 py-20">
-      <div className="mx-auto max-w-container">
+    <section className="bg-m-bg-lighter px-6 py-16 sm:px-10">
+      <FrameBand step="02" total="05" label="SETUP" sub="Connect it your way" />
+
+      <div className="py-16">
         <div data-reveal>
-          <SectionEyebrow step="02 / 04" label="SETUP" sub="Connect it your way" />
-          <h2 className="mt-4 max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
+          <h2 className="max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
             Connect it however <span className="text-violet">your agent already works.</span>
           </h2>
           <p className="mt-3 max-w-[520px] text-[16px] leading-relaxed text-m-ink/72">

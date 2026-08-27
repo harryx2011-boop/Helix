@@ -48,24 +48,33 @@ Three checks run before anything is written, and any one of them stops it:
 `verified: true`, so the lie survives the person who told it.
 
 Run with `--headed` on a machine with real graphics. `--channel chrome` records
-from an actual Chrome install rather than Playwright's bundled build, which is
-generally preferable — though on this machine both are version 151, so it does
-not settle the version gap described below.
+from an actual Chrome install rather than Playwright's bundled build; use
+`--executable` when you need a specific version, as below.
 
-## Known blocker: no browser here can record chrome-137
+## Matching the version you record to the identity you claim
 
-`apps/fetch` presents `chrome-137` as its newest identity. Playwright's bundled
-Chromium and system Chrome are both **151**. Nothing on this machine can produce
-a Chrome 137 JS surface, so every capture warns about a version mismatch and
-would pair a 151 user-agent with a 137 handshake.
+`apps/fetch` presents Chrome 131-149, Edge 127-148 and Safari 17.5-26.4. Record
+against a browser whose version is one of them, or the definition pairs one
+version's user-agent with another's handshake — the contradiction the whole
+profile system exists to prevent. The tool warns when they disagree.
 
-That is why `packages/profiles/definitions` still holds only `verified: false`
-entries: the tool works, but shipping its output today would encode the exact
-contradiction the profile system exists to prevent.
+Playwright usually keeps more than one Chromium build, and the older one is
+often a version `wreq-util` carries even when the newest is not:
 
-The fix is upstream of this tool — add the newer `Emulation` variants that
-`wreq-util` offers to `available()` and `resolve()` in
-`apps/fetch/src/profile.rs`, then record against a matching browser.
+```powershell
+Get-ChildItem "$env:LOCALAPPDATA\ms-playwright" -Filter chrome.exe -Recurse |
+  ForEach-Object { "{0} : {1}" -f $_.Directory.Parent.Name, $_.VersionInfo.ProductVersion }
+```
+
+Then pass that binary directly:
+
+```bash
+node tools/capture/capture.mjs --id chrome-148 --headed \
+  --executable "$LOCALAPPDATA/ms-playwright/chromium-1223/chrome-win64/chrome.exe"
+```
+
+`chrome-148-windows.json` was recorded exactly that way, and is the reference
+for what a `verified: true` definition looks like.
 
 ## Output
 

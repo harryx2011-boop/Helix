@@ -119,9 +119,15 @@ BYOK is proven live end to end: probing extract `/schema` with a caller-supplied
 
 - **Transport - real.** `apps/fetch`'s `resolve()` maps a profile name onto a `wreq-util` `Emulation` preset (13 identities), maintained upstream against actual browser captures. The JSON definitions do not drive this; `load_all()` in `profile.rs` is a stub with a TODO and never reads them.
 - **JS layer - was dead, now applied.** The definitions carried WebGL strings, core count, memory, timezone and screen that *nothing read*. A scrape naming a profile got the right transport identity and the host machine's real fingerprint - the exact contradiction profiles exist to prevent. `apps/api/src/browser/profiles.ts` now injects it via `addInitScript`, and `profileUsed` is reported the way the fetch tiers already did. Canvas is perturbed deterministically from the profile id, because a value that varies between two reads is itself the tell.
-- **Capture - still missing.** `tools/capture` is an empty directory, so every definition is `verified: false`: plausible, not recorded.
+- **Capture - built, and the chain now closes.** `tools/capture` records a real browser's JS surface (`@helix/capture`). It refuses a `HeadlessChrome` user-agent, a SwiftShader renderer and an unstable canvas, because a bad recording marked `verified: true` is worse than none.
 
-A naming trap worth knowing: the pre-existing `chrome-149-macos` names an identity `resolve()` does not know, so it silently falls back to `chrome-137`. `chrome-137-macos` was added so both layers agree. Check `available()` in `apps/fetch/src/profile.rs` before adding a definition.
+**The version ceiling is gone (2026-08-26).** `wreq-util 0.1` stopped at Chrome 137 while browsers run 148+, so every capture paired a user-agent the transport layer could not present. The pin comment named the cause: `wreq 0.16` needs rustc 1.98, and the toolchain was 1.95. After `rustup update`, apps/fetch moved to `wreq 0.16` + `wreq-util 0.2` and `available()`/`resolve()` grew from 13 identities to **44** (Chrome 131-149, Edge 127-148, Safari 17.5-26.4 including iOS); the default is now `chrome-149`. The release binary reports `profiles_loaded: 44`, and a live fetch returns `profile_used: chrome-148`.
+
+`chrome-148-windows.json` is the first `verified: true` definition — recorded with `--executable` against Playwright's chromium-1223 build, which is Chrome 148. Playwright keeps more than one Chromium, and the older one is often the version `wreq-util` carries.
+
+The 0.16 API changes were mechanical but worth knowing: `Emulation` became `Profile` (aliased as `Identity`, since profile.rs has its own `Profile`), `wreq::Url` gave way to `http::Uri`, and `Attempt::url()`/`previous()` are now public fields.
+
+A naming trap: the pre-existing `chrome-149-macos` names an identity `resolve()` does not know, so it falls back silently. Check `available()` before adding a definition.
 
 ## Conventions
 

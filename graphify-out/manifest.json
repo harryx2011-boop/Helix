@@ -245,14 +245,14 @@
     "semantic_hash": "22b75d331cf4452c1914e39c27f9472c"
   },
   "E:\\Helix\\apps\\fetch\\src\\main.rs": {
-    "mtime": 1787614040.0,
-    "ast_hash": "9fd279448871163124297d65fb1a1745",
-    "semantic_hash": "9fd279448871163124297d65fb1a1745"
+    "mtime": 1787794020.0,
+    "ast_hash": "0fe3ba43faddba0c20cb1e1845fffdf3",
+    "semantic_hash": "0fe3ba43faddba0c20cb1e1845fffdf3"
   },
   "E:\\Helix\\apps\\fetch\\src\\profile.rs": {
-    "mtime": 1787526292.0,
-    "ast_hash": "50cb26994fbd4bd164d150c71b248062",
-    "semantic_hash": "50cb26994fbd4bd164d150c71b248062"
+    "mtime": 1787794130.0,
+    "ast_hash": "222e59b555dc3e286db6cc311fe0c477",
+    "semantic_hash": "222e59b555dc3e286db6cc311fe0c477"
   },
   "E:\\Helix\\apps\\extract\\helix_extract\\main.py": {
     "mtime": 1787706934.0,
@@ -519,11 +519,6 @@
     "ast_hash": "161456c6700be99245580fa1381198fd",
     "semantic_hash": "161456c6700be99245580fa1381198fd"
   },
-  "E:\\Helix\\packages\\profiles\\definitions\\chrome-149-macos.json": {
-    "mtime": 1787524214.0,
-    "ast_hash": "06e268270c742797f5be1529d403febe",
-    "semantic_hash": "06e268270c742797f5be1529d403febe"
-  },
   "E:\\Helix\\RESEARCH.md": {
     "mtime": 1787521606.0,
     "ast_hash": "7fb84f196f88638326e9e04cbf5c0d7f",
@@ -560,9 +555,9 @@
     "semantic_hash": "da7476637c5ae59d21708fa0712af14f"
   },
   "E:\\Helix\\pnpm-workspace.yaml": {
-    "mtime": 1787614550.0,
-    "ast_hash": "6ba79307c749ced1dd18c978a9bfd73e",
-    "semantic_hash": "6ba79307c749ced1dd18c978a9bfd73e"
+    "mtime": 1787785092.0,
+    "ast_hash": "02437f9e7ba33618939273da21a8fa1e",
+    "semantic_hash": "02437f9e7ba33618939273da21a8fa1e"
   },
   "E:\\Helix\\DESIGN.md": {
     "mtime": 1787531238.0,
@@ -575,9 +570,9 @@
     "semantic_hash": "355b4dfeb0069b8218036054cf68c160"
   },
   "E:\\Helix\\context.md": {
-    "mtime": 1787784424.0,
-    "ast_hash": "bb8dd748a4ae9b317f150d2e70f6ec8b",
-    "semantic_hash": "bb8dd748a4ae9b317f150d2e70f6ec8b"
+    "mtime": 1787794432.0,
+    "ast_hash": "fc4cd5e7ba95462badb0f3350cad71fd",
+    "semantic_hash": "fc4cd5e7ba95462badb0f3350cad71fd"
   },
   "E:\\Helix\\research\\01-firecrawl-teardown.md": {
     "mtime": 1787521616.0,
@@ -2120,14 +2115,14 @@
     "semantic_hash": "2bb7afe4acb4b4f24c63849193467212"
   },
   "E:\\Helix\\apps\\api\\src\\browser\\profiles.ts": {
-    "mtime": 1787783852.0,
-    "ast_hash": "91aa87e4ccde607513b0aa3af54ef6ab",
-    "semantic_hash": "91aa87e4ccde607513b0aa3af54ef6ab"
+    "mtime": 1787789540.0,
+    "ast_hash": "1979d5ffda368b808a08a8cf324b4c43",
+    "semantic_hash": "1979d5ffda368b808a08a8cf324b4c43"
   },
   "E:\\Helix\\apps\\api\\src\\browser\\profiles.test.ts": {
-    "mtime": 1787783954.0,
-    "ast_hash": "ee117b97a0c8faea718dd8f4cb5a6101",
-    "semantic_hash": "ee117b97a0c8faea718dd8f4cb5a6101"
+    "mtime": 1787789516.0,
+    "ast_hash": "eda861a7a6c8bc8f996bccb5e9214f0e",
+    "semantic_hash": "eda861a7a6c8bc8f996bccb5e9214f0e"
   },
   "E:\\Helix\\apps\\dashboard\\lib\\github.ts": {
     "mtime": 1787782706.0,
@@ -2160,13 +2155,48 @@
     "semantic_hash": "05cac8dbf4b046c29c432c7f1a4bb00d"
   },
   "E:\\Helix\\packages\\profiles\\definitions\\chrome-137-macos.json": {
-    "mtime": 1787784026.0,
-    "ast_hash": "f3726fdbfd0bd16e36496fef500260e9",
-    "semantic_hash": "f3726fdbfd0bd16e36496fef500260e9"
+    "mtime": 1787794356.0,
+    "ast_hash": "78e8b31c5f9f0815ef842db0252a8160",
+    "semantic_hash": "78e8b31c5f9f0815ef842db0252a8160"
   },
   "E:\\Helix\\DEPLOY.md": {
     "mtime": 1787782850.0,
     "ast_hash": "5593109a0901a02c7ba9fe85524e05ed",
     "semantic_hash": "5593109a0901a02c7ba9fe85524e05ed"
+  },
+  "E:\\Helix\\packages\\profiles\\definitions\\chrome-148-windows.json": {
+    "mtime": 1787790984.0,
+    "ast_hash": "03e51fe0bb7aafc9f2e16c3fbaf49b37",
+    "semantic_hash": "03e51fe0bb7aafc9f2e16c3fbaf49b37"
+  },
+  "E:\\Helix\\tools\\capture\\read-surface.js": {
+    "mtime": 1787784826.0,
+    "ast_hash": "74761499c7364f41a6200bc4d9c04874",
+    "semantic_hash": "74761499c7364f41a6200bc4d9c04874"
+  },
+  "E:\\Helix\\tools\\capture\\identity.mjs": {
+    "mtime": 1787790352.0,
+    "ast_hash": "4ff3d05cf395f7c582c8aa891c0cba72",
+    "semantic_hash": "4ff3d05cf395f7c582c8aa891c0cba72"
+  },
+  "E:\\Helix\\tools\\capture\\package.json": {
+    "mtime": 1787785296.0,
+    "ast_hash": "fa95170c5b56bc53dea5913b63210969",
+    "semantic_hash": "fa95170c5b56bc53dea5913b63210969"
+  },
+  "E:\\Helix\\tools\\capture\\identity.test.mjs": {
+    "mtime": 1787790366.0,
+    "ast_hash": "2a7bc74d7ddcfed1ac3f6c5b66de0253",
+    "semantic_hash": "2a7bc74d7ddcfed1ac3f6c5b66de0253"
+  },
+  "E:\\Helix\\tools\\capture\\capture.mjs": {
+    "mtime": 1787790972.0,
+    "ast_hash": "c1c8a6bf40a0d88c5b82c536e570f2ac",
+    "semantic_hash": "c1c8a6bf40a0d88c5b82c536e570f2ac"
+  },
+  "E:\\Helix\\tools\\capture\\README.md": {
+    "mtime": 1787791650.0,
+    "ast_hash": "5bad072243704e3359e9d89b40f09ee3",
+    "semantic_hash": "5bad072243704e3359e9d89b40f09ee3"
   }
 }

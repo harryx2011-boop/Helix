@@ -127,7 +127,11 @@ BYOK is proven live end to end: probing extract `/schema` with a caller-supplied
 
 The 0.16 API changes were mechanical but worth knowing: `Emulation` became `Profile` (aliased as `Identity`, since profile.rs has its own `Profile`), `wreq::Url` gave way to `http::Uri`, and `Attempt::url()`/`previous()` are now public fields.
 
-A naming trap: the pre-existing `chrome-149-macos` names an identity `resolve()` does not know, so it falls back silently. Check `available()` before adding a definition.
+`load_all()` in apps/fetch was a stub that never opened the JSON, which is why `ProfileError` and `validate()` were dead code. It now reads `packages/profiles/definitions`, refuses to boot on an incoherent profile, and warns per definition that was never captured or that names an identity the transport layer falls back from. `health()` separates the two counts it used to conflate: `profiles_loaded` is the identities this build presents (44), `definitions_loaded` is the JSON actually read (2).
+
+`chrome-149-macos` is gone — a fabricated sample whose id `resolve()` fell back from. `chrome-137-macos` stays because `chrome-137` resolves and has no other definition, but it is `verified: false`, describes a macOS machine that cannot be captured from this Windows box, and both tiers log a warning on every use.
+
+A naming trap worth keeping in mind: `resolve()` echoes back whatever name it is given, so comparing its returned id to a definition's proves nothing — check membership in `available()`. A test of mine passed while broken for exactly that reason.
 
 ## Conventions
 

@@ -201,7 +201,7 @@ export function KeysClient() {
   const activeCount = keys?.filter((k) => !k.revoked).length ?? 0;
 
   return (
-    <div className="flex flex-col gap-4 p-4 lg:p-6">
+    <div className="relative flex flex-col gap-4 bg-background p-4 lg:p-6">
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>

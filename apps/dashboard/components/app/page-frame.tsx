@@ -1,23 +1,21 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { AppGrid } from '@/components/app/app-grid';
 
 /*
  * The /app page skeleton: a centred column whose vertical hairlines run the
  * full height of the page, with horizontal hairlines that bleed past the
  * column edges so rows read as one grid rather than stacked cards. The
- * column itself has no solid background, so the AppGrid layer mounted in
- * the outer gutters shows through the empty space around and between rows;
- * FrameRow defaults to a solid background so text never sits on a grid
- * line, and opts out via `transparent` for rows that want the grid to
- * show through (e.g. spacer rows). Every app screen composes these;
- * nothing here fetches.
+ * column itself has no solid background, so the AppGrid layer the shell
+ * mounts behind every screen (app-shell.tsx) shows through the empty space
+ * around and between rows; FrameRow defaults to a solid background so text
+ * never sits on a grid line, and opts out via `transparent` for rows that
+ * want the grid to show through (e.g. spacer rows). Every app screen
+ * composes these; nothing here fetches.
  */
 
 export function PageFrame({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn('relative min-h-full overflow-x-hidden px-4 lg:px-10', className)}>
-      <AppGrid className="mx-auto max-w-[1180px]" clusters={[{ col: 1, row: 2, size: 3 }, { col: 9, row: 3, size: 4 }]} />
       <div className="relative mx-auto min-h-full max-w-[1180px] border-x border-border">{children}</div>
     </div>
   );

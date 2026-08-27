@@ -33,7 +33,7 @@ export default async function RunDetailPage({ params }: RunDetailPageProps) {
   const tier = run.tier_resolved as Tier | null;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="relative flex flex-col gap-6 bg-background p-6">
       <div className="flex flex-col gap-3">
         <Link
           href="/app/activity"

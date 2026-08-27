@@ -25,7 +25,7 @@ export default async function InstancesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="relative flex flex-col gap-6 bg-background p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold leading-tight">Instances</h1>

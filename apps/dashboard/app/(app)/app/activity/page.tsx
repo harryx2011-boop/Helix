@@ -53,7 +53,7 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
   if (nextCursor) nextParams.set('cursor', nextCursor);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="relative flex flex-col gap-6 bg-background p-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold leading-tight">Activity Logs</h1>
         <p className="text-sm text-muted-foreground leading-relaxed">Every request made against your keys.</p>

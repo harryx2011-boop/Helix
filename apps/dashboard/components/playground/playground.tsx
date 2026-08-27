@@ -209,7 +209,7 @@ export function Playground({ initialTab }: PlaygroundProps) {
         </div>
       </div>
 
-      <div className="min-h-[300px] overflow-x-auto rounded-card border border-border">
+      <div className="min-h-[300px] overflow-x-auto rounded-card border border-border bg-background">
         <Results result={result} loading={loading} timingMs={timingMs} error={error} />
       </div>
 

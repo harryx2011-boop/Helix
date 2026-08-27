@@ -129,15 +129,18 @@ export interface AppGridProps {
   seed?: number;
   clusters?: { col: number; row: number; size?: 3 | 4 }[];
   crosshairs?: boolean;
+  /** How many ✦ nodes to pin at intersections. Seeded into the outer thirds, and unlike markers they do not drift. */
+  sparkles?: number;
   className?: string;
 }
 
-export function AppGrid({ cell = 100, density = 10, seed = 7, clusters = [], crosshairs = true, className }: AppGridProps) {
+export function AppGrid({ cell = 100, density = 10, seed = 7, clusters = [], crosshairs = true, sparkles = 0, className }: AppGridProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const inView = useInView(ref);
   const [size, setSize] = React.useState({ w: 0, h: 0 });
   const [markers, setMarkers] = React.useState<{ c: number; r: number; m: Marker }[]>([]);
+  const [nodes, setNodes] = React.useState<{ c: number; r: number }[]>([]);
   const rngRef = React.useRef(mulberry32(seed));
 
   React.useEffect(() => {
@@ -164,7 +167,16 @@ export function AppGrid({ cell = 100, density = 10, seed = 7, clusters = [], cro
       initial.push({ c: outerCol(rng, cols), r: Math.floor(rng() * rows), m: MARKERS[Math.floor(rng() * MARKERS.length)]! });
     }
     setMarkers(initial);
-  }, [size.w, cols, rows, density, seed]);
+    // Nodes sit on intersections from row 3 down: the first rows are under the
+    // header panel every screen opens with, and a pill half-hidden by a card
+    // edge reads as a glitch rather than a decoration.
+    const firstRow = 3;
+    const pinned: { c: number; r: number }[] = [];
+    for (let i = 0; i < sparkles && rows > firstRow; i++) {
+      pinned.push({ c: outerCol(rng, cols + 1), r: firstRow + Math.floor(rng() * (rows - firstRow)) });
+    }
+    setNodes(pinned);
+  }, [size.w, cols, rows, density, seed, sparkles]);
 
   const running = inView && !reduced && size.w > 0;
 
@@ -201,6 +213,15 @@ export function AppGrid({ cell = 100, density = 10, seed = 7, clusters = [], cro
           style={{ left: offsetX + m.c * cell + cell / 2 - 4, top: m.r * cell + cell / 2 - 6 }}
         >
           {m.m}
+        </span>
+      ))}
+      {nodes.map((n, i) => (
+        <span
+          key={`n-${i}`}
+          className="absolute hidden h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-pill border border-border bg-background text-[14px] leading-none text-primary lg:flex"
+          style={{ left: offsetX + n.c * cell, top: n.r * cell }}
+        >
+          <span className={running ? 'animate-sparkle' : undefined}>✦</span>
         </span>
       ))}
       {crosshairs &&

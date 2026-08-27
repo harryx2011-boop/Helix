@@ -34,7 +34,7 @@ export function useReducedMotion(): boolean {
   return reduced;
 }
 
-function useInView(ref: React.RefObject<Element | null>): boolean {
+export function useInView(ref: React.RefObject<Element | null>): boolean {
   const [inView, setInView] = React.useState(false);
   React.useEffect(() => {
     const el = ref.current;

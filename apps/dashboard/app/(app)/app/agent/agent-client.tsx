@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { Loader2, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AppGrid } from '@/components/app/app-grid';
 import { Composer } from '@/components/app/agent/composer';
 import { RefineBar } from '@/components/app/agent/refine-bar';
 import { SchemaPanel } from '@/components/app/agent/schema-panel';
@@ -172,10 +171,6 @@ export function AgentClient() {
   if (stage === 'idle') {
     return (
       <div className="relative flex h-full items-center justify-center px-4">
-        <AppGrid
-          className="[mask-image:radial-gradient(ellipse_640px_420px_at_center,transparent,black)] [-webkit-mask-image:radial-gradient(ellipse_640px_420px_at_center,transparent,black)]"
-          clusters={[{ col: 1, row: 1, size: 4 }, { col: 8, row: 4, size: 3 }]}
-        />
         <div className="relative flex w-full max-w-[640px] flex-col items-center gap-6">
           <h1 className="text-center text-[28px] font-medium leading-tight tracking-tight text-foreground">
             What data do you want to gather?

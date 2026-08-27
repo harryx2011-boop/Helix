@@ -146,14 +146,19 @@ impl FetchResponse {
 struct Health {
     status: &'static str,
     version: &'static str,
+    /// Identities this build can present. Unchanged in meaning since 0.1.
     profiles_loaded: usize,
+    /// JSON definitions read and validated at boot. These describe the JS layer
+    /// the browser tier applies, and are independent of the count above.
+    definitions_loaded: usize,
 }
 
 async fn health() -> Json<Health> {
     Json(Health {
         status: "ok",
         version: env!("CARGO_PKG_VERSION"),
-        profiles_loaded: profile::loaded_count(),
+        profiles_loaded: profile::available_count(),
+        definitions_loaded: profile::loaded_count(),
     })
 }
 
@@ -315,7 +320,12 @@ async fn main() -> anyhow::Result<()> {
         .parse()?;
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
-    tracing::info!(%addr, profiles = profile::loaded_count(), "helix-fetch listening");
+    tracing::info!(
+        %addr,
+        profiles = profile::available_count(),
+        definitions = profile::loaded_count(),
+        "helix-fetch listening"
+    );
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;

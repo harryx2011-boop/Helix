@@ -21,15 +21,27 @@
 //! the metadata that lets a profile be named and validated.
 
 use serde::{Deserialize, Serialize};
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use wreq_util::Profile as Identity;
 
+/// The JSON definitions are camelCase, so every struct here renames. Unknown
+/// keys are ignored rather than rejected: the definitions carry `$comment`
+/// blocks and JS-layer fields (`screen`, `canvasSeed`) that only the browser
+/// tier reads, and a new one should not stop this service from booting.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Profile {
     pub id: String,
     pub browser: String,
     pub version: String,
     pub platform: String,
+    /// Null until `tools/capture` records it from a real browser.
+    #[serde(default)]
+    pub captured_at: Option<String>,
+    /// False for a hand-written definition: plausible values, never measured.
+    #[serde(default)]
+    pub verified: bool,
     pub tls: TlsProfile,
     pub http2: Http2Profile,
     pub headers: HeaderProfile,
@@ -37,6 +49,7 @@ pub struct Profile {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TlsProfile {
     pub ja4: String,
     pub cipher_suites: Vec<String>,
@@ -45,6 +58,7 @@ pub struct TlsProfile {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Http2Profile {
     /// Chrome sends 65536; Python's httpx defaults to 4096. Getting this wrong
     /// contradicts the TLS layer and is a single-field giveaway.
@@ -55,6 +69,7 @@ pub struct Http2Profile {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct HeaderProfile {
     pub user_agent: String,
     pub accept: String,
@@ -64,13 +79,17 @@ pub struct HeaderProfile {
     pub order: Vec<String>,
 }
 
+/// The JS layer, applied by the browser tier rather than by this service. It is
+/// parsed here so the definition can be validated as a whole.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct JsProfile {
     pub webgl_vendor: String,
     pub webgl_renderer: String,
     pub hardware_concurrency: u32,
     pub device_memory: Option<u32>,
     pub timezone: String,
+    #[serde(default)]
     pub fonts: Vec<String>,
 }
 
@@ -263,19 +282,93 @@ pub fn available() -> &'static [&'static str] {
 
 static PROFILES: OnceLock<Vec<Profile>> = OnceLock::new();
 
+/// Where the definitions live, relative to this binary or the repo root.
+///
+/// Checked in order so the service runs both from `cargo run` inside
+/// `apps/fetch` and from a deployed binary beside a `profiles/` directory.
+fn definition_dirs() -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    if let Ok(explicit) = std::env::var("HELIX_PROFILES_DIR") {
+        dirs.push(PathBuf::from(explicit));
+    }
+    dirs.push(PathBuf::from("../../packages/profiles/definitions"));
+    dirs.push(PathBuf::from("packages/profiles/definitions"));
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            dirs.push(dir.join("profiles"));
+        }
+    }
+    dirs
+}
+
+fn read_definitions(dir: &Path) -> anyhow::Result<Vec<Profile>> {
+    let mut profiles = Vec::new();
+    for entry in std::fs::read_dir(dir)? {
+        let path = entry?.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path)?;
+        let profile: Profile = serde_json::from_str(&text)
+            .map_err(|e| anyhow::anyhow!("{}: {e}", path.display()))?;
+        profiles.push(profile);
+    }
+    Ok(profiles)
+}
+
+/// Read every definition, validate it, and refuse to start on an incoherent one.
+///
+/// Failing loudly at boot beats presenting a contradictory identity to a live
+/// target: an identity whose HTTP/2 settings disagree with its user-agent is
+/// visible before the response body exists, and a service that started anyway
+/// would leak that on every request.
+///
+/// Missing definitions are not an error. The transport layer comes from
+/// wreq-util, so this service works with none loaded — `available()` is what it
+/// can present, and these files describe the JS layer the browser tier applies.
 pub fn load_all() -> anyhow::Result<()> {
-    // The JSON definitions in packages/profiles carry the JS-layer surface used
-    // by the browser tiers. The transport layer comes from wreq-util, so this
-    // service works with none loaded.
-    //
-    // TODO(M2+): read packages/profiles/definitions/*.json, validate each, and
-    // refuse to start on an incoherent one. Failing loudly at boot beats
-    // presenting a contradictory identity to a live target.
-    PROFILES.get_or_init(Vec::new);
+    let mut loaded: Vec<Profile> = Vec::new();
+
+    for dir in definition_dirs() {
+        if !dir.is_dir() {
+            continue;
+        }
+        loaded = read_definitions(&dir)?;
+        tracing::debug!(dir = %dir.display(), count = loaded.len(), "read profile definitions");
+        break;
+    }
+
+    for profile in &loaded {
+        profile.validate()?;
+        if !profile.verified {
+            tracing::warn!(
+                id = %profile.id,
+                "profile was never captured from a real browser; run tools/capture to record one"
+            );
+        }
+        if resolve(Some(&profile.id)).id != profile.id {
+            tracing::warn!(
+                id = %profile.id,
+                "no transport identity of this name; a request naming it gets the default instead"
+            );
+        }
+    }
+
+    if loaded.is_empty() {
+        tracing::debug!("no profile definitions found; the transport layer still presents its own identities");
+    }
+
+    PROFILES.get_or_init(|| loaded);
     Ok(())
 }
 
+/// Definitions successfully loaded and validated, not identities available.
 pub fn loaded_count() -> usize {
+    PROFILES.get().map(Vec::len).unwrap_or(0)
+}
+
+/// Identities this build can present, which is independent of the definitions.
+pub fn available_count() -> usize {
     available().len()
 }
 
@@ -283,12 +376,62 @@ pub fn loaded_count() -> usize {
 mod tests {
     use super::*;
 
+    /// The definitions that actually ship must parse and validate.
+    ///
+    /// They are camelCase JSON against snake_case structs, and they carry keys
+    /// this service does not read (`$comment`, `screen`, `canvasSeed`). Nothing
+    /// caught that until load_all() stopped being a stub, because the files were
+    /// never opened.
+    #[test]
+    fn every_shipped_definition_parses_and_validates() {
+        let dir = std::path::Path::new("../../packages/profiles/definitions");
+        if !dir.is_dir() {
+            return; // Not a checkout with the definitions beside us.
+        }
+
+        let profiles = read_definitions(dir).expect("definitions should parse");
+        assert!(!profiles.is_empty(), "expected at least one shipped definition");
+
+        for profile in &profiles {
+            profile
+                .validate()
+                .unwrap_or_else(|e| panic!("shipped definition is incoherent: {e}"));
+        }
+    }
+
+    /// A definition naming an identity resolve() does not know is served the
+    /// default instead, silently. That is how chrome-149-macos shipped.
+    #[test]
+    fn shipped_definitions_name_resolvable_identities() {
+        let dir = std::path::Path::new("../../packages/profiles/definitions");
+        if !dir.is_dir() {
+            return;
+        }
+
+        let profiles = read_definitions(dir).expect("definitions should parse");
+        // Not `resolve(..).id != p.id`: resolve echoes back whatever name it was
+        // given, so that comparison passes even when the emulation fell back.
+        // Membership in available() is the property that actually matters.
+        let unresolvable: Vec<&str> = profiles
+            .iter()
+            .filter(|p| !available().contains(&p.id.as_str()))
+            .map(|p| p.id.as_str())
+            .collect();
+
+        assert!(
+            unresolvable.is_empty(),
+            "these definitions name identities the transport layer falls back from: {unresolvable:?}"
+        );
+    }
+
     fn chrome() -> Profile {
         Profile {
             id: "chrome-137".into(),
             browser: "chrome".into(),
             version: "137".into(),
             platform: "macos".into(),
+            captured_at: None,
+            verified: false,
             tls: TlsProfile {
                 ja4: "t13d1516h2_8daaf6152771_02713d6af862".into(),
                 cipher_suites: vec!["TLS_AES_128_GCM_SHA256".into()],

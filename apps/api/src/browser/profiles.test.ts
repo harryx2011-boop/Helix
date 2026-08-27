@@ -2,7 +2,14 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fingerprintScript, getProfile, loadProfiles, resetProfileCache, type BrowserProfile } from './profiles.js';
+import {
+  fingerprintScript,
+  getProfile,
+  loadProfiles,
+  resetInstanceSecret,
+  resetProfileCache,
+  type BrowserProfile,
+} from './profiles.js';
 
 /**
  * The JS layer is what a page can read about the machine it thinks it is on.
@@ -40,7 +47,20 @@ function writeDefinitions(files: Record<string, string>): string {
 
 afterEach(() => {
   resetProfileCache();
+  resetInstanceSecret();
+  delete process.env['HELIX_ENCRYPTION_KEY'];
+  delete process.env['HELIX_BOOTSTRAP_KEY'];
 });
+
+function seedOf(script: string): string | undefined {
+  return /"seed":(\d+)/.exec(script)?.[1];
+}
+
+function scriptWithSecret(secret: string, profile: BrowserProfile): string {
+  process.env['HELIX_ENCRYPTION_KEY'] = secret;
+  resetInstanceSecret();
+  return fingerprintScript(profile);
+}
 
 describe('loadProfiles', () => {
   it('loads every readable definition by id', () => {
@@ -109,6 +129,67 @@ describe('unverified profiles', () => {
 
     expect(getProfile('chrome-real', { warn } as never)?.verified).toBe(true);
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('the canvas seed', () => {
+  /**
+   * The attack this defends against: the profile id ships in a public repo, so
+   * a seed derived from it alone is a pure function of data the tracker already
+   * has. They recompute it, invert the transform, and read the true hardware
+   * canvas hash - every install handing out the same stable identifier behind a
+   * veneer of protection. Cortex shipped that exact bug and measured 0 of 4096
+   * bytes differing after inversion.
+   */
+  it('differs between two instances running the same public profile', () => {
+    const profile = profileFixture();
+
+    const a = scriptWithSecret('a'.repeat(64), profile);
+    const b = scriptWithSecret('b'.repeat(64), profile);
+
+    expect(seedOf(a)).toBeDefined();
+    expect(seedOf(a)).not.toBe(seedOf(b));
+  });
+
+  it('is identical across calls on one instance, so the hash does not vary between reads', () => {
+    const profile = profileFixture();
+
+    const first = scriptWithSecret('c'.repeat(64), profile);
+    const second = fingerprintScript(profile);
+
+    expect(seedOf(first)).toBe(seedOf(second));
+  });
+
+  it('still separates two identities on the same instance', () => {
+    process.env['HELIX_ENCRYPTION_KEY'] = 'd'.repeat(64);
+    resetInstanceSecret();
+
+    const a = fingerprintScript(profileFixture({ id: 'chrome-a' }));
+    const b = fingerprintScript(profileFixture({ id: 'chrome-b' }));
+
+    expect(seedOf(a)).not.toBe(seedOf(b));
+  });
+
+  it('falls back to random rather than to a guessable value', () => {
+    // No instance secret configured: the seed must still not be computable from
+    // the profile, so two processes disagree.
+    const profile = profileFixture();
+    resetInstanceSecret();
+    const first = fingerprintScript(profile);
+    resetInstanceSecret();
+    const second = fingerprintScript(profile);
+
+    expect(seedOf(first)).not.toBe(seedOf(second));
+  });
+
+  it('perturbs every profile, with no seed value that is a silent no-op', () => {
+    // The first implementation used a single XOR bit, so half of all profiles
+    // XORed with zero and perturbed nothing at all.
+    for (const id of ['chrome-a', 'chrome-b', 'chrome-c', 'chrome-d']) {
+      const script = scriptWithSecret('e'.repeat(64), profileFixture({ id }));
+      expect(script).not.toContain('seed & 1');
+      expect(Number(seedOf(script))).toBeGreaterThan(0);
+    }
   });
 });
 

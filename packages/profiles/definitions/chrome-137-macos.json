@@ -24,7 +24,11 @@
   "tls": {
     "$comment": "Documentation only. The handshake actually sent is wreq-util's, not these values.",
     "ja4": "unset_transport_owned_by_wreq_util",
-    "cipherSuites": ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+    "cipherSuites": [
+      "TLS_AES_128_GCM_SHA256",
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256"
+    ],
     "extensions": [
       "server_name",
       "extended_master_secret",
@@ -40,14 +44,22 @@
       "supported_versions",
       "compress_certificate"
     ],
-    "alpn": ["h2", "http/1.1"]
+    "alpn": [
+      "h2",
+      "http/1.1"
+    ]
   },
   "http2": {
     "$comment": "Chrome sends 65536; the validator rejects anything else for a chrome profile.",
     "headerTableSize": 65536,
     "initialWindowSize": 6291456,
     "maxConcurrentStreams": 1000,
-    "pseudoHeaderOrder": [":method", ":authority", ":scheme", ":path"]
+    "pseudoHeaderOrder": [
+      ":method",
+      ":authority",
+      ":scheme",
+      ":path"
+    ]
   },
   "headers": {
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
@@ -73,7 +85,7 @@
     ]
   },
   "js": {
-    "$comment": "canvasSeed is derived from the profile id and then held STABLE. Real browsers return an identical canvas hash on every read; randomising per read is itself the tell.",
+    "$comment": "canvasSeed names this identity's perturbation; the SEED ITSELF is keyed with an instance-local secret at runtime, never derived from this file. A seed computable from public repo contents can be replayed and inverted by a tracker, which recovers the true hardware hash. The result is held stable per instance: real browsers return an identical canvas hash on every read.",
     "canvasSeed": "chrome-137-macos",
     "webglVendor": "Google Inc. (Apple)",
     "webglRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)",
@@ -85,6 +97,12 @@
       "height": 1117,
       "colorDepth": 30
     },
-    "fonts": ["Helvetica Neue", "Menlo", "Monaco", "SF Pro Text", "Times New Roman"]
+    "fonts": [
+      "Helvetica Neue",
+      "Menlo",
+      "Monaco",
+      "SF Pro Text",
+      "Times New Roman"
+    ]
   }
 }

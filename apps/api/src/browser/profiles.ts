@@ -1,3 +1,4 @@
+import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -107,20 +108,51 @@ export function getProfile(id: string | undefined, logger?: Log): BrowserProfile
 }
 
 /**
- * A stable 32-bit seed for this identity.
+ * A per-instance secret the canvas seed is keyed with.
  *
- * Real browsers return an identical canvas hash on every read; randomising per
- * read is itself the tell. Deriving from the profile id makes the value stable
- * across renders without storing one.
+ * Derived once from whichever instance secret exists, and from random bytes if
+ * none does. It never leaves the process; only its effect on pixels is visible.
+ */
+let instanceSecret: Buffer | undefined;
+
+function secret(): Buffer {
+  if (instanceSecret) return instanceSecret;
+  const configured = process.env['HELIX_ENCRYPTION_KEY'] ?? process.env['HELIX_BOOTSTRAP_KEY'];
+  instanceSecret = configured
+    ? createHash('sha256').update(`canvas:${configured}`).digest()
+    : randomBytes(32);
+  return instanceSecret;
+}
+
+/** Test seam: forget the derived secret so a different environment can be read. */
+export function resetInstanceSecret(): void {
+  instanceSecret = undefined;
+}
+
+/**
+ * A stable 32-bit seed for this identity, keyed with an instance-local secret.
+ *
+ * Two properties have to hold at once, and only one of them is obvious.
+ *
+ * Stable: real browsers return an identical canvas hash on every read, so a
+ * value that varies between two reads is itself the tell.
+ *
+ * *Unpredictable to the page.* Deriving the seed from the profile id alone —
+ * which is what this did first — makes it a pure function of a value that ships
+ * in a public repo. A tracker recomputes it off-box, inverts the transform, and
+ * recovers the true hardware canvas hash: strictly worse than not perturbing at
+ * all, because every install then hands out the same stable identifier behind a
+ * veneer of protection. (Cortex shipped and measured exactly this: 0 of 4096
+ * bytes differed after inversion.)
+ *
+ * Keying with an instance secret keeps the stability and removes the
+ * predictability. The fallback is random rather than public — it degrades
+ * toward unpredictable, never toward guessable.
  */
 function seedFor(profile: BrowserProfile): number {
   const source = profile.js.canvasSeed && profile.js.canvasSeed !== 'per-session' ? profile.js.canvasSeed : profile.id;
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < source.length; i++) {
-    hash ^= source.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
+  const digest = createHmac('sha256', secret()).update(source).digest();
+  return digest.readUInt32BE(0);
 }
 
 /**
@@ -175,8 +207,13 @@ export function fingerprintScript(profile: BrowserProfile): string {
     }
   }
 
-  // Canvas: perturb deterministically from the seed. A per-read random value
-  // would be detected precisely because it varies between two reads.
+  // Canvas: perturb deterministically from the seed, which is keyed with an
+  // instance secret the page cannot compute. A per-read random value would be
+  // detected because it varies between two reads; a publicly-derivable one is
+  // worse still, because the transform can simply be replayed and inverted.
+  //
+  // The offset walks with a small PRNG rather than a fixed stride, and the
+  // delta varies per pixel, so knowing one touched byte does not give the rest.
   const toBlobOrDataUrl = HTMLCanvasElement.prototype.toDataURL;
   HTMLCanvasElement.prototype.toDataURL = function (...args) {
     try {
@@ -184,9 +221,22 @@ export function fingerprintScript(profile: BrowserProfile): string {
       if (ctx && this.width > 0 && this.height > 0) {
         const image = ctx.getImageData(0, 0, this.width, this.height);
         const d = image.data;
-        // One deterministic sub-LSB nudge, spread across the buffer.
-        for (let i = 0; i < d.length; i += 4 * 997) {
-          d[i] = d[i] ^ (p.seed & 1);
+        let state = p.seed >>> 0;
+        const next = () => {
+          // xorshift32: cheap, and every bit of the seed reaches the output.
+          state ^= state << 13; state >>>= 0;
+          state ^= state >>> 17;
+          state ^= state << 5; state >>>= 0;
+          return state;
+        };
+        for (let i = 0; i < d.length; ) {
+          const r = next();
+          // Nudge one channel by ±1, clamped. Sub-perceptual, but it moves the hash.
+          const delta = (r & 1) === 0 ? 1 : -1;
+          const v = d[i] + delta;
+          d[i] = v < 0 ? 0 : v > 255 ? 255 : v;
+          // 4..~1024 bytes on, so the touched set is not a fixed lattice.
+          i += 4 * (1 + ((r >>> 1) & 0xff));
         }
         ctx.putImageData(image, 0, 0);
       }

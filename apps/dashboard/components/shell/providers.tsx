@@ -18,5 +18,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <Toaster position="bottom-right" toastOptions={{ className: 'font-sans text-sm' }} />
     </ThemeProvider>
   );
-  return HOSTED ? <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up" afterSignOutUrl="/">{tree}</ClerkProvider> : tree;
+  // The fallback redirects are set in code for the same reason the middleware
+  // sets the sign-in paths: without NEXT_PUBLIC_CLERK_*_FALLBACK_REDIRECT_URL
+  // a completed sign-in landed on the marketing page, which reads as nothing
+  // having happened.
+  return HOSTED ? (
+    <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      signInFallbackRedirectUrl="/app"
+      signUpFallbackRedirectUrl="/onboarding"
+      afterSignOutUrl="/"
+    >
+      {tree}
+    </ClerkProvider>
+  ) : (
+    tree
+  );
 }

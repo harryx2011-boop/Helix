@@ -14,9 +14,17 @@ const isBearerSkill = (req: NextRequest): boolean =>
 
 const hosted = process.env.HELIX_HOSTED === '1';
 
-const clerk = clerkMiddleware(async (auth, req) => {
-  if (isProtected(req)) await auth.protect();
-});
+// The sign-in paths are passed here, not only to ClerkProvider: protect() runs
+// in middleware and reads these (or NEXT_PUBLIC_CLERK_SIGN_IN_URL), and with
+// neither set it sent a signed-out visitor to Clerk's hosted accounts.dev
+// portal instead of this site's own /sign-in. Env stays supported; it is no
+// longer load-bearing.
+const clerk = clerkMiddleware(
+  async (auth, req) => {
+    if (isProtected(req)) await auth.protect();
+  },
+  { signInUrl: '/sign-in', signUpUrl: '/sign-up' },
+);
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
   if (!hosted || isBearerSkill(req)) return NextResponse.next();

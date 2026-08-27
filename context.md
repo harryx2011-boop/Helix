@@ -133,6 +133,14 @@ The 0.16 API changes were mechanical but worth knowing: `Emulation` became `Prof
 
 A naming trap worth keeping in mind: `resolve()` echoes back whatever name it is given, so comparing its returned id to a definition's proves nothing — check membership in `available()`. A test of mine passed while broken for exactly that reason.
 
+## Sign-in fix, the auth surface, and the /app backdrop grid (2026-08-27)
+
+**Signed-out `/app` went to Clerk's hosted portal** (`fluent-eft-4786.accounts.dev`) instead of `/sign-in`. `auth.protect()` runs in middleware and reads its sign-in path from the `clerkMiddleware` options or `NEXT_PUBLIC_CLERK_SIGN_IN_URL`; the `signInUrl` prop on `ClerkProvider` only covers client components. Both paths are now passed in code, plus `signInFallbackRedirectUrl="/app"` / `signUpFallbackRedirectUrl="/onboarding"`, so env is no longer load-bearing. Diagnose Clerk in a browser (`research/firecrawl-capture/probe-clerk-signin.mjs`) — `curl` without `Accept: text/html` gets Clerk's non-page 404 rewrite, which is not what a person sees.
+
+**Auth surface.** `AuthFrame` now carries the hero's `GridCells` (crosshairs, markers, ✦ nodes, clusters), masked clear behind the Clerk card, plus two new ambient pieces in `components/marketing/ocean.tsx`: `AsciiOcean` (a three-sine height field rendered as glyphs, violet crests on an ink swell, along the bottom) and `AsciiWave` (one travelling sine beside the title). Same contract as `AsciiHelix` — one 12fps ticker, paused off-screen, settled frame under reduced motion, hidden below `lg`. `useInView` is exported from `ambient.tsx` for them.
+
+**/app grid is one shell-level backdrop**, not per page. `app-shell.tsx` mounts `AppGrid` (now with `sparkles`, pinned ✦ nodes from row 3 down) as `sticky top-0 z-[-1] h-0` inside `main.isolate.[container-type:size]`, sized `h-[100cqh]`. Three details are load-bearing: sticky with zero height takes no space; `cqh` sizes it to the scroll area rather than the viewport; `z-[-1]` inside `isolate` paints it below in-flow content. The first attempt — a `min-h-full` wrapper around children — put the absolutely positioned grid *above* any page whose root was not positioned (absolute siblings paint over in-flow blocks regardless of DOM order) and broke `PageFrame`'s own `min-h-full`, so the overview's column borders stopped at content bottom. `PageFrame` and the agent page no longer mount their own grid; pages that bypass `PageFrame` paint `bg-background` on their content panel, the contract `FrameRow` already follows.
+
 ## Conventions
 
 - Tokens: WEBSITE.md §3. Marketing = Firecrawl-structured light theme in violet; app = DESIGN.md dark.

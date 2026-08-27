@@ -1,12 +1,14 @@
 # CanvasLMS - API: context
 
+> v1.1.0 (2026-09-05): HTTP shared-secret auth (`CANVAS_MCP_AUTH_TOKEN`) so claude.ai custom connectors can reach the server; `--transport http` refuses to bind past localhost without it
+>
 > v1.0.2 (2026-09-05): GET-only retry with jittered backoff and capped `Retry-After`, write-triggered course-cache invalidation, per-call timeout override
 >
 > v1.0.1 (2026-09-05): `get_all()` discloses page-cap truncation instead of silently dropping items past the 1000-item limit
 >
 > v1.0.0 (2026-09-02): semver rebaseline; earlier version history folds into it
 >
-> v1.0.0 (2026-08-24) initial release; marketing site added under web/ the same day
+> v1.0.0 (2026-08-24) initial release; marketing site added under web/ the same day, since moved into Helix
 
 ## Purpose
 
@@ -17,6 +19,7 @@ CanvasLMS - API is a local MCP server that exposes a Canvas LMS account to MCP c
 - Python 3.11+
 - FastMCP 3 (`fastmcp>=3.4,<4`) for the MCP server and tool registration
 - httpx for the Canvas API client
+- starlette for the HTTP transport's auth middleware (also FastMCP's own ASGI layer)
 - python-dotenv for `.env` loading
 - Dev/test: pytest, pytest-asyncio, respx, ruff
 - Packaging: hatchling, console script `canvaslms-api`
@@ -32,6 +35,7 @@ src/canvaslms_api/
   courses.py    CourseResolver: resolves course id/code/name/sis_course_id: to a numeric id, with caching
   md.py         Markdown-formatting helpers shared by tool modules
   config.py     Settings dataclass, Settings.from_env(), ConfigError, load_env()
+  http_auth.py  SharedSecretGuard ASGI middleware, secret_url(), is_loopback()
   tools/
     identity.py      9 tools : courses & identity
     student.py        9 tools: student-facing tools
@@ -58,6 +62,9 @@ src/canvaslms_api/
 - **Markdown helpers.** `md.py` centralizes table/list/heading formatting so every tool's output is consistent Markdown.
 - **Course resolution and cache.** `CourseResolver` (`courses.py`) accepts a numeric id, a course code, a partial course name, or `sis_course_id:X`, and resolves it to a Canvas course id. Results are cached for `CANVAS_CACHE_TTL` seconds; `get_cache_status` and `clear_cache` (in `identity.py`) inspect/reset that cache.
 - **Error mapping.** `CanvasError` (`client.py`) wraps Canvas API failures; a 403 from an educator-only endpoint surfaces to the caller with a permission hint rather than a raw HTTP error.
+- **HTTP auth.** `SharedSecretGuard` (`http_auth.py`) wraps the HTTP app when `CANVAS_MCP_AUTH_TOKEN` is set. It accepts either `Authorization: Bearer <token>` or an `/s/<token>` path prefix, and 401s everything else. The path form is there for claude.ai custom connectors, whose dialog accepts a URL and nothing else. The prefix is moved into the ASGI `root_path` rather than stripped from `path`, because Starlette subtracts `root_path` from `path` when routing and builds redirect URLs from the full `path` -- rewriting `path` would emit redirects that drop the secret and 401.
+- **Host validation.** FastMCP defaults `http_host_origin_protection` to `False`, so naming allowed hosts alone does nothing. `_run_http` (`cli.py`) passes `host_origin_protection=True` whenever hosts are named via `CANVAS_MCP_ALLOWED_HOSTS` or `--allowed-host`; a Host outside the list then gets 421. Loopback names are always allowed on top of the configured list.
+- **Off-loopback guard.** `--transport http` exits 2 rather than bind past localhost (or accept proxy hostnames) without `CANVAS_MCP_AUTH_TOKEN`: an open port here is equivalent to handing out the Canvas token. Plain loopback serving stays unauthenticated for backwards compatibility.
 - **Anonymization.** When `CANVAS_ANONYMIZE_STUDENTS=true`, `App.person()` returns a stable SHA-256-derived pseudonym (`Student_xxxxxxxx`) instead of the real name; `App.anonymous_id()` computes it, `export_anonymization_map` (in `people.py`) can export the mapping, `get_privacy_status` reports whether anonymization is active.
 
 ## Configuration
@@ -73,6 +80,8 @@ Loaded from `.env` in the repository root via `Settings.from_env()` (`config.py`
 | `CANVAS_MAX_CONCURRENCY` | no | 5 |
 | `CANVAS_ANONYMIZE_STUDENTS` | no | false |
 | `CANVAS_DOWNLOAD_DIR` | no | system temp dir |
+| `CANVAS_MCP_AUTH_TOKEN` | no |: |
+| `CANVAS_MCP_ALLOWED_HOSTS` | no |: |
 
 `CANVAS_URL` must start with `https://`; a trailing `/api/v1` is stripped automatically.
 
@@ -85,6 +94,7 @@ canvaslms-api --config        # print resolved settings, token masked
 canvaslms-api --list-tools    # print all registered tool names
 canvaslms-api                 # run over stdio (default)
 canvaslms-api --transport http --host 127.0.0.1 --port 7100
+canvaslms-api --transport http --allowed-host <tunnel host>   # needs CANVAS_MCP_AUTH_TOKEN
 pytest
 ruff check .
 ```
@@ -96,7 +106,7 @@ HTTP transport default port: **7100** (host `127.0.0.1` by default). Stdio trans
 ## Known limitations
 
 - No arbitrary code execution (no TypeScript/JS sandbox): every tool is a fixed Canvas API operation.
-- No institutional hosting or SSO/OAuth flow: the server is local-only and authenticates with a single personal access token per run.
+- No institutional hosting or SSO/OAuth flow: the server is local-only and authenticates with a single personal access token per run. Reaching it from claude.ai means running a tunnel to the user's own machine; the connector URL carries a shared secret in its path, which is a bearer credential in URL form, not OAuth. claude.ai will not connect to `localhost`, and free `trycloudflare.com` hostnames change on every tunnel restart.
 - Permissions are exactly whatever the configured token's Canvas role grants. A student token cannot exercise educator tools (grading, bulk messaging, content migration, etc.); those calls return the Canvas 403 with a permission hint rather than succeeding partially.
 
 ## Presentation (in Helix)

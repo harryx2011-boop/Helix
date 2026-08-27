@@ -17,6 +17,8 @@ def _clear_canvas_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "CANVAS_MAX_CONCURRENCY",
         "CANVAS_ANONYMIZE_STUDENTS",
         "CANVAS_DOWNLOAD_DIR",
+        "CANVAS_MCP_AUTH_TOKEN",
+        "CANVAS_MCP_ALLOWED_HOSTS",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -176,3 +178,43 @@ def test_load_env_does_not_override_existing(
     import os
 
     assert os.environ.get("CANVAS_URL") == "https://already-set.instructure.com"
+
+
+def test_from_env_reads_auth_token_and_allowed_hosts(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_canvas_env(monkeypatch)
+    monkeypatch.setenv("CANVAS_URL", "https://school.instructure.com")
+    monkeypatch.setenv("CANVAS_TOKEN", "abc123")
+    monkeypatch.setenv("CANVAS_MCP_AUTH_TOKEN", "a-long-enough-shared-secret")
+    monkeypatch.setenv("CANVAS_MCP_ALLOWED_HOSTS", "demo.trycloudflare.com, mcp.example.com")
+    settings = Settings.from_env()
+    assert settings.auth_token == "a-long-enough-shared-secret"
+    assert settings.allowed_hosts == ("demo.trycloudflare.com", "mcp.example.com")
+
+
+def test_from_env_without_auth_token_leaves_it_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_canvas_env(monkeypatch)
+    monkeypatch.setenv("CANVAS_URL", "https://school.instructure.com")
+    monkeypatch.setenv("CANVAS_TOKEN", "abc123")
+    settings = Settings.from_env()
+    assert settings.auth_token is None
+    assert settings.allowed_hosts == ()
+
+
+@pytest.mark.parametrize("value", ["short", "has spaces in it here", "has/a/slash/in/it/here"])
+def test_from_env_rejects_weak_auth_token(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
+    _clear_canvas_env(monkeypatch)
+    monkeypatch.setenv("CANVAS_URL", "https://school.instructure.com")
+    monkeypatch.setenv("CANVAS_TOKEN", "abc123")
+    monkeypatch.setenv("CANVAS_MCP_AUTH_TOKEN", value)
+    with pytest.raises(ConfigError):
+        Settings.from_env()
+
+
+def test_masked_auth_token_hides_the_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_canvas_env(monkeypatch)
+    monkeypatch.setenv("CANVAS_URL", "https://school.instructure.com")
+    monkeypatch.setenv("CANVAS_TOKEN", "abc123")
+    monkeypatch.setenv("CANVAS_MCP_AUTH_TOKEN", "supersecretsharedvalue")
+    settings = Settings.from_env()
+    assert settings.masked_auth_token() == "supe...alue"
+    assert "secretshared" not in settings.masked_auth_token()

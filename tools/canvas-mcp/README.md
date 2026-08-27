@@ -76,6 +76,77 @@ Config file locations:
 
 Restart Claude Desktop after editing the file.
 
+## Connect to Claude on the web
+
+Claude on the web (claude.ai) reaches an MCP server from Anthropic's servers, not
+from your browser, so `localhost` will not do: the server needs a public HTTPS
+URL. That means anything that can reach the URL can use your Canvas token, so
+the server refuses to listen beyond localhost until you set a shared secret.
+
+1. Generate a secret and add it to `.env`.
+
+   ```bash
+   python -c "import secrets; print(secrets.token_urlsafe(32))"
+   ```
+
+   ```
+   CANVAS_MCP_AUTH_TOKEN=<the generated value>
+   ```
+
+2. Start the server.
+
+   ```bash
+   canvaslms-api --transport http
+   ```
+
+3. Give it a public HTTPS URL. Any tunnel works; `cloudflared` needs no account:
+
+   ```bash
+   cloudflared tunnel --url http://127.0.0.1:7100
+   ```
+
+   It prints a hostname such as `https://mild-owl-quiet.trycloudflare.com`. Add
+   that hostname to `.env` as `CANVAS_MCP_ALLOWED_HOSTS` and restart the server,
+   which turns on Host header validation:
+
+   ```
+   CANVAS_MCP_ALLOWED_HOSTS=mild-owl-quiet.trycloudflare.com
+   ```
+
+4. In claude.ai, go to **Settings > Connectors > Add custom connector** and enter
+   the URL with the secret in its path:
+
+   ```
+   https://mild-owl-quiet.trycloudflare.com/s/<CANVAS_MCP_AUTH_TOKEN>/mcp
+   ```
+
+   The connector dialog takes a URL and nothing else, which is why the secret
+   goes in the path. Clients that can send headers should use
+   `Authorization: Bearer <CANVAS_MCP_AUTH_TOKEN>` against `/mcp` instead.
+
+Check it from the command line before adding the connector:
+
+```bash
+curl -sS -X POST https://mild-owl-quiet.trycloudflare.com/s/<CANVAS_MCP_AUTH_TOKEN>/mcp \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'
+```
+
+A JSON-RPC result means the connector will work. `401` means the secret in the
+URL is wrong; `421` means the hostname is missing from `CANVAS_MCP_ALLOWED_HOSTS`.
+
+What to know before relying on this:
+
+- **Your machine is the server.** The connector works only while both
+  `canvaslms-api` and the tunnel are running.
+- **A free `trycloudflare.com` URL is temporary.** It changes every time you
+  restart the tunnel, and the connector URL changes with it. A named tunnel on
+  your own domain keeps a stable address.
+- **The URL is the credential.** Anyone holding it has your Canvas access.
+  Rotate `CANVAS_MCP_AUTH_TOKEN` and update the connector if it leaks.
+- **Custom connectors are a paid-plan feature** on claude.ai.
+
 ## Other clients
 
 Any MCP client that supports stdio servers can launch the executable directly, the same way as Claude Code and Claude Desktop above.
@@ -86,7 +157,10 @@ For clients that only speak HTTP, run the server with the HTTP transport:
 canvaslms-api --transport http --host 127.0.0.1 --port 7100
 ```
 
-Point the client at `http://127.0.0.1:7100`. The server still reads Canvas credentials from `.env` in the repository folder.
+Point the client at `http://127.0.0.1:7100/mcp`. The server still reads Canvas
+credentials from `.env` in the repository folder. On localhost it runs
+unauthenticated; set `CANVAS_MCP_AUTH_TOKEN` to require a bearer token, which is
+mandatory before it will bind anywhere else.
 
 ## How it behaves
 
@@ -283,6 +357,8 @@ All configuration comes from environment variables, loaded from a `.env` file in
 | `CANVAS_MAX_CONCURRENCY` | no | `5` | Maximum concurrent requests to Canvas. |
 | `CANVAS_ANONYMIZE_STUDENTS` | no | `false` | Replace student names with stable pseudonyms in tool output. |
 | `CANVAS_DOWNLOAD_DIR` | no | system temp directory | Where `download_file` writes downloaded files. |
+| `CANVAS_MCP_AUTH_TOKEN` | no | | Shared secret required by the HTTP transport, as a bearer token or an `/s/<token>` URL prefix. Required to serve beyond localhost. Minimum 16 characters. |
+| `CANVAS_MCP_ALLOWED_HOSTS` | no | | Comma-separated hostnames allowed in the `Host` header over HTTP. Setting it turns on Host/Origin validation. |
 
 Run `canvaslms-api --config` to print the resolved configuration, with the token masked.
 
@@ -316,6 +392,8 @@ Useful CLI flags during development: `canvaslms-api --list-tools` prints every r
 - The token is never logged. `--config` and `get_privacy_status` mask it.
 - Write tools require an explicit `confirm=true` after a preview. Nothing changes in Canvas by accident.
 - `download_file` will not overwrite an existing file at the destination path.
+- The HTTP transport will not bind past localhost without `CANVAS_MCP_AUTH_TOKEN`; unauthenticated requests get a `401`.
+- Exposing the server publicly makes the connector URL equivalent to your Canvas token. Prefer stdio unless you need Claude on the web.
 
 ## License
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "canvaslms-api"
-version = "1.0.2"
+version = "1.1.0"
 description = "CanvasLMS - API: an MCP server that puts your Canvas LMS account in front of an AI assistant"
 readme = "README.md"
 license = "MIT"
@@ -15,6 +15,7 @@ dependencies = [
     "fastmcp>=3.4,<4",
     "httpx>=0.28,<1",
     "python-dotenv>=1.0,<2",
+    "starlette>=0.47,<2",
 ]
 
 [project.scripts]

@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2026-09-05
+
+### Added
+
+- Shared-secret authentication for the HTTP transport (`CANVAS_MCP_AUTH_TOKEN`), accepted either as an `Authorization: Bearer` header or as an `/s/<token>` URL path prefix. The path form exists for claude.ai custom connectors, whose setup dialog takes a URL and nothing else.
+- `CANVAS_MCP_ALLOWED_HOSTS` and `--allowed-host` to name the hostnames a tunnel or reverse proxy puts in the `Host` header. Setting either turns on Host/Origin validation, which FastMCP leaves off by default.
+- README instructions for connecting the server to Claude on the web through a tunnel.
+
+### Changed
+
+- `--transport http` refuses to start when it would listen beyond localhost without `CANVAS_MCP_AUTH_TOKEN` set. Unauthenticated loopback serving is unchanged.
+- `--config` reports whether an HTTP auth token is set, masked, along with the allowed hosts.
+
 ## [1.0.2] - 2026-09-05
 
 ### Changed

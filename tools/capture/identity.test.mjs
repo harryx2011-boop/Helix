@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   browserFromUserAgent,
@@ -131,23 +132,17 @@ describe('versionMismatch', () => {
 
 describe('the resolvable identity list', () => {
   it('matches what apps/fetch advertises, or a capture names a profile it falls back from', () => {
-    // Mirrors available() in apps/fetch/src/profile.rs. If that list changes,
-    // this fails, which is the point.
-    expect(RESOLVABLE).toEqual([
-      'chrome-137',
-      'chrome-136',
-      'chrome-135',
-      'chrome-134',
-      'chrome-133',
-      'chrome-132',
-      'chrome-131',
-      'edge-131',
-      'edge-127',
-      'safari-18-5',
-      'safari-18-3-1',
-      'safari-17-5',
-      'safari-ios-18-1-1',
-    ]);
+    // Mirrors available() in apps/fetch/src/profile.rs. Read from the Rust
+    // source rather than duplicated here: a frozen copy is what lets the two
+    // drift, and a name this list carries that resolve() does not know would
+    // recreate the chrome-149-macos bug one level up.
+    const rs = readFileSync(new URL('../../apps/fetch/src/profile.rs', import.meta.url), 'utf8');
+    const body = rs.slice(rs.indexOf('pub fn available()'));
+    const block = body.slice(body.indexOf('&['), body.indexOf(']', body.indexOf('&[')));
+    const fromRust = [...block.matchAll(/"([a-z0-9-]+)"/g)].map((m) => m[1]);
+
+    expect(fromRust.length).toBeGreaterThan(0);
+    expect(RESOLVABLE).toEqual(fromRust);
   });
 
   it('carries an HTTP/2 table size for every engine it can record', () => {

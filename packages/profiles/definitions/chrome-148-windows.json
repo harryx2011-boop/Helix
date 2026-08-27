@@ -1,0 +1,112 @@
+{
+  "$comment": [
+    "Recorded by tools/capture from a real browser. Do not hand-edit the js block:",
+    "a plausible-looking value that was never measured is exactly what detection",
+    "looks for.",
+    "",
+    "The tls and http2 blocks are NOT recordings — the transport layer is not",
+    "observable from inside a browser. Helix presents wreq-util emulation for",
+    "this identity; these values document what that is expected to be and give",
+    "the Rust validator something to check the user-agent against."
+  ],
+  "id": "chrome-148",
+  "browser": "chrome",
+  "version": "148",
+  "platform": "windows",
+  "capturedAt": "2026-08-27T00:36:23.330Z",
+  "verified": true,
+  "tls": {
+    "$comment": "Documentation only. The handshake actually sent is wreq-util’s.",
+    "ja4": "unset_transport_owned_by_wreq_util",
+    "cipherSuites": [
+      "TLS_AES_128_GCM_SHA256",
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256"
+    ],
+    "extensions": [
+      "server_name",
+      "extended_master_secret",
+      "renegotiation_info",
+      "supported_groups",
+      "ec_point_formats",
+      "application_layer_protocol_negotiation",
+      "status_request",
+      "signature_algorithms",
+      "signed_certificate_timestamp",
+      "key_share",
+      "psk_key_exchange_modes",
+      "supported_versions"
+    ],
+    "alpn": [
+      "h2",
+      "http/1.1"
+    ]
+  },
+  "http2": {
+    "$comment": "chrome sends 65536; the validator rejects anything else for this engine.",
+    "headerTableSize": 65536,
+    "initialWindowSize": 6291456,
+    "maxConcurrentStreams": 1000,
+    "pseudoHeaderOrder": [
+      ":method",
+      ":authority",
+      ":scheme",
+      ":path"
+    ]
+  },
+  "headers": {
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "acceptLanguage": "en-US",
+    "acceptEncoding": "gzip, deflate, br, zstd",
+    "$comment": "Header ORDER is itself a fingerprint, independent of the values.",
+    "order": [
+      "host",
+      "connection",
+      "sec-ch-ua",
+      "sec-ch-ua-mobile",
+      "sec-ch-ua-platform",
+      "upgrade-insecure-requests",
+      "user-agent",
+      "accept",
+      "sec-fetch-site",
+      "sec-fetch-mode",
+      "sec-fetch-user",
+      "sec-fetch-dest",
+      "accept-encoding",
+      "accept-language"
+    ]
+  },
+  "js": {
+    "$comment": "Recorded. canvasSeed is derived from the profile id and held stable: real browsers return an identical canvas hash on every read, and randomising per read is itself the tell.",
+    "canvasSeed": "chrome-148-windows",
+    "webglVendor": "Google Inc. (NVIDIA)",
+    "webglRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2070 SUPER (0x00001E84) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "hardwareConcurrency": 16,
+    "deviceMemory": 32,
+    "timezone": "America/New_York",
+    "screen": {
+      "width": 1920,
+      "height": 1080,
+      "colorDepth": 32
+    },
+    "fonts": [
+      "Arial",
+      "Arial Black",
+      "Calibri",
+      "Cambria",
+      "Comic Sans MS",
+      "Consolas",
+      "Courier New",
+      "Georgia",
+      "Helvetica",
+      "Impact",
+      "Lucida Console",
+      "Segoe UI",
+      "Tahoma",
+      "Times New Roman",
+      "Trebuchet MS",
+      "Verdana"
+    ]
+  }
+}

@@ -53,6 +53,7 @@ function parseArgs(argv) {
     else if (arg === '--id') args.id = argv[++i];
     else if (arg === '--browser') args.browser = argv[++i];
     else if (arg === '--channel') args.channel = argv[++i];
+    else if (arg === '--executable') args.executable = argv[++i];
     else if (arg === '--out') args.out = argv[++i];
     else if (arg === '--help' || arg === '-h') args.help = true;
     else {
@@ -69,6 +70,9 @@ const HELP = `Record a real browser's JS surface into a profile definition.
   --browser <name>   chromium | firefox | webkit. Default chromium.
   --channel <name>   Playwright browser channel, e.g. chrome, msedge. Use a real
                      installed browser rather than Playwright's bundled build.
+  --executable <p>   Path to a specific browser binary. This is how you record a
+                     version the transport layer can actually present, rather
+                     than whichever build happens to be newest.
   --headed           Show the window. Some GPUs report a different renderer headless.
   --out <path>       Write here instead of packages/profiles/definitions/<id>-<platform>.json.
   --force            Overwrite an existing definition.
@@ -110,6 +114,7 @@ async function main() {
   const browser = await launcher.launch({
     headless: !args.headed,
     ...(args.channel ? { channel: args.channel } : {}),
+    ...(args.executable ? { executablePath: args.executable } : {}),
     // `screen.width` reports the display, but a browser launched into a small
     // window can report the window instead. Starting maximised, with no forced
     // viewport below, is what makes the recorded geometry the real monitor's.

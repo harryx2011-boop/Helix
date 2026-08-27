@@ -22,7 +22,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
-use wreq_util::Emulation;
+use wreq_util::Profile as Identity;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Profile {
@@ -126,9 +126,15 @@ impl Profile {
 }
 
 /// A resolved identity, ready to apply to a request.
+///
+/// wreq-util 0.2 renamed what 0.1 called `Emulation` to `Profile`, and gave the
+/// name `Emulation` to a struct pairing a profile with a platform. It is
+/// imported as `Identity` here because this module already defines its own
+/// `Profile` (the JSON definition). It implements `IntoEmulation`, so it can be
+/// handed to the request builder directly.
 pub struct Resolved {
     pub id: String,
-    pub emulation: Emulation,
+    pub emulation: Identity,
 }
 
 /// Map a profile name onto a wreq emulation profile.
@@ -141,26 +147,57 @@ pub fn resolve(name: Option<&str>) -> Resolved {
     let requested = name.unwrap_or(DEFAULT_PROFILE);
 
     let emulation = match requested {
-        "chrome-137" | "chrome" => Emulation::Chrome137,
-        "chrome-136" => Emulation::Chrome136,
-        "chrome-135" => Emulation::Chrome135,
-        "chrome-134" => Emulation::Chrome134,
-        "chrome-133" => Emulation::Chrome133,
-        "chrome-132" => Emulation::Chrome132,
-        "chrome-131" => Emulation::Chrome131,
-        "edge-131" | "edge" => Emulation::Edge131,
-        "edge-127" => Emulation::Edge127,
-        "safari-18-5" | "safari" => Emulation::Safari18_5,
-        "safari-18-3-1" => Emulation::Safari18_3_1,
-        "safari-17-5" => Emulation::Safari17_5,
-        "safari-ios-18-1-1" | "safari-ios" => Emulation::SafariIos18_1_1,
+        "chrome-149" | "chrome" => Identity::Chrome149,
+        "chrome-148" => Identity::Chrome148,
+        "chrome-147" => Identity::Chrome147,
+        "chrome-146" => Identity::Chrome146,
+        "chrome-145" => Identity::Chrome145,
+        "chrome-144" => Identity::Chrome144,
+        "chrome-143" => Identity::Chrome143,
+        "chrome-142" => Identity::Chrome142,
+        "chrome-141" => Identity::Chrome141,
+        "chrome-140" => Identity::Chrome140,
+        "chrome-139" => Identity::Chrome139,
+        "chrome-138" => Identity::Chrome138,
+        "chrome-137" => Identity::Chrome137,
+        "chrome-136" => Identity::Chrome136,
+        "chrome-135" => Identity::Chrome135,
+        "chrome-134" => Identity::Chrome134,
+        "chrome-133" => Identity::Chrome133,
+        "chrome-132" => Identity::Chrome132,
+        "chrome-131" => Identity::Chrome131,
+        "edge-148" | "edge" => Identity::Edge148,
+        "edge-147" => Identity::Edge147,
+        "edge-146" => Identity::Edge146,
+        "edge-145" => Identity::Edge145,
+        "edge-144" => Identity::Edge144,
+        "edge-143" => Identity::Edge143,
+        "edge-142" => Identity::Edge142,
+        "edge-141" => Identity::Edge141,
+        "edge-137" => Identity::Edge137,
+        "edge-136" => Identity::Edge136,
+        "edge-135" => Identity::Edge135,
+        "edge-134" => Identity::Edge134,
+        "edge-131" => Identity::Edge131,
+        "edge-127" => Identity::Edge127,
+        "safari-26-4" | "safari" => Identity::Safari26_4,
+        "safari-26-3" => Identity::Safari26_3,
+        "safari-26-2" => Identity::Safari26_2,
+        "safari-26-1" => Identity::Safari26_1,
+        "safari-26" => Identity::Safari26,
+        "safari-18-5" => Identity::Safari18_5,
+        "safari-18-3-1" => Identity::Safari18_3_1,
+        "safari-17-5" => Identity::Safari17_5,
+        "safari-ios-26-2" | "safari-ios" => Identity::SafariIos26_2,
+        "safari-ios-26" => Identity::SafariIos26,
+        "safari-ios-18-1-1" => Identity::SafariIos18_1_1,
         _ => {
             tracing::debug!(
                 requested,
                 fallback = DEFAULT_PROFILE,
                 "unknown profile requested; using the default"
             );
-            Emulation::Chrome137
+            Identity::Chrome149
         }
     };
 
@@ -172,11 +209,23 @@ pub fn resolve(name: Option<&str>) -> Resolved {
     Resolved { id, emulation }
 }
 
-const DEFAULT_PROFILE: &str = "chrome-137";
+const DEFAULT_PROFILE: &str = "chrome-149";
 
 /// Every identity this build can present.
 pub fn available() -> &'static [&'static str] {
     &[
+        "chrome-149",
+        "chrome-148",
+        "chrome-147",
+        "chrome-146",
+        "chrome-145",
+        "chrome-144",
+        "chrome-143",
+        "chrome-142",
+        "chrome-141",
+        "chrome-140",
+        "chrome-139",
+        "chrome-138",
         "chrome-137",
         "chrome-136",
         "chrome-135",
@@ -184,11 +233,30 @@ pub fn available() -> &'static [&'static str] {
         "chrome-133",
         "chrome-132",
         "chrome-131",
+        "edge-148",
+        "edge-147",
+        "edge-146",
+        "edge-145",
+        "edge-144",
+        "edge-143",
+        "edge-142",
+        "edge-141",
+        "edge-137",
+        "edge-136",
+        "edge-135",
+        "edge-134",
         "edge-131",
         "edge-127",
+        "safari-26-4",
+        "safari-26-3",
+        "safari-26-2",
+        "safari-26-1",
+        "safari-26",
         "safari-18-5",
         "safari-18-3-1",
         "safari-17-5",
+        "safari-ios-26-2",
+        "safari-ios-26",
         "safari-ios-18-1-1",
     ]
 }

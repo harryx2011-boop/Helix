@@ -24,7 +24,7 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::{Duration, Instant};
 use wreq::redirect;
-use wreq::Url;
+use url::Url;
 
 #[derive(Debug, Deserialize)]
 struct FetchRequest {
@@ -98,8 +98,12 @@ fn is_private_ip(ip: IpAddr) -> bool {
 
 /// The literal-only check: an address, or a name that is local by definition.
 /// No DNS, so it is cheap enough to run on every redirect hop.
-fn is_private_host(url: &Url) -> bool {
-    let Some(host) = url.host_str() else {
+/// Takes the host rather than a URL type: wreq 0.16 replaced `Url` with
+/// `http::Uri`, and this guard only ever needed the host. A missing host is
+/// treated as private, so a URL we cannot read a host from is refused rather
+/// than allowed.
+fn is_private_host(host: Option<&str>) -> bool {
+    let Some(host) = host else {
         return true;
     };
     let host = host.trim_start_matches('[').trim_end_matches(']');
@@ -175,9 +179,9 @@ fn build_client(req: &FetchRequest) -> anyhow::Result<(wreq::Client, Option<Stri
 
     if !req.allow_private {
         builder = builder.redirect(redirect::Policy::custom(|attempt| {
-            if is_private_host(attempt.url()) {
+            if is_private_host(attempt.uri.host()) {
                 attempt.error("redirected to a private or local address")
-            } else if attempt.previous().len() >= 10 {
+            } else if attempt.previous.len() >= 10 {
                 attempt.error("too many redirects")
             } else {
                 attempt.follow()
@@ -194,7 +198,7 @@ async fn fetch(Json(req): Json<FetchRequest>) -> Json<FetchResponse> {
 
     if !req.allow_private {
         match Url::parse(&req.url) {
-            Ok(url) if !is_private_host(&url) => {}
+            Ok(url) if !is_private_host(url.host_str()) => {}
             Ok(_) => {
                 return Json(FetchResponse::failure(
                     "private or local address, which this instance does not fetch",
@@ -247,7 +251,7 @@ async fn fetch(Json(req): Json<FetchRequest>) -> Json<FetchResponse> {
     };
 
     let status = response.status().as_u16();
-    let final_url = response.url().to_string();
+    let final_url = response.uri().to_string();
 
     let headers = response
         .headers()

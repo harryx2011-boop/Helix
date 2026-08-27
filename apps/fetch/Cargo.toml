@@ -16,9 +16,16 @@ path = "src/main.rs"
 #
 # It is the maintained successor to rquest, whose every published version was
 # yanked from crates.io. wreq-util carries the browser emulation profiles.
-# Pinned to 0.15.x: 0.16 requires rustc 1.98, above the toolchain in use.
-wreq = "0.15.3"
-wreq-util = "0.1"
+#
+# 0.16/0.2 need rustc 1.98, which is now the toolchain in use. The upgrade is
+# what makes newer identities presentable: wreq-util 0.1 stopped at Chrome 137,
+# while real browsers are on 149+, so every capture recorded a user-agent the
+# transport layer could not match.
+wreq = "0.16"
+wreq-util = "0.2"
+# wreq 0.16 dropped its Url re-export in favour of http::Uri; the initial URL
+# check still wants a parser, so depend on the crate wreq itself uses.
+url = "2"
 tokio = { version = "1", features = ["full"] }
 axum = "0.7"
 serde = { version = "1", features = ["derive"] }

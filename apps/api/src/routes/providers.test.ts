@@ -10,10 +10,11 @@ import { createHash } from 'node:crypto';
 
 interface Row {
   provider: string;
-  key_ciphertext: Buffer;
-  key_iv: Buffer;
-  key_last4: string;
+  key_ciphertext: Buffer | null;
+  key_iv: Buffer | null;
+  key_last4: string | null;
   model: string | null;
+  base_url: string | null;
   updated_at: Date;
 }
 
@@ -25,12 +26,13 @@ const db = vi.hoisted(() => {
       return { rows: state.rows.filter((r) => (r as unknown as { api_key_id: string }).api_key_id === apiKeyId) };
     }
     if (text.startsWith('INSERT INTO provider_keys')) {
-      const [apiKeyId, provider, ciphertext, iv, keyLast4, model] = values as [
+      const [apiKeyId, provider, ciphertext, iv, keyLast4, model, baseUrl] = values as [
         string,
         string,
-        Buffer,
-        Buffer,
-        string,
+        Buffer | null,
+        Buffer | null,
+        string | null,
+        string | null,
         string | null,
       ];
       const existing = state.rows.find(
@@ -41,8 +43,9 @@ const db = vi.hoisted(() => {
         existing.key_iv = iv;
         existing.key_last4 = keyLast4;
         existing.model = model;
+        existing.base_url = baseUrl;
         existing.updated_at = new Date();
-        return { rows: [{ model: existing.model }] };
+        return { rows: [{ model: existing.model, base_url: existing.base_url }] };
       }
       const row = {
         provider,
@@ -50,11 +53,12 @@ const db = vi.hoisted(() => {
         key_iv: iv,
         key_last4: keyLast4,
         model,
+        base_url: baseUrl,
         updated_at: new Date(),
         api_key_id: apiKeyId,
       } as unknown as Row;
       state.rows.push(row);
-      return { rows: [{ model }] };
+      return { rows: [{ model, base_url: baseUrl }] };
     }
     if (text.startsWith('DELETE FROM provider_keys')) {
       const [apiKeyId, provider] = values as [string, string];
@@ -95,6 +99,9 @@ async function build(instanceConfigured: Partial<Record<Provider, boolean>> = {}
           openai: false,
           gemini: false,
           openrouter: false,
+          ollama: false,
+          vllm: false,
+          'openai-compatible': false,
           ...instanceConfigured,
         },
       });
@@ -114,7 +121,7 @@ afterEach(async () => {
 });
 
 describe('GET /v1/providers', () => {
-  it('lists all four providers as unconfigured with no stored keys and no instance keys', async () => {
+  it('lists all seven providers as unconfigured with no stored keys and no instance keys', async () => {
     app = await build();
     const response = await app.inject({ method: 'GET', url: '/v1/providers', headers: { 'x-test-key': 'a' } });
 
@@ -126,6 +133,9 @@ describe('GET /v1/providers', () => {
       { provider: 'openai', configured: false, source: 'none' },
       { provider: 'gemini', configured: false, source: 'none' },
       { provider: 'openrouter', configured: false, source: 'none' },
+      { provider: 'ollama', configured: false, source: 'none' },
+      { provider: 'vllm', configured: false, source: 'none' },
+      { provider: 'openai-compatible', configured: false, source: 'none' },
     ]);
   });
 
@@ -175,7 +185,58 @@ describe('PUT /v1/providers/:provider', () => {
 
     expect(response.statusCode).toBe(200);
     const body = response.json();
-    expect(body).toEqual({ success: true, provider: 'openai', last4: '5678', model: 'gpt-4o-mini' });
+    expect(body).toEqual({
+      success: true,
+      provider: 'openai',
+      last4: '5678',
+      model: 'gpt-4o-mini',
+      baseUrl: null,
+    });
+  });
+
+  it('stores an ollama provider with only a baseUrl and no key', async () => {
+    app = await build();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/ollama',
+      headers: { 'x-test-key': 'a' },
+      payload: { baseUrl: 'http://localhost:11434/v1' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      success: true,
+      provider: 'ollama',
+      last4: null,
+      model: null,
+      baseUrl: 'http://localhost:11434/v1',
+    });
+  });
+
+  it('rejects an ollama PUT with no baseUrl', async () => {
+    app = await build();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/ollama',
+      headers: { 'x-test-key': 'a' },
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('baseUrl');
+  });
+
+  it('rejects an anthropic PUT with no apiKey', async () => {
+    app = await build();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/anthropic',
+      headers: { 'x-test-key': 'a' },
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('apiKey');
   });
 
   it('rejects an unknown provider', async () => {

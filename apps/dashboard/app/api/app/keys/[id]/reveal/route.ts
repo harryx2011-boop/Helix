@@ -12,7 +12,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const profile = await requireProfile();
 
   if (!supabaseConfigured()) {
-    return NextResponse.json({ key: 'helix-LOCALDEVKEY00001' });
+    return NextResponse.json(
+      { error: 'not_configured', message: 'Key storage is not configured on this deployment.' },
+      { status: 400 },
+    );
   }
 
   const keys = await listApiKeys(profile.id);

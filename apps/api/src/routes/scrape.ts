@@ -319,7 +319,7 @@ export async function registerScrape(
         const apiKeyId = request.apiKey?.id;
         const resolved =
           apiKeyId && deps.encryptionKey ? await resolveProviderKeys(apiKeyId, deps.encryptionKey) : {};
-        const { providerKeys, providerModels } = toClientKeys(resolved);
+        const { providerKeys, providerModels, providerBaseUrls } = toClientKeys(resolved);
 
         const structured = await deps.extractClient.structured({
           content: content.markdown,
@@ -330,6 +330,7 @@ export async function registerScrape(
           includeSources: extraction.includeSources,
           providerKeys,
           providerModels,
+          providerBaseUrls,
         });
         data['json'] = structured.data;
         if (extraction.includeSources) data['jsonSources'] = structured.sources;
@@ -393,6 +394,7 @@ export async function registerScrape(
       mobile: body.mobile && result.tier === 'chromium',
       timingMs: result.timingMs,
       fromCache: false,
+      favicon: content.favicon,
     };
 
     return reply.code(200).send({

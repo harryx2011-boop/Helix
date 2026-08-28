@@ -22,6 +22,7 @@ import { MetadataStrip } from '@/components/result/metadata-strip';
 import { MarkdownView } from '@/components/result/markdown-view';
 import { JsonView } from '@/components/result/json-view';
 import { FailurePanel } from '@/components/result/failure-panel';
+import { SiteIcon } from '@/components/result/site-icon';
 import { AnimatedCode } from '@/components/marketing/animated-code';
 
 /**
@@ -108,7 +109,12 @@ function SessionStrip({ sessionId, sessionOpen, url, timingMs }: { sessionId?: s
           {sessionOpen ? 'open' : 'closed'}
         </Badge>
       )}
-      {url && <span className="truncate">{url}</span>}
+      {url && (
+        <span className="flex min-w-0 items-center gap-1.5">
+          <SiteIcon url={url} size={13} />
+          <span className="truncate">{url}</span>
+        </span>
+      )}
       {timingMs !== undefined && <span>{timingMs}ms round-trip</span>}
     </div>
   );
@@ -409,7 +415,10 @@ export function Results({ result, loading, timingMs, error }: ResultsProps) {
                 rel="noreferrer"
                 className="flex flex-col gap-0.5 px-3 py-2 text-sm transition-colors duration-150 ease-out hover:bg-accent"
               >
-                <span className="truncate font-mono text-xs text-primary">{link.url}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <SiteIcon url={link.url} size={13} />
+                  <span className="truncate font-mono text-xs text-primary">{link.url}</span>
+                </span>
                 {link.title && <span className="truncate text-xs text-muted-foreground">{link.title}</span>}
               </a>
             ))}
@@ -436,7 +445,10 @@ export function Results({ result, loading, timingMs, error }: ResultsProps) {
                 <a href={item.url} target="_blank" rel="noreferrer" className="text-sm font-medium text-primary hover:underline">
                   {item.title || item.url}
                 </a>
-                <span className="truncate font-mono text-xs text-muted-foreground">{item.url}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <SiteIcon url={item.url} size={13} />
+                  <span className="truncate font-mono text-xs text-muted-foreground">{item.url}</span>
+                </span>
                 {item.description && <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>}
                 {item.failure && <FailurePanel failure={item.failure} />}
                 {item.markdown && <MarkdownView content={item.markdown} />}

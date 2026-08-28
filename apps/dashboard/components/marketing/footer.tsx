@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { Logo } from '@/components/shell/logo';
 import { GithubMark } from '@/components/marketing/github-mark';
 import { AsciiHelix, GridCells } from '@/components/marketing/ambient';
+import { cn } from '@/lib/utils';
 
-/** WEBSITE.md §4.9. Four groups, hairline-divided rows, no Company column. */
+/** WEBSITE.md §4.9. Three groups, hairline-divided rows, no Company column. */
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: 'Capabilities',
@@ -36,13 +37,6 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: 'Security', href: '/self-host#security' },
     ],
   },
-  {
-    title: 'Community',
-    links: [
-      { label: 'Discussions', href: 'https://github.com/helix-dev/helix/discussions' },
-      { label: 'X', href: 'https://x.com/helixdev' },
-    ],
-  },
 ];
 
 export function Footer() {
@@ -56,7 +50,7 @@ export function Footer() {
           </span>
         </div>
 
-        <div className="grid lg:grid-cols-[1.2fr_1fr_1fr]">
+        <div className="grid lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
           <div className="min-w-0 border-b border-m-border-faint p-8 lg:border-b-0 lg:border-r">
             <Logo className="h-10 w-auto text-m-ink/56" />
             <p className="mt-6 text-[20px] leading-tight tracking-tight text-m-ink/88">
@@ -70,29 +64,15 @@ export function Footer() {
             </div>
           </div>
 
-          <div className="grid min-w-0 grid-cols-1 border-b border-m-border-faint sm:grid-cols-2 lg:border-b-0 lg:border-r">
-            {COLUMNS.slice(0, 2).map((col, i) => (
-              <div key={col.title} className={i === 0 ? 'min-w-0 border-b border-m-border-faint sm:border-b-0 sm:border-r' : 'min-w-0'}>
-                <h3 className="px-6 py-3 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">{col.title}</h3>
-                <ul className="divide-y divide-m-border-faint border-t border-m-border-faint">
-                  {col.links.map((link) => (
-                    <li key={link.label}>
-                      <Link
-                        href={link.href}
-                        className="block px-6 py-3 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2">
-            {COLUMNS.slice(2, 4).map((col, i) => (
-              <div key={col.title} className={i === 0 ? 'min-w-0 border-b border-m-border-faint sm:border-b-0 sm:border-r' : 'min-w-0'}>
+          <div className="grid min-w-0 grid-cols-1 sm:grid-cols-3 lg:contents">
+            {COLUMNS.map((col, i) => (
+              <div
+                key={col.title}
+                className={cn(
+                  'min-w-0 border-m-border-faint',
+                  i < COLUMNS.length - 1 && 'border-b sm:border-b-0 sm:border-r lg:border-b-0 lg:border-r',
+                )}
+              >
                 <h3 className="px-6 py-3 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">{col.title}</h3>
                 <ul className="divide-y divide-m-border-faint border-t border-m-border-faint">
                   {col.links.map((link) => (

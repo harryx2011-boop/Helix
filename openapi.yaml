@@ -2509,6 +2509,7 @@ components:
         mobile: { type: boolean }
         timingMs: { type: integer, description: 'Wall-clock for the fetch ladder, in milliseconds.' }
         fromCache: { type: boolean }
+        favicon: { type: string, format: uri, description: 'Absolute favicon URL, resolved from the page''s declared <link rel="icon"> or falling back to /favicon.ico. Never fetched by the API — a URL for the client to load.' }
         document:
           type: object
           description: Present for PDFs and Office files.

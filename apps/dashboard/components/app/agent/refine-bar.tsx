@@ -51,7 +51,7 @@ export function RefineBar({
   return (
     <div className={cn('flex flex-col gap-3', className)}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="flex h-14 min-w-0 flex-1 items-center gap-2 rounded-pill border border-border bg-card px-4">
+        <div className="flex h-14 min-w-0 flex-1 items-center gap-2 rounded-pill border border-border bg-card pl-4 pr-2">
           <Wand2 aria-hidden className="h-[18px] w-[18px] shrink-0 text-primary" />
           <input
             value={refineValue}

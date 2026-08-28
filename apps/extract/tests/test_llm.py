@@ -142,8 +142,22 @@ class TestOpenAiWireCredentials:
         monkeypatch.setattr(settings, "openai_compatible_api_key", None)
         assert llm._openai_wire_credentials("ollama") == ("not-needed", "http://localhost:11434/v1")
         monkeypatch.setattr(settings, "openai_compatible_base_url", None)
-        with pytest.raises(llm.ProviderError, match="OPENAI_COMPATIBLE_BASE_URL"):
+        with pytest.raises(llm.ProviderError, match="base URL"):
             llm._openai_wire_credentials("vllm")
+
+    def test_caller_base_url_overrides_the_instance_one(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "openai_compatible_base_url", "http://instance-runtime:11434/v1")
+        monkeypatch.setattr(settings, "openai_compatible_api_key", None)
+        key, url = llm._openai_wire_credentials("ollama", caller_base_url="http://callers-own-box:11434/v1")
+        assert key == "not-needed"
+        assert url == "http://callers-own-box:11434/v1"
+
+    def test_caller_base_url_works_with_no_instance_base_url_at_all(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "openai_compatible_base_url", None)
+        monkeypatch.setattr(settings, "openai_compatible_api_key", None)
+        key, url = llm._openai_wire_credentials("vllm", caller_base_url="http://callers-own-box:8000/v1")
+        assert key == "not-needed"
+        assert url == "http://callers-own-box:8000/v1"
 
     def test_openai_never_borrows_the_openrouter_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(settings, "openai_api_key", None)
@@ -206,6 +220,7 @@ class TestExtractStructured:
             *,
             provider: str = "openai",
             caller_key: str | None = None,
+            caller_base_url: str | None = None,
         ) -> llm.ExtractionResult:
             seen["model"] = model
             seen["provider"] = provider
@@ -252,6 +267,7 @@ class TestExtractStructured:
             *,
             provider: str = "openai",
             caller_key: str | None = None,
+            caller_base_url: str | None = None,
         ) -> llm.ExtractionResult:
             seen["provider"] = provider
             seen["caller_key"] = caller_key

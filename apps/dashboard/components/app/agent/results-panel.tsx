@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { SchemaJson } from './schema-json';
 import { toCsv } from '@/lib/agent';
 import type { AgentPageResult } from '@/lib/agent';
+import type { AgentOutputFormat } from './output-toggle';
 import { cn } from '@/lib/utils';
 
 function downloadFile(filename: string, content: string, type: string) {
@@ -21,10 +22,12 @@ function downloadFile(filename: string, content: string, type: string) {
 export function ResultsPanel({
   results,
   onRetry,
+  outputFormat,
   className,
 }: {
   results: AgentPageResult[];
   onRetry: (url: string) => void;
+  outputFormat: AgentOutputFormat;
   className?: string;
 }) {
   const [copied, setCopied] = React.useState(false);
@@ -41,6 +44,15 @@ export function ResultsPanel({
     });
   };
 
+  const downloadJson = () => downloadFile('results.json', JSON.stringify(merged, null, 2), 'application/json');
+  const downloadCsv = () => downloadFile('results.csv', toCsv(rowsForCsv), 'text/csv');
+  const primary = outputFormat === 'json'
+    ? { label: '.json', onClick: downloadJson }
+    : { label: '.csv', onClick: downloadCsv };
+  const secondary = outputFormat === 'json'
+    ? { label: '.csv', onClick: downloadCsv }
+    : { label: '.json', onClick: downloadJson };
+
   return (
     <div className={cn('rounded-panel border border-border bg-card', className)}>
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
@@ -48,23 +60,23 @@ export function ResultsPanel({
         <div className="flex items-center gap-1">
           <Button
             type="button"
-            variant="ghost"
+            variant="secondary"
             size="sm"
             className="h-7 gap-1.5 rounded-card px-2 text-xs"
-            onClick={() => downloadFile('results.json', JSON.stringify(merged, null, 2), 'application/json')}
+            onClick={primary.onClick}
           >
             <Download className="h-3.5 w-3.5" />
-            .json
+            {primary.label}
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 gap-1.5 rounded-card px-2 text-xs"
-            onClick={() => downloadFile('results.csv', toCsv(rowsForCsv), 'text/csv')}
+            className="h-7 gap-1.5 rounded-card px-2 text-xs text-muted-foreground"
+            onClick={secondary.onClick}
           >
             <Download className="h-3.5 w-3.5" />
-            .csv
+            {secondary.label}
           </Button>
           <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-card" onClick={copyJson} aria-label="Copy results">
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}

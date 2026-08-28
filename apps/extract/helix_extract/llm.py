@@ -88,7 +88,7 @@ def _same_family(a: str, b: str) -> bool:
     return (a in _LOCAL_OPENAI_WIRE and b in _LOCAL_OPENAI_WIRE) or (a in _GEMINI and b in _GEMINI)
 
 
-def _instance_has_key(provider: str) -> bool:
+def _instance_has_key(provider: str, provider_base_urls: dict[str, str] | None = None) -> bool:
     if provider == "anthropic":
         return bool(settings.anthropic_api_key)
     if provider in _GEMINI:
@@ -96,7 +96,7 @@ def _instance_has_key(provider: str) -> bool:
     if provider == "openrouter":
         return bool(settings.openrouter_api_key)
     if provider in _LOCAL_OPENAI_WIRE:
-        return bool(settings.openai_compatible_base_url)
+        return bool(settings.openai_compatible_base_url) or bool((provider_base_urls or {}).get(provider))
     if provider == "openai":
         return bool(settings.openai_api_key or settings.openai_compatible_base_url)
     return False
@@ -117,6 +117,7 @@ def _resolve(
     provider: str | None = None,
     provider_keys: dict[str, str] | None = None,
     provider_models: dict[str, str] | None = None,
+    provider_base_urls: dict[str, str] | None = None,
 ) -> tuple[str, str]:
     """The provider and model this request will use.
 
@@ -124,12 +125,13 @@ def _resolve(
     no key configured, a caller who supplied their own provider keys has one
     picked for them (anthropic, then openai, then gemini, then openrouter)
     rather than failing on missing instance credentials the caller has already
-    worked around.
+    worked around. A caller-supplied base URL for a local runtime counts as
+    that provider being usable, the same as an instance-wide one.
     """
     default_provider = settings.helix_llm_provider.lower()
     resolved_provider = (provider or default_provider).lower()
 
-    if provider is None and not _instance_has_key(default_provider):
+    if provider is None and not _instance_has_key(default_provider, provider_base_urls):
         auto = _auto_pick_caller_provider(provider_keys)
         if auto is not None:
             resolved_provider = auto
@@ -157,14 +159,19 @@ def _resolve(
     return resolved_provider, fallback
 
 
-def _openai_wire_credentials(provider: str, caller_key: str | None = None) -> tuple[str, str | None]:
+def _openai_wire_credentials(
+    provider: str, caller_key: str | None = None, caller_base_url: str | None = None
+) -> tuple[str, str | None]:
     """Key and base URL for a provider that speaks the OpenAI wire format.
 
     Each provider reads its own settings: OpenRouter's key must never be sent to
     api.openai.com, and a local runtime's base URL must not be borrowed by a
     request that asked for OpenAI. `caller_key`, when given, overrides the
-    instance's own credential for that provider; the base URL is unaffected,
-    since a caller supplies a key, not a different runtime to call.
+    instance's own credential for that provider. For a local runtime,
+    `caller_base_url` is preferred over the instance-wide
+    OPENAI_COMPATIBLE_BASE_URL, since a caller who stored their own Ollama or
+    vLLM address wants their own runtime called, not the operator's; the call
+    only fails when neither is set.
     """
     if provider == "openrouter":
         if caller_key:
@@ -174,12 +181,14 @@ def _openai_wire_credentials(provider: str, caller_key: str | None = None) -> tu
         return settings.openrouter_api_key, settings.openrouter_base_url
 
     if provider in _LOCAL_OPENAI_WIRE:
-        if not settings.openai_compatible_base_url:
+        base_url = caller_base_url or settings.openai_compatible_base_url
+        if not base_url:
             raise ProviderError(
-                f"OPENAI_COMPATIBLE_BASE_URL is not set; provider \"{provider}\" needs a runtime to call."
+                f"No base URL configured for provider \"{provider}\"; store one or set "
+                "OPENAI_COMPATIBLE_BASE_URL."
             )
         # A local runtime needs no real key, but the SDK requires the field.
-        return caller_key or settings.openai_compatible_api_key or "not-needed", settings.openai_compatible_base_url
+        return caller_key or settings.openai_compatible_api_key or "not-needed", base_url
 
     if caller_key:
         return caller_key, settings.openai_base_url
@@ -201,10 +210,11 @@ async def _call_openai(
     *,
     provider: str = "openai",
     caller_key: str | None = None,
+    caller_base_url: str | None = None,
 ) -> ExtractionResult:
     from openai import AsyncOpenAI
 
-    key, url = _openai_wire_credentials(provider, caller_key)
+    key, url = _openai_wire_credentials(provider, caller_key, caller_base_url)
 
     client = AsyncOpenAI(api_key=key, base_url=url) if url else AsyncOpenAI(api_key=key)
 
@@ -331,18 +341,21 @@ async def extract_structured(
     include_sources: bool = False,
     provider_keys: dict[str, str] | None = None,
     provider_models: dict[str, str] | None = None,
+    provider_base_urls: dict[str, str] | None = None,
 ) -> ExtractionResult:
     """Extract structured data using the operator's configured provider.
 
     `provider_keys` carries a caller's own credentials, decrypted, keyed by
     provider name; when the provider ultimately used has one, it overrides the
-    instance's environment credential for that call. Content is
-    relevance-trimmed first. Sending a whole page costs more and scores worse,
-    because the fields being asked about end up buried in the middle where
-    attention is weakest.
+    instance's environment credential for that call. `provider_base_urls` is
+    the same idea for a local runtime's address. Content is relevance-trimmed
+    first. Sending a whole page costs more and scores worse, because the
+    fields being asked about end up buried in the middle where attention is
+    weakest.
     """
-    provider, resolved_model = _resolve(model, provider, provider_keys, provider_models)
+    provider, resolved_model = _resolve(model, provider, provider_keys, provider_models, provider_base_urls)
     caller_key = (provider_keys or {}).get(provider)
+    caller_base_url = (provider_base_urls or {}).get(provider)
 
     selection = relevance.select(content, schema, prompt, max_tokens=max_input_tokens)
     trimmed = selection.text
@@ -354,7 +367,13 @@ async def extract_structured(
             result = await _call_gemini(trimmed, schema, prompt, resolved_model, caller_key=caller_key)
         elif provider == "openai" or provider == "openrouter" or provider in _LOCAL_OPENAI_WIRE:
             result = await _call_openai(
-                trimmed, schema, prompt, resolved_model, provider=provider, caller_key=caller_key
+                trimmed,
+                schema,
+                prompt,
+                resolved_model,
+                provider=provider,
+                caller_key=caller_key,
+                caller_base_url=caller_base_url,
             )
         else:
             raise ProviderError(f"Unknown provider: {provider}")

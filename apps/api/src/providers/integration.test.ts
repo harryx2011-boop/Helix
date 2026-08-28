@@ -16,10 +16,11 @@ const ARTICLE_TEXT = 'Real article text about a real topic. '.repeat(10);
 interface Row {
   api_key_id: string;
   provider: string;
-  key_ciphertext: Buffer;
-  key_iv: Buffer;
-  key_last4: string;
+  key_ciphertext: Buffer | null;
+  key_iv: Buffer | null;
+  key_last4: string | null;
   model: string | null;
+  base_url: string | null;
   updated_at: Date;
 }
 
@@ -32,6 +33,7 @@ function storedRow(): Row {
     key_iv: iv,
     key_last4: '9999',
     model: 'claude-sonnet-4-5',
+    base_url: null,
     updated_at: new Date(),
   };
 }

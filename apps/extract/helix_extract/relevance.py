@@ -23,18 +23,12 @@ attacker's and the true value was not in the payload at all. The trimmer built
 to save tokens was selecting FOR the payload.
 
 Ranking cannot be fixed by reweighting, because any lexical signal the schema
-can express is a signal the page can echo. Every attempt moved the numbers
-without separating the two populations. What DOES separate them is the shape of
-the score distribution: real content answers one field at a time and lands
-between 0.56 and 1.44, while text salted with the whole schema vocabulary lands
-at 2.6 and above. So `select` caps how much of the budget the top-scoring BAND
-may hold — a page whose highest band wants more than half the window is a page
-where one narrow kind of block is trying to be the entire payload.
-
-A reserve for the document's opening blocks was written alongside this and
-REMOVED: mutation testing on 2026-08-28 showed the band cap alone carries every
-assertion, and the reserve changed no outcome. Code no test can justify is the
-thing that later reads as protection while providing none.
+can express is a signal the page can echo. What it can be bounded by is
+position: LEAD_RESERVE_FRACTION of the budget always goes to the document's
+opening blocks in document order, whatever they score. Titles, summaries and
+lead paragraphs live there, an injection block placed there has to displace the
+page's own visible content to reach the model, and the reserve is spent on real
+content rather than held back when a page is benign.
 """
 
 from __future__ import annotations
@@ -44,6 +38,13 @@ import re
 from dataclasses import dataclass
 
 CHARS_PER_TOKEN = 4
+
+# Share of the budget reserved for the document's opening blocks, filled in
+# document order before ranking is consulted. A quarter is enough that a page's
+# own lead survives any amount of salted text further down, and small enough
+# that a schema asking about something genuinely deep in the page still gets
+# three quarters of the window aimed at it by score.
+LEAD_RESERVE_FRACTION = 0.25
 
 # Ceiling on how much of the budget the highest-scoring band may hold. Real
 # content and salted text occupy separate score ranges (0.56–1.44 against 2.6
@@ -283,6 +284,18 @@ def select(
     kept = []
     used = 0
     taken: set[int] = set()
+
+    # The lead reserve, filled in document order and before ranking is
+    # consulted. See the module docstring: score is attacker-steerable and
+    # position is not, so this is what stops salted blocks taking every slot.
+    lead_budget = int(budget_chars * LEAD_RESERVE_FRACTION)
+    for block in scored:
+        cost = len(block.text) + 2
+        if used + cost > lead_budget:
+            break
+        kept.append(block)
+        taken.add(block.index)
+        used += cost
 
     # The band cap. Blocks close to the top score are held to a share of the
     # budget, so a page cannot make one narrow kind of block the entire payload

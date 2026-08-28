@@ -44,7 +44,7 @@ export function Composer({
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
-      <div className="flex h-14 max-w-[720px] items-center gap-2 rounded-pill border border-border bg-card px-4">
+      <div className="flex h-14 max-w-[720px] items-center gap-2 rounded-pill border border-border bg-card pl-4 pr-2">
         <Sparkles aria-hidden className="h-[18px] w-[18px] shrink-0 text-primary" />
         <input
           value={value}

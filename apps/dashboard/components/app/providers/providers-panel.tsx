@@ -47,7 +47,7 @@ export function ProvidersPanel() {
       <FrameRow>
         <FrameHeading
           title="Model providers"
-          description="Bring your own keys. Requests made with your Helix API key use these providers for JSON extraction and the Agent."
+          description="Bring your own keys, or point at a local runtime. Requests made with your Helix API key use these providers for JSON extraction and the Agent."
         />
       </FrameRow>
 
@@ -71,16 +71,26 @@ export function ProvidersPanel() {
 
       {!loading && !error && statuses && (
         <>
-          {PROVIDER_META.map((meta, index) => (
-            <ProviderRow
-              key={meta.id}
-              meta={meta}
-              status={statuses[meta.id]}
-              apiKey={apiKey}
-              flush={index === PROVIDER_META.length - 1}
-              onChanged={(next) => setStatuses((prev) => (prev ? { ...prev, [meta.id]: next } : prev))}
-            />
-          ))}
+          {PROVIDER_META.map((meta, index) => {
+            const previous = PROVIDER_META[index - 1];
+            const enteringLocal = meta.local && !previous?.local;
+            return (
+              <React.Fragment key={meta.id}>
+                {enteringLocal && (
+                  <FrameRow className="px-6 py-2.5">
+                    <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">Local runtimes</span>
+                  </FrameRow>
+                )}
+                <ProviderRow
+                  meta={meta}
+                  status={statuses[meta.id]}
+                  apiKey={apiKey}
+                  flush={index === PROVIDER_META.length - 1}
+                  onChanged={(next) => setStatuses((prev) => (prev ? { ...prev, [meta.id]: next } : prev))}
+                />
+              </React.Fragment>
+            );
+          })}
         </>
       )}
     </>

@@ -6,27 +6,11 @@ import { supabaseConfigured } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-function localStubKeys() {
-  return [
-    {
-      id: 'local-default',
-      name: 'Default',
-      prefix: 'helix-LOCA',
-      last3: '001',
-      masked: maskApiKey('helix-LOCA', '001'),
-      rateLimitPerMin: null,
-      lastUsedAt: null,
-      createdAt: new Date(0).toISOString(),
-      revoked: false,
-    },
-  ];
-}
-
 export async function GET() {
   const profile = await requireProfile();
 
   if (!supabaseConfigured()) {
-    return NextResponse.json({ keys: localStubKeys() });
+    return NextResponse.json({ keys: [] });
   }
 
   const keys = await listApiKeys(profile.id);
@@ -52,7 +36,10 @@ export async function POST(request: Request) {
   const rateLimitPerMin = typeof body.rateLimitPerMin === 'number' ? body.rateLimitPerMin : null;
 
   if (!supabaseConfigured()) {
-    return NextResponse.json({ key: 'helix-LOCALDEVKEY00001', id: 'local-default', name });
+    return NextResponse.json(
+      { error: 'not_configured', message: 'Key storage is not configured on this deployment.' },
+      { status: 400 },
+    );
   }
 
   const { key, row } = await createApiKey({ profileId: profile.id, name, rateLimitPerMin });

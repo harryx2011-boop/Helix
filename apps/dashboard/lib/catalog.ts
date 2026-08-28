@@ -17,7 +17,7 @@ export interface EndpointDef {
   name: string;
   /** Footer / capability-page product name. */
   productName: string;
-  /** Sidebar label (verb phrase). */
+  /** Sidebar label: the one-word action. */
   sidebarLabel: string;
   /** One line, used on cards, onboarding rows and the overview. */
   tagline: string;
@@ -33,13 +33,13 @@ export interface EndpointDef {
 }
 
 export const ENDPOINTS: readonly EndpointDef[] = [
-  { id: 'scrape', name: 'Scrape', productName: 'Web Scraping API', sidebarLabel: 'Scrape a web page', tagline: 'One URL in, clean markdown, JSON or a screenshot out. Documents return the same envelope as pages.', method: 'POST', path: '/v1/scrape', route: '/scrape', group: 'EXTRACT', status: 'live', icon: FileText, product: true, async: false },
-  { id: 'parse', name: 'Parse', productName: 'Document Parsing API', sidebarLabel: 'Parse a file', tagline: 'PDF, DOCX, PPTX and XLSX by upload or URL. OCR only when the text layer is missing.', method: 'POST', path: '/v1/parse', route: '/parse', group: 'EXTRACT', status: 'live', icon: FileScan, product: true, async: false },
-  { id: 'search', name: 'Search', productName: 'Web Search API', sidebarLabel: 'Search the web', tagline: 'Search the web and read every result in the same call. Bring your own search backend.', method: 'POST', path: '/v1/search', route: '/search', group: 'DISCOVER', status: 'live', icon: Search, product: true, async: false },
-  { id: 'map', name: 'Map', productName: 'Site Map', sidebarLabel: 'Map a site', tagline: "List a site's URLs without reading them.", method: 'POST', path: '/v1/map', route: '/crawl', group: 'DISCOVER', status: 'live', icon: MapIcon, product: false, async: false },
-  { id: 'crawl', name: 'Crawl', productName: 'Web Crawling API', sidebarLabel: 'Crawl entire website', tagline: 'Discover and read a whole site. Robots-aware, adaptive politeness, and an estimate before it runs.', method: 'POST', path: '/v1/crawl', route: '/crawl', group: 'CRAWL', status: 'live', icon: Network, product: true, async: true },
-  { id: 'interact', name: 'Interact', productName: 'Browser Interaction', sidebarLabel: 'Interact with a page', tagline: 'A stateful browser session your agent can drive: click, type, scroll, extract.', method: 'POST', path: '/v1/interact', route: '/interact', group: 'ACT', status: 'live', icon: MousePointerClick, product: true, async: false },
-  { id: 'monitor', name: 'Monitor', productName: 'Web Monitoring', sidebarLabel: 'Monitor the web', tagline: 'Re-read on a schedule, get a diff when something changes. Unchanged pages cost nothing.', method: 'POST', path: '/v1/monitor', route: '/monitor', group: 'WATCH', status: 'live', icon: Eye, product: true, async: true },
+  { id: 'scrape', name: 'Scrape', productName: 'Web Scraping API', sidebarLabel: 'Scrape', tagline: 'One URL in, clean markdown, JSON or a screenshot out. Documents return the same envelope as pages.', method: 'POST', path: '/v1/scrape', route: '/scrape', group: 'EXTRACT', status: 'live', icon: FileText, product: true, async: false },
+  { id: 'parse', name: 'Parse', productName: 'Document Parsing API', sidebarLabel: 'Parse', tagline: 'PDF, DOCX, PPTX and XLSX by upload or URL. OCR only when the text layer is missing.', method: 'POST', path: '/v1/parse', route: '/parse', group: 'EXTRACT', status: 'live', icon: FileScan, product: true, async: false },
+  { id: 'search', name: 'Search', productName: 'Web Search API', sidebarLabel: 'Search', tagline: 'Search the web and read every result in the same call. Bring your own search backend.', method: 'POST', path: '/v1/search', route: '/search', group: 'DISCOVER', status: 'live', icon: Search, product: true, async: false },
+  { id: 'map', name: 'Map', productName: 'Site Map', sidebarLabel: 'Map', tagline: "List a site's URLs without reading them.", method: 'POST', path: '/v1/map', route: '/crawl', group: 'DISCOVER', status: 'live', icon: MapIcon, product: false, async: false },
+  { id: 'crawl', name: 'Crawl', productName: 'Web Crawling API', sidebarLabel: 'Crawl', tagline: 'Discover and read a whole site. Robots-aware, adaptive politeness, and an estimate before it runs.', method: 'POST', path: '/v1/crawl', route: '/crawl', group: 'CRAWL', status: 'live', icon: Network, product: true, async: true },
+  { id: 'interact', name: 'Interact', productName: 'Browser Interaction', sidebarLabel: 'Interact', tagline: 'A stateful browser session your agent can drive: click, type, scroll, extract.', method: 'POST', path: '/v1/interact', route: '/interact', group: 'ACT', status: 'live', icon: MousePointerClick, product: true, async: false },
+  { id: 'monitor', name: 'Monitor', productName: 'Web Monitoring', sidebarLabel: 'Monitor', tagline: 'Re-read on a schedule, get a diff when something changes. Unchanged pages cost nothing.', method: 'POST', path: '/v1/monitor', route: '/monitor', group: 'WATCH', status: 'live', icon: Eye, product: true, async: true },
 ] as const;
 
 export const TAB_GROUPS: readonly TabGroup[] = ['DISCOVER', 'EXTRACT', 'CRAWL', 'ACT', 'WATCH'];

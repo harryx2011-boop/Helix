@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { FetchLadder } from '@/components/ladder/fetch-ladder';
+import { SiteIcon } from '@/components/result/site-icon';
 import type { DocumentMetadata } from '@/lib/api';
 
 /** Timing and hash are surfaced from the raw response, since Document.metadata doesn't carry them (see openapi.yaml Metadata vs. the route's actual payload). */
@@ -14,9 +15,16 @@ export function MetadataStrip({ metadata, timingMs, contentHash }: MetadataStrip
   // stopwatch (round-trip including network) is the fallback for callers
   // that pass no metadata.timingMs.
   const displayedTimingMs = metadata.timingMs ?? timingMs;
+  const displayedUrl = metadata.finalUrl ?? metadata.sourceUrl;
 
   return (
     <div className="flex flex-col gap-3 border-b border-border pb-3">
+      {displayedUrl && (
+        <div className="flex items-center gap-1.5 text-xs">
+          <SiteIcon url={displayedUrl} src={metadata.favicon} size={14} />
+          <span className="truncate font-mono text-muted-foreground">{displayedUrl}</span>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
         {metadata.statusCode !== undefined && (
           <span className="flex items-center gap-1.5">

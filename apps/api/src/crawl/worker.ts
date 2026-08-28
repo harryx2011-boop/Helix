@@ -299,6 +299,7 @@ export class CrawlWorker {
                 finalUrl: result.finalUrl ?? item.url,
                 statusCode: result.statusCode ?? null,
                 tier: result.tier,
+                favicon: result.content.favicon,
               },
             });
           } else {
@@ -433,6 +434,7 @@ export class CrawlWorker {
           tiersAttempted: result.tiersAttempted,
           extractor: result.content.extractorUsed,
           timingMs: result.timingMs,
+          favicon: result.content.favicon,
         }),
       ],
     );

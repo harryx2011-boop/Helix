@@ -205,3 +205,131 @@ export const AGENT_SURFACE_SLUGS: readonly AgentSurfaceSlug[] = ['mcp', 'cli', '
 export function isAgentSurfaceSlug(slug: string): slug is AgentSurfaceSlug {
   return (AGENT_SURFACE_SLUGS as readonly string[]).includes(slug);
 }
+
+/* ------------------------------------------------------------------------- */
+/* Reference pages: api-reference, sdks, agents.                              */
+/*                                                                            */
+/* Same plain-string DocSectionContent shape as agentSurfaceDocs, rendered by */
+/* the same StaticShell + ContentSection pair in `/docs/[slug]`.              */
+/* ------------------------------------------------------------------------- */
+
+export type ReferenceSlug = 'api-reference' | 'sdks' | 'agents';
+
+export interface ReferenceDoc {
+  slug: ReferenceSlug;
+  title: string;
+  summary: string;
+  sections: DocSectionContent[];
+  /** Rendered as a distinct list, not folded into a paragraph — api-reference only. */
+  endpointRows?: { method: string; path: string; productName: string; tagline: string; docHref: string }[];
+}
+
+export const REFERENCE_SLUGS: readonly ReferenceSlug[] = ['api-reference', 'sdks', 'agents'];
+
+export function isReferenceSlug(slug: string): slug is ReferenceSlug {
+  return (REFERENCE_SLUGS as readonly string[]).includes(slug);
+}
+
+/** The six live endpoints, method + path + auth, one line each, linking to their own doc page. */
+export function apiReferenceDoc(): ReferenceDoc {
+  const endpoints = docsEndpointList();
+  return {
+    slug: 'api-reference',
+    title: 'API reference',
+    summary: 'Every live endpoint, its method, path and auth header, in one page.',
+    sections: [
+      {
+        title: 'Auth',
+        body: 'Every request carries `Authorization: Bearer helix-YOUR_KEY`. One key authenticates you to this Helix instance; it is unrelated to the LLM, proxy or vector-store credentials an operator sets in their own environment. Base URL is `https://api.helix.dev` hosted, or `http://localhost:7400` on a default self-host.',
+      },
+      {
+        title: 'Async jobs',
+        body: 'Crawl and Monitor return a job id immediately (`202` or `201`) instead of blocking. Poll `GET /v1/{crawl|batch/scrape}/{jobId}` or `GET /v1/jobs/{id}`; `DELETE` cancels and keeps finished results. Pass `webhook` on the create call to receive `started`, `page`, `completed` and `failed` events instead of polling.',
+      },
+      {
+        title: 'Failures inside 200',
+        body: 'A blocked page, a bot challenge or a timeout is `{ success: false, failure: { reason, detail } }` inside an HTTP 200, not a thrown error — Helix distinguishes a target that refused to be read from a malformed request (`400`) or a missing key (`401`). Every response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`.',
+      },
+    ],
+    endpointRows: endpoints.map((e) => ({ method: e.method, path: e.path, productName: e.productName, tagline: e.tagline, docHref: `/docs/${e.id}` })),
+  };
+}
+
+const SDK_CURL = `curl -X POST https://api.helix.dev/v1/scrape \\
+  -H "Authorization: Bearer helix-YOUR_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"url":"https://example.com"}'`;
+
+const SDK_FETCH = `const r = await fetch("https://api.helix.dev/v1/scrape", {
+  method: "POST",
+  headers: { Authorization: "Bearer helix-YOUR_KEY", "Content-Type": "application/json" },
+  body: JSON.stringify({ url: "https://example.com" }),
+});
+console.log(await r.json());`;
+
+const SDK_PYTHON = `import requests
+
+r = requests.post(
+    "https://api.helix.dev/v1/scrape",
+    headers={"Authorization": "Bearer helix-YOUR_KEY"},
+    json={"url": "https://example.com"},
+)
+print(r.json())`;
+
+/** Honest state: sdk-ts is an empty package, @helix/cli is unpublished. Plain HTTP is what works today. */
+export function sdksDoc(): ReferenceDoc {
+  return {
+    slug: 'sdks',
+    title: 'SDKs',
+    summary: 'No typed SDK is published yet. Helix is a plain HTTP API — cURL, fetch and requests all work today.',
+    sections: [
+      {
+        title: 'Current state',
+        body: '`packages/sdk-ts` exists in the monorepo as an empty package and has not been published to npm. `@helix/cli` is written and buildable from source but is also not on npm yet — see `/docs/agents` for how to run it from a checkout. Treat every mention of a Helix SDK elsewhere as forward-looking, not available today.',
+      },
+      {
+        title: 'What works right now',
+        body: 'Helix is a plain JSON-over-HTTP API with one bearer header. Any HTTP client reaches every endpoint; nothing in the response envelope requires a generated client to parse.',
+        code: { label: 'cURL', text: SDK_CURL },
+      },
+      {
+        title: 'fetch (TypeScript / JavaScript)',
+        body: 'The same request with the platform `fetch`, no dependency added.',
+        code: { label: 'fetch', text: SDK_FETCH },
+      },
+      {
+        title: 'requests (Python)',
+        body: 'The same request with `requests`, the most common HTTP client in the Python ecosystem.',
+        code: { label: 'requests', text: SDK_PYTHON },
+      },
+      {
+        title: 'Full request and response shapes',
+        body: 'See `/docs/api-reference` for every endpoint, or the raw `openapi.yaml` at the repository root, which is the single source of truth this page and the generated MCP tools both read from.',
+      },
+    ],
+  };
+}
+
+/** Index over the three agent surfaces (MCP, CLI, Skills), linking onward to each. */
+export function agentsIndexDoc(): ReferenceDoc {
+  return {
+    slug: 'agents',
+    title: 'MCP · CLI · Skills',
+    summary: 'Three ways an agent harness reaches Helix: the MCP server, the CLI connector, and a generated SKILL.md.',
+    sections: [
+      {
+        title: 'MCP server',
+        body: 'Helix serves MCP over streamable HTTP at `/mcp`, on the same host and the same bearer key as the REST API. Tools are generated from `openapi.yaml`, one per live endpoint (`helix_scrape`, `helix_crawl`, and so on), plus job and health tools. Full detail on `/docs/mcp`.',
+      },
+      {
+        title: 'CLI connector',
+        body: '`@helix/cli` detects installed agent harnesses (Claude Code, Cursor, Codex, Windsurf) and writes their MCP config plus a SKILL.md in one command: `npx -y @helix/cli@latest init --all -k helix-YOUR_KEY`. Not yet published to npm — build it from a checkout with `pnpm --filter @helix/cli build` and run `node packages/cli/dist/bin.js init --all -k helix-YOUR_KEY` in its place. Full detail on `/docs/cli`.',
+        code: { label: 'terminal', text: 'npx -y @helix/cli@latest init --all -k helix-YOUR_KEY' },
+      },
+      {
+        title: 'SKILL.md',
+        body: 'A generated skill file scoped to the endpoints selected in onboarding: auth, base URL, rate-limit headers, and one section per endpoint with its request, response and failure reasons. `helix init` places it directly in each harness\'s skills directory. Full detail on `/docs/skills`.',
+      },
+    ],
+  };
+}

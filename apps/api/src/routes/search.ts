@@ -425,6 +425,7 @@ async function readResult(
         profile: result.profileUsed,
         extractor: content.extractorUsed,
         timingMs: result.timingMs,
+        favicon: content.favicon,
       },
     };
   } catch (error) {

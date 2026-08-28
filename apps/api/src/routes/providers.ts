@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   deleteProviderKey,
   getProviderStatuses,
+  isLocalProvider,
   PROVIDERS,
   upsertProviderKey,
   type Provider,
@@ -13,7 +14,9 @@ import {
  *
  * Every LLM-backed request made with that key then uses these instead of the
  * instance's environment credentials. The plaintext is accepted once, at
- * write time, and never returned again — only its last 4 characters are.
+ * write time, and never returned again — only its last 4 characters are. A
+ * local runtime (ollama, vllm, openai-compatible) stores a base URL instead
+ * of, or alongside, a key: most need no credential at all.
  */
 
 const PutBodySchema = z.object({
@@ -21,8 +24,10 @@ const PutBodySchema = z.object({
     .string()
     .trim()
     .min(8, 'must be at least 8 characters')
-    .max(512, 'must be at most 512 characters'),
+    .max(512, 'must be at most 512 characters')
+    .optional(),
   model: z.string().min(1).max(200).optional(),
+  baseUrl: z.string().url().optional(),
 });
 
 export interface ProviderRouteDeps {
@@ -72,10 +77,35 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
       });
     }
 
-    const { apiKey, model } = parsed.data;
-    const result = await upsertProviderKey(apiKeyId, provider, apiKey, deps.encryptionKey, model);
+    const { apiKey, model, baseUrl } = parsed.data;
+    const local = isLocalProvider(provider);
 
-    return reply.send({ success: true, provider, last4: result.last4, model: result.model });
+    if (local && !baseUrl) {
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: 'baseUrl: is required for a local runtime',
+        field: 'baseUrl',
+        requestId: request.id,
+      });
+    }
+    if (!local && !apiKey) {
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: 'apiKey: is required for this provider',
+        field: 'apiKey',
+        requestId: request.id,
+      });
+    }
+
+    const result = await upsertProviderKey(apiKeyId, provider, deps.encryptionKey, { apiKey, model, baseUrl });
+
+    return reply.send({
+      success: true,
+      provider,
+      last4: result.last4,
+      model: result.model,
+      baseUrl: result.baseUrl,
+    });
   });
 
   app.delete<{ Params: { provider: string } }>('/providers/:provider', async (request, reply) => {

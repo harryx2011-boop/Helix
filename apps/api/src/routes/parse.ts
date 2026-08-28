@@ -617,7 +617,7 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
           const apiKeyId = request.apiKey?.id;
           const resolved =
             apiKeyId && deps.encryptionKey ? await resolveProviderKeys(apiKeyId, deps.encryptionKey) : {};
-          const { providerKeys, providerModels } = toClientKeys(resolved);
+          const { providerKeys, providerModels, providerBaseUrls } = toClientKeys(resolved);
 
           const structured = await deps.extractClient.structured({
             content: parsed.markdown,
@@ -626,6 +626,7 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
             model: options.jsonOptions.model,
             providerKeys,
             providerModels,
+            providerBaseUrls,
           });
           data['json'] = structured.data;
           data['usage'] = {

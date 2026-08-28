@@ -20,6 +20,7 @@ export function formatBytes(bytes: number): string {
 
 export function formatRelativeTime(iso: string): string {
   const then = new Date(iso).getTime();
+  if (!Number.isFinite(then) || then <= 0) return 'unknown';
   const diffMs = Date.now() - then;
   const diffSec = Math.round(diffMs / 1000);
 

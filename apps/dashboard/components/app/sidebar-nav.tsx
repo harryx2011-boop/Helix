@@ -49,7 +49,7 @@ export function buildNavGroups(selectedEndpoints: readonly string[]): NavGroup[]
       }),
     },
     {
-      heading: 'Research preview',
+      heading: 'Utilities',
       rows: [{ href: '/app/agent', label: 'Agent', icon: Sparkles }],
     },
     {

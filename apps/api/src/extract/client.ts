@@ -45,21 +45,17 @@ export interface DocumentResult {
   parserUsed: string;
 }
 
+/** Every provider a caller can store, cloud or local. */
+export type ProviderName = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'ollama' | 'vllm' | 'openai-compatible';
+
 /** Caller-supplied provider keys, decrypted, keyed by provider name. */
-export interface ProviderKeyMap {
-  anthropic?: string | undefined;
-  openai?: string | undefined;
-  gemini?: string | undefined;
-  openrouter?: string | undefined;
-}
+export type ProviderKeyMap = Partial<Record<ProviderName, string>>;
 
 /** The caller's stored model per provider, sent alongside `providerKeys`. */
-export interface ProviderModelMap {
-  anthropic?: string | undefined;
-  openai?: string | undefined;
-  gemini?: string | undefined;
-  openrouter?: string | undefined;
-}
+export type ProviderModelMap = Partial<Record<ProviderName, string>>;
+
+/** The caller's stored base URL per provider — how a local runtime (Ollama, vLLM, OpenAI-compatible) is reached. */
+export type ProviderBaseUrlMap = Partial<Record<ProviderName, string>>;
 
 export interface StructuredOptions {
   content: string;
@@ -73,6 +69,8 @@ export interface StructuredOptions {
   /** The caller's own provider keys, when they have any stored. Override the instance's environment credentials. */
   providerKeys?: ProviderKeyMap | undefined;
   providerModels?: ProviderModelMap | undefined;
+  /** The caller's own local-runtime base URLs, when they have any stored. Override the instance's environment default. */
+  providerBaseUrls?: ProviderBaseUrlMap | undefined;
 }
 
 export interface StructuredResult {
@@ -96,6 +94,8 @@ export interface SchemaOptions {
   /** The caller's own provider keys, when they have any stored. Override the instance's environment credentials. */
   providerKeys?: ProviderKeyMap | undefined;
   providerModels?: ProviderModelMap | undefined;
+  /** The caller's own local-runtime base URLs, when they have any stored. Override the instance's environment default. */
+  providerBaseUrls?: ProviderBaseUrlMap | undefined;
 }
 
 export interface SchemaResult {
@@ -272,6 +272,7 @@ export class ExtractClient {
         include_sources: options.includeSources ?? false,
         provider_keys: options.providerKeys ?? null,
         provider_models: options.providerModels ?? null,
+        provider_base_urls: options.providerBaseUrls ?? null,
       }),
       signal: AbortSignal.timeout(options.timeoutMs ?? 120_000),
     });
@@ -327,6 +328,7 @@ export class ExtractClient {
         instruction: options.instruction ?? null,
         provider_keys: options.providerKeys ?? null,
         provider_models: options.providerModels ?? null,
+        provider_base_urls: options.providerBaseUrls ?? null,
       }),
       signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
     });

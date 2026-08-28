@@ -6,12 +6,31 @@ import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { CodePanel, CodeBlock } from '@/components/marketing/code-panel';
 import { PillButton } from '@/components/marketing/pill-button';
 import { ENDPOINTS, type EndpointDef } from '@/lib/catalog';
-import { docsEndpointOrThrow, docsCurlExample, agentSurfaceDocs, isAgentSurfaceSlug, type EndpointDocs, type DocSectionContent } from '@/lib/docs-content';
+import {
+  docsEndpointOrThrow,
+  docsCurlExample,
+  agentSurfaceDocs,
+  isAgentSurfaceSlug,
+  apiReferenceDoc,
+  sdksDoc,
+  agentsIndexDoc,
+  isReferenceSlug,
+  type EndpointDocs,
+  type DocSectionContent,
+  type ReferenceDoc,
+  type ReferenceSlug,
+} from '@/lib/docs-content';
 import { MCP_URL, SITE_URL } from '@/lib/mode';
 import { generateCode } from '@/lib/codegen';
 import type { Endpoint } from '@/lib/supabase/types';
 
-const STATIC_SLUGS = ['getting-started', 'mcp', 'cli', 'skills'] as const;
+const STATIC_SLUGS = ['getting-started', 'mcp', 'cli', 'skills', 'api-reference', 'sdks', 'agents'] as const;
+
+const REFERENCE_DOCS: Record<ReferenceSlug, () => ReferenceDoc> = {
+  'api-reference': apiReferenceDoc,
+  sdks: sdksDoc,
+  agents: agentsIndexDoc,
+};
 
 export function generateStaticParams() {
   const endpointSlugs = ENDPOINTS.filter((e) => e.product).map((e) => ({ slug: e.id }));
@@ -30,6 +49,7 @@ function titleFor(slug: string): string | undefined {
   if (endpoint) return endpoint.def.productName;
   if (slug === 'getting-started') return 'Getting started';
   if (isAgentSurfaceSlug(slug)) return agentSurfaceDocs({ mcpUrl: MCP_URL, siteUrl: SITE_URL })[slug].title;
+  if (isReferenceSlug(slug)) return REFERENCE_DOCS[slug]().title;
   return undefined;
 }
 
@@ -38,6 +58,7 @@ export default async function DocsSlugPage({ params }: { params: Promise<{ slug:
   const endpoint = docsEndpointOrThrow(slug);
   if (endpoint) return <EndpointDoc def={endpoint.def} docs={endpoint.docs} />;
   if (isAgentSurfaceSlug(slug)) return <AgentSurfaceDoc slug={slug} />;
+  if (isReferenceSlug(slug)) return <ReferenceDocPage doc={REFERENCE_DOCS[slug]()} />;
   if (slug === 'getting-started') return <GettingStartedDoc />;
   notFound();
 }
@@ -171,6 +192,56 @@ function AgentSurfaceDoc({ slug }: { slug: 'mcp' | 'cli' | 'skills' }) {
       {doc.sections.map((section) => (
         <ContentSection key={section.title} section={section} />
       ))}
+    </StaticShell>
+  );
+}
+
+function EndpointRows({ rows }: { rows: NonNullable<ReferenceDoc['endpointRows']> }) {
+  return (
+    <DocSection title="Endpoints">
+      <ul className="divide-y divide-m-border-faint border-t border-m-border-muted">
+        {rows.map((row) => (
+          <li key={row.path} className="py-4 first:pt-0">
+            <Link
+              href={row.docHref}
+              className="group flex flex-col gap-1 transition-colors duration-150 ease-out"
+            >
+              <span className="flex items-center gap-2 font-mono text-[13px]">
+                <span className="text-violet">{row.method}</span>
+                <span className="text-m-ink group-hover:text-violet">{row.path}</span>
+                <span className="text-m-ink/48">— {row.productName}</span>
+              </span>
+              <span className="text-[14px] leading-relaxed text-m-ink/72">{row.tagline}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </DocSection>
+  );
+}
+
+function ReferenceDocPage({ doc }: { doc: ReferenceDoc }) {
+  const [firstSection, ...restSections] = doc.sections;
+  return (
+    <StaticShell h1={doc.title}>
+      {firstSection && <ContentSection section={firstSection} />}
+      {doc.endpointRows && <EndpointRows rows={doc.endpointRows} />}
+      {restSections.map((section) => (
+        <ContentSection key={section.title} section={section} />
+      ))}
+      {doc.slug === 'agents' && (
+        <div className="flex flex-wrap gap-3 pt-2">
+          <PillButton href="/docs/mcp" variant="secondary">
+            Read MCP
+          </PillButton>
+          <PillButton href="/docs/cli" variant="secondary">
+            Read CLI
+          </PillButton>
+          <PillButton href="/docs/skills" variant="secondary">
+            Read Skills
+          </PillButton>
+        </div>
+      )}
     </StaticShell>
   );
 }

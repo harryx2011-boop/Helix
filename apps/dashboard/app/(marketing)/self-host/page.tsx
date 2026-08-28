@@ -108,7 +108,7 @@ export default function SelfHostPage() {
 
       <section className="mx-auto mt-20 max-w-[880px] animate-fade-up">
         <SectionEyebrow step="02" label="CONFIGURATION" sub="bring your own keys" />
-        <h2 className="mt-3 text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
+        <h2 id="security" className="mt-3 text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
           Your keys, your bill, your providers.
         </h2>
         <p className="mt-3 max-w-[640px] text-[16px] leading-relaxed text-m-ink/72">

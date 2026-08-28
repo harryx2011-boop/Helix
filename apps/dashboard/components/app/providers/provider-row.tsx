@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { Server } from 'lucide-react';
 import { toast } from 'sonner';
 import { FrameRow } from '@/components/app/page-frame';
 import { Button } from '@/components/ui/button';
@@ -15,8 +16,11 @@ const CONFIRM_TIMEOUT_MS = 4000;
 interface ProviderMeta {
   id: ProviderId;
   name: string;
-  placeholder: string;
-  defaultModel: string;
+  /** Local runtimes take a base URL instead of an API key. */
+  local?: boolean;
+  placeholder?: string;
+  baseUrlPlaceholder?: string;
+  defaultModel?: string;
 }
 
 export const PROVIDER_META: ProviderMeta[] = [
@@ -24,10 +28,47 @@ export const PROVIDER_META: ProviderMeta[] = [
   { id: 'openai', name: 'OpenAI', placeholder: 'sk-…', defaultModel: 'gpt-4o-mini' },
   { id: 'gemini', name: 'Gemini', placeholder: 'AIza…', defaultModel: 'gemini-2.0-flash' },
   { id: 'openrouter', name: 'OpenRouter', placeholder: 'sk-or-…', defaultModel: 'openrouter/auto' },
+  { id: 'ollama', name: 'Ollama', local: true, baseUrlPlaceholder: 'http://localhost:11434/v1', defaultModel: 'llama3.2' },
+  {
+    id: 'vllm',
+    name: 'vLLM',
+    local: true,
+    baseUrlPlaceholder: 'http://localhost:8000/v1',
+    defaultModel: 'meta-llama/Llama-3.1-8B-Instruct',
+  },
+  { id: 'openai-compatible', name: 'OpenAI-compatible', local: true, baseUrlPlaceholder: 'https://your-host/v1' },
 ];
 
-function statusLine(status: ProviderStatus): { text: string; className: string } {
+/** `docs.vllm.ai` / `ollama.com` ship real PNG marks; `openai-compatible` isn't a company and gets a lucide icon instead. */
+function ProviderIcon({ meta }: { meta: ProviderMeta }) {
+  if (meta.id === 'openai-compatible') {
+    return (
+      <span className="flex h-5 w-5 items-center justify-center rounded-card bg-muted text-muted-foreground">
+        <Server className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element -- static favicon-sized PNG, no next/image benefit
+  return <img src={`/providers/${meta.id}.png`} alt="" width={20} height={20} className="rounded-card" />;
+}
+
+function hostFromUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.port ? `${parsed.hostname}:${parsed.port}` : parsed.hostname;
+  } catch {
+    return url;
+  }
+}
+
+function statusLine(status: ProviderStatus, local: boolean | undefined): { text: string; className: string } {
   if (status.source === 'key') {
+    if (local) {
+      return {
+        text: status.baseUrl ? `Connected · ${hostFromUrl(status.baseUrl)}` : 'Connected',
+        className: 'font-mono text-success',
+      };
+    }
     return { text: `Connected · key ending in ${status.last4}`, className: 'font-mono text-success' };
   }
   if (status.source === 'instance') {
@@ -50,6 +91,7 @@ export function ProviderRow({
   flush?: boolean;
 }) {
   const [apiKeyInput, setApiKeyInput] = React.useState('');
+  const [baseUrlInput, setBaseUrlInput] = React.useState(status.baseUrl ?? '');
   const [model, setModel] = React.useState(status.model ?? '');
   const [saving, setSaving] = React.useState(false);
   const [confirmingRemove, setConfirmingRemove] = React.useState(false);
@@ -58,31 +100,37 @@ export function ProviderRow({
 
   React.useEffect(() => () => clearTimeout(confirmTimeout.current), []);
 
-  const line = statusLine(status);
+  const line = statusLine(status, meta.local);
 
   const handleSave = async () => {
-    if (!apiKeyInput.trim()) {
+    if (meta.local) {
+      if (!baseUrlInput.trim()) {
+        toast.error('Enter a base URL to save.');
+        return;
+      }
+    } else if (!apiKeyInput.trim()) {
       toast.error('Enter an API key to save.');
       return;
     }
     setSaving(true);
     try {
       const result = await saveProvider(apiKey, meta.id, {
-        apiKey: apiKeyInput.trim(),
+        ...(meta.local ? { baseUrl: baseUrlInput.trim() } : { apiKey: apiKeyInput.trim() }),
         ...(model.trim() ? { model: model.trim() } : {}),
       });
       onChanged({
         provider: meta.id,
         configured: true,
         source: 'key',
-        last4: result.last4,
+        ...(result.last4 ? { last4: result.last4 } : {}),
         model: result.model ?? model.trim() ?? null,
+        baseUrl: result.baseUrl ?? (meta.local ? baseUrlInput.trim() : null),
         updatedAt: new Date().toISOString(),
       });
-      setApiKeyInput('');
-      toast.success(`${meta.name} key saved.`);
+      if (!meta.local) setApiKeyInput('');
+      toast.success(`${meta.name} ${meta.local ? 'connection' : 'key'} saved.`);
     } catch (error) {
-      toast.error(error instanceof HelixApiError ? error.message : 'Could not save the key.');
+      toast.error(error instanceof HelixApiError ? error.message : `Could not save the ${meta.local ? 'connection' : 'key'}.`);
     } finally {
       setSaving(false);
     }
@@ -99,9 +147,9 @@ export function ProviderRow({
     try {
       await removeProvider(apiKey, meta.id);
       onChanged({ provider: meta.id, configured: false, source: 'none' });
-      toast.success(`${meta.name} key removed.`);
+      toast.success(`${meta.name} ${meta.local ? 'connection' : 'key'} removed.`);
     } catch (error) {
-      toast.error(error instanceof HelixApiError ? error.message : 'Could not remove the key.');
+      toast.error(error instanceof HelixApiError ? error.message : `Could not remove the ${meta.local ? 'connection' : 'key'}.`);
     } finally {
       setRemoving(false);
       setConfirmingRemove(false);
@@ -112,8 +160,7 @@ export function ProviderRow({
     <FrameRow flush={flush}>
       <div className="flex flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2.5">
-          {/* eslint-disable-next-line @next/next/no-img-element -- static favicon-sized PNG, no next/image benefit */}
-          <img src={`/providers/${meta.id}.png`} alt="" width={20} height={20} className="rounded-card" />
+          <ProviderIcon meta={meta} />
           <div className="flex flex-col gap-0.5">
             <span className="text-[13px] font-medium text-foreground">{meta.name}</span>
             <span className={cn('text-xs', line.className)}>{line.text}</span>
@@ -121,15 +168,27 @@ export function ProviderRow({
         </div>
 
         <div className="flex flex-col gap-2 lg:flex-1 lg:flex-row lg:items-center lg:justify-end">
-          <Input
-            type="password"
-            placeholder={meta.placeholder}
-            value={apiKeyInput}
-            onChange={(e) => setApiKeyInput(e.target.value)}
-            autoComplete="off"
-            aria-label={`${meta.name} API key`}
-            className="lg:max-w-xs"
-          />
+          {meta.local ? (
+            <Input
+              type="url"
+              placeholder={meta.baseUrlPlaceholder}
+              value={baseUrlInput}
+              onChange={(e) => setBaseUrlInput(e.target.value)}
+              autoComplete="off"
+              aria-label={`${meta.name} base URL`}
+              className="lg:max-w-xs"
+            />
+          ) : (
+            <Input
+              type="password"
+              placeholder={meta.placeholder}
+              value={apiKeyInput}
+              onChange={(e) => setApiKeyInput(e.target.value)}
+              autoComplete="off"
+              aria-label={`${meta.name} API key`}
+              className="lg:max-w-xs"
+            />
+          )}
           <Input
             type="text"
             placeholder={meta.defaultModel}
@@ -149,7 +208,7 @@ export function ProviderRow({
                 disabled={removing}
                 className={cn('shrink-0 rounded-pill', confirmingRemove && 'text-destructive')}
               >
-                {removing ? 'Removing…' : confirmingRemove ? 'Confirm' : 'Remove key?'}
+                {removing ? 'Removing…' : confirmingRemove ? 'Confirm' : meta.local ? 'Remove?' : 'Remove key?'}
               </Button>
             )}
           </div>

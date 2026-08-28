@@ -126,11 +126,15 @@ const sessions = new SessionRegistry({
 const searchProvider = createSearchProvider(config.searchProvider, process.env, app.log);
 
 const providerEncryptionKey = deriveEncryptionKey(config.encryptionKey, config.bootstrapKey);
+const instanceHasLocalBaseUrl = Boolean(process.env['OPENAI_COMPATIBLE_BASE_URL']);
 const instanceConfigured: Record<Provider, boolean> = {
   anthropic: Boolean(process.env['ANTHROPIC_API_KEY']),
   openai: Boolean(process.env['OPENAI_API_KEY']),
   gemini: Boolean(process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY']),
   openrouter: Boolean(process.env['OPENROUTER_API_KEY']),
+  ollama: instanceHasLocalBaseUrl,
+  vllm: instanceHasLocalBaseUrl,
+  'openai-compatible': instanceHasLocalBaseUrl,
 };
 
 const crawlWorker = new CrawlWorker({

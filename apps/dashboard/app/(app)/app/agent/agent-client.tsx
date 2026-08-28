@@ -189,7 +189,7 @@ export function AgentClient() {
           />
           {noProvider ? (
             <p className="font-mono text-[11px] text-muted-foreground">
-              [ research preview ]  Needs a model key —{' '}
+              [ utilities ]  Needs a model key —{' '}
               <Link
                 href="/app/settings?tab=providers"
                 className="text-foreground underline underline-offset-2 transition-colors duration-150 ease-out hover:text-muted-foreground"
@@ -200,7 +200,7 @@ export function AgentClient() {
             </p>
           ) : (
             <p className="font-mono text-[11px] text-muted-foreground">
-              [ research preview ]  Generates a schema first, then searches and reads the pages that match.
+              [ utilities ]  Generates a schema first, then searches and reads the pages that match.
             </p>
           )}
         </div>
@@ -289,7 +289,9 @@ export function AgentClient() {
             </div>
           )}
 
-          {run && !run.error && run.stage === 'done' && <ResultsPanel results={run.results} onRetry={retryPage} />}
+          {run && !run.error && run.stage === 'done' && (
+            <ResultsPanel results={run.results} onRetry={retryPage} outputFormat={outputFormat} />
+          )}
 
           <div ref={transcriptEndRef} />
         </div>

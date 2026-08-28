@@ -7,6 +7,7 @@ import {
   type Tier,
 } from './escalation.js';
 import { classifyTransportError, detectBlock, type FailureReason, type ResponseFacts } from './block-detection.js';
+import { resolveFavicon } from './favicon.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient, ExtractResult } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
@@ -45,7 +46,7 @@ export interface PipelineOptions {
 
 export interface PipelineSuccess {
   success: true;
-  content: ExtractResult & { rawHtml?: string | undefined; screenshot?: string | undefined };
+  content: ExtractResult & { rawHtml?: string | undefined; screenshot?: string | undefined; favicon?: string | undefined };
   tier: Tier;
   tiersAttempted: Tier[];
   profileUsed?: string | undefined;
@@ -271,6 +272,9 @@ export async function runPipeline(
               options.formats.includes('rawHtml') || options.formats.includes('html')
                 ? attempt.facts.body
                 : undefined,
+            // Resolved from the fetched body regardless of the caller's requested
+            // formats — like title/language, it is metadata, not opted-in content.
+            favicon: resolveFavicon(attempt.facts.body, attempt.finalUrl ?? options.url),
             screenshot: attempt.screenshot,
           },
           tier,

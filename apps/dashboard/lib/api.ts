@@ -438,6 +438,7 @@ export interface DocumentMetadata {
   title?: string;
   description?: string;
   language?: string;
+  favicon?: string;
   sourceUrl?: string;
   finalUrl?: string;
   statusCode?: number;
@@ -559,7 +560,7 @@ export type AgentSchemaResponse = AgentSchemaResponseSuccess | AgentSchemaRespon
 
 // --- Providers (GET/PUT/DELETE /v1/providers) ---
 
-export type ProviderName = 'anthropic' | 'openai' | 'gemini' | 'openrouter';
+export type ProviderName = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'ollama' | 'vllm' | 'openai-compatible';
 
 export interface ProviderStatus {
   provider: ProviderName;
@@ -567,6 +568,7 @@ export interface ProviderStatus {
   source: 'key' | 'instance' | 'none';
   last4?: string;
   model?: string | null;
+  baseUrl?: string | null;
   updatedAt?: string;
 }
 
@@ -576,15 +578,17 @@ export interface ListProvidersResponse {
 }
 
 export interface SaveProviderRequest {
-  apiKey: string;
+  apiKey?: string;
   model?: string;
+  baseUrl?: string;
 }
 
 export interface SaveProviderResponse {
   success: true;
   provider: ProviderName;
-  last4: string;
+  last4?: string;
   model?: string | null;
+  baseUrl?: string | null;
 }
 
 export interface RemoveProviderResponse {

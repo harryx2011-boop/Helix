@@ -153,6 +153,10 @@ class StructuredRequest(BaseModel):
     # overrides the instance's environment credential for that provider.
     provider_keys: dict[str, str] | None = None
     provider_models: dict[str, str] | None = None
+    # The caller's own local-runtime base URLs, decrypted by the gateway, keyed
+    # by provider name. Same semantics as `provider_keys`, for Ollama, vLLM and
+    # OpenAI-compatible servers.
+    provider_base_urls: dict[str, str] | None = None
 
 
 class StructuredResponse(BaseModel):
@@ -181,6 +185,7 @@ async def structured(request: StructuredRequest) -> StructuredResponse:
             include_sources=request.include_sources,
             provider_keys=request.provider_keys,
             provider_models=request.provider_models,
+            provider_base_urls=request.provider_base_urls,
         )
     except SchemaError as exc:
         # A schema problem is the caller's to fix, and the hint says how.
@@ -217,6 +222,7 @@ class SchemaRequest(BaseModel):
     # provider name. Same semantics as StructuredRequest's.
     provider_keys: dict[str, str] | None = None
     provider_models: dict[str, str] | None = None
+    provider_base_urls: dict[str, str] | None = None
 
 
 class SchemaResponse(BaseModel):
@@ -239,6 +245,7 @@ async def generate_schema(request: SchemaRequest) -> SchemaResponse:
             instruction=request.instruction,
             provider_keys=request.provider_keys,
             provider_models=request.provider_models,
+            provider_base_urls=request.provider_base_urls,
         )
     except llm.RequestError as exc:
         raise HTTPException(

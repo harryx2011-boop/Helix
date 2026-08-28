@@ -15,9 +15,7 @@ export async function ensureProfile(input: { clerkUserId: string; email: string;
     .select('*')
     .single();
   if (error) throw error;
-  const profile = data as ProfileRow;
-  await createApiKey({ profileId: profile.id, name: 'Default' });
-  return profile;
+  return data as ProfileRow;
 }
 
 export async function getProfileByClerkId(clerkUserId: string): Promise<ProfileRow | null> {
@@ -28,11 +26,9 @@ export async function getProfileByClerkId(clerkUserId: string): Promise<ProfileR
 
 /** Mints a `helix-…` key, stores hash + ciphertext, returns the plaintext exactly once. */
 export async function createApiKey(input: { profileId: string; name: string; rateLimitPerMin?: number | null }): Promise<{ key: string; row: ApiKeyRow }> {
+  if (!supabaseConfigured()) throw new Error('key storage is not configured');
   const key = generateApiKey();
   const { ciphertext, iv } = encryptApiKey(key);
-  if (!supabaseConfigured()) {
-    return { key, row: { ...localStubKey(input.profileId), id: `local-${Date.now()}`, name: input.name, prefix: keyPrefix(key), last3: keyLast3(key), key_hash: hashApiKey(key), key_ciphertext: `\\x${ciphertext.toString('hex')}`, key_iv: `\\x${iv.toString('hex')}`, created_at: new Date().toISOString() } };
-  }
   const { data, error } = await supabaseAdmin()
     .from('api_keys')
     .insert({
@@ -52,22 +48,8 @@ export async function createApiKey(input: { profileId: string; name: string; rat
   return { key, row: data as ApiKeyRow };
 }
 
-/**
- * Local-dev stand-in when Supabase is not configured: one deterministic key so
- * every page renders. The key is never valid against a real API.
- */
-const LOCAL_KEY = 'helix-LOCALDEVKEY00001';
-function localStubKey(profileId: string): ApiKeyRow {
-  const { ciphertext, iv } = encryptApiKey(LOCAL_KEY);
-  return {
-    id: 'local-default', profile_id: profileId, name: 'Default', prefix: keyPrefix(LOCAL_KEY), last3: keyLast3(LOCAL_KEY),
-    key_hash: hashApiKey(LOCAL_KEY), key_ciphertext: `\\x${ciphertext.toString('hex')}`, key_iv: `\\x${iv.toString('hex')}`,
-    rate_limit_per_min: null, last_used_at: null, created_at: new Date().toISOString(), revoked_at: null,
-  };
-}
-
 export async function listApiKeys(profileId: string): Promise<ApiKeyRow[]> {
-  if (!supabaseConfigured()) return [localStubKey(profileId)];
+  if (!supabaseConfigured()) return [];
   const { data } = await supabaseAdmin().from('api_keys').select('*').eq('profile_id', profileId).order('created_at', { ascending: true });
   return (data as ApiKeyRow[]) ?? [];
 }

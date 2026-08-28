@@ -54,7 +54,7 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
     try {
       const apiKeyId = request.apiKey?.id;
       const resolved = apiKeyId && deps.encryptionKey ? await resolveProviderKeys(apiKeyId, deps.encryptionKey) : {};
-      const { providerKeys, providerModels } = toClientKeys(resolved);
+      const { providerKeys, providerModels, providerBaseUrls } = toClientKeys(resolved);
 
       const result = await deps.extractClient.schema({
         prompt: body.prompt,
@@ -63,6 +63,7 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
         instruction: body.instruction,
         providerKeys,
         providerModels,
+        providerBaseUrls,
       });
 
       return reply.send({

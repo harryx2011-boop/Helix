@@ -1,9 +1,21 @@
+import * as React from 'react';
 import type { Metadata } from 'next';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
+
+/** Anchors `/architecture#roadmap` to the "Build order" heading without a rehype-slug dependency. */
+function H2({ children, ...props }: React.ComponentPropsWithoutRef<'h2'>) {
+  const text = React.Children.toArray(children).join('');
+  const id = /build order/i.test(text) ? 'roadmap' : undefined;
+  return (
+    <h2 id={id} {...props}>
+      {children}
+    </h2>
+  );
+}
 
 export const metadata: Metadata = {
   title: 'Architecture',
@@ -28,7 +40,9 @@ export default async function ArchitecturePage() {
       </div>
 
       <article className="prose-helix mx-auto mt-14 max-w-[720px] animate-fade-up [animation-delay:60ms]">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ h2: H2 }}>
+          {markdown}
+        </ReactMarkdown>
       </article>
     </div>
   );

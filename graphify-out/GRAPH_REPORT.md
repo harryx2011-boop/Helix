@@ -1,1152 +1,1358 @@
-# Graph Report - e:/Helix  (2026-08-27)
+# Graph Report - Helix  (2026-08-28)
 
 ## Corpus Check
-- 443 files · ~289,537 words
+- 454 files · ~298,889 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3833 nodes · 6048 edges · 281 communities (213 shown, 68 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 188 edges (avg confidence: 0.77)
-- Token cost: 78,000 input · 2,848 output
+- 4657 nodes · 6967 edges · 361 communities (245 shown, 116 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 214 edges (avg confidence: 0.78)
+- Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_API Types and Contracts|API Types and Contracts]]
-- [[_COMMUNITY_Document Parsing|Document Parsing]]
-- [[_COMMUNITY_Webhook Delivery|Webhook Delivery]]
-- [[_COMMUNITY_LLM and Embeddings|LLM and Embeddings]]
-- [[_COMMUNITY_CLI|CLI]]
-- [[_COMMUNITY_Instance Settings and Key Rotation|Instance Settings and Key Rotation]]
-- [[_COMMUNITY_Monitor Checks|Monitor Checks]]
-- [[_COMMUNITY_Relevance Scoring|Relevance Scoring]]
-- [[_COMMUNITY_Dashboard API Routes|Dashboard API Routes]]
-- [[_COMMUNITY_Provider Schema Compilation|Provider Schema Compilation]]
-- [[_COMMUNITY_Webhook Target Guards|Webhook Target Guards]]
-- [[_COMMUNITY_Browser Profiles|Browser Profiles]]
-- [[_COMMUNITY_Dashboard Pages|Dashboard Pages]]
-- [[_COMMUNITY_Block Detection and Escalation|Block Detection and Escalation]]
-- [[_COMMUNITY_Community 14|Community 14]]
-- [[_COMMUNITY_Community 15|Community 15]]
-- [[_COMMUNITY_Community 16|Community 16]]
-- [[_COMMUNITY_Community 17|Community 17]]
-- [[_COMMUNITY_Community 18|Community 18]]
-- [[_COMMUNITY_Community 19|Community 19]]
-- [[_COMMUNITY_Community 20|Community 20]]
-- [[_COMMUNITY_Community 21|Community 21]]
-- [[_COMMUNITY_Community 22|Community 22]]
-- [[_COMMUNITY_Community 23|Community 23]]
-- [[_COMMUNITY_Community 24|Community 24]]
-- [[_COMMUNITY_Community 25|Community 25]]
-- [[_COMMUNITY_Community 26|Community 26]]
-- [[_COMMUNITY_Community 27|Community 27]]
-- [[_COMMUNITY_Community 28|Community 28]]
-- [[_COMMUNITY_Community 29|Community 29]]
-- [[_COMMUNITY_Community 30|Community 30]]
-- [[_COMMUNITY_Community 31|Community 31]]
-- [[_COMMUNITY_Community 32|Community 32]]
-- [[_COMMUNITY_Community 33|Community 33]]
-- [[_COMMUNITY_Community 34|Community 34]]
-- [[_COMMUNITY_Community 35|Community 35]]
-- [[_COMMUNITY_Community 36|Community 36]]
-- [[_COMMUNITY_Community 37|Community 37]]
-- [[_COMMUNITY_Community 38|Community 38]]
-- [[_COMMUNITY_Community 39|Community 39]]
-- [[_COMMUNITY_Community 40|Community 40]]
-- [[_COMMUNITY_Community 41|Community 41]]
-- [[_COMMUNITY_Community 42|Community 42]]
-- [[_COMMUNITY_Community 43|Community 43]]
-- [[_COMMUNITY_Community 44|Community 44]]
-- [[_COMMUNITY_Community 45|Community 45]]
-- [[_COMMUNITY_Community 46|Community 46]]
-- [[_COMMUNITY_Community 47|Community 47]]
-- [[_COMMUNITY_Community 48|Community 48]]
-- [[_COMMUNITY_Community 49|Community 49]]
-- [[_COMMUNITY_Community 50|Community 50]]
-- [[_COMMUNITY_Community 51|Community 51]]
-- [[_COMMUNITY_Community 52|Community 52]]
-- [[_COMMUNITY_Community 53|Community 53]]
-- [[_COMMUNITY_Community 54|Community 54]]
-- [[_COMMUNITY_Community 55|Community 55]]
-- [[_COMMUNITY_Community 56|Community 56]]
-- [[_COMMUNITY_Community 57|Community 57]]
-- [[_COMMUNITY_Community 58|Community 58]]
-- [[_COMMUNITY_Community 59|Community 59]]
-- [[_COMMUNITY_Community 60|Community 60]]
-- [[_COMMUNITY_Community 61|Community 61]]
-- [[_COMMUNITY_Community 62|Community 62]]
-- [[_COMMUNITY_Community 63|Community 63]]
-- [[_COMMUNITY_Community 64|Community 64]]
-- [[_COMMUNITY_Community 65|Community 65]]
-- [[_COMMUNITY_Community 66|Community 66]]
-- [[_COMMUNITY_Community 67|Community 67]]
-- [[_COMMUNITY_Community 68|Community 68]]
-- [[_COMMUNITY_Community 69|Community 69]]
-- [[_COMMUNITY_Community 70|Community 70]]
-- [[_COMMUNITY_Community 71|Community 71]]
-- [[_COMMUNITY_Community 72|Community 72]]
-- [[_COMMUNITY_Community 73|Community 73]]
-- [[_COMMUNITY_Community 74|Community 74]]
-- [[_COMMUNITY_Community 75|Community 75]]
-- [[_COMMUNITY_Community 76|Community 76]]
-- [[_COMMUNITY_Community 77|Community 77]]
-- [[_COMMUNITY_Community 78|Community 78]]
-- [[_COMMUNITY_Community 79|Community 79]]
-- [[_COMMUNITY_Community 80|Community 80]]
-- [[_COMMUNITY_Community 81|Community 81]]
-- [[_COMMUNITY_Community 82|Community 82]]
-- [[_COMMUNITY_Community 83|Community 83]]
-- [[_COMMUNITY_Community 84|Community 84]]
-- [[_COMMUNITY_Community 85|Community 85]]
-- [[_COMMUNITY_Community 86|Community 86]]
-- [[_COMMUNITY_Community 87|Community 87]]
-- [[_COMMUNITY_Community 88|Community 88]]
-- [[_COMMUNITY_Community 89|Community 89]]
-- [[_COMMUNITY_Community 90|Community 90]]
-- [[_COMMUNITY_Community 91|Community 91]]
-- [[_COMMUNITY_Community 92|Community 92]]
-- [[_COMMUNITY_Community 93|Community 93]]
-- [[_COMMUNITY_Community 94|Community 94]]
-- [[_COMMUNITY_Community 95|Community 95]]
-- [[_COMMUNITY_Community 96|Community 96]]
-- [[_COMMUNITY_Community 97|Community 97]]
-- [[_COMMUNITY_Community 98|Community 98]]
-- [[_COMMUNITY_Community 99|Community 99]]
-- [[_COMMUNITY_Community 100|Community 100]]
-- [[_COMMUNITY_Community 101|Community 101]]
-- [[_COMMUNITY_Community 102|Community 102]]
-- [[_COMMUNITY_Community 103|Community 103]]
-- [[_COMMUNITY_Community 104|Community 104]]
-- [[_COMMUNITY_Community 105|Community 105]]
-- [[_COMMUNITY_Community 106|Community 106]]
-- [[_COMMUNITY_Community 107|Community 107]]
-- [[_COMMUNITY_Community 108|Community 108]]
-- [[_COMMUNITY_Community 109|Community 109]]
-- [[_COMMUNITY_Community 110|Community 110]]
-- [[_COMMUNITY_Community 111|Community 111]]
-- [[_COMMUNITY_Community 112|Community 112]]
-- [[_COMMUNITY_Community 113|Community 113]]
-- [[_COMMUNITY_Community 114|Community 114]]
-- [[_COMMUNITY_Community 115|Community 115]]
-- [[_COMMUNITY_Community 116|Community 116]]
-- [[_COMMUNITY_Community 117|Community 117]]
-- [[_COMMUNITY_Community 118|Community 118]]
-- [[_COMMUNITY_Community 119|Community 119]]
-- [[_COMMUNITY_Community 120|Community 120]]
-- [[_COMMUNITY_Community 121|Community 121]]
-- [[_COMMUNITY_Community 122|Community 122]]
-- [[_COMMUNITY_Community 123|Community 123]]
-- [[_COMMUNITY_Community 124|Community 124]]
-- [[_COMMUNITY_Community 125|Community 125]]
-- [[_COMMUNITY_Community 126|Community 126]]
-- [[_COMMUNITY_Community 127|Community 127]]
-- [[_COMMUNITY_Community 128|Community 128]]
-- [[_COMMUNITY_Community 129|Community 129]]
-- [[_COMMUNITY_Community 130|Community 130]]
-- [[_COMMUNITY_Community 131|Community 131]]
-- [[_COMMUNITY_Community 132|Community 132]]
-- [[_COMMUNITY_Community 133|Community 133]]
-- [[_COMMUNITY_Community 134|Community 134]]
-- [[_COMMUNITY_Community 135|Community 135]]
-- [[_COMMUNITY_Community 136|Community 136]]
-- [[_COMMUNITY_Community 137|Community 137]]
-- [[_COMMUNITY_Community 138|Community 138]]
-- [[_COMMUNITY_Community 139|Community 139]]
-- [[_COMMUNITY_Community 140|Community 140]]
-- [[_COMMUNITY_Community 141|Community 141]]
-- [[_COMMUNITY_Community 142|Community 142]]
-- [[_COMMUNITY_Community 143|Community 143]]
-- [[_COMMUNITY_Community 144|Community 144]]
-- [[_COMMUNITY_Community 145|Community 145]]
-- [[_COMMUNITY_Community 146|Community 146]]
-- [[_COMMUNITY_Community 147|Community 147]]
-- [[_COMMUNITY_Community 148|Community 148]]
-- [[_COMMUNITY_Community 149|Community 149]]
-- [[_COMMUNITY_Community 150|Community 150]]
-- [[_COMMUNITY_Community 151|Community 151]]
-- [[_COMMUNITY_Community 152|Community 152]]
-- [[_COMMUNITY_Community 153|Community 153]]
-- [[_COMMUNITY_Community 154|Community 154]]
-- [[_COMMUNITY_Community 155|Community 155]]
-- [[_COMMUNITY_Community 156|Community 156]]
-- [[_COMMUNITY_Community 157|Community 157]]
-- [[_COMMUNITY_Community 158|Community 158]]
-- [[_COMMUNITY_Community 159|Community 159]]
-- [[_COMMUNITY_Community 160|Community 160]]
-- [[_COMMUNITY_Community 161|Community 161]]
-- [[_COMMUNITY_Community 162|Community 162]]
-- [[_COMMUNITY_Community 163|Community 163]]
-- [[_COMMUNITY_Community 164|Community 164]]
-- [[_COMMUNITY_Community 165|Community 165]]
-- [[_COMMUNITY_Community 166|Community 166]]
-- [[_COMMUNITY_Community 167|Community 167]]
-- [[_COMMUNITY_Community 168|Community 168]]
-- [[_COMMUNITY_Community 169|Community 169]]
-- [[_COMMUNITY_Community 170|Community 170]]
-- [[_COMMUNITY_Community 171|Community 171]]
-- [[_COMMUNITY_Community 172|Community 172]]
-- [[_COMMUNITY_Community 173|Community 173]]
-- [[_COMMUNITY_Community 174|Community 174]]
-- [[_COMMUNITY_Community 175|Community 175]]
-- [[_COMMUNITY_Community 176|Community 176]]
-- [[_COMMUNITY_Community 177|Community 177]]
-- [[_COMMUNITY_Community 178|Community 178]]
-- [[_COMMUNITY_Community 179|Community 179]]
-- [[_COMMUNITY_Community 180|Community 180]]
-- [[_COMMUNITY_Community 181|Community 181]]
-- [[_COMMUNITY_Community 182|Community 182]]
-- [[_COMMUNITY_Community 183|Community 183]]
-- [[_COMMUNITY_Community 184|Community 184]]
-- [[_COMMUNITY_Community 185|Community 185]]
-- [[_COMMUNITY_Community 186|Community 186]]
-- [[_COMMUNITY_Community 187|Community 187]]
-- [[_COMMUNITY_Community 188|Community 188]]
-- [[_COMMUNITY_Community 189|Community 189]]
-- [[_COMMUNITY_Community 190|Community 190]]
-- [[_COMMUNITY_Community 191|Community 191]]
-- [[_COMMUNITY_Community 192|Community 192]]
-- [[_COMMUNITY_Community 193|Community 193]]
-- [[_COMMUNITY_Community 194|Community 194]]
-- [[_COMMUNITY_Community 195|Community 195]]
-- [[_COMMUNITY_Community 196|Community 196]]
-- [[_COMMUNITY_Community 197|Community 197]]
-- [[_COMMUNITY_Community 198|Community 198]]
-- [[_COMMUNITY_Community 199|Community 199]]
-- [[_COMMUNITY_Community 200|Community 200]]
-- [[_COMMUNITY_Community 203|Community 203]]
-- [[_COMMUNITY_Community 204|Community 204]]
-- [[_COMMUNITY_Community 205|Community 205]]
-- [[_COMMUNITY_Community 206|Community 206]]
-- [[_COMMUNITY_Community 207|Community 207]]
-- [[_COMMUNITY_Community 208|Community 208]]
-- [[_COMMUNITY_Community 209|Community 209]]
-- [[_COMMUNITY_Community 210|Community 210]]
-- [[_COMMUNITY_Community 211|Community 211]]
-- [[_COMMUNITY_Community 212|Community 212]]
-- [[_COMMUNITY_Community 213|Community 213]]
-- [[_COMMUNITY_Community 214|Community 214]]
-- [[_COMMUNITY_Community 215|Community 215]]
-- [[_COMMUNITY_Community 216|Community 216]]
-- [[_COMMUNITY_Community 217|Community 217]]
-- [[_COMMUNITY_Community 218|Community 218]]
-- [[_COMMUNITY_Community 219|Community 219]]
-- [[_COMMUNITY_Community 220|Community 220]]
-- [[_COMMUNITY_Community 221|Community 221]]
-- [[_COMMUNITY_Community 222|Community 222]]
-- [[_COMMUNITY_Community 227|Community 227]]
-- [[_COMMUNITY_Community 228|Community 228]]
-- [[_COMMUNITY_Community 229|Community 229]]
-- [[_COMMUNITY_Community 231|Community 231]]
-- [[_COMMUNITY_Community 232|Community 232]]
-- [[_COMMUNITY_Community 233|Community 233]]
-- [[_COMMUNITY_Community 234|Community 234]]
-- [[_COMMUNITY_Community 235|Community 235]]
-- [[_COMMUNITY_Community 236|Community 236]]
-- [[_COMMUNITY_Community 237|Community 237]]
-- [[_COMMUNITY_Community 238|Community 238]]
-- [[_COMMUNITY_Community 241|Community 241]]
-- [[_COMMUNITY_Community 243|Community 243]]
-- [[_COMMUNITY_Community 244|Community 244]]
-- [[_COMMUNITY_Community 246|Community 246]]
-- [[_COMMUNITY_Community 247|Community 247]]
-- [[_COMMUNITY_Community 248|Community 248]]
-- [[_COMMUNITY_Community 249|Community 249]]
-- [[_COMMUNITY_Community 250|Community 250]]
-- [[_COMMUNITY_Community 251|Community 251]]
-- [[_COMMUNITY_Community 252|Community 252]]
-- [[_COMMUNITY_Community 253|Community 253]]
-- [[_COMMUNITY_Community 254|Community 254]]
-- [[_COMMUNITY_Community 255|Community 255]]
-- [[_COMMUNITY_Community 256|Community 256]]
-- [[_COMMUNITY_Community 257|Community 257]]
-- [[_COMMUNITY_Community 258|Community 258]]
-- [[_COMMUNITY_Community 259|Community 259]]
-- [[_COMMUNITY_Community 260|Community 260]]
-- [[_COMMUNITY_Community 261|Community 261]]
-- [[_COMMUNITY_Community 262|Community 262]]
-- [[_COMMUNITY_Community 263|Community 263]]
-- [[_COMMUNITY_Community 264|Community 264]]
-- [[_COMMUNITY_Community 265|Community 265]]
-- [[_COMMUNITY_Community 266|Community 266]]
-- [[_COMMUNITY_Community 267|Community 267]]
-- [[_COMMUNITY_Community 268|Community 268]]
-- [[_COMMUNITY_Community 272|Community 272]]
-- [[_COMMUNITY_Community 273|Community 273]]
-- [[_COMMUNITY_Community 274|Community 274]]
-- [[_COMMUNITY_Community 275|Community 275]]
-- [[_COMMUNITY_Community 276|Community 276]]
-- [[_COMMUNITY_Community 277|Community 277]]
-- [[_COMMUNITY_Community 278|Community 278]]
-- [[_COMMUNITY_Community 279|Community 279]]
-- [[_COMMUNITY_Community 280|Community 280]]
+- Community 0
+- Community 1
+- Community 2
+- Community 3
+- Community 4
+- Community 5
+- Community 6
+- Community 7
+- Community 8
+- Community 9
+- Community 10
+- Community 11
+- Community 12
+- Community 13
+- Community 14
+- Community 15
+- Community 16
+- Community 17
+- Community 18
+- Community 19
+- Community 20
+- Community 21
+- Community 22
+- Community 23
+- Community 24
+- Community 25
+- Community 26
+- Community 27
+- Community 28
+- Community 29
+- Community 30
+- Community 31
+- Community 32
+- Community 33
+- Community 34
+- Community 35
+- Community 36
+- Community 37
+- Community 38
+- Community 39
+- Community 40
+- Community 41
+- Community 42
+- Community 43
+- Community 44
+- Community 45
+- Community 46
+- Community 47
+- Community 48
+- Community 49
+- Community 50
+- Community 51
+- Community 52
+- Community 53
+- Community 54
+- Community 55
+- Community 56
+- Community 57
+- Community 58
+- Community 59
+- Community 60
+- Community 61
+- Community 62
+- Community 63
+- Community 64
+- Community 65
+- Community 66
+- Community 67
+- Community 68
+- Community 69
+- Community 70
+- Community 71
+- Community 72
+- Community 73
+- Community 74
+- Community 75
+- Community 76
+- Community 77
+- Community 78
+- Community 79
+- Community 80
+- Community 81
+- Community 82
+- Community 83
+- Community 84
+- Community 85
+- Community 86
+- Community 87
+- Community 88
+- Community 89
+- Community 90
+- Community 91
+- Community 92
+- Community 93
+- Community 94
+- Community 95
+- Community 96
+- Community 97
+- Community 98
+- Community 99
+- Community 100
+- Community 101
+- Community 102
+- Community 103
+- Community 104
+- Community 105
+- Community 106
+- Community 107
+- Community 108
+- Community 109
+- Community 110
+- Community 111
+- Community 112
+- Community 113
+- Community 114
+- Community 115
+- Community 116
+- Community 117
+- Community 118
+- Community 119
+- Community 120
+- Community 121
+- Community 122
+- Community 123
+- Community 124
+- Community 125
+- Community 126
+- Community 127
+- Community 128
+- Community 129
+- Community 130
+- Community 131
+- Community 132
+- Community 133
+- Community 134
+- Community 135
+- Community 136
+- Community 137
+- Community 138
+- Community 139
+- Community 140
+- Community 141
+- Community 142
+- Community 143
+- Community 144
+- Community 145
+- Community 146
+- Community 147
+- Community 148
+- Community 149
+- Community 150
+- Community 151
+- Community 152
+- Community 153
+- Community 154
+- Community 155
+- Community 156
+- Community 157
+- Community 158
+- Community 159
+- Community 160
+- Community 161
+- Community 162
+- Community 163
+- Community 164
+- Community 165
+- Community 166
+- Community 167
+- Community 168
+- Community 169
+- Community 170
+- Community 171
+- Community 172
+- Community 173
+- Community 174
+- Community 175
+- Community 176
+- Community 177
+- Community 178
+- Community 179
+- Community 180
+- Community 181
+- Community 182
+- Community 183
+- Community 184
+- Community 185
+- Community 186
+- Community 187
+- Community 188
+- Community 189
+- Community 190
+- Community 191
+- Community 192
+- Community 193
+- Community 194
+- Community 195
+- Community 196
+- Community 197
+- Community 198
+- Community 199
+- Community 200
+- Community 201
+- Community 202
+- Community 203
+- Community 204
+- Community 205
+- Community 206
+- Community 207
+- Community 208
+- Community 209
+- Community 210
+- Community 211
+- Community 212
+- Community 213
+- Community 214
+- Community 215
+- Community 216
+- Community 217
+- Community 218
+- Community 219
+- Community 220
+- Community 221
+- Community 222
+- Community 223
+- Community 224
+- Community 225
+- Community 226
+- Community 227
+- Community 228
+- Community 229
+- Community 230
+- Community 231
+- Community 232
+- Community 233
+- Community 234
+- Community 235
+- Community 236
+- Community 237
+- Community 238
+- Community 239
+- Community 240
+- Community 241
+- Community 242
+- Community 245
+- Community 246
+- Community 247
+- Community 249
+- Community 250
+- Community 251
+- Community 252
+- Community 253
+- Community 254
+- Community 255
+- Community 256
+- Community 257
+- Community 258
+- Community 259
+- Community 260
+- Community 261
+- Community 262
+- Community 263
+- Community 264
+- Community 265
+- Community 266
+- Community 267
+- Community 268
+- Community 269
+- Community 270
+- Community 271
+- Community 272
+- Community 273
+- Community 274
+- Community 275
+- Community 276
+- Community 277
+- Community 278
+- Community 279
+- Community 280
+- Community 281
+- Community 282
+- Community 283
+- Community 284
+- Community 285
+- Community 286
+- Community 296
+- Community 297
+- Community 298
+- Community 299
+- Community 300
+- Community 301
+- Community 302
+- Community 303
+- Community 304
+- Community 305
+- Community 306
+- Community 307
+- Community 308
+- Community 309
+- Community 310
+- Community 311
+- Community 315
+- Community 316
+- Community 317
+- Community 318
+- Community 319
+- Community 320
+- Community 321
+- Community 322
+- Community 323
+- Community 324
+- Community 325
+- Community 326
+- Community 327
+- Community 328
+- Community 329
+- Community 330
+- Community 331
+- Community 332
+- Community 333
+- Community 334
+- Community 335
+- Community 336
+- Community 337
+- Community 338
+- Community 339
+- Community 340
+- Community 341
+- Community 342
+- Community 343
+- Community 344
+- Community 345
+- Community 346
+- Community 347
+- Community 348
+- Community 349
+- Community 350
+- Community 351
+- Community 352
+- Community 353
+- Community 354
+- Community 355
+- Community 356
+- Community 357
+- Community 358
+- Community 360
 
 ## God Nodes (most connected - your core abstractions)
-1. `supabaseConfigured()` - 58 edges
-2. `requireProfile()` - 54 edges
-3. `supabaseAdmin()` - 45 edges
-4. `getPool()` - 34 edges
-5. `MemoryMonitorStore` - 30 edges
-6. `PgMonitorStore` - 25 edges
-7. `SessionRegistry` - 24 edges
-8. `Log` - 21 edges
-9. `HelixClient` - 21 edges
-10. `BrowserPool` - 19 edges
+1. `getPool()` - 34 edges
+2. `MemoryMonitorStore` - 30 edges
+3. `PgMonitorStore` - 25 edges
+4. `SessionRegistry` - 24 edges
+5. `Log` - 21 edges
+6. `HelixClient` - 21 edges
+7. `HelixClient` - 20 edges
+8. `ExtractClient` - 19 edges
+9. `api service` - 19 edges
+10. `parse()` - 19 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `animated-code.tsx (scramble/type/reveal/static)` --semantically_similar_to--> `POST /v1/scrape`  [INFERRED] [semantically similar]
-  context.md → openapi.yaml
 - `helix.adminToken (localStorage)` --semantically_similar_to--> `Read-Only By Design`  [INFERRED] [semantically similar]
   context.md → research/api-specs/profiles-api.md
+- `animated-code.tsx (scramble/type/reveal/static)` --semantically_similar_to--> `POST /v1/scrape`  [INFERRED] [semantically similar]
+  context.md → openapi.yaml
+- `workspace package apps/api` --conceptually_related_to--> `api service`  [INFERRED]
+  pnpm-workspace.yaml → docker-compose.yml
 - `POST /v2/search` --semantically_similar_to--> `Helix POST /v1/search (shipped)`  [INFERRED] [semantically similar]
   RESEARCH.md → research/15-api-surface-landscape.md
-- `api service` --conceptually_related_to--> `workspace package apps/api`  [INFERRED]
-  docker-compose.yml → pnpm-workspace.yaml
-- `Character-animation motif` --semantically_similar_to--> `Character-grid charts (CharChart component)`  [INFERRED] [semantically similar]
-  FRONTEND.md → WEBSITE.md
+- `ProviderStatus schema` --semantically_similar_to--> `_CALLER_KEY_PRIORITY`  [INFERRED] [semantically similar]
+  openapi.yaml → context.md
+
+## Import Cycles
+- None detected.
 
 ## Hyperedges (group relationships)
-- **Clerk Sign-In Path Fix Participants** — context_clerk_signin_defect, middleware_ts_clerk_protect, providers_tsx_clerkprovider, probe_clerk_signin_script [EXTRACTED 0.90]
-- **/app Shell-Level Backdrop Grid Participants** — app_shell_tsx, app_grid_component, page_frame_tsx_grid_removed, agent_page_grid_removed, context_minheight_wrapper_failure [EXTRACTED 0.90]
+- **** — context_stealth_chain, context_wreq_util, context_profiles_ts, context_tools_capture, context_load_all_fn [EXTRACTED 1.00]
+- **** — openapi_op_scrape, openapi_op_parse, openapi_schema_extract_config, openapi_schema_document [INFERRED 0.85]
+- **** — context_agent_screen, context_agent_route_api, context_extract_client, context_schema_gen_py, openapi_op_agent_schema [INFERRED 0.90]
 
-## Communities (281 total, 68 thin omitted)
+## Communities (361 total, 116 thin omitted)
 
-### Community 0 - "API Types and Contracts"
+### Community 0 - "Community 0"
+Cohesion: 0.06
+Nodes (72): BaseModel, Exception, _auto_pick_caller_provider(), _call_anthropic(), _call_gemini(), _call_openai(), _describe_failure(), extract_structured() (+64 more)
+
+### Community 1 - "Community 1"
 Cohesion: 0.03
 Nodes (72): Action, ActionType, AgentSchemaRequest, AgentSchemaResponse, AgentSchemaResponseFailure, AgentSchemaResponseSuccess, ApiErrorBody, ChunkConfig (+64 more)
 
-### Community 1 - "Document Parsing"
+### Community 2 - "Community 2"
 Cohesion: 0.05
-Nodes (47): Enum, Exception, assess_pdf(), available_parsers(), classify_content_type(), _docling_pdf(), DocumentError, DocumentKind (+39 more)
+Nodes (46): Enum, assess_pdf(), available_parsers(), classify_content_type(), _docling_pdf(), DocumentError, DocumentKind, _docx_to_markdown() (+38 more)
 
-### Community 2 - "Webhook Delivery"
+### Community 3 - "Community 3"
+Cohesion: 0.05
+Nodes (44): dedupeKey(), enqueueDelivery(), EnqueueInput, purgeSettledDeliveries(), Queryable, retryDelayMs(), config, db (+36 more)
+
+### Community 4 - "Community 4"
+Cohesion: 0.03
+Nodes (64): Action, ActionType, AgentSchemaRequest, AgentSchemaResponse, AgentSchemaResponseFailure, AgentSchemaResponseSuccess, ApiErrorBody, ChunkConfig (+56 more)
+
+### Community 5 - "Community 5"
+Cohesion: 0.05
+Nodes (40): CrawlForm(), CrawlFormProps, SitemapMode, FormFooter(), FormFooterProps, ACTION_TYPES, InteractForm(), InteractFormProps (+32 more)
+
+### Community 6 - "Community 6"
 Cohesion: 0.07
 Nodes (48): BaseSettings, embed(), _embed_local(), _embed_openai(), _embed_voyage(), EmbeddingError, EmbeddingResult, _local_model() (+40 more)
 
-### Community 3 - "LLM and Embeddings"
+### Community 7 - "Community 7"
 Cohesion: 0.07
 Nodes (41): ApiKey, AuthDeps, FastifyRequest, InternalTickets, registerAuth(), liveTools(), McpDeps, registerMcp() (+33 more)
 
-### Community 4 - "CLI"
-Cohesion: 0.07
-Nodes (27): Frontier, FrontierItem, FrontierOptions, RejectionReason, filtered, frontier, item, offSite (+19 more)
+### Community 8 - "Community 8"
+Cohesion: 0.06
+Nodes (42): AgentSurfaceDoc(), DocsSlugPage(), EndpointDoc(), generateMetadata(), REFERENCE_DOCS, STATIC_SLUGS, titleFor(), buildNavGroups() (+34 more)
 
-### Community 5 - "Instance Settings and Key Rotation"
+### Community 9 - "Community 9"
 Cohesion: 0.08
 Nodes (39): ALIASES, flagSet(), flagValue(), flagValues(), parseArgs(), ParsedArgs, main(), VALUED (+31 more)
 
-### Community 6 - "Monitor Checks"
+### Community 10 - "Community 10"
 Cohesion: 0.06
 Nodes (37): registerSettings(), RotateSchema, SettingsRouteDeps, app, auth, body, buildApp(), Call (+29 more)
 
-### Community 7 - "Relevance Scoring"
+### Community 11 - "Community 11"
 Cohesion: 0.07
 Nodes (40): DEFINITIONS, HERE, main(), parseArgs(), REPO_ROOT, RESOLVABLE, browserFromUserAgent(), HEADER_TABLE_SIZE (+32 more)
 
-### Community 8 - "Dashboard API Routes"
+### Community 12 - "Community 12"
 Cohesion: 0.06
 Nodes (37): CheckerDeps, CheckOutcome, enqueue(), FetchOutcome, hashContent(), includeSelectorsFor(), runCheck(), check() (+29 more)
 
-### Community 9 - "Provider Schema Compilation"
-Cohesion: 0.06
-Nodes (34): CrawlJobRequest, BatchLimits, batchRequestSchema(), BatchRouteDeps, DEFAULT_BATCH_LIMITS, HttpUrlSchema, ParsedBatchRequest, PartitionedUrls (+26 more)
+### Community 13 - "Community 13"
+Cohesion: 0.07
+Nodes (36): BlockVerdict, classifyFailure(), detectBlock(), FailureReason, ResponseFacts, Signal, SIGNALS, reasons (+28 more)
 
-### Community 10 - "Webhook Target Guards"
+### Community 14 - "Community 14"
+Cohesion: 0.08
+Nodes (22): Block, Relevance scoring and trimming, run before the model sees anything. Dumping a…, The vocabulary a schema is asking about. Field names, descriptions and examples…, Split on blank lines, keeping headings attached to what follows. A heading…, How well a block matches what is being asked for. Distinct matched terms beat…, Trim content to a token budget, keeping the most relevant parts. Returns the…, Choose what reaches the model within a token budget. Selected blocks are re-…, What reached the model, and how much of the page that was. (+14 more)
+
+### Community 15 - "Community 15"
+Cohesion: 0.06
+Nodes (33): CrawlJobRequest, BatchLimits, batchRequestSchema(), BatchRouteDeps, DEFAULT_BATCH_LIMITS, HttpUrlSchema, ParsedBatchRequest, PartitionedUrls (+25 more)
+
+### Community 16 - "Community 16"
 Cohesion: 0.08
 Nodes (24): Block, Relevance scoring and trimming, run before the model sees anything.  Dumping a, Split on blank lines, keeping headings attached to what follows.      A headin, Split on blank lines, keeping headings attached to what follows.      A headin, How well a block matches what is being asked for.      Distinct matched terms, How well a block matches what is being asked for.      Distinct matched terms, Trim content to a token budget, keeping the most relevant parts.      Returns, Trim content to a token budget, keeping the most relevant parts.      Returns (+16 more)
 
-### Community 11 - "Browser Profiles"
-Cohesion: 0.16
-Nodes (29): ActivityPage(), DELETE(), DELETE(), GET(), ClerkEmail, ClerkUserEvent, POST(), HealthResultBody (+21 more)
-
-### Community 12 - "Dashboard Pages"
+### Community 17 - "Community 17"
 Cohesion: 0.09
 Nodes (23): compile_anthropic(), compile_for(), compile_gemini(), compile_openai(), One schema representation, compiled to each provider's native mechanism.  Provid, A ``response_format`` payload for the OpenAI Chat Completions API., A forced-tool-use payload for the Anthropic Messages API.      Anthropic has no, A ``responseSchema`` for the Gemini API. (+15 more)
 
-### Community 13 - "Block Detection and Escalation"
+### Community 18 - "Community 18"
 Cohesion: 0.05
 Nodes (39): browser, capturedAt, $comment, headers, accept, acceptEncoding, acceptLanguage, $comment (+31 more)
 
-### Community 14 - "Community 14"
+### Community 19 - "Community 19"
 Cohesion: 0.05
 Nodes (39): browser, capturedAt, $comment, headers, accept, acceptEncoding, acceptLanguage, $comment (+31 more)
 
-### Community 15 - "Community 15"
+### Community 20 - "Community 20"
 Cohesion: 0.09
 Nodes (27): assertPublicTarget(), BlockedTargetError, ipv4Octets(), ipv6Groups(), isPublicAddress(), isPublicIpv4(), isPublicIpv6(), Resolve (+19 more)
 
-### Community 16 - "Community 16"
+### Community 21 - "Community 21"
 Cohesion: 0.10
 Nodes (21): ArchitecturePage(), getArchitectureMarkdown(), metadata, CrawlPage(), metadata, InteractPage(), metadata, SectionEyebrow() (+13 more)
 
-### Community 17 - "Community 17"
-Cohesion: 0.09
-Nodes (30): BlockVerdict, classifyFailure(), classifyTransportError(), detectBlock(), FailureReason, ResponseFacts, Signal, SIGNALS (+22 more)
-
-### Community 18 - "Community 18"
-Cohesion: 0.08
-Nodes (28): AppMode, AppSessionContext, AppSessionProvider(), AppSessionValue, STATUS_CLASS, STATUS_LABEL, StatusBadge(), extractFailureReason() (+20 more)
-
-### Community 19 - "Community 19"
-Cohesion: 0.11
-Nodes (22): ActivityPageProps, AddInstanceDialog(), BudgetField(), BudgetFieldProps, HealthPill(), HealthPillProps, InstanceRowActions(), InstanceRowActionsProps (+14 more)
-
-### Community 20 - "Community 20"
-Cohesion: 0.13
-Nodes (33): AmbientCode(), AmbientCodeProps, AsciiHelix(), AsciiHelixProps, assembleOrder(), CodeRain(), CodeRainProps, Corner (+25 more)
-
-### Community 21 - "Community 21"
-Cohesion: 0.12
-Nodes (30): GET(), settings(), GET(), redirectUri(), GET(), DELETE(), notConfigured(), PATCH() (+22 more)
-
 ### Community 22 - "Community 22"
+Cohesion: 0.11
+Nodes (7): asyncio, Provider routing for structured extraction. The provider SDKs are imported…, _result(), TestExtractStructured, TestOpenAiWireCredentials, TestResolve, MonkeyPatch
+
+### Community 23 - "Community 23"
+Cohesion: 0.07
+Nodes (26): ActionError, answerSchema(), EvaluateTimeoutError, guardPage(), InteractAction, InteractActionDeps, InteractActionSchema, InteractOutcome (+18 more)
+
+### Community 24 - "Community 24"
 Cohesion: 0.08
 Nodes (30): diffForPayload(), attempt(), boundedDiff(), Box, DiffOp, diffText(), EditLimitExceeded, Emit (+22 more)
 
-### Community 23 - "Community 23"
+### Community 25 - "Community 25"
 Cohesion: 0.10
 Nodes (15): Chunk, chunk_markdown(), estimate_tokens(), _heading_level(), make_anchor(), _pack_sentences(), Semantic chunking with stable anchors.  Two properties matter more than the sp, Pack sentences into chunks, never splitting mid-sentence when avoidable. (+7 more)
 
-### Community 24 - "Community 24"
-Cohesion: 0.11
-Nodes (22): AgentClient(), RunState, Stage, Composer(), ComposerProps, AgentOutputFormat, OutputToggle(), RefineBar() (+14 more)
-
-### Community 25 - "Community 25"
-Cohesion: 0.08
-Nodes (25): ActionError, answerSchema(), EvaluateTimeoutError, guardPage(), InteractAction, InteractActionDeps, InteractActionSchema, InteractOutcome (+17 more)
-
 ### Community 26 - "Community 26"
+Cohesion: 0.08
+Nodes (21): PageLease, CloseReason, Session, SessionBusyError, SessionLimitError, SessionRecord, SessionRegistryOptions, attempts (+13 more)
+
+### Community 27 - "Community 27"
+Cohesion: 0.11
+Nodes (23): endpointById(), generateCode(), Lang, LANGS, Opts, pyLiteral(), AGENT_SURFACE_SLUGS, agentSurfaceDocs (+15 more)
+
+### Community 28 - "Community 28"
 Cohesion: 0.06
 Nodes (33): dependencies, class-variance-authority, @clerk/nextjs, clsx, geist, gsap, lenis, lucide-react (+25 more)
 
-### Community 27 - "Community 27"
-Cohesion: 0.07
-Nodes (27): deriveEncryptionKey(), EncryptedSecret, encryptSecret(), last4(), a, b, { ciphertext }, { ciphertext, iv } (+19 more)
-
-### Community 28 - "Community 28"
-Cohesion: 0.11
-Nodes (19): retryDelayMs(), WebhookPayload, DeliveryOutcome, DeliveryRow, DispatcherDeps, isPermanentError(), isRetryableStatus(), WebhookDispatcher (+11 more)
-
 ### Community 29 - "Community 29"
+Cohesion: 0.19
+Nodes (25): AppLayout(), OverviewPage(), orderBySelection(), decryptApiKey(), encryptApiKey(), encryptionKey(), generateApiKey(), hashApiKey() (+17 more)
+
+### Community 30 - "Community 30"
 Cohesion: 0.09
 Nodes (31): HELIX_API_KEY (CLI env fallback), Dashboard baked NEXT_PUBLIC_HELIX_API_URL at build time because a static export cannot read runtime env, Every dependency health-gated so there is no boot race to retry past, api service, dashboard service, extract service, fetch service, postgres service (pgvector/pgvector:pg16) (+23 more)
 
-### Community 30 - "Community 30"
-Cohesion: 0.11
-Nodes (21): applyOperators(), backendSignal(), createSearchProvider(), describeError(), freshnessToTbs(), ProviderResult, resolveTbs(), SearchProvider (+13 more)
-
 ### Community 31 - "Community 31"
-Cohesion: 0.06
-Nodes (4): Provider routing for structured extraction.  The provider SDKs are imported la, TestExtractStructured, TestOpenAiWireCredentials, TestResolve
+Cohesion: 0.08
+Nodes (23): isJobAccepted(), PlaygroundResult, Results(), ResultsProps, ViewMode, MetadataStrip(), MetadataStripProps, hostnameFromUrl() (+15 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.09
-Nodes (15): _apply_selectors(), content_hash(), extract(), _extract_links(), Extracted, HTML extraction and markdown serialisation.  Two engines behind one interface:, Plain text from markdown, for hashing and length checks., Hash of normalised text.      Whitespace is collapsed before hashing so that ref (+7 more)
+Cohesion: 0.12
+Nodes (22): redactSecrets(), Chunk, ChunkOptions, DocumentOptions, DocumentResult, ExtractHttpError, ExtractOptions, ExtractResult (+14 more)
 
 ### Community 33 - "Community 33"
 Cohesion: 0.10
-Nodes (16): Capabilities(), REQUEST, RESPONSE, TABS, ClosingCta(), HardParts(), Hero(), FrameBand() (+8 more)
+Nodes (26): decryptSecret(), deriveEncryptionKey(), EncryptedSecret, encryptSecret(), last4(), a, b, { ciphertext } (+18 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.13
-Nodes (21): Chunk, ChunkOptions, DocumentOptions, DocumentResult, ExtractHttpError, ExtractOptions, ExtractResult, ProviderKeyMap (+13 more)
+Cohesion: 0.06
+Nodes (4): Provider routing for structured extraction.  The provider SDKs are imported la, TestExtractStructured, TestOpenAiWireCredentials, TestResolve
+
+### Community 35 - "Community 35"
+Cohesion: 0.12
+Nodes (23): FrameCells(), FrameHeading(), FrameRow(), FrameRowProps, FrameTag(), PageFrame(), HelixApiError, ListProvidersResponse (+15 more)
 
 ### Community 36 - "Community 36"
-Cohesion: 0.12
-Nodes (22): createApiKey(), CreatedApiKey, ensureBootstrapKey(), generateKey(), hashKey(), importApiKey(), KeyRow, listApiKeys() (+14 more)
+Cohesion: 0.09
+Nodes (15): _apply_selectors(), content_hash(), extract(), _extract_links(), Extracted, HTML extraction and markdown serialisation.  Two engines behind one interface:, Plain text from markdown, for hashing and length checks., Hash of normalised text.      Whitespace is collapsed before hashing so that ref (+7 more)
 
 ### Community 37 - "Community 37"
-Cohesion: 0.11
-Nodes (19): call(), clearInstanceSetting(), FailureBody, getAdminToken(), InstanceSetting, listInstanceSettings(), saveInstanceSetting(), SaveResult (+11 more)
+Cohesion: 0.10
+Nodes (17): Capabilities(), REQUEST, RESPONSE, TABS, ClosingCta(), HardParts(), FrameBand(), FrameBandProps (+9 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.14
-Nodes (22): assertPublicUrl(), bareHostname(), checkUrl(), defaultResolver(), expandV6(), HostResolver, inV4Block(), isLocalName() (+14 more)
+Cohesion: 0.13
+Nodes (21): DocsIndexPage(), metadata, docsCurlExample(), docsEndpointList(), ENDPOINT_DOCS, AGENT_BLOCK, agentSurfaceMarkdown(), architectureMarkdown() (+13 more)
 
 ### Community 39 - "Community 39"
-Cohesion: 0.11
-Nodes (22): checkJsonOptions(), classifyRemoteError(), documentFailure(), fetchRemote(), FileInput, filenameFromDisposition(), filenameFromUrl(), firstIssueMessage() (+14 more)
+Cohesion: 0.12
+Nodes (24): Config, ConfigSchema, loadConfig(), app, browserPool, config, crawlWebhookDispatcher, crawlWorker (+16 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.09
-Nodes (5): PgMonitorStore, rowToCheck(), rowToDelivery(), rowToMonitor(), rowToSnapshot()
+Cohesion: 0.13
+Nodes (26): DocumentResult, checkJsonOptions(), classifyRemoteError(), documentFailure(), fetchRemote(), FileInput, filenameFromDisposition(), filenameFromUrl() (+18 more)
 
 ### Community 41 - "Community 41"
 Cohesion: 0.12
-Nodes (20): conditionalHeaders(), CrawlStateRecord, isUnchanged(), loadState(), recordVisit(), RecordVisitInput, StateRow, headers (+12 more)
+Nodes (22): createApiKey(), CreatedApiKey, ensureBootstrapKey(), generateKey(), hashKey(), importApiKey(), KeyRow, listApiKeys() (+14 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.13
-Nodes (4): PersistentFrontier, loadStateForSite(), CrawlWorker, getPool()
-
-### Community 43 - "Community 43"
 Cohesion: 0.11
-Nodes (20): BrowserProfile, fingerprintScript(), getProfile(), loadProfiles(), ProfileJs, ProfileScreen, resetInstanceSecret(), resetProfileCache() (+12 more)
+Nodes (19): call(), clearInstanceSetting(), FailureBody, getAdminToken(), InstanceSetting, listInstanceSettings(), saveInstanceSetting(), SaveResult (+11 more)
 
 ### Community 44 - "Community 44"
-Cohesion: 0.10
-Nodes (26): apps/api/migrations/*.sql (API's own Postgres, separate from supabase/migrations), apps/api (Fastify/TypeScript), apps/dashboard (Next.js), apps/extract (Python parsing/LLM/embeddings), Async-only execution (sync form dropped), 10,000 URL ceiling, POST /v1/batch/scrape, Batch scrape job semantics (maxDepth 0 + sitemap skip + allowExternal) (+18 more)
+Cohesion: 0.11
+Nodes (21): Chunk, ChunkOptions, DocumentOptions, ExtractHttpError, ExtractOptions, ProviderBaseUrlMap, ProviderKeyMap, ProviderModelMap (+13 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.10
-Nodes (14): CacheEntry, PERMISSIVE, RobotsCache, RobotsRules, asArray(), ParsedSitemap, RawUrlEntry, SitemapEntry (+6 more)
+Cohesion: 0.13
+Nodes (24): deleteProviderKey(), getProviderStatuses(), isLocalProvider(), listProviderKeys(), LOCAL_PROVIDERS, LocalProvider, Provider, ProviderKeyRow (+16 more)
 
 ### Community 46 - "Community 46"
-Cohesion: 0.10
-Nodes (13): ChunkToStore, deterministicId(), PgVectorSink, QdrantSink, StoreRequest, StoreResult, a, b (+5 more)
+Cohesion: 0.11
+Nodes (22): checkJsonOptions(), classifyRemoteError(), documentFailure(), fetchRemote(), FileInput, filenameFromDisposition(), filenameFromUrl(), firstIssueMessage() (+14 more)
 
 ### Community 47 - "Community 47"
 Cohesion: 0.11
-Nodes (16): FrameCells(), FrameHeading(), FrameRow(), FrameRowProps, FrameTag(), PageFrame(), DEPLOY_INTENTS, EMPTY_STATS (+8 more)
+Nodes (23): ActivityFiltersProps, STATUSES, EndpointDef, ENDPOINTS, EndpointStatus, EXAMPLE_REQUEST, TAB_GROUPS, TabGroup (+15 more)
 
 ### Community 48 - "Community 48"
 Cohesion: 0.08
-Nodes (24): Build order M0-M9, Semantic chunking and embedding with stable anchors, M0 Skeleton (done), M1 Fetch and extract (done), M2 Browser tiers (done), M5 LLM (done), M6 Vectors (in progress), M9 Surface (not started) (+16 more)
+Nodes (16): CastSession, CastSessionFactory, cdpSessionFor(), Screencast, ScreencastFrame, ScreencastOptions, a, b (+8 more)
 
 ### Community 49 - "Community 49"
-Cohesion: 0.12
-Nodes (17): PRODUCTS, metadata, OnboardingPage(), SelectCard(), SelectCardProps, OnboardingWizard(), STEP_META, WizardAnswers (+9 more)
+Cohesion: 0.14
+Nodes (22): assertPublicUrl(), bareHostname(), checkUrl(), defaultResolver(), expandV6(), HostResolver, inV4Block(), isLocalName() (+14 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.13
-Nodes (16): EndpointDef, EXAMPLE_REQUEST, AGENT_SURFACE_SLUGS, agentSurfaceDocs, AgentSurfaceSlug, ALL_FAILURE_REASONS, DocSectionContent, docsEndpointOrThrow() (+8 more)
+Cohesion: 0.15
+Nodes (20): FrontierItem, FrontierOptions, RejectionReason, PendingRow, compilePathPattern(), compilePathPatterns(), depthFrom(), globMatcher() (+12 more)
 
 ### Community 51 - "Community 51"
-Cohesion: 0.16
-Nodes (21): app, browserPool, config, crawlWebhookDispatcher, crawlWorker, extractClient, fetchClient, fetchMonitorPage() (+13 more)
+Cohesion: 0.13
+Nodes (4): PersistentFrontier, loadState(), CrawlWorker, getPool()
 
 ### Community 52 - "Community 52"
-Cohesion: 0.10
-Nodes (17): snapshotUrl(), MonitorWebhook, SnapshotRecord, CreateSchema, DiffSchema, invalid(), MonitorRouteDeps, PatchSchema (+9 more)
+Cohesion: 0.09
+Nodes (5): PgMonitorStore, rowToCheck(), rowToDelivery(), rowToMonitor(), rowToSnapshot()
 
 ### Community 53 - "Community 53"
-Cohesion: 0.09
-Nodes (22): compilerOptions, allowJs, esModuleInterop, exactOptionalPropertyTypes, incremental, isolatedModules, jsx, lib (+14 more)
+Cohesion: 0.10
+Nodes (26): apps/api/migrations/*.sql (API's own Postgres, separate from supabase/migrations), apps/api (Fastify/TypeScript), apps/dashboard (Next.js), apps/extract (Python parsing/LLM/embeddings), Async-only execution (sync form dropped), 10,000 URL ceiling, POST /v1/batch/scrape, Batch scrape job semantics (maxDepth 0 + sitemap skip + allowExternal) (+18 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.19
-Nodes (17): ActivityFilters(), ActivityFiltersProps, STATUSES, AppLayout(), OverviewPage(), ENDPOINTS, EndpointStatus, orderBySelection() (+9 more)
+Cohesion: 0.16
+Nodes (23): contentFromResponse(), liveTools(), McpDeps, registerMcp(), SPEC_TO_FASTIFY(), bodySchema(), collectParams(), CONFIRM_REQUIRED (+15 more)
 
 ### Community 55 - "Community 55"
-Cohesion: 0.23
-Nodes (18): GET(), resolveApiKey(), GET(), localStubKeys(), decryptApiKey(), encryptApiKey(), encryptionKey(), generateApiKey() (+10 more)
+Cohesion: 0.11
+Nodes (20): BrowserProfile, fingerprintScript(), getProfile(), loadProfiles(), ProfileJs, ProfileScreen, resetInstanceSecret(), resetProfileCache() (+12 more)
 
 ### Community 56 - "Community 56"
-Cohesion: 0.11
-Nodes (23): App routes (dark theme, Clerk-gated), apps/web on port 3500 withdrawn, Build plan phases 0-3, Claims guard rule, Clerk auth (hosted mode), @helix/cli agent surface, /enrich endpoint pipeline, fire-enrich guardrails (adopted) (+15 more)
+Cohesion: 0.14
+Nodes (12): abortClosesPage(), abortMessage(), blockPrivateHosts(), BrowserPool, BrowserPoolOptions, Engine, LeaseOptions, MOBILE_CONTEXT (+4 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.09
-Nodes (23): Helix architecture principles (8), API keys vs provider credentials separation, BYO-proxy design (managed path same code path), CI job: spec (OpenAPI lint via Redocly), Cost estimation (estimate: true), Cost estimator before execution, Fifteen ranked differentiators, Firecrawl credit pricing model (+15 more)
+Cohesion: 0.10
+Nodes (13): ChunkToStore, deterministicId(), PgVectorSink, QdrantSink, StoreRequest, StoreResult, a, b (+5 more)
 
 ### Community 58 - "Community 58"
-Cohesion: 0.16
-Nodes (17): HelixApiError, ListProvidersResponse, ProviderName, ProviderStatus, RemoveProviderResponse, SaveProviderRequest, SaveProviderResponse, FailureBody (+9 more)
+Cohesion: 0.17
+Nodes (23): AmbientCodeProps, AsciiHelixProps, assembleOrder(), CodeRainProps, Corner, CORNER_CLASS, Fragment, FRAGMENTS (+15 more)
 
 ### Community 59 - "Community 59"
-Cohesion: 0.10
-Nodes (22): Block detection classifier, Character-animation motif, Character-grid charts (CharChart component), Dashboard audience: the self-hoster, DESIGN.md tokens and motif, E: drive readlinkSync EISDIR build bug, Escalation policy (content-presence test), HTML to markdown (trafilatura/readability) (+14 more)
+Cohesion: 0.08
+Nodes (24): Build order M0-M9, Semantic chunking and embedding with stable anchors, M0 Skeleton (done), M1 Fetch and extract (done), M2 Browser tiers (done), M5 LLM (done), M6 Vectors (in progress), M9 Surface (not started) (+16 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.12
-Nodes (10): CastSession, CastSessionFactory, cdpSessionFor(), Listener, Screencast, ScreencastFrame, ScreencastOptions, InteractRequestSchema (+2 more)
+Cohesion: 0.09
+Nodes (25): Batch scrape (POST /v1/batch/scrape), POST /v1/crawl, Estimate-before-you-run (estimate: true), POST /v1/map, POST /batch/scrape, POST /crawl, POST /map, POST /scrape (+17 more)
 
 ### Community 61 - "Community 61"
 Cohesion: 0.10
-Nodes (17): registerInteract(), body, codes, controllers, decoder, fakeCdp(), FakePage, FastifyRequest (+9 more)
+Nodes (25): Agent research preview flow, apps/api/src/routes/agent.ts, openapi.yaml (wire contract), ExtractClient.schema, lib/agent.ts (max 3 concurrent, per-page retry), apps/extract/helix_extract/schema_gen.py, POST /v1/agent/schema, Failure semantics (typed FetchFailure) (+17 more)
 
 ### Community 62 - "Community 62"
-Cohesion: 0.12
-Nodes (11): CodeBlock(), CodePanel(), CodePanelProps, TOKEN_CLASS, GithubMark(), PillButton(), PillButtonProps, TRANSCRIPT (+3 more)
+Cohesion: 0.13
+Nodes (20): attrValue(), declaredIcons(), ICON_RELS, IconCandidate, resolveFavicon(), resolveHref(), sizeOf(), abortDetail() (+12 more)
 
 ### Community 63 - "Community 63"
-Cohesion: 0.12
-Nodes (20): --executable Flag, Headless Capture Refusal Checks, --id Identity Constraint, tools/capture, verified: true / verified: false Definition Flag, Matching Recorded Browser Version to Resolvable Identity, available() Membership Check, 44 Browser Identities (Chrome 131-149, Edge 127-148, Safari 17.5-26.4) (+12 more)
+Cohesion: 0.09
+Nodes (24): /app/agent (research preview), apps/api/src/core/favicon.ts, lib/agent.ts, components/result/site-icon.tsx, GET /jobs/{id}/errors, POST /search, ChunkConfig schema, ExtractConfig schema (+16 more)
 
 ### Community 64 - "Community 64"
-Cohesion: 0.12
-Nodes (9): SchemaJson(), Token, TokenType, AgentPageResult, failureMessage(), runWithConcurrency(), scrapeForSchema(), scrapeUrlsForSchema() (+1 more)
+Cohesion: 0.09
+Nodes (21): app, browserPool, config, crawlWebhookDispatcher, crawlWorker, extractClient, fetchClient, fetchMonitorPage() (+13 more)
+
+### Community 65 - "Community 65"
+Cohesion: 0.11
+Nodes (23): App routes (dark theme, Clerk-gated), apps/web on port 3500 withdrawn, Build plan phases 0-3, Claims guard rule, Clerk auth (hosted mode), @helix/cli agent surface, /enrich endpoint pipeline, fire-enrich guardrails (adopted) (+15 more)
 
 ### Community 66 - "Community 66"
-Cohesion: 0.14
-Nodes (13): Appearance, marketingAppearance, AuthFrame(), AsciiOcean(), AsciiOceanProps, AsciiWave(), AsciiWaveProps, height() (+5 more)
+Cohesion: 0.11
+Nodes (14): Log, redactUrlToken(), safe, CacheEntry, PERMISSIVE, RobotsRules, migrate(), MigrationResult (+6 more)
 
 ### Community 67 - "Community 67"
 Cohesion: 0.10
-Nodes (20): bin, helix, description, devDependencies, eslint, @types/node, typescript, vitest (+12 more)
+Nodes (17): snapshotUrl(), MonitorWebhook, SnapshotRecord, CreateSchema, DiffSchema, invalid(), MonitorRouteDeps, PatchSchema (+9 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.11
-Nodes (8): Tests for schema generation.  Same approach as test_llm.py: the provider SDKs ar, _stub_returning(), test_includes_urls_hint_and_instruction_in_the_prompt(), test_returns_the_schema_and_usage_on_first_try(), test_routes_to_the_overridden_provider(), TestGenerateSchema, TestIsUsableSchema, TestSummarise
+Cohesion: 0.13
+Nodes (15): authorizationFor(), authorizeUrl(), clientId(), clientSecret(), decryptToken(), encryptionKey(), encryptToken(), exchangeCode() (+7 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.10
-Nodes (19): compilerOptions, declaration, esModuleInterop, exactOptionalPropertyTypes, lib, module, moduleResolution, noImplicitOverride (+11 more)
+Cohesion: 0.09
+Nodes (22): compilerOptions, allowJs, esModuleInterop, exactOptionalPropertyTypes, incremental, isolatedModules, jsx, lib (+14 more)
 
 ### Community 70 - "Community 70"
-Cohesion: 0.12
-Nodes (14): LeaseOptions, PageLease, CloseReason, Session, SessionBusyError, SessionLimitError, SessionRecord, SessionRegistryOptions (+6 more)
+Cohesion: 0.09
+Nodes (23): Helix architecture principles (8), API keys vs provider credentials separation, BYO-proxy design (managed path same code path), CI job: spec (OpenAPI lint via Redocly), Cost estimation (estimate: true), Cost estimator before execution, Fifteen ranked differentiators, Firecrawl credit pricing model (+15 more)
 
 ### Community 71 - "Community 71"
-Cohesion: 0.14
-Nodes (9): DEFAULTS, HostState, PolitenessController, PolitenessOptions, RequestOutcome, ResolvedOptions, before, blocked (+1 more)
+Cohesion: 0.12
+Nodes (16): STATUS_CLASS, STATUS_LABEL, emptyUsageSeries(), fetchUsageSeries(), lastNDays(), UsageSeries, RecentRuns(), STATUS_VARIANT (+8 more)
 
 ### Community 72 - "Community 72"
-Cohesion: 0.15
-Nodes (15): decryptSecret(), deleteProviderKey(), getProviderStatuses(), listProviderKeys(), Provider, ProviderKeyRow, ProviderKeyStatus, PROVIDERS (+7 more)
+Cohesion: 0.12
+Nodes (12): PRODUCTS, CodeBlock(), CodePanel(), CodePanelProps, TOKEN_CLASS, GithubMark(), PillButton(), PillButtonProps (+4 more)
 
 ### Community 73 - "Community 73"
-Cohesion: 0.12
-Nodes (9): MonitorScheduler, registerMonitor(), attempts, body, first, gate, { id }, scheduler (+1 more)
+Cohesion: 0.10
+Nodes (22): Block detection classifier, Character-animation motif, Character-grid charts (CharChart component), Dashboard audience: the self-hoster, DESIGN.md tokens and motif, E: drive readlinkSync EISDIR build bug, Escalation policy (content-presence test), HTML to markdown (trafilatura/readability) (+14 more)
 
 ### Community 74 - "Community 74"
-Cohesion: 0.10
-Nodes (12): body, client, failing, { failure }, fetchImpl, gate, held, HTML (+4 more)
+Cohesion: 0.15
+Nodes (3): AgentClient(), HelixClient, resolveBaseUrl()
 
 ### Community 75 - "Community 75"
 Cohesion: 0.12
-Nodes (13): body, db, dispatcher, fetchFn, gone, headers, queued, refused (+5 more)
+Nodes (9): SchemaJson(), Token, TokenType, AgentPageResult, failureMessage(), runWithConcurrency(), scrapeForSchema(), scrapeUrlsForSchema() (+1 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.10
-Nodes (19): compilerOptions, declaration, esModuleInterop, exactOptionalPropertyTypes, lib, module, moduleResolution, noImplicitOverride (+11 more)
+Cohesion: 0.11
+Nodes (11): RobotsCache, asArray(), ParsedSitemap, RawUrlEntry, SitemapEntry, SitemapFetcher, record(), DiscoveredLink (+3 more)
 
 ### Community 77 - "Community 77"
 Cohesion: 0.10
-Nodes (19): description, devDependencies, typescript, engines, node, license, name, packageManager (+11 more)
+Nodes (17): registerInteract(), body, codes, controllers, decoder, fakeCdp(), FakePage, FastifyRequest (+9 more)
+
+### Community 78 - "Community 78"
+Cohesion: 0.15
+Nodes (13): SelectCard(), SelectCardProps, STEP_META, WizardAnswers, DEPLOY_INTENTS, StepDeploy(), StepEndpoints(), PROVIDERS (+5 more)
 
 ### Community 79 - "Community 79"
-Cohesion: 0.20
-Nodes (15): docsCurlExample(), AGENT_BLOCK, agentSurfaceMarkdown(), architectureMarkdown(), capabilityPageMarkdown(), docsEndpointMarkdown(), docsIndexMarkdown(), frontmatter() (+7 more)
+Cohesion: 0.12
+Nodes (20): --executable Flag, Headless Capture Refusal Checks, --id Identity Constraint, tools/capture, verified: true / verified: false Definition Flag, Matching Recorded Browser Version to Resolvable Identity, available() Membership Check, 44 Browser Identities (Chrome 131-149, Edge 127-148, Safari 17.5-26.4) (+12 more)
 
 ### Community 80 - "Community 80"
-Cohesion: 0.13
-Nodes (11): metadata, ApiKeyGate(), KeyMenu(), Logo(), Theme, ThemeContext, ThemeContextValue, ThemeProvider() (+3 more)
+Cohesion: 0.10
+Nodes (20): bin, helix, description, devDependencies, eslint, @types/node, typescript, vitest (+12 more)
 
 ### Community 81 - "Community 81"
-Cohesion: 0.13
-Nodes (19): Agent research preview flow, apps/api/src/routes/agent.ts, openapi.yaml (wire contract), ExtractClient.schema, lib/agent.ts (max 3 concurrent, per-page retry), apps/extract/helix_extract/schema_gen.py, POST /v1/agent/schema, Failure semantics (typed FetchFailure, no challenge HTML as content) (+11 more)
-
-### Community 82 - "Community 82"
-Cohesion: 0.15
-Nodes (14): Action, ActionOutcome, ActionSchema, parseActions(), runActions(), RunActionsOptions, [, clickOptions], [ms] (+6 more)
+Cohesion: 0.11
+Nodes (8): Tests for schema generation.  Same approach as test_llm.py: the provider SDKs ar, _stub_returning(), test_includes_urls_hint_and_instruction_in_the_prompt(), test_returns_the_schema_and_usage_on_first_try(), test_routes_to_the_overridden_provider(), TestGenerateSchema, TestIsUsableSchema, TestSummarise
 
 ### Community 83 - "Community 83"
-Cohesion: 0.21
-Nodes (17): BaseModel, Chunk, ChunkRequest, ChunkResponse, DocumentResponse, extract(), ExtractRequest, ExtractResponse (+9 more)
+Cohesion: 0.11
+Nodes (16): ResolvedProviderKeys, ClientKeys, result, toClientKeys(), ChunkSchema, ExtractSchema, FORMATS, PROVIDERS (+8 more)
 
 ### Community 84 - "Community 84"
-Cohesion: 0.13
-Nodes (18): GET/DELETE /v1/crawl/{jobId}, GET /v1/jobs/{id}/errors, GET/DELETE /v1/jobs/{id}, Document, ExtractionUsage, FetchFailure, InteractFailure, InteractResponse (+10 more)
+Cohesion: 0.10
+Nodes (19): compilerOptions, declaration, esModuleInterop, exactOptionalPropertyTypes, lib, module, moduleResolution, noImplicitOverride (+11 more)
 
 ### Community 85 - "Community 85"
-Cohesion: 0.14
-Nodes (17): Agent page (no longer mounts its own grid), AppGrid (sparkles, pinned nodes from row 3), app-shell.tsx (mounts AppGrid at shell level), AsciiOcean (three-sine height field, violet crests), AsciiWave (single travelling sine beside title), AuthFrame (GridCells masked behind Clerk card), /app Shell-Level Backdrop Grid, Auth Surface: AuthFrame + Ocean Ambient Pieces (+9 more)
+Cohesion: 0.12
+Nodes (6): Frontier, filtered, frontier, item, offSite, rejections
 
 ### Community 86 - "Community 86"
-Cohesion: 0.24
-Nodes (11): Button, ButtonProps, buttonVariants, DialogContent, DialogDescription, DialogHeader(), DialogOverlay, DialogTitle (+3 more)
+Cohesion: 0.14
+Nodes (9): DEFAULTS, HostState, PolitenessController, PolitenessOptions, RequestOutcome, ResolvedOptions, before, blocked (+1 more)
 
 ### Community 87 - "Community 87"
 Cohesion: 0.12
-Nodes (17): Agent composer (/app/agent), app/api/app/agent/schema/route.ts (hosted proxy), animated-code.tsx (scramble/type/reveal/static), components/app/app-grid.tsx, /app Overview page, /app restyle (2026-08-25), /app Settings page (tabs profile/preferences/statistics/advanced), /app shell (sidebar, spend meter, top bar) (+9 more)
+Nodes (9): MonitorScheduler, registerMonitor(), attempts, body, first, gate, { id }, scheduler (+1 more)
 
 ### Community 88 - "Community 88"
-Cohesion: 0.12
-Nodes (16): description, license, main, name, private, scripts, build, codegen (+8 more)
-
-### Community 89 - "Community 89"
-Cohesion: 0.14
-Nodes (14): abortDetail(), baseItem(), CATEGORY_OPERATORS, DomainSchema, FORMATS, readResult(), ScrapeOptions, ScrapeOptionsSchema (+6 more)
+Cohesion: 0.10
+Nodes (12): body, client, failing, { failure }, fetchImpl, gate, held, HTML (+4 more)
 
 ### Community 90 - "Community 90"
-Cohesion: 0.14
-Nodes (10): Bucket, RateLimitDecision, RateLimiter, RateLimiterOptions, rateLimitHeaders(), broken, decision, headers (+2 more)
+Cohesion: 0.10
+Nodes (19): compilerOptions, declaration, esModuleInterop, exactOptionalPropertyTypes, lib, module, moduleResolution, noImplicitOverride (+11 more)
 
 ### Community 91 - "Community 91"
-Cohesion: 0.24
-Nodes (5): abortClosesPage(), abortMessage(), blockPrivateHosts(), BrowserPool, profileContextOptions()
+Cohesion: 0.10
+Nodes (19): description, devDependencies, typescript, engines, node, license, name, packageManager (+11 more)
 
 ### Community 92 - "Community 92"
-Cohesion: 0.22
-Nodes (15): endpointNotes(), endpointSection(), exampleDataShape(), exampleFailureEnvelope(), exampleSuccessEnvelope(), FAILURE_REASON_NOTES, FAILURE_REASONS, generateSkillMarkdown() (+7 more)
+Cohesion: 0.12
+Nodes (20): GET/DELETE /v1/crawl/{jobId}, GET /v1/jobs/{id}/errors, GET/DELETE /v1/jobs/{id}, DELETE /jobs/{id}, GET /batch/scrape/{jobId}, GET /crawl/{jobId}, GET /jobs/{id}, Document schema (+12 more)
 
 ### Community 93 - "Community 93"
 Cohesion: 0.17
-Nodes (12): FetchLadder(), FetchLadderProps, TIER_LABEL, TIER_ORDER, FailurePanel(), REASON_COPY, ReasonCopy, MetadataStrip() (+4 more)
+Nodes (18): abortDetail(), baseItem(), CATEGORY_OPERATORS, DomainSchema, FORMATS, groupBySource(), mapSources(), mapWithLimit() (+10 more)
 
 ### Community 94 - "Community 94"
-Cohesion: 0.12
-Nodes (15): dependencies, playwright, description, devDependencies, vitest, engines, node, license (+7 more)
+Cohesion: 0.18
+Nodes (13): CreateKeyDialog(), KeyRow, KeysClient(), RevokeButton(), useKeys(), generateEphemeralKey(), call(), CreatedKey (+5 more)
 
 ### Community 95 - "Community 95"
-Cohesion: 0.17
-Nodes (16): apps/fetch (Rust, TLS identity), chrome-137-macos definition (new, agrees with fallback), chrome-149-macos.json definition (sample/placeholder), chrome-149-macos naming trap, Interact (sessions + live view), packages/profiles (definitions), load_all() stub in profile.rs, resolve() in apps/fetch/src/profile.rs (+8 more)
+Cohesion: 0.13
+Nodes (11): metadata, ApiKeyGate(), KeyMenu(), Logo(), Theme, ThemeContext, ThemeContextValue, ThemeProvider() (+3 more)
 
 ### Community 96 - "Community 96"
-Cohesion: 0.15
-Nodes (9): Log, migrate(), MigrationResult, checkHealth(), Pool, PoolClient, PostgresHealth, transaction() (+1 more)
+Cohesion: 0.12
+Nodes (19): /app 404 for Signed-Out Visitors (Clerk dev-browser-missing), /app neutral black surface, components/app/app-grid.tsx, /app restyle and Agent research preview (2026-08-25), app-shell.tsx, apps/dashboard (Next.js), AuthFrame (auth surface), Clerk Dev Keys (+11 more)
 
 ### Community 97 - "Community 97"
-Cohesion: 0.17
-Nodes (11): cn(), Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Skeleton() (+3 more)
+Cohesion: 0.15
+Nodes (14): Action, ActionOutcome, ActionSchema, parseActions(), runActions(), RunActionsOptions, [, clickOptions], [ms] (+6 more)
 
 ### Community 98 - "Community 98"
-Cohesion: 0.22
-Nodes (11): build_client(), fetch(), FetchRequest, FetchResponse, Health, healthcheck(), is_private_host(), is_private_ip() (+3 more)
+Cohesion: 0.12
+Nodes (18): Ambient primitives contract (text not canvas, seeded, reduced-motion static), ambient.tsx (GridCells, PixelSquares, CodeRain, AsciiHelix, AmbientCode), animated-code.tsx (scramble/type/reveal/static), capability-page.tsx (2x2 feature grid), Claims guard (WEBSITE.md §11), Tokens convention (WEBSITE.md §3, marketing light/violet vs app dark), [data-reveal] / [data-reveal-group] convention, DESIGN.md (+10 more)
 
 ### Community 99 - "Community 99"
-Cohesion: 0.18
-Nodes (15): helix-extract llm.py (provider preference + auto-pick), Provider keys (BYOK per Helix key), apps/api/migrations/005_provider_keys.sql, src/providers/crypto.ts, src/providers/repository.ts, src/providers/resolve.ts, Routes GET /v1/providers, PUT /v1/providers/:provider, DELETE /v1/providers/:provider, ApiKey security scheme (Bearer hx_...) (+7 more)
+Cohesion: 0.14
+Nodes (17): Agent page (no longer mounts its own grid), AppGrid (sparkles, pinned nodes from row 3), app-shell.tsx (mounts AppGrid at shell level), AsciiOcean (three-sine height field, violet crests), AsciiWave (single travelling sine beside title), AuthFrame (GridCells masked behind Clerk card), /app Shell-Level Backdrop Grid, Auth Surface: AuthFrame + Ocean Ambient Pieces (+9 more)
 
 ### Community 100 - "Community 100"
-Cohesion: 0.15
-Nodes (14): v0.1 is a connector only: writes MCP config and SKILL.md, no helix scrape command yet, Claude Code harness target, Codex harness target, Cursor harness target, Windsurf harness target, @helix/cli init --all -k, @helix/cli init --browser, @helix/cli README (+6 more)
+Cohesion: 0.14
+Nodes (14): abortDetail(), baseItem(), CATEGORY_OPERATORS, DomainSchema, FORMATS, readResult(), ScrapeOptions, ScrapeOptionsSchema (+6 more)
 
 ### Community 101 - "Community 101"
-Cohesion: 0.14
-Nodes (12): ChunkSchema, ExtractSchema, FORMATS, PROVIDERS, ProxyObjectSchema, ProxyResolution, ProxySchema, registerScrape() (+4 more)
+Cohesion: 0.18
+Nodes (11): KeyRow, KeysClient(), useKeys(), Table, TableBody, TableCaption, TableCell, TableFooter (+3 more)
 
 ### Community 102 - "Community 102"
 Cohesion: 0.24
-Nodes (11): assertMinimumInterval(), everyToCron(), minimumGapSeconds(), nextRun(), normalizeSchedule(), Schedule, ScheduleError, ScheduleInput (+3 more)
+Nodes (11): Button, ButtonProps, buttonVariants, DialogContent, DialogDescription, DialogHeader(), DialogOverlay, DialogTitle (+3 more)
 
 ### Community 103 - "Community 103"
-Cohesion: 0.19
-Nodes (9): useAppSession(), TAB_GROUPS, callSelfHost(), runEndpoint(), RunResult, PlaygroundPageProps, Playground(), PlaygroundProps (+1 more)
+Cohesion: 0.12
+Nodes (10): DEPLOY_INTENTS, EMPTY_STATS, isTabId(), PROVIDERS, ROLES, SettingsClient(), StatsData, TabId (+2 more)
 
 ### Community 104 - "Community 104"
-Cohesion: 0.15
-Nodes (14): Ambient primitives contract (text not canvas, seeded, reduced-motion static), ambient.tsx (GridCells, PixelSquares, CodeRain, AsciiHelix, AmbientCode), Claims guard (WEBSITE.md §11), Tokens convention (WEBSITE.md §3, marketing light/violet vs app dark), [data-reveal] / [data-reveal-group] convention, DESIGN.md, WEBSITE.md, footer.tsx (+6 more)
+Cohesion: 0.14
+Nodes (17): GET/PATCH/DELETE /v1/monitor/{id}, GET /v1/monitor/{id}/snapshots/{snapshotId}, POST /monitor, GET /monitor/{id}, GET /monitor, GET /monitor/{id}/snapshots/{snapshotId}, PATCH /monitor/{id}, Monitor schema (+9 more)
 
 ### Community 105 - "Community 105"
-Cohesion: 0.23
-Nodes (9): ClientPanel(), bearer(), claudeMcpAddCommand(), cliInitCommand(), CONNECT_CLIENTS, ConnectClient, ConnectSnippet, ConnectTarget (+1 more)
+Cohesion: 0.12
+Nodes (16): description, license, main, name, private, scripts, build, codegen (+8 more)
 
 ### Community 106 - "Community 106"
-Cohesion: 0.15
-Nodes (14): POST /v1/monitor/{id}/deliveries/{deliveryId}/replay, GET /v1/monitor/{id}/deliveries, GET/PATCH/DELETE /v1/monitor/{id}, GET /v1/monitor/{id}/snapshots/{snapshotId}, GET/POST /v1/monitor, Monitor, MonitorDiffOptions, MonitorPatch (+6 more)
+Cohesion: 0.14
+Nodes (10): Bucket, RateLimitDecision, RateLimiter, RateLimiterOptions, rateLimitHeaders(), broken, decision, headers (+2 more)
 
 ### Community 107 - "Community 107"
-Cohesion: 0.14
-Nodes (13): author, dependencies, @clerk/testing, playwright, description, keywords, license, main (+5 more)
+Cohesion: 0.17
+Nodes (12): FetchLadder(), FetchLadderProps, TIER_LABEL, TIER_ORDER, FailurePanel(), REASON_COPY, ReasonCopy, MetadataStrip() (+4 more)
 
 ### Community 108 - "Community 108"
-Cohesion: 0.18
-Nodes (8): PipelineDeps, ARTICLE_TEXT, browserPool, deps(), extractClientReturning(), fetchClient, fetchClientReturning(), FetchClient
+Cohesion: 0.17
+Nodes (16): apps/fetch (Rust, TLS identity), chrome-137-macos definition (new, agrees with fallback), chrome-149-macos.json definition (sample/placeholder), chrome-149-macos naming trap, Interact (sessions + live view), packages/profiles (definitions), load_all() stub in profile.rs, resolve() in apps/fetch/src/profile.rs (+8 more)
 
 ### Community 109 - "Community 109"
-Cohesion: 0.18
-Nodes (10): mapWithLimit(), registerSearch(), SearchRouteDeps, build(), hit(), hits, pipeline, provider (+2 more)
+Cohesion: 0.12
+Nodes (15): dependencies, playwright, description, devDependencies, vitest, engines, node, license (+7 more)
 
 ### Community 110 - "Community 110"
-Cohesion: 0.15
-Nodes (10): a, b, cast, cdp, FrameEvent, late, offA, offB (+2 more)
+Cohesion: 0.14
+Nodes (16): apps/dashboard (Next.js, port 3400), Clerk auth (GitHub+Google), @helix/cli, Helix (product), MCP server (/mcp), packages/ (profiles, schema, sdk-ts, cli), Ports: dashboard 3400, api 7400, Postgres + pgvector (+8 more)
 
 ### Community 111 - "Community 111"
 Cohesion: 0.17
-Nodes (10): RunNowResult, SchedulerOptions, first, gate, past, ran, scheduler, store (+2 more)
+Nodes (16): helix-extract llm.py (provider preference + auto-pick), Provider keys (BYOK per Helix key), apps/api/migrations/005_provider_keys.sql, src/providers/crypto.ts, src/providers/repository.ts, src/providers/resolve.ts, Routes GET /v1/providers, PUT /v1/providers/:provider, DELETE /v1/providers/:provider, ApiKey security scheme (Bearer hx_...) (+8 more)
 
 ### Community 112 - "Community 112"
-Cohesion: 0.15
-Nodes (13): dependencies, bloom-filters, croner, fast-xml-parser, @fastify/cors, @fastify/helmet, js-yaml, @modelcontextprotocol/sdk (+5 more)
+Cohesion: 0.25
+Nodes (11): RunState, Stage, Composer(), ComposerProps, AgentOutputFormat, OPTIONS, OutputToggle(), RefineBar() (+3 more)
 
 ### Community 113 - "Community 113"
-Cohesion: 0.18
-Nodes (8): ACTION_TYPES, InteractForm(), InteractFormProps, FORMAT_OPTIONS, SearchForm(), SearchFormProps, TIME_WINDOWS, Switch
+Cohesion: 0.13
+Nodes (12): ARTICLE_TEXT, db, DocumentResult, ENCRYPTION_KEY, ExtractClient, fetchImpl, KEY, parsed (+4 more)
 
 ### Community 114 - "Community 114"
-Cohesion: 0.27
-Nodes (10): emptyUsageSeries(), fetchUsageSeries(), lastNDays(), UsageSeries, GET(), monthStart(), UsageDailyRow, dayKey() (+2 more)
+Cohesion: 0.13
+Nodes (10): createSearchProvider(), SearxngProvider, SerperProvider, tbsToSearxngRange(), base, calls, controller, result (+2 more)
 
 ### Community 115 - "Community 115"
-Cohesion: 0.23
-Nodes (13): CI job: api (TypeScript typecheck/test), CI job: extract (Python ruff/pytest), CI job: fetch (Rust clippy/test), CI workflow (.github/workflows/ci.yml), Office document pipeline (python-docx/pptx/openpyxl), PDF extraction pipeline (pdf-inspector/pypdfium2/Marker/Docling), helix-api (TypeScript), helix-extract (Python/FastAPI) (+5 more)
+Cohesion: 0.17
+Nodes (11): cn(), Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Skeleton() (+3 more)
 
 ### Community 116 - "Community 116"
 Cohesion: 0.22
-Nodes (6): SearchCache, base, cache, hits, SearchHit, SearchQuery
+Nodes (11): build_client(), fetch(), FetchRequest, FetchResponse, Health, healthcheck(), is_private_host(), is_private_ip() (+3 more)
 
 ### Community 117 - "Community 117"
-Cohesion: 0.18
-Nodes (11): registerProviders(), anthropic, body, build(), db, ENCRYPTION_KEY, KEY_A, KEY_B (+3 more)
+Cohesion: 0.15
+Nodes (14): v0.1 is a connector only: writes MCP config and SKILL.md, no helix scrape command yet, Claude Code harness target, Codex harness target, Cursor harness target, Windsurf harness target, @helix/cli init --all -k, @helix/cli init --browser, @helix/cli README (+6 more)
 
 ### Community 118 - "Community 118"
-Cohesion: 0.18
-Nodes (10): fastify, crawlRequestSchema(), registerCrawl(), buildApp(), Call, db, discoverUrls, seed (+2 more)
+Cohesion: 0.26
+Nodes (9): AgentClient(), RunState, Stage, Composer(), ComposerProps, AgentOutputFormat, OutputToggle(), RefineBar() (+1 more)
 
 ### Community 119 - "Community 119"
-Cohesion: 0.17
-Nodes (7): CharChart(), CharChartFormatKind, CharChartProps, CharChartSeries, FORMAT_KINDS, GLYPHS, SERIES_COLOR_CLASSES
+Cohesion: 0.16
+Nodes (13): ChunkSchema, ExtractSchema, FORMATS, PROVIDERS, ProxyObjectSchema, ProxyResolution, ProxySchema, registerScrape() (+5 more)
 
 ### Community 120 - "Community 120"
-Cohesion: 0.20
-Nodes (8): CrawlForm(), CrawlFormProps, SitemapMode, FormFooter(), FormFooterProps, MapForm(), MapFormProps, SITEMAP_OPTIONS
+Cohesion: 0.33
+Nodes (11): AppGrid(), AppGridProps, AssembleCluster(), buildCluster(), ClusterCell, Marker, MARKERS, mulberry32() (+3 more)
 
 ### Community 121 - "Community 121"
 Cohesion: 0.23
-Nodes (8): EXTRACTOR_OPTIONS, FORMAT_OPTIONS, ScrapeFormProps, TIER_OPTIONS, Checkbox, SelectContent, SelectItem, SelectTrigger
+Nodes (9): ClientPanel(), bearer(), claudeMcpAddCommand(), cliInitCommand(), CONNECT_CLIENTS, ConnectClient, ConnectSnippet, ConnectTarget (+1 more)
 
 ### Community 122 - "Community 122"
-Cohesion: 0.17
-Nodes (12): AgentQL, Browser Use (89.1% WebVoyager), OpenRouter, Skyvern (85.85% WebVoyager), Stagehand SDK (Browserbase), POST /v2/interact, Helix POST /v1/interact (spec, Browser Interaction API), Helix liveViewUrl / interactiveLiveViewUrl (+4 more)
+Cohesion: 0.24
+Nodes (10): conditionalHeaders(), CrawlStateRecord, isUnchanged(), loadStateForSite(), recordVisit(), RecordVisitInput, StateRow, headers (+2 more)
 
 ### Community 123 - "Community 123"
-Cohesion: 0.17
-Nodes (12): Context7 (docs-for-agents MCP incumbent), Exa.ai, Exa Websets, Parallel (general-purpose search competitor), POST /v2/search/developer (Developer Index), DevDex benchmark (Firecrawl self-reported), POST /v2/search, Helix POST /v1/crawl (shipped) (+4 more)
+Cohesion: 0.24
+Nodes (11): assertMinimumInterval(), everyToCron(), minimumGapSeconds(), nextRun(), normalizeSchedule(), Schedule, ScheduleError, ScheduleInput (+3 more)
 
 ### Community 124 - "Community 124"
-Cohesion: 0.18
-Nodes (12): BrowserPool.lease, HELIX_PUBLIC_URL, Live view /v1/interact/live/{id}?token=, Interact subsystem (routes/interact.ts, sessions, actions, screencast), GET /v1/interact/live/{sessionId}, GET/DELETE /v1/interact/session/{sessionId}, POST /v1/interact/session, POST /v1/interact (+4 more)
+Cohesion: 0.19
+Nodes (8): FetchClient, ARTICLE_TEXT, body, browserPool(), build(), { data }, extractClient(), fetchClientReturning()
 
 ### Community 125 - "Community 125"
+Cohesion: 0.18
+Nodes (10): mapWithLimit(), registerSearch(), SearchRouteDeps, build(), hit(), hits, pipeline, provider (+2 more)
+
+### Community 126 - "Community 126"
+Cohesion: 0.15
+Nodes (14): HELIX_INTERNAL_ADMIN_TOKEN, helix.adminToken (localStorage), apps/api (Fastify, TypeScript), apps/extract (Python, parsing/LLM/embeddings), BrowserPool.lease, Self-Host Settings Screen, Helix, Instance settings (/settings, migration 006) (+6 more)
+
+### Community 127 - "Community 127"
+Cohesion: 0.14
+Nodes (13): author, dependencies, @clerk/testing, playwright, description, keywords, license, main (+5 more)
+
+### Community 128 - "Community 128"
+Cohesion: 0.15
+Nodes (13): dependencies, bloom-filters, croner, fast-xml-parser, @fastify/cors, @fastify/helmet, js-yaml, @modelcontextprotocol/sdk (+5 more)
+
+### Community 129 - "Community 129"
+Cohesion: 0.17
+Nodes (10): RunNowResult, SchedulerOptions, first, gate, past, ran, scheduler, store (+2 more)
+
+### Community 130 - "Community 130"
+Cohesion: 0.22
+Nodes (6): SearchCache, base, cache, hits, SearchHit, SearchQuery
+
+### Community 131 - "Community 131"
+Cohesion: 0.23
+Nodes (13): CI job: api (TypeScript typecheck/test), CI job: extract (Python ruff/pytest), CI job: fetch (Rust clippy/test), CI workflow (.github/workflows/ci.yml), Office document pipeline (python-docx/pptx/openpyxl), PDF extraction pipeline (pdf-inspector/pypdfium2/Marker/Docling), helix-api (TypeScript), helix-extract (Python/FastAPI) (+5 more)
+
+### Community 132 - "Community 132"
+Cohesion: 0.17
+Nodes (13): Agent composer (/app/agent), app/api/app/agent/schema/route.ts (hosted proxy), components/app/app-grid.tsx, /app Overview page, /app restyle (2026-08-25), /app Settings page (tabs profile/preferences/statistics/advanced), /app shell (sidebar, spend meter, top bar), Black surface tokens (--background 3%, --card 5%, --border 14%) (+5 more)
+
+### Community 133 - "Community 133"
+Cohesion: 0.17
+Nodes (13): BrowserPool.lease, HELIX_PUBLIC_URL, Live view /v1/interact/live/{id}?token=, Interact subsystem (routes/interact.ts, sessions, actions, screencast), GET /v1/interact/live/{sessionId}, GET/DELETE /v1/interact/session/{sessionId}, POST /v1/interact/session, POST /v1/interact (+5 more)
+
+### Community 134 - "Community 134"
+Cohesion: 0.18
+Nodes (8): BADGE_CLASS, DOC_FILES, DocFile, DocParse(), JSON_TOKENS, JsonExtract(), particleFrame(), useInView()
+
+### Community 135 - "Community 135"
+Cohesion: 0.18
+Nodes (10): fastify, crawlRequestSchema(), registerCrawl(), buildApp(), Call, db, discoverUrls, seed (+2 more)
+
+### Community 136 - "Community 136"
+Cohesion: 0.18
+Nodes (11): registerProviders(), anthropic, body, build(), db, ENCRYPTION_KEY, KEY_A, KEY_B (+3 more)
+
+### Community 137 - "Community 137"
+Cohesion: 0.17
+Nodes (6): CharChartFormatKind, CharChartProps, CharChartSeries, FORMAT_KINDS, GLYPHS, SERIES_COLOR_CLASSES
+
+### Community 138 - "Community 138"
 Cohesion: 0.30
 Nodes (10): ActiveBrowsersRow(), AgentIntegrations(), ApiKeyRow(), EndpointSummary, ExploreCell(), ExploreRow(), IntegrationRow, OverviewClient() (+2 more)
 
-### Community 126 - "Community 126"
-Cohesion: 0.20
-Nodes (7): BADGE_CLASS, DOC_FILES, DocFile, DocParse(), JSON_TOKENS, JsonExtract(), useInView()
+### Community 139 - "Community 139"
+Cohesion: 0.23
+Nodes (8): EXTRACTOR_OPTIONS, FORMAT_OPTIONS, ScrapeFormProps, TIER_OPTIONS, Checkbox, SelectContent, SelectItem, SelectTrigger
 
-### Community 127 - "Community 127"
-Cohesion: 0.31
-Nodes (6): assertPublicUrl(), blocked, defaultLookup(), HostNotAllowedError, isPublicAddress(), Lookup
+### Community 140 - "Community 140"
+Cohesion: 0.23
+Nodes (8): AsciiOcean(), AsciiOceanProps, AsciiWave(), AsciiWaveProps, height(), oceanLayers(), SURFACE, surfaceGlyph()
 
-### Community 128 - "Community 128"
+### Community 141 - "Community 141"
+Cohesion: 0.17
+Nodes (12): AgentQL, Browser Use (89.1% WebVoyager), OpenRouter, Skyvern (85.85% WebVoyager), Stagehand SDK (Browserbase), POST /v2/interact, Helix POST /v1/interact (spec, Browser Interaction API), Helix liveViewUrl / interactiveLiveViewUrl (+4 more)
+
+### Community 142 - "Community 142"
+Cohesion: 0.17
+Nodes (12): Context7 (docs-for-agents MCP incumbent), Exa.ai, Exa Websets, Parallel (general-purpose search competitor), POST /v2/search/developer (Developer Index), DevDex benchmark (Firecrawl self-reported), POST /v2/search, Helix POST /v1/crawl (shipped) (+4 more)
+
+### Community 143 - "Community 143"
+Cohesion: 0.26
+Nodes (8): hostFromUrl(), PROVIDER_META, ProviderMeta, ProviderRow(), statusLine(), emptyStatus(), ProvidersPanel(), HelixApiError
+
+### Community 144 - "Community 144"
 Cohesion: 0.18
 Nodes (11): devDependencies, eslint, @eslint/js, globals, tsx, @types/node, @types/pg, typescript (+3 more)
 
-### Community 129 - "Community 129"
+### Community 146 - "Community 146"
+Cohesion: 0.22
+Nodes (4): detailOf(), ExtractClient, ScrapeRouteDeps, SearchRouteDeps
+
+### Community 147 - "Community 147"
+Cohesion: 0.18
+Nodes (7): AppMode, AppSessionContext, AppSessionProvider(), AppSessionValue, useAppSession(), PlaygroundPageProps, Playground()
+
+### Community 148 - "Community 148"
+Cohesion: 0.31
+Nodes (6): assertPublicUrl(), blocked, defaultLookup(), HostNotAllowedError, isPublicAddress(), Lookup
+
+### Community 149 - "Community 149"
 Cohesion: 0.20
 Nodes (5): isJobAccepted(), PlaygroundResult, Results(), ResultsProps, ViewMode
 
-### Community 130 - "Community 130"
+### Community 150 - "Community 150"
 Cohesion: 0.20
 Nodes (11): BYOK split: BYO-LLM-key / BYO-proxy / BYO-browser, Browserbase, Browserless (OSS core), Steel.dev, 20 /alternatives/firecrawl-vs-[competitor] pages, Homepage ungated micro-demo + gated full playground, Firecrawl GH #3968 (cached PDF scrape returns wrong URL's markdown), Self-host guide buried in docs, absent from marketing nav (+3 more)
 
-### Community 131 - "Community 131"
-Cohesion: 0.24
-Nodes (11): apps/api/src/routes/agent.ts, BYOK Provider-Key Path, BYOK Verified Live (401 probe), decryptSecret, Encryption Key Rotation (rotate.ts), helix-extract llm.py provider resolution, HELIX_ENCRYPTION_KEY / HELIX_BOOTSTRAP_KEY, provider_keys.key_version (+3 more)
+### Community 151 - "Community 151"
+Cohesion: 0.27
+Nodes (11): _CALLER_KEY_PRIORITY, ExtractClient, llm.py, Local runtimes, favicons, footer (2026-08-28), apps/api/migrations/007_local_providers.sql, Provider keys (BYOK), apps/extract/helix_extract/schema_gen.py, DELETE /providers/{provider} (+3 more)
 
-### Community 132 - "Community 132"
+### Community 152 - "Community 152"
+Cohesion: 0.18
+Nodes (11): Interact live view (/v1/interact/live/{id}), GET /interact/session/{sessionId}, POST /interact, GET /interact/live/{sessionId}, POST /interact/session, InteractAction schema, InteractFailure schema, InteractRequest schema (+3 more)
+
+### Community 153 - "Community 153"
 Cohesion: 0.18
 Nodes (11): devDependencies, autoprefixer, eslint, eslint-config-next, @eslint/eslintrc, postcss, tailwindcss, @types/node (+3 more)
 
-### Community 133 - "Community 133"
+### Community 154 - "Community 154"
+Cohesion: 0.20
+Nodes (11): packages/profiles/definitions/chrome-149-macos.json, Profile Coherence Validation (JA4/HTTP2), Profiles Failure Semantics, GET /v1/profiles/{id}, helix-fetch profiles_loaded health field, Profiles Open Questions, apps/fetch/src/profile.rs, Read-Only By Design (+3 more)
+
+### Community 155 - "Community 155"
+Cohesion: 0.20
+Nodes (7): ARTICLE_TEXT, db, DocumentResult, ENCRYPTION_KEY, ExtractClient, KEY, Row
+
+### Community 156 - "Community 156"
+Cohesion: 0.33
+Nodes (9): dynamic, extractFailureReason(), extractJobId(), extractTier(), extractUsage(), POST(), recordRun(), resolveApiKey() (+1 more)
+
+### Community 157 - "Community 157"
 Cohesion: 0.24
 Nodes (9): BY_CONTENT_TYPE, BY_EXTENSION, Classification, classifyFile(), CONTENT_TYPE_FOR, extensionOf(), FILE_TYPES, FileType (+1 more)
 
-### Community 134 - "Community 134"
-Cohesion: 0.29
-Nodes (8): generateCode(), Lang, LANGS, Opts, pyLiteral(), GetCodeDialog(), GetCodeDialogProps, GettingStartedDoc()
-
-### Community 135 - "Community 135"
-Cohesion: 0.20
-Nodes (8): EXTRACTOR_OPTIONS, FORMAT_OPTIONS, PROVIDER_OPTIONS, PROXY_OPTIONS, ProxyMode, ScrapeForm(), ScrapeFormProps, TIER_OPTIONS
-
-### Community 136 - "Community 136"
+### Community 158 - "Community 158"
 Cohesion: 0.20
 Nodes (8): DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuSubContent, DropdownMenuSubTrigger
 
-### Community 137 - "Community 137"
-Cohesion: 0.20
-Nodes (10): anydoc (Firecrawl doc-parsing engine, OSS), Firecrawl GH #333 (cookies work on scrape not map/crawl), Firecrawl Document Parsing API (marketing page), pdf-inspector (OSS Rust lib), Helix design commitment: fully OSS, no hosted/cloud tier, Helix POST /v1/parse (spec, Document Parsing API), Helix Python post-processing service, Helix POST /v1/scrape (shipped) (+2 more)
-
-### Community 138 - "Community 138"
-Cohesion: 0.20
-Nodes (10): Action, ChunkConfig, CrawlRequest, Destination, ProxyConfig, ScrapeOptions, SearchRequest, SearchScrapeOptions (+2 more)
-
-### Community 139 - "Community 139"
-Cohesion: 0.29
-Nodes (7): captureCodeSamples(), captureHomepage(), captureResponsive(), captureWidgets(), log(), OUT, report
-
-### Community 140 - "Community 140"
+### Community 159 - "Community 159"
 Cohesion: 0.22
 Nodes (10): BYOK four axes (LLM, proxy, browser, vector DB), Firecrawl AGPL-3.0 licence, Fire Engine (Firecrawl anti-bot proxy layer), Firecrawl GH #2257 (fingerprinting fails, Browserless succeeds), Firecrawl GH #2350 (infinite waterfall loop, anti-bot), Firecrawl GH #722 (self-host memory leak), Firecrawl self-host (AGPL-3.0), Four pricing models (open-core, BYOK control-plane fee, pay-per-event, managed credits) (+2 more)
 
-### Community 142 - "Community 142"
-Cohesion: 0.25
-Nodes (7): contentHash(), cache, hash, JPG, PDF, result, ZIP
-
-### Community 143 - "Community 143"
-Cohesion: 0.31
-Nodes (7): ARTICLE_TEXT, body, browserPool(), build(), { data }, extractClient(), fetchClientReturning()
-
-### Community 144 - "Community 144"
-Cohesion: 0.31
-Nodes (6): DocsIndexPage(), metadata, docsEndpointList(), ENDPOINT_DOCS, buildSkillMd(), GET()
-
-### Community 145 - "Community 145"
-Cohesion: 0.25
-Nodes (9): @helix/cli, Helix (product), MCP server (/mcp), packages/ (profiles, schema, sdk-ts, cli), Postgres + pgvector, apps/extract (Python, parsing/LLM/embeddings), apps/fetch (Rust, TLS identity), setup-guides.tsx (Python/Node/cURL/CLI tabs, Skill|MCP toggle) (+1 more)
-
-### Community 146 - "Community 146"
-Cohesion: 0.22
-Nodes (4): HERO_ENDPOINTS, PLACEHOLDER_ROTATION, PLACEHOLDERS, RESPONSE_PREVIEW
-
-### Community 147 - "Community 147"
-Cohesion: 0.22
-Nodes (9): Adaptive politeness (AIMD), Bloom filter URL dedup, Crawl frontier (BFS, per-host partitioning), Idempotency key design, M4 Crawl (done), robots.txt compliance (RFC 9309), Frame sequence B: crawl frontier expanding, Stripe webhook model (reference) (+1 more)
-
-### Community 148 - "Community 148"
-Cohesion: 0.22
-Nodes (6): i, OUT, ROUTES, slug, t, url
-
-### Community 149 - "Community 149"
-Cohesion: 0.29
-Nodes (5): sseSink, SseTarget, sink, { target, written }, { target, written, drain }
-
-### Community 150 - "Community 150"
-Cohesion: 0.25
-Nodes (8): scripts, build, dev, lint, start, test, test:watch, typecheck
-
-### Community 151 - "Community 151"
-Cohesion: 0.32
-Nodes (4): JsonView(), MarkdownView(), ResultPanelProps, ViewMode
-
-### Community 152 - "Community 152"
-Cohesion: 0.29
-Nodes (8): Crawl4AI (OSS, LLM BYOK reference impl), Cursor BYOK disclosure model, Firecrawl GH #1467 (Ollama local LLM extract fails, demands Google key), Firecrawl GH #1826 (LiteLLM support requested, closed unshipped), Firecrawl GH #3552 (agent hits max credits on SPA URL), Firecrawl GH #4083 (OPENAI_API_KEY BYOK broken, silent fail still bills), Helix instance-wide BYOK config (HELIX_LLM_PROVIDER env vars), Helix cost-estimate-before-run whitespace target
-
-### Community 153 - "Community 153"
-Cohesion: 0.25
-Nodes (8): POST /v2/agent, Firecrawl API v2, POST /v2/batch/scrape, POST /v2/crawl, POST /v2/map, Firecrawl webhook system, Helix has no /batch/scrape route (contrary to task-brief premise), Gap: sitemap lastmod-driven incremental recrawl
-
-### Community 154 - "Community 154"
-Cohesion: 0.25
-Nodes (8): changedetection.io, Firecrawl Web Monitoring product, Firecrawl PR #4345 (stop billing unchanged pages), Helix POST /v1/monitor (spec, Web Monitoring API), Helix monitor scheduler (cron-style job runner), Helix monitor sensitivity (any | significant), Helix TODO(M7+): /monitors, /enrich (index.ts:174), Gap: word/line/char diff granularity inline in webhook payload
-
-### Community 155 - "Community 155"
-Cohesion: 0.25
-Nodes (8): HELIX_INTERNAL_ADMIN_TOKEN, helix.adminToken (localStorage), Self-Host Settings Screen, Self-Host Static Export Constraint, shoot-self-host-settings.mjs, apps/fetch/src/profile.rs, Read-Only By Design, tools/capture
-
-### Community 156 - "Community 156"
-Cohesion: 0.29
-Nodes (8): allowPrivateUrls URL Guard, Batch Limits (HELIX_BATCH_MAX_URLS etc.), BrowserPool.setLimits, Live / Restart / Guarded Effect Classes, Guarded Settings (allowPrivateUrls, lightpandaEnabled), Instance Settings Subsystem, SessionRegistry.setLimits, Settings Registry (registry.ts)
-
-### Community 157 - "Community 157"
-Cohesion: 0.32
-Nodes (6): BLOCKED_ELEMENTS, BLOCKED_VOID_ELEMENTS, sanitizeHtml(), stripBlockedElements(), brackets, started
-
-### Community 158 - "Community 158"
-Cohesion: 0.50
-Nodes (8): Helix brand palette (violet-to-ink scale), 'Helix' product identity (web-data API + dashboard), Stacked/layered plate motif (data pipeline layers), Helix mark, Bottom isometric plate (#0B1220), Middle isometric plate (#5B21B6), Top isometric plate (#8B5CF6), 'helix' wordmark text
-
-### Community 159 - "Community 159"
-Cohesion: 0.25
-Nodes (8): Capture-and-replay profile generation, Fetch identity profile model, Fingerprint coherence principle, JA4 TLS fingerprint standard, Known risks (arch), Fingerprint coherence over cleverness, Sample profile is a placeholder (risk), wreq pinned to 0.15.3 (risk)
-
 ### Community 160 - "Community 160"
-Cohesion: 0.33
-Nodes (4): buildNavGroups(), NavGroup, NavRow, SidebarNav()
+Cohesion: 0.22
+Nodes (10): apps/api/src/routes/agent.ts, BYOK proven live end to end, POST /agent/schema, POST /parse, AgentSchemaRequest schema, AgentSchemaResponse schema, ParseJsonOptions schema, ParseOptions schema (+2 more)
 
 ### Community 161 - "Community 161"
-Cohesion: 0.38
-Nodes (3): redactSecrets(), redactUrlToken(), safe
+Cohesion: 0.24
+Nodes (10): apps/api/src/routes/agent.ts, BYOK Provider-Key Path, decryptSecret, Encryption Key Rotation (rotate.ts), helix-extract llm.py provider resolution, HELIX_ENCRYPTION_KEY / HELIX_BOOTSTRAP_KEY, provider_keys.key_version, 005_provider_keys.sql (+2 more)
 
 ### Community 162 - "Community 162"
-Cohesion: 0.29
-Nodes (6): BrowserPoolOptions, Engine, MOBILE_CONTEXT, PooledBrowser, RenderOptions, RenderResult
+Cohesion: 0.20
+Nodes (10): anydoc (Firecrawl doc-parsing engine, OSS), Firecrawl GH #333 (cookies work on scrape not map/crawl), Firecrawl Document Parsing API (marketing page), pdf-inspector (OSS Rust lib), Helix design commitment: fully OSS, no hosted/cloud tier, Helix POST /v1/parse (spec, Document Parsing API), Helix Python post-processing service, Helix POST /v1/scrape (shipped) (+2 more)
 
 ### Community 163 - "Community 163"
 Cohesion: 0.29
-Nodes (6): GRANULARITY_OPTIONS, MonitorForm(), MonitorFormProps, SCHEDULE_PRESETS, Sensitivity, SENSITIVITY_OPTIONS
+Nodes (7): captureCodeSamples(), captureHomepage(), captureResponsive(), captureWidgets(), log(), OUT, report
 
 ### Community 164 - "Community 164"
+Cohesion: 0.22
+Nodes (9): Adaptive politeness (AIMD), Bloom filter URL dedup, Crawl frontier (BFS, per-host partitioning), Idempotency key design, M4 Crawl (done), robots.txt compliance (RFC 9309), Frame sequence B: crawl frontier expanding, Stripe webhook model (reference) (+1 more)
+
+### Community 165 - "Community 165"
+Cohesion: 0.31
+Nodes (7): dynamic, GET(), settings(), dynamic, GET(), redirectUri(), STATE_COOKIE
+
+### Community 166 - "Community 166"
+Cohesion: 0.25
+Nodes (7): contentHash(), cache, hash, JPG, PDF, result, ZIP
+
+### Community 167 - "Community 167"
+Cohesion: 0.22
+Nodes (6): ProviderResult, SearchProvider, SearchProviderName, SearchSource, SerpApiProvider, SourceFailure
+
+### Community 168 - "Community 168"
+Cohesion: 0.22
+Nodes (9): /crawl (existing endpoint), POST /v1/batch/scrape, Batch Failure Semantics, Job Machinery (shared with /crawl), GET /v1/jobs/{id}, /scrape (existing endpoint), Synchronous Form (async:false), GET /v1/profiles (+1 more)
+
+### Community 169 - "Community 169"
+Cohesion: 0.22
+Nodes (4): HERO_ENDPOINTS, PLACEHOLDER_ROTATION, PLACEHOLDERS, RESPONSE_PREVIEW
+
+### Community 170 - "Community 170"
+Cohesion: 0.36
+Nodes (8): AmbientCode(), AsciiHelix(), CodeRain(), GridCells(), rainLayers(), useInView(), useReducedMotion(), Hero()
+
+### Community 171 - "Community 171"
+Cohesion: 0.33
+Nodes (5): byteaToBuffer(), createApiKey(), hostedApiRequest(), revokeApiKey(), syncKeyToHostedApi()
+
+### Community 173 - "Community 173"
+Cohesion: 0.22
+Nodes (6): i, OUT, ROUTES, slug, t, url
+
+### Community 175 - "Community 175"
+Cohesion: 0.25
+Nodes (9): POST /v1/monitor/{id}/deliveries/{deliveryId}/replay, GET /v1/monitor/{id}/deliveries, GET/POST /v1/monitor, MonitorDiffOptions, MonitorRequest, MonitorSchedule, MonitorTrigger, MonitorWebhook (+1 more)
+
+### Community 176 - "Community 176"
+Cohesion: 0.25
+Nodes (8): scripts, build, dev, lint, start, test, test:watch, typecheck
+
+### Community 177 - "Community 177"
+Cohesion: 0.32
+Nodes (6): BLOCKED_ELEMENTS, BLOCKED_VOID_ELEMENTS, sanitizeHtml(), stripBlockedElements(), brackets, started
+
+### Community 178 - "Community 178"
+Cohesion: 0.32
+Nodes (4): JsonView(), MarkdownView(), ResultPanelProps, ViewMode
+
+### Community 179 - "Community 179"
+Cohesion: 0.25
+Nodes (8): Capture-and-replay profile generation, Fetch identity profile model, Fingerprint coherence principle, JA4 TLS fingerprint standard, Known risks (arch), Fingerprint coherence over cleverness, Sample profile is a placeholder (risk), wreq pinned to 0.15.3 (risk)
+
+### Community 180 - "Community 180"
+Cohesion: 0.25
+Nodes (8): changedetection.io, Firecrawl Web Monitoring product, Firecrawl PR #4345 (stop billing unchanged pages), Helix POST /v1/monitor (spec, Web Monitoring API), Helix monitor scheduler (cron-style job runner), Helix monitor sensitivity (any | significant), Helix TODO(M7+): /monitors, /enrich (index.ts:174), Gap: word/line/char diff granularity inline in webhook payload
+
+### Community 181 - "Community 181"
+Cohesion: 0.29
+Nodes (8): Crawl4AI (OSS, LLM BYOK reference impl), Cursor BYOK disclosure model, Firecrawl GH #1467 (Ollama local LLM extract fails, demands Google key), Firecrawl GH #1826 (LiteLLM support requested, closed unshipped), Firecrawl GH #3552 (agent hits max credits on SPA URL), Firecrawl GH #4083 (OPENAI_API_KEY BYOK broken, silent fail still bills), Helix instance-wide BYOK config (HELIX_LLM_PROVIDER env vars), Helix cost-estimate-before-run whitespace target
+
+### Community 182 - "Community 182"
+Cohesion: 0.50
+Nodes (8): Helix brand palette (violet-to-ink scale), 'Helix' product identity (web-data API + dashboard), Stacked/layered plate motif (data pipeline layers), Helix mark, Bottom isometric plate (#0B1220), Middle isometric plate (#5B21B6), Top isometric plate (#8B5CF6), 'helix' wordmark text
+
+### Community 183 - "Community 183"
+Cohesion: 0.25
+Nodes (8): POST /v2/agent, Firecrawl API v2, POST /v2/batch/scrape, POST /v2/crawl, POST /v2/map, Firecrawl webhook system, Helix has no /batch/scrape route (contrary to task-brief premise), Gap: sitemap lastmod-driven incremental recrawl
+
+### Community 184 - "Community 184"
+Cohesion: 0.54
+Nodes (5): applyOperators(), backendSignal(), describeError(), freshnessToTbs(), resolveTbs()
+
+### Community 185 - "Community 185"
+Cohesion: 0.33
+Nodes (4): buildNavGroups(), NavGroup, NavRow, SidebarNav()
+
+### Community 186 - "Community 186"
+Cohesion: 0.33
+Nodes (7): allowPrivateUrls URL Guard, Batch Limits (HELIX_BATCH_MAX_URLS etc.), BrowserPool.setLimits, Live / Restart / Guarded Effect Classes, Guarded Settings (allowPrivateUrls, lightpandaEnabled), SessionRegistry.setLimits, Settings Registry (registry.ts)
+
+### Community 187 - "Community 187"
 Cohesion: 0.29
 Nodes (3): canvas, FONT_CANDIDATES, gl
 
-### Community 165 - "Community 165"
+### Community 188 - "Community 188"
 Cohesion: 0.29
-Nodes (7): Batch Scrape Open Questions, Proposed, Not Implemented Status, Batch Scrape API Spec, Spec-First Rule (WEBSITE.md §650), Helix Project, Proposed, Not Implemented Status, Spec-First Rule (WEBSITE.md §650)
+Nodes (7): components/marketing/ambient.tsx, components/marketing/animated-code.tsx, pages/capability-page.tsx, hero-panel.tsx, Landing page rebuild (2026-08-25), components/marketing/scroll-motion.tsx (GSAP + Lenis), components/marketing/section-frame.tsx (FrameColumn, FrameBand)
 
-### Community 166 - "Community 166"
-Cohesion: 0.29
-Nodes (7): /scrape (existing endpoint), Profiles Failure Semantics, GET /v1/profiles, helix-fetch profiles_loaded health field, Profiles Open Questions, profile param on /scrape,/search,/crawl,/monitor, Profiles API Spec
-
-### Community 167 - "Community 167"
+### Community 189 - "Community 189"
 Cohesion: 0.33
-Nodes (7): apps/dashboard (Next.js, port 3400), Clerk auth (GitHub+Google), Ports: dashboard 3400, api 7400, apps/api (Fastify, TypeScript), Search backends: SearXNG/Serper/SerpAPI, HELIX_SEARCH_PROVIDER=auto, supabase/ migrations (profiles, api_keys, instances, runs, usage_daily), Turbopack dev-speed finding
+Nodes (7): apps/fetch (Rust, TLS identity), load_all() in apps/fetch (profile.rs), apps/api/src/browser/profiles.ts, Stealth chain (transport/JS layer/capture), tools/capture (@helix/capture), Version ceiling fix (wreq 0.16 / wreq-util 0.2), wreq-util profile resolution
 
-### Community 168 - "Community 168"
-Cohesion: 0.33
-Nodes (7): POST /v1/crawl, Estimate-before-you-run (estimate: true), POST /v1/map, Estimate, JobAccepted, MapRequest, MapResponse
-
-### Community 169 - "Community 169"
+### Community 190 - "Community 190"
 Cohesion: 0.38
 Nodes (3): AgentBlock(), COLUMNS, Footer()
 
-### Community 170 - "Community 170"
-Cohesion: 0.33
-Nodes (4): bool(), Config, ConfigSchema, loadConfig()
-
-### Community 172 - "Community 172"
+### Community 191 - "Community 191"
 Cohesion: 0.33
 Nodes (5): license, name, private, type, version
 
-### Community 174 - "Community 174"
-Cohesion: 0.33
-Nodes (4): FRAMES, LadderExplainerProps, LadderRow, TIERS
-
-### Community 175 - "Community 175"
-Cohesion: 0.40
-Nodes (5): jsonOptionsFrom(), OCR_OPTIONS, ParseForm(), ParseFormProps, TABLE_OPTIONS
-
-### Community 177 - "Community 177"
-Cohesion: 0.40
-Nodes (6): Scrapfly, Firecrawl 18 output formats, Fire-PDF engine / pdf-inspector, POST /v2/scrape, Schema-driven vertical presets (branding/product/menu), Proxyway benchmark (Firecrawl 33.69% success @2req/s)
-
-### Community 178 - "Community 178"
-Cohesion: 0.33
-Nodes (6): POST /v2/agent (spark models), Firecrawl /v1/deep-research (deprecated, unmaintained), POST /v2/extract, FIRE-1 agent (v1 legacy), Firesearch (OSS DIY deep-research pattern), Firecrawl GH #2072 (v2 JSON mode ignores schema)
-
-### Community 179 - "Community 179"
-Cohesion: 0.33
-Nodes (6): /crawl (existing endpoint), POST /v1/batch/scrape, Batch Failure Semantics, Job Machinery (shared with /crawl), GET /v1/jobs/{id}, Synchronous Form (async:false)
-
-### Community 181 - "Community 181"
-Cohesion: 0.47
-Nodes (5): clerk, config, isBearerSkill(), isProtected, middleware()
-
-### Community 182 - "Community 182"
-Cohesion: 0.33
-Nodes (5): license, name, private, type, version
-
-### Community 183 - "Community 183"
-Cohesion: 0.33
-Nodes (6): scripts, build, dev, lint, start, typecheck
-
-### Community 184 - "Community 184"
+### Community 192 - "Community 192"
 Cohesion: 0.33
 Nodes (6): Apify rental actor model retirement (2026), Apify, Common Crawl (WARC/WAT/WET), Diffbot (Knowledge Graph), Firecrawl PR #3684 (knowledgeGraph scrape format RFC, undecided), Gap: native SQL-queryable scrape output
 
-### Community 186 - "Community 186"
-Cohesion: 0.40
-Nodes (4): bodyText, errors, OUT, responses
+### Community 193 - "Community 193"
+Cohesion: 0.67
+Nodes (5): dynamic, GET(), markdownResponse(), selectedEndpoints(), skillForBearer()
 
-### Community 187 - "Community 187"
-Cohesion: 0.40
-Nodes (4): env, envText, errors, OUT
+### Community 194 - "Community 194"
+Cohesion: 0.53
+Nodes (5): dynamic, formatUsd(), lastNDays(), shortLabel(), UsagePage()
 
-### Community 188 - "Community 188"
+### Community 197 - "Community 197"
+Cohesion: 0.33
+Nodes (4): FRAMES, LadderExplainerProps, LadderRow, TIERS
+
+### Community 198 - "Community 198"
+Cohesion: 0.47
+Nodes (5): clerk, config, isBearerSkill(), isProtected, middleware()
+
+### Community 199 - "Community 199"
+Cohesion: 0.33
+Nodes (5): license, name, private, type, version
+
+### Community 201 - "Community 201"
+Cohesion: 0.33
+Nodes (6): Batch Scrape Open Questions, Proposed, Not Implemented Status, Batch Scrape API Spec, Spec-First Rule (WEBSITE.md §650), Proposed, Not Implemented Status, Spec-First Rule (WEBSITE.md §650)
+
+### Community 202 - "Community 202"
+Cohesion: 0.40
+Nodes (6): Scrapfly, Firecrawl 18 output formats, Fire-PDF engine / pdf-inspector, POST /v2/scrape, Schema-driven vertical presets (branding/product/menu), Proxyway benchmark (Firecrawl 33.69% success @2req/s)
+
+### Community 203 - "Community 203"
+Cohesion: 0.33
+Nodes (6): agent_may_use flag, GitHub connections (Settings → Integrations), supabase/migrations/0002_github_connections.sql, Provider key rotation (rotate.ts, key_version), lib/github.ts, apps/api/migrations/005_provider_keys.sql
+
+### Community 205 - "Community 205"
+Cohesion: 0.33
+Nodes (6): scripts, build, dev, lint, start, typecheck
+
+### Community 206 - "Community 206"
+Cohesion: 0.33
+Nodes (6): POST /v2/agent (spark models), Firecrawl /v1/deep-research (deprecated, unmaintained), POST /v2/extract, FIRE-1 agent (v1 legacy), Firesearch (OSS DIY deep-research pattern), Firecrawl GH #2072 (v2 JSON mode ignores schema)
+
+### Community 209 - "Community 209"
+Cohesion: 0.60
+Nodes (4): DELETE(), dynamic, notConfigured(), PATCH()
+
+### Community 212 - "Community 212"
+Cohesion: 0.60
+Nodes (4): DELETE(), dynamic, PUT(), resolveApiKey()
+
+### Community 215 - "Community 215"
+Cohesion: 0.50
+Nodes (3): dynamic, GET(), homeMarkdown()
+
+### Community 217 - "Community 217"
 Cohesion: 0.50
 Nodes (5): CI job: compose boot test, Health-gated startup ordering, Firecrawl #2583 RabbitMQ race on first boot, Firecrawl #948 docker image fails to build, docker compose up works the first time
 
-### Community 189 - "Community 189"
-Cohesion: 0.40
-Nodes (4): env, envText, errors, OUT
-
-### Community 190 - "Community 190"
-Cohesion: 0.40
-Nodes (4): env, envText, errors, OUT
-
-### Community 191 - "Community 191"
-Cohesion: 0.40
-Nodes (4): env, envText, errors, OUT
-
-### Community 192 - "Community 192"
-Cohesion: 0.40
-Nodes (4): env, envText, errors, OUT
-
-### Community 193 - "Community 193"
-Cohesion: 0.40
-Nodes (4): env, envText, errors, OUT
-
-### Community 194 - "Community 194"
-Cohesion: 0.40
-Nodes (4): env, envText, errors, OUT
-
-### Community 195 - "Community 195"
-Cohesion: 0.40
-Nodes (4): env, envText, errors, OUT
-
-### Community 197 - "Community 197"
+### Community 218 - "Community 218"
 Cohesion: 0.40
 Nodes (5): SerpAPI, Serper, Spider.cloud, Tavily, Pricing transparency itself as the wedge
 
-### Community 200 - "Community 200"
+### Community 219 - "Community 219"
+Cohesion: 0.60
+Nodes (4): ArchitecturePage(), getArchitectureMarkdown(), H2(), metadata
+
+### Community 221 - "Community 221"
+Cohesion: 0.40
+Nodes (4): bodyText, errors, OUT, responses
+
+### Community 222 - "Community 222"
+Cohesion: 0.40
+Nodes (4): env, envText, errors, OUT
+
+### Community 223 - "Community 223"
+Cohesion: 0.40
+Nodes (4): env, envText, errors, OUT
+
+### Community 224 - "Community 224"
+Cohesion: 0.40
+Nodes (4): env, envText, errors, OUT
+
+### Community 225 - "Community 225"
+Cohesion: 0.40
+Nodes (4): env, envText, errors, OUT
+
+### Community 226 - "Community 226"
+Cohesion: 0.40
+Nodes (4): env, envText, errors, OUT
+
+### Community 227 - "Community 227"
+Cohesion: 0.40
+Nodes (4): env, envText, errors, OUT
+
+### Community 228 - "Community 228"
+Cohesion: 0.40
+Nodes (4): env, envText, errors, OUT
+
+### Community 229 - "Community 229"
+Cohesion: 0.40
+Nodes (4): env, envText, errors, OUT
+
+### Community 230 - "Community 230"
+Cohesion: 0.67
+Nodes (3): dynamic, POST(), resolveApiKey()
+
+### Community 234 - "Community 234"
+Cohesion: 0.67
+Nodes (3): dynamic, GET(), resolveApiKey()
+
+### Community 235 - "Community 235"
+Cohesion: 0.67
+Nodes (3): dynamic, GET(), resolveApiKey()
+
+### Community 236 - "Community 236"
+Cohesion: 0.67
+Nodes (3): dynamic, GET(), monthStart()
+
+### Community 242 - "Community 242"
 Cohesion: 0.50
 Nodes (3): Avatar, AvatarFallback, AvatarImage
 
-### Community 203 - "Community 203"
-Cohesion: 0.50
-Nodes (4): packages/profiles/definitions/chrome-149-macos.json, Profile Coherence Validation (JA4/HTTP2), GET /v1/profiles/{id}, sample Flag / Fabricated Placeholder
-
-### Community 204 - "Community 204"
-Cohesion: 0.67
-Nodes (4): /app 404 for Signed-Out Visitors (Clerk dev-browser-missing), Clerk Dev Keys, Public Routes Serve 200 (/, /docs, capability pages, /sign-in), Vercel Deployment (helixapi-dev.vercel.app)
-
-### Community 205 - "Community 205"
-Cohesion: 0.83
-Nodes (3): DELETE(), PUT(), resolveApiKey()
-
-### Community 207 - "Community 207"
-Cohesion: 0.50
-Nodes (4): Firecrawl GH #3150 (no rate-limit headers), Firecrawl GH #3728 (rate limiter fails closed), Rate limiter fails closed on Redis outage, Firecrawl rate limits (req/min per team)
-
-### Community 208 - "Community 208"
-Cohesion: 0.50
-Nodes (4): POST /v1/monitor/{id}/check, GET /v1/monitor/{id}/history, MonitorDiff, MonitorHistoryEntry
-
-### Community 209 - "Community 209"
+### Community 249 - "Community 249"
 Cohesion: 0.50
 Nodes (3): errors, OUT, passes
 
-### Community 210 - "Community 210"
+### Community 250 - "Community 250"
 Cohesion: 0.50
 Nodes (3): errors, OUT, routes
 
-### Community 211 - "Community 211"
+### Community 252 - "Community 252"
+Cohesion: 0.50
+Nodes (4): Firecrawl GH #3150 (no rate-limit headers), Firecrawl GH #3728 (rate limiter fails closed), Rate limiter fails closed on Redis outage, Firecrawl rate limits (req/min per team)
+
+### Community 253 - "Community 253"
+Cohesion: 0.50
+Nodes (4): POST /v1/monitor/{id}/check, GET /v1/monitor/{id}/history, MonitorDiff, MonitorHistoryEntry
+
+### Community 254 - "Community 254"
+Cohesion: 0.50
+Nodes (4): POST /monitor/{id}/check, GET /monitor/{id}/history, MonitorDiff schema, MonitorHistoryEntry schema
+
+### Community 255 - "Community 255"
 Cohesion: 0.50
 Nodes (3): orgId, projectId, projectName
 
-### Community 216 - "Community 216"
+### Community 275 - "Community 275"
+Cohesion: 0.67
+Nodes (3): Ollama Logo Mark (Llama Icon), Ollama Provider, Dashboard Provider Settings Row
+
+### Community 276 - "Community 276"
+Cohesion: 1.00
+Nodes (3): vLLM Logo Mark, vLLM Provider, Dashboard Provider Settings Row
+
+### Community 279 - "Community 279"
 Cohesion: 0.67
 Nodes (3): EU sui generis database right, hiQ v. LinkedIn case law, Van Buren (2021) CFAA narrowing
 
-### Community 219 - "Community 219"
+### Community 283 - "Community 283"
 Cohesion: 0.67
 Nodes (3): Firecrawl SELF_HOST.md BYOK plumbing, Firecrawl #1467 Ollama key ignored, Firecrawl #4083 BYOK broken on hosted product
 
+### Community 285 - "Community 285"
+Cohesion: 0.67
+Nodes (3): DELETE /batch/scrape/{jobId}, DELETE /crawl/{jobId}, JobCancelled schema
+
+### Community 286 - "Community 286"
+Cohesion: 1.00
+Nodes (3): GET /monitor/{id}/deliveries, POST /monitor/{id}/deliveries/{deliveryId}/replay, WebhookDelivery schema
+
 ## Ambiguous Edges - Review These
-- `postgres service (pgvector/pgvector:pg16)` → `HELIX_MONITOR_MIN_INTERVAL`  [AMBIGUOUS]
-  docker-compose.yml · relation: conceptually_related_to
-- `POST /v2/agent (spark models)` → `FIRE-1 agent (v1 legacy)`  [AMBIGUOUS]
-  research/04-api-corrections.md · relation: conceptually_related_to
+- `AgentQL` → `POST /v2/interact`  [AMBIGUOUS]
+  research/03-competitive-landscape.md · relation: conceptually_related_to
 - `POST /v2/search/developer (Developer Index)` → `Helix POST /v1/search (shipped)`  [AMBIGUOUS]
   research/15-api-surface-landscape.md · relation: semantically_similar_to
-- `POST /v2/interact` → `AgentQL`  [AMBIGUOUS]
-  research/03-competitive-landscape.md · relation: conceptually_related_to
+- `apps/api/migrations/005_provider_keys.sql` → `GitHub connections (Settings → Integrations)`  [AMBIGUOUS]
+  context.md · relation: conceptually_related_to
 - `Firecrawl GH #333 (cookies work on scrape not map/crawl)` → `Helix TypeScript API gateway layer`  [AMBIGUOUS]
   research/08-feature-ideation.md · relation: semantically_similar_to
-- `Top isometric plate (#8B5CF6)` → `Stacked/layered plate motif (data pipeline layers)`  [AMBIGUOUS]
+- `Bottom isometric plate (#0B1220)` → `Stacked/layered plate motif (data pipeline layers)`  [AMBIGUOUS]
   apps/dashboard/public/logo.svg · relation: rationale_for
 - `Middle isometric plate (#5B21B6)` → `Stacked/layered plate motif (data pipeline layers)`  [AMBIGUOUS]
   apps/dashboard/public/logo.svg · relation: rationale_for
-- `Bottom isometric plate (#0B1220)` → `Stacked/layered plate motif (data pipeline layers)`  [AMBIGUOUS]
+- `Top isometric plate (#8B5CF6)` → `Stacked/layered plate motif (data pipeline layers)`  [AMBIGUOUS]
   apps/dashboard/public/logo.svg · relation: rationale_for
-- `Stacked/layered plate motif (data pipeline layers)` → `'Helix' product identity (web-data API + dashboard)`  [AMBIGUOUS]
+- `'Helix' product identity (web-data API + dashboard)` → `Stacked/layered plate motif (data pipeline layers)`  [AMBIGUOUS]
   apps/dashboard/public/logo.svg · relation: rationale_for
-- `apps/api (Fastify, TypeScript)` → `Turbopack dev-speed finding`  [AMBIGUOUS]
-  context.md · relation: rationale_for
+- `POST /v2/agent (spark models)` → `FIRE-1 agent (v1 legacy)`  [AMBIGUOUS]
+  research/04-api-corrections.md · relation: conceptually_related_to
+- `postgres service (pgvector/pgvector:pg16)` → `HELIX_MONITOR_MIN_INTERVAL`  [AMBIGUOUS]
+  docker-compose.yml · relation: conceptually_related_to
+- `ExtractConfig schema` → `Metadata schema`  [AMBIGUOUS]
+  openapi.yaml · relation: conceptually_related_to
 - `HELIX_HOSTED_API_URL (server-side proxy URL)` → `NEXT_PUBLIC_HELIX_API_URL (user-facing/skill-baked URL)`  [AMBIGUOUS]
   DEPLOY.md · relation: conceptually_related_to
+- `apps/api (Fastify, TypeScript)` → `Turbopack dev-speed finding`  [AMBIGUOUS]
+  context.md · relation: rationale_for
 
 ## Knowledge Gaps
-- **1308 isolated node(s):** `name`, `version`, `private`, `description`, `license` (+1303 more)
+- **1580 isolated node(s):** `RunState`, `Stage`, `ProxyResolution`, `ScrapeFormat`, `ScrapeRequest` (+1575 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **68 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **116 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **What is the exact relationship between `postgres service (pgvector/pgvector:pg16)` and `HELIX_MONITOR_MIN_INTERVAL`?**
-  _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `POST /v2/agent (spark models)` and `FIRE-1 agent (v1 legacy)`?**
+- **What is the exact relationship between `AgentQL` and `POST /v2/interact`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `POST /v2/search/developer (Developer Index)` and `Helix POST /v1/search (shipped)`?**
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
-- **What is the exact relationship between `POST /v2/interact` and `AgentQL`?**
+- **What is the exact relationship between `apps/api/migrations/005_provider_keys.sql` and `GitHub connections (Settings → Integrations)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `Firecrawl GH #333 (cookies work on scrape not map/crawl)` and `Helix TypeScript API gateway layer`?**
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
-- **What is the exact relationship between `Top isometric plate (#8B5CF6)` and `Stacked/layered plate motif (data pipeline layers)`?**
+- **What is the exact relationship between `Bottom isometric plate (#0B1220)` and `Stacked/layered plate motif (data pipeline layers)`?**
   _Edge tagged AMBIGUOUS (relation: rationale_for) - confidence is low._
 - **What is the exact relationship between `Middle isometric plate (#5B21B6)` and `Stacked/layered plate motif (data pipeline layers)`?**
+  _Edge tagged AMBIGUOUS (relation: rationale_for) - confidence is low._
+- **What is the exact relationship between `Top isometric plate (#8B5CF6)` and `Stacked/layered plate motif (data pipeline layers)`?**
   _Edge tagged AMBIGUOUS (relation: rationale_for) - confidence is low._

@@ -12,6 +12,29 @@ Scoring is lexical rather than semantic — deliberately. An embedding pass per
 page would cost more than the extraction it is meant to make cheaper, and the
 signal here (does this block mention the words in the schema?) is one that term
 overlap already answers well.
+
+THE SCORE IS ATTACKER-STEERABLE, AND THE LEAD RESERVE IS WHAT BOUNDS IT.
+The page is written by whoever controls the site; the schema vocabulary it is
+scored against travels to that page in the request. So a block that simply
+repeats the field names outscores the block holding the real answer — measured
+2026-08-28 at 3.50 against 1.15 for a genuine product line — and sixty such
+blocks take every slot: at a 400-token budget, 17 of 17 kept blocks were the
+attacker's and the true value was not in the payload at all. The trimmer built
+to save tokens was selecting FOR the payload.
+
+Ranking cannot be fixed by reweighting, because any lexical signal the schema
+can express is a signal the page can echo. Every attempt moved the numbers
+without separating the two populations. What DOES separate them is the shape of
+the score distribution: real content answers one field at a time and lands
+between 0.56 and 1.44, while text salted with the whole schema vocabulary lands
+at 2.6 and above. So `select` caps how much of the budget the top-scoring BAND
+may hold — a page whose highest band wants more than half the window is a page
+where one narrow kind of block is trying to be the entire payload.
+
+A reserve for the document's opening blocks was written alongside this and
+REMOVED: mutation testing on 2026-08-28 showed the band cap alone carries every
+assertion, and the reserve changed no outcome. Code no test can justify is the
+thing that later reads as protection while providing none.
 """
 
 from __future__ import annotations
@@ -21,6 +44,19 @@ import re
 from dataclasses import dataclass
 
 CHARS_PER_TOKEN = 4
+
+# Ceiling on how much of the budget the highest-scoring band may hold. Real
+# content and salted text occupy separate score ranges (0.56–1.44 against 2.6
+# and up, measured 2026-08-28), so a page whose top band wants more than this
+# is a page where one narrow kind of block is trying to be the whole payload.
+# Half leaves an ordinary page unaffected — its top band rarely fills even a
+# quarter — while guaranteeing the rest of the document keeps half the window.
+TOP_BAND_MAX_FRACTION = 0.5
+
+# Blocks within this multiple of the top score count as one band for the cap
+# above. Wide enough that near-identical salted blocks group together rather
+# than each being treated as its own tier.
+TOP_BAND_RATIO = 0.6
 
 # Words too common to distinguish one block from another.
 STOPWORDS = frozenset(
@@ -147,6 +183,15 @@ def score_block(block: str, wanted: set[str]) -> float:
     Distinct matched terms beat repetition — a block saying "price" ten times is
     not ten times more relevant than one saying it once — and the result is
     length-normalised so a long block cannot win on volume alone.
+
+    The score is deliberately left uncapped here. Reweighting it was tried and
+    abandoned on 2026-08-28: any lexical signal the schema can express is one
+    the page can echo, so every reweighting moved the numbers without
+    separating the two populations. What DOES separate them is measured and
+    stable — real content scores 0.56 to 1.44 across every shape a product page
+    states an answer in, while text salted with the schema's vocabulary scores
+    2.6 and up — and `select` acts on that with a band cap rather than trying
+    to out-score the attacker here.
     """
     if not wanted:
         return 0.0
@@ -237,12 +282,32 @@ def select(
 
     kept = []
     used = 0
+    taken: set[int] = set()
+
+    # The band cap. Blocks close to the top score are held to a share of the
+    # budget, so a page cannot make one narrow kind of block the entire payload
+    # by repeating it. See TOP_BAND_MAX_FRACTION: the two populations sit in
+    # separate score ranges, so this bites on salted text and not on a page
+    # that genuinely answers the schema in several places.
+    top_score = ranked[0].score
+    band_floor = top_score * TOP_BAND_RATIO
+    band_budget = int(budget_chars * TOP_BAND_MAX_FRACTION)
+    band_used = 0
+
     for block in ranked:
+        if block.index in taken:
+            continue
         cost = len(block.text) + 2
         if used + cost > budget_chars:
             continue
+        in_band = block.score >= band_floor
+        if in_band and band_used + cost > band_budget:
+            continue
         kept.append(block)
+        taken.add(block.index)
         used += cost
+        if in_band:
+            band_used += cost
 
     # Every block individually over budget — take the highest-scoring one,
     # truncated. Returning nothing would look like an empty page.

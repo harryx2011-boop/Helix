@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatRelativeTime } from '@/lib/format';
+import { HOSTED } from '@/lib/mode';
+import { createInstanceKey, listInstanceKeys, revokeInstanceKey } from '@/lib/instance-keys';
 import { toast } from 'sonner';
 
 interface KeyRow {
@@ -30,12 +32,29 @@ function useKeys() {
   const refresh = React.useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/app/keys');
-      const data = await res.json();
-      setKeys(data.keys ?? []);
-      setStorageConfigured(data.storageConfigured !== false);
-    } catch {
+      if (HOSTED) {
+        const res = await fetch('/api/app/keys');
+        const data = await res.json();
+        setKeys(data.keys ?? []);
+        setStorageConfigured(data.storageConfigured !== false);
+      } else {
+        const rows = await listInstanceKeys();
+        setKeys(
+          rows.map((k) => ({
+            id: k.id,
+            name: k.name,
+            masked: `${k.keyPrefix}${'•'.repeat(8)}`,
+            rateLimitPerMin: k.rateLimit,
+            lastUsedAt: k.lastUsedAt,
+            createdAt: k.createdAt,
+            revoked: Boolean(k.revokedAt),
+          })),
+        );
+        setStorageConfigured(true);
+      }
+    } catch (error) {
       setKeys([]);
+      if (!HOSTED) toast.error(error instanceof Error ? error.message : 'Could not load keys.');
     } finally {
       setLoading(false);
     }
@@ -67,14 +86,19 @@ function CreateKeyDialog({ onCreated, disabled = false }: { onCreated: () => voi
     event.preventDefault();
     setCreating(true);
     try {
-      const res = await fetch('/api/app/keys', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: name.trim() || 'New key', rateLimitPerMin: rateLimit ? Number(rateLimit) : null }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Could not create the key. Try again.');
-      setCreatedKey(data.key);
+      if (HOSTED) {
+        const res = await fetch('/api/app/keys', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ name: name.trim() || 'New key', rateLimitPerMin: rateLimit ? Number(rateLimit) : null }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Could not create the key. Try again.');
+        setCreatedKey(data.key);
+      } else {
+        const created = await createInstanceKey(name.trim() || 'New key', rateLimit ? Number(rateLimit) : null);
+        setCreatedKey(created.key);
+      }
       onCreated();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not create the key. Try again.');
@@ -159,10 +183,14 @@ function RevokeButton({ id, disabled, onRevoked }: { id: string; disabled: boole
   const handleRevoke = async () => {
     setRevoking(true);
     try {
-      const res = await fetch(`/api/app/keys/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message ?? 'Could not revoke the key.');
+      if (HOSTED) {
+        const res = await fetch(`/api/app/keys/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message ?? 'Could not revoke the key.');
+        }
+      } else {
+        await revokeInstanceKey(id);
       }
       onRevoked();
       setOpen(false);
@@ -230,7 +258,17 @@ export function KeysClient() {
               with <code className="font-mono text-xs">POST /v1/keys</code>.
             </p>
           ) : keys.length === 0 ? (
-            <p className="p-4 text-sm text-muted-foreground">No keys yet.</p>
+            <p className="p-4 text-sm text-muted-foreground">
+              {HOSTED ? (
+                'No keys yet.'
+              ) : (
+                <>
+                  No keys yet. Save your instance&rsquo;s{' '}
+                  <code className="font-mono text-xs">HELIX_BOOTSTRAP_KEY</code> on the settings page, then create keys
+                  here.
+                </>
+              )}
+            </p>
           ) : (
             <Table>
               <TableHeader>

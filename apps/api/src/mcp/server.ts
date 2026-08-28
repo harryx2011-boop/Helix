@@ -5,7 +5,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { INTERNAL_TICKET_HEADER, type InternalTickets } from '../core/auth.js';
 import { loadSpec, type OpenApiSpec } from './spec.js';
-import { generateTools, planRequest, type HttpMethod, type ToolDef } from './tools.js';
+import { generateTools, needsConfirmation, planRequest, type HttpMethod, type ToolDef } from './tools.js';
 
 /**
  * MCP over streamable HTTP at `/mcp`.
@@ -84,6 +84,22 @@ export async function registerMcp(app: FastifyInstance, deps: McpDeps = {}): Pro
       const tool = getTools().find((t) => t.name === call.params.name);
       if (!tool) {
         return { content: [{ type: 'text', text: `Unknown tool: ${call.params.name}` }], isError: true };
+      }
+
+      /* The confirm gate. Enforced HERE rather than trusted from the schema:
+         an inputSchema is a description of what a caller should send, and a
+         `required` entry is not a check. This is the check. */
+      const warning = needsConfirmation(tool.method, tool.path);
+      if (warning && (call.params.arguments ?? {})['confirm'] !== true) {
+        return {
+          content: [{
+            type: 'text',
+            text: `confirmation_required: ${warning}\n\n`
+              + `Nothing was changed. Show this to the person you are acting for, and call `
+              + `${tool.name} again with "confirm": true only if they approve.`,
+          }],
+          isError: true,
+        };
       }
 
       const planned = planRequest(tool, call.params.arguments ?? {}, prefix);

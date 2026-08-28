@@ -339,3 +339,179 @@ describe('/mcp behind the auth hook', () => {
     }
   });
 });
+
+describe('confirm gate on irreversible operations', () => {
+  // A curl caller who sends DELETE chose that verb. A model inferred it from a
+  // description, and CallTool hands both to app.inject identically. The gate is
+  // at the MCP boundary because that is where the asymmetry is.
+  const GATED_SPEC = parseSpec(`
+openapi: 3.1.0
+info: { title: Gated, version: 0.0.1 }
+paths:
+  /providers/{provider}:
+    parameters:
+      - { name: provider, in: path, required: true, schema: { type: string } }
+    put:
+      summary: Store your key for a provider
+      operationId: putProvider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [apiKey]
+              properties:
+                apiKey: { type: string }
+      responses:
+        '200': { description: Stored. }
+  /monitor/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    delete:
+      summary: Delete a monitor
+      operationId: deleteMonitor
+      responses:
+        '204': { description: Deleted. }
+  /scrape:
+    post:
+      summary: Read one URL
+      operationId: scrape
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string }
+      responses:
+        '200': { description: The page. }
+`);
+
+  const toolFor = (name: string) => {
+    const tool = generateTools(GATED_SPEC).find((t) => t.name === name);
+    if (!tool) throw new Error(`no tool ${name}`);
+    return tool;
+  };
+
+  it('advertises confirm on a gated operation and requires it', () => {
+    for (const name of ['helix_put_provider', 'helix_delete_monitor']) {
+      const tool = toolFor(name);
+      const props = tool.inputSchema['properties'] as Record<string, unknown>;
+      expect(props['confirm'], `${name} advertises confirm`).toBeDefined();
+      expect(tool.inputSchema['required'], `${name} requires confirm`).toContain('confirm');
+      expect(tool.description, `${name} explains why`).toMatch(/Requires confirm/);
+    }
+  });
+
+  it('leaves an ordinary operation alone', () => {
+    // Gating /scrape would mean confirming a scrape. Most mutations here ARE
+    // the product; only the ones a caller cannot undo are listed.
+    const tool = toolFor('helix_scrape');
+    const props = tool.inputSchema['properties'] as Record<string, unknown>;
+    expect(props['confirm']).toBeUndefined();
+    expect(tool.inputSchema['required'] ?? []).not.toContain('confirm');
+    expect(tool.description).not.toMatch(/Requires confirm/);
+  });
+
+  it('never puts confirm into the HTTP request', () => {
+    // It is an MCP-layer argument. The route has never heard of it, and a body
+    // carrying an unexpected field is a body the route rejects.
+    const planned = planRequest(toolFor('helix_put_provider'), {
+      provider: 'anthropic',
+      apiKey: 'sk-ant-xxxxxxxx',
+      confirm: true,
+    });
+    expect(planned.url).toBe('/v1/providers/anthropic');
+    expect(planned.body).toEqual({ apiKey: 'sk-ant-xxxxxxxx' });
+    expect(planned.body).not.toHaveProperty('confirm');
+  });
+
+  it('strips confirm even from an ungated tool', () => {
+    const planned = planRequest(toolFor('helix_scrape'), { url: 'https://x.test', confirm: true });
+    expect(planned.body).toEqual({ url: 'https://x.test' });
+  });
+});
+
+describe('confirm gate refuses a real dispatch', () => {
+  // The tests above cover the SCHEMA half. This one covers enforcement, which
+  // is the half that matters: a `required` entry in an inputSchema describes
+  // what a caller should send and checks nothing. Mutation testing on
+  // 2026-08-28 found exactly this gap — disabling the server-side branch left
+  // every schema assertion green.
+  const GATED = parseSpec(`
+openapi: 3.1.0
+info: { title: Gated, version: 0.0.1 }
+paths:
+  /monitor/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    delete:
+      summary: Delete a monitor
+      operationId: deleteMonitor
+      responses:
+        '204': { description: Deleted. }
+`);
+
+  async function boot() {
+    const app = Fastify();
+    const deleted: string[] = [];
+    await app.register(
+      async (instance) => {
+        instance.delete<{ Params: { id: string } }>('/monitor/:id', async (request, reply) => {
+          deleted.push(request.params.id);
+          return reply.code(204).send();
+        });
+      },
+      { prefix: '/v1' },
+    );
+    await registerMcp(app, { spec: GATED });
+    await app.listen({ port: 0, host: '127.0.0.1' });
+    const address = app.server.address();
+    const port = typeof address === 'object' && address ? address.port : 0;
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    const transport = new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp`), {
+      requestInit: { headers: { authorization: 'Bearer helix-testkey' } },
+    });
+    await client.connect(transport as unknown as Transport);
+    return { app, client, deleted };
+  }
+
+  it('does not reach the route without confirm, and does with it', async () => {
+    const { app, client, deleted } = await boot();
+    try {
+      const refused = await client.callTool({ name: 'helix_delete_monitor', arguments: { id: 'mon-1' } });
+      expect(refused.isError).toBe(true);
+      expect((refused.content as { text: string }[])[0]!.text).toContain('confirmation_required');
+      expect(deleted, 'the route must not have run').toEqual([]);
+
+      const confirmed = await client.callTool({
+        name: 'helix_delete_monitor',
+        arguments: { id: 'mon-1', confirm: true },
+      });
+      expect(confirmed.isError).toBeFalsy();
+      expect(deleted, 'the route runs once confirmed').toEqual(['mon-1']);
+    } finally {
+      await client.close();
+      await app.close();
+    }
+  });
+
+  it('treats a non-true confirm as absent', async () => {
+    const { app, client, deleted } = await boot();
+    try {
+      for (const value of ['true', 1, {}]) {
+        const r = await client.callTool({
+          name: 'helix_delete_monitor',
+          arguments: { id: 'mon-2', confirm: value as never },
+        });
+        expect(r.isError, `confirm=${JSON.stringify(value)} must be refused`).toBe(true);
+      }
+      expect(deleted).toEqual([]);
+    } finally {
+      await client.close();
+      await app.close();
+    }
+  });
+});

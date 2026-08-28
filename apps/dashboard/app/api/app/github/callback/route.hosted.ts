@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { requireProfile } from '@/lib/session';
 import { exchangeCode, fetchViewer, saveConnection, stateMatches } from '@/lib/github';
 import { supabaseConfigured } from '@/lib/supabase/server';
-import { STATE_COOKIE } from '../connect/route';
+import { STATE_COOKIE } from '../connect/route.hosted';
 
 export const dynamic = 'force-dynamic';
 

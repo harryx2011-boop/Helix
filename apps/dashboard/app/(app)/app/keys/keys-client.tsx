@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatRelativeTime } from '@/lib/format';
 import { HOSTED } from '@/lib/mode';
 import { createInstanceKey, listInstanceKeys, revokeInstanceKey } from '@/lib/instance-keys';
+import { generateEphemeralKey } from '@/lib/ephemeral-keys';
 import { toast } from 'sonner';
 
 interface KeyRow {
@@ -67,7 +68,7 @@ function useKeys() {
   return { keys, loading, storageConfigured, refresh };
 }
 
-function CreateKeyDialog({ onCreated, disabled = false }: { onCreated: () => void; disabled?: boolean }) {
+function CreateKeyDialog({ onCreated, ephemeral = false }: { onCreated: () => void; ephemeral?: boolean }) {
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState('');
   const [rateLimit, setRateLimit] = React.useState('');
@@ -86,7 +87,9 @@ function CreateKeyDialog({ onCreated, disabled = false }: { onCreated: () => voi
     event.preventDefault();
     setCreating(true);
     try {
-      if (HOSTED) {
+      if (ephemeral) {
+        setCreatedKey(generateEphemeralKey());
+      } else if (HOSTED) {
         const res = await fetch('/api/app/keys', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -123,16 +126,20 @@ function CreateKeyDialog({ onCreated, disabled = false }: { onCreated: () => voi
         if (!next) reset();
       }}
     >
-      <Button size="sm" className="gap-1.5 rounded-pill" onClick={() => setOpen(true)} disabled={disabled}>
+      <Button size="sm" className="gap-1.5 rounded-pill" onClick={() => setOpen(true)}>
         <Plus className="h-3.5 w-3.5" />
-        Create key
+        {ephemeral ? 'Generate key' : 'Create key'}
       </Button>
       <DialogContent>
         {createdKey ? (
           <>
             <DialogHeader>
-              <DialogTitle>Key created</DialogTitle>
-              <DialogDescription>Copy it now. For your security this is the only time the full key is shown.</DialogDescription>
+              <DialogTitle>{ephemeral ? 'Key generated' : 'Key created'}</DialogTitle>
+              <DialogDescription>
+                {ephemeral
+                  ? 'Generated in your browser and never sent anywhere. Nothing is stored, so this is the only time you will see it — add it to your instance to make it work.'
+                  : 'Copy it now. For your security this is the only time the full key is shown.'}
+              </DialogDescription>
             </DialogHeader>
             <div className="flex items-center justify-between gap-3 rounded-card border border-border bg-secondary/40 px-3 py-2.5">
               <span className="truncate font-mono text-sm text-primary">{createdKey}</span>
@@ -145,15 +152,19 @@ function CreateKeyDialog({ onCreated, disabled = false }: { onCreated: () => voi
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Create API key</DialogTitle>
-              <DialogDescription>Name it for what will use it. Rate limit is optional.</DialogDescription>
+              <DialogTitle>{ephemeral ? 'Generate API key' : 'Create API key'}</DialogTitle>
+              <DialogDescription>
+                {ephemeral
+                  ? 'This deployment has no key store, so the key is generated locally and not saved.'
+                  : 'Name it for what will use it. Rate limit is optional.'}
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreate} className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1.5">
+              <div className={ephemeral ? 'hidden' : 'flex flex-col gap-1.5'}>
                 <Label htmlFor="key-name">Name</Label>
                 <Input id="key-name" placeholder="Production agent" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
               </div>
-              <div className="flex flex-col gap-1.5">
+              <div className={ephemeral ? 'hidden' : 'flex flex-col gap-1.5'}>
                 <Label htmlFor="key-rate">Rate limit (requests / minute, optional)</Label>
                 <Input
                   id="key-rate"
@@ -166,7 +177,7 @@ function CreateKeyDialog({ onCreated, disabled = false }: { onCreated: () => voi
               </div>
               <Button type="submit" disabled={creating} className="gap-2">
                 {creating && <span className="h-3.5 w-3.5 animate-spin rounded-pill border-2 border-primary-foreground/40 border-t-primary-foreground" />}
-                Create key
+                {ephemeral ? 'Generate key' : 'Create key'}
               </Button>
             </form>
           </>
@@ -241,7 +252,7 @@ export function KeysClient() {
             </CardTitle>
             <CardDescription>Named keys with an optional per-minute limit. Revoked keys stop authenticating immediately.</CardDescription>
           </div>
-          <CreateKeyDialog onCreated={refresh} disabled={!storageConfigured} />
+          <CreateKeyDialog onCreated={refresh} ephemeral={!storageConfigured} />
         </CardHeader>
         <CardContent className="p-0">
           {loading || !keys ? (
@@ -252,10 +263,12 @@ export function KeysClient() {
             </div>
           ) : !storageConfigured ? (
             <p className="p-4 text-sm text-muted-foreground">
-              Key storage is not configured on this deployment. Set{' '}
-              <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
-              <code className="font-mono text-xs">SUPABASE_SECRET_KEY</code>, or create keys directly on your instance
-              with <code className="font-mono text-xs">POST /v1/keys</code>.
+              This deployment has no key store, so keys are generated in your browser and never saved — nothing is
+              listed here. Add one to your instance with{' '}
+              <code className="font-mono text-xs">HELIX_BOOTSTRAP_KEY</code> or{' '}
+              <code className="font-mono text-xs">POST /internal/keys</code> to make it authenticate. For a persistent
+              list, set <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+              <code className="font-mono text-xs">SUPABASE_SECRET_KEY</code>.
             </p>
           ) : keys.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">

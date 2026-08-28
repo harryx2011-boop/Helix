@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { HelixApiError } from '@/lib/api';
 import type {
@@ -36,18 +37,17 @@ import { Results, type PlaygroundResult } from './results';
 import { RecentRuns } from './recent-runs';
 import { PromptBox } from './prompt-box';
 
-interface PlaygroundProps {
-  initialTab: string;
-}
-
 function isJobAcceptedShape(body: unknown): body is { id: string } {
   return Boolean(body && typeof body === 'object' && typeof (body as { id?: unknown }).id === 'string');
 }
 
-export function Playground({ initialTab }: PlaygroundProps) {
+export function Playground() {
   const router = useRouter();
   const { apiKey } = useAppSession();
-  const [activeId, setActiveId] = React.useState<string>(endpointById(initialTab) ? initialTab : 'scrape');
+  const requestedTab = useSearchParams().get('tab');
+  const [activeId, setActiveId] = React.useState<string>(
+    requestedTab && endpointById(requestedTab) ? requestedTab : 'scrape',
+  );
   const [promptValue, setPromptValue] = React.useState('');
   const [optionsOpen, setOptionsOpen] = React.useState(false);
   const [source, setSource] = React.useState('hosted');

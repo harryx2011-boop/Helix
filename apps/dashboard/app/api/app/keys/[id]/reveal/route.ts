@@ -13,7 +13,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   if (!supabaseConfigured()) {
     return NextResponse.json(
-      { error: 'not_configured', message: 'Key storage is not configured on this deployment.' },
+      {
+        error: 'not_configured',
+        message: 'Key storage is not configured: set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY.',
+      },
       { status: 400 },
     );
   }

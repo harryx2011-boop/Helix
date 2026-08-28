@@ -10,11 +10,12 @@ export async function GET() {
   const profile = await requireProfile();
 
   if (!supabaseConfigured()) {
-    return NextResponse.json({ keys: [] });
+    return NextResponse.json({ keys: [], storageConfigured: false });
   }
 
   const keys = await listApiKeys(profile.id);
   return NextResponse.json({
+    storageConfigured: true,
     keys: keys.map((k) => ({
       id: k.id,
       name: k.name,
@@ -37,7 +38,11 @@ export async function POST(request: Request) {
 
   if (!supabaseConfigured()) {
     return NextResponse.json(
-      { error: 'not_configured', message: 'Key storage is not configured on this deployment.' },
+      {
+        error: 'not_configured',
+        message:
+          'Key storage is not configured: set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY, or create keys directly on your instance with POST /v1/keys.',
+      },
       { status: 400 },
     );
   }

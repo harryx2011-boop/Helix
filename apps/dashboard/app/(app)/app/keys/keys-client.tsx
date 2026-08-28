@@ -24,6 +24,7 @@ interface KeyRow {
 
 function useKeys() {
   const [keys, setKeys] = React.useState<KeyRow[] | null>(null);
+  const [storageConfigured, setStorageConfigured] = React.useState(true);
   const [loading, setLoading] = React.useState(true);
 
   const refresh = React.useCallback(async () => {
@@ -32,6 +33,7 @@ function useKeys() {
       const res = await fetch('/api/app/keys');
       const data = await res.json();
       setKeys(data.keys ?? []);
+      setStorageConfigured(data.storageConfigured !== false);
     } catch {
       setKeys([]);
     } finally {
@@ -43,10 +45,10 @@ function useKeys() {
     refresh();
   }, [refresh]);
 
-  return { keys, loading, refresh };
+  return { keys, loading, storageConfigured, refresh };
 }
 
-function CreateKeyDialog({ onCreated }: { onCreated: () => void }) {
+function CreateKeyDialog({ onCreated, disabled = false }: { onCreated: () => void; disabled?: boolean }) {
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState('');
   const [rateLimit, setRateLimit] = React.useState('');
@@ -70,12 +72,12 @@ function CreateKeyDialog({ onCreated }: { onCreated: () => void }) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ name: name.trim() || 'New key', rateLimitPerMin: rateLimit ? Number(rateLimit) : null }),
       });
-      if (!res.ok) throw new Error('Failed to create key');
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Could not create the key. Try again.');
       setCreatedKey(data.key);
       onCreated();
-    } catch {
-      toast.error('Could not create the key. Try again.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not create the key. Try again.');
     } finally {
       setCreating(false);
     }
@@ -97,7 +99,7 @@ function CreateKeyDialog({ onCreated }: { onCreated: () => void }) {
         if (!next) reset();
       }}
     >
-      <Button size="sm" className="gap-1.5 rounded-pill" onClick={() => setOpen(true)}>
+      <Button size="sm" className="gap-1.5 rounded-pill" onClick={() => setOpen(true)} disabled={disabled}>
         <Plus className="h-3.5 w-3.5" />
         Create key
       </Button>
@@ -197,7 +199,7 @@ function RevokeButton({ id, disabled, onRevoked }: { id: string; disabled: boole
 }
 
 export function KeysClient() {
-  const { keys, loading, refresh } = useKeys();
+  const { keys, loading, storageConfigured, refresh } = useKeys();
   const activeCount = keys?.filter((k) => !k.revoked).length ?? 0;
 
   return (
@@ -211,7 +213,7 @@ export function KeysClient() {
             </CardTitle>
             <CardDescription>Named keys with an optional per-minute limit. Revoked keys stop authenticating immediately.</CardDescription>
           </div>
-          <CreateKeyDialog onCreated={refresh} />
+          <CreateKeyDialog onCreated={refresh} disabled={!storageConfigured} />
         </CardHeader>
         <CardContent className="p-0">
           {loading || !keys ? (
@@ -220,6 +222,13 @@ export function KeysClient() {
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </div>
+          ) : !storageConfigured ? (
+            <p className="p-4 text-sm text-muted-foreground">
+              Key storage is not configured on this deployment. Set{' '}
+              <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+              <code className="font-mono text-xs">SUPABASE_SECRET_KEY</code>, or create keys directly on your instance
+              with <code className="font-mono text-xs">POST /v1/keys</code>.
+            </p>
           ) : keys.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">No keys yet.</p>
           ) : (

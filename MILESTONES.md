@@ -134,7 +134,7 @@ what `assess_pdf` returns.
 - ☐ Prompt caching where the provider supports it
 - ☐ Live provider calls unverified — no API keys available in this environment
 
-## M6 — Vectors ◐
+## M6 — Vectors ☑
 
 - ☑ Semantic chunking: heading-aware sections, sentence-boundary splitting,
       configurable overlap, and `heading`/`fixed`/`semantic` strategies
@@ -145,10 +145,17 @@ what `assess_pdf` returns.
 - ☑ pgvector sink reporting inserts and updates separately
 - ☑ Deterministic UUID v5 IDs from URL + anchor, so a re-crawl updates in place
       rather than appending a second copy of every chunk
-- ☐ `destination` wired into the crawl worker — sinks exist but nothing calls them
-- ☐ Live embedding run unverified: the local model was not downloaded here
+- ☑ `destination` wired into the crawl worker: each stored page is chunked and
+      embedded through helix-extract and upserted, the collection ensured once per
+      job, a failure recorded as a `vector_store` row rather than losing the page
+- ☑ Live embedding run VERIFIED 2026-08-29: `all-MiniLM-L6-v2` returns real
+      384-dimension vectors, and a real crawl of example.com stored one point in
+      a live Qdrant. scikit-learn was silently corrupted in the venv, which is why
+      this had never run; `uv pip install --reinstall scikit-learn` fixed it
+- ☐ pgvector unverified against a real server: no prebuilt for PG18 on Windows,
+      so that sink is covered by unit tests only
 
-## M7 — Monitors ◐
+## M7 — Monitors ☑
 
 - ☑ `POST/GET /v1/monitor`, `GET/PATCH/DELETE /v1/monitor/{id}`, `GET /v1/monitor/{id}/history`, `GET .../snapshots/{id}`, `POST .../check`, `GET .../deliveries`, `POST .../deliveries/{id}/replay`
 - ☑ Scheduler: cron and intervals (`15m`, `6h`, `1d`) with timezone, Postgres due-queue claimed with SKIP LOCKED, operator minimum interval (`HELIX_MONITOR_MIN_INTERVAL`), concurrency cap
@@ -158,8 +165,10 @@ what `assess_pdf` returns.
 - ☑ Keyword triggers (`keywordAppears`, `keywordDisappears`, `minChangeRatio`, `selector`) with no model call
 - ☑ Webhooks: HMAC signing (`Helix-Signature`), backoff over ten attempts, dead letter with replay
 - ☑ Snapshot retention by count and age (`HELIX_MONITOR_RETAIN_SNAPSHOTS`, `HELIX_MONITOR_RETAIN_DAYS`)
-- ☐ Business-hours windows as a first-class field (today: express them in cron, e.g. `0 9-17 * * 1-5`)
-- ☐ Field-level JSON diffs (`jsonOptions`) — needs the extraction pipeline on the check path
+- ☑ Business-hours windows as a first-class field. The window restricts the cron
+      and never widens it; a combination that can never fire is rejected at write time
+- ☑ Field-level JSON diffs (`jsonOptions`) on the check path, run only once a
+      change is already firing so a quiet check pays for no model call
 - ☐ Multi-page monitors over a crawl scope (spec §7 open question; v1 is one URL per monitor)
 
 ## M7b — Interact ◐
@@ -178,8 +187,8 @@ Spec: `research/api-specs/browser-interaction-api.md`. Endpoint shape from the s
 - ☑ Live view: CDP screencast fanned out over server-sent events to a token-authenticated
       viewer page, started with the first viewer and stopped with the last (42 tests across
       registry, actions, screencast and routes)
-- ☐ Live view over WebSocket (no `ws` dependency available in this pass; SSE carries the
-      same frames one way)
+- ☐ Live view over WebSocket — still needs a websocket dependency the repo does not
+      carry, so it was left rather than added silently. SSE carries the same frames
 - ☐ Interactive live view (human takeover) — cut from this pass
 - ☐ Prompt-resolved actions without a selector (`"click the checkout button"`) — open question
       in the spec, deliberately not started
@@ -199,7 +208,7 @@ Last, because the hard part is not the loop — it is calibration and knowing wh
 - ☑ MCP server at `/mcp` (streamable HTTP, bearer key), tools generated from `openapi.yaml` for every live route; descriptions and input schemas are the spec's, and tests check the generator against the real spec plus a tool-call round trip through the HTTP routes
 - ☑ `@helix/cli` connector (`packages/cli`): `init --all -k` writes MCP config and SKILL.md for Claude Code, Cursor, Codex, Windsurf; `--browser` opens the connect page. Unpublished; the `@helix` npm scope is unclaimed
 - ☑ SKILL.md served keyless at `/agent-onboarding/SKILL.md` (the per-account variant went with Supabase)
-- ☐ Generated TypeScript SDK
+- ☑ TypeScript SDK (`@helix/sdk`, packages/sdk-ts): typed client over every path in openapi.yaml, no runtime dependencies
 - ☐ Documentation site
 - ☐ Self-host polish, resource tuning
 
@@ -216,6 +225,14 @@ Last, because the hard part is not the loop — it is calibration and knowing wh
 - Cross-source entity resolution (Diffbot-scale fusion is a separate multi-year bet)
 
 ## Known risks
+
+**The LLM and embedding paths are proven, on a local model.** Both had never
+run in this repo. As of 2026-08-29 a real generation reaches a model and comes
+back (`/v1/agent/schema` against Ollama `gemma4:latest`, token counts and all),
+and `all-MiniLM-L6-v2` returns real 384-dimension vectors that reach a live
+Qdrant through a real crawl. What is still unproven is behaviour against a
+FRONTIER model — every live result here is from a 4-8B local model, which is
+weaker at structured output than the cloud vendors the code also targets.
 
 **Stealth is validated locally only.** CreepJS, Sannysoft and browserleaks catch fingerprint incoherence; they cannot tell you whether Cloudflare or DataDome would let you through. The local suite will find real bugs and cannot confirm the ladder works.
 

@@ -595,6 +595,20 @@ export interface RemoveProviderResponse {
   success: true;
 }
 
+export interface ProviderModel {
+  name: string;
+  parameterSize?: string;
+  quantization?: string;
+  sizeBytes?: number;
+  capabilities?: string[];
+}
+
+export type ListModelsFailureReason = 'invalid_base_url' | 'unreachable' | 'unsupported' | 'bad_response';
+
+export type ListModelsResponse =
+  | { success: true; provider: ProviderName; models: ProviderModel[] }
+  | { success: false; provider: ProviderName; failure: { reason: ListModelsFailureReason; message: string } };
+
 export interface HelixClientOptions {
   baseUrl?: string;
   apiKey: string;
@@ -685,6 +699,10 @@ export class HelixClient {
 
   async removeProvider(provider: ProviderName, signal?: AbortSignal): Promise<RemoveProviderResponse> {
     return this.delete<RemoveProviderResponse>(`/providers/${provider}`, signal);
+  }
+
+  async listProviderModels(provider: ProviderName, signal?: AbortSignal): Promise<ListModelsResponse> {
+    return this.get<ListModelsResponse>(`/providers/${provider}/models`, signal);
   }
 
   async job(id: string, signal?: AbortSignal): Promise<Job> {

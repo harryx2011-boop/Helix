@@ -2,6 +2,7 @@
 
 import { HelixClient, HelixApiError } from '@/lib/api';
 import type {
+  ListModelsResponse,
   ListProvidersResponse,
   ProviderName,
   RemoveProviderResponse,
@@ -9,7 +10,7 @@ import type {
   SaveProviderResponse,
 } from '@/lib/api';
 
-export type { ProviderStatus, ProviderName as ProviderId } from '@/lib/api';
+export type { ProviderStatus, ProviderName as ProviderId, ProviderModel, ListModelsFailureReason } from '@/lib/api';
 
 interface FailureBody {
   success?: boolean;
@@ -45,4 +46,10 @@ export async function removeProvider(apiKey: string | null, provider: ProviderNa
   if (!apiKey) throw new HelixApiError('No API key configured.', 401);
   const client = new HelixClient({ apiKey });
   return client.removeProvider(provider);
+}
+
+export async function listProviderModels(apiKey: string | null, provider: ProviderName): Promise<ListModelsResponse> {
+  if (!apiKey) throw new HelixApiError('No API key configured.', 401);
+  const client = new HelixClient({ apiKey });
+  return client.listProviderModels(provider);
 }

@@ -1,5 +1,6 @@
 import { PageFrame } from '@/components/app/page-frame';
 import { InstanceSettingsPanel } from '@/components/app/settings/instance-settings-panel';
+import { ProvidersPanel } from '@/components/app/providers/providers-panel';
 
 export default function SettingsPage() {
   return (
@@ -10,6 +11,7 @@ export default function SettingsPage() {
           This instance&apos;s configuration. The environment supplies the defaults; a change here overrides one.
         </p>
       </div>
+      <ProvidersPanel />
       <InstanceSettingsPanel />
     </PageFrame>
   );

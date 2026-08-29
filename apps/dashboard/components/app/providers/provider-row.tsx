@@ -1,14 +1,15 @@
 'use client';
 
 import * as React from 'react';
-import { Server } from 'lucide-react';
+import { ChevronsUpDown, Loader2, Server } from 'lucide-react';
 import { toast } from 'sonner';
 import { FrameRow } from '@/components/app/page-frame';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HelixApiError } from '@/lib/api';
-import { saveProvider, removeProvider } from '@/lib/providers';
-import type { ProviderId, ProviderStatus } from '@/lib/providers';
+import { saveProvider, removeProvider, listProviderModels } from '@/lib/providers';
+import type { ProviderId, ProviderModel, ProviderStatus } from '@/lib/providers';
 import { cn } from '@/lib/utils';
 
 const CONFIRM_TIMEOUT_MS = 4000;
@@ -59,6 +60,105 @@ function hostFromUrl(url: string): string {
   } catch {
     return url;
   }
+}
+
+function modelMeta(model: ProviderModel): string | undefined {
+  const parts: string[] = [];
+  if (model.parameterSize) parts.push(model.parameterSize);
+  if (model.capabilities?.length) parts.push(model.capabilities.join(', '));
+  return parts.length ? parts.join(' · ') : undefined;
+}
+
+/**
+ * Browses a local runtime's installed models, next to the free-text model
+ * input it never replaces — a runtime may hold a model this list can't see
+ * (still pulling, or on a host the caller trusts but this fetch can't reach).
+ *
+ * The API fetches against the base URL already saved for this provider, not
+ * whatever sits unsaved in the text field — `savedBaseUrl` gates browsing so
+ * a pending edit never gets silently checked against the old host.
+ */
+function ModelPicker({
+  providerId,
+  providerName,
+  apiKey,
+  savedBaseUrl,
+  onPick,
+}: {
+  providerId: ProviderId;
+  providerName: string;
+  apiKey: string | null;
+  savedBaseUrl: string | null | undefined;
+  onPick: (name: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [models, setModels] = React.useState<ProviderModel[] | null>(null);
+  const [notice, setNotice] = React.useState<string | null>(null);
+
+  const load = React.useCallback(async () => {
+    if (!savedBaseUrl) {
+      setNotice('Save a base URL first, then browse its models.');
+      return;
+    }
+    setLoading(true);
+    setNotice(null);
+    try {
+      const result = await listProviderModels(apiKey, providerId);
+      if (!result.success) {
+        setModels(null);
+        setNotice(result.failure.message);
+        return;
+      }
+      setModels(result.models);
+      if (result.models.length === 0) setNotice(`No models found on this ${providerName} host yet.`);
+    } catch (error) {
+      setModels(null);
+      setNotice(error instanceof HelixApiError ? error.message : `Could not reach ${providerName}.`);
+    } finally {
+      setLoading(false);
+    }
+  }, [apiKey, savedBaseUrl, providerId, providerName]);
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (next && models === null && !loading) void load();
+  };
+
+  React.useEffect(() => {
+    setModels(null);
+    setNotice(null);
+  }, [savedBaseUrl]);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <Select open={open} onOpenChange={handleOpenChange} onValueChange={onPick} value="">
+        <SelectTrigger
+          aria-label={`Browse installed ${providerName} models`}
+          className="h-9 w-9 shrink-0 justify-center gap-0 border-dashed px-0 [&>span]:hidden"
+        >
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />}
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="end">
+          {models && models.length > 0 ? (
+            models.map((m) => (
+              <SelectItem key={m.name} value={m.name}>
+                <div className="flex flex-col gap-0.5 py-0.5">
+                  <span className="font-mono text-xs">{m.name}</span>
+                  {modelMeta(m) && <span className="text-[11px] text-muted-foreground">{modelMeta(m)}</span>}
+                </div>
+              </SelectItem>
+            ))
+          ) : (
+            <div className="px-2 py-3 text-center text-xs text-muted-foreground">
+              {loading ? 'Checking…' : (notice ?? 'No models to show.')}
+            </div>
+          )}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 }
 
 function statusLine(status: ProviderStatus, local: boolean | undefined): { text: string; className: string } {
@@ -189,14 +289,24 @@ export function ProviderRow({
               className="lg:max-w-xs"
             />
           )}
-          <Input
-            type="text"
-            placeholder={meta.defaultModel}
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            aria-label={`${meta.name} model`}
-            className="lg:max-w-[200px]"
-          />
+          <div className="flex items-center gap-1.5 lg:max-w-[200px]">
+            <Input
+              type="text"
+              placeholder={meta.defaultModel}
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              aria-label={`${meta.name} model`}
+            />
+            {meta.local && (
+              <ModelPicker
+                providerId={meta.id}
+                providerName={meta.name}
+                apiKey={apiKey}
+                savedBaseUrl={status.baseUrl}
+                onPick={setModel}
+              />
+            )}
+          </div>
           <div className="flex shrink-0 items-center gap-2">
             <Button onClick={handleSave} disabled={saving} className="shrink-0 rounded-pill">
               {saving ? 'Saving…' : 'Save'}

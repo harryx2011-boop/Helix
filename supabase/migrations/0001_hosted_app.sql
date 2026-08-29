@@ -120,13 +120,18 @@ create or replace function current_clerk_user_id() returns text language sql sta
   select coalesce(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '')
 $$;
 
+drop policy if exists profiles_self on profiles;
 create policy profiles_self on profiles for all
   using (clerk_user_id = current_clerk_user_id());
+drop policy if exists api_keys_self on api_keys;
 create policy api_keys_self on api_keys for all
   using (profile_id in (select id from profiles where clerk_user_id = current_clerk_user_id()));
+drop policy if exists instances_self on instances;
 create policy instances_self on instances for all
   using (profile_id in (select id from profiles where clerk_user_id = current_clerk_user_id()));
+drop policy if exists runs_self on runs;
 create policy runs_self on runs for all
   using (profile_id in (select id from profiles where clerk_user_id = current_clerk_user_id()));
+drop policy if exists usage_daily_self on usage_daily;
 create policy usage_daily_self on usage_daily for select
   using (profile_id in (select id from profiles where clerk_user_id = current_clerk_user_id()));

@@ -53,6 +53,7 @@ alter table github_connections enable row level security;
 
 -- Matches the existing per-table policies: server routes use the service role,
 -- and this covers any direct client access keyed by the Clerk JWT's sub claim.
+drop policy if exists github_connections_self on github_connections;
 create policy github_connections_self on github_connections for all
   using (profile_id in (select id from profiles where clerk_user_id = current_clerk_user_id()));
 

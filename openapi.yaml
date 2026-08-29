@@ -65,6 +65,8 @@ tags:
     description: Web search, optionally scraping each result.
   - name: Agent
     description: Model-assisted helpers for building a request, such as schema design.
+  - name: Enrich
+    description: Fill columns about a subject from the open web, with a checkable citation for every value.
   - name: Interact
     description: Stateful browser sessions an agent can drive, with a live view.
   - name: Monitors
@@ -582,6 +584,72 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/RateLimited' }
+
+  /enrich:
+    post:
+      tags: [Enrich]
+      summary: Fill columns about a subject from the open web, or say why it could not
+      description: |
+        Takes a sparse identifier — a company name, a domain, an email — and the
+        fields you want, and returns each field with the passage that grounds it.
+
+        Sources come from `urls` when you supply them, otherwise from a search.
+        Every candidate passes guardrails before it can become evidence: parked
+        domains, placeholder and default server pages, blocklisted social hosts
+        and anything below the content floor are rejected, and each rejection is
+        listed in `sources.rejected` with its reason.
+
+        Fields are answered in phases, cheapest first. A value stated in a page's
+        `<meta>` tags or JSON-LD is read directly and never costs a model call;
+        only the fields structure could not answer are sent to a model.
+
+        **Every returned value is verified against text this API fetched.** The
+        model must quote the passage stating each value; that passage is then
+        checked against the page it was attributed to, and the value is checked
+        against the passage. Anything that fails becomes `null` with a `reason`
+        rather than a low-confidence guess. A field is never invented.
+
+        `confidence` is an ordinal band, not a probability, and is not
+        calibrated — see the `EnrichedField` schema for exactly what each band
+        means and does not mean.
+      operationId: enrich
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EnrichRequest' }
+            examples:
+              fromSearch:
+                summary: Let Helix find the sources
+                value:
+                  subject: Acme Robotics
+                  fields:
+                    - { name: headquarters, description: City of the head office }
+                    - { name: foundedYear, type: number }
+              fromUrls:
+                summary: Enrich from pages you already have
+                value:
+                  subject: Acme Robotics
+                  urls: ['https://acme.example/about']
+                  fields:
+                    - { name: headquarters }
+      responses:
+        '200':
+          description: |
+            The request was well-formed. Individual fields may still be `null`
+            with a `reason` — that is the normal, intended outcome when no
+            source states a value or the model could not ground it.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrichResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: No `urls` were given and no search backend is configured to discover them.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /interact:
     post:
@@ -2179,6 +2247,207 @@ components:
           properties:
             reason: { type: string, enum: [service_unavailable, timeout] }
             detail: { type: string }
+
+    EnrichField:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 64
+          pattern: '^[A-Za-z][A-Za-z0-9_]*$'
+          description: Field name, as it will appear in the response.
+        type:
+          type: string
+          enum: [string, number, boolean]
+          default: string
+        description:
+          type: string
+          maxLength: 300
+          description: What you mean by this field. Sent to the model when structure cannot answer it.
+
+    EnrichRequest:
+      type: object
+      required: [subject, fields]
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: What is being enriched - a company name, a domain, an email.
+        fields:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { $ref: '#/components/schemas/EnrichField' }
+        urls:
+          type: array
+          maxItems: 10
+          items: { type: string, format: uri }
+          description: |
+            Pages to read instead of searching. When omitted, sources are
+            discovered with the configured search backend; without one, the
+            request is a 503.
+        maxSources:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 4
+          description: How many pages may become evidence.
+        timeout:
+          type: integer
+          minimum: 1000
+          maximum: 120000
+          default: 30000
+        provider:
+          type: string
+          enum: [anthropic, openai, openrouter, google, gemini, ollama, vllm, openai-compatible]
+          description: |
+            Which of your configured providers runs the model phase. Optional;
+            when omitted a provider is chosen from your stored credentials.
+            Name a local runtime (`ollama`, `vllm`, `openai-compatible`)
+            explicitly if it is the only one you have configured.
+        model:
+          type: string
+          maxLength: 200
+          description: Model to use, when it differs from the one stored for that provider.
+
+    EnrichCitation:
+      type: object
+      required: [url, quote, locator]
+      properties:
+        url: { type: string, format: uri, description: The page the passage was read from. }
+        quote:
+          type: string
+          description: |
+            The passage grounding this value, verified to appear in the page at
+            `url`. This is the citation - a span you can check, not just a link.
+        locator:
+          type: string
+          description: Where in the page it was read, e.g. `meta[og:site_name]`, `ld+json Organization.name`, or `body`.
+
+    EnrichedField:
+      type: object
+      required: [value, confidence, citation, phase, reason, evidence]
+      properties:
+        value:
+          nullable: true
+          description: |
+            The value, or `null` when none could be grounded. A `null` here is a
+            real answer, not an error - see `reason`.
+          oneOf:
+            - { type: string }
+            - { type: number }
+            - { type: boolean }
+        confidence:
+          type: string
+          nullable: true
+          enum: [high, medium, low]
+          description: |
+            An ordinal band, NOT a probability, and NOT calibrated - no error
+            rate is claimed for any band because none has been measured.
+
+            `high` - read directly out of the page's `<meta>` tags or JSON-LD by
+            this API. No model was involved, so it cannot be a hallucination.
+
+            `medium` - a model proposed it, quoted a passage, that passage was
+            found in the fetched page, and the value appears inside the passage.
+
+            `low` - as `medium`, but the value could not be required to appear
+            inside its own passage. This is the boolean case: a page establishes
+            `hiring: true` by saying "we are hiring", never by containing "true".
+
+            Grounding proves a passage is real, not that it is true. A page that
+            states a falsehood yields a `medium` field quoting it faithfully.
+
+            `null` whenever `value` is `null`.
+        citation:
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/EnrichCitation' }]
+          description: Null whenever `value` is null.
+        phase:
+          type: string
+          nullable: true
+          enum: [metadata, structural, model]
+          description: Which extractor phase produced the value.
+        reason:
+          type: string
+          nullable: true
+          enum:
+            - no_sources
+            - all_sources_rejected
+            - not_stated
+            - no_citation
+            - citation_not_in_source
+            - value_not_in_citation
+            - citation_too_short
+            - unknown_source_url
+            - model_unavailable
+          description: |
+            Why `value` is null. Null when a value was found.
+
+            `not_stated` - no source stated it. `citation_not_in_source` and
+            `unknown_source_url` - the model proposed a value it could not tie
+            to a page this API fetched, so it was discarded rather than returned
+            at low confidence. `all_sources_rejected` - every candidate page was
+            discarded by the guardrails; see `sources.rejected`.
+        evidence:
+          type: object
+          required: [valueInCitation, sourcesConsidered]
+          properties:
+            valueInCitation:
+              type: boolean
+              description: |
+                Whether the value itself was found inside its cited passage.
+                Always false for booleans, which cannot appear literally in the
+                prose that establishes them.
+            sourcesConsidered: { type: integer, description: How many screened pages were searched for this field. }
+
+    EnrichRejectedSource:
+      type: object
+      required: [url, reason, detail]
+      properties:
+        url: { type: string, format: uri }
+        reason:
+          type: string
+          enum: [parked_domain, placeholder_page, blocklisted_social, below_content_floor, unsafe_url, unreadable]
+        detail: { type: string, description: What the guardrail saw, in one line. }
+
+    EnrichResponse:
+      type: object
+      required: [success, data, sources]
+      properties:
+        success: { type: boolean }
+        subject: { type: string }
+        data:
+          type: object
+          additionalProperties: { $ref: '#/components/schemas/EnrichedField' }
+          description: One entry per requested field, keyed by field name.
+        sources:
+          type: object
+          required: [used, rejected]
+          properties:
+            used:
+              type: array
+              items: { type: string, format: uri }
+              description: Pages that became evidence, in the order they were read.
+            rejected:
+              type: array
+              items: { $ref: '#/components/schemas/EnrichRejectedSource' }
+              description: Pages fetched or considered and discarded, each with the guardrail that discarded it.
+        usage:
+          type: object
+          description: Present only when the model phase ran. Absent when structure answered every field.
+          properties:
+            tokens:
+              type: object
+              properties:
+                input: { type: integer }
+                output: { type: integer }
+            model: { type: string }
+        warnings:
+          type: array
+          items: { type: string }
 
     InteractAction:
       type: object

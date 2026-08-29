@@ -9,10 +9,12 @@ stack have no real equivalent in another ecosystem.
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import FastAPI, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from . import chunking, documents, embeddings, extraction, llm, schema_gen
+from . import chunking, documents, embeddings, enrich, extraction, llm, schema_gen
 from .schema_compiler import SchemaError
 from .settings import settings
 
@@ -210,6 +212,63 @@ async def structured(request: StructuredRequest) -> StructuredResponse:
         blocks_total=result.blocks_total,
     )
 
+
+
+class EnrichVerifyRequest(BaseModel):
+    # The content that was sent to the model, fences included. Citations are
+    # checked against this rather than against the original page, so a passage
+    # the relevance trimmer dropped fails here even though it is really on the
+    # page - the model could not have read it.
+    content: str
+    # Claimed fields, keyed by field name, each an object carrying `value` and
+    # `citation` as the enrichment schema asks the model to return them.
+    claims: dict
+
+
+class VerifiedField(BaseModel):
+    name: str
+    value: Any = None
+    citation: str | None = None
+    grounded: bool
+    # Null when the model correctly reported the content does not state the
+    # field; set only when a claim was made and rejected.
+    reason: str | None = None
+    # False for booleans, which cannot appear literally in the prose that
+    # establishes them. Surfaced so a caller can tell that weaker case apart.
+    value_in_citation: bool
+
+
+class EnrichVerifyResponse(BaseModel):
+    fields: list[VerifiedField]
+    grounded_count: int
+    rejected_count: int
+
+
+@app.post("/enrich/verify", response_model=EnrichVerifyResponse)
+async def enrich_verify(request: EnrichVerifyRequest) -> EnrichVerifyResponse:
+    """Check claimed fields against the content that reached the model.
+
+    Calls no provider. The gateway runs its own grounding check against the
+    pages it fetched; this one runs against the trimmed content actually sent,
+    which is a different question with a different blind spot.
+    """
+    verdicts = enrich.verify_fields(request.content, request.claims)
+
+    return EnrichVerifyResponse(
+        fields=[
+            VerifiedField(
+                name=v.name,
+                value=v.value,
+                citation=v.citation,
+                grounded=v.grounded,
+                reason=v.reason,
+                value_in_citation=v.value_in_citation,
+            )
+            for v in verdicts
+        ],
+        grounded_count=sum(1 for v in verdicts if v.grounded),
+        rejected_count=sum(1 for v in verdicts if v.reason is not None),
+    )
 
 class SchemaRequest(BaseModel):
     prompt: str

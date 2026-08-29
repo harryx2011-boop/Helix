@@ -31,6 +31,21 @@ import { mapWithLimit } from './search.js';
 
 const FIELD_TYPES = ['string', 'number', 'boolean'] as const;
 
+/**
+ * Providers a caller may name. Declared as an enum so an unknown name is a 400
+ * from this route rather than a 503 from two services away.
+ */
+const PROVIDERS = [
+  'anthropic',
+  'openai',
+  'openrouter',
+  'google',
+  'gemini',
+  'ollama',
+  'vllm',
+  'openai-compatible',
+] as const;
+
 const FieldSchema = z.object({
   name: z
     .string()
@@ -53,6 +68,8 @@ const EnrichRequestSchema = z
     urls: z.array(HttpUrlSchema).max(10).optional(),
     maxSources: z.number().int().min(1).max(10).default(4),
     timeout: z.number().int().min(1_000).max(120_000).default(30_000),
+    provider: z.enum(PROVIDERS).optional(),
+    model: z.string().min(1).max(200).optional(),
   })
   .strict();
 
@@ -90,6 +107,22 @@ async function findCandidates(
     urls: dedupeByUrl(outcome.hits.map((hit) => ({ url: hit.url }))).map((u) => u.url),
     searched: true,
   };
+}
+
+/**
+ * The caller's local runtime, when that is the only thing they have configured.
+ *
+ * helix-extract auto-picks a provider from the caller's stored keys, but walks
+ * cloud providers only: a local runtime is identified by a base URL rather than
+ * a key and is reachable solely when named. So a caller whose one configured
+ * provider is Ollama would get "no provider configured" while looking straight
+ * at a running Ollama. Naming it for them is the fix; when they have configured
+ * more than one, the choice is theirs and this stays out of it.
+ */
+function soleLocalProvider(baseUrls: Record<string, string> | undefined): string | undefined {
+  if (!baseUrls) return undefined;
+  const configured = Object.keys(baseUrls).filter((name) => baseUrls[name]);
+  return configured.length === 1 ? configured[0] : undefined;
 }
 
 interface ReadOutcome {
@@ -203,7 +236,7 @@ export async function registerEnrich(app: FastifyInstance, deps: EnrichRouteDeps
       if (urls.length === 0) {
         if (searched) {
           return reply.send(
-            emptyOutcome(fields, [], 'no_sources', `no search result was returned for "${body.subject}"`),
+            emptyOutcome(body.subject, fields, [], 'no_sources', `no search result was returned for "${body.subject}"`),
           );
         }
         if (!deps.searchProvider?.configured()) {
@@ -215,7 +248,7 @@ export async function registerEnrich(app: FastifyInstance, deps: EnrichRouteDeps
             requestId: request.id,
           });
         }
-        return reply.send(emptyOutcome(fields, [], 'no_sources', 'no candidate URL was available'));
+        return reply.send(emptyOutcome(body.subject, fields, [], 'no_sources', 'no candidate URL was available'));
       }
 
       const outcomes = await mapWithLimit(urls.slice(0, body.maxSources * 2), concurrency, (url) =>
@@ -232,6 +265,7 @@ export async function registerEnrich(app: FastifyInstance, deps: EnrichRouteDeps
       if (pages.length === 0) {
         return reply.send(
           emptyOutcome(
+            body.subject,
             fields,
             rejected,
             rejected.length > 0 ? 'all_sources_rejected' : 'no_sources',
@@ -257,12 +291,15 @@ export async function registerEnrich(app: FastifyInstance, deps: EnrichRouteDeps
         const apiKeyId = request.apiKey?.id;
         const resolved = apiKeyId && deps.encryptionKey ? await resolveProviderKeys(apiKeyId, deps.encryptionKey) : {};
         const { providerKeys, providerModels, providerBaseUrls } = toClientKeys(resolved);
+        const provider = body.provider ?? soleLocalProvider(providerBaseUrls);
 
         try {
           const result = await deps.extractClient.structured({
             content: buildContent(pages),
             schema: buildSchema(open),
             prompt: buildPrompt(body.subject, open),
+            provider,
+            model: body.model,
             providerKeys,
             providerModels,
             providerBaseUrls,
@@ -318,16 +355,20 @@ export async function registerEnrich(app: FastifyInstance, deps: EnrichRouteDeps
 
 /** Every field null for the same reason, when there was nothing to read. */
 function emptyOutcome(
+  subject: string,
   fields: readonly FieldSpec[],
   rejected: readonly RejectedSource[],
   reason: NullReason,
   detail: string,
 ) {
   const outcome = assemble(fields, new Map(), new Map(), [], rejected, reason);
+  // Same shape as the success path, down to `subject` and the `sources` object:
+  // a caller must never have to branch on which of the two they received.
   return {
     success: true,
+    subject,
     data: outcome.fields,
-    sources: { used: [], rejected: outcome.sourcesRejected },
+    sources: { used: outcome.sourcesUsed, rejected: outcome.sourcesRejected },
     warnings: [detail],
   };
 }

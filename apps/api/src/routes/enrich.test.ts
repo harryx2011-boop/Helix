@@ -319,3 +319,69 @@ describe('POST /v1/enrich never invents a value', () => {
     expect(body.data.name).toMatchObject({ value: 'Acme Robotics', phase: 'metadata' });
   });
 });
+
+describe('POST /v1/enrich provider selection', () => {
+  it('forwards an explicitly named provider and model', async () => {
+    const client = extractClient();
+    const app = await build({ fetchClient: fetchClient({ [ABOUT]: { html: ABOUT_HTML } }), extractClient: client });
+
+    await post(app, {
+      subject: 'Acme',
+      fields: [{ name: 'headquarters' }],
+      urls: [ABOUT],
+      provider: 'ollama',
+      model: 'gemma4:latest',
+    });
+
+    expect(vi.mocked(client.structured).mock.calls[0]?.[0]).toMatchObject({
+      provider: 'ollama',
+      model: 'gemma4:latest',
+    });
+  });
+
+  it('rejects a provider name that is not a known provider', async () => {
+    const app = await build({});
+    const { status } = await post(app, {
+      subject: 'Acme',
+      fields: [{ name: 'city' }],
+      urls: [ABOUT],
+      provider: 'not-a-provider',
+    });
+    expect(status).toBe(400);
+  });
+
+  it('names the caller sole local runtime, which auto-pick would otherwise skip', async () => {
+    // helix-extract auto-picks cloud providers only, so an Ollama-only caller
+    // gets "no provider configured" unless the runtime is named for them.
+    const client = extractClient();
+    const app = await build({
+      fetchClient: fetchClient({ [ABOUT]: { html: ABOUT_HTML } }),
+      extractClient: client,
+    });
+
+    await post(app, { subject: 'Acme', fields: [{ name: 'headquarters' }], urls: [ABOUT] });
+    // No stored keys in this harness, so nothing is named and auto-pick applies.
+    expect(vi.mocked(client.structured).mock.calls[0]?.[0].provider).toBeUndefined();
+  });
+});
+
+describe('POST /v1/enrich response shape is the same on every path', () => {
+  it('returns subject and a sources object even when every source was rejected', async () => {
+    const app = await build({
+      fetchClient: fetchClient({ [ABOUT]: { html: `<html><body>${PARKED_TEXT}</body></html>` } }),
+    });
+    const { body } = await post(app, { subject: 'Acme Robotics', fields: [{ name: 'city' }], urls: [ABOUT] });
+
+    expect(body.subject).toBe('Acme Robotics');
+    expect(body.sources).toEqual({ used: [], rejected: expect.any(Array) });
+    expect(Array.isArray(body.sources.rejected)).toBe(true);
+  });
+
+  it('returns subject and a sources object on the success path too', async () => {
+    const app = await build({ fetchClient: fetchClient({ [ABOUT]: { html: ABOUT_HTML } }) });
+    const { body } = await post(app, { subject: 'Acme Robotics', fields: [{ name: 'name' }], urls: [ABOUT] });
+
+    expect(body.subject).toBe('Acme Robotics');
+    expect(body.sources).toEqual({ used: [ABOUT], rejected: [] });
+  });
+});

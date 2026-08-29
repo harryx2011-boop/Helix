@@ -5,7 +5,7 @@ import { PillButton } from '@/components/marketing/pill-button';
 import { CodePanel } from '@/components/marketing/code-panel';
 import { AnimatedCode, type AnimatedCodeMode } from '@/components/marketing/animated-code';
 import { endpointById } from '@/lib/catalog';
-import type { Endpoint } from '@/lib/supabase/types';
+import type { Endpoint } from '@/lib/endpoints';
 
 /** Per-endpoint mock animation: type = content composing, reveal = results listing. */
 const MOCK_MODE: Record<Endpoint, AnimatedCodeMode> = {

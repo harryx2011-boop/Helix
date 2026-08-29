@@ -4,30 +4,12 @@ import { HelixClient, HelixApiError } from '@/lib/api';
 import type { AgentSchemaRequest, AgentSchemaResponse, SearchResponse, ScrapeResponse } from '@/lib/api';
 import { runEndpoint } from '@/lib/run-endpoint';
 
-const HOSTED = process.env.NEXT_PUBLIC_HELIX_HOSTED === '1';
-
 const MAX_CONCURRENT_PAGES = 3;
 
 export async function requestAgentSchema(
   request: AgentSchemaRequest,
   apiKey: string | null,
 ): Promise<AgentSchemaResponse> {
-  if (HOSTED) {
-    const response = await fetch('/api/app/agent/schema', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-    const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-    if (body && typeof body.success === 'boolean') return body as unknown as AgentSchemaResponse;
-    const message = typeof body?.message === 'string' ? body.message : 'Malformed response from the server.';
-    const field = typeof body?.field === 'string' ? ` (${body.field})` : '';
-    return {
-      success: false,
-      failure: { reason: response.status === 400 ? 'invalid_request' : 'service_unavailable', message: `${message}${field}` },
-    } as unknown as AgentSchemaResponse;
-  }
-
   if (!apiKey) throw new HelixApiError('No API key configured.', 401);
   const client = new HelixClient({ apiKey });
   return client.agentSchema(request);

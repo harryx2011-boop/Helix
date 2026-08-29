@@ -8,7 +8,7 @@ import { FrameBand } from './section-frame';
 import { CodeRain } from './ambient';
 import { CodePanel } from './code-panel';
 import { AnimatedCode } from './animated-code';
-import type { Endpoint } from '@/lib/supabase/types';
+import type { Endpoint } from '@/lib/endpoints';
 
 const TABS = ENDPOINTS.filter((e) => e.product);
 

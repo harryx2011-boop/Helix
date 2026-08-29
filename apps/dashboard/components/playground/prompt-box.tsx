@@ -5,8 +5,7 @@ import { ChevronDown, Code2, Globe, Loader2, Play, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ENDPOINTS, TAB_GROUPS, endpointById } from '@/lib/catalog';
-import type { Endpoint } from '@/lib/supabase/types';
-import type { InstanceRow } from '@/lib/supabase/types';
+import type { Endpoint } from '@/lib/endpoints';
 import { cn } from '@/lib/utils';
 
 const PLACEHOLDERS: Record<Endpoint, string[]> = {
@@ -41,9 +40,6 @@ interface PromptBoxProps {
   onToggleOptions: () => void;
   onGetCode: () => void;
   getCodeDisabled: boolean;
-  instances: InstanceRow[];
-  source: string;
-  onSourceChange: (source: string) => void;
 }
 
 export function PromptBox({
@@ -58,9 +54,6 @@ export function PromptBox({
   onToggleOptions,
   onGetCode,
   getCodeDisabled,
-  instances,
-  source,
-  onSourceChange,
 }: PromptBoxProps) {
   const activeDef = endpointById(activeId) ?? ENDPOINTS[0]!;
   const isSearch = activeDef.id === 'search';
@@ -190,21 +183,6 @@ export function PromptBox({
           <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-150 ease-out', optionsOpen && 'rotate-180')} />
           Options
         </Button>
-
-        <Select value={source} onValueChange={onSourceChange}>
-          <SelectTrigger className="h-8 w-auto min-w-[7rem] gap-1.5 text-xs" aria-label="Source">
-            <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">Source</span>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="hosted">Hosted</SelectItem>
-            {instances.map((instance) => (
-              <SelectItem key={instance.id} value={instance.id}>
-                {instance.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
         <div className="ml-auto flex items-center gap-2">
           <Button type="button" variant="secondary" size="sm" className="gap-1.5" onClick={onGetCode} disabled={getCodeDisabled}>

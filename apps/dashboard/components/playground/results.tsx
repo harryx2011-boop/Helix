@@ -260,17 +260,11 @@ export function Results({ result, loading, timingMs, error }: ResultsProps) {
     return (
       <div className="flex flex-col gap-3 p-4">
         <div className="flex flex-col gap-2 rounded-card border border-border bg-card p-4">
-          <span className="text-sm font-medium text-foreground">Handed off to Activity Logs</span>
+          <span className="text-sm font-medium text-foreground">Running as a background job</span>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            This is an async job. Track progress and results in Activity Logs.
+            This is an async job. Poll GET /v1/jobs/:id on your instance for progress and results.
           </p>
           <span className="font-mono text-xs text-muted-foreground">Job {result.jobId}</span>
-          <Button variant="secondary" size="sm" className="w-fit gap-1.5" asChild>
-            <a href={`/app/activity/${result.jobId}`}>
-              <ExternalLink className="h-3.5 w-3.5" />
-              View in Activity Logs
-            </a>
-          </Button>
         </div>
       </div>
     );
@@ -475,15 +469,9 @@ export function Results({ result, loading, timingMs, error }: ResultsProps) {
             <div className="flex flex-col gap-2 rounded-card border border-border bg-card p-4">
               <span className="text-sm font-medium text-foreground">Crawl started</span>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Crawls run in the background. Track progress and results in Activity Logs.
+                Crawls run in the background. Poll GET /v1/jobs/:id on your instance for progress and results.
               </p>
               <span className="font-mono text-xs text-muted-foreground">Job {response.id}</span>
-              <Button variant="secondary" size="sm" className="w-fit gap-1.5" asChild>
-                <a href={`/app/activity/${response.id}`}>
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  View in Activity Logs
-                </a>
-              </Button>
             </div>
           </div>
         );

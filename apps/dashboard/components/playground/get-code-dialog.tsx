@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { generateCode, LANGS, type Lang } from '@/lib/codegen';
 import { MCP_URL, PUBLIC_API_URL } from '@/lib/mode';
-import type { Endpoint } from '@/lib/supabase/types';
+import type { Endpoint } from '@/lib/endpoints';
 
 interface GetCodeDialogProps {
   endpoint: Endpoint;

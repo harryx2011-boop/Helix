@@ -22,7 +22,7 @@ import {
 } from '@/lib/docs-content';
 import { MCP_URL, SITE_URL } from '@/lib/mode';
 import { generateCode } from '@/lib/codegen';
-import type { Endpoint } from '@/lib/supabase/types';
+import type { Endpoint } from '@/lib/endpoints';
 
 const STATIC_SLUGS = ['getting-started', 'mcp', 'cli', 'skills', 'api-reference', 'sdks', 'agents'] as const;
 

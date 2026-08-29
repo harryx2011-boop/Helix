@@ -1,4 +1,4 @@
-import type { Endpoint } from './supabase/types';
+import type { Endpoint } from './endpoints';
 import { endpointById } from './catalog';
 
 export type Lang = 'curl' | 'python' | 'node' | 'mcp';

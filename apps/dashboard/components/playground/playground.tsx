@@ -23,7 +23,7 @@ import type {
 import { runEndpoint } from '@/lib/run-endpoint';
 import { useAppSession } from '@/components/app/session-provider';
 import { endpointById } from '@/lib/catalog';
-import type { Endpoint, InstanceRow } from '@/lib/supabase/types';
+import type { Endpoint } from '@/lib/endpoints';
 import { cn } from '@/lib/utils';
 import { ScrapeForm } from './forms/scrape-form';
 import { MapForm } from './forms/map-form';
@@ -34,7 +34,6 @@ import { InteractForm } from './forms/interact-form';
 import { MonitorForm } from './forms/monitor-form';
 import { GetCodeDialog } from './get-code-dialog';
 import { Results, type PlaygroundResult } from './results';
-import { RecentRuns } from './recent-runs';
 import { PromptBox } from './prompt-box';
 
 function isJobAcceptedShape(body: unknown): body is { id: string } {
@@ -50,8 +49,6 @@ export function Playground() {
   );
   const [promptValue, setPromptValue] = React.useState('');
   const [optionsOpen, setOptionsOpen] = React.useState(false);
-  const [source, setSource] = React.useState('hosted');
-  const [instances, setInstances] = React.useState<InstanceRow[]>([]);
   const [result, setResult] = React.useState<PlaygroundResult | undefined>(undefined);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | undefined>(undefined);
@@ -59,21 +56,6 @@ export function Playground() {
   const [codeDialog, setCodeDialog] = React.useState<{ endpoint: Endpoint; body: Record<string, unknown> } | undefined>(undefined);
 
   const activeDef = endpointById(activeId) ?? endpointById('scrape')!;
-
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch('/api/app/instances')
-      .then((response) => (response.ok ? (response.json() as Promise<{ instances: InstanceRow[] }>) : { instances: [] }))
-      .then((data) => {
-        if (!cancelled) setInstances(data.instances);
-      })
-      .catch(() => {
-        if (!cancelled) setInstances([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const selectTab = (id: string) => {
     setActiveId(id);
@@ -140,9 +122,6 @@ export function Playground() {
         onToggleOptions={() => setOptionsOpen((open) => !open)}
         onGetCode={submitGetCode}
         getCodeDisabled={promptDisabled}
-        instances={instances}
-        source={source}
-        onSourceChange={setSource}
       />
 
       <div className={cn('rounded-card border border-border bg-card', !optionsOpen && 'sr-only')} aria-hidden={!optionsOpen}>
@@ -213,7 +192,6 @@ export function Playground() {
         <Results result={result} loading={loading} timingMs={timingMs} error={error} />
       </div>
 
-      <RecentRuns />
 
       {codeDialog && (
         <GetCodeDialog

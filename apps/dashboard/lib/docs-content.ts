@@ -1,4 +1,4 @@
-import type { Endpoint } from './supabase/types';
+import type { Endpoint } from './endpoints';
 import type { FailureReason } from './api';
 import { endpointById, EXAMPLE_REQUEST, ENDPOINTS } from './catalog';
 import { generateCode } from './codegen';
@@ -184,12 +184,12 @@ export function agentSurfaceDocs(opts: { mcpUrl: string; siteUrl: string }): Rec
       sections: [
         {
           title: 'SKILL.md',
-          body: 'A SKILL.md is generated per account from the endpoints selected in onboarding. It opens with auth, the base URL, the rate-limit headers and `estimate: true`, then gives one section per endpoint: purpose, when to reach for it versus a sibling, the request and response shapes from openapi.yaml, a curl with your key, and every typed failure reason with what to do about it. Changing your endpoint selection in Preferences regenerates it.',
+          body: 'The SKILL.md covers every endpoint. It opens with auth, the base URL, the rate-limit headers and `estimate: true`, then gives one section per endpoint: purpose, when to reach for it versus a sibling, the request and response shapes from openapi.yaml, a curl with your key, and every typed failure reason with what to do about it.',
         },
         {
           title: 'Where it lives',
-          body: `Signed in, it is at \`${site}/api/app/skill\` (View and Copy on the Overview page). The same route accepts \`Authorization: Bearer helix-…\` and returns the document for the account that owns the key; that is how \`helix init\` fetches it. The public, keyless version covering every endpoint is at \`${site}/agent-onboarding/SKILL.md\`.`,
-          code: { label: 'curl', text: `curl -H "Authorization: Bearer helix-YOUR_KEY" ${site}/api/app/skill` },
+          body: `It is served, keyless, at \`${site}/agent-onboarding/SKILL.md\` — View and Copy on the Overview page, and what \`helix init\` fetches.`,
+          code: { label: 'curl', text: `curl ${site}/agent-onboarding/SKILL.md` },
         },
         {
           title: 'Placement',

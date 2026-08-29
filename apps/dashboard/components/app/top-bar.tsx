@@ -4,34 +4,19 @@ import Link from 'next/link';
 import { Bell, CircleHelp, Menu, Plug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { HOSTED, PUBLIC_API_URL } from '@/lib/mode';
-import { useAppSession } from '@/components/app/session-provider';
+import { PUBLIC_API_URL } from '@/lib/mode';
 
 function truncateUrl(url: string): string {
   return url.replace(/^https?:\/\//, '');
 }
 
 function WorkspacePill() {
-  const { profile } = useAppSession();
-
-  if (HOSTED) {
-    const label = profile?.email?.[0]?.toUpperCase() ?? 'P';
-    return (
-      <div className="flex items-center gap-2 rounded-pill border border-border px-2.5 py-1.5 text-[13px] text-foreground">
-        <span className="flex h-5 w-5 items-center justify-center rounded-card bg-primary/12 font-mono text-[11px] text-primary">
-          {label}
-        </span>
-        Personal
-      </div>
-    );
-  }
-
   return (
     <div className="flex items-center gap-2 rounded-pill border border-border px-2.5 py-1.5 text-[13px] text-foreground">
       <span className="flex h-5 w-5 items-center justify-center rounded-card bg-primary/12 font-mono text-[11px] text-primary">
-        S
+        H
       </span>
-      Self-host
+      Instance
       <span className="font-mono text-[11px] text-muted-foreground">{truncateUrl(PUBLIC_API_URL)}</span>
     </div>
   );

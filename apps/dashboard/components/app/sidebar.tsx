@@ -7,7 +7,6 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/shell/logo';
 import { SidebarNav } from './sidebar-nav';
-import { SpendMeter } from './spend-meter';
 import { UserChip } from './user-chip';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -64,7 +63,6 @@ function SidebarBody({
       </div>
       <SidebarNav selectedEndpoints={selectedEndpoints} collapsed={collapsed} />
       <div className={cn('mt-auto flex flex-col gap-1 border-t border-border px-2 py-2', collapsed && 'items-center px-0')}>
-        <SpendMeter collapsed={collapsed} />
         <UserChip collapsed={collapsed} />
         {onToggle && <CollapseToggle collapsed={collapsed} onToggle={onToggle} />}
       </div>

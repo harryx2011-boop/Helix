@@ -5,7 +5,7 @@ import { ArrowRight, FileScan, Globe, Map as MapIcon, Network, Search } from 'lu
 import { cn } from '@/lib/utils';
 import { generateCode, type Lang } from '@/lib/codegen';
 import { EXAMPLE_REQUEST } from '@/lib/catalog';
-import type { Endpoint } from '@/lib/supabase/types';
+import type { Endpoint } from '@/lib/endpoints';
 import { AnimatedCode, randomGlyphString, usePrefersReducedMotion } from './animated-code';
 import { CodeToken } from './code-panel';
 import { LadderExplainer } from './ladder-explainer';

@@ -4,7 +4,7 @@ import { ENDPOINTS, EXAMPLE_REQUEST } from './catalog';
 import { ENDPOINT_DOCS, docsCurlExample, docsEndpointList, agentSurfaceDocs, AGENT_SURFACE_SLUGS } from './docs-content';
 import { MCP_URL, SITE_URL } from './mode';
 import { generateCode } from './codegen';
-import type { Endpoint } from './supabase/types';
+import type { Endpoint } from './endpoints';
 
 /**
  * Markdown twins: every marketing page is also served as plain markdown, no

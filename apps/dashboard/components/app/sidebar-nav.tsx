@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
-import { Activity, BarChart3, BookOpen, Home, KeyRound, Server, Settings, Sparkles } from 'lucide-react';
+import { Activity, Home, KeyRound, Settings, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ENDPOINTS, orderBySelection } from '@/lib/catalog';
 
@@ -53,17 +53,12 @@ export function buildNavGroups(selectedEndpoints: readonly string[]): NavGroup[]
       rows: [{ href: '/app/agent', label: 'Agent', icon: Sparkles }],
     },
     {
-      heading: 'Self-host',
-      rows: [
-        { href: '/app/self-host', label: 'Guide', icon: BookOpen },
-        { href: '/app/self-host/instances', label: 'Instances', icon: Server },
-      ],
+      heading: 'Instance',
+      rows: [{ href: '/app/self-host/health', label: 'Health', icon: Activity }],
     },
     {
       heading: 'Account',
       rows: [
-        { href: '/app/activity', label: 'Activity Logs', icon: Activity },
-        { href: '/app/usage', label: 'Usage', icon: BarChart3 },
         { href: '/app/keys', label: 'API Keys', icon: KeyRound },
         { href: '/app/settings', label: 'Settings', icon: Settings },
       ],

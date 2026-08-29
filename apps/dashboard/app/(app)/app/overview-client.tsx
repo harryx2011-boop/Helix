@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useAppSession } from '@/components/app/session-provider';
 import Link from 'next/link';
 import { Check, Copy, Eye, EyeOff, FileText, Plug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -83,49 +84,6 @@ function ExploreRow({ endpoints }: { endpoints: EndpointSummary[] }) {
   );
 }
 
-function RequestsChart({ initialSeries }: { initialSeries: RequestsSeries | null }) {
-  const [series, setSeries] = React.useState<RequestsSeries | null>(initialSeries);
-  const [loading, setLoading] = React.useState(initialSeries === null);
-
-  React.useEffect(() => {
-    if (initialSeries) return;
-    let cancelled = false;
-    fetch('/api/app/usage?days=7')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (cancelled) return;
-        if (data && Array.isArray(data.labels) && Array.isArray(data.requests)) {
-          setSeries({ labels: data.labels, values: data.requests });
-        } else {
-          const labels = Array.from({ length: 7 }, (_, i) => `D${i + 1}`);
-          setSeries({ labels, values: labels.map(() => 0) });
-        }
-      })
-      .catch(() => {
-        const labels = Array.from({ length: 7 }, (_, i) => `D${i + 1}`);
-        setSeries({ labels, values: labels.map(() => 0) });
-      })
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [initialSeries]);
-
-  const total = series?.values.reduce((a, b) => a + b, 0) ?? 0;
-
-  return (
-    <div className="flex flex-col">
-      <div className="flex items-start justify-between gap-4 px-6 py-5">
-        <h2 className="text-[17px] font-medium leading-tight tracking-tight text-foreground">Requests, last 7 days</h2>
-        <span className="font-mono text-[28px] leading-none text-foreground">{total}</span>
-      </div>
-      <div className="px-6 pb-6">
-        {loading || !series ? <Skeleton className="h-32 w-full" /> : <CharChart series={[{ label: 'requests', values: series.values }]} labels={series.labels} height={8} variant="area" />}
-      </div>
-    </div>
-  );
-}
-
 function ActiveBrowsersRow() {
   return (
     <FrameRow flush>
@@ -146,43 +104,24 @@ function ActiveBrowsersRow() {
   );
 }
 
-function ApiKeyRow({ keyMasked, revealedKey, welcome }: { keyMasked: string | null; revealedKey: string | null; welcome: boolean }) {
-  const [revealed, setRevealed] = React.useState<string | null>(revealedKey);
-  const [showing, setShowing] = React.useState(Boolean(revealedKey));
+function ApiKeyRow({ welcome }: { welcome: boolean }) {
+  const { apiKey } = useAppSession();
+  const [showing, setShowing] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
 
-  const onReveal = React.useCallback(async () => {
-    if (showing) {
-      setShowing(false);
-      return;
-    }
-    if (revealed) {
-      setShowing(true);
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch('/api/app/keys/default/reveal');
-      if (res.ok) {
-        const data = await res.json();
-        setRevealed(data.key ?? null);
-        setShowing(true);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [showing, revealed]);
+  // The key lives in this browser, so revealing it is a local toggle rather
+  // than a request for something the server is holding.
+  const masked = apiKey ? `${apiKey.slice(0, 10)}${'•'.repeat(8)}${apiKey.slice(-3)}` : null;
+  const display = showing && apiKey ? apiKey : (masked ?? '·'.repeat(8));
 
   const onCopy = React.useCallback(() => {
-    const value = revealed ?? keyMasked ?? '';
+    const value = apiKey ?? '';
     navigator.clipboard.writeText(value).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
-  }, [revealed, keyMasked]);
+  }, [apiKey]);
 
-  const display = showing && revealed ? revealed : (keyMasked ?? '········');
 
   return (
     <div className="flex flex-col gap-3 px-6 py-5">
@@ -190,17 +129,15 @@ function ApiKeyRow({ keyMasked, revealedKey, welcome }: { keyMasked: string | nu
         <h3 className="text-[15px] font-medium leading-tight text-foreground">API key</h3>
         <p className="text-[13px] text-muted-foreground">{welcome ? 'Copy it now — you can reveal it again anytime with the eye icon.' : 'Use it as a Bearer token'}</p>
       </div>
-      {!HOSTED && keyMasked === null ? (
+      {apiKey === null ? (
         <p className="text-[13px] text-muted-foreground">Key is held in this browser. Open the connect sheet below to generate one.</p>
       ) : (
         <div className="flex items-center justify-between gap-3 rounded-card bg-secondary/40 px-3 py-2.5">
           <span className="truncate font-mono text-sm text-primary">{display}</span>
           <div className="flex shrink-0 items-center gap-1">
-            {HOSTED && (
-              <Button variant="ghost" size="icon" onClick={onReveal} disabled={loading} aria-label={showing ? 'Hide key' : 'Reveal key'}>
-                {showing ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            )}
+            <Button variant="ghost" size="icon" onClick={() => setShowing((v) => !v)} aria-label={showing ? 'Hide key' : 'Reveal key'}>
+              {showing ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
             <Button variant="ghost" size="icon" onClick={onCopy} aria-label="Copy key">
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             </Button>
@@ -221,7 +158,9 @@ interface IntegrationRow {
   copyText?: string;
 }
 
-function AgentIntegrations({ apiKey, initialOpen }: { apiKey: string; initialOpen: boolean }) {
+function AgentIntegrations({ initialOpen }: { initialOpen: boolean }) {
+  const { apiKey: sessionKey } = useAppSession();
+  const apiKey = sessionKey ?? 'helix-YOUR_KEY';
   const [open, setOpen] = React.useState(initialOpen);
   const [copiedRow, setCopiedRow] = React.useState<string | null>(null);
 
@@ -236,7 +175,7 @@ function AgentIntegrations({ apiKey, initialOpen }: { apiKey: string; initialOpe
   };
 
   const rows: IntegrationRow[] = [
-    { id: 'skill', label: 'SKILL.md', description: "Paste into your AI agent's context", action: 'view', href: '/api/app/skill' },
+    { id: 'skill', label: 'SKILL.md', description: "Paste into your AI agent's context", action: 'view', href: '/agent-onboarding/SKILL.md' },
     { id: 'cli', label: 'CLI', lines: [cliCmd], action: 'copy', copyText: cliCmd },
     { id: 'mcp', label: 'MCP', description: 'Connect an MCP client', action: 'copy', copyText: mcpLines.join('\n') },
   ];
@@ -297,19 +236,13 @@ function AgentIntegrations({ apiKey, initialOpen }: { apiKey: string; initialOpe
 
 export function OverviewClient({
   endpoints,
-  keyMasked,
-  revealedKey,
   welcome,
   connect,
-  requestsSeries = null,
 }: {
   endpoints: EndpointSummary[];
-  keyMasked: string | null;
-  revealedKey: string | null;
   welcome: boolean;
   /** Omitted by the static-export build, which cannot read searchParams on the server. */
   connect?: boolean;
-  requestsSeries?: RequestsSeries | null;
 }) {
   const [urlConnect, setUrlConnect] = React.useState(false);
 
@@ -330,12 +263,11 @@ export function OverviewClient({
       <FrameRow flush={!interactLive}>
         <div className="grid min-w-0 lg:grid-cols-[1.4fr_1fr] lg:divide-x lg:divide-border">
           <div className="flex min-w-0 flex-col divide-y divide-border">
-            <RequestsChart initialSeries={requestsSeries} />
             {interactLive && <ActiveBrowsersRow />}
           </div>
           <div className="flex min-w-0 flex-col divide-y divide-border">
-            <ApiKeyRow keyMasked={keyMasked} revealedKey={revealedKey} welcome={welcome} />
-            <AgentIntegrations apiKey={revealedKey ?? keyMasked ?? 'helix-YOUR_KEY'} initialOpen={connectOpen} />
+            <ApiKeyRow welcome={welcome} />
+            <AgentIntegrations initialOpen={connectOpen} />
           </div>
         </div>
       </FrameRow>

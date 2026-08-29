@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { Eye, FileScan, FileText, Map as MapIcon, MousePointerClick, Network, Search } from 'lucide-react';
-import type { Endpoint } from './supabase/types';
+import type { Endpoint } from './endpoints';
 
 /**
  * The single source of truth for the endpoint catalog across marketing, onboarding,

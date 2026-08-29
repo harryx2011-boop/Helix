@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import type { RunStatus } from '@/lib/supabase/types';
+import type { RunStatus } from '@/lib/endpoints';
 
 const STATUS_LABEL: Record<RunStatus, string> = {
   success: 'SUCCESS',

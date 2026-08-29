@@ -17,9 +17,7 @@ import type {
   SearchRequest,
   SearchResponse,
 } from '@/lib/api';
-import type { Endpoint } from '@/lib/supabase/types';
-
-const HOSTED = process.env.NEXT_PUBLIC_HELIX_HOSTED === '1';
+import type { Endpoint } from '@/lib/endpoints';
 
 export interface RunResult<T> {
   ok: boolean;
@@ -28,36 +26,25 @@ export interface RunResult<T> {
 }
 
 /**
- * One call path for every playground form. Hosted mode posts to our own proxy
- * (which attaches the server-held key and writes a `runs` row); self-host mode
- * calls the local API directly with the key from `useApiKey()` (WEBSITE.md §8).
+ * One call path for every playground form, in both modes: the browser calls
+ * the operator's own instance with the key from `useApiKey()`. Nothing is
+ * proxied through this app and no run is recorded anywhere but the instance.
  */
 export async function runEndpoint<T>(
   endpoint: Endpoint,
   body: Record<string, unknown> | FormData,
   apiKey: string | null,
 ): Promise<RunResult<T>> {
-  if (HOSTED) {
-    const response = await fetch(`/api/app/playground/${endpoint}`, {
-      method: 'POST',
-      ...(body instanceof FormData
-        ? { body }
-        : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-    });
-    const json = (await response.json().catch(() => ({}))) as T;
-    return { ok: response.ok, status: response.status, body: json };
-  }
-
   if (!apiKey) {
     throw new HelixApiError('No API key configured.', 401);
   }
   const client = new HelixClient({ apiKey });
-  const json = await callSelfHost(client, endpoint, body);
+  const json = await callInstance(client, endpoint, body);
   return { ok: true, status: 200, body: json as T };
 }
 
 // Each branch returns a different response shape; the caller asserts the union member it expects for the endpoint it asked for.
-async function callSelfHost(
+async function callInstance(
   client: HelixClient,
   endpoint: Endpoint,
   body: Record<string, unknown> | FormData,

@@ -97,6 +97,33 @@ describe('POST /v1/monitor', () => {
     expect(JSON.stringify(body)).not.toContain('abc');
   });
 
+  it('accepts a business-hours window and echoes it back', async () => {
+    const response = await create({
+      url: 'https://example.com',
+      schedule: { cron: '0 * * * *', window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 } },
+    });
+
+    expect(response.statusCode).toBe(201);
+    const body = response.json();
+    expect(body.schedule).toEqual({
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 },
+    });
+    // The window pushed the next check to the following in-window instant, not
+    // just the next cron tick.
+    expect(typeof body.nextCheckAt).toBe('string');
+  });
+
+  it('rejects a window that never intersects the cron', async () => {
+    const response = await create({
+      url: 'https://example.com',
+      schedule: { cron: '0 12 * * 0', window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 } },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: 'invalid_request', field: 'schedule.window' });
+  });
+
   it('rejects a schedule under the operator minimum with the field named', async () => {
     const response = await create({ url: 'https://example.com', schedule: '*/15 * * * *' });
     expect(response.statusCode).toBe(400);
@@ -124,6 +151,28 @@ describe('POST /v1/monitor', () => {
     });
     expect(response.statusCode).toBe(400);
     expect(response.json().field).toBe('trigger.selector');
+  });
+
+  it('accepts jsonOptions and echoes the schema back', async () => {
+    const response = await create({
+      url: 'https://example.com',
+      schedule: '0 * * * *',
+      jsonOptions: { schema: { type: 'object', properties: { price: { type: 'number' } } } },
+    });
+    expect(response.statusCode).toBe(201);
+    expect(response.json().jsonOptions).toEqual({
+      schema: { type: 'object', properties: { price: { type: 'number' } } },
+    });
+  });
+
+  it('rejects a jsonOptions schema with fabrication-inviting length keywords', async () => {
+    const response = await create({
+      url: 'https://example.com',
+      schedule: '0 * * * *',
+      jsonOptions: { schema: { type: 'array', minItems: 3 } },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('jsonOptions.schema.minItems');
   });
 
   it('refuses webhooks aimed inside the deployment', async () => {

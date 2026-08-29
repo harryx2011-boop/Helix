@@ -393,7 +393,10 @@ export class ExtractClient {
         overlap: options.overlap ?? 64,
         embed: options.embed ?? false,
       }),
-      signal: AbortSignal.timeout(30_000),
+      // Embedding loads the local model on first use, which takes longer than
+      // a warm call by an order of magnitude — 30s timed out every first crawl
+      // with a destination while a warm one answers in under a second.
+      signal: AbortSignal.timeout(options.embed ? 180_000 : 30_000),
     });
 
     if (!response.ok) {

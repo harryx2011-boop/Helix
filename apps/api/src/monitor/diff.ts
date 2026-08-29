@@ -308,3 +308,76 @@ export function boundedDiff(diff: Diff, maxBytes: number): Diff {
   const { ops: _ops, text: _text, ...rest } = diff;
   return { ...rest, ops: [], text: '', truncated: true };
 }
+
+/**
+ * A field that changed between two structured-extraction results, dot-
+ * pathed for nested objects (`address.city`) and index-pathed for arrays
+ * (`items.0.price`). `before`/`after` are omitted, not null, when a field was
+ * added or removed, so "the field is now null" is distinguishable from "the
+ * field did not exist".
+ */
+export interface JsonFieldChange {
+  path: string;
+  before?: unknown;
+  after?: unknown;
+}
+
+export interface JsonDiff {
+  granularity: 'json';
+  fields: JsonFieldChange[];
+  /** Changed fields over the total fields seen across both sides, 0 when identical. */
+  changeRatio: number;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Field-level diff of two JSON values from structured extraction. Unlike
+ * `diffText`, this never falls back to comparing serialized JSON as text: a
+ * key reordering or whitespace change in `JSON.stringify` output would read
+ * as a change to every field, which defeats the point of asking which fields
+ * changed.
+ */
+export function diffJson(before: unknown, after: unknown): JsonDiff {
+  const fields: JsonFieldChange[] = [];
+  let total = 0;
+
+  const walk = (path: string, a: unknown, b: unknown): void => {
+    if (a === b) {
+      if (a !== undefined) total += 1;
+      return;
+    }
+
+    const bothObjects = isPlainObject(a) && isPlainObject(b);
+    const bothArrays = Array.isArray(a) && Array.isArray(b);
+
+    if (bothObjects) {
+      const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+      for (const key of keys) walk(path ? `${path}.${key}` : key, a[key], b[key]);
+      return;
+    }
+
+    if (bothArrays) {
+      const length = Math.max(a.length, b.length);
+      for (let i = 0; i < length; i += 1) walk(`${path}.${i}`, a[i], b[i]);
+      return;
+    }
+
+    total += 1;
+    const change: JsonFieldChange = { path };
+    if (a !== undefined) change.before = a;
+    if (b !== undefined) change.after = b;
+    fields.push(change);
+  };
+
+  walk('', before, after);
+
+  return {
+    granularity: 'json',
+    fields,
+    changeRatio: total === 0 ? 0 : Math.min(1, fields.length / total),
+  };
+}
+

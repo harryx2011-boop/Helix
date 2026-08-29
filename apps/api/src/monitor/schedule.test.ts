@@ -6,6 +6,7 @@ import {
   nextRun,
   normalizeSchedule,
   ScheduleError,
+  withinWindow,
 } from './schedule.js';
 
 describe('everyToCron', () => {
@@ -87,3 +88,69 @@ describe('minimum interval', () => {
     expect(() => assertMinimumInterval({ cron: '*/15 * * * *', timezone: 'UTC' }, 0)).not.toThrow();
   });
 });
+
+describe('business-hours window', () => {
+  it('skips a firing outside the window to the next one inside it', () => {
+    // Hourly cron, Mon-Fri 9-17 UTC. From a Friday evening, the next in-window
+    // firing is Monday morning, not Friday 18:00.
+    const schedule = normalizeSchedule({
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 },
+    });
+    const friday1830 = new Date('2026-08-28T18:30:00Z');
+    expect(nextRun(schedule, friday1830)?.toISOString()).toBe('2026-08-31T09:00:00.000Z');
+  });
+
+  it('stays on an in-window firing without skipping ahead', () => {
+    const schedule = normalizeSchedule({
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 },
+    });
+    const tuesday1000 = new Date('2026-08-25T10:00:00Z');
+    expect(nextRun(schedule, tuesday1000)?.toISOString()).toBe('2026-08-25T11:00:00.000Z');
+  });
+
+  it('measures the real gap a window imposes, not the raw cron interval', () => {
+    const schedule = normalizeSchedule({
+      cron: '0 * * * *',
+      timezone: 'UTC',
+      window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 },
+    });
+    // The window is open 8 hours a day, so the largest gap (Friday 16:00 to
+    // Monday 09:00) dwarfs the 1-hour cron interval elsewhere in the sample.
+    const from = new Date('2026-08-24T00:00:00Z');
+    expect(minimumGapSeconds(schedule, 8, from)).toBe(3600);
+  });
+
+  it('defaults days to Monday-Friday when omitted', () => {
+    const schedule = normalizeSchedule({ cron: '0 12 * * *', timezone: 'UTC', window: { startHour: 9, endHour: 17 } });
+    expect(withinWindow(schedule.window!, new Date('2026-08-22T12:00:00Z'), 'UTC')).toBe(false); // Saturday
+    expect(withinWindow(schedule.window!, new Date('2026-08-24T12:00:00Z'), 'UTC')).toBe(true); // Monday
+  });
+
+  it('rejects a window and cron combination that never intersects', () => {
+    expect(() =>
+      normalizeSchedule({ cron: '0 12 * * 0', timezone: 'UTC', window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 } }),
+    ).toThrow(/never fires/);
+  });
+
+  it('rejects a malformed window', () => {
+    expect(() => normalizeSchedule({ cron: '0 * * * *', window: { startHour: 17, endHour: 9 } })).toThrow(ScheduleError);
+    expect(() => normalizeSchedule({ cron: '0 * * * *', window: { startHour: 9, endHour: 17, days: [7] } })).toThrow(
+      ScheduleError,
+    );
+  });
+
+  it('evaluates the window in the schedule timezone, not UTC', () => {
+    const schedule = normalizeSchedule({
+      cron: '0 * * * *',
+      timezone: 'Europe/London',
+      window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 },
+    });
+    // 08:30 UTC is 09:30 London in August (BST), inside the window.
+    expect(withinWindow(schedule.window!, new Date('2026-08-24T08:30:00Z'), 'Europe/London')).toBe(true);
+  });
+});
+

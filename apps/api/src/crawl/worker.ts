@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { getPool } from '../db/pool.js';
 import { runPipeline, type PipelineDeps } from '../core/pipeline.js';
 import { PersistentFrontier } from './persistent-frontier.js';
@@ -8,6 +9,7 @@ import { SitemapFetcher } from './sitemap.js';
 import { siteOf } from './url.js';
 import type { Log } from '../core/logger.js';
 import { enqueueDelivery, type WebhookConfig, type WebhookEvent } from '../webhooks/deliveries.js';
+import { createSink, type VectorSink } from '../vectors/sink.js';
 
 /**
  * The crawl worker.
@@ -19,6 +21,13 @@ import { enqueueDelivery, type WebhookConfig, type WebhookEvent } from '../webho
  * And failures are recorded as typed rows rather than dropped, so a crawl that
  * returned forty pages out of a hundred can say what happened to the other sixty.
  */
+
+export interface DestinationConfig {
+  type: string;
+  collection?: string | undefined;
+  namespace?: string | undefined;
+  upsertMode: 'update-in-place' | 'append';
+}
 
 export interface CrawlJobRequest {
   url: string;
@@ -40,6 +49,7 @@ export interface CrawlJobRequest {
   extractor: 'trafilatura' | 'readability' | 'auto';
   onlyMainContent: boolean;
   webhook?: WebhookConfig | undefined;
+  destination?: DestinationConfig | undefined;
 }
 
 export interface WorkerDeps extends PipelineDeps {
@@ -129,6 +139,18 @@ export class CrawlWorker {
     });
 
     const robots = new RobotsCache(this.#deps.userAgent, this.#logger);
+
+    const sink = request.destination
+      ? createSink(request.destination.type, process.env, this.#logger)
+      : undefined;
+    if (request.destination && !sink) {
+      this.#logger?.warn(
+        { jobId, type: request.destination.type },
+        'destination requested but not configured on this instance',
+      );
+    }
+    const sinkState = { ensured: false };
+    let vectorFailures = 0;
 
     // Resume before seeding: a restarted crawl already has a frontier, and
     // re-seeding it would duplicate work the dedup filter has forgotten.
@@ -288,6 +310,21 @@ export class CrawlWorker {
           if (!contentUnchanged) {
             await this.#recordDocument(jobId, item.url, result);
             completed++;
+
+            if (sink && request.destination) {
+              const failure = await this.#storeToDestination(
+                sink,
+                sinkState,
+                request.destination,
+                item.url,
+                result.content.markdown,
+              );
+              if (failure) {
+                vectorFailures++;
+                await this.#recordFailure(jobId, item.url, 'vector_store', failure);
+              }
+            }
+
             // The markdown is not copied into the delivery row: the dispatcher
             // reads it from `documents` at send time, so a crawl with a webhook
             // stores each page once.
@@ -359,6 +396,7 @@ export class CrawlWorker {
         JSON.stringify({
           pagesFetched: completed,
           pagesUnchanged: unchanged,
+          ...(request.destination ? { vectorFailures } : {}),
         }),
         JSON.stringify(frontier.rejections()),
       ],
@@ -373,7 +411,7 @@ export class CrawlWorker {
     }
 
     this.#logger?.info(
-      { jobId, completed, failed, unchanged, rejections: frontier.rejections() },
+      { jobId, completed, failed, unchanged, vectorFailures, rejections: frontier.rejections() },
       'crawl finished',
     );
 
@@ -383,6 +421,51 @@ export class CrawlWorker {
       failed,
       unchanged,
     });
+  }
+
+  /**
+   * Chunk, embed and upsert one page into the configured destination.
+   *
+   * A failure here is recorded and swallowed rather than thrown: the page
+   * itself is already stored, and a vector-store outage should not cost the
+   * crawl the page it already fetched.
+   */
+  async #storeToDestination(
+    sink: VectorSink,
+    sinkState: { ensured: boolean },
+    destination: DestinationConfig,
+    url: string,
+    markdown: string,
+  ): Promise<string | undefined> {
+    const collection = destination.collection ?? destination.namespace ?? 'default';
+
+    try {
+      const chunked = await this.#deps.extractClient.chunk({ text: markdown, url, embed: true });
+      if (chunked.chunks.length === 0) return undefined;
+
+      if (!sinkState.ensured) {
+        const dimensions = chunked.embeddingDimensions ?? chunked.chunks[0]?.embedding?.length ?? 0;
+        await sink.ensureCollection(collection, dimensions);
+        sinkState.ensured = true;
+      }
+
+      await sink.store({
+        url,
+        collection,
+        chunks: chunked.chunks.map((chunk) => ({
+          text: chunk.text,
+          anchor: destination.upsertMode === 'append' ? `${chunk.anchor}:${randomUUID()}` : chunk.anchor,
+          tokens: chunk.tokens,
+          embedding: chunk.embedding ?? [],
+          headingPath: chunk.headingPath,
+        })),
+      });
+      return undefined;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.#logger?.warn({ error, url }, 'destination store failed');
+      return message;
+    }
   }
 
   /**

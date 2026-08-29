@@ -4,10 +4,12 @@ import {
   deleteProviderKey,
   getProviderStatuses,
   isLocalProvider,
+  listProviderKeys,
   PROVIDERS,
   upsertProviderKey,
   type Provider,
 } from '../providers/repository.js';
+import { listLocalProviderModels } from '../providers/models.js';
 
 /**
  * A caller's own LLM provider keys, stored against their Helix API key.
@@ -106,6 +108,48 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
       model: result.model,
       baseUrl: result.baseUrl,
     });
+  });
+
+  app.get<{ Params: { provider: string } }>('/providers/:provider/models', async (request, reply) => {
+    const apiKeyId = request.apiKey?.id;
+    if (!apiKeyId) {
+      return reply.code(401).send({ error: 'unauthorized', message: 'Missing API key.', requestId: request.id });
+    }
+
+    const { provider } = request.params;
+    if (!isProvider(provider)) {
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: `provider: must be one of ${PROVIDERS.join(', ')}`,
+        field: 'provider',
+        requestId: request.id,
+      });
+    }
+    if (!isLocalProvider(provider)) {
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: `${provider} has no installed-model listing; only local runtimes do.`,
+        field: 'provider',
+        requestId: request.id,
+      });
+    }
+
+    const rows = await listProviderKeys(apiKeyId);
+    const baseUrl = rows.find((r) => r.provider === provider)?.base_url;
+    if (!baseUrl) {
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: `Save a base URL for ${provider} before browsing its models.`,
+        field: 'baseUrl',
+        requestId: request.id,
+      });
+    }
+
+    const result = await listLocalProviderModels(provider, baseUrl);
+    if (!result.ok) {
+      return reply.send({ success: false, provider, failure: { reason: result.reason, message: result.message } });
+    }
+    return reply.send({ success: true, provider, models: result.models });
   });
 
   app.delete<{ Params: { provider: string } }>('/providers/:provider', async (request, reply) => {

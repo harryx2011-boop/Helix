@@ -28,6 +28,7 @@ import { registerJobs } from './routes/jobs.js';
 import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerAgent } from './routes/agent.js';
+import { registerEnrich } from './routes/enrich.js';
 import { registerInternal } from './routes/internal.js';
 import { registerSettings } from './routes/settings.js';
 import { readOverrides } from './settings/store.js';
@@ -187,6 +188,20 @@ const fetchMonitorPage = async (monitor: MonitorRecord): Promise<FetchOutcome> =
   return { ok: true, content, contentHash: result.content.contentHash };
 };
 
+/** Structured extraction for a monitor's `jsonOptions`, on the same helix-extract path `/scrape`'s `jsonOptions` uses. */
+const extractMonitorJson = async (monitor: MonitorRecord, content: string): Promise<Record<string, unknown>> => {
+  const jsonOptions = monitor.jsonOptions;
+  if (!jsonOptions) throw new Error('extractMonitorJson called without jsonOptions');
+  const structured = await extractClient.structured({
+    content,
+    schema: jsonOptions.schema,
+    prompt: jsonOptions.prompt,
+    provider: jsonOptions.provider,
+    model: jsonOptions.model,
+  });
+  return structured.data;
+};
+
 const monitorScheduler = new MonitorScheduler({
   store: monitorStore,
   concurrency: config.monitorConcurrency,
@@ -194,6 +209,7 @@ const monitorScheduler = new MonitorScheduler({
     runCheck(monitor, {
       store: monitorStore,
       fetchPage: fetchMonitorPage,
+      extractJson: extractMonitorJson,
       retention: monitorRetention,
       maxContentBytes: config.monitorMaxContentBytes,
       logger: app.log,
@@ -282,6 +298,14 @@ await app.register(
     });
     await registerInteract(instance, { sessions, extractClient, publicUrl: config.publicUrl });
     await registerAgent(instance, { extractClient, encryptionKey: providerEncryptionKey });
+    await registerEnrich(instance, {
+      fetchClient,
+      extractClient,
+      browserPool,
+      searchProvider,
+      encryptionKey: providerEncryptionKey,
+      concurrency: config.searchScrapeConcurrency,
+    });
   },
   { prefix: '/v1' },
 );

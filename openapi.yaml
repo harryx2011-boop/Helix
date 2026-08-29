@@ -805,8 +805,14 @@ paths:
         not count as a change. Keyword triggers narrow it further without a
         model call.
 
-        The schedule is a cron expression or an interval (`15m`, `6h`, `1d`).
-        The operator sets the minimum gap between checks
+        `jsonOptions` swaps the reported diff for a field-level one: on a
+        change, the markdown before and after is run through structured
+        extraction and the two results are diffed field by field, so the
+        webhook says which fields changed instead of a text diff.
+
+        The schedule is a cron expression or an interval (`15m`, `6h`, `1d`),
+        with an optional `window` restricting it to business hours. The
+        operator sets the minimum gap between checks
         (`HELIX_MONITOR_MIN_INTERVAL`, hourly by default); a schedule under it
         is rejected with `field: schedule`.
       operationId: createMonitor
@@ -1095,11 +1101,16 @@ paths:
       tags: [Providers]
       summary: List your provider keys
       description: |
-        Status for all four supported providers (`anthropic`, `openai`, `gemini`,
-        `openrouter`) under the calling API key. `configured` is true whenever a
-        call can use that provider at all; `source` says whether that comes from
-        a key you stored (`key`) or the instance's own environment credentials
-        (`instance`), or neither (`none`).
+        Status for every supported provider — the four cloud providers
+        (`anthropic`, `openai`, `gemini`, `openrouter`) and three local runtimes
+        (`ollama`, `vllm`, `openai-compatible`) — under the calling API key.
+        `configured` is true whenever a call can use that provider at all;
+        `source` says whether that comes from a key you stored (`key`) or the
+        instance's own environment credentials (`instance`), or neither
+        (`none`).
+
+        A local runtime is identified by `baseUrl` instead of a key — most need
+        no credential at all.
 
         The plaintext of a stored key is never returned — only `last4`.
       operationId: listProviders
@@ -1133,19 +1144,35 @@ paths:
                   - provider: openrouter
                     configured: false
                     source: none
+                  - provider: ollama
+                    configured: true
+                    source: key
+                    model: gemma3:4b
+                    baseUrl: 'http://localhost:11434/v1'
+                    updatedAt: '2026-08-24T12:30:00.000Z'
+                  - provider: vllm
+                    configured: false
+                    source: none
+                  - provider: openai-compatible
+                    configured: false
+                    source: none
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /providers/{provider}:
     parameters:
-      - { name: provider, in: path, required: true, schema: { type: string, enum: [anthropic, openai, gemini, openrouter] } }
+      - { name: provider, in: path, required: true, schema: { $ref: '#/components/schemas/ProviderName' } }
     put:
       tags: [Providers]
-      summary: Store your key for a provider
+      summary: Store your key or base URL for a provider
       description: |
         Upserts your own credential for this provider. Every LLM-backed request
         made with this Helix API key — `/scrape` and `/parse`'s `jsonOptions`,
         and `/agent/schema` — then uses it instead of this instance's
         environment credentials.
+
+        `ollama`, `vllm` and `openai-compatible` are local runtimes: they take
+        `baseUrl` instead of `apiKey` (most need no credential at all). Every
+        other provider requires `apiKey`.
 
         The plaintext is accepted once and never returned again; only its last
         4 characters (`last4`) come back, here and from `GET /providers`.
@@ -1156,18 +1183,27 @@ paths:
           application/json:
             schema:
               type: object
-              required: [apiKey]
               properties:
                 apiKey:
                   type: string
                   minLength: 8
                   maxLength: 512
-                  description: Trimmed before storage.
+                  description: Trimmed before storage. Required for every provider except a local runtime.
                 model:
                   type: string
                   maxLength: 200
                   description: Used for calls made with this provider when the request names no model.
-            example: { apiKey: 'sk-ant-...', model: claude-sonnet-4-5 }
+                baseUrl:
+                  type: string
+                  format: uri
+                  description: Required for `ollama`, `vllm` and `openai-compatible` — where the runtime is reached.
+            examples:
+              cloud:
+                summary: A cloud provider
+                value: { apiKey: 'sk-ant-...', model: claude-sonnet-4-5 }
+              local:
+                summary: A local runtime
+                value: { baseUrl: 'http://localhost:11434/v1', model: gemma3:4b }
       responses:
         '200':
           description: Stored.
@@ -1177,9 +1213,10 @@ paths:
                 type: object
                 properties:
                   success: { type: boolean }
-                  provider: { type: string, enum: [anthropic, openai, gemini, openrouter] }
-                  last4: { type: string }
+                  provider: { $ref: '#/components/schemas/ProviderName' }
+                  last4: { type: [string, 'null'] }
                   model: { type: [string, 'null'] }
+                  baseUrl: { type: [string, 'null'] }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
     delete:
@@ -1196,6 +1233,75 @@ paths:
                 type: object
                 properties:
                   success: { type: boolean }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /providers/{provider}/models:
+    get:
+      tags: [Providers]
+      summary: List the models a local runtime actually has installed
+      description: |
+        For `ollama`, `vllm` and `openai-compatible` only — the models a caller
+        can pick from instead of typing a model name blind. Reads the base URL
+        already saved for this provider (`PUT /providers/{provider}` first);
+        a cloud provider or an unsaved local runtime is rejected with 400.
+
+        A local runtime that cannot be reached, or answers with something
+        unexpected, is reported as a typed `failure` in a `200` response, never
+        a `5xx` — a caller's home network reaching a stopped Ollama is an
+        everyday case, not a server error.
+      operationId: listProviderModels
+      parameters:
+        - { name: provider, in: path, required: true, schema: { $ref: '#/components/schemas/ProviderName' } }
+      responses:
+        '200':
+          description: Either the installed models, or a typed reason the runtime could not be listed.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    required: [success, provider, models]
+                    properties:
+                      success: { type: boolean, enum: [true] }
+                      provider: { $ref: '#/components/schemas/ProviderName' }
+                      models:
+                        type: array
+                        items: { $ref: '#/components/schemas/ProviderModel' }
+                  - type: object
+                    required: [success, provider, failure]
+                    properties:
+                      success: { type: boolean, enum: [false] }
+                      provider: { $ref: '#/components/schemas/ProviderName' }
+                      failure:
+                        type: object
+                        required: [reason, message]
+                        properties:
+                          reason: { type: string, enum: [invalid_base_url, unreachable, unsupported, bad_response] }
+                          message: { type: string }
+              examples:
+                installed:
+                  summary: Ollama, reachable
+                  value:
+                    success: true
+                    provider: ollama
+                    models:
+                      - name: 'gemma4:latest'
+                        parameterSize: 8.0B
+                        quantization: Q4_K_M
+                        sizeBytes: 9608350718
+                        capabilities: [completion, tools, thinking]
+                      - name: 'gemma3:4b'
+                        parameterSize: 4.3B
+                        quantization: Q4_K_M
+                        sizeBytes: 3338801804
+                        capabilities: [completion]
+                unreachable:
+                  summary: The runtime is not running
+                  value:
+                    success: false
+                    provider: ollama
+                    failure: { reason: unreachable, message: 'Could not reach ollama at http://localhost:11434/v1.' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
@@ -2230,6 +2336,7 @@ components:
                 sessionId: { type: string }
                 geo: { type: string, minLength: 2, maxLength: 2 }
         diff: { $ref: '#/components/schemas/MonitorDiffOptions' }
+        jsonOptions: { $ref: '#/components/schemas/MonitorJsonOptions' }
         trigger: { $ref: '#/components/schemas/MonitorTrigger' }
         sensitivity:
           type: string
@@ -2256,6 +2363,11 @@ components:
         schedule: { $ref: '#/components/schemas/MonitorSchedule' }
         scrapeOptions: { type: object }
         diff: { $ref: '#/components/schemas/MonitorDiffOptions' }
+        jsonOptions:
+          description: Send `null` to remove it.
+          oneOf:
+            - { type: 'null' }
+            - $ref: '#/components/schemas/MonitorJsonOptions'
         trigger: { $ref: '#/components/schemas/MonitorTrigger' }
         sensitivity: { type: string, enum: [any, significant] }
         webhook:
@@ -2270,8 +2382,15 @@ components:
     MonitorSchedule:
       description: |
         A cron expression as a string, or an object with `cron` or `every`
-        (`15m`, `6h`, `1d`) and an optional IANA `timezone` (default UTC).
-        Business-hours windows are written in cron: `0 9-17 * * 1-5`.
+        (`15m`, `6h`, `1d`), an optional IANA `timezone` (default UTC), and an
+        optional business-hours `window`.
+
+        `window` restricts the cron rather than replacing it: a firing outside
+        the window is skipped forward to the next one inside it, so the cron
+        still decides how often a check *could* run and the window decides
+        which of those firings are kept. A schedule whose cron and window never
+        intersect (e.g. a Sunday-only cron against a Monday-Friday window) is
+        rejected at creation with `field: schedule.window`.
       oneOf:
         - { type: string, example: '0 * * * *' }
         - type: object
@@ -2279,6 +2398,20 @@ components:
             cron: { type: string }
             every: { type: string, description: 'Interval such as `15m`, `6h`, `1d`.' }
             timezone: { type: string, default: UTC }
+            window: { $ref: '#/components/schemas/MonitorScheduleWindow' }
+
+    MonitorScheduleWindow:
+      type: object
+      required: [startHour, endHour]
+      description: Business hours the cron is narrowed to, evaluated in the schedule's own timezone.
+      properties:
+        days:
+          type: array
+          items: { type: integer, minimum: 0, maximum: 6 }
+          default: [1, 2, 3, 4, 5]
+          description: 0 = Sunday .. 6 = Saturday. Defaults to Monday-Friday.
+        startHour: { type: integer, minimum: 0, maximum: 23, description: Hour the window opens, inclusive. }
+        endHour: { type: integer, minimum: 1, maximum: 24, description: Hour the window closes, exclusive. }
 
     MonitorDiffOptions:
       type: object
@@ -2288,6 +2421,25 @@ components:
           type: boolean
           default: true
           description: Include the diff text and ops in the webhook body. Off sends counts only.
+
+    MonitorJsonOptions:
+      type: object
+      required: [schema]
+      description: |
+        Field-level diffing on extracted JSON instead of markdown text. On a
+        change, the page's markdown before and after is run through
+        helix-extract `/structured` with this schema, and the two results are
+        diffed field by field (see `MonitorJsonDiff`). The text diff still
+        decides whether the page changed and drives keyword/ratio triggers;
+        this only replaces what gets reported and delivered once a change
+        already fired, so a quiet check never pays for the extra model call.
+      properties:
+        schema:
+          type: object
+          description: A JSON Schema describing the fields to extract. `minItems`/`maxItems` are rejected, same as `/scrape`'s `jsonOptions.schema`.
+        prompt: { type: string, maxLength: 4000 }
+        provider: { type: string }
+        model: { type: string }
 
     MonitorTrigger:
       type: object
@@ -2343,8 +2495,13 @@ components:
             cron: { type: string }
             timezone: { type: string }
             every: { type: string }
+            window: { $ref: '#/components/schemas/MonitorScheduleWindow' }
         scrapeOptions: { type: object }
         diff: { $ref: '#/components/schemas/MonitorDiffOptions' }
+        jsonOptions:
+          oneOf:
+            - { type: 'null' }
+            - $ref: '#/components/schemas/MonitorJsonOptions'
         trigger: { $ref: '#/components/schemas/MonitorTrigger' }
         sensitivity: { type: string, enum: [any, significant] }
         webhook:
@@ -2415,6 +2572,25 @@ components:
               op: { type: string, enum: [equal, insert, delete] }
               text: { type: string }
 
+    MonitorJsonDiff:
+      type: object
+      description: |
+        Field-level diff of two structured-extraction results, produced when
+        the monitor has `jsonOptions` set. Unlike `MonitorDiff`, this never
+        diffs serialized JSON as text: a key reordering counts as no change,
+        and `fields` names only the paths whose value actually differs.
+      properties:
+        granularity: { type: string, enum: [json] }
+        changeRatio: { type: number, description: 'Changed fields over the total fields seen across both sides, 0 to 1.' }
+        fields:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string, description: 'Dot-pathed for nested objects (`address.city`), index-pathed for arrays (`items.0.price`).' }
+              before: { description: Omitted, not null, when the field did not exist before. }
+              after: { description: Omitted, not null, when the field no longer exists. }
+
     MonitorHistoryEntry:
       type: object
       properties:
@@ -2429,8 +2605,10 @@ components:
             sensitivity setting ignores. `trigger_not_met` changed but the keyword
             or ratio trigger did not fire; the baseline still moved.
         diff:
-          allOf:
+          description: A `MonitorDiff` (text) normally, or a `MonitorJsonDiff` when the monitor's `jsonOptions` is set and extraction succeeded.
+          oneOf:
             - $ref: '#/components/schemas/MonitorDiff'
+            - $ref: '#/components/schemas/MonitorJsonDiff'
         error: { type: [string, 'null'] }
         snapshotUrl: { type: [string, 'null'], description: Null when the snapshot was pruned. }
 
@@ -2671,11 +2849,15 @@ components:
             amount: { type: number }
             currency: { type: string }
 
+    ProviderName:
+      type: string
+      enum: [anthropic, openai, gemini, openrouter, ollama, vllm, openai-compatible]
+
     ProviderStatus:
       type: object
       required: [provider, configured, source]
       properties:
-        provider: { type: string, enum: [anthropic, openai, gemini, openrouter] }
+        provider: { $ref: '#/components/schemas/ProviderName' }
         configured:
           type: boolean
           description: Whether a call for this provider can use a key at all, yours or the instance's.
@@ -2685,14 +2867,32 @@ components:
           description: '`key`: yours, stored here. `instance`: the environment credential, no key of yours stored. `none`: neither.'
         last4:
           type: string
-          description: Present only when `source` is `key`.
+          description: Present only when `source` is `key` and a credential (not just a base URL) is stored.
         model:
           type: [string, 'null']
           description: Your stored default model for this provider, when you set one.
+        baseUrl:
+          type: [string, 'null']
+          description: Where a local runtime (`ollama`, `vllm`, `openai-compatible`) is reached. Absent for cloud providers.
         updatedAt:
           type: string
           format: date-time
           description: Present only when `source` is `key`.
+
+    ProviderModel:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: The exact string to pass as `model` — Ollama's tag, or an OpenAI-compatible model id.
+        parameterSize: { type: string, description: 'e.g. "8.0B", when the runtime reports it.' }
+        quantization: { type: string, description: 'e.g. "Q4_K_M", when the runtime reports it.' }
+        sizeBytes: { type: integer, description: On-disk size, when the runtime reports it. }
+        capabilities:
+          type: array
+          items: { type: string }
+          description: 'e.g. ["completion", "tools", "thinking"], when the runtime reports them.'
 
     Health:
       type: object

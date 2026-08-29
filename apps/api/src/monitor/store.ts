@@ -1,6 +1,6 @@
 import type { Pool } from '../db/pool.js';
 import { transaction } from '../db/pool.js';
-import type { Diff, Granularity } from './diff.js';
+import type { Diff, Granularity, JsonDiff } from './diff.js';
 import type { Schedule } from './schedule.js';
 import type { Sensitivity } from './sensitivity.js';
 import type { TriggerOptions } from './triggers.js';
@@ -35,6 +35,21 @@ export interface DiffOptions {
   inline: boolean;
 }
 
+/**
+ * When set, a check extracts structured JSON from the page (via helix-extract
+ * `/structured`, the same path `/scrape`'s `jsonOptions` uses) and diffs the
+ * two JSON objects field by field instead of diffing markdown text. The text
+ * diff still runs first to decide whether the page changed at all; JSON
+ * extraction only runs on a real change, so a quiet page never pays for a
+ * model call.
+ */
+export interface MonitorJsonOptions {
+  schema: Record<string, unknown>;
+  prompt?: string | undefined;
+  provider?: string | undefined;
+  model?: string | undefined;
+}
+
 export type MonitorEvent = 'changed' | 'checked' | 'failed';
 
 export interface MonitorWebhook {
@@ -53,6 +68,7 @@ export interface MonitorRecord {
   schedule: Schedule;
   scrapeOptions: MonitorScrapeOptions;
   diff: DiffOptions;
+  jsonOptions: MonitorJsonOptions | null;
   trigger: TriggerOptions;
   sensitivity: Sensitivity;
   webhook: MonitorWebhook | null;
@@ -76,6 +92,7 @@ export interface NewMonitor {
   schedule: Schedule;
   scrapeOptions: MonitorScrapeOptions;
   diff: DiffOptions;
+  jsonOptions?: MonitorJsonOptions | null | undefined;
   trigger: TriggerOptions;
   sensitivity: Sensitivity;
   webhook: MonitorWebhook | null;
@@ -86,6 +103,7 @@ export interface MonitorPatch {
   schedule?: Schedule;
   scrapeOptions?: MonitorScrapeOptions;
   diff?: DiffOptions;
+  jsonOptions?: MonitorJsonOptions | null;
   trigger?: TriggerOptions;
   sensitivity?: Sensitivity;
   webhook?: MonitorWebhook | null;
@@ -120,7 +138,7 @@ export interface CheckRecord {
   checkedAt: Date;
   changed: boolean;
   reason: CheckReason;
-  diff: Diff | null;
+  diff: Diff | JsonDiff | null;
   error: string | null;
 }
 
@@ -130,7 +148,7 @@ export interface NewCheck {
   checkedAt: Date;
   changed: boolean;
   reason: CheckReason;
-  diff: Diff | null;
+  diff: Diff | JsonDiff | null;
   error: string | null;
 }
 
@@ -230,6 +248,7 @@ export class MemoryMonitorStore implements MonitorStore {
       schedule: input.schedule,
       scrapeOptions: input.scrapeOptions,
       diff: input.diff,
+      jsonOptions: input.jsonOptions ?? null,
       trigger: input.trigger,
       sensitivity: input.sensitivity,
       webhook: input.webhook,
@@ -268,6 +287,7 @@ export class MemoryMonitorStore implements MonitorStore {
     if (patch.schedule !== undefined) next.schedule = patch.schedule;
     if (patch.scrapeOptions !== undefined) next.scrapeOptions = patch.scrapeOptions;
     if (patch.diff !== undefined) next.diff = patch.diff;
+    if (patch.jsonOptions !== undefined) next.jsonOptions = patch.jsonOptions;
     if (patch.trigger !== undefined) next.trigger = patch.trigger;
     if (patch.sensitivity !== undefined) next.sensitivity = patch.sensitivity;
     if (patch.webhook !== undefined) next.webhook = patch.webhook;
@@ -473,6 +493,7 @@ interface MonitorRow {
   urls: string[];
   schedule: Schedule;
   diff_config: DiffOptions;
+  json_options: MonitorJsonOptions | null;
   trigger_config: TriggerOptions;
   scrape_options: MonitorScrapeOptions;
   webhook: MonitorWebhook | null;
@@ -490,11 +511,11 @@ interface MonitorRow {
   pages_unchanged: number;
 }
 
-const MONITOR_COLUMNS = `id, api_key_id, urls, schedule, diff_config, trigger_config, scrape_options,
+const MONITOR_COLUMNS = `id, api_key_id, urls, schedule, diff_config, json_options, trigger_config, scrape_options,
   webhook, sensitivity, status, created_at, updated_at, last_checked_at, next_check_at, claimed_at,
   last_change_at, last_error, checks, changes, pages_unchanged`;
 
-const CLAIMED_COLUMNS = `m.id, m.api_key_id, m.urls, m.schedule, m.diff_config, m.trigger_config,
+const CLAIMED_COLUMNS = `m.id, m.api_key_id, m.urls, m.schedule, m.diff_config, m.json_options, m.trigger_config,
   m.scrape_options, m.webhook, m.sensitivity, m.status, m.created_at, m.updated_at,
   m.last_checked_at, m.next_check_at, m.claimed_at, m.last_change_at, m.last_error, m.checks,
   m.changes, m.pages_unchanged`;
@@ -507,6 +528,7 @@ function rowToMonitor(row: MonitorRow): MonitorRecord {
     schedule: row.schedule,
     scrapeOptions: row.scrape_options ?? {},
     diff: row.diff_config ?? { granularity: 'word', inline: true },
+    jsonOptions: row.json_options ?? null,
     trigger: row.trigger_config ?? {},
     sensitivity: row.sensitivity,
     webhook: row.webhook,
@@ -551,7 +573,7 @@ interface CheckRow {
   checked_at: Date;
   changed: boolean;
   reason: CheckReason;
-  diff: Diff | null;
+  diff: Diff | JsonDiff | null;
   error: string | null;
 }
 
@@ -614,15 +636,16 @@ export class PgMonitorStore implements MonitorStore {
 
   async create(input: NewMonitor): Promise<MonitorRecord> {
     const { rows } = await this.#pool.query<MonitorRow>(
-      `INSERT INTO monitors (api_key_id, urls, schedule, diff_config, trigger_config, scrape_options,
+      `INSERT INTO monitors (api_key_id, urls, schedule, diff_config, json_options, trigger_config, scrape_options,
                              webhook, sensitivity, status, next_check_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', $10)
        RETURNING ${MONITOR_COLUMNS}`,
       [
         input.apiKeyId,
         [input.url],
         JSON.stringify(input.schedule),
         JSON.stringify(input.diff),
+        input.jsonOptions ? JSON.stringify(input.jsonOptions) : null,
         JSON.stringify(input.trigger),
         JSON.stringify(input.scrapeOptions),
         input.webhook ? JSON.stringify(input.webhook) : null,
@@ -663,6 +686,7 @@ export class PgMonitorStore implements MonitorStore {
     if (patch.schedule !== undefined) push('schedule', JSON.stringify(patch.schedule));
     if (patch.scrapeOptions !== undefined) push('scrape_options', JSON.stringify(patch.scrapeOptions));
     if (patch.diff !== undefined) push('diff_config', JSON.stringify(patch.diff));
+    if (patch.jsonOptions !== undefined) push('json_options', patch.jsonOptions ? JSON.stringify(patch.jsonOptions) : null);
     if (patch.trigger !== undefined) push('trigger_config', JSON.stringify(patch.trigger));
     if (patch.sensitivity !== undefined) push('sensitivity', patch.sensitivity);
     if (patch.webhook !== undefined) push('webhook', patch.webhook ? JSON.stringify(patch.webhook) : null);

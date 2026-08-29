@@ -89,6 +89,13 @@ const WebhookObjectSchema = z
 // headers, an event filter and metadata. Both normalise to the object.
 export const WebhookSchema = z.union([WebhookUrlSchema.transform((url) => ({ url })), WebhookObjectSchema]);
 
+export const DestinationSchema = z.object({
+  type: z.enum(['qdrant', 'pgvector']),
+  collection: z.string().optional(),
+  namespace: z.string().optional(),
+  upsertMode: z.enum(['update-in-place', 'append']).default('update-in-place'),
+});
+
 function crawlRequestSchema(limits: CrawlLimits) {
   return z.object({
     url: z.string().url(),
@@ -112,6 +119,7 @@ function crawlRequestSchema(limits: CrawlLimits) {
     extractor: z.enum(EXTRACTORS).optional(),
     onlyMainContent: z.boolean().optional(),
     scrapeOptions: ScrapeOptionsSchema.optional(),
+    destination: DestinationSchema.optional(),
     webhook: WebhookSchema.optional(),
   });
 }
@@ -142,6 +150,7 @@ export function normaliseCrawlRequest(body: ParsedCrawlRequest): CrawlJobRequest
   if (body.maxConcurrency !== undefined) request.maxConcurrency = body.maxConcurrency;
   if (body.delay !== undefined) request.delay = body.delay;
   if (body.webhook !== undefined) request.webhook = body.webhook;
+  if (body.destination !== undefined) request.destination = body.destination;
   return request;
 }
 

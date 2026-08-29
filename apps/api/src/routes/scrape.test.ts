@@ -42,9 +42,11 @@ function extractClient(over: Partial<Record<'extract' | 'structured' | 'chunk', 
       blocksKept: 3,
       blocksTotal: 5,
     })),
-    chunk: vi.fn(async () => [
-      { text: 'chunk one', anchor: 'a1', tokens: 3, headingPath: ['Title'], index: 0 },
-    ]),
+    chunk: vi.fn(async () => ({
+      chunks: [{ text: 'chunk one', anchor: 'a1', tokens: 3, headingPath: ['Title'], index: 0 }],
+      embeddingModel: undefined,
+      embeddingDimensions: undefined,
+    })),
     health: vi.fn(async () => true),
     ...over,
   } as unknown as ExtractClient;

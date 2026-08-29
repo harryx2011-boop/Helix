@@ -7,11 +7,13 @@ import type { MonitorScheduler } from '../monitor/scheduler.js';
 import type {
   CheckRecord,
   DeliveryRecord,
+  MonitorJsonOptions,
   MonitorRecord,
   MonitorStore,
   MonitorWebhook,
   SnapshotRecord,
 } from '../monitor/store.js';
+import { rejectFabricationKeywords } from './scrape.js';
 
 /**
  * Monitor.
@@ -28,12 +30,19 @@ import type {
 const BASE_PATH = '/v1/monitor';
 const HISTORY_PAGE = 50;
 
+const ScheduleWindowSchema = z.object({
+  days: z.array(z.number().int().min(0).max(6)).min(1).optional(),
+  startHour: z.number().int().min(0).max(23),
+  endHour: z.number().int().min(1).max(24),
+});
+
 const ScheduleSchema = z.union([
   z.string().min(1),
   z.object({
     cron: z.string().min(1).optional(),
     every: z.string().min(1).optional(),
     timezone: z.string().min(1).optional(),
+    window: ScheduleWindowSchema.optional(),
   }),
 ]);
 
@@ -62,6 +71,13 @@ const DiffSchema = z.object({
   inline: z.boolean().default(true),
 });
 
+const JsonOptionsSchema = z.object({
+  schema: z.record(z.unknown()),
+  prompt: z.string().max(4_000).optional(),
+  provider: z.string().max(100).optional(),
+  model: z.string().max(200).optional(),
+});
+
 const TriggerSchema = z.object({
   keywordAppears: z.string().min(1).max(500).optional(),
   keywordDisappears: z.string().min(1).max(500).optional(),
@@ -85,6 +101,7 @@ const CreateSchema = z.object({
   schedule: ScheduleSchema,
   scrapeOptions: ScrapeOptionsSchema.default({}),
   diff: DiffSchema.default({}),
+  jsonOptions: JsonOptionsSchema.optional(),
   trigger: TriggerSchema.default({}),
   sensitivity: z.enum(['any', 'significant']).default('any'),
   webhook: WebhookSchema.optional(),
@@ -95,6 +112,7 @@ const PatchSchema = z
     schedule: ScheduleSchema.optional(),
     scrapeOptions: ScrapeOptionsSchema.optional(),
     diff: DiffSchema.optional(),
+    jsonOptions: JsonOptionsSchema.nullable().optional(),
     trigger: TriggerSchema.optional(),
     sensitivity: z.enum(['any', 'significant']).optional(),
     webhook: WebhookSchema.nullable().optional(),
@@ -143,6 +161,15 @@ function toScrapeOptions(input: z.infer<typeof ScrapeOptionsSchema>): MonitorRec
   return rest;
 }
 
+function toJsonOptions(input: z.infer<typeof JsonOptionsSchema>): MonitorJsonOptions {
+  return {
+    schema: input.schema,
+    ...(input.prompt !== undefined ? { prompt: input.prompt } : {}),
+    ...(input.provider !== undefined ? { provider: input.provider } : {}),
+    ...(input.model !== undefined ? { model: input.model } : {}),
+  };
+}
+
 /** `trigger.selector` and a non-empty `includeSelectors` name the same knob twice. */
 function selectorConflict(scrape: MonitorRecord['scrapeOptions'], trigger: z.infer<typeof TriggerSchema>): boolean {
   return trigger.selector !== undefined && (scrape.includeSelectors?.length ?? 0) > 0;
@@ -164,6 +191,7 @@ function serializeSchedule(schedule: MonitorRecord['schedule']): Record<string, 
     cron: schedule.cron,
     timezone: schedule.timezone,
     ...(schedule.every !== undefined ? { every: schedule.every } : {}),
+    ...(schedule.window !== undefined ? { window: schedule.window } : {}),
   };
 }
 
@@ -175,6 +203,7 @@ export function serializeMonitor(monitor: MonitorRecord, latest?: SnapshotRecord
     schedule: serializeSchedule(monitor.schedule),
     scrapeOptions: monitor.scrapeOptions,
     diff: monitor.diff,
+    jsonOptions: monitor.jsonOptions,
     trigger: monitor.trigger,
     sensitivity: monitor.sensitivity,
     webhook: publicWebhook(monitor.webhook),
@@ -286,12 +315,24 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
       webhook = resolved;
     }
 
+    let jsonOptions: MonitorJsonOptions | null = null;
+    if (body.jsonOptions !== undefined) {
+      try {
+        rejectFabricationKeywords(body.jsonOptions.schema, 'jsonOptions.schema');
+      } catch (error) {
+        const e = error as Error & { field?: string; hint?: string };
+        return invalid(reply, request, e.hint ? `${e.message} ${e.hint}` : e.message, e.field);
+      }
+      jsonOptions = toJsonOptions(body.jsonOptions);
+    }
+
     const monitor = await deps.store.create({
       apiKeyId: owner(request),
       url: body.url,
       schedule,
       scrapeOptions,
       diff: body.diff,
+      jsonOptions,
       trigger: body.trigger,
       sensitivity: body.sensitivity,
       webhook,
@@ -347,6 +388,19 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
     }
 
     if (body.diff !== undefined) patch.diff = body.diff;
+    if (body.jsonOptions !== undefined) {
+      if (body.jsonOptions === null) {
+        patch.jsonOptions = null;
+      } else {
+        try {
+          rejectFabricationKeywords(body.jsonOptions.schema, 'jsonOptions.schema');
+        } catch (error) {
+          const e = error as Error & { field?: string; hint?: string };
+          return invalid(reply, request, e.hint ? `${e.message} ${e.hint}` : e.message, e.field);
+        }
+        patch.jsonOptions = toJsonOptions(body.jsonOptions);
+      }
+    }
     if (body.sensitivity !== undefined) patch.sensitivity = body.sensitivity;
     if (body.webhook !== undefined) {
       if (body.webhook === null) {

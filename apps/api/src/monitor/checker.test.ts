@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { includeSelectorsFor, MAX_DIFF_BYTES, runCheck, type FetchOutcome } from './checker.js';
+import type { Diff, JsonDiff } from './diff.js';
+import { includeSelectorsFor, MAX_DIFF_BYTES, runCheck, type CheckerDeps, type FetchOutcome } from './checker.js';
 import { MemoryMonitorStore, type MonitorRecord, type NewMonitor } from './store.js';
 
 const RETENTION = { keep: 3, maxAgeDays: 90, keepChecks: 4 };
@@ -30,9 +31,15 @@ const pages = (...contents: (string | FetchOutcome)[]) => {
   };
 };
 
-async function check(store: MemoryMonitorStore, id: string, fetchPage: () => Promise<FetchOutcome>, maxContentBytes?: number) {
+async function check(
+  store: MemoryMonitorStore,
+  id: string,
+  fetchPage: () => Promise<FetchOutcome>,
+  maxContentBytes?: number,
+  extra?: Partial<CheckerDeps>,
+) {
   const monitor = (await store.get(id)) as MonitorRecord;
-  return runCheck(monitor, { store, fetchPage, retention: RETENTION, maxContentBytes });
+  return runCheck(monitor, { store, fetchPage, retention: RETENTION, maxContentBytes, ...extra });
 }
 
 describe('runCheck', () => {
@@ -70,7 +77,7 @@ describe('runCheck', () => {
 
     expect(outcome.check.reason).toBe('changed');
     expect(outcome.check.changed).toBe(true);
-    expect(outcome.check.diff?.text).toBe('Standard [-$29/month-]{+$34/month+}');
+    expect((outcome.check.diff as Diff | null)?.text).toBe('Standard [-$29/month-]{+$34/month+}');
     expect(store.snapshots).toHaveLength(2);
     expect(outcome.webhookQueued).toBe(true);
 
@@ -93,6 +100,58 @@ describe('runCheck', () => {
     await check(store, monitor.id, fetchPage);
     const payload = store.deliveries[0]?.payload as { diff: Record<string, unknown> };
     expect(payload.diff).toEqual({ granularity: 'line', added: 1, removed: 1, changeRatio: 1 });
+  });
+
+  it('reports a field-level JSON diff naming the changed field, not unchanged siblings', async () => {
+    const jsonOptions = { schema: { type: 'object', properties: { price: { type: 'number' }, name: { type: 'string' } } } };
+    const { store, monitor } = await setup({ jsonOptions });
+    const fetchPage = pages('Standard $29/month', 'Standard $34/month');
+    const structured: Record<string, unknown>[] = [
+      { price: 29, name: 'Standard' },
+      { price: 34, name: 'Standard' },
+    ];
+    let call = 0;
+    const extractJson = async () => structured[Math.min(call++, structured.length - 1)]!;
+
+    await check(store, monitor.id, fetchPage, undefined, { extractJson });
+    const outcome = await check(store, monitor.id, fetchPage, undefined, { extractJson });
+
+    expect(outcome.check.reason).toBe('changed');
+    const diff = outcome.check.diff as JsonDiff;
+    expect(diff.granularity).toBe('json');
+    expect(diff.fields).toEqual([{ path: 'price', before: 29, after: 34 }]);
+
+    const payload = store.deliveries[0]?.payload as { diff: JsonDiff };
+    expect(payload.diff.fields).toEqual([{ path: 'price', before: 29, after: 34 }]);
+  });
+
+  it('falls back to the text diff when JSON extraction fails', async () => {
+    const jsonOptions = { schema: { type: 'object', properties: { price: { type: 'number' } } } };
+    const { store, monitor } = await setup({ jsonOptions });
+    const fetchPage = pages('Standard $29/month', 'Standard $34/month');
+    const extractJson = async () => {
+      throw new Error('model unavailable');
+    };
+
+    await check(store, monitor.id, fetchPage, undefined, { extractJson });
+    const outcome = await check(store, monitor.id, fetchPage, undefined, { extractJson });
+
+    expect(outcome.check.reason).toBe('changed');
+    expect((outcome.check.diff as Diff).granularity).toBe('word');
+  });
+
+  it('never calls extractJson for a monitor with no jsonOptions', async () => {
+    const { store, monitor } = await setup();
+    const fetchPage = pages('Standard $29', 'Standard $34');
+    let called = false;
+    const extractJson = async () => {
+      called = true;
+      return {};
+    };
+
+    await check(store, monitor.id, fetchPage, undefined, { extractJson });
+    await check(store, monitor.id, fetchPage, undefined, { extractJson });
+    expect(called).toBe(false);
   });
 
   it('filters timestamp noise at significant sensitivity', async () => {
@@ -197,7 +256,7 @@ describe('runCheck', () => {
     const outcome = await check(store, monitor.id, fetchPage);
 
     expect(outcome.check.diff).toMatchObject({ truncated: true, ops: [], text: '' });
-    expect(outcome.check.diff?.added).toBeGreaterThan(0);
+    expect((outcome.check.diff as Diff | null)?.added).toBeGreaterThan(0);
     const payload = store.deliveries[0]?.payload as { diff: Record<string, unknown> };
     expect(payload.diff['truncated']).toBe(true);
     expect(payload.diff['text']).toBeUndefined();

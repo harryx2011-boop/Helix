@@ -387,3 +387,93 @@ describe('DELETE /v1/providers/:provider', () => {
     expect(response.statusCode).toBe(401);
   });
 });
+
+describe('GET /v1/providers/:provider/models', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('lists installed models once a base URL is stored', async () => {
+    globalThis.fetch = vi.fn(async () =>
+      new Response(JSON.stringify({ models: [{ name: 'llama3.2', details: { parameter_size: '3.2B' } }] }), { status: 200 }),
+    ) as unknown as typeof fetch;
+
+    app = await build();
+    await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/ollama',
+      headers: { 'x-test-key': 'a' },
+      payload: { baseUrl: 'http://localhost:11434/v1' },
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/providers/ollama/models',
+      headers: { 'x-test-key': 'a' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      success: true,
+      provider: 'ollama',
+      models: [{ name: 'llama3.2', parameterSize: '3.2B' }],
+    });
+  });
+
+  it('returns a typed failure body, not a 500, when the runtime is unreachable', async () => {
+    globalThis.fetch = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    }) as unknown as typeof fetch;
+
+    app = await build();
+    await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/ollama',
+      headers: { 'x-test-key': 'a' },
+      payload: { baseUrl: 'http://localhost:11434/v1' },
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/providers/ollama/models',
+      headers: { 'x-test-key': 'a' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.success).toBe(false);
+    expect(body.failure.reason).toBe('unreachable');
+  });
+
+  it('rejects when no base URL has been stored for the provider yet', async () => {
+    app = await build();
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/providers/ollama/models',
+      headers: { 'x-test-key': 'a' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('baseUrl');
+  });
+
+  it('rejects a non-local provider', async () => {
+    app = await build();
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/providers/anthropic/models',
+      headers: { 'x-test-key': 'a' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('provider');
+  });
+
+  it('requires auth', async () => {
+    app = await build();
+    const response = await app.inject({ method: 'GET', url: '/v1/providers/ollama/models' });
+    expect(response.statusCode).toBe(401);
+  });
+});

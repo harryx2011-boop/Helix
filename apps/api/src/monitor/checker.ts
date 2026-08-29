@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Log } from '../core/logger.js';
-import { boundedDiff, diffText, type Diff } from './diff.js';
+import { boundedDiff, diffJson, diffText, type Diff, type JsonDiff } from './diff.js';
 import { normalizeForComparison } from './sensitivity.js';
 import type { CheckRecord, MonitorEvent, MonitorRecord, MonitorStore, SnapshotRecord } from './store.js';
 import { evaluateTrigger, type TriggerReason } from './triggers.js';
@@ -21,6 +21,13 @@ export type FetchOutcome =
 export interface CheckerDeps {
   store: MonitorStore;
   fetchPage: (monitor: MonitorRecord) => Promise<FetchOutcome>;
+  /**
+   * Runs structured extraction for a monitor with `jsonOptions` set. Only
+   * called on a change that already passed the trigger, so a quiet or
+   * filtered check never pays for a model call. A failure is logged and
+   * falls back to the text diff rather than failing the check.
+   */
+  extractJson?: ((monitor: MonitorRecord, content: string) => Promise<Record<string, unknown>>) | undefined;
   retention: { keep: number; maxAgeDays: number; keepChecks: number };
   /** A page larger than this is a failed check, not a stored snapshot. */
   maxContentBytes?: number | undefined;
@@ -65,7 +72,10 @@ function wants(monitor: MonitorRecord, event: MonitorEvent): boolean {
   return monitor.webhook !== null && monitor.webhook.events.includes(event);
 }
 
-function diffForPayload(diff: Diff, inline: boolean): Record<string, unknown> {
+function diffForPayload(diff: Diff | JsonDiff, inline: boolean): Record<string, unknown> {
+  if (diff.granularity === 'json') {
+    return { granularity: 'json', fields: diff.fields, changeRatio: diff.changeRatio };
+  }
   const summary = {
     granularity: diff.granularity,
     added: diff.added,
@@ -133,7 +143,7 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
     input: {
       reason: CheckRecord['reason'];
       changed: boolean;
-      diff: Diff | null;
+      diff: Diff | JsonDiff | null;
       snapshot: SnapshotRecord | null;
       triggerReason?: TriggerReason | undefined;
     },
@@ -144,7 +154,7 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
       checkedAt,
       changed: input.changed,
       reason: input.reason,
-      diff: input.diff ? boundedDiff(input.diff, MAX_DIFF_BYTES) : null,
+      diff: input.diff ? (input.diff.granularity === 'json' ? input.diff : boundedDiff(input.diff, MAX_DIFF_BYTES)) : null,
       error: null,
     });
     await deps.store.pruneChecks(monitor.id, deps.retention.keepChecks, deps.retention.maxAgeDays);
@@ -219,8 +229,8 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
     return finish({ reason: 'filtered', changed: false, diff: null, snapshot: null });
   }
 
-  const diff = diffText(before, after, monitor.diff.granularity);
-  const verdict = evaluateTrigger(monitor.trigger, { before, after, diff });
+  const textDiff = diffText(before, after, monitor.diff.granularity);
+  const verdict = evaluateTrigger(monitor.trigger, { before, after, diff: textDiff });
 
   // The baseline moves whenever the content really differs, so the next
   // keyword check compares against what the page says now.
@@ -233,7 +243,23 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
   });
 
   if (!verdict.fire) {
-    return finish({ reason: 'trigger_not_met', changed: false, diff, snapshot, triggerReason: verdict.reason });
+    return finish({ reason: 'trigger_not_met', changed: false, diff: textDiff, snapshot, triggerReason: verdict.reason });
+  }
+
+  // The text diff always decides whether the change fires; JSON extraction is
+  // an additional, more expensive view taken only once a change is already
+  // going out, so a trigger that suppresses the change never pays for it.
+  let diff: Diff | JsonDiff = textDiff;
+  if (monitor.jsonOptions && deps.extractJson) {
+    try {
+      const [beforeJson, afterJson] = await Promise.all([
+        deps.extractJson(monitor, previous.content),
+        deps.extractJson(monitor, content),
+      ]);
+      diff = diffJson(beforeJson, afterJson);
+    } catch (error) {
+      deps.logger?.warn({ error, monitorId: monitor.id }, 'monitor JSON extraction failed; falling back to the text diff');
+    }
   }
 
   return finish({ reason: 'changed', changed: true, diff, snapshot, triggerReason: verdict.reason });

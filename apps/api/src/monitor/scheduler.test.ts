@@ -87,6 +87,38 @@ describe('MonitorScheduler', () => {
     expect((await store.get(paused.id))?.nextCheckAt).toEqual(past);
   });
 
+  it('reschedules a windowed monitor past the check that falls outside business hours', async () => {
+    const store = new MemoryMonitorStore();
+    // Hourly cron, Mon-Fri 9-17 UTC, due right now on a Friday afternoon.
+    const due = new Date('2026-08-28T16:00:00Z');
+    const m = await store.create({
+      apiKeyId: null,
+      url: 'https://example.com',
+      schedule: { cron: '0 * * * *', timezone: 'UTC', window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 } },
+      scrapeOptions: {},
+      diff: { granularity: 'word', inline: true },
+      trigger: {},
+      sensitivity: 'any',
+      webhook: null,
+      nextCheckAt: due,
+    });
+
+    const ran: string[] = [];
+    const scheduler = new MonitorScheduler({
+      store,
+      check: async (monitor) => {
+        ran.push(monitor.id);
+      },
+      now: () => due,
+    });
+
+    expect(await scheduler.tick()).toBe(1);
+    expect(ran).toEqual([m.id]);
+    // The 17:00 and later Friday firings are outside the window; the next one
+    // inside it is Monday morning.
+    expect((await store.get(m.id))?.nextCheckAt?.toISOString()).toBe('2026-08-31T09:00:00.000Z');
+  });
+
   it('marks a monitor whose check threw and still reschedules it', async () => {
     const store = new MemoryMonitorStore();
     const m = await monitor(store, new Date('2026-08-24T12:00:00Z'));

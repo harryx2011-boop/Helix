@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedDiff, diffText, tokenize } from './diff.js';
+import { boundedDiff, diffJson, diffText, tokenize } from './diff.js';
 
 describe('tokenize', () => {
   it('keeps whitespace tokens at word granularity so the text re-joins verbatim', () => {
@@ -148,3 +148,51 @@ describe('boundedDiff', () => {
     expect(bounded).toMatchObject({ added: 1, removed: 1, ops: [], text: '', truncated: true });
   });
 });
+
+describe('diffJson', () => {
+  it('reports only the field that changed, not unchanged siblings', () => {
+    const before = { price: 29, name: 'Standard', tags: ['a', 'b'] };
+    const after = { price: 34, name: 'Standard', tags: ['a', 'b'] };
+    const diff = diffJson(before, after);
+
+    expect(diff.granularity).toBe('json');
+    expect(diff.fields).toEqual([{ path: 'price', before: 29, after: 34 }]);
+  });
+
+  it('walks nested objects with dot paths', () => {
+    const before = { address: { city: 'Leeds', zip: 'LS1' } };
+    const after = { address: { city: 'York', zip: 'LS1' } };
+    const diff = diffJson(before, after);
+    expect(diff.fields).toEqual([{ path: 'address.city', before: 'Leeds', after: 'York' }]);
+  });
+
+  it('walks arrays with index paths', () => {
+    const before = { items: [{ price: 10 }, { price: 20 }] };
+    const after = { items: [{ price: 10 }, { price: 25 }] };
+    const diff = diffJson(before, after);
+    expect(diff.fields).toEqual([{ path: 'items.1.price', before: 20, after: 25 }]);
+  });
+
+  it('reports an added or removed field without a spurious null', () => {
+    const added = diffJson({ a: 1 }, { a: 1, b: 2 });
+    expect(added.fields).toEqual([{ path: 'b', after: 2 }]);
+    expect('before' in added.fields[0]!).toBe(false);
+
+    const removed = diffJson({ a: 1, b: 2 }, { a: 1 });
+    expect(removed.fields).toEqual([{ path: 'b', before: 2 }]);
+    expect('after' in removed.fields[0]!).toBe(false);
+  });
+
+  it('reports no fields and a zero changeRatio for identical objects', () => {
+    const diff = diffJson({ a: 1, b: { c: 2 } }, { a: 1, b: { c: 2 } });
+    expect(diff.fields).toEqual([]);
+    expect(diff.changeRatio).toBe(0);
+  });
+
+  it('never treats key reordering or whitespace as a change', () => {
+    const before = { b: 2, a: 1 };
+    const after = { a: 1, b: 2 };
+    expect(diffJson(before, after).fields).toEqual([]);
+  });
+});
+

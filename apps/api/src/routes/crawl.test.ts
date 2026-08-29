@@ -250,6 +250,58 @@ describe('POST /v1/crawl', () => {
     expect(response.json().field).toContain('webhook');
   });
 
+  it('stores a destination with its defaults applied', async () => {
+    const app = await buildApp();
+    await app.inject({
+      method: 'POST',
+      url: '/v1/crawl',
+      payload: { url: 'https://example.com', destination: { type: 'qdrant', collection: 'docs' } },
+    });
+
+    expect(storedRequest()['destination']).toEqual({
+      type: 'qdrant',
+      collection: 'docs',
+      upsertMode: 'update-in-place',
+    });
+  });
+
+  it('keeps an explicit append upsertMode and a namespace', async () => {
+    const app = await buildApp();
+    await app.inject({
+      method: 'POST',
+      url: '/v1/crawl',
+      payload: {
+        url: 'https://example.com',
+        destination: { type: 'pgvector', namespace: 'tenant-1', upsertMode: 'append' },
+      },
+    });
+
+    expect(storedRequest()['destination']).toEqual({
+      type: 'pgvector',
+      namespace: 'tenant-1',
+      upsertMode: 'append',
+    });
+  });
+
+  it('rejects a destination with an unsupported type', async () => {
+    const app = await buildApp();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/crawl',
+      payload: { url: 'https://example.com', destination: { type: 'pinecone' } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('destination.type');
+  });
+
+  it('omits destination from the stored request when none is given', async () => {
+    const app = await buildApp();
+    await app.inject({ method: 'POST', url: '/v1/crawl', payload: { url: 'https://example.com' } });
+
+    expect(storedRequest()).not.toHaveProperty('destination');
+  });
+
   it('rejects a path pattern that is neither a glob nor a valid regular expression', async () => {
     const app = await buildApp();
     const response = await app.inject({

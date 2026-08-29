@@ -363,13 +363,14 @@ export async function registerScrape(
 
     if (body.formats.includes('chunks')) {
       try {
-        data['chunks'] = await deps.extractClient.chunk({
+        const chunked = await deps.extractClient.chunk({
           text: content.markdown,
           url: body.url,
           strategy: body.chunk?.strategy,
           maxTokens: body.chunk?.maxTokens,
           overlap: body.chunk?.overlap,
         });
+        data['chunks'] = chunked.chunks;
       } catch (error) {
         const detail = error instanceof Error ? error.message : 'chunking failed';
         request.log.warn({ error, url: body.url }, 'chunking failed');

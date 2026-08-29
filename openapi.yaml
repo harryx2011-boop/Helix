@@ -824,6 +824,13 @@ paths:
         behind receives the newest frame once it catches up rather than every
         frame in between. At most 4 viewers may stream one session at a time
         (`too_many_viewers`, 429).
+
+        The same stream is available over a WebSocket at
+        `/interact/live/{sessionId}/ws`, carrying JSON messages
+        `{type: session|frame|ping|closed, data}` with the same token, the same
+        viewer cap (close code 4429) and the same drop-oldest policy; a rejected
+        token closes with 4401. The stream is one-way — anything a viewer sends
+        is ignored, since the link carries no authority to act on the session.
       operationId: interactLiveView
       security: []
       responses:

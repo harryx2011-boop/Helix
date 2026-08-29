@@ -171,7 +171,7 @@ what `assess_pdf` returns.
       change is already firing so a quiet check pays for no model call
 - ☐ Multi-page monitors over a crawl scope (spec §7 open question; v1 is one URL per monitor)
 
-## M7b — Interact ◐
+## M7b — Interact ☑
 
 Spec: `research/api-specs/browser-interaction-api.md`. Endpoint shape from the spec, runtime on the Playwright pool (no Rust session workers).
 
@@ -187,8 +187,10 @@ Spec: `research/api-specs/browser-interaction-api.md`. Endpoint shape from the s
 - ☑ Live view: CDP screencast fanned out over server-sent events to a token-authenticated
       viewer page, started with the first viewer and stopped with the last (42 tests across
       registry, actions, screencast and routes)
-- ☐ Live view over WebSocket — still needs a websocket dependency the repo does not
-      carry, so it was left rather than added silently. SSE carries the same frames
+- ☑ Live view over WebSocket at `/v1/interact/live/{id}/ws`, beside the SSE
+      stream rather than replacing it. Same view-token auth, same viewer cap,
+      same drop-oldest backpressure (queue depth stands in for a write's return
+      value). Costs one dependency, `@fastify/websocket`
 - ☐ Interactive live view (human takeover) — cut from this pass
 - ☐ Prompt-resolved actions without a selector (`"click the checkout button"`) — open question
       in the spec, deliberately not started

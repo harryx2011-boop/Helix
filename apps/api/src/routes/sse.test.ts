@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sseSink } from './sse.js';
+import { sseSink, socketSink } from './sse.js';
 
 /** `absorbs` writes fit without pressure; the next one is taken but returns false, as Node does. */
 function fakeTarget(absorbs: number) {
@@ -63,5 +63,68 @@ describe('sseSink', () => {
     sink.frame('a');
     sink.event('closed', 'closed');
     expect(written).toEqual([]);
+  });
+});
+
+/** A socket whose queue the test controls, the way a slow reader's would grow. */
+function fakeSocket(initialBuffered = 0) {
+  const sent: string[] = [];
+  const socket = {
+    readyState: 1,
+    bufferedAmount: initialBuffered,
+    send: (data: string) => {
+      sent.push(data);
+    },
+  };
+  return { socket, sent, parsed: () => sent.map((s) => JSON.parse(s) as { type: string; data?: string }) };
+}
+
+describe('socketSink', () => {
+  it('forwards frames while the socket keeps up', () => {
+    const { socket, parsed } = fakeSocket();
+    const sink = socketSink(socket);
+    sink.frame('a');
+    sink.frame('b');
+
+    expect(parsed().map((m) => m.data)).toEqual(['a', 'b']);
+    expect(sink.dropped).toBe(0);
+  });
+
+  it('keeps only the newest frame while the reader is behind', () => {
+    const { socket, parsed } = fakeSocket(1024 * 1024);
+    const sink = socketSink(socket);
+    sink.frame('old');
+    sink.frame('newer');
+    sink.frame('newest');
+
+    // Nothing goes out while the queue is over the cap.
+    expect(parsed()).toEqual([]);
+    // Two frames were replaced rather than queued.
+    expect(sink.dropped).toBe(2);
+
+    socket.bufferedAmount = 0;
+    sink.frame('current');
+    const frames = parsed().filter((m) => m.type === 'frame');
+    expect(frames.map((m) => m.data)).toEqual(['newest', 'current']);
+  });
+
+  it('writes nothing to a socket that is not open', () => {
+    const { socket, sent } = fakeSocket();
+    socket.readyState = 3;
+    const sink = socketSink(socket);
+    sink.event('session', 'x');
+    sink.frame('a');
+
+    expect(sent).toEqual([]);
+  });
+
+  it('sends control events as typed messages', () => {
+    const { socket, parsed } = fakeSocket();
+    const sink = socketSink(socket);
+    sink.event('session', '{"sessionId":"s1"}');
+    sink.comment('ping');
+    sink.event('closed', 'idle_timeout');
+
+    expect(parsed().map((m) => m.type)).toEqual(['session', 'ping', 'closed']);
   });
 });

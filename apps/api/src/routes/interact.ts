@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
+import websocket from '@fastify/websocket';
 import { z } from 'zod';
 import { classifyTransportError } from '../core/block-detection.js';
 import type { ExtractClient } from '../extract/client.js';
@@ -11,7 +12,7 @@ import {
   type InteractOutcome,
 } from '../browser/interact-actions.js';
 import type { Lookup } from '../core/url-guard.js';
-import { sseSink } from './sse.js';
+import { sseSink, socketSink } from './sse.js';
 import {
   SessionBusyError,
   SessionLimitError,
@@ -422,6 +423,54 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
       });
 
       request.raw.on('close', cleanup);
+    },
+  );
+
+  // The same stream over a WebSocket, for a viewer that wants one. SSE stays
+  // the default: it needs nothing beyond the HTTP server and reconnects itself.
+  await app.register(websocket);
+  app.get<{ Params: { id: string }; Querystring: { token?: string } }>(
+    '/interact/live/:id/ws',
+    { websocket: true },
+    (socket, request) => {
+      const session = deps.sessions.getByViewToken(request.params.id, request.query.token ?? '');
+      if (!session) {
+        socket.close(4401, 'no open session matches this link');
+        return;
+      }
+
+      const cast = castFor(session);
+      if (cast.viewers >= MAX_LIVE_VIEWERS) {
+        socket.close(4429, `this session already has ${MAX_LIVE_VIEWERS} viewers`);
+        return;
+      }
+
+      const sink = socketSink(socket);
+      sink.event('session', JSON.stringify({ sessionId: session.id, url: session.page.url() }));
+
+      const unsubscribe = cast.subscribe((frame) => sink.frame(frame.data));
+      const heartbeat = setInterval(() => sink.comment('ping'), SSE_HEARTBEAT_MS);
+      heartbeat.unref();
+
+      let done = false;
+      const cleanup = () => {
+        if (done) return;
+        done = true;
+        clearInterval(heartbeat);
+        unsubscribe();
+        offClose();
+      };
+
+      const offClose = session.onClose((reason) => {
+        sink.event('closed', reason);
+        cleanup();
+        socket.close();
+      });
+
+      socket.on('close', cleanup);
+      // The stream is one-way; a viewer that sends anything is ignored rather
+      // than trusted, since this connection carries no authority to act.
+      socket.on('message', () => {});
     },
   );
 }

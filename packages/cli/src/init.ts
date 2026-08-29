@@ -76,7 +76,7 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
     throw new Error('no agent harness detected (looked for ~/.claude, ~/.cursor, ~/.codex, ~/.codeium/windsurf). Use --client <id> to force one.');
   }
 
-  let skill: { markdown: string; source: 'account' | 'public' } | undefined;
+  let skill: { markdown: string; source: 'public' } | undefined;
   if (opts.skill) {
     try {
       skill = await fetchSkill(opts.siteUrl, opts.fetchImpl);

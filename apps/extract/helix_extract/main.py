@@ -20,7 +20,7 @@ from .settings import settings
 
 app = FastAPI(
     title="helix-extract",
-    version="0.1.0",
+    version="1.0.0",
     description="Internal service. Not exposed publicly.",
 )
 
@@ -38,7 +38,7 @@ class Health(BaseModel):
 async def health() -> Health:
     return Health(
         status="ok",
-        version="0.1.0",
+        version="1.0.0",
         extractors=["trafilatura", "readability"],
         document_parsers=documents.available_parsers(),
         llm_configured=settings.llm_configured,

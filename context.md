@@ -1,6 +1,10 @@
 # Helix — context
 
-> **v0.1.0-pre** (2026-08-24): WEBSITE.md plan settled; Phase 1 shipped (marketing site, capability pages, docs, agent routes, Clerk auth GitHub+Google, onboarding, /app shell, playground, keys/usage/activity/settings/self-host; every route 200 at 1440/390, tsc+lint clean). Phase 2 merged: all six APIs live (scrape, parse, search, crawl, interact incl. live view, monitor) plus MCP server at /mcp and @helix/cli; 12 routes, 20 OpenAPI paths, 545 API tests; every marketing and /app route 200 at 1440/390.
+> **v1.0.0** (2026-08-29): every milestone that was going to ship for v1 has. Vector `destination` wired into the crawl worker (the sinks existed and nothing called them); M8 Enrich built; monitors gained business-hours windows and field-level JSON diffs; `@helix/sdk` fills the empty packages/sdk-ts; local runtimes list their installed models instead of asking for a name typed from memory. 802 API tests, 165 extract tests, 29 SDK tests, 15 CLI tests.
+>
+> The three claims this file had carried as unverified since it was written are now proven against real services: a real LLM generation reaches a model and returns (Ollama `gemma4:latest`), embeddings produce real 384-dimension vectors, and a real crawl stores them in a live Qdrant. Not proven: behaviour against a frontier model (every live result here came from a 4-8B local one), pgvector against a real server (no PG18 Windows build), and stealth against a commercial WAF.
+>
+> **v0.1.0-pre** (2026-08-24): WEBSITE.md plan settled; Phase 1 shipped (marketing site, capability pages, docs, agent routes, Clerk auth GitHub+Google, /app shell, playground, keys/settings; every route 200 at 1440/390, tsc+lint clean). Phase 2 merged: all six APIs live plus MCP server at /mcp and @helix/cli.
 
 ## What this is
 
@@ -26,6 +30,20 @@ Interact (`apps/api/src/routes/interact.ts`, `browser/sessions.ts`, `browser/int
 - `apps/api` — routes: scrape, parse, map, crawl, search, monitor, interact (+ live view), jobs, keys, health, internal (key sync), mcp. Port 7400. Search backends: SearXNG (`SEARXNG_URL`, no key), Serper, SerpAPI; `HELIX_SEARCH_PROVIDER=auto` picks the first configured.
 - `packages/` — profiles, schema, sdk-ts (empty), cli (`@helix/cli`: `init --all -k <key>` writes MCP config + SKILL.md for Claude Code, Cursor, Codex, Windsurf; unpublished).
 - `graphify-out/` — knowledge graph; regenerate after structural changes.
+
+## v1.0.0 — the last gaps closed (2026-08-29)
+
+**Vector destinations are live.** `POST /v1/crawl` takes `destination` ({type: qdrant|pgvector, collection, namespace, upsertMode}) the way openapi.yaml already claimed. Each stored page is chunked and embedded through helix-extract `POST /chunk` (embed:true) and upserted; `ensureCollection` fires once per job; a failure is recorded as a `vector_store` row in fetch_failures and counted in the job's `usage.vectorFailures` rather than losing the page. `upsertMode: append` mangles the anchor with a UUID so each call makes a fresh point. GOTCHA fixed in the same pass: the embed call's timeout was 30s, but the FIRST embed loads the model from disk and takes longer, so the first crawl anyone ran with a destination always timed out while every later one worked — it is 180s when embedding, 30s otherwise.
+
+**M8 Enrich** (`apps/api/src/enrich/`, `routes/enrich.ts`, `apps/extract/helix_extract/enrich.py`). `POST /v1/enrich` takes a subject plus a field list and answers only from pages it read. Phased: metadata/JSON-LD first, model last. Every model-proposed value is checked against fetched content — citation must be a real passage in a page actually read, and the value must appear inside it — and anything failing becomes `null` with a reason. Confidence is an ordinal band (`high` = read out of markup by this code; `medium` = model-proposed and verified; `low` = booleans), explicitly not a probability and not calibrated. Untrusted page text is fenced with an ASCII marker whose terminator is stripped from the payload, and the wrapped type is branded so slicing it will not compile; a clipped payload tells the model how much was cut. 11 of 12 controls fail a test when deleted; the twelfth was deleted for surviving.
+
+**Monitors**: business-hours windows (`schedule.window`), which RESTRICT the cron and never widen it — a combination that can never fire is rejected at write time — and field-level JSON diffs (`jsonOptions`, migration 008) that run only once a change is already firing, so a quiet check pays for no model call.
+
+**`@helix/sdk`** (packages/sdk-ts, was an empty directory): typed client over every path in openapi.yaml, no runtime dependencies. Where the spec and the dashboard's hand-written client disagreed the spec won — scrape actions and interact actions are separate unions, stored providers (4 cloud) are separate from the 7-value per-request extract override.
+
+**Local models are browsable**: `GET /v1/providers/{provider}/models` reads Ollama's native `/api/tags` (deriving the native root from the stored `/v1` base URL) or an OpenAI-style `/v1/models`, and Settings → Model providers offers them beside the free-text field.
+
+Two bugs that would have shipped, both found only by running against a real model rather than a mock. `/v1/agent/schema` accepted no `provider`, and helix-extract's auto-pick walks cloud vendors only by design, so an instance whose sole provider was a local runtime could not use it at all. With that fixed it answered, and always returned `properties: {}` — `_strictify` in `schema_compiler.py` stamped `additionalProperties: false` onto objects declaring no properties, which forbids every key, so the meta-schema's own `properties` field was structurally unfillable and schema design could never emit a field.
 
 ## Supabase removed; the app is local (2026-08-29)
 

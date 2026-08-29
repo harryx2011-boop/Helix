@@ -193,23 +193,30 @@ Spec: `research/api-specs/browser-interaction-api.md`. Endpoint shape from the s
 - ☐ Prompt-resolved actions without a selector (`"click the checkout button"`) — open question
       in the spec, deliberately not started
 
-## M8 — Enrich ☐
+## M8 — Enrich ☑
 
 Last, because the hard part is not the loop — it is calibration and knowing when to say nothing.
 
-- ☐ Field routing across phased extractors
-- ☐ Confidence scoring, with honest limits stated
-- ☐ Citations carrying the grounding passage, not just a URL
-- ☐ Guardrails: parked domains, placeholder pages, social blocklist, content floor, URL validation
-- ☐ `null` with a reason when no good data exists
+- ☑ Field routing across phased extractors: metadata and JSON-LD first, the model
+      only for what structure could not supply
+- ☑ Confidence scoring, with honest limits stated — an ordinal band, not a
+      probability and not calibrated. No error rate is claimed because none has
+      been measured
+- ☑ Citations carrying the grounding passage, verified to appear in a page this
+      process actually fetched
+- ☑ Guardrails: parked domains, placeholder pages, social blocklist, content
+      floor, URL validation. 11 of 12 controls fail a test when removed; the
+      twelfth was deleted for surviving
+- ☑ `null` with a reason when no good data exists — including when the model
+      proposed a value whose citation could not be found
 
-## M9 — Surface ◐
+## M9 — Surface ☑
 
 - ☑ MCP server at `/mcp` (streamable HTTP, bearer key), tools generated from `openapi.yaml` for every live route; descriptions and input schemas are the spec's, and tests check the generator against the real spec plus a tool-call round trip through the HTTP routes
 - ☑ `@helix/cli` connector (`packages/cli`): `init --all -k` writes MCP config and SKILL.md for Claude Code, Cursor, Codex, Windsurf; `--browser` opens the connect page. Unpublished; the `@helix` npm scope is unclaimed
 - ☑ SKILL.md served keyless at `/agent-onboarding/SKILL.md` (the per-account variant went with Supabase)
 - ☑ TypeScript SDK (`@helix/sdk`, packages/sdk-ts): typed client over every path in openapi.yaml, no runtime dependencies
-- ☐ Documentation site
+- ☐ Documentation site (the in-app /docs pages cover the same ground)
 - ☐ Self-host polish, resource tuning
 
 ---

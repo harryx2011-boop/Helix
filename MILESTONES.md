@@ -198,7 +198,7 @@ Last, because the hard part is not the loop — it is calibration and knowing wh
 
 - ☑ MCP server at `/mcp` (streamable HTTP, bearer key), tools generated from `openapi.yaml` for every live route; descriptions and input schemas are the spec's, and tests check the generator against the real spec plus a tool-call round trip through the HTTP routes
 - ☑ `@helix/cli` connector (`packages/cli`): `init --all -k` writes MCP config and SKILL.md for Claude Code, Cursor, Codex, Windsurf; `--browser` opens the connect page. Unpublished; the `@helix` npm scope is unclaimed
-- ☑ Per-account SKILL.md served at `/api/app/skill` (session or bearer key) and the public `/agent-onboarding/SKILL.md`
+- ☑ SKILL.md served keyless at `/agent-onboarding/SKILL.md` (the per-account variant went with Supabase)
 - ☐ Generated TypeScript SDK
 - ☐ Documentation site
 - ☐ Self-host polish, resource tuning
@@ -207,6 +207,8 @@ Last, because the hard part is not the loop — it is calibration and knowing wh
 
 ## Deliberately out of scope for v0.1
 
+- Hosted accounts and stored history — Supabase was removed 2026-08-29; Clerk
+  gates `/app` and every screen reads from the operator's own instance
 - Hosted multi-tenant deployment and billing
 - BYO-browser (pointing at Browserbase or Steel) — the seam exists, the adapter does not
 - SQL/Parquet/BigQuery export
@@ -219,7 +221,7 @@ Last, because the hard part is not the loop — it is calibration and knowing wh
 
 **Three runtimes is real overhead.** If the Rust tier proves marginal against curl_cffi in Python, collapsing it is a legitimate simplification, not a defeat.
 
-**`wreq` is pinned to 0.15.3.** 0.16 requires rustc 1.98, above the 1.95 toolchain here. Its predecessor `rquest` was yanked from crates.io entirely — every version — so this dependency needs watching.
+**`wreq` is on 0.16** (rustc upgraded to 1.98). Its predecessor `rquest` was yanked from crates.io entirely — every version — so this dependency needs watching.
 
 **BoringSSL needs cmake to build.** Present in the Docker image, absent on this host, so `cargo test` for the fetch service only runs in a container until cmake is installed locally.
 

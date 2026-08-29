@@ -1,37 +1,24 @@
 /**
- * SKILL.md comes from the app, generated for the account the key belongs to
- * (WEBSITE.md §9.3). The public, keyless version is the fallback when the
- * account route is unreachable, so an install never ends without a skill.
+ * SKILL.md is served keyless and covers every endpoint. Helix keeps no account
+ * data, so there is no per-account variant to prefer.
  *
- * Both requests are bounded: fetch has no timeout of its own, and a site that
+ * The request is bounded: fetch has no timeout of its own, and a site that
  * accepts the connection and never answers must not hang the install.
  */
 
 export interface SkillSource {
   markdown: string;
-  source: 'account' | 'public';
+  source: 'public';
 }
 
 export const SKILL_FETCH_TIMEOUT_MS = 10_000;
 
 export async function fetchSkill(
   siteUrl: string,
-  apiKey: string,
   fetchImpl: typeof fetch = fetch,
   timeoutMs: number = SKILL_FETCH_TIMEOUT_MS,
 ): Promise<SkillSource> {
   const base = siteUrl.replace(/\/$/, '');
-
-  try {
-    const response = await fetchImpl(`${base}/api/app/skill`, {
-      headers: { authorization: `Bearer ${apiKey}`, accept: 'text/markdown' },
-      redirect: 'manual',
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    if (response.ok) return { markdown: await response.text(), source: 'account' };
-  } catch {
-    // Fall through to the public document.
-  }
 
   let response: Response;
   try {

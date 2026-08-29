@@ -45,7 +45,7 @@ export function ClosingCta() {
           Ready to run it?
         </h2>
         <p className="mt-3 max-w-[480px] text-[16px] leading-relaxed text-m-ink/72">
-          Apache-2.0, self-hosted, bring your own keys. Or start with a hosted key in under a minute.
+          Apache-2.0, self-hosted, bring your own keys.
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">

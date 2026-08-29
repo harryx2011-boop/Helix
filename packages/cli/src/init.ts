@@ -24,7 +24,7 @@ export interface InitOptions {
 
 export interface InitResult {
   harnesses: { id: string; mcpConfigPath: string; skillPath?: string }[];
-  skillSource?: 'account' | 'public';
+  skillSource?: 'public';
   warnings: string[];
 }
 
@@ -79,8 +79,7 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   let skill: { markdown: string; source: 'account' | 'public' } | undefined;
   if (opts.skill) {
     try {
-      skill = await fetchSkill(opts.siteUrl, apiKey, opts.fetchImpl);
-      if (skill.source === 'public') warnings.push('account SKILL.md unavailable; wrote the public version instead');
+      skill = await fetchSkill(opts.siteUrl, opts.fetchImpl);
     } catch (error) {
       warnings.push(`SKILL.md skipped: ${error instanceof Error ? error.message : String(error)}`);
     }

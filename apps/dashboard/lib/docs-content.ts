@@ -328,7 +328,7 @@ export function agentsIndexDoc(): ReferenceDoc {
       },
       {
         title: 'SKILL.md',
-        body: 'A generated skill file scoped to the endpoints selected in onboarding: auth, base URL, rate-limit headers, and one section per endpoint with its request, response and failure reasons. `helix init` places it directly in each harness\'s skills directory. Full detail on `/docs/skills`.',
+        body: 'A skill file covering every endpoint: auth, base URL, rate-limit headers, and one section per endpoint with its request, response and failure reasons. `helix init` places it directly in each harness\'s skills directory. Full detail on `/docs/skills`.',
       },
     ],
   };

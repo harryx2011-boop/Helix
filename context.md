@@ -25,8 +25,13 @@ Interact (`apps/api/src/routes/interact.ts`, `browser/sessions.ts`, `browser/int
 - `apps/dashboard` — one Next.js app: marketing (light), Clerk auth, onboarding, `/app` dashboard (dark). Port 3400. `HELIX_HOSTED=1` selects hosted mode.
 - `apps/api` — routes: scrape, parse, map, crawl, search, monitor, interact (+ live view), jobs, keys, health, internal (key sync), mcp. Port 7400. Search backends: SearXNG (`SEARXNG_URL`, no key), Serper, SerpAPI; `HELIX_SEARCH_PROVIDER=auto` picks the first configured.
 - `packages/` — profiles, schema, sdk-ts (empty), cli (`@helix/cli`: `init --all -k <key>` writes MCP config + SKILL.md for Claude Code, Cursor, Codex, Windsurf; unpublished).
-- `supabase/` — migrations for the hosted app (profiles, api_keys, instances, runs, usage_daily).
 - `graphify-out/` — knowledge graph; regenerate after structural changes.
+
+## Supabase removed; the app is local (2026-08-29)
+
+The hosted half kept a second copy of what the instance already owns — profiles, api_keys, instances, runs, usage_daily, github_connections — behind 24 `app/api/app/*` route handlers. All removed, with `supabase/`, `lib/supabase/`, `lib/profiles.ts`, `lib/usage.ts`, `lib/github.ts` and both npm packages. Clerk stays and does one job: gate `/app`. Past that gate both modes are the same code — the browser holds a key in `localStorage` (`helix.apiKey`) and calls the instance directly, so the playground posts to `/v1/*` with no proxy and no run recorded anywhere but the instance. Screens whose only source was Supabase are gone rather than showing zeroes: activity, usage, instances, GitHub integrations, onboarding, the requests chart, the spend meter. `/app` is now Overview · Playground · Agent · Health · Keys · Settings. The keys page keeps a browser-side 32-char generator (`lib/ephemeral-keys.ts`, rejection-sampled — `byte % 62` over-represents A–H by 21.5%) for a deployment with no instance in reach.
+
+Self-host export now builds (it never had): hosted-only files carry a `.hosted.ts(x)` extension included via `pageExtensions` only when `HELIX_HOSTED=1`, and self-host aliases `@clerk/nextjs` + `/server` to `lib/clerk-stub/` — a runtime branch is not enough, the static import alone pulls in Server Actions that `output: export` refuses. GOTCHA: exFAT `readlink` returns EISDIR on a regular file where NTFS returns EINVAL, so any `next build` on E: dies with `EISDIR ... readlink <file>.ts`. Copy to C: to build.
 
 ## Motion and prompt box (2026-08-25)
 

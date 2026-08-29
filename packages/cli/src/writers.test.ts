@@ -124,11 +124,11 @@ describe('harness detection and skill placement', () => {
 describe('init end to end', () => {
   const fetchImpl: typeof fetch = async (input) => {
     const url = String(input);
-    if (url.endsWith('/api/app/skill')) return new Response('# account skill\n', { status: 200 });
+    if (url.endsWith('/api/app/skill')) return new Response('# public skill\n', { status: 200 });
     return new Response('# public skill\n', { status: 200 });
   };
 
-  it('writes MCP config and the account SKILL.md for every detected harness', async () => {
+  it('writes MCP config and SKILL.md for every detected harness', async () => {
     mkdirSync(join(home, '.claude'));
     mkdirSync(join(home, '.codex'));
     const result = await runInit({
@@ -145,7 +145,7 @@ describe('init end to end', () => {
     });
 
     expect(result.harnesses.map((h) => h.id)).toEqual(['claude-code', 'codex']);
-    expect(result.skillSource).toBe('account');
+    expect(result.skillSource).toBe('public');
     expect(result.warnings).toEqual([]);
 
     const claude = JSON.parse(readFileSync(join(home, '.claude.json'), 'utf8'));
@@ -154,15 +154,14 @@ describe('init end to end', () => {
       url: TARGET.mcpUrl,
       headers: { Authorization: `Bearer ${TARGET.apiKey}` },
     });
-    expect(readFileSync(join(home, '.claude', 'skills', 'helix', 'SKILL.md'), 'utf8')).toBe('# account skill\n');
+    expect(readFileSync(join(home, '.claude', 'skills', 'helix', 'SKILL.md'), 'utf8')).toBe('# public skill\n');
     expect(readFileSync(join(home, '.codex', 'config.toml'), 'utf8')).toContain(`Bearer ${TARGET.apiKey}`);
-    expect(readFileSync(join(home, '.codex', 'skills', 'helix', 'SKILL.md'), 'utf8')).toBe('# account skill\n');
+    expect(readFileSync(join(home, '.codex', 'skills', 'helix', 'SKILL.md'), 'utf8')).toBe('# public skill\n');
   });
 
-  it('falls back to the public SKILL.md with a warning when the account route rejects the key', async () => {
+  it('warns instead of failing the install when SKILL.md cannot be fetched', async () => {
     mkdirSync(join(home, '.cursor'));
-    const rejecting: typeof fetch = async (input) =>
-      String(input).endsWith('/api/app/skill') ? new Response('', { status: 401 }) : new Response('# public skill\n');
+    const rejecting: typeof fetch = async () => new Response('', { status: 404 });
     const result = await runInit({
       apiKey: TARGET.apiKey,
       all: true,
@@ -175,9 +174,8 @@ describe('init end to end', () => {
       home,
       fetchImpl: rejecting,
     });
-    expect(result.skillSource).toBe('public');
-    expect(result.warnings[0]).toMatch(/public version/);
-    expect(readFileSync(join(home, '.cursor', 'skills', 'helix', 'SKILL.md'), 'utf8')).toBe('# public skill\n');
+    expect(result.skillSource).toBeUndefined();
+    expect(result.warnings[0]).toMatch(/SKILL.md skipped/);
   });
 
   it('gives up on a site that never answers instead of hanging', async () => {
@@ -185,7 +183,7 @@ describe('init end to end', () => {
       new Promise((_resolve, reject) => {
         init?.signal?.addEventListener('abort', () => reject(init.signal?.reason));
       });
-    await expect(fetchSkill('https://app.example.test', TARGET.apiKey, stalled, 20)).rejects.toThrow(
+    await expect(fetchSkill('https://app.example.test', stalled, 20)).rejects.toThrow(
       /could not fetch SKILL.md .*no response within 20ms/,
     );
   });

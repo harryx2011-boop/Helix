@@ -81,6 +81,13 @@ def _strictify(schema: dict[str, Any]) -> dict[str, Any]:
     """
     out = dict(schema)
 
+    # An object that declares no properties is a free-form map, not an empty
+    # record. Stamping `additionalProperties: false` on it forbids every key,
+    # which under strict mode makes the field structurally unfillable — the
+    # model cannot emit content it is not allowed to emit.
+    if out.get("type") == "object" and not out.get("properties"):
+        return out
+
     if out.get("type") == "object" or "properties" in out:
         properties = out.get("properties", {})
         compiled: dict[str, Any] = {}

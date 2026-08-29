@@ -85,6 +85,24 @@ class TestOpenAI:
         assert schema["properties"]["price"]["type"] == ["number", "null"]
         assert schema["properties"]["title"]["type"] == "string"
 
+    def test_leaves_a_free_form_map_open(self) -> None:
+        # An object with no declared properties is a free-form map. Stamping
+        # `additionalProperties: false` on it forbids every key, which under
+        # strict mode makes the field structurally unfillable — the schema
+        # designer returned an empty `properties` on every request until this
+        # case was excluded.
+        compiled = compile_openai(
+            {
+                "type": "object",
+                "properties": {"properties": {"type": "object"}},
+                "required": ["properties"],
+            }
+        )
+        field = compiled["json_schema"]["schema"]["properties"]["properties"]
+
+        assert field == {"type": "object"}
+        assert "additionalProperties" not in field
+
     def test_applies_strictness_to_nested_objects(self) -> None:
         nested = {
             "type": "object",

@@ -18,11 +18,25 @@ const HttpUrlSchema = z
   .url()
   .refine((value) => /^https?:\/\//i.test(value), 'must be an http(s) URL');
 
+/** Providers helix-extract can route to. Naming one is the only way to reach a local runtime. */
+const PROVIDERS = [
+  'anthropic',
+  'openai',
+  'openrouter',
+  'google',
+  'gemini',
+  'ollama',
+  'vllm',
+  'openai-compatible',
+] as const;
+
 const AgentSchemaRequestSchema = z.object({
   prompt: z.string().min(1).max(2000),
   urls: z.array(HttpUrlSchema).max(10).optional(),
   hint: z.record(z.unknown()).optional(),
   instruction: z.string().min(1).max(2000).optional(),
+  provider: z.enum(PROVIDERS).optional(),
+  model: z.string().max(200).optional(),
 });
 
 export interface AgentRouteDeps {
@@ -61,6 +75,8 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
         urls: body.urls,
         hint: body.hint,
         instruction: body.instruction,
+        provider: body.provider,
+        model: body.model,
         providerKeys,
         providerModels,
         providerBaseUrls,

@@ -91,6 +91,9 @@ export interface SchemaOptions {
   hint?: Record<string, unknown> | undefined;
   instruction?: string | undefined;
   timeoutMs?: number | undefined;
+  /** Naming a provider is the only way to reach a local runtime: auto-pick walks cloud vendors only. */
+  provider?: string | undefined;
+  model?: string | undefined;
   /** The caller's own provider keys, when they have any stored. Override the instance's environment credentials. */
   providerKeys?: ProviderKeyMap | undefined;
   providerModels?: ProviderModelMap | undefined;
@@ -112,6 +115,7 @@ export interface ChunkOptions {
   strategy?: 'semantic' | 'heading' | 'fixed' | undefined;
   maxTokens?: number | undefined;
   overlap?: number | undefined;
+  embed?: boolean | undefined;
 }
 
 export interface Chunk {
@@ -120,6 +124,13 @@ export interface Chunk {
   tokens: number;
   headingPath: string[];
   index: number;
+  embedding?: number[] | undefined;
+}
+
+export interface ChunkResult {
+  chunks: Chunk[];
+  embeddingModel: string | undefined;
+  embeddingDimensions: number | undefined;
 }
 
 /** helix-extract answered with a status the caller can act on (400 schema, 415 type, 503 provider). */
@@ -326,6 +337,8 @@ export class ExtractClient {
         urls: options.urls ?? [],
         hint: options.hint ?? null,
         instruction: options.instruction ?? null,
+        provider: options.provider ?? null,
+        model: options.model ?? null,
         provider_keys: options.providerKeys ?? null,
         provider_models: options.providerModels ?? null,
         provider_base_urls: options.providerBaseUrls ?? null,
@@ -368,7 +381,7 @@ export class ExtractClient {
     };
   }
 
-  async chunk(options: ChunkOptions): Promise<Chunk[]> {
+  async chunk(options: ChunkOptions): Promise<ChunkResult> {
     const response = await fetch(`${this.#baseUrl}/chunk`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -378,7 +391,7 @@ export class ExtractClient {
         strategy: options.strategy ?? 'semantic',
         max_tokens: options.maxTokens ?? 512,
         overlap: options.overlap ?? 64,
-        embed: false,
+        embed: options.embed ?? false,
       }),
       signal: AbortSignal.timeout(30_000),
     });
@@ -390,16 +403,30 @@ export class ExtractClient {
     }
 
     const body = (await response.json()) as {
-      chunks: { text: string; anchor: string; tokens: number; heading_path?: string[]; index?: number }[];
+      chunks: {
+        text: string;
+        anchor: string;
+        tokens: number;
+        heading_path?: string[];
+        index?: number;
+        embedding?: number[];
+      }[];
+      embedding_model?: string;
+      embedding_dimensions?: number;
     };
 
-    return body.chunks.map((c) => ({
-      text: c.text,
-      anchor: c.anchor,
-      tokens: c.tokens,
-      headingPath: c.heading_path ?? [],
-      index: c.index ?? 0,
-    }));
+    return {
+      chunks: body.chunks.map((c) => ({
+        text: c.text,
+        anchor: c.anchor,
+        tokens: c.tokens,
+        headingPath: c.heading_path ?? [],
+        index: c.index ?? 0,
+        embedding: c.embedding,
+      })),
+      embeddingModel: body.embedding_model,
+      embeddingDimensions: body.embedding_dimensions,
+    };
   }
 
   async health(): Promise<boolean> {

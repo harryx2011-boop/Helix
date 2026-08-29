@@ -223,6 +223,11 @@ class SchemaRequest(BaseModel):
     provider_keys: dict[str, str] | None = None
     provider_models: dict[str, str] | None = None
     provider_base_urls: dict[str, str] | None = None
+    # Naming a provider is the only way to reach a local runtime: auto-pick
+    # walks cloud vendors, so an instance with only Ollama configured would
+    # otherwise report no credentials.
+    provider: str | None = None
+    model: str | None = None
 
 
 class SchemaResponse(BaseModel):
@@ -243,6 +248,8 @@ async def generate_schema(request: SchemaRequest) -> SchemaResponse:
             urls=request.urls,
             hint=request.hint,
             instruction=request.instruction,
+            provider=request.provider,
+            model=request.model,
             provider_keys=request.provider_keys,
             provider_models=request.provider_models,
             provider_base_urls=request.provider_base_urls,

@@ -959,7 +959,7 @@ wheels = [
 
 [[package]]
 name = "helix-extract"
-version = "1.0.0"
+version = "1.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },

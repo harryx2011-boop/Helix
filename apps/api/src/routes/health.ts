@@ -73,7 +73,7 @@ export async function registerHealth(app: FastifyInstance, deps: HealthDeps): Pr
 
     return reply.code(status === 'unhealthy' ? 503 : 200).send({
       status,
-      version: '1.0.0',
+      version: '1.0.1',
       services,
       providers,
     });

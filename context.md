@@ -1,6 +1,6 @@
 # Helix — context
 
-> **v1.0.0** (2026-08-29): every milestone closed, M7b's WebSocket live view included (it shipped a few hours after the tag). Vector `destination` wired into the crawl worker (the sinks existed and nothing called them); M8 Enrich built; monitors gained business-hours windows and field-level JSON diffs; `@helix/sdk` fills the empty packages/sdk-ts; local runtimes list their installed models instead of asking for a name typed from memory. 806 API tests, 165 extract tests, 29 SDK tests, 15 CLI tests.
+> **v1.0.1** (2026-08-29): WebSocket live view, the one item v1.0.0 shipped without. **v1.0.0** the same day: every other milestone closed. Vector `destination` wired into the crawl worker (the sinks existed and nothing called them); M8 Enrich built; monitors gained business-hours windows and field-level JSON diffs; `@helix/sdk` fills the empty packages/sdk-ts; local runtimes list their installed models instead of asking for a name typed from memory. 806 API tests, 165 extract tests, 29 SDK tests, 15 CLI tests.
 >
 > The three claims this file had carried as unverified since it was written are now proven against real services: a real LLM generation reaches a model and returns (Ollama `gemma4:latest`), embeddings produce real 384-dimension vectors, and a real crawl stores them in a live Qdrant. Not proven: behaviour against a frontier model (every live result here came from a 4-8B local one), pgvector against a real server (no PG18 Windows build), and stealth against a commercial WAF.
 >

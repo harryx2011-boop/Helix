@@ -2,6 +2,7 @@ import { HeroPanel } from './hero-panel';
 import { GridCells, AsciiHelix, CodeRain } from './ambient';
 import { PillButton } from './pill-button';
 import { GithubMark } from './github-mark';
+import { SetupPrompt } from './setup-prompt';
 
 /** WEBSITE.md §4.2. H1 + subhead + CTA pair + hero panel, over a hairline grid texture. */
 export function Hero() {
@@ -77,6 +78,10 @@ export function Hero() {
               <GithubMark className="h-4 w-4" />
               View on GitHub
             </PillButton>
+          </div>
+
+          <div data-reveal style={{ transitionDelay: '220ms' }} className="mt-4">
+            <SetupPrompt />
           </div>
         </div>
 

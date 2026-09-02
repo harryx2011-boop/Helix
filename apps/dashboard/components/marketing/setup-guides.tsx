@@ -6,6 +6,7 @@ import { ArrowRight, Braces, Code2, SquareTerminal, Terminal } from 'lucide-reac
 import { FrameBand } from './section-frame';
 import { CodePanel, CodeBlock } from './code-panel';
 import { AnimatedCode } from './animated-code';
+import { setupPrompt } from '@/lib/setup-prompt';
 
 type SetupLang = 'python' | 'node' | 'curl' | 'cli';
 
@@ -173,11 +174,17 @@ export function SetupGuides() {
           <div data-reveal className="rounded-panel border border-m-border-muted bg-m-surface p-5 shadow-card-sm">
             <h3 className="text-[16px] font-medium leading-tight tracking-tight text-m-ink">Agent onboarding.</h3>
             <p className="mt-1.5 text-[14px] leading-relaxed text-m-ink/64">
-              Are you an AI agent? Fetch this skill to get a key and the request shapes.
+              Paste this into your coding agent. It installs the skill, checks for a key without printing it, and smoke-tests
+              one request. An agent reading this page can fetch the skill directly instead.
             </p>
 
             <div className="mt-4">
-              <CodePanel chrome="terminal" label="cURL" copyText={AGENT_ONBOARDING_SNIPPET}>
+              <CodePanel chrome="terminal" label="setup prompt" copyText={setupPrompt()}>
+                <div className="max-h-[188px] overflow-y-auto [&_code]:whitespace-pre-wrap [&_code]:break-words [&_pre]:whitespace-pre-wrap">
+                  <CodeBlock dark>{setupPrompt()}</CodeBlock>
+                </div>
+              </CodePanel>
+              <CodePanel chrome="terminal" label="cURL" copyText={AGENT_ONBOARDING_SNIPPET} className="mt-3">
                 <CodeBlock dark>{AGENT_ONBOARDING_SNIPPET}</CodeBlock>
               </CodePanel>
             </div>

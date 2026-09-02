@@ -63,6 +63,14 @@ Every response is JSON with either \`{"success": true, "data": {...}, "warnings"
 Rate limits are reported on every response via \`X-RateLimit-Limit\`, \`X-RateLimit-Remaining\` and \`X-RateLimit-Reset\` headers. Back off when \`X-RateLimit-Remaining\` reaches 0.
 
 Any request that supports \`estimate: true\` returns a cost and time estimate instead of running — use it before a large crawl.
+
+## Where this file lives
+
+Save it as \`SKILL.md\` under \`.claude/skills/helix/\` (Claude Code, project-local) or \`~/.claude/skills/helix/\` (global); \`.agents/skills/helix/\` or \`~/.agents/skills/helix/\` for Codex, Cursor and other Agent-Skills tools. \`npx -y @helix/cli@latest init --all\` writes it, plus the MCP config, for every harness it finds.
+
+## The key is a secret
+
+Resolve it from \`HELIX_API_KEY\` in your own shell, or from \`.env.local\`. Check for it with a presence test (\`\${HELIX_API_KEY:+set}\`) or an HTTP status code — never print, echo, cat or grep-with-output anything that may contain it, and never paste it into a chat. If it is exposed, revoke it (\`DELETE /v1/keys/{id}\`) and mint a new one.
 `;
 }
 

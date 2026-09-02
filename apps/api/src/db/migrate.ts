@@ -24,6 +24,16 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   applied_at  timestamptz NOT NULL DEFAULT now()
 )`;
 
+// 001_init.sql shipped with a vectors block that was syntactically broken but
+// unreachable everywhere it ran (the surrounding IF EXISTS guard only ever
+// found pgvector absent), so every database that recorded this checksum holds
+// the identical schema the fixed file now produces. Tolerate the old checksum
+// once, for that one file, rather than tripping the immutability check.
+const PRIOR_CHECKSUMS: Record<string, readonly string[]> = {
+  // pre-fix 001_init.sql: broken (unreachable) pgvector chunks block
+  '001_init.sql': ['fe5eba1b27c750c815064ca92d54234b7469f4071e3f42a5d6890e3a75342041'],
+};
+
 export interface MigrationResult {
   applied: string[];
   skipped: string[];
@@ -50,6 +60,14 @@ export async function migrate(dir: string, logger?: Log): Promise<MigrationResul
 
     if (previous !== undefined) {
       if (previous !== checksum) {
+        if (PRIOR_CHECKSUMS[filename]?.includes(previous)) {
+          await pool.query('UPDATE schema_migrations SET checksum = $2 WHERE filename = $1', [
+            filename,
+            checksum,
+          ]);
+          skipped.push(filename);
+          continue;
+        }
         throw new Error(
           `Migration ${filename} has changed since it was applied. ` +
             `Applied migrations are immutable — add a new file instead.`,

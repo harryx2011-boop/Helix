@@ -1,6 +1,6 @@
 {
   "name": "@helix/cli",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Connect Claude Code, Cursor, Codex and Windsurf to the Helix web-data API: writes each harness's MCP config and your SKILL.md.",
   "license": "Apache-2.0",
   "type": "module",

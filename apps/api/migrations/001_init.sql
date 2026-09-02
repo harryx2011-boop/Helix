@@ -198,6 +198,8 @@ CREATE INDEX webhook_deliveries_pending ON webhook_deliveries (next_retry_at) WH
 
 -- pgvector sink. Point IDs are deterministic (UUID v5 from the URL) so a re-crawl
 -- updates in place instead of duplicating vectors.
+-- 384 is the default local model's embedding dimension; other dimensions need
+-- an ALTER COLUMN embedding TYPE vector(N) after this migration runs.
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN
     EXECUTE $sql$CREATE TABLE chunks (
@@ -208,8 +210,7 @@ DO $$ BEGIN
   anchor      text        NOT NULL,   -- stable across re-crawls, so citations keep resolving
   text        text        NOT NULL,
   tokens      integer,
-  embedding   vector(384),            -- default local model$sql$;
-    EXECUTE $sql$ALTER for other dimensions
+  embedding   vector(384),
   metadata    jsonb       NOT NULL DEFAULT '{}',
   created_at  timestamptz NOT NULL DEFAULT now()
 )$sql$;

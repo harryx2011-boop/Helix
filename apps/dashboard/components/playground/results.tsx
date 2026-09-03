@@ -226,13 +226,14 @@ function DocumentResult({
 
 export function Results({ result, loading, timingMs, error, pending }: ResultsProps) {
   if (loading) {
-    if (pending?.kind === 'metadata' || pending?.kind === 'metadata-scrub') {
-      return (
-        <MetadataScanning
-          mode={pending.kind === 'metadata-scrub' ? 'scrub' : 'scan'}
-          filename={pending.filename}
-        />
-      );
+    // File-shaped work gets the lens: an upload the user just handed over, a
+    // wait of unknown length, and a skeleton that would be shaped like the
+    // wrong thing. Everything else keeps the skeleton, which is correct where
+    // the response shape IS known.
+    const LENS_MODE = { metadata: 'scan', 'metadata-scrub': 'scrub', parse: 'parse' } as const;
+    const lensMode = pending ? LENS_MODE[pending.kind as keyof typeof LENS_MODE] : undefined;
+    if (lensMode) {
+      return <MetadataScanning mode={lensMode} filename={pending?.filename} />;
     }
     return (
       <div className="flex flex-col gap-4 p-4">

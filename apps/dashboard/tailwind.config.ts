@@ -94,25 +94,41 @@ const config: Config = {
           '0%, 100%': { opacity: '0.55', transform: 'scale(0.9) rotate(0deg)' },
           '50%': { opacity: '1', transform: 'scale(1) rotate(45deg)' },
         },
-        // The scan sweep travels the page and resets above it, so the line
-        // re-enters from off-screen rather than snapping back into view.
-        'metadata-sweep': {
-          '0%': { transform: 'translateY(-64px)' },
-          '100%': { transform: 'translateY(184px)' },
+        // The lens walks a slow S down the page. Every coordinate below, and the
+        // counter-translate in `metadata-lens-content`, is computed from one
+        // path — see the note in metadata-scanning.tsx. Editing one without the
+        // other breaks the magnification alignment.
+        'metadata-lens': {
+          '0%': { transform: 'translate(10px, 4px)' },
+          '22%': { transform: 'translate(88px, 44px)' },
+          '48%': { transform: 'translate(16px, 100px)' },
+          '74%': { transform: 'translate(94px, 144px)' },
+          '100%': { transform: 'translate(10px, 4px)' },
+        },
+        // The magnified copy counter-translates so the point under the glass is
+        // the point on the page beneath it: for a lens centre (cx, cy),
+        // translate(LENS/2 - ZOOM*cx, LENS/2 - ZOOM*cy) scale(ZOOM) with
+        // transform-origin 0 0. LENS = 62, ZOOM = 1.85.
+        'metadata-lens-content': {
+          '0%': { transform: 'translate(-44.9px, -33.8px) scale(1.85)' },
+          '22%': { transform: 'translate(-189.2px, -107.8px) scale(1.85)' },
+          '48%': { transform: 'translate(-56px, -211.4px) scale(1.85)' },
+          '74%': { transform: 'translate(-200.2px, -292.8px) scale(1.85)' },
+          '100%': { transform: 'translate(-44.9px, -33.8px) scale(1.85)' },
         },
         // A tag surfaces as the sweep passes it, holds while the sweep finishes
         // the page, then clears before the next pass so the loop reads as a
         // fresh scan rather than an accumulating pile.
         'metadata-tag-in': {
-          '0%, 4%': { opacity: '0', transform: 'scale(0.94)' },
-          '12%, 72%': { opacity: '1', transform: 'scale(1)' },
-          '86%, 100%': { opacity: '0', transform: 'scale(1)' },
+          '0%, 2%': { opacity: '0', transform: 'scale(0.9)' },
+          '8%, 60%': { opacity: '1', transform: 'scale(1)' },
+          '78%, 100%': { opacity: '0', transform: 'scale(1)' },
         },
         // The scrub reads the same mechanism backwards: the tag is already
         // there and the sweep takes it away.
         'metadata-tag-out': {
-          '0%, 4%': { opacity: '1', transform: 'scale(1)' },
-          '16%, 72%': { opacity: '0', transform: 'scale(0.94)' },
+          '0%, 2%': { opacity: '1', transform: 'scale(1)' },
+          '12%, 74%': { opacity: '0', transform: 'scale(0.9)' },
           '92%, 100%': { opacity: '1', transform: 'scale(1)' },
         },
       },
@@ -125,12 +141,15 @@ const config: Config = {
         'text-swap-out': 'text-swap-out 150ms ease-in-out both',
         'text-swap-in': 'text-swap-in 150ms ease-in-out both',
         sparkle: 'sparkle 2400ms cubic-bezier(0, 0, 0.2, 1) infinite',
-        // Duration is set per-instance so the sweep and the tags stay locked to
-        // one cycle; linear is correct here because a sweep at constant speed
-        // is the point — easing it would read as hesitation.
-        'metadata-sweep': 'metadata-sweep 2600ms linear infinite',
-        'metadata-tag-in': 'metadata-tag-in 2600ms cubic-bezier(0, 0, 0.2, 1) infinite',
-        'metadata-tag-out': 'metadata-tag-out 2600ms cubic-bezier(0, 0, 0.2, 1) infinite',
+        // Duration is set per-instance so the lens, the magnified copy and the
+        // tags stay locked to one cycle. `ease-in-out` on the lens because a
+        // hand moving a glass slows at each turn of the path; linear would read
+        // as a machine part. The two lens tracks MUST share a timing function
+        // or the magnified copy drifts out of register with its own lens.
+        'metadata-lens': 'metadata-lens 3600ms ease-in-out infinite',
+        'metadata-lens-content': 'metadata-lens-content 3600ms ease-in-out infinite',
+        'metadata-tag-in': 'metadata-tag-in 3600ms cubic-bezier(0, 0, 0.2, 1) infinite',
+        'metadata-tag-out': 'metadata-tag-out 3600ms cubic-bezier(0, 0, 0.2, 1) infinite',
       },
     },
   },

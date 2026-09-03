@@ -678,7 +678,7 @@ Every writer of copy, docs or SKILL.md text checks against this list (13 §6):
 4. **Supabase:** migrations, RLS, typed client, `supabase db push` after Harry creates the project.
 5. **Clerk:** middleware, sign-in/up pages themed via `clerk-custom-ui`, `user.created` webhook → profile + default key.
 6. **Keys:** `lib/keys.ts` (generate, hash, encrypt, mask), internal admin sync to the hosted API.
-7. **Onboarding wizard** (§6.2).
+7. **Onboarding wizard** (§6.2). **Shipped 1.3.0** at `/onboarding` (`page.hosted.tsx`), answers on `profiles` via migration `0003_onboarding.sql`, saved by `POST /api/app/onboarding`. Two deviations from the table above, both deliberate: the LLM step names vendors as **words, not logos** (a provider mark would be the only third-party branding in the app), and step 5's selection currently sorts the sidebar but does **not** yet regenerate SKILL.md — the generator still runs over all six endpoints.
 8. **App shell** (§7.1): sidebar, groups, spend meter, user chip; route group `(app)`.
 9. **Overview, API Keys, Settings, Usage, Activity Logs, Self-host** pages with the `<CharChart>` component; runs written by the playground route handlers.
 10. **Marketing:** layout, nav, footer, landing page (§4) including the hero panel, curl builder, character-grid background templates, and the terminal replay; `/self-host`, `/architecture`, `/docs` scaffold; `.md` twins, `/llms.txt`, `/agent-onboarding/SKILL.md`.

@@ -6,7 +6,7 @@
 -- find so it does not re-apply its own files at boot.
 --
 -- Regenerate after any migration lands:  node supabase/build-schema.mjs
--- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql | 0001_hosted_identity.sql, 0002_persona.sql
+-- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql | 0001_hosted_identity.sql, 0002_persona.sql, 0003_onboarding.sql, 0004_persona_sync.sql
 
 -- ============================================================================
 -- API migrations
@@ -784,3 +784,142 @@ insert into persona_roles (slug, name, department, color, icon, summary, sort_or
 on conflict (slug) do update set
   name = excluded.name, department = excluded.department, color = excluded.color,
   icon = excluded.icon, summary = excluded.summary, sort_order = excluded.sort_order;
+
+-- ---- supabase/migrations/0003_onboarding.sql
+-- Onboarding answers on the profile (WEBSITE.md §6.2).
+--
+-- Five questions, asked once at /onboarding, re-editable later under
+-- Settings → Preferences. Four of the five are optional and skippable, so
+-- every column is nullable and the arrays default empty rather than null —
+-- a skipped step and an unanswered one are the same thing to every reader,
+-- and `selected_endpoints` is iterated by the sidebar and the SKILL.md
+-- generator, which should not have to null-check before looping.
+--
+-- `onboarding_completed_at` is the gate: middleware sends a signed-in user
+-- with a null here to /onboarding. It is set when step 5 submits, including
+-- when every step was skipped, so skipping is a completion and does not trap
+-- the user in a loop.
+
+alter table profiles add column if not exists role                text;
+alter table profiles add column if not exists use_cases           text[] not null default '{}';
+alter table profiles add column if not exists llm_provider        text;
+alter table profiles add column if not exists deploy_intent       text;
+alter table profiles add column if not exists selected_endpoints  text[] not null default '{}';
+alter table profiles add column if not exists onboarding_completed_at timestamptz;
+
+-- The single-select answers are closed vocabularies. Constraining them here
+-- means a typo in a client payload fails at the boundary rather than becoming
+-- a value the dashboard silently never matches. Null stays legal (skipped).
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'profiles_role_check') then
+    alter table profiles add constraint profiles_role_check
+      check (role is null or role in ('engineer', 'founder', 'researcher', 'data_ml', 'other'));
+  end if;
+
+  if not exists (select 1 from pg_constraint where conname = 'profiles_llm_provider_check') then
+    alter table profiles add constraint profiles_llm_provider_check
+      check (llm_provider is null or llm_provider in ('anthropic', 'openai', 'google', 'openrouter', 'local', 'unsure'));
+  end if;
+
+  if not exists (select 1 from pg_constraint where conname = 'profiles_deploy_intent_check') then
+    alter table profiles add constraint profiles_deploy_intent_check
+      check (deploy_intent is null or deploy_intent in ('hosted', 'self_host', 'both'));
+  end if;
+end $$;
+
+-- The multi-selects are checked by containment so an unknown element is
+-- rejected without pinning the column to a fixed length.
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'profiles_use_cases_check') then
+    alter table profiles add constraint profiles_use_cases_check
+      check (use_cases <@ array['agent_tools', 'research_pipeline', 'rag_search', 'monitoring', 'enrichment', 'internal_tooling']::text[]);
+  end if;
+
+  if not exists (select 1 from pg_constraint where conname = 'profiles_selected_endpoints_check') then
+    alter table profiles add constraint profiles_selected_endpoints_check
+      check (selected_endpoints <@ array['scrape', 'parse', 'search', 'crawl', 'interact', 'monitor']::text[]);
+  end if;
+end $$;
+
+-- profiles_update_self (0001) already lets a signed-in browser update its own
+-- row, and these columns are inside it. The wizard nonetheless writes through
+-- a server action with the service role, because completing onboarding also
+-- mints the first API key, which RLS deliberately cannot do.
+
+-- ---- supabase/migrations/0004_persona_sync.sql
+-- Make the Persona tables reachable from the browser's local-first state
+-- (PERSONA.md §7, Phase 4). 0002 modelled forks and favourites as if the
+-- client already knew catalog UUIDs. It does not: everything Persona stores
+-- offline is keyed by SLUG, because the catalog it reads is a directory of
+-- markdown files, not the database. Signing in therefore had to translate
+-- every local row into a uuid before it could be inserted, and any row whose
+-- persona had been renamed or removed was silently unmergeable.
+--
+-- This migration makes the slug a first-class key so a merge can be a plain
+-- upsert, and so a fork survives its source persona being deleted.
+
+-- ------------------------------------------------------------------ forks
+--
+-- `role_slug` / `persona_slug` are what the editor actually needs to render a
+-- fork (its badge, its "back to role" link) and are what localStorage holds.
+-- They are kept alongside `persona_id` rather than replacing it: the uuid is
+-- the referential link while the catalog still has the row, the slugs are the
+-- durable record of where the fork came from once it does not.
+alter table persona_forks add column if not exists role_slug    text;
+alter table persona_forks add column if not exists persona_slug text;
+
+-- Local forks record the version as an integer (`sourceVersion: 3`), which is
+-- what the markdown frontmatter carries. Resolving it to persona_versions.id
+-- needs a catalog round trip the browser cannot do offline, so the integer is
+-- stored directly and the uuid stays an optional refinement.
+alter table persona_forks add column if not exists source_version int;
+
+create index if not exists persona_forks_slug_idx
+  on persona_forks (profile_id, role_slug, persona_slug);
+
+-- --------------------------------------------------------------- favourites
+--
+-- Local favourites are the string "<role>/<persona>". Keying the table on the
+-- persona uuid meant a favourite could not be written without a lookup, and
+-- cascaded away if the catalog row was reseeded with a new id. The slug pair
+-- becomes the identity; persona_id stays as a nullable convenience join.
+--
+-- Rebuilt rather than altered: the primary key changes, and the table is
+-- empty in every environment (Phase 4 is what first writes it).
+drop table if exists persona_favorites;
+
+create table persona_favorites (
+  profile_id    uuid not null references profiles(id) on delete cascade,
+  role_slug     text not null,
+  persona_slug  text not null,
+  persona_id    uuid references personas(id) on delete set null,
+  created_at    timestamptz not null default now(),
+  primary key (profile_id, role_slug, persona_slug)
+);
+
+alter table persona_favorites enable row level security;
+
+drop policy if exists persona_favorites_own on persona_favorites;
+create policy persona_favorites_own on persona_favorites for all
+  to authenticated
+  using (profile_id = current_profile_id())
+  with check (profile_id = current_profile_id());
+
+grant select, insert, delete on persona_favorites to authenticated;
+
+-- ----------------------------------------------------------- template values
+--
+-- 0002 gave this table no touch trigger, so `updated_at` only ever held its
+-- insert default and last-write-wins across two devices compared two equal
+-- timestamps. The merge resolves conflicts on this column, so it has to move.
+drop trigger if exists persona_template_values_touch on persona_template_values;
+create trigger persona_template_values_touch before update on persona_template_values
+  for each row execute function touch_updated_at();
+
+-- ------------------------------------------------------------------ settings
+--
+-- Theme, sidebar width and collapse state stay in localStorage: they are
+-- per-device UI preferences, and syncing them would make a wide sidebar on a
+-- desktop narrow every phone. The wizard's model API key is deliberately NOT
+-- stored here either — it is a provider secret, and Persona has no server-side
+-- encryption path for it the way apps/api does for provider_keys.

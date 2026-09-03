@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/shell/logo';
 import { GithubMark } from '@/components/marketing/github-mark';
 import { AsciiHelix, GridCells } from '@/components/marketing/ambient';
+import { PERSONA_URL } from '@/lib/mode';
 import { cn } from '@/lib/utils';
 
 /** WEBSITE.md §4.9. Three groups, hairline-divided rows, no Company column. */
@@ -30,6 +31,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: 'Project',
     links: [
+      { label: 'Persona', href: PERSONA_URL },
       { label: 'GitHub', href: 'https://github.com/helix-dev/helix' },
       { label: 'Licence (Apache-2.0)', href: 'https://github.com/helix-dev/helix/blob/main/LICENSE' },
       { label: 'Architecture', href: '/architecture' },

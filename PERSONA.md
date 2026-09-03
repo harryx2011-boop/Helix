@@ -92,10 +92,26 @@ A seed script `supabase/seed/persona.mts` (service role) reads `content/personas
 | **1 — the project** | Create the Supabase project; paste `schema.sql`; enable Clerk third-party auth; set Vercel env (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`); point the hosted API's `DATABASE_URL` at it (DEPLOY.md) | Harry (accounts), Claude (verification) | A key created on `/app/keys` authenticates a `curl` against the hosted API. |
 | **2 — catalog site** | `apps/persona` scaffold on 4200; landing (pill, search demo, iframe mockup, wizard card); `/roles`, `/roles/[slug]` static; sidebar search + filters; seed script + the 11 rewritten personas; Vercel project `persona-ai` | Claude | Every role page 200 at 1440/390, tsc + lint clean, `interface-review` → `review-animations` → tastemaker anti-slop → `ui-anti-vibe` checklist pass. |
 | **3 — engine + editor** | Placeholder scanner, step-by-step wizard with the striped progress bar, live substitution, block editor, four export formats, localStorage persistence | Claude | A visitor fills Support (Chat) end to end and downloads a `.pdf` without signing in. |
-| **4 — accounts** | Clerk on Persona; Supabase client with the session token; local→cloud merge; forks, favourites, template values, shares (`/s/[token]`, server route) | Claude | Two browsers, one account, same forks. |
+| **4 — accounts** | Clerk on Persona; Supabase client with the session token; local→cloud merge; forks, favourites, template values, shares (`/s/[token]`, server route) | Claude | Two browsers, one account, same forks. **Schema unblocked 2026-09-03 (1.3.0), code not started.** |
 | **5 — polish + stretch** | Version-history UI, "Try this persona" through the hosted Helix API, semantic search (`persona_versions.embedding`), satellite-domain SSO once domains exist | Claude / Harry | Each ships on its own. |
 
 Phase 2 is the weekend build the PRD names; Phases 3 and 4 are the second and third weekends.
+
+### Phase 4's blocker, and the fix (2026-09-03, migration `0004_persona_sync.sql`)
+
+§3's schema was written as if the browser knew catalog UUIDs. It does not. Persona's catalog is **markdown on disk**, read by `lib/catalog.ts`, so everything localStorage holds is keyed by **slug** — a fork records `roleSlug`/`personaSlug` and an integer `sourceVersion`, a favourite is the string `"support-chat/chat-v2"`. Against 0002, signing in would have had to translate every local row into a uuid before it could be inserted, and any row whose persona had been reseeded with a new id was silently unmergeable. Three concrete gaps, all closed:
+
+| Gap | 0002 | 0004 |
+|---|---|---|
+| Fork origin | only `persona_id`/`source_version_id` uuids; `roleSlug`/`personaSlug` had nowhere to land | `role_slug`, `persona_slug` added beside the uuids — the uuid is the live link, the slugs are the durable record once the catalog row is gone |
+| Fork version | `source_version_id uuid` vs a local integer | `source_version int` stored directly; the uuid stays an optional refinement |
+| Favourites | primary key `(profile_id, persona_id)` — unwritable offline, and not idempotent on re-sync | rebuilt with primary key `(profile_id, role_slug, persona_slug)`, so a merge is a plain upsert |
+
+Also fixed: `persona_template_values` had **no touch trigger**, so `updated_at` never moved off its insert default and the last-write-wins merge would have compared two equal timestamps forever.
+
+**Settings stay local by decision.** Theme, sidebar width and collapse state are per-device UI preferences — syncing them would make a wide desktop sidebar narrow every phone. The wizard's model API key is deliberately not synced either: it is a provider secret, and Persona has no server-side encryption path for it the way `apps/api` has for `provider_keys`.
+
+Still to write (the code half of Phase 4): `ClerkProvider` + `middleware.ts` in `apps/persona` (it has `@clerk/nextjs` as a dependency and zero imports today), a Supabase **browser** client presenting the Clerk session token (the dashboard has only the server/service-role one, so this is a new pattern, not a copy), and the merge itself. Sync hazards to respect: fork upserts are idempotent on the client-generated UUID, favourites need `on conflict do nothing`, and a second tab signing in with its own localStorage can double-insert unless the merge reads the remote set first.
 
 ## 8. Still open (need a human call)
 

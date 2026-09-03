@@ -2,11 +2,13 @@ import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import {
   DEPLOY_INTENTS,
+  HEARD_FROM,
   ONBOARDING_ENDPOINTS,
   LLM_PROVIDERS,
   ONBOARDING_ROLES,
   USE_CASES,
   type DeployIntent,
+  type HeardFrom,
   type OnboardingEndpoint,
   type LlmProvider,
   type OnboardingRole,
@@ -20,6 +22,9 @@ export interface OnboardingAnswers {
   llmProvider: LlmProvider | null;
   deployIntent: DeployIntent | null;
   selectedEndpoints: OnboardingEndpoint[];
+  heardFrom: HeardFrom | null;
+  /** Only meaningful when `heardFrom` is 'other'; dropped otherwise. */
+  heardFromDetail: string | null;
 }
 
 export const EMPTY_ANSWERS: OnboardingAnswers = {
@@ -28,6 +33,8 @@ export const EMPTY_ANSWERS: OnboardingAnswers = {
   llmProvider: null,
   deployIntent: null,
   selectedEndpoints: [],
+  heardFrom: null,
+  heardFromDetail: null,
 };
 
 /**
@@ -53,14 +60,29 @@ function pickMany<T extends readonly string[]>(allowed: T, value: unknown): T[nu
   return (allowed as readonly string[]).filter((a) => seen.has(a)) as T[number][];
 }
 
+/**
+ * The free-text note on 'other'. Trimmed, length-capped to the same 200 the
+ * check constraint enforces, and dropped entirely unless the answer is
+ * 'other' — a detail attached to a categorised answer would put the prose and
+ * the count out of step, and 0005 rejects it at the database anyway.
+ */
+function pickDetail(heardFrom: HeardFrom | null, value: unknown): string | null {
+  if (heardFrom !== 'other' || typeof value !== 'string') return null;
+  const trimmed = value.trim().slice(0, 200);
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export function parseAnswers(input: unknown): OnboardingAnswers {
   const body = (input ?? {}) as Record<string, unknown>;
+  const heardFrom = pickOne(HEARD_FROM, body.heardFrom);
   return {
     role: pickOne(ONBOARDING_ROLES, body.role),
     useCases: pickMany(USE_CASES, body.useCases),
     llmProvider: pickOne(LLM_PROVIDERS, body.llmProvider),
     deployIntent: pickOne(DEPLOY_INTENTS, body.deployIntent),
     selectedEndpoints: pickMany(ONBOARDING_ENDPOINTS, body.selectedEndpoints),
+    heardFrom,
+    heardFromDetail: pickDetail(heardFrom, body.heardFromDetail),
   };
 }
 
@@ -71,6 +93,8 @@ export function answersFromProfile(profile: ProfileRow): OnboardingAnswers {
     llmProvider: profile.llm_provider,
     deployIntent: profile.deploy_intent,
     selectedEndpoints: profile.selected_endpoints ?? [],
+    heardFrom: profile.heard_from,
+    heardFromDetail: profile.heard_from_detail,
   };
 }
 
@@ -92,6 +116,8 @@ export async function saveAnswers(
       llm_provider: answers.llmProvider,
       deploy_intent: answers.deployIntent,
       selected_endpoints: answers.selectedEndpoints,
+      heard_from: answers.heardFrom,
+      heard_from_detail: answers.heardFromDetail,
       ...(options.complete ? { onboarding_completed_at: new Date().toISOString() } : {}),
     })
     .eq('id', profileId)

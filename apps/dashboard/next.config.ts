@@ -9,6 +9,10 @@ const hosted = process.env.HELIX_HOSTED === '1';
 // Hosted: server output, because Clerk middleware and the route handlers need it (WEBSITE.md §1).
 const nextConfig: NextConfig = {
   ...(hosted ? {} : { output: 'export' as const }),
+  // Two dev servers on one checkout fight over `.next` — the second dies on a
+  // locked `.next/trace`. Setting this lets a second instance build elsewhere:
+  //   NEXT_DIST_DIR=.next-alt pnpm exec next dev -p 3401
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // Self-host has no dashboard server: the route handlers under app/api are
   // hosted-only, and `force-dynamic` is illegal under `output: export`. The
   // static export therefore accepts only `.tsx` special files, which drops every

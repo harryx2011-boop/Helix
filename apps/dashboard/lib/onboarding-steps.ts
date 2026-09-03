@@ -1,4 +1,4 @@
-import type { DeployIntent, OnboardingEndpoint, LlmProvider, OnboardingRole, UseCase } from '@/lib/supabase/types';
+import type { DeployIntent, HeardFrom, OnboardingEndpoint, LlmProvider, OnboardingRole, UseCase } from '@/lib/supabase/types';
 
 /**
  * The five questions (WEBSITE.md §6.2), kept out of the wizard component so
@@ -12,6 +12,17 @@ export interface Choice<T extends string> {
   label: string;
   hint?: string;
 }
+
+export const HEARD_FROM_CHOICES: Choice<HeardFrom>[] = [
+  { value: 'search', label: 'Search' },
+  { value: 'hn', label: 'Hacker News' },
+  { value: 'social', label: 'Social', hint: 'X, LinkedIn, Reddit' },
+  { value: 'github', label: 'GitHub' },
+  { value: 'friend', label: 'A colleague' },
+  { value: 'blog', label: 'A blog or newsletter' },
+  { value: 'ai_assistant', label: 'An AI assistant', hint: 'It recommended Helix' },
+  { value: 'other', label: 'Somewhere else' },
+];
 
 export const ROLE_CHOICES: Choice<OnboardingRole>[] = [
   { value: 'engineer', label: 'Engineer', hint: 'Building software that calls the API' },
@@ -59,4 +70,4 @@ export const ENDPOINT_CHOICES: EndpointChoice[] = [
   { value: 'monitor', label: 'Monitor', hint: 'Re-check a page on a schedule' },
 ];
 
-export const TOTAL_STEPS = 5;
+export const TOTAL_STEPS = 6;

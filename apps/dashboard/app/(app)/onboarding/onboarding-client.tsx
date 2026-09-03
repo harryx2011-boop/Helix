@@ -6,16 +6,25 @@ import { ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { LocalSetupOffer } from '@/components/app/local-setup-offer';
 import {
   DEPLOY_INTENT_CHOICES,
   ENDPOINT_CHOICES,
+  HEARD_FROM_CHOICES,
   LLM_PROVIDER_CHOICES,
   ROLE_CHOICES,
   TOTAL_STEPS,
   USE_CASE_CHOICES,
   type Choice,
 } from '@/lib/onboarding-steps';
-import type { DeployIntent, OnboardingEndpoint, LlmProvider, OnboardingRole, UseCase } from '@/lib/supabase/types';
+import type {
+  DeployIntent,
+  HeardFrom,
+  OnboardingEndpoint,
+  LlmProvider,
+  OnboardingRole,
+  UseCase,
+} from '@/lib/supabase/types';
 
 interface Answers {
   role: OnboardingRole | null;
@@ -23,9 +32,12 @@ interface Answers {
   llmProvider: LlmProvider | null;
   deployIntent: DeployIntent | null;
   selectedEndpoints: OnboardingEndpoint[];
+  heardFrom: HeardFrom | null;
+  heardFromDetail: string | null;
 }
 
 const STEP_TITLES = [
+  'How did you hear about Helix?',
   'What best describes you?',
   'What are you building?',
   'Which LLM provider will you bring?',
@@ -34,6 +46,7 @@ const STEP_TITLES = [
 ];
 
 const STEP_BLURBS = [
+  'It tells us where to spend our time. It is not used for anything else.',
   'It shapes the examples we show you. Nothing else.',
   'Pick as many as apply.',
   'Helix is BYOK — your key, your provider, your bill.',
@@ -218,6 +231,46 @@ export function OnboardingClient({ initial }: { initial: Answers }) {
 
         <div className="mt-6">
           {step === 1 ? (
+            <div className="flex flex-col gap-3">
+              <CardChoices
+                choices={HEARD_FROM_CHOICES}
+                value={answers.heardFrom}
+                onSelect={(heardFrom) =>
+                  setAnswers((a) => ({
+                    ...a,
+                    heardFrom,
+                    // The note belongs to 'other'. Switching away from it must
+                    // clear the text, or a stale sentence rides along with a
+                    // categorised answer and the database rejects the whole save.
+                    heardFromDetail: heardFrom === 'other' ? a.heardFromDetail : null,
+                  }))
+                }
+                columns="sm:grid-cols-2"
+              />
+              {answers.heardFrom === 'other' ? (
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="heard-from-detail" className="text-sm font-medium text-foreground">
+                    Where, roughly?
+                  </label>
+                  <input
+                    id="heard-from-detail"
+                    type="text"
+                    maxLength={200}
+                    autoComplete="off"
+                    placeholder="A podcast, a conference talk, a Discord…"
+                    value={answers.heardFromDetail ?? ''}
+                    onChange={(event) =>
+                      setAnswers((a) => ({ ...a, heardFromDetail: event.target.value }))
+                    }
+                    className="flex h-9 w-full rounded-[var(--radius)] border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  />
+                  <p className="text-xs text-muted-foreground">Optional, and only kept for this answer.</p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {step === 2 ? (
             <CardChoices
               choices={ROLE_CHOICES}
               value={answers.role}
@@ -226,7 +279,7 @@ export function OnboardingClient({ initial }: { initial: Answers }) {
             />
           ) : null}
 
-          {step === 2 ? (
+          {step === 3 ? (
             <ListChoices
               choices={USE_CASE_CHOICES}
               values={answers.useCases}
@@ -234,7 +287,7 @@ export function OnboardingClient({ initial }: { initial: Answers }) {
             />
           ) : null}
 
-          {step === 3 ? (
+          {step === 4 ? (
             <CardChoices
               choices={LLM_PROVIDER_CHOICES}
               value={answers.llmProvider}
@@ -243,7 +296,7 @@ export function OnboardingClient({ initial }: { initial: Answers }) {
             />
           ) : null}
 
-          {step === 4 ? (
+          {step === 5 ? (
             <CardChoices
               choices={DEPLOY_INTENT_CHOICES}
               value={answers.deployIntent}
@@ -252,12 +305,17 @@ export function OnboardingClient({ initial }: { initial: Answers }) {
             />
           ) : null}
 
-          {step === 5 ? (
-            <ListChoices
-              choices={ENDPOINT_CHOICES}
-              values={answers.selectedEndpoints}
-              onToggle={(v) => setAnswers((a) => ({ ...a, selectedEndpoints: toggle(a.selectedEndpoints, v) }))}
-            />
+          {step === 6 ? (
+            <div className="flex flex-col gap-5">
+              <ListChoices
+                choices={ENDPOINT_CHOICES}
+                values={answers.selectedEndpoints}
+                onToggle={(v) => setAnswers((a) => ({ ...a, selectedEndpoints: toggle(a.selectedEndpoints, v) }))}
+              />
+              {/* Last step: the answers are about to save and a key is about to
+                  be minted, so this is the moment the setup offer is useful. */}
+              <LocalSetupOffer />
+            </div>
           ) : null}
         </div>
 

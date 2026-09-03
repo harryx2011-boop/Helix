@@ -2,7 +2,7 @@
 
 > A sub-brand under Helix at **persona-helix.vercel.app**: a searchable library of role-specific system prompts, each with setup guides, a live templating wizard and an in-browser editor with export. Free, anonymous by default, and a Helix account (Clerk) unlocks cloud-saved forks and shareable links. This file is the plan; the PRD it descends from is `research/persona/persona-prd-final.md`.
 
-Decided 2026-09-02. Status: **Phases 0–3 shipped the same day** (schema, dashboard keys, the Supabase project, `apps/persona` with landing, library, role pages, wizard, editor and export, deployed to persona-helix.vercel.app); Phase 4 (accounts) and 5 open.
+Decided 2026-09-02. Status: **Phases 0–3 shipped the same day** (schema, dashboard keys, the Supabase project, `apps/persona` with landing, library, role pages, wizard, editor and export, deployed to persona-helix.vercel.app); Phase 4 (accounts) and 5 open. **2026-09-03:** the library is 36 roles and 112 personas, each with an LLM setup guide; `content/INDEX.md` indexes them for agent dispatch (`~/.claude/rules/persona-agents.md`).
 
 ---
 

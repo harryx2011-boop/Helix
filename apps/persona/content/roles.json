@@ -1,13 +1,326 @@
 [
-  { "slug": "support-chat", "name": "Support (Chat)", "department": "Support", "color": "#2F6FE4", "icon": "MessageCircle", "summary": "Web and in-app chat support: troubleshoot, route bugs, hand off to humans.", "sortOrder": 10 },
-  { "slug": "support-email", "name": "Support (Email)", "department": "Support", "color": "#2F6FE4", "icon": "Mail", "summary": "Asynchronous ticket resolution with complete multi-step replies.", "sortOrder": 20 },
-  { "slug": "customer-success", "name": "Customer Success", "department": "Support", "color": "#1E8E5A", "icon": "HeartHandshake", "summary": "Onboarding, adoption and renewal conversations for existing accounts.", "sortOrder": 30 },
-  { "slug": "sales", "name": "Sales", "department": "Sales", "color": "#D9762C", "icon": "BadgeDollarSign", "summary": "Qualify inbound leads, handle pricing questions, book demos.", "sortOrder": 40 },
-  { "slug": "marketing", "name": "Marketing", "department": "Marketing", "color": "#C2410C", "icon": "Megaphone", "summary": "Campaign copy, positioning and content that stays on brand.", "sortOrder": 50 },
-  { "slug": "product", "name": "Product", "department": "Product", "color": "#7C3AED", "icon": "Boxes", "summary": "Feedback triage, spec drafting and roadmap questions.", "sortOrder": 60 },
-  { "slug": "developer-relations", "name": "Developer Relations", "department": "Engineering", "color": "#0EA5A5", "icon": "Code2", "summary": "Answer developer questions, write samples, route API feedback.", "sortOrder": 70 },
-  { "slug": "data-analytics", "name": "Data Analytics", "department": "Engineering", "color": "#0369A1", "icon": "BarChart3", "summary": "Turn questions into SQL or Python and explain the result.", "sortOrder": 80 },
-  { "slug": "security", "name": "Security", "department": "Security", "color": "#C6402E", "icon": "Shield", "summary": "Triage reports, answer policy questions, never leak internals.", "sortOrder": 90 },
-  { "slug": "finops", "name": "FinOps", "department": "Finance", "color": "#1E8E5A", "icon": "Calculator", "summary": "Cloud spend questions, budget alerts, cost-allocation rules.", "sortOrder": 100 },
-  { "slug": "hr", "name": "HR", "department": "People", "color": "#8B5CF6", "icon": "Users", "summary": "Policy answers, leave and benefits questions, escalation to people partners.", "sortOrder": 110 }
+  {
+    "slug": "support-chat",
+    "name": "Support (Chat)",
+    "department": "Support",
+    "color": "#2F6FE4",
+    "icon": "MessageCircle",
+    "summary": "Web and in-app chat support: troubleshoot, route bugs, hand off to humans.",
+    "sortOrder": 10
+  },
+  {
+    "slug": "support-email",
+    "name": "Support (Email)",
+    "department": "Support",
+    "color": "#2F6FE4",
+    "icon": "Mail",
+    "summary": "Asynchronous ticket resolution with complete multi-step replies.",
+    "sortOrder": 20
+  },
+  {
+    "slug": "customer-success",
+    "name": "Customer Success",
+    "department": "Support",
+    "color": "#1E8E5A",
+    "icon": "HeartHandshake",
+    "summary": "Onboarding, adoption and renewal conversations for existing accounts.",
+    "sortOrder": 30
+  },
+  {
+    "slug": "sales",
+    "name": "Sales",
+    "department": "Sales",
+    "color": "#D9762C",
+    "icon": "BadgeDollarSign",
+    "summary": "Qualify inbound leads, handle pricing questions, book demos.",
+    "sortOrder": 40
+  },
+  {
+    "slug": "marketing",
+    "name": "Marketing",
+    "department": "Marketing",
+    "color": "#C2410C",
+    "icon": "Megaphone",
+    "summary": "Campaign copy, positioning and content that stays on brand.",
+    "sortOrder": 50
+  },
+  {
+    "slug": "product",
+    "name": "Product",
+    "department": "Product",
+    "color": "#7C3AED",
+    "icon": "Boxes",
+    "summary": "Feedback triage, spec drafting and roadmap questions.",
+    "sortOrder": 60
+  },
+  {
+    "slug": "developer-relations",
+    "name": "Developer Relations",
+    "department": "Engineering",
+    "color": "#0EA5A5",
+    "icon": "Code2",
+    "summary": "Answer developer questions, write samples, route API feedback.",
+    "sortOrder": 70
+  },
+  {
+    "slug": "data-analytics",
+    "name": "Data Analytics",
+    "department": "Engineering",
+    "color": "#0369A1",
+    "icon": "BarChart3",
+    "summary": "Turn questions into SQL or Python and explain the result.",
+    "sortOrder": 80
+  },
+  {
+    "slug": "security",
+    "name": "Security",
+    "department": "Security",
+    "color": "#C6402E",
+    "icon": "Shield",
+    "summary": "Triage reports, answer policy questions, never leak internals.",
+    "sortOrder": 90
+  },
+  {
+    "slug": "finops",
+    "name": "FinOps",
+    "department": "Finance",
+    "color": "#1E8E5A",
+    "icon": "Calculator",
+    "summary": "Cloud spend questions, budget alerts, cost-allocation rules.",
+    "sortOrder": 100
+  },
+  {
+    "slug": "hr",
+    "name": "HR",
+    "department": "People",
+    "color": "#8B5CF6",
+    "icon": "Users",
+    "summary": "Policy answers, leave and benefits questions, escalation to people partners.",
+    "sortOrder": 110
+  },
+  {
+    "slug": "it-helpdesk",
+    "name": "IT Helpdesk",
+    "department": "Support",
+    "color": "#0F766E",
+    "icon": "Headset",
+    "summary": "Password resets, device setup, access requests and outage triage for employees.",
+    "sortOrder": 120
+  },
+  {
+    "slug": "legal",
+    "name": "Legal",
+    "department": "Legal",
+    "color": "#6D28D9",
+    "icon": "Scale",
+    "summary": "Contract questions, policy lookups and first-pass review with clear limits.",
+    "sortOrder": 130
+  },
+  {
+    "slug": "compliance",
+    "name": "Compliance",
+    "department": "Legal",
+    "color": "#7F1D1D",
+    "icon": "ShieldCheck",
+    "summary": "Regulatory questions, evidence requests and audit preparation.",
+    "sortOrder": 140
+  },
+  {
+    "slug": "recruiting",
+    "name": "Recruiting",
+    "department": "People",
+    "color": "#DB2777",
+    "icon": "UserPlus",
+    "summary": "Candidate screening, scheduling and consistent interview communication.",
+    "sortOrder": 150
+  },
+  {
+    "slug": "operations",
+    "name": "Operations",
+    "department": "Operations",
+    "color": "#4D7C0F",
+    "icon": "ClipboardCheck",
+    "summary": "Process questions, vendor coordination and incident logs.",
+    "sortOrder": 160
+  },
+  {
+    "slug": "project-management",
+    "name": "Project Management",
+    "department": "Operations",
+    "color": "#B45309",
+    "icon": "CalendarClock",
+    "summary": "Status updates, risk registers and stakeholder-ready summaries.",
+    "sortOrder": 170
+  },
+  {
+    "slug": "executive-assistant",
+    "name": "Executive Assistant",
+    "department": "Operations",
+    "color": "#1D4ED8",
+    "icon": "Briefcase",
+    "summary": "Scheduling, inbox triage and briefing notes for a busy calendar.",
+    "sortOrder": 180
+  },
+  {
+    "slug": "content-writing",
+    "name": "Content Writing",
+    "department": "Marketing",
+    "color": "#BE123C",
+    "icon": "PenLine",
+    "summary": "Articles, newsletters and landing copy in a fixed brand voice.",
+    "sortOrder": 190
+  },
+  {
+    "slug": "social-media",
+    "name": "Social Media",
+    "department": "Marketing",
+    "color": "#EA580C",
+    "icon": "Share2",
+    "summary": "Platform-native posts, replies and moderation within brand rules.",
+    "sortOrder": 200
+  },
+  {
+    "slug": "seo",
+    "name": "SEO",
+    "department": "Marketing",
+    "color": "#0891B2",
+    "icon": "Search",
+    "summary": "Keyword briefs, on-page recommendations and content gap analysis.",
+    "sortOrder": 210
+  },
+  {
+    "slug": "community",
+    "name": "Community",
+    "department": "Marketing",
+    "color": "#7C3AED",
+    "icon": "MessagesSquare",
+    "summary": "Forum and Discord moderation, member onboarding and escalation.",
+    "sortOrder": 220
+  },
+  {
+    "slug": "ux-research",
+    "name": "UX Research",
+    "department": "Product",
+    "color": "#9333EA",
+    "icon": "Lightbulb",
+    "summary": "Interview guides, synthesis and insight summaries from raw notes.",
+    "sortOrder": 230
+  },
+  {
+    "slug": "localization",
+    "name": "Localization",
+    "department": "Product",
+    "color": "#059669",
+    "icon": "Languages",
+    "summary": "Translation with glossary discipline and locale-aware formatting.",
+    "sortOrder": 240
+  },
+  {
+    "slug": "accessibility",
+    "name": "Accessibility",
+    "department": "Product",
+    "color": "#1E40AF",
+    "icon": "Accessibility",
+    "summary": "WCAG audits, remediation guidance and inclusive copy review.",
+    "sortOrder": 250
+  },
+  {
+    "slug": "qa-testing",
+    "name": "QA and Testing",
+    "department": "Engineering",
+    "color": "#DC2626",
+    "icon": "Bug",
+    "summary": "Test plans, reproduction steps and defect reports that engineers can act on.",
+    "sortOrder": 260
+  },
+  {
+    "slug": "code-review",
+    "name": "Code Review",
+    "department": "Engineering",
+    "color": "#2563EB",
+    "icon": "GitPullRequest",
+    "summary": "Review comments with severity, rationale and a suggested fix.",
+    "sortOrder": 270
+  },
+  {
+    "slug": "devops-sre",
+    "name": "DevOps and SRE",
+    "department": "Engineering",
+    "color": "#0E7490",
+    "icon": "ServerCog",
+    "summary": "Incident response, runbooks and change reviews under a blameless rule.",
+    "sortOrder": 280
+  },
+  {
+    "slug": "data-engineering",
+    "name": "Data Engineering",
+    "department": "Engineering",
+    "color": "#0369A1",
+    "icon": "Database",
+    "summary": "Pipeline design, schema changes and data-quality investigations.",
+    "sortOrder": 290
+  },
+  {
+    "slug": "procurement",
+    "name": "Procurement",
+    "department": "Finance",
+    "color": "#15803D",
+    "icon": "HandCoins",
+    "summary": "Vendor evaluation, RFP drafting and purchase-policy answers.",
+    "sortOrder": 300
+  },
+  {
+    "slug": "accounting",
+    "name": "Accounting",
+    "department": "Finance",
+    "color": "#166534",
+    "icon": "Receipt",
+    "summary": "Expense questions, invoice matching and month-end checklists.",
+    "sortOrder": 310
+  },
+  {
+    "slug": "education-tutor",
+    "name": "Education and Tutoring",
+    "department": "Education",
+    "color": "#C2410C",
+    "icon": "GraduationCap",
+    "summary": "Patient step-by-step teaching with checks for understanding.",
+    "sortOrder": 320
+  },
+  {
+    "slug": "research-analyst",
+    "name": "Research Analyst",
+    "department": "Research",
+    "color": "#4338CA",
+    "icon": "FlaskConical",
+    "summary": "Source-grounded summaries, comparisons and citation discipline.",
+    "sortOrder": 330
+  },
+  {
+    "slug": "e-commerce",
+    "name": "E-commerce",
+    "department": "Commerce",
+    "color": "#EA580C",
+    "icon": "ShoppingCart",
+    "summary": "Product questions, order status and returns within store policy.",
+    "sortOrder": 340
+  },
+  {
+    "slug": "travel-concierge",
+    "name": "Travel Concierge",
+    "department": "Commerce",
+    "color": "#0284C7",
+    "icon": "Plane",
+    "summary": "Itineraries, rebooking help and destination questions with clear limits.",
+    "sortOrder": 350
+  },
+  {
+    "slug": "real-estate",
+    "name": "Real Estate",
+    "department": "Commerce",
+    "color": "#92400E",
+    "icon": "Building2",
+    "summary": "Listing questions, viewing scheduling and qualification within fair-housing rules.",
+    "sortOrder": 360
+  }
 ]

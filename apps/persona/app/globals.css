@@ -18,6 +18,7 @@
   --p-blue-soft: rgba(47, 111, 228, 0.1);
   --p-blue-ring: rgba(47, 111, 228, 0.28);
   --p-grid: rgba(17, 17, 20, 0.06);
+  --p-highlight: rgba(255, 255, 255, 0.6);
 
   --shadow-card-sm: 0 1px 2px rgba(17, 17, 20, 0.04), 0 4px 12px -6px rgba(17, 17, 20, 0.08);
   --shadow-card: 0 1px 2px rgba(17, 17, 20, 0.04), 0 12px 32px -12px rgba(17, 17, 20, 0.14);
@@ -62,6 +63,7 @@
   --p-blue-soft: rgba(107, 155, 242, 0.16);
   --p-blue-ring: rgba(107, 155, 242, 0.32);
   --p-grid: rgba(241, 241, 244, 0.06);
+  --p-highlight: rgba(255, 255, 255, 0.06);
 
   --shadow-card-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px -6px rgba(0, 0, 0, 0.5);
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -12px rgba(0, 0, 0, 0.6);

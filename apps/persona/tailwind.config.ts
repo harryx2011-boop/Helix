@@ -31,6 +31,7 @@ const config: Config = {
           line: 'var(--p-line)',
           'line-2': 'var(--p-line-2)',
           code: 'var(--p-code)',
+          highlight: 'var(--p-highlight)',
         },
         blue: {
           DEFAULT: 'var(--p-blue)',

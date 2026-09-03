@@ -49,6 +49,11 @@ guides:
     icon: Mail
     platform: email
     file: support-email.md
+  - tab: llm
+    label: LLM
+    icon: Bot
+    platform: llm
+    file: support-chat-llm.md
 ---
 # Support Agent (Detailed) for {{COMPANY_NAME}}
 

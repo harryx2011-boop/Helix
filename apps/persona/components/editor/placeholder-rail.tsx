@@ -42,7 +42,7 @@ export function PlaceholderRail({
           <Button
             type="button"
             onClick={onFill}
-            className="h-8 w-full rounded-pill bg-p-ink text-sm text-white hover:bg-p-ink/90"
+            className="h-8 w-full rounded-pill bg-p-ink text-sm text-p-bg hover:bg-p-ink/90"
           >
             <Sparkles className="h-3.5 w-3.5" />
             Fill remaining

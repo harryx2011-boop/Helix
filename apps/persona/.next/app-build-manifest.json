@@ -6,6 +6,11 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/page.js"
+    ],
     "/(app)/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -15,6 +20,11 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(app)/roles/loading.js"
+    ],
+    "/(app)/roles/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(app)/roles/page.js"
     ],
     "/(app)/roles/[slug]/loading": [
       "static/chunks/webpack.js",
@@ -26,10 +36,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(app)/roles/[slug]/page.js"
     ],
-    "/(app)/roles/page": [
+    "/(app)/editor/new/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(app)/roles/page.js"
+      "static/chunks/app/(app)/editor/new/page.js"
+    ],
+    "/(app)/editor/[forkId]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(app)/editor/[forkId]/page.js"
     ]
   }
 }

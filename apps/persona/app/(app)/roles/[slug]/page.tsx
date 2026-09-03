@@ -6,7 +6,6 @@ import { iconFor } from '@/components/icons';
 import { PromptView } from '@/components/prompt-view';
 import { PersonaSelect } from '@/components/app/persona-select';
 import { PlatformTabs } from '@/components/app/platform-tabs';
-import { VersionHistory } from '@/components/app/version-history';
 import { RoleActions } from '@/components/app/role-actions';
 
 export async function generateStaticParams() {
@@ -80,7 +79,9 @@ export default async function RolePage({
         </React.Suspense>
         <div>
           <p className="text-[14px] font-medium text-p-ink">{active.tagline}</p>
-          <p className="mt-0.5 text-[12.5px] text-p-ink-3">{active.tone} tone</p>
+          <p className="mt-0.5 text-[12.5px] text-p-ink-3">
+            {active.tone} tone &middot; v{active.version}
+          </p>
         </div>
 
         <RoleActions role={role} persona={active} />
@@ -94,9 +95,6 @@ export default async function RolePage({
         <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
           <div className="rounded-panel border border-p-line bg-p-surface p-4 shadow-card-sm">
             <PlatformTabs guides={active.guides} />
-          </div>
-          <div className="rounded-panel border border-p-line bg-p-surface p-4 shadow-card-sm">
-            <VersionHistory history={active.history} />
           </div>
         </aside>
       </div>

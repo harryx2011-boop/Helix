@@ -42,14 +42,27 @@ export default function PrintForkPage({ params }: { params: Promise<{ forkId: st
   return (
     <div className="print-page">
       <style>{`
-        @media print {
-          @page { size: A4; margin: 20mm 18mm; }
-          .print-chrome { display: none !important; }
-        }
         .print-page {
+          --p-bg: #fbfbfb;
+          --p-surface: #ffffff;
+          --p-ink: #111114;
+          --p-ink-2: #4b4b55;
+          --p-ink-3: #8c8c96;
+          --p-line: #e6e6eb;
+          --p-line-2: #d4d4dc;
+          --p-code: #f4f4f7;
+          --p-blue: #2f6fe4;
+          --p-blue-soft: rgba(47, 111, 228, 0.1);
+          background: var(--p-bg);
+          color: var(--p-ink);
+          color-scheme: light;
           max-width: 720px;
           margin: 0 auto;
           padding: 24px;
+        }
+        @media print {
+          @page { size: A4; margin: 20mm 18mm; }
+          .print-chrome { display: none !important; }
         }
       `}</style>
       <p className="print-chrome mb-4 rounded-card border border-p-line bg-p-code px-3 py-2 text-xs text-p-ink-2">

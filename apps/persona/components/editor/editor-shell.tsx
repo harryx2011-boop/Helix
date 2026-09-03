@@ -133,7 +133,7 @@ export function EditorShell({ forkId }: { forkId: string }) {
         </p>
         <Link
           href="/roles"
-          className="mt-6 inline-flex h-9 items-center rounded-pill bg-p-ink px-4 text-sm text-white transition-colors duration-150 ease-out hover:bg-p-ink/90"
+          className="mt-6 inline-flex h-9 items-center rounded-pill bg-p-ink px-4 text-sm text-p-bg transition-colors duration-150 ease-out hover:bg-p-ink/90"
         >
           Browse roles
         </Link>

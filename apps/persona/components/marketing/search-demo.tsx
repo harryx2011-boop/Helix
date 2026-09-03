@@ -104,7 +104,10 @@ export function SearchDemo() {
   const results = matches(text);
 
   return (
-    <div ref={containerRef} className="relative mx-auto w-full max-w-[440px] select-none rounded-panel border border-p-line bg-p-surface shadow-panel">
+    <div
+      ref={containerRef}
+      className="relative mx-auto w-full max-w-[440px] select-none rounded-panel border border-p-line bg-p-surface shadow-panel ring-1 ring-p-highlight"
+    >
       <div className="flex items-center gap-1.5 border-b border-p-line px-4 py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-p-line-2" />
         <span className="h-2.5 w-2.5 rounded-full bg-p-line-2" />
@@ -116,10 +119,10 @@ export function SearchDemo() {
 
       <div className="relative p-4">
         <div
-          className={`flex items-center gap-2 rounded-card border bg-p-bg px-3 py-2 transition-[box-shadow,border-color] duration-200 ease-out ${
+          className={`flex items-center gap-2 rounded-card border bg-p-bg px-3 py-2 transition-[box-shadow,border-color,transform] duration-200 ease-out ${
             focused ? 'border-blue shadow-[0_0_0_3px_var(--p-blue-ring)]' : 'border-p-line'
           }`}
-          style={{ transform: focused ? 'scale(1.02)' : 'scale(1)', transition: 'transform 200ms cubic-bezier(0,0,0.2,1), border-color 200ms, box-shadow 200ms' }}
+          style={{ transform: focused ? 'scale(1.02)' : 'scale(1)' }}
         >
           <SearchIconGlyph />
           <span className="font-mono text-sm text-p-ink">
@@ -152,14 +155,18 @@ export function SearchDemo() {
 
         {!reducedMotion && (
           <div
-            className="pointer-events-none absolute h-4 w-4 transition-[left,top,opacity] duration-500 ease-out"
+            className="pointer-events-none absolute transition-opacity duration-300 ease-out"
             style={{
-              left: cursorAtInput ? 116 : 260,
-              top: cursorAtInput ? 68 : 20,
+              left: 0,
+              top: 0,
               opacity: phase === 'backspacing' && text.length === 0 ? 0 : 1,
+              transform: `translate(${cursorAtInput ? 116 : 260}px, ${cursorAtInput ? 68 : 20}px)`,
+              transition: 'transform 500ms cubic-bezier(0.23,1,0.32,1), opacity 300ms ease-out',
             }}
           >
-            <CursorGlyph />
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 1.5 13.5 8 8 9.2 6 14.5 2 1.5Z" fill="var(--p-ink)" stroke="var(--p-surface)" strokeWidth="1" strokeLinejoin="round" />
+            </svg>
           </div>
         )}
       </div>
@@ -172,14 +179,6 @@ function SearchIconGlyph() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-p-ink-3">
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-3.5-3.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CursorGlyph() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M2 1.5 13.5 8 8 9.2 6 14.5 2 1.5Z" fill="var(--p-ink)" stroke="var(--p-surface)" strokeWidth="1" strokeLinejoin="round" />
     </svg>
   );
 }

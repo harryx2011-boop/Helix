@@ -283,7 +283,7 @@ export function WizardDialog({ target, open, onOpenChange }: WizardDialogProps) 
                           <Button
                             type="button"
                             onClick={goNext}
-                            className="h-8 rounded-pill bg-p-ink px-4 text-sm text-white hover:bg-p-ink/90"
+                            className="h-8 rounded-pill bg-p-ink px-4 text-sm text-p-bg hover:bg-p-ink/90"
                           >
                             {stepIndex + 1 < total ? 'Next' : 'Review'}
                           </Button>
@@ -329,7 +329,7 @@ export function WizardDialog({ target, open, onOpenChange }: WizardDialogProps) 
                         <Button
                           type="button"
                           onClick={openInEditor}
-                          className="h-9 flex-1 rounded-pill bg-p-ink text-sm text-white hover:bg-p-ink/90"
+                          className="h-9 flex-1 rounded-pill bg-p-ink text-sm text-p-bg hover:bg-p-ink/90"
                         >
                           Open in editor
                         </Button>

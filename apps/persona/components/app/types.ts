@@ -9,7 +9,7 @@ export interface CatalogEntry {
 }
 
 export const TONES: Tone[] = ['Warm', 'Technical', 'Formal', 'Casual', 'Consultative'];
-export const PLATFORMS: Platform[] = ['chat', 'email', 'code', 'voice', 'sql', 'python', 'docs'];
+export const PLATFORMS: Platform[] = ['chat', 'email', 'code', 'voice', 'sql', 'python', 'docs', 'llm'];
 
 export const PLATFORM_LABELS: Record<Platform, string> = {
   chat: 'Chat',
@@ -19,4 +19,5 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
   sql: 'SQL',
   python: 'Python',
   docs: 'Docs',
+  llm: 'LLM',
 };

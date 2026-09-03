@@ -10,7 +10,7 @@ function ConfigPanel({ configKeys }: { configKeys: Record<string, string> }) {
   const entries = Object.entries(configKeys);
   if (entries.length === 0) return null;
   return (
-    <pre className="overflow-x-auto rounded-card bg-[#111114] p-3.5 font-mono text-[12.5px] leading-relaxed text-[#e6e6eb]">
+    <pre className="overflow-x-auto rounded-card bg-[#0b0b0e] p-3.5 font-mono text-[12.5px] leading-relaxed text-[#e6e6eb]">
       {entries.map(([key, value]) => (
         <div key={key}>
           <span className="text-[#6b9bf2]">{key}</span>

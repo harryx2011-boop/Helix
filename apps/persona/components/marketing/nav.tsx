@@ -1,9 +1,25 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 /** Sticky top nav: wordmark + Helix credit, library links, and the primary CTA pill. */
 export function Nav() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-p-line bg-p-bg/80 backdrop-blur">
+    <header
+      className={`sticky top-0 z-40 border-b bg-p-bg/80 backdrop-blur transition-colors duration-200 ease-out ${
+        scrolled ? 'border-p-line' : 'border-transparent'
+      }`}
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <div className="flex items-baseline gap-2">
           <Link href="/" className="text-[17px] font-semibold tracking-tight text-p-ink">
@@ -34,7 +50,7 @@ export function Nav() {
           </a>
           <Link
             href="/roles"
-            className="inline-flex h-9 items-center rounded-pill bg-p-ink px-4 text-[13px] font-medium text-white transition-transform duration-150 ease-out hover:-translate-y-0.5"
+            className="inline-flex h-9 items-center rounded-pill bg-p-ink px-4 text-[13px] font-medium text-p-bg transition-transform duration-150 ease-out hover:-translate-y-0.5"
           >
             Browse the library
           </Link>

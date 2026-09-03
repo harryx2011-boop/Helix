@@ -96,7 +96,43 @@ export function useForks() {
     [setForks],
   );
   const remove = React.useCallback((id: string) => setForks((prev) => prev.filter((f) => f.id !== id)), [setForks]);
-  return { forks, upsert, remove };
+  const rename = React.useCallback(
+    (id: string, title: string) =>
+      setForks((prev) => prev.map((f) => (f.id === id ? { ...f, title, updatedAt: new Date().toISOString() } : f))),
+    [setForks],
+  );
+  const duplicate = React.useCallback(
+    (id: string) => {
+      const source = read(KEYS.forks, EMPTY_FORKS).find((f) => f.id === id);
+      if (!source) return null;
+      const now = new Date().toISOString();
+      const copy: Fork = { ...source, id: newForkId(), title: `${source.title} copy`, createdAt: now, updatedAt: now };
+      setForks((prev) => [copy, ...prev]);
+      return copy;
+    },
+    [setForks],
+  );
+  return { forks, upsert, remove, rename, duplicate };
+}
+
+/** Rename a fork by id; usable outside the hook (e.g. from a store-driven list). */
+export function renameFork(id: string, title: string): void {
+  const forks = read(KEYS.forks, EMPTY_FORKS);
+  write(
+    KEYS.forks,
+    forks.map((f) => (f.id === id ? { ...f, title, updatedAt: new Date().toISOString() } : f)),
+  );
+}
+
+/** Duplicate a fork by id, returning the new fork or null if the source is gone. */
+export function duplicateFork(id: string): Fork | null {
+  const forks = read(KEYS.forks, EMPTY_FORKS);
+  const source = forks.find((f) => f.id === id);
+  if (!source) return null;
+  const now = new Date().toISOString();
+  const copy: Fork = { ...source, id: newForkId(), title: `${source.title} copy`, createdAt: now, updatedAt: now };
+  write(KEYS.forks, [copy, ...forks]);
+  return copy;
 }
 
 export function newForkId(): string {

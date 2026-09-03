@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 
 interface Step {
   question: string;
@@ -37,6 +38,10 @@ export function WizardCard() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const reduced = useReducedMotion();
+
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start end', 'start center'] });
+  const entranceWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -106,13 +111,18 @@ export function WizardCard() {
         </p>
       </div>
 
-      <div className="relative overflow-hidden rounded-panel border border-p-line bg-p-surface p-6 shadow-panel grid-glow">
+      <div className="relative overflow-hidden rounded-panel border border-p-line bg-p-surface p-6 shadow-panel ring-1 ring-p-highlight grid-glow">
         <div className="relative">
           <div className="h-1.5 w-full overflow-hidden rounded-pill bg-p-line">
-            <div
-              className="stripe-bar h-full rounded-pill transition-[width] duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
+            {!reduced && !visible && (
+              <motion.div className="stripe-bar h-full rounded-pill" style={{ width: entranceWidth }} />
+            )}
+            {(reduced || visible) && (
+              <div
+                className="stripe-bar h-full rounded-pill transition-[width] duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            )}
           </div>
 
           <div className="mt-4 flex items-center gap-2">

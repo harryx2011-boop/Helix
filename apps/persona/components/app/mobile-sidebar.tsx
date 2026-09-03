@@ -7,8 +7,9 @@ import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Role } from '@/lib/catalog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search as SearchIcon, Settings as SettingsIcon } from 'lucide-react';
+import { PenLine, Search as SearchIcon, Settings as SettingsIcon } from 'lucide-react';
 import { SidebarSearch } from './sidebar-search';
+import { SidebarEditor } from './sidebar-editor';
 import { SidebarSettings } from './sidebar-settings';
 
 /** < 1024px: the sidebar becomes a sheet toggled from a top bar. */
@@ -55,10 +56,14 @@ export function MobileSidebar({ roles }: { roles: Role[] }) {
             </DialogPrimitive.Close>
           </div>
           <Tabs defaultValue="search" className="flex min-h-0 flex-1 flex-col">
-            <TabsList className="mx-4 mt-3 grid grid-cols-2 rounded-card bg-p-code p-1">
+            <TabsList className="mx-4 mt-3 grid grid-cols-3 rounded-card bg-p-code p-1">
               <TabsTrigger value="search" className="gap-1.5 rounded-[8px] text-[12.5px] data-[state=active]:bg-p-surface data-[state=active]:shadow-card-sm">
                 <SearchIcon className="h-3.5 w-3.5" />
                 Search
+              </TabsTrigger>
+              <TabsTrigger value="editor" className="gap-1.5 rounded-[8px] text-[12.5px] data-[state=active]:bg-p-surface data-[state=active]:shadow-card-sm">
+                <PenLine className="h-3.5 w-3.5" />
+                Editor
               </TabsTrigger>
               <TabsTrigger value="settings" className="gap-1.5 rounded-[8px] text-[12.5px] data-[state=active]:bg-p-surface data-[state=active]:shadow-card-sm">
                 <SettingsIcon className="h-3.5 w-3.5" />
@@ -68,6 +73,9 @@ export function MobileSidebar({ roles }: { roles: Role[] }) {
             <div className="min-h-0 flex-1 overflow-y-auto">
               <TabsContent value="search" className="mt-0">
                 <SidebarSearch roles={roles} />
+              </TabsContent>
+              <TabsContent value="editor" className="mt-0">
+                <SidebarEditor roles={roles} />
               </TabsContent>
               <TabsContent value="settings" className="mt-0">
                 <SidebarSettings />

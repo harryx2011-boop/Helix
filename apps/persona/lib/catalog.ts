@@ -15,7 +15,7 @@ import { scanPlaceholders, type PlaceholderMeta } from './placeholders';
  */
 
 export type Tone = 'Warm' | 'Technical' | 'Formal' | 'Casual' | 'Consultative';
-export type Platform = 'chat' | 'email' | 'code' | 'voice' | 'sql' | 'python' | 'docs';
+export type Platform = 'chat' | 'email' | 'code' | 'voice' | 'sql' | 'python' | 'docs' | 'llm';
 
 export interface Role {
   slug: string;

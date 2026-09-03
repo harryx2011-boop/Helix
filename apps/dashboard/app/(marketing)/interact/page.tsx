@@ -54,7 +54,12 @@ export default function InteractPage() {
 → Keyboard available at $49.99`,
       }}
       features={[
-        { icon: MousePointerClick, eyebrow: 'Interact with pages', lead: 'A real action set.', body: 'Navigate, click, type, press, scroll, wait and screenshot, in sequence.', evidence: '{ "type": "press", "key": "Enter" }' },
+        { icon: MousePointerClick, eyebrow: 'Interact with pages', lead: 'A real action set.', body: 'Navigate, click, type, press, scroll, wait and screenshot, in sequence.', evidence: 'action mix · sample session', meters: [
+          { label: 'click', value: 42, accent: true },
+          { label: 'type', value: 27 },
+          { label: 'wait', value: 19 },
+          { label: 'screenshot', value: 12 },
+        ] },
         { icon: Timer, eyebrow: 'Sessions persist', lead: 'The page stays open between calls.', body: 'Cookies, storage and focus carry over until you close it.', evidence: '"sessionId": "sess_9f2c1a7b3e4d5c60"' },
         { icon: Eye, eyebrow: 'Knows the moment', lead: 'Watch it happen.', body: 'A read-only live view streams the session’s own screencast.', evidence: '"sessionOpen": true' },
         { icon: ScanSearch, eyebrow: 'Extract with your model', lead: 'One action reads the page.', body: 'Returns a string or fills your JSON Schema.', evidence: '{ "type": "extract", "prompt": "..." }' },

@@ -57,10 +57,17 @@ export default function SearchPage() {
 }`,
       }}
       features={[
-        { icon: Search, eyebrow: 'Search and read', lead: 'Results arrive with content.', body: 'Set scrapeOptions and every result carries its page markdown.', evidence: '"scrapeOptions": { "formats": ["markdown"] }' },
+        { icon: Search, eyebrow: 'Search and read', lead: 'Results arrive with content.', body: 'Set scrapeOptions and every result carries its page markdown.', evidence: 'results with markdown attached', meters: [
+          { label: 'read', value: 94, accent: true },
+          { label: 'warned', value: 6 },
+        ] },
         { icon: Server, eyebrow: 'Bring your own backend', lead: 'No key required.', body: 'A self-hosted SearXNG instance works out of the box; Serper and SerpAPI plug in with yours.', evidence: 'HELIX_SEARCH_PROVIDER=auto' },
-        { icon: ListChecks, eyebrow: 'Partial success', lead: 'One bad result won’t fail the call.', body: 'An unreadable page keeps its row with a typed failure in warnings.', evidence: '"success": true, "warnings": [...]' },
         { icon: Filter, eyebrow: 'Narrow without a second call', lead: 'Language, country and time filters.', body: 'lang, country and a tbs window scope the search up front.', evidence: '"tbs": "qdr:m"' },
+        { icon: ListChecks, eyebrow: 'Partial success', lead: 'One bad result won’t fail the call.', body: 'An unreadable page keeps its row with a typed failure in warnings.', evidence: '"success": true · per-result outcome', meterSize: 'thin', meters: [
+          { label: 'markdown', value: 80, accent: true },
+          { label: 'FetchFailure', value: 20 },
+          { label: 'dropped', value: 0, display: '0' },
+        ] },
       ]}
       request={REQUEST}
       response={RESPONSE}

@@ -277,7 +277,7 @@ function JsonExtract({ quiet }: { quiet: boolean }) {
 export function HardParts() {
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="02" total="06" label="HARD PARTS" sub="Handled for you" />
+      <FrameBand step="02" total="07" label="HARD PARTS" sub="Handled for you" />
 
       <div className="py-16">
         <div data-reveal className="text-center">

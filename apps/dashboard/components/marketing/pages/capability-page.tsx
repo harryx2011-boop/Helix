@@ -107,7 +107,7 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
       </section>
 
       <section className="mx-auto mt-20 max-w-[960px]">
-        <div className="grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm sm:grid-cols-6">
+        <div data-reveal-group className="grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm sm:grid-cols-6">
           {features.map((feature, i) => (
             <FeatureCell key={feature.eyebrow} {...feature} index={i} />
           ))}
@@ -140,8 +140,6 @@ function FeatureCell({ icon, eyebrow, lead, body, evidence, meters, meterSize, m
       lead={lead}
       body={body}
       span={SPAN[index % SPAN.length]!}
-      className="animate-fade-up"
-      style={{ animationDelay: `${index * 60}ms` }}
     >
       {meters ? (
         <MeterPanel

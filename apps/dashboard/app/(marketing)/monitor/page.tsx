@@ -45,10 +45,13 @@ export default function MonitorPage() {
   $79/month. Includes priority support.`,
       }}
       features={[
+        { icon: BellRing, eyebrow: 'Unchanged costs nothing', lead: 'No snapshot, no webhook.', body: 'A check with no change just records that it looked.', evidence: '"stats": { "checks": 12, "changes": 0 } · outcomes', meters: [
+          { label: 'unchanged', value: 92, accent: true },
+          { label: 'changed', value: 8 },
+        ] },
         { icon: CalendarClock, eyebrow: 'Cron or interval', lead: 'Scheduled re-reads.', body: 'A cron string or every: "6h", with a timezone attached.', evidence: '"schedule": "0 * * * *"' },
         { icon: GitCompareArrows, eyebrow: 'Diffs inline', lead: 'No second call to learn what moved.', body: 'Word, line or character diffs ship in the webhook payload.', evidence: '"diff": { "granularity": "word" }' },
         { icon: SlidersHorizontal, eyebrow: 'Sensitivity and triggers', lead: 'Noise gets filtered out.', body: 'significant strips timestamps and tracking params before comparing.', evidence: '"sensitivity": "significant"' },
-        { icon: BellRing, eyebrow: 'Unchanged costs nothing', lead: 'No snapshot, no webhook.', body: 'A check with no change just records that it looked.', evidence: '"stats": { "checks": 12, "changes": 0 }' },
       ]}
       request={REQUEST}
       response={RESPONSE}

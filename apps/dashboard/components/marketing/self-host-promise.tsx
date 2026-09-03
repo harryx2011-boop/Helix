@@ -40,7 +40,7 @@ const CLAIMS: {
 export function SelfHostPromise() {
   return (
     <section className="relative overflow-hidden bg-m-bg-lighter px-6 py-16 sm:px-10">
-      <FrameBand step="04" total="06" label="SELF-HOST" sub="Bring your own keys" />
+      <FrameBand step="05" total="07" label="SELF-HOST" sub="Bring your own keys" />
 
       <div className="relative py-16">
         <div data-reveal className="relative mx-auto max-w-[760px] px-6 py-6 text-center">

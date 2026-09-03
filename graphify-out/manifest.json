@@ -1,2579 +1,3200 @@
 {
-  "E:\\Helix\\package.json": {
-    "mtime": 1788018020.0,
-    "seen": 1788018344.6266491,
-    "ast_hash": "e8e73b4e0f95067b0dd3dfa7e7499805",
-    "semantic_hash": "e8e73b4e0f95067b0dd3dfa7e7499805"
+  "package.json": {
+    "mtime": 1788474074.0,
+    "seen": 1788474514.2774258,
+    "ast_hash": "bd0420a463c018cb5a655df445cf424d",
+    "semantic_hash": "bd0420a463c018cb5a655df445cf424d"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\package.json": {
+  "research/firecrawl-capture/package.json": {
     "mtime": 1787609626.0,
     "seen": 1787939870.085734,
     "ast_hash": "1eb11cf0d4692598ad444cfbed93598e",
     "semantic_hash": "1eb11cf0d4692598ad444cfbed93598e"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\capture.mjs": {
+  "research/firecrawl-capture/capture.mjs": {
     "mtime": 1787534502.0,
     "seen": 1787939870.0857267,
     "ast_hash": "9b96af3269345a48ff2874b57a81b025",
     "semantic_hash": "9b96af3269345a48ff2874b57a81b025"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\interact.mjs": {
+  "research/firecrawl-capture/interact.mjs": {
     "mtime": 1787534948.0,
     "seen": 1787939870.085732,
     "ast_hash": "6a19338db457c328ee380e96f0a22e8e",
     "semantic_hash": "6a19338db457c328ee380e96f0a22e8e"
   },
-  "E:\\Helix\\apps\\api\\package.json": {
-    "mtime": 1788018020.0,
-    "seen": 1788018344.626212,
-    "ast_hash": "d332ac6c709907f5aa020e31aaf6e393",
-    "semantic_hash": "d332ac6c709907f5aa020e31aaf6e393"
+  "apps/api/package.json": {
+    "mtime": 1788474074.0,
+    "seen": 1788474514.1973948,
+    "ast_hash": "067ac4ef6c18317f120f8eb3b9dab92f",
+    "semantic_hash": "067ac4ef6c18317f120f8eb3b9dab92f"
   },
-  "E:\\Helix\\apps\\api\\tsconfig.json": {
+  "apps/api/tsconfig.json": {
     "mtime": 1787525790.0,
     "seen": 1787939870.0854876,
     "ast_hash": "08d0b7bb588b36ec5cdc54df39deb56e",
     "semantic_hash": "08d0b7bb588b36ec5cdc54df39deb56e"
   },
-  "E:\\Helix\\apps\\api\\src\\config.ts": {
+  "apps/api/src/config.ts": {
     "mtime": 1787706506.0,
     "seen": 1787939870.0853696,
     "ast_hash": "b94f069086183f599b6f53222fed934a",
     "semantic_hash": "b94f069086183f599b6f53222fed934a"
   },
-  "E:\\Helix\\apps\\api\\src\\index.ts": {
-    "mtime": 1788016334.0,
-    "seen": 1788018344.6262987,
-    "ast_hash": "be20f70e95cf6c000deb196f8e5f9b49",
-    "semantic_hash": "be20f70e95cf6c000deb196f8e5f9b49"
+  "apps/api/src/index.ts": {
+    "mtime": 1788472694.0,
+    "seen": 1788474514.2153091,
+    "ast_hash": "43247d118637700a0885c93b7b66048e",
+    "semantic_hash": "43247d118637700a0885c93b7b66048e"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\scrape.ts": {
+  "apps/api/src/routes/scrape.ts": {
     "mtime": 1788015166.0,
     "seen": 1788018344.626372,
     "ast_hash": "bdbc4ba8776e4e769404931a891c8e74",
     "semantic_hash": "bdbc4ba8776e4e769404931a891c8e74"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\keys.ts": {
+  "apps/api/src/routes/keys.ts": {
     "mtime": 1787525602.0,
     "seen": 1787939870.0854511,
     "ast_hash": "f58ba9b55cdfaab24c403cdc4e327157",
     "semantic_hash": "f58ba9b55cdfaab24c403cdc4e327157"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\health.ts": {
-    "mtime": 1788018028.0,
-    "seen": 1788018344.6263545,
-    "ast_hash": "7567c622ebf61e1d7879cb9817910959",
-    "semantic_hash": "7567c622ebf61e1d7879cb9817910959"
+  "apps/api/src/routes/health.ts": {
+    "mtime": 1788400530.0,
+    "seen": 1788474514.227595,
+    "ast_hash": "0527824d9da40f0db203b075ad9e0284",
+    "semantic_hash": "0527824d9da40f0db203b075ad9e0284"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\map.ts": {
+  "apps/api/src/routes/map.ts": {
     "mtime": 1787527442.0,
     "seen": 1787939870.0854518,
     "ast_hash": "688c4b7ee012d0a7739373c4f6ab842a",
     "semantic_hash": "688c4b7ee012d0a7739373c4f6ab842a"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\crawl.ts": {
+  "apps/api/src/routes/crawl.ts": {
     "mtime": 1788015196.0,
     "seen": 1788018344.6263506,
     "ast_hash": "49867cd1e1083631a61c3fa442ffba6e",
     "semantic_hash": "49867cd1e1083631a61c3fa442ffba6e"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\jobs.ts": {
+  "apps/api/src/routes/jobs.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.08545,
     "ast_hash": "c437b96b2284072ac7e62b002f552460",
     "semantic_hash": "c437b96b2284072ac7e62b002f552460"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\search.ts": {
+  "apps/api/src/routes/search.ts": {
     "mtime": 1787939124.0,
     "seen": 1787939870.0854616,
     "ast_hash": "0ea4fc6ebaca21109fcf2cf3f0221296",
     "semantic_hash": "0ea4fc6ebaca21109fcf2cf3f0221296"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\rate-limit.ts": {
+  "apps/api/src/core/rate-limit.ts": {
     "mtime": 1787523978.0,
     "seen": 1787939870.0853846,
     "ast_hash": "86abecd201a4a42b87f4a04b9cf57a63",
     "semantic_hash": "86abecd201a4a42b87f4a04b9cf57a63"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\escalation.ts": {
+  "apps/api/src/core/escalation.ts": {
     "mtime": 1787614040.0,
     "seen": 1787939870.0853763,
     "ast_hash": "016897f8b23491b7a6cf6df92e0602ec",
     "semantic_hash": "016897f8b23491b7a6cf6df92e0602ec"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\rate-limit.test.ts": {
+  "apps/api/src/core/rate-limit.test.ts": {
     "mtime": 1787524058.0,
     "seen": 1787939870.0853834,
     "ast_hash": "87c36d5f0c1daabba21975afccb57b0a",
     "semantic_hash": "87c36d5f0c1daabba21975afccb57b0a"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\api-keys.ts": {
+  "apps/api/src/core/api-keys.ts": {
     "mtime": 1787609024.0,
     "seen": 1787939870.0853722,
     "ast_hash": "94a0fdf85ef39fe892ca2df41280013f",
     "semantic_hash": "94a0fdf85ef39fe892ca2df41280013f"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\api-keys.test.ts": {
+  "apps/api/src/core/api-keys.test.ts": {
     "mtime": 1787609024.0,
     "seen": 1787939870.085371,
     "ast_hash": "dcead9592c8965a8e1a9f38fb7a8413f",
     "semantic_hash": "dcead9592c8965a8e1a9f38fb7a8413f"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\pipeline.ts": {
+  "apps/api/src/core/pipeline.ts": {
     "mtime": 1787939114.0,
     "seen": 1787939870.0853827,
     "ast_hash": "2ba256887d7629167d3d02acf8b1e936",
     "semantic_hash": "2ba256887d7629167d3d02acf8b1e936"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\pipeline.test.ts": {
+  "apps/api/src/core/pipeline.test.ts": {
     "mtime": 1787614040.0,
     "seen": 1787939870.0853817,
     "ast_hash": "8e4ae447b1cc1d9d197ed7a8e6fb5111",
     "semantic_hash": "8e4ae447b1cc1d9d197ed7a8e6fb5111"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\logger.ts": {
+  "apps/api/src/core/logger.ts": {
     "mtime": 1787782498.0,
     "seen": 1787939870.0853806,
     "ast_hash": "0342c41196204dbe1ca4c37f6efb2b31",
     "semantic_hash": "0342c41196204dbe1ca4c37f6efb2b31"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\block-detection.ts": {
+  "apps/api/src/core/block-detection.ts": {
     "mtime": 1787614842.0,
     "seen": 1787939870.0853753,
     "ast_hash": "f4c21eaef5e56c2cd8e501ab4bda5aed",
     "semantic_hash": "f4c21eaef5e56c2cd8e501ab4bda5aed"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\block-detection.test.ts": {
+  "apps/api/src/core/block-detection.test.ts": {
     "mtime": 1787534432.0,
     "seen": 1787939870.085374,
     "ast_hash": "7392f9594138a13a4f5d04e441d3d4cc",
     "semantic_hash": "7392f9594138a13a4f5d04e441d3d4cc"
   },
-  "E:\\Helix\\apps\\api\\src\\fetch\\client.ts": {
+  "apps/api/src/fetch/client.ts": {
     "mtime": 1787614170.0,
     "seen": 1787939870.0854065,
     "ast_hash": "16140fc39626a680671f6e1727a0fa7f",
     "semantic_hash": "16140fc39626a680671f6e1727a0fa7f"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\pool.ts": {
+  "apps/api/src/browser/pool.ts": {
     "mtime": 1787783918.0,
     "seen": 1787939870.0853603,
     "ast_hash": "97b6049ad68f5290021eaf6f21df4fbe",
     "semantic_hash": "97b6049ad68f5290021eaf6f21df4fbe"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\actions.ts": {
+  "apps/api/src/browser/actions.ts": {
     "mtime": 1787614040.0,
     "seen": 1787939870.0853567,
     "ast_hash": "99b6813ecd8e368afe6ef1361a730836",
     "semantic_hash": "99b6813ecd8e368afe6ef1361a730836"
   },
-  "E:\\Helix\\apps\\api\\src\\db\\pool.ts": {
+  "apps/api/src/db/pool.ts": {
     "mtime": 1787525808.0,
     "seen": 1787939870.0854027,
     "ast_hash": "3b15040b9849d9d5e2a86124bd494a96",
     "semantic_hash": "3b15040b9849d9d5e2a86124bd494a96"
   },
-  "E:\\Helix\\apps\\api\\src\\db\\migrate.ts": {
-    "mtime": 1787525808.0,
-    "seen": 1787939870.0854013,
-    "ast_hash": "a2c41cc2cf2242c00da488ced96c7840",
-    "semantic_hash": "a2c41cc2cf2242c00da488ced96c7840"
+  "apps/api/src/db/migrate.ts": {
+    "mtime": 1788383916.0,
+    "seen": 1788474514.2119396,
+    "ast_hash": "b9935e595ecb1fa38a0b33272a048087",
+    "semantic_hash": "b9935e595ecb1fa38a0b33272a048087"
   },
-  "E:\\Helix\\apps\\api\\src\\extract\\client.ts": {
-    "mtime": 1788016860.0,
-    "seen": 1788018344.6262932,
-    "ast_hash": "fe1700d706313a993d7d5c2e91f12460",
-    "semantic_hash": "fe1700d706313a993d7d5c2e91f12460"
+  "apps/api/src/extract/client.ts": {
+    "mtime": 1788472594.0,
+    "seen": 1788474514.2145538,
+    "ast_hash": "ac5b14abfca4d94cc53217067ed2e5dd",
+    "semantic_hash": "ac5b14abfca4d94cc53217067ed2e5dd"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\robots.ts": {
+  "apps/api/src/crawl/robots.ts": {
     "mtime": 1787527218.0,
     "seen": 1787939870.0853946,
     "ast_hash": "248eecb767384e602ebf56b78bca52a1",
     "semantic_hash": "248eecb767384e602ebf56b78bca52a1"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\sitemap.ts": {
+  "apps/api/src/crawl/sitemap.ts": {
     "mtime": 1787527236.0,
     "seen": 1787939870.0853958,
     "ast_hash": "a5dd6fdb0a0669c5768dd1ab2587dad9",
     "semantic_hash": "a5dd6fdb0a0669c5768dd1ab2587dad9"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\url.ts": {
+  "apps/api/src/crawl/url.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.0853996,
     "ast_hash": "e3ec079884d80a6d7d67b0a1b435d776",
     "semantic_hash": "e3ec079884d80a6d7d67b0a1b435d776"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\url.test.ts": {
+  "apps/api/src/crawl/url.test.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.0853987,
     "ast_hash": "b37bbd8442f35a9a20d1a42b3801ab56",
     "semantic_hash": "b37bbd8442f35a9a20d1a42b3801ab56"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\politeness.test.ts": {
+  "apps/api/src/crawl/politeness.test.ts": {
     "mtime": 1787527378.0,
     "seen": 1787939870.0853927,
     "ast_hash": "d4be8ad0f895e61f4283a9536bb44fa0",
     "semantic_hash": "d4be8ad0f895e61f4283a9536bb44fa0"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\frontier.test.ts": {
+  "apps/api/src/crawl/frontier.test.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.0853896,
     "ast_hash": "b4a92f32054fb377f5dc3c917542fc55",
     "semantic_hash": "b4a92f32054fb377f5dc3c917542fc55"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\worker.ts": {
+  "apps/api/src/crawl/worker.ts": {
     "mtime": 1788015334.0,
     "seen": 1788018344.6262777,
     "ast_hash": "cef99d2c2b1346021b658d830a09b84b",
     "semantic_hash": "cef99d2c2b1346021b658d830a09b84b"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\politeness.ts": {
+  "apps/api/src/crawl/politeness.ts": {
     "mtime": 1787527602.0,
     "seen": 1787939870.0853937,
     "ast_hash": "caba80ea358a415a7b7283b4c91738b1",
     "semantic_hash": "caba80ea358a415a7b7283b4c91738b1"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\state.ts": {
+  "apps/api/src/crawl/state.ts": {
     "mtime": 1787528404.0,
     "seen": 1787939870.0853977,
     "ast_hash": "76b7bf85758093cc70f0acb77b8f8274",
     "semantic_hash": "76b7bf85758093cc70f0acb77b8f8274"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\persistent-frontier.ts": {
+  "apps/api/src/crawl/persistent-frontier.ts": {
     "mtime": 1787528436.0,
     "seen": 1787939870.0853915,
     "ast_hash": "6055bab9f6516786e96ae6f78884c5b0",
     "semantic_hash": "6055bab9f6516786e96ae6f78884c5b0"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\frontier.ts": {
+  "apps/api/src/crawl/frontier.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.0853906,
     "ast_hash": "0f2d93765c1f653ef665de1734aeee31",
     "semantic_hash": "0f2d93765c1f653ef665de1734aeee31"
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\state.test.ts": {
+  "apps/api/src/crawl/state.test.ts": {
     "mtime": 1787528536.0,
     "seen": 1787939870.0853968,
     "ast_hash": "70d46f38dc5c95b67978e7176a2d2efa",
     "semantic_hash": "70d46f38dc5c95b67978e7176a2d2efa"
   },
-  "E:\\Helix\\apps\\api\\src\\search\\providers.ts": {
+  "apps/api/src/search/providers.ts": {
     "mtime": 1787614010.0,
     "seen": 1787939870.0854702,
     "ast_hash": "c5b9f0140dc1e8b9f7fcd346bc5db305",
     "semantic_hash": "c5b9f0140dc1e8b9f7fcd346bc5db305"
   },
-  "E:\\Helix\\apps\\api\\src\\search\\providers.test.ts": {
+  "apps/api/src/search/providers.test.ts": {
     "mtime": 1787614010.0,
     "seen": 1787939870.085469,
     "ast_hash": "156638c892c450c05f4d5608c7df8489",
     "semantic_hash": "156638c892c450c05f4d5608c7df8489"
   },
-  "E:\\Helix\\apps\\api\\src\\vectors\\sink.ts": {
+  "apps/api/src/vectors/sink.ts": {
     "mtime": 1787529708.0,
     "seen": 1787939870.0854793,
     "ast_hash": "482e7c9601a3236071d2793f270a502c",
     "semantic_hash": "482e7c9601a3236071d2793f270a502c"
   },
-  "E:\\Helix\\apps\\api\\src\\vectors\\sink.test.ts": {
+  "apps/api/src/vectors/sink.test.ts": {
     "mtime": 1787529738.0,
     "seen": 1787939870.085478,
     "ast_hash": "5e870b4297a9f8dfeb1b93eab80b231c",
     "semantic_hash": "5e870b4297a9f8dfeb1b93eab80b231c"
   },
-  "E:\\Helix\\apps\\api\\migrations\\001_init.sql": {
+  "apps/api/migrations/001_init.sql": {
     "mtime": 1787617114.0,
     "seen": 1787939870.085344,
-    "ast_hash": "721f2a6b0bd395d8acc55a53c6d58733",
-    "semantic_hash": "721f2a6b0bd395d8acc55a53c6d58733"
+    "ast_hash": "",
+    "semantic_hash": ""
   },
-  "E:\\Helix\\apps\\api\\migrations\\002_frontier.sql": {
+  "apps/api/migrations/002_frontier.sql": {
     "mtime": 1787528386.0,
     "seen": 1787939870.085346,
-    "ast_hash": "22b75d331cf4452c1914e39c27f9472c",
-    "semantic_hash": "22b75d331cf4452c1914e39c27f9472c"
+    "ast_hash": "",
+    "semantic_hash": ""
   },
-  "E:\\Helix\\apps\\fetch\\src\\main.rs": {
+  "apps/fetch/src/main.rs": {
     "mtime": 1787794020.0,
     "seen": 1787939870.0857122,
     "ast_hash": "0fe3ba43faddba0c20cb1e1845fffdf3",
     "semantic_hash": "0fe3ba43faddba0c20cb1e1845fffdf3"
   },
-  "E:\\Helix\\apps\\fetch\\src\\profile.rs": {
+  "apps/fetch/src/profile.rs": {
     "mtime": 1787794130.0,
     "seen": 1787939870.0857131,
     "ast_hash": "222e59b555dc3e286db6cc311fe0c477",
     "semantic_hash": "222e59b555dc3e286db6cc311fe0c477"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\main.py": {
-    "mtime": 1788018048.0,
-    "seen": 1788018344.626625,
-    "ast_hash": "92ae35cbdff5131284a56d2be4c893c5",
-    "semantic_hash": "92ae35cbdff5131284a56d2be4c893c5"
+  "apps/extract/helix_extract/main.py": {
+    "mtime": 1788474074.0,
+    "seen": 1788474514.2738967,
+    "ast_hash": "b467fe36e47aa93b9809e19fd92bcd30",
+    "semantic_hash": "b467fe36e47aa93b9809e19fd92bcd30"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\settings.py": {
+  "apps/extract/helix_extract/settings.py": {
     "mtime": 1787614040.0,
     "seen": 1787939870.0856993,
     "ast_hash": "53e926ef05743eb5c75de42151a6401a",
     "semantic_hash": "53e926ef05743eb5c75de42151a6401a"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\__init__.py": {
-    "mtime": 1788018048.0,
-    "seen": 1788018344.6266158,
-    "ast_hash": "f1befb5e139406fc95412252775a6e85",
-    "semantic_hash": "f1befb5e139406fc95412252775a6e85"
+  "apps/extract/helix_extract/__init__.py": {
+    "mtime": 1788400530.0,
+    "seen": 1788474514.272011,
+    "ast_hash": "3cfeaba3b14df7a2c898d2d555dbac8b",
+    "semantic_hash": "3cfeaba3b14df7a2c898d2d555dbac8b"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\extraction.py": {
+  "apps/extract/helix_extract/extraction.py": {
     "mtime": 1787526516.0,
     "seen": 1787939870.0856931,
     "ast_hash": "da9df8a720d4b3a73beb83f24f8b1dea",
     "semantic_hash": "da9df8a720d4b3a73beb83f24f8b1dea"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\documents.py": {
+  "apps/extract/helix_extract/documents.py": {
     "mtime": 1787614024.0,
     "seen": 1787939870.0856915,
     "ast_hash": "174cd4072999d5dd17f70cc437a8eff9",
     "semantic_hash": "174cd4072999d5dd17f70cc437a8eff9"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\schema_compiler.py": {
+  "apps/extract/helix_extract/schema_compiler.py": {
     "mtime": 1788016680.0,
     "seen": 1788018344.6266274,
     "ast_hash": "268012fd7cf62b5cdb7070635e7334f5",
     "semantic_hash": "268012fd7cf62b5cdb7070635e7334f5"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\llm.py": {
+  "apps/extract/helix_extract/llm.py": {
     "mtime": 1787939282.0,
     "seen": 1787939870.0856946,
     "ast_hash": "1175933a82df64d1a94a517c426391cd",
     "semantic_hash": "1175933a82df64d1a94a517c426391cd"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\relevance.py": {
+  "apps/extract/helix_extract/relevance.py": {
     "mtime": 1787939470.0,
     "seen": 1787939870.0856962,
     "ast_hash": "b16900d9195f8e39f319ebd49907ee83",
     "semantic_hash": "b16900d9195f8e39f319ebd49907ee83"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\embeddings.py": {
+  "apps/extract/helix_extract/embeddings.py": {
     "mtime": 1787529658.0,
     "seen": 1787939870.0856924,
     "ast_hash": "7ae66f3d8d41181f5705a16319f3540f",
     "semantic_hash": "7ae66f3d8d41181f5705a16319f3540f"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\chunking.py": {
+  "apps/extract/helix_extract/chunking.py": {
     "mtime": 1787529854.0,
     "seen": 1787939870.0856903,
     "ast_hash": "3b61b50224994b7e19cdea8667b801a6",
     "semantic_hash": "3b61b50224994b7e19cdea8667b801a6"
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_health.py": {
+  "apps/extract/tests/test_health.py": {
     "mtime": 1787524256.0,
     "seen": 1787939870.0857053,
     "ast_hash": "ce4bf742ef4b493374eaf57e8da680c3",
     "semantic_hash": "ce4bf742ef4b493374eaf57e8da680c3"
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_extraction.py": {
+  "apps/extract/tests/test_extraction.py": {
     "mtime": 1787526368.0,
     "seen": 1787939870.085704,
     "ast_hash": "f97aae56ae3ed91d7ee133efb98fb0a9",
     "semantic_hash": "f97aae56ae3ed91d7ee133efb98fb0a9"
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_documents.py": {
+  "apps/extract/tests/test_documents.py": {
     "mtime": 1787614024.0,
     "seen": 1787939870.0857034,
     "ast_hash": "26ac1c5bfda0e9cd7bdf026c704821ed",
     "semantic_hash": "26ac1c5bfda0e9cd7bdf026c704821ed"
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_schema_compiler.py": {
+  "apps/extract/tests/test_schema_compiler.py": {
     "mtime": 1788016668.0,
     "seen": 1788018344.6266418,
     "ast_hash": "8fb9761ba9caafdf0a8ea311343c1b34",
     "semantic_hash": "8fb9761ba9caafdf0a8ea311343c1b34"
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_relevance.py": {
+  "apps/extract/tests/test_relevance.py": {
     "mtime": 1787936012.0,
     "seen": 1787939870.0857072,
     "ast_hash": "e49b3dada8aa200b6759aec0ede3276b",
     "semantic_hash": "e49b3dada8aa200b6759aec0ede3276b"
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_chunking.py": {
+  "apps/extract/tests/test_chunking.py": {
     "mtime": 1787529790.0,
     "seen": 1787939870.0857015,
     "ast_hash": "274b19dd257c6770ee482a88fd28aef6",
     "semantic_hash": "274b19dd257c6770ee482a88fd28aef6"
   },
-  "E:\\Helix\\apps\\dashboard\\package.json": {
-    "mtime": 1788018020.0,
-    "seen": 1788018344.6266108,
-    "ast_hash": "8c06ea3429f22ea336744b72a4fbdb38",
-    "semantic_hash": "8c06ea3429f22ea336744b72a4fbdb38"
+  "apps/dashboard/package.json": {
+    "mtime": 1788474074.0,
+    "seen": 1788474514.2711143,
+    "ast_hash": "c5ec6fc201eac8e78ca01b63bc947a0a",
+    "semantic_hash": "c5ec6fc201eac8e78ca01b63bc947a0a"
   },
-  "E:\\Helix\\apps\\dashboard\\tsconfig.json": {
+  "apps/dashboard/tsconfig.json": {
     "mtime": 1787530806.0,
     "seen": 1787939870.0856879,
     "ast_hash": "20ecdeb0d4e4227c670014fe54fdbe07",
     "semantic_hash": "20ecdeb0d4e4227c670014fe54fdbe07"
   },
-  "E:\\Helix\\apps\\dashboard\\tailwind.config.ts": {
+  "apps/dashboard/tailwind.config.ts": {
     "mtime": 1787701338.0,
     "seen": 1787939870.0856867,
     "ast_hash": "1e6fd368248c6430135ba1547ddf4ac9",
     "semantic_hash": "1e6fd368248c6430135ba1547ddf4ac9"
   },
-  "E:\\Helix\\apps\\dashboard\\postcss.config.mjs": {
+  "apps/dashboard/postcss.config.mjs": {
     "mtime": 1787530814.0,
     "seen": 1787939870.085686,
     "ast_hash": "c56b5f3c12f777a86e2513f45daab56a",
     "semantic_hash": "c56b5f3c12f777a86e2513f45daab56a"
   },
-  "E:\\Helix\\apps\\dashboard\\next.config.ts": {
-    "mtime": 1787951224.0,
-    "seen": 1787952093.606424,
-    "ast_hash": "7fd843f9a88e0483cc6c916134f45377",
-    "semantic_hash": "7fd843f9a88e0483cc6c916134f45377"
+  "apps/dashboard/next.config.ts": {
+    "mtime": 1788397396.0,
+    "seen": 1788474514.2711122,
+    "ast_hash": "198260f912fa250d830f6db546585f9c",
+    "semantic_hash": "198260f912fa250d830f6db546585f9c"
   },
-  "E:\\Helix\\apps\\dashboard\\next-env.d.ts": {
-    "mtime": 1787531538.0,
-    "ast_hash": "90426577ad8f38459f3e566411c85589",
-    "semantic_hash": "90426577ad8f38459f3e566411c85589"
-  },
-  "E:\\Helix\\apps\\dashboard\\eslint.config.mjs": {
+  "apps/dashboard/eslint.config.mjs": {
     "mtime": 1787531822.0,
     "seen": 1787939870.0856597,
     "ast_hash": "2562a87eb3be2f9afd00dd9bc6b97b04",
     "semantic_hash": "2562a87eb3be2f9afd00dd9bc6b97b04"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\utils.ts": {
+  "apps/dashboard/lib/utils.ts": {
     "mtime": 1787530828.0,
     "seen": 1787939870.0856822,
     "ast_hash": "2d01b535f0be7422af24560c9f31c327",
     "semantic_hash": "2d01b535f0be7422af24560c9f31c327"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\format.ts": {
+  "apps/dashboard/lib/format.ts": {
     "mtime": 1787938404.0,
     "seen": 1787939870.085669,
     "ast_hash": "19677f1d92fce6a7d97a2fec94fcf091",
     "semantic_hash": "19677f1d92fce6a7d97a2fec94fcf091"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\auth.ts": {
+  "apps/dashboard/lib/auth.ts": {
     "mtime": 1787530834.0,
     "seen": 1787939870.085663,
     "ast_hash": "dc758e5edee3636d076bfa2c6f52b0ef",
     "semantic_hash": "dc758e5edee3636d076bfa2c6f52b0ef"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\api.ts": {
-    "mtime": 1788015872.0,
-    "seen": 1788018344.62658,
-    "ast_hash": "3578c34abe5c880987a9698e2de78a16",
-    "semantic_hash": "3578c34abe5c880987a9698e2de78a16"
+  "apps/dashboard/lib/api.ts": {
+    "mtime": 1788473290.0,
+    "seen": 1788474514.2672117,
+    "ast_hash": "b93b3050d7752928c1f5cc03e5b93d5d",
+    "semantic_hash": "b93b3050d7752928c1f5cc03e5b93d5d"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\layout.tsx": {
+  "apps/dashboard/app/layout.tsx": {
     "mtime": 1787619848.0,
     "seen": 1787939870.0855463,
     "ast_hash": "9e17bd1d3c2cd1ab34977a4525e38c1c",
     "semantic_hash": "9e17bd1d3c2cd1ab34977a4525e38c1c"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\button.tsx": {
+  "apps/dashboard/components/ui/button.tsx": {
     "mtime": 1787530876.0,
     "seen": 1787939870.085644,
     "ast_hash": "6c0cc94711346ad8d828308ff6e263e6",
     "semantic_hash": "6c0cc94711346ad8d828308ff6e263e6"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\input.tsx": {
+  "apps/dashboard/components/ui/input.tsx": {
     "mtime": 1787530878.0,
     "seen": 1787939870.0856495,
     "ast_hash": "f1f83383037a776192a6670ec017c1bd",
     "semantic_hash": "f1f83383037a776192a6670ec017c1bd"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\card.tsx": {
+  "apps/dashboard/components/ui/card.tsx": {
     "mtime": 1787530884.0,
     "seen": 1787939870.0856452,
     "ast_hash": "6022d4bc59080444e7bc71060a1e046a",
     "semantic_hash": "6022d4bc59080444e7bc71060a1e046a"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\badge.tsx": {
-    "mtime": 1787530886.0,
-    "seen": 1787939870.0856433,
-    "ast_hash": "9296eff2184063c6a1ab651df09369f9",
-    "semantic_hash": "9296eff2184063c6a1ab651df09369f9"
+  "apps/dashboard/components/ui/badge.tsx": {
+    "mtime": 1788473236.0,
+    "seen": 1788474514.261979,
+    "ast_hash": "c37e0f085080ae90666317dca932b739",
+    "semantic_hash": "c37e0f085080ae90666317dca932b739"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\skeleton.tsx": {
+  "apps/dashboard/components/ui/skeleton.tsx": {
     "mtime": 1787530888.0,
     "seen": 1787939870.0856545,
     "ast_hash": "877eb14c4a9a3be801453fd6cf26c63d",
     "semantic_hash": "877eb14c4a9a3be801453fd6cf26c63d"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\checkbox.tsx": {
+  "apps/dashboard/components/ui/checkbox.tsx": {
     "mtime": 1787530892.0,
     "seen": 1787939870.0856462,
     "ast_hash": "4634c41a1dfe048f2ddee32bc0f5119c",
     "semantic_hash": "4634c41a1dfe048f2ddee32bc0f5119c"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\label.tsx": {
+  "apps/dashboard/components/ui/label.tsx": {
     "mtime": 1787530894.0,
     "seen": 1787939870.0856504,
     "ast_hash": "d7eb9aadea67c63f8c1f4527e964ae97",
     "semantic_hash": "d7eb9aadea67c63f8c1f4527e964ae97"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\tabs.tsx": {
+  "apps/dashboard/components/ui/tabs.tsx": {
     "mtime": 1787530900.0,
     "seen": 1787939870.0856576,
     "ast_hash": "0ce5059bcd8a61d1bff9918d7377d165",
     "semantic_hash": "0ce5059bcd8a61d1bff9918d7377d165"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\dialog.tsx": {
+  "apps/dashboard/components/ui/dialog.tsx": {
     "mtime": 1787530908.0,
     "seen": 1787939870.0856473,
     "ast_hash": "8d0fd347596809162800a271a2d378d7",
     "semantic_hash": "8d0fd347596809162800a271a2d378d7"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\select.tsx": {
+  "apps/dashboard/components/ui/select.tsx": {
     "mtime": 1787530916.0,
     "seen": 1787939870.0856528,
     "ast_hash": "4f6008b9bd610f43c0f6ee857d5762b1",
     "semantic_hash": "4f6008b9bd610f43c0f6ee857d5762b1"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ladder\\fetch-ladder.tsx": {
+  "apps/dashboard/components/ladder/fetch-ladder.tsx": {
     "mtime": 1787530986.0,
     "seen": 1787939870.0855799,
     "ast_hash": "7c76323887209de83bb71e280904ac74",
     "semantic_hash": "7c76323887209de83bb71e280904ac74"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ladder\\scrape-form.tsx": {
+  "apps/dashboard/components/ladder/scrape-form.tsx": {
     "mtime": 1787531074.0,
     "seen": 1787939870.0855808,
     "ast_hash": "7ecb452d2343843d71b375defd21c81f",
     "semantic_hash": "7ecb452d2343843d71b375defd21c81f"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\result\\failure-panel.tsx": {
+  "apps/dashboard/components/result/failure-panel.tsx": {
     "mtime": 1787614842.0,
     "seen": 1787939870.0856285,
     "ast_hash": "8fa3852f10b2aff2145d354460fbcc0b",
     "semantic_hash": "8fa3852f10b2aff2145d354460fbcc0b"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\result\\markdown-view.tsx": {
+  "apps/dashboard/components/result/markdown-view.tsx": {
     "mtime": 1787531030.0,
     "seen": 1787939870.0856302,
     "ast_hash": "dbe718c9bfe5addd54e74be30a3f83c9",
     "semantic_hash": "dbe718c9bfe5addd54e74be30a3f83c9"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\result\\json-view.tsx": {
+  "apps/dashboard/components/result/json-view.tsx": {
     "mtime": 1787531046.0,
     "seen": 1787939870.0856292,
     "ast_hash": "9519c114ab1cbc52e40065d9c902005d",
     "semantic_hash": "9519c114ab1cbc52e40065d9c902005d"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\result\\result-panel.tsx": {
+  "apps/dashboard/components/result/result-panel.tsx": {
     "mtime": 1787531110.0,
     "seen": 1787939870.085632,
     "ast_hash": "11f00a594396bb9d6a208418865f91c2",
     "semantic_hash": "11f00a594396bb9d6a208418865f91c2"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\result\\metadata-strip.tsx": {
+  "apps/dashboard/components/result/metadata-strip.tsx": {
     "mtime": 1787939232.0,
     "seen": 1787939870.0856311,
     "ast_hash": "ebce94f8b19e5190f03c217b60c669bd",
     "semantic_hash": "ebce94f8b19e5190f03c217b60c669bd"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\shell\\theme-provider.tsx": {
+  "apps/dashboard/components/shell/theme-provider.tsx": {
     "mtime": 1787530924.0,
     "seen": 1787939870.0856402,
     "ast_hash": "03abc72bef40bd7aa510dd07d95da803",
     "semantic_hash": "03abc72bef40bd7aa510dd07d95da803"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\shell\\api-key-provider.tsx": {
+  "apps/dashboard/components/shell/api-key-provider.tsx": {
     "mtime": 1787705192.0,
     "seen": 1787939870.0856352,
     "ast_hash": "d0920228a37ee9c83e42495afb297028",
     "semantic_hash": "d0920228a37ee9c83e42495afb297028"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\shell\\api-key-gate.tsx": {
+  "apps/dashboard/components/shell/api-key-gate.tsx": {
     "mtime": 1787609024.0,
     "seen": 1787939870.085634,
     "ast_hash": "3107333d941d5edd6e7d87a66173906f",
     "semantic_hash": "3107333d941d5edd6e7d87a66173906f"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\shell\\key-menu.tsx": {
+  "apps/dashboard/components/shell/key-menu.tsx": {
     "mtime": 1787609024.0,
     "seen": 1787939870.0856361,
     "ast_hash": "00b6391a518ef9e9e161220e6a043eae",
     "semantic_hash": "00b6391a518ef9e9e161220e6a043eae"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\shell\\top-nav.tsx": {
+  "apps/dashboard/components/shell/top-nav.tsx": {
     "mtime": 1787619848.0,
     "seen": 1787939870.0856411,
     "ast_hash": "c0796cec56e3f52f05b1e6291f4ccc10",
     "semantic_hash": "c0796cec56e3f52f05b1e6291f4ccc10"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\shell\\placeholder-screen.tsx": {
+  "apps/dashboard/components/shell/placeholder-screen.tsx": {
     "mtime": 1787795796.0,
     "seen": 1787939870.085638,
     "ast_hash": "fec654f8fc60f958d30218b828cf5daa",
     "semantic_hash": "fec654f8fc60f958d30218b828cf5daa"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\shell\\logo.tsx": {
+  "apps/dashboard/components/shell/logo.tsx": {
     "mtime": 1787619830.0,
     "seen": 1787939870.085637,
     "ast_hash": "33b125f3ad75d91f144d00f2b644384f",
     "semantic_hash": "33b125f3ad75d91f144d00f2b644384f"
   },
-  "E:\\Helix\\packages\\schema\\package.json": {
+  "packages/schema/package.json": {
     "mtime": 1787524200.0,
     "seen": 1787939870.0857258,
     "ast_hash": "161456c6700be99245580fa1381198fd",
     "semantic_hash": "161456c6700be99245580fa1381198fd"
   },
-  "E:\\Helix\\RESEARCH.md": {
+  "RESEARCH.md": {
     "mtime": 1787521606.0,
     "seen": 1787939870.0857651,
     "ast_hash": "7fb84f196f88638326e9e04cbf5c0d7f",
     "semantic_hash": "7fb84f196f88638326e9e04cbf5c0d7f"
   },
-  "E:\\Helix\\ARCHITECTURE.md": {
+  "ARCHITECTURE.md": {
     "mtime": 1787523620.0,
     "seen": 1787939870.0857587,
     "ast_hash": "852b15ef1b341a9646e3ebf8af513188",
     "semantic_hash": "852b15ef1b341a9646e3ebf8af513188"
   },
-  "E:\\Helix\\docker-compose.yml": {
+  "docker-compose.yml": {
     "mtime": 1787614712.0,
     "seen": 1787939870.085768,
     "ast_hash": "5a3c5e38e16f120ae99233b025128d51",
     "semantic_hash": "5a3c5e38e16f120ae99233b025128d51"
   },
-  "E:\\Helix\\README.md": {
+  "README.md": {
     "mtime": 1787614710.0,
     "seen": 1787939870.0857642,
     "ast_hash": "b2746440e2ab17fe038e1fc5a20b7e9f",
     "semantic_hash": "b2746440e2ab17fe038e1fc5a20b7e9f"
   },
-  "E:\\Helix\\MILESTONES.md": {
+  "MILESTONES.md": {
     "mtime": 1788018124.0,
     "seen": 1788018344.6267183,
     "ast_hash": "38fdffd50d78c5c1da2b3fb64a157f05",
     "semantic_hash": "38fdffd50d78c5c1da2b3fb64a157f05"
   },
-  "E:\\Helix\\openapi.yaml": {
+  "openapi.yaml": {
     "mtime": 1788018028.0,
     "seen": 1788018344.6267257,
     "ast_hash": "0b99961d9b65326eef0a74f6f74b3461",
     "semantic_hash": "0b99961d9b65326eef0a74f6f74b3461"
   },
-  "E:\\Helix\\FRONTEND.md": {
+  "FRONTEND.md": {
     "mtime": 1787532284.0,
     "seen": 1787939870.0857618,
     "ast_hash": "da7476637c5ae59d21708fa0712af14f",
     "semantic_hash": "da7476637c5ae59d21708fa0712af14f"
   },
-  "E:\\Helix\\pnpm-workspace.yaml": {
+  "pnpm-workspace.yaml": {
     "mtime": 1787785092.0,
     "seen": 1787939870.0857708,
     "ast_hash": "02437f9e7ba33618939273da21a8fa1e",
     "semantic_hash": "02437f9e7ba33618939273da21a8fa1e"
   },
-  "E:\\Helix\\DESIGN.md": {
+  "DESIGN.md": {
     "mtime": 1787531238.0,
     "seen": 1787939870.0857606,
     "ast_hash": "a4fb92a4ff80b1955874b709c385701e",
     "semantic_hash": "a4fb92a4ff80b1955874b709c385701e"
   },
-  "E:\\Helix\\WEBSITE.md": {
+  "WEBSITE.md": {
     "mtime": 1787607352.0,
     "seen": 1787939870.0857658,
     "ast_hash": "355b4dfeb0069b8218036054cf68c160",
     "semantic_hash": "355b4dfeb0069b8218036054cf68c160"
   },
-  "E:\\Helix\\context.md": {
+  "context.md": {
     "mtime": 1788018244.0,
     "seen": 1788018344.6267233,
     "ast_hash": "d99099554b14245b43d9eb7f96661449",
     "semantic_hash": "d99099554b14245b43d9eb7f96661449"
   },
-  "E:\\Helix\\research\\01-firecrawl-teardown.md": {
+  "research/01-firecrawl-teardown.md": {
     "mtime": 1787521616.0,
     "seen": 1787939870.0857718,
     "ast_hash": "71e5ddbae14a827c14e712dd6246a5f1",
     "semantic_hash": "71e5ddbae14a827c14e712dd6246a5f1"
   },
-  "E:\\Helix\\research\\02-firecrawl-weaknesses.md": {
+  "research/02-firecrawl-weaknesses.md": {
     "mtime": 1787521616.0,
     "seen": 1787939870.0857728,
     "ast_hash": "b6f596cca576526c0f48de0b2ce705ee",
     "semantic_hash": "b6f596cca576526c0f48de0b2ce705ee"
   },
-  "E:\\Helix\\research\\03-competitive-landscape.md": {
+  "research/03-competitive-landscape.md": {
     "mtime": 1787521616.0,
     "seen": 1787939870.0857737,
     "ast_hash": "46515849c9008d75b326622fb87756f9",
     "semantic_hash": "46515849c9008d75b326622fb87756f9"
   },
-  "E:\\Helix\\research\\04-api-corrections.md": {
+  "research/04-api-corrections.md": {
     "mtime": 1787521616.0,
     "seen": 1787939870.085775,
     "ast_hash": "ed5c450389beac4217b6c30490238aeb",
     "semantic_hash": "ed5c450389beac4217b6c30490238aeb"
   },
-  "E:\\Helix\\research\\05-dx-and-byok.md": {
+  "research/05-dx-and-byok.md": {
     "mtime": 1787521616.0,
     "seen": 1787939870.0857759,
     "ast_hash": "c5d4a2499501b6d721125f8120143a8c",
     "semantic_hash": "c5d4a2499501b6d721125f8120143a8c"
   },
-  "E:\\Helix\\research\\06-monitoring-and-datalayer.md": {
+  "research/06-monitoring-and-datalayer.md": {
     "mtime": 1787521616.0,
     "seen": 1787939870.0857775,
     "ast_hash": "0e92c8cfa570c45e9960bfd911373006",
     "semantic_hash": "0e92c8cfa570c45e9960bfd911373006"
   },
-  "E:\\Helix\\research\\07-infra-buildout.md": {
+  "research/07-infra-buildout.md": {
     "mtime": 1787521616.0,
     "seen": 1787939870.0857782,
     "ast_hash": "0efbd4c8f07aab2bf516d31a7a6ad84a",
     "semantic_hash": "0efbd4c8f07aab2bf516d31a7a6ad84a"
   },
-  "E:\\Helix\\research\\08-feature-ideation.md": {
+  "research/08-feature-ideation.md": {
     "mtime": 1787521616.0,
     "seen": 1787939870.0857792,
     "ast_hash": "9e23048b759f19d205a9db8a1223450c",
     "semantic_hash": "9e23048b759f19d205a9db8a1223450c"
   },
-  "E:\\Helix\\research\\10-site-ia.md": {
+  "research/10-site-ia.md": {
     "mtime": 1787530490.0,
     "seen": 1787939870.0857801,
     "ast_hash": "965fdc4a21bbbf20d75771796d6fa334",
     "semantic_hash": "965fdc4a21bbbf20d75771796d6fa334"
   },
-  "E:\\Helix\\research\\12-firecrawl-copy-conversion.md": {
+  "research/12-firecrawl-copy-conversion.md": {
     "mtime": 1787534514.0,
     "seen": 1787939870.0857823,
     "ast_hash": "cbf6fa4a9d6f1138f4e530f98ef00335",
     "semantic_hash": "cbf6fa4a9d6f1138f4e530f98ef00335"
   },
-  "E:\\Helix\\research\\13-helix-marketing-assets.md": {
+  "research/13-helix-marketing-assets.md": {
     "mtime": 1787534550.0,
     "seen": 1787939870.0857832,
     "ast_hash": "4560ebf84250d715f099d0e300dcc483",
     "semantic_hash": "4560ebf84250d715f099d0e300dcc483"
   },
-  "E:\\Helix\\research\\11-firecrawl-visual-system.md": {
+  "research/11-firecrawl-visual-system.md": {
     "mtime": 1787534564.0,
     "seen": 1787939870.0857813,
     "ast_hash": "c36fd64da07930bd0266f37076046136",
     "semantic_hash": "c36fd64da07930bd0266f37076046136"
   },
-  "E:\\Helix\\research\\14-firecrawl-interaction-motion.md": {
+  "research/14-firecrawl-interaction-motion.md": {
     "mtime": 1787535294.0,
     "seen": 1787939870.085784,
     "ast_hash": "584e3bdf0ab2f5e6f919ba412e4176f5",
     "semantic_hash": "584e3bdf0ab2f5e6f919ba412e4176f5"
   },
-  "E:\\Helix\\research\\15-api-surface-landscape.md": {
+  "research/15-api-surface-landscape.md": {
     "mtime": 1787536060.0,
     "seen": 1787939870.0857852,
     "ast_hash": "445d7fba52a56aaa8f5bc7862dbe5971",
     "semantic_hash": "445d7fba52a56aaa8f5bc7862dbe5971"
   },
-  "E:\\Helix\\research\\16-endpoint-feasibility.md": {
+  "research/16-endpoint-feasibility.md": {
     "mtime": 1787536096.0,
     "seen": 1787939870.085786,
     "ast_hash": "6eceabfedc5b20fd53ad67634c4e6a51",
     "semantic_hash": "6eceabfedc5b20fd53ad67634c4e6a51"
   },
-  "E:\\Helix\\research\\api-specs\\web-scraping-api.md": {
+  "research/api-specs/web-scraping-api.md": {
     "mtime": 1787618444.0,
     "seen": 1787939870.0857937,
     "ast_hash": "0e42a96d1d635ee11317afaaa07c818c",
     "semantic_hash": "0e42a96d1d635ee11317afaaa07c818c"
   },
-  "E:\\Helix\\research\\api-specs\\document-parsing-api.md": {
+  "research/api-specs/document-parsing-api.md": {
     "mtime": 1787618444.0,
     "seen": 1787939870.0857902,
     "ast_hash": "64b93a76e01720266c040b088f62455c",
     "semantic_hash": "64b93a76e01720266c040b088f62455c"
   },
-  "E:\\Helix\\research\\api-specs\\web-search-api.md": {
+  "research/api-specs/web-search-api.md": {
     "mtime": 1787618444.0,
     "seen": 1787939870.085795,
     "ast_hash": "9dd54582b3b5362c260b055b2cfe5d95",
     "semantic_hash": "9dd54582b3b5362c260b055b2cfe5d95"
   },
-  "E:\\Helix\\research\\api-specs\\web-crawling-api.md": {
+  "research/api-specs/web-crawling-api.md": {
     "mtime": 1787618444.0,
     "seen": 1787939870.085792,
     "ast_hash": "bddb58fb0e50bc11a3d5842968e53af0",
     "semantic_hash": "bddb58fb0e50bc11a3d5842968e53af0"
   },
-  "E:\\Helix\\research\\api-specs\\browser-interaction-api.md": {
+  "research/api-specs/browser-interaction-api.md": {
     "mtime": 1787618444.0,
     "seen": 1787939870.0857892,
     "ast_hash": "06eeb56f98928d3c0027ae4cdd939441",
     "semantic_hash": "06eeb56f98928d3c0027ae4cdd939441"
   },
-  "E:\\Helix\\research\\api-specs\\web-monitoring-api.md": {
+  "research/api-specs/web-monitoring-api.md": {
     "mtime": 1787618444.0,
     "seen": 1787939870.085793,
     "ast_hash": "90a018424afd521c9a8a17ffbf898df5",
     "semantic_hash": "90a018424afd521c9a8a17ffbf898df5"
   },
-  "E:\\Helix\\.github\\workflows\\ci.yml": {
+  ".github/workflows/ci.yml": {
     "mtime": 1787524190.0,
     "seen": 1787939870.0857577,
     "ast_hash": "0cd8024ad2f6306d15c1ee80ce87ced3",
     "semantic_hash": "0cd8024ad2f6306d15c1ee80ce87ced3"
   },
-  "E:\\Helix\\apps\\dashboard\\public\\logo.svg": {
+  "apps/dashboard/public/logo.svg": {
     "mtime": 1787532004.0,
     "seen": 1787939870.0857978,
     "ast_hash": "17ac1a75f82696cc804653bacb558dd4",
     "semantic_hash": "17ac1a75f82696cc804653bacb558dd4"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\hero-shot.mjs": {
+  "research/firecrawl-capture/hero-shot.mjs": {
     "mtime": 1787609370.0,
     "seen": 1787939870.0857308,
     "ast_hash": "d036def2dbb7bbe6150178e36f9bf864",
     "semantic_hash": "d036def2dbb7bbe6150178e36f9bf864"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\overflow.mjs": {
+  "research/firecrawl-capture/overflow.mjs": {
     "mtime": 1787609392.0,
     "seen": 1787939870.0857332,
     "ast_hash": "82c7202dfdc2d179ae3d33114573e936",
     "semantic_hash": "82c7202dfdc2d179ae3d33114573e936"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-helix.mjs": {
+  "research/firecrawl-capture/shoot-helix.mjs": {
     "mtime": 1787609428.0,
     "seen": 1787939870.0857453,
     "ast_hash": "a217bace2b8a75224ef0296946c74dd2",
     "semantic_hash": "a217bace2b8a75224ef0296946c74dd2"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-app.mjs": {
+  "research/firecrawl-capture/shoot-app.mjs": {
     "mtime": 1787609784.0,
     "seen": 1787939870.0857432,
     "ast_hash": "c7265c503a1c3e5ee1abfe763af8d9d4",
     "semantic_hash": "c7265c503a1c3e5ee1abfe763af8d9d4"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\debug-signin.mjs": {
+  "research/firecrawl-capture/debug-signin.mjs": {
     "mtime": 1787609784.0,
     "seen": 1787939870.0857277,
     "ast_hash": "a5cd0241d197bd6bc461b1f38e1c6efa",
     "semantic_hash": "a5cd0241d197bd6bc461b1f38e1c6efa"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-app-search.mjs": {
+  "research/firecrawl-capture/shoot-app-search.mjs": {
     "mtime": 1787612482.0,
     "seen": 1787939870.085742,
     "ast_hash": "266a0c8a7aa007fae394564778b02804",
     "semantic_hash": "266a0c8a7aa007fae394564778b02804"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-app-parse.mjs": {
+  "research/firecrawl-capture/shoot-app-parse.mjs": {
     "mtime": 1787612618.0,
     "seen": 1787939870.0857403,
     "ast_hash": "a2b83fc056cf26e27ea0f01b967e1dc1",
     "semantic_hash": "a2b83fc056cf26e27ea0f01b967e1dc1"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-app-agent-surfaces.mjs": {
+  "research/firecrawl-capture/shoot-app-agent-surfaces.mjs": {
     "mtime": 1787612858.0,
     "seen": 1787939870.0857365,
     "ast_hash": "d0f38ee9df99eda0d99c2c729ea5c6fa",
     "semantic_hash": "d0f38ee9df99eda0d99c2c729ea5c6fa"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-app-crawl.mjs": {
+  "research/firecrawl-capture/shoot-app-crawl.mjs": {
     "mtime": 1787613192.0,
     "seen": 1787939870.0857372,
     "ast_hash": "0390991ef1921908557a679f00ffadaa",
     "semantic_hash": "0390991ef1921908557a679f00ffadaa"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-app-interact.mjs": {
+  "research/firecrawl-capture/shoot-app-interact.mjs": {
     "mtime": 1787613206.0,
     "seen": 1787939870.0857382,
     "ast_hash": "428028b64f4a5748222f614ad51146db",
     "semantic_hash": "428028b64f4a5748222f614ad51146db"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-app-scrape.mjs": {
+  "research/firecrawl-capture/shoot-app-scrape.mjs": {
     "mtime": 1787613474.0,
     "seen": 1787939870.0857413,
     "ast_hash": "6feb88702fb451fca812df15bfddd5e6",
     "semantic_hash": "6feb88702fb451fca812df15bfddd5e6"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-app-monitor.mjs": {
+  "research/firecrawl-capture/shoot-app-monitor.mjs": {
     "mtime": 1787613952.0,
     "seen": 1787939870.0857394,
     "ast_hash": "052e3a11d3b1e25a473b0e8af32b7fbb",
     "semantic_hash": "052e3a11d3b1e25a473b0e8af32b7fbb"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shot-edits.mjs": {
+  "research/firecrawl-capture/shot-edits.mjs": {
     "mtime": 1787619912.0,
     "seen": 1787939870.0857484,
     "ast_hash": "44f5e616677c8205d36a440c7a949467",
     "semantic_hash": "44f5e616677c8205d36a440c7a949467"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\drive-playground.mjs": {
+  "research/firecrawl-capture/drive-playground.mjs": {
     "mtime": 1787620438.0,
     "seen": 1787939870.085729,
     "ast_hash": "41f12216e011d289482d82f9fcf04692",
     "semantic_hash": "41f12216e011d289482d82f9fcf04692"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\hero-frames.mjs": {
+  "research/firecrawl-capture/hero-frames.mjs": {
     "mtime": 1787621116.0,
     "seen": 1787939870.0857298,
     "ast_hash": "c8e267d017efe64b49236915086c518f",
     "semantic_hash": "c8e267d017efe64b49236915086c518f"
   },
-  "E:\\Helix\\apps\\api\\eslint.config.js": {
+  "apps/api/eslint.config.js": {
     "mtime": 1787614618.0,
     "seen": 1787939870.0853393,
     "ast_hash": "2affa7cc8158d0e8456f7adb0bd686d9",
     "semantic_hash": "2affa7cc8158d0e8456f7adb0bd686d9"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\internal.ts": {
+  "apps/api/src/routes/internal.ts": {
     "mtime": 1787609028.0,
     "seen": 1787939870.0854492,
     "ast_hash": "8e99dc08406c310df96b1f677b810990",
     "semantic_hash": "8e99dc08406c310df96b1f677b810990"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\search.test.ts": {
+  "apps/api/src/routes/search.test.ts": {
     "mtime": 1787614010.0,
     "seen": 1787939870.0854604,
     "ast_hash": "1347d4044637a98d980b47aff1f6ac3c",
     "semantic_hash": "1347d4044637a98d980b47aff1f6ac3c"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\parse.test.ts": {
+  "apps/api/src/routes/parse.test.ts": {
     "mtime": 1787614024.0,
     "seen": 1787939870.085455,
     "ast_hash": "c15e47981ae3435a60c0e1ce4fd220ca",
     "semantic_hash": "c15e47981ae3435a60c0e1ce4fd220ca"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\parse.ts": {
+  "apps/api/src/routes/parse.ts": {
     "mtime": 1787938404.0,
     "seen": 1787939870.0854557,
     "ast_hash": "0d7b4cc3092cebb85093613a56f1495d",
     "semantic_hash": "0d7b4cc3092cebb85093613a56f1495d"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\scrape.test.ts": {
+  "apps/api/src/routes/scrape.test.ts": {
     "mtime": 1788015186.0,
     "seen": 1788018344.6263711,
     "ast_hash": "557616a2b150ee6f116d1291e0849f74",
     "semantic_hash": "557616a2b150ee6f116d1291e0849f74"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\crawl.test.ts": {
+  "apps/api/src/routes/crawl.test.ts": {
     "mtime": 1788015610.0,
     "seen": 1788018344.6263494,
     "ast_hash": "9fc6a760c15bf500753641a9d0259951",
     "semantic_hash": "9fc6a760c15bf500753641a9d0259951"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\monitor.test.ts": {
+  "apps/api/src/routes/monitor.test.ts": {
     "mtime": 1788016422.0,
     "seen": 1788018344.6263638,
     "ast_hash": "8da9d1c1036cacecdd035129e61a44af",
     "semantic_hash": "8da9d1c1036cacecdd035129e61a44af"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\monitor.ts": {
+  "apps/api/src/routes/monitor.ts": {
     "mtime": 1788016298.0,
     "seen": 1788018344.6263647,
     "ast_hash": "77e566073b92981286b7de226b7cc6c3",
     "semantic_hash": "77e566073b92981286b7de226b7cc6c3"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\interact.test.ts": {
+  "apps/api/src/routes/interact.test.ts": {
     "mtime": 1787614842.0,
     "seen": 1787939870.085447,
     "ast_hash": "33d02e5d77242bffe9784c0950ad6dac",
     "semantic_hash": "33d02e5d77242bffe9784c0950ad6dac"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\interact.ts": {
-    "mtime": 1787614842.0,
-    "seen": 1787939870.0854483,
-    "ast_hash": "0dde164c4d58e3f8d6df24df31d1091b",
-    "semantic_hash": "0dde164c4d58e3f8d6df24df31d1091b"
+  "apps/api/src/routes/interact.ts": {
+    "mtime": 1788019808.0,
+    "seen": 1788474514.227796,
+    "ast_hash": "bb0562173b97d24ee085f3bfa68f03cc",
+    "semantic_hash": "bb0562173b97d24ee085f3bfa68f03cc"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\sse.test.ts": {
-    "mtime": 1787614842.0,
-    "seen": 1787939870.0854652,
-    "ast_hash": "ef898f483943caf12c23cc8b5e18d991",
-    "semantic_hash": "ef898f483943caf12c23cc8b5e18d991"
+  "apps/api/src/routes/sse.test.ts": {
+    "mtime": 1788019848.0,
+    "seen": 1788474514.231754,
+    "ast_hash": "1a07254a810b1559a444a17882f8bff4",
+    "semantic_hash": "1a07254a810b1559a444a17882f8bff4"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\sse.ts": {
-    "mtime": 1787614842.0,
-    "seen": 1787939870.0854661,
-    "ast_hash": "1762430c9550dac5eb468d820deded30",
-    "semantic_hash": "1762430c9550dac5eb468d820deded30"
+  "apps/api/src/routes/sse.ts": {
+    "mtime": 1788019778.0,
+    "seen": 1788474514.2317584,
+    "ast_hash": "c4f21a63d4a7dd024acd31f4cbb50b36",
+    "semantic_hash": "c4f21a63d4a7dd024acd31f4cbb50b36"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\auth.ts": {
+  "apps/api/src/core/auth.ts": {
     "mtime": 1787614548.0,
     "seen": 1787939870.0853732,
     "ast_hash": "fdf5ac970b9462c1ebfe70557e400220",
     "semantic_hash": "fdf5ac970b9462c1ebfe70557e400220"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\webhook-target.test.ts": {
+  "apps/api/src/core/webhook-target.test.ts": {
     "mtime": 1787614710.0,
     "seen": 1787939870.0853877,
     "ast_hash": "2541a94f908e614d0866707b7ff734fb",
     "semantic_hash": "2541a94f908e614d0866707b7ff734fb"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\webhook-target.ts": {
+  "apps/api/src/core/webhook-target.ts": {
     "mtime": 1787614710.0,
     "seen": 1787939870.085389,
     "ast_hash": "b0126e7731da9725ecaccb10a9248137",
     "semantic_hash": "b0126e7731da9725ecaccb10a9248137"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\logger.test.ts": {
+  "apps/api/src/core/logger.test.ts": {
     "mtime": 1787782554.0,
     "seen": 1787939870.0853796,
     "ast_hash": "96b59d3a7c8908197294f9532fc13caf",
     "semantic_hash": "96b59d3a7c8908197294f9532fc13caf"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\url-guard.ts": {
+  "apps/api/src/core/url-guard.ts": {
     "mtime": 1787615052.0,
     "seen": 1787939870.0853868,
     "ast_hash": "b0c91624f7ad015f26138e05ae18b4c9",
     "semantic_hash": "b0c91624f7ad015f26138e05ae18b4c9"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\url-guard.test.ts": {
+  "apps/api/src/core/url-guard.test.ts": {
     "mtime": 1787614984.0,
     "seen": 1787939870.0853858,
     "ast_hash": "962519eb8c2743a919b0f29f08f19230",
     "semantic_hash": "962519eb8c2743a919b0f29f08f19230"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\actions.test.ts": {
+  "apps/api/src/browser/actions.test.ts": {
     "mtime": 1787614040.0,
     "seen": 1787939870.0853555,
     "ast_hash": "500f9520be6fe8a8a6e2fef601753ab7",
     "semantic_hash": "500f9520be6fe8a8a6e2fef601753ab7"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\screenshot.ts": {
+  "apps/api/src/browser/screenshot.ts": {
     "mtime": 1787614040.0,
     "seen": 1787939870.0853665,
     "ast_hash": "ec2fba05e0dca704e052b83f7ca852cb",
     "semantic_hash": "ec2fba05e0dca704e052b83f7ca852cb"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\interact-actions.test.ts": {
+  "apps/api/src/browser/interact-actions.test.ts": {
     "mtime": 1787614842.0,
     "seen": 1787939870.0853581,
     "ast_hash": "1fd73c7f3a274ae43dd8a95af2361aa4",
     "semantic_hash": "1fd73c7f3a274ae43dd8a95af2361aa4"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\interact-actions.ts": {
+  "apps/api/src/browser/interact-actions.ts": {
     "mtime": 1787614842.0,
     "seen": 1787939870.085359,
     "ast_hash": "fe6e2caf8f8d0db3970dd016a8d6522a",
     "semantic_hash": "fe6e2caf8f8d0db3970dd016a8d6522a"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\screencast.test.ts": {
+  "apps/api/src/browser/screencast.test.ts": {
     "mtime": 1787614842.0,
     "seen": 1787939870.0853648,
     "ast_hash": "2dc8d7ce3e2a5b4d2e76cbdba5b53c33",
     "semantic_hash": "2dc8d7ce3e2a5b4d2e76cbdba5b53c33"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\screencast.ts": {
+  "apps/api/src/browser/screencast.ts": {
     "mtime": 1787614842.0,
     "seen": 1787939870.0853655,
     "ast_hash": "daa5be4bbae3cacb5979f5d9bc3b02ae",
     "semantic_hash": "daa5be4bbae3cacb5979f5d9bc3b02ae"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\sessions.test.ts": {
+  "apps/api/src/browser/sessions.test.ts": {
     "mtime": 1787614842.0,
     "seen": 1787939870.0853674,
     "ast_hash": "da92e576509760f272b2261065bb87b9",
     "semantic_hash": "da92e576509760f272b2261065bb87b9"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\sessions.ts": {
+  "apps/api/src/browser/sessions.ts": {
     "mtime": 1787779944.0,
     "seen": 1787939870.0853686,
     "ast_hash": "b62d64f98b50e06c5fdc3cf7b40283e3",
     "semantic_hash": "b62d64f98b50e06c5fdc3cf7b40283e3"
   },
-  "E:\\Helix\\apps\\api\\src\\mcp\\server.ts": {
+  "apps/api/src/mcp/server.ts": {
     "mtime": 1787937706.0,
     "seen": 1787939870.0854084,
     "ast_hash": "0a3a629ade962204045d42795ec4b3b0",
     "semantic_hash": "0a3a629ade962204045d42795ec4b3b0"
   },
-  "E:\\Helix\\apps\\api\\src\\mcp\\spec.ts": {
+  "apps/api/src/mcp/spec.ts": {
     "mtime": 1787614548.0,
     "seen": 1787939870.0854092,
     "ast_hash": "9553cc6747e1b595f5133406195cc882",
     "semantic_hash": "9553cc6747e1b595f5133406195cc882"
   },
-  "E:\\Helix\\apps\\api\\src\\mcp\\tools.test.ts": {
+  "apps/api/src/mcp/tools.test.ts": {
     "mtime": 1787937690.0,
     "seen": 1787939870.0854104,
     "ast_hash": "c111b0401f86ad1e348886812cd3c325",
     "semantic_hash": "c111b0401f86ad1e348886812cd3c325"
   },
-  "E:\\Helix\\apps\\api\\src\\mcp\\tools.ts": {
+  "apps/api/src/mcp/tools.ts": {
     "mtime": 1787937602.0,
     "seen": 1787939870.0854113,
     "ast_hash": "eba47dbf3e651373f061e7be593fe1df",
     "semantic_hash": "eba47dbf3e651373f061e7be593fe1df"
   },
-  "E:\\Helix\\apps\\api\\src\\extract\\sanitize.test.ts": {
+  "apps/api/src/extract/sanitize.test.ts": {
     "mtime": 1787614040.0,
     "seen": 1787939870.0854046,
     "ast_hash": "83efd62ae8413fe6de87ef0a632b7dcc",
     "semantic_hash": "83efd62ae8413fe6de87ef0a632b7dcc"
   },
-  "E:\\Helix\\apps\\api\\src\\extract\\sanitize.ts": {
+  "apps/api/src/extract/sanitize.ts": {
     "mtime": 1787614040.0,
     "seen": 1787939870.0854053,
     "ast_hash": "1e4d338e2c3ccc02b1e77c1f55f06cb9",
     "semantic_hash": "1e4d338e2c3ccc02b1e77c1f55f06cb9"
   },
-  "E:\\Helix\\apps\\api\\src\\search\\cache.test.ts": {
+  "apps/api/src/search/cache.test.ts": {
     "mtime": 1787614010.0,
     "seen": 1787939870.085467,
     "ast_hash": "9de515e0798642c5a9516b868f38f705",
     "semantic_hash": "9de515e0798642c5a9516b868f38f705"
   },
-  "E:\\Helix\\apps\\api\\src\\search\\cache.ts": {
+  "apps/api/src/search/cache.ts": {
     "mtime": 1787614010.0,
     "seen": 1787939870.0854678,
     "ast_hash": "2be237e28270ec40843424acb5230ec6",
     "semantic_hash": "2be237e28270ec40843424acb5230ec6"
   },
-  "E:\\Helix\\apps\\api\\src\\parse\\cache.ts": {
+  "apps/api/src/parse/cache.ts": {
     "mtime": 1787614024.0,
     "seen": 1787939870.0854273,
     "ast_hash": "29db79342cc1666540e9aadbcfae73ea",
     "semantic_hash": "29db79342cc1666540e9aadbcfae73ea"
   },
-  "E:\\Helix\\apps\\api\\src\\parse\\file-type.test.ts": {
+  "apps/api/src/parse/file-type.test.ts": {
     "mtime": 1787614024.0,
     "seen": 1787939870.0854282,
     "ast_hash": "1c3a7410d157d99313e0860dc6e1ceeb",
     "semantic_hash": "1c3a7410d157d99313e0860dc6e1ceeb"
   },
-  "E:\\Helix\\apps\\api\\src\\parse\\file-type.ts": {
+  "apps/api/src/parse/file-type.ts": {
     "mtime": 1787614024.0,
     "seen": 1787939870.0854292,
     "ast_hash": "3b24a634bbd392e895007f5374759b99",
     "semantic_hash": "3b24a634bbd392e895007f5374759b99"
   },
-  "E:\\Helix\\apps\\api\\src\\parse\\remote.test.ts": {
+  "apps/api/src/parse/remote.test.ts": {
     "mtime": 1787614024.0,
     "seen": 1787939870.0854304,
     "ast_hash": "328b8fe37a516f9ffabf35336989fd5a",
     "semantic_hash": "328b8fe37a516f9ffabf35336989fd5a"
   },
-  "E:\\Helix\\apps\\api\\src\\parse\\remote.ts": {
+  "apps/api/src/parse/remote.ts": {
     "mtime": 1787614024.0,
     "seen": 1787939870.0854313,
     "ast_hash": "07057e9d6d3505cbbd5b483d667c2588",
     "semantic_hash": "07057e9d6d3505cbbd5b483d667c2588"
   },
-  "E:\\Helix\\apps\\api\\src\\webhooks\\deliveries.test.ts": {
+  "apps/api/src/webhooks/deliveries.test.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.0854805,
     "ast_hash": "96545698b8e16be17f7b1a7eb433afaa",
     "semantic_hash": "96545698b8e16be17f7b1a7eb433afaa"
   },
-  "E:\\Helix\\apps\\api\\src\\webhooks\\deliveries.ts": {
+  "apps/api/src/webhooks/deliveries.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.0854812,
     "ast_hash": "30e43ddd45ca4a08409d00846757da4b",
     "semantic_hash": "30e43ddd45ca4a08409d00846757da4b"
   },
-  "E:\\Helix\\apps\\api\\src\\webhooks\\dispatcher.test.ts": {
+  "apps/api/src/webhooks/dispatcher.test.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.0854824,
     "ast_hash": "b24f2fec0809952e905ccb06627a7ecd",
     "semantic_hash": "b24f2fec0809952e905ccb06627a7ecd"
   },
-  "E:\\Helix\\apps\\api\\src\\webhooks\\dispatcher.ts": {
+  "apps/api/src/webhooks/dispatcher.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.085483,
     "ast_hash": "ed618845fb0d53e449ddb3c7b1298219",
     "semantic_hash": "ed618845fb0d53e449ddb3c7b1298219"
   },
-  "E:\\Helix\\apps\\api\\src\\webhooks\\signature.test.ts": {
+  "apps/api/src/webhooks/signature.test.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.085484,
     "ast_hash": "f88b51a56a56c3e00f81d559866a902c",
     "semantic_hash": "f88b51a56a56c3e00f81d559866a902c"
   },
-  "E:\\Helix\\apps\\api\\src\\webhooks\\signature.ts": {
+  "apps/api/src/webhooks/signature.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.085485,
     "ast_hash": "12fadc418f80e40c568355a0f9c7a7fc",
     "semantic_hash": "12fadc418f80e40c568355a0f9c7a7fc"
   },
-  "E:\\Helix\\apps\\api\\src\\webhooks\\target.test.ts": {
+  "apps/api/src/webhooks/target.test.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.085486,
     "ast_hash": "0b8c0317414fcf98284a1c4d4a8cbcff",
     "semantic_hash": "0b8c0317414fcf98284a1c4d4a8cbcff"
   },
-  "E:\\Helix\\apps\\api\\src\\webhooks\\target.ts": {
+  "apps/api/src/webhooks/target.ts": {
     "mtime": 1787614448.0,
     "seen": 1787939870.085487,
     "ast_hash": "32f9e50e7048334032d22fad664a8e1e",
     "semantic_hash": "32f9e50e7048334032d22fad664a8e1e"
   },
-  "E:\\Helix\\apps\\api\\src\\types\\js-yaml.d.ts": {
+  "apps/api/src/types/js-yaml.d.ts": {
     "mtime": 1787614548.0,
     "seen": 1787939870.085477,
     "ast_hash": "832e0c56f9a2148978893e8930e29d82",
     "semantic_hash": "832e0c56f9a2148978893e8930e29d82"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\checker.test.ts": {
+  "apps/api/src/monitor/checker.test.ts": {
     "mtime": 1788016402.0,
     "seen": 1788018344.6263053,
     "ast_hash": "43001eba84005a5f3da09eba8e992248",
     "semantic_hash": "43001eba84005a5f3da09eba8e992248"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\checker.ts": {
+  "apps/api/src/monitor/checker.ts": {
     "mtime": 1788016176.0,
     "seen": 1788018344.6263065,
     "ast_hash": "708879778edd627338b5bc982ffb7f5f",
     "semantic_hash": "708879778edd627338b5bc982ffb7f5f"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\diff.test.ts": {
+  "apps/api/src/monitor/diff.test.ts": {
     "mtime": 1788016364.0,
     "seen": 1788018344.6263077,
     "ast_hash": "e81b6e0be97414aec1e87bb6b17e728a",
     "semantic_hash": "e81b6e0be97414aec1e87bb6b17e728a"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\diff.ts": {
+  "apps/api/src/monitor/diff.ts": {
     "mtime": 1788015896.0,
     "seen": 1788018344.6263092,
     "ast_hash": "bb48947cc7010406f96f98f3a4ae47be",
     "semantic_hash": "bb48947cc7010406f96f98f3a4ae47be"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\schedule.test.ts": {
+  "apps/api/src/monitor/schedule.test.ts": {
     "mtime": 1788015698.0,
     "seen": 1788018344.62631,
     "ast_hash": "4f39b1d5110be3c082e53bde7b3a9247",
     "semantic_hash": "4f39b1d5110be3c082e53bde7b3a9247"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\schedule.ts": {
+  "apps/api/src/monitor/schedule.ts": {
     "mtime": 1788015626.0,
     "seen": 1788018344.626311,
     "ast_hash": "4a34b91b47d28bb71079db953a83e738",
     "semantic_hash": "4a34b91b47d28bb71079db953a83e738"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\scheduler.test.ts": {
+  "apps/api/src/monitor/scheduler.test.ts": {
     "mtime": 1788015730.0,
     "seen": 1788018344.6263127,
     "ast_hash": "a86ca005400d3fe762d37fe23d56aff6",
     "semantic_hash": "a86ca005400d3fe762d37fe23d56aff6"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\scheduler.ts": {
+  "apps/api/src/monitor/scheduler.ts": {
     "mtime": 1787614712.0,
     "seen": 1787939870.0854194,
     "ast_hash": "29be1724532151407c93db88f6ddc874",
     "semantic_hash": "29be1724532151407c93db88f6ddc874"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\sensitivity.test.ts": {
+  "apps/api/src/monitor/sensitivity.test.ts": {
     "mtime": 1787614712.0,
     "seen": 1787939870.0854204,
     "ast_hash": "a577ae5e57adc3afe7067afd3445b90d",
     "semantic_hash": "a577ae5e57adc3afe7067afd3445b90d"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\sensitivity.ts": {
+  "apps/api/src/monitor/sensitivity.ts": {
     "mtime": 1787614712.0,
     "seen": 1787939870.0854213,
     "ast_hash": "3152fc16c481e6826013a1576adc667d",
     "semantic_hash": "3152fc16c481e6826013a1576adc667d"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\store.ts": {
+  "apps/api/src/monitor/store.ts": {
     "mtime": 1788016022.0,
     "seen": 1788018344.6263187,
     "ast_hash": "bfc0fcc7088e380b5950a49497d5fd5d",
     "semantic_hash": "bfc0fcc7088e380b5950a49497d5fd5d"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\triggers.test.ts": {
+  "apps/api/src/monitor/triggers.test.ts": {
     "mtime": 1787614712.0,
     "seen": 1787939870.0854237,
     "ast_hash": "d0e8ca71b9b7ab62bff55319c50500e6",
     "semantic_hash": "d0e8ca71b9b7ab62bff55319c50500e6"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\triggers.ts": {
+  "apps/api/src/monitor/triggers.ts": {
     "mtime": 1787614712.0,
     "seen": 1787939870.0854244,
     "ast_hash": "d7c2c06afed04e9cf7dc771846edfc2d",
     "semantic_hash": "d7c2c06afed04e9cf7dc771846edfc2d"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\webhooks.test.ts": {
+  "apps/api/src/monitor/webhooks.test.ts": {
     "mtime": 1787614712.0,
     "seen": 1787939870.0854254,
     "ast_hash": "aaadf471d01253ae35019694fc95c2a9",
     "semantic_hash": "aaadf471d01253ae35019694fc95c2a9"
   },
-  "E:\\Helix\\apps\\api\\src\\monitor\\webhooks.ts": {
+  "apps/api/src/monitor/webhooks.ts": {
     "mtime": 1787614712.0,
     "seen": 1787939870.085426,
     "ast_hash": "8d5a6a65880b1349c27a5e8f022af11f",
     "semantic_hash": "8d5a6a65880b1349c27a5e8f022af11f"
   },
-  "E:\\Helix\\apps\\api\\migrations\\003_monitor.sql": {
+  "apps/api/migrations/003_monitor.sql": {
     "mtime": 1787614710.0,
     "seen": 1787939870.0853477,
-    "ast_hash": "810b38d882262ace35c4cc00ce058499",
-    "semantic_hash": "810b38d882262ace35c4cc00ce058499"
+    "ast_hash": "",
+    "semantic_hash": ""
   },
-  "E:\\Helix\\apps\\api\\migrations\\004_monitor_claims.sql": {
+  "apps/api/migrations/004_monitor_claims.sql": {
     "mtime": 1787614710.0,
     "seen": 1787939870.085349,
-    "ast_hash": "10653db0de699cad4d3ed6f106f1267b",
-    "semantic_hash": "10653db0de699cad4d3ed6f106f1267b"
+    "ast_hash": "",
+    "semantic_hash": ""
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_document_endpoint.py": {
+  "apps/extract/tests/test_document_endpoint.py": {
     "mtime": 1787614024.0,
     "seen": 1787939870.0857022,
     "ast_hash": "75892d1b2c954c85ec41b20ad199bc19",
     "semantic_hash": "75892d1b2c954c85ec41b20ad199bc19"
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_llm.py": {
+  "apps/extract/tests/test_llm.py": {
     "mtime": 1787939282.0,
     "seen": 1787939870.0857062,
     "ast_hash": "b4f90179fb35895fa8955ec5f266f798",
     "semantic_hash": "b4f90179fb35895fa8955ec5f266f798"
   },
-  "E:\\Helix\\apps\\dashboard\\middleware.ts": {
+  "apps/dashboard/middleware.ts": {
     "mtime": 1787968628.0,
     "seen": 1788018344.6266081,
     "ast_hash": "24e31a6c2acdd455970386ddb57d9eea",
     "semantic_hash": "24e31a6c2acdd455970386ddb57d9eea"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\keys.ts": {
+  "apps/dashboard/lib/keys.ts": {
     "mtime": 1787607784.0,
     "seen": 1787939870.0856717,
     "ast_hash": "620136d397dc20a313d41d484cf516c6",
     "semantic_hash": "620136d397dc20a313d41d484cf516c6"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\session.ts": {
+  "apps/dashboard/lib/session.ts": {
     "mtime": 1787968572.0,
     "seen": 1788018344.6266046,
     "ast_hash": "4383fc2f6b4f35891477e87ca24e71e6",
     "semantic_hash": "4383fc2f6b4f35891477e87ca24e71e6"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\codegen.ts": {
-    "mtime": 1787968778.0,
-    "seen": 1788018344.6265886,
-    "ast_hash": "2624e8bed9df43dab93b07ab63c27c7a",
-    "semantic_hash": "2624e8bed9df43dab93b07ab63c27c7a"
+  "apps/dashboard/lib/codegen.ts": {
+    "mtime": 1788473456.0,
+    "seen": 1788474514.2683613,
+    "ast_hash": "bc7568cad9faf44b96ea9c0d32d06f2d",
+    "semantic_hash": "bc7568cad9faf44b96ea9c0d32d06f2d"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\run-endpoint.ts": {
-    "mtime": 1787968658.0,
-    "seen": 1788018344.6266034,
-    "ast_hash": "2d86bd03674377043f054d6c4850846e",
-    "semantic_hash": "2d86bd03674377043f054d6c4850846e"
+  "apps/dashboard/lib/run-endpoint.ts": {
+    "mtime": 1788473314.0,
+    "seen": 1788474514.2705498,
+    "ast_hash": "7f935b649a2a7bc5340a320367b07a9e",
+    "semantic_hash": "7f935b649a2a7bc5340a320367b07a9e"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\clerk-appearance.ts": {
+  "apps/dashboard/lib/clerk-appearance.ts": {
     "mtime": 1787610234.0,
     "seen": 1787939870.085665,
     "ast_hash": "6d3f36a36f1110ae1380c77b64e71c39",
     "semantic_hash": "6d3f36a36f1110ae1380c77b64e71c39"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\connect.ts": {
+  "apps/dashboard/lib/connect.ts": {
     "mtime": 1787614548.0,
     "seen": 1787939870.0856671,
     "ast_hash": "709ea27858889776eaf7bf48e4c511b3",
     "semantic_hash": "709ea27858889776eaf7bf48e4c511b3"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\markdown-twins.ts": {
+  "apps/dashboard/lib/markdown-twins.ts": {
     "mtime": 1787968778.0,
     "seen": 1788018344.6266,
     "ast_hash": "725818a0b2118368670df3986be644d7",
     "semantic_hash": "725818a0b2118368670df3986be644d7"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\mode.ts": {
-    "mtime": 1787614548.0,
-    "seen": 1787939870.0856738,
-    "ast_hash": "d990202a9747e04be07fc8bcd6bdbe01",
-    "semantic_hash": "d990202a9747e04be07fc8bcd6bdbe01"
+  "apps/dashboard/lib/mode.ts": {
+    "mtime": 1788471040.0,
+    "seen": 1788474514.2703323,
+    "ast_hash": "6025f0277f6f362c6559378c440ba2c9",
+    "semantic_hash": "6025f0277f6f362c6559378c440ba2c9"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\catalog.ts": {
-    "mtime": 1787968778.0,
-    "seen": 1788018344.6265826,
-    "ast_hash": "0d6cda7aedb8d0bcdc416ee6273926cc",
-    "semantic_hash": "0d6cda7aedb8d0bcdc416ee6273926cc"
+  "apps/dashboard/lib/catalog.ts": {
+    "mtime": 1788473236.0,
+    "seen": 1788474514.2675347,
+    "ast_hash": "1250fa39a3fd427767b06843f40c74f9",
+    "semantic_hash": "1250fa39a3fd427767b06843f40c74f9"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\docs-content.ts": {
-    "mtime": 1788013940.0,
-    "seen": 1788018344.626591,
-    "ast_hash": "738ed60e61047e932cba96386d4ab971",
-    "semantic_hash": "738ed60e61047e932cba96386d4ab971"
+  "apps/dashboard/lib/docs-content.ts": {
+    "mtime": 1788473930.0,
+    "seen": 1788474514.2686722,
+    "ast_hash": "0bfa16eb32ba87e9c843a0bac21a8c89",
+    "semantic_hash": "0bfa16eb32ba87e9c843a0bac21a8c89"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\skill.ts": {
-    "mtime": 1787614912.0,
-    "seen": 1787939870.0856786,
-    "ast_hash": "56fe9c29d82453742912bb9a2f2af976",
-    "semantic_hash": "56fe9c29d82453742912bb9a2f2af976"
+  "apps/dashboard/lib/skill.ts": {
+    "mtime": 1788473888.0,
+    "seen": 1788474514.2707412,
+    "ast_hash": "a45c164aede9f2917188a7998960ccd5",
+    "semantic_hash": "a45c164aede9f2917188a7998960ccd5"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\layout.tsx": {
-    "mtime": 1787968646.0,
-    "seen": 1788018344.626415,
-    "ast_hash": "c03a19db8150f3ff041039144a3a50b0",
-    "semantic_hash": "c03a19db8150f3ff041039144a3a50b0"
+  "apps/dashboard/app/(app)/app/layout.tsx": {
+    "mtime": 1788471040.0,
+    "seen": 1788474514.239612,
+    "ast_hash": "37baa001d7ac3d7e0801d34d96f2faf7",
+    "semantic_hash": "37baa001d7ac3d7e0801d34d96f2faf7"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\overview-client.tsx": {
+  "apps/dashboard/app/(app)/app/overview-client.tsx": {
     "mtime": 1787969314.0,
     "seen": 1788018344.6264164,
     "ast_hash": "4935802100f9fafa6c8b04f63af6c2cf",
     "semantic_hash": "4935802100f9fafa6c8b04f63af6c2cf"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\page.tsx": {
+  "apps/dashboard/app/(app)/app/page.tsx": {
     "mtime": 1787969314.0,
     "seen": 1788018344.6264174,
     "ast_hash": "c50940346f623aa382621e68652d3aa4",
     "semantic_hash": "c50940346f623aa382621e68652d3aa4"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\playground\\page.tsx": {
+  "apps/dashboard/app/(app)/app/playground/page.tsx": {
     "mtime": 1787951224.0,
     "seen": 1787952093.6061943,
     "ast_hash": "7a766c46ad71f4c53a72a4433cdde4a2",
     "semantic_hash": "7a766c46ad71f4c53a72a4433cdde4a2"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\keys\\page.tsx": {
+  "apps/dashboard/app/(app)/app/keys/page.tsx": {
     "mtime": 1787951636.0,
     "seen": 1787952093.6061893,
     "ast_hash": "1081eb8d9929976864a8f838242a835f",
     "semantic_hash": "1081eb8d9929976864a8f838242a835f"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\keys\\keys-client.tsx": {
-    "mtime": 1787968958.0,
-    "seen": 1788018344.6264124,
-    "ast_hash": "08c7c4af4cea09913b1ed8d42efc63c0",
-    "semantic_hash": "08c7c4af4cea09913b1ed8d42efc63c0"
+  "apps/dashboard/app/(app)/app/keys/keys-client.tsx": {
+    "mtime": 1788384002.0,
+    "seen": 1788474514.2392447,
+    "ast_hash": "76f8c909ab6b563d3d43febf68155890",
+    "semantic_hash": "76f8c909ab6b563d3d43febf68155890"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\self-host\\health\\page.tsx": {
+  "apps/dashboard/app/(app)/app/self-host/health/page.tsx": {
     "mtime": 1787530976.0,
     "seen": 1787939870.0854988,
     "ast_hash": "aa9ab8decf05bd0fc772a5fef3c97e9a",
     "semantic_hash": "aa9ab8decf05bd0fc772a5fef3c97e9a"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\settings\\page.tsx": {
+  "apps/dashboard/app/(app)/app/settings/page.tsx": {
     "mtime": 1788017082.0,
     "seen": 1788018344.6264212,
     "ast_hash": "f950672c659f23f0a6013d4892a9357e",
     "semantic_hash": "f950672c659f23f0a6013d4892a9357e"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\layout.tsx": {
+  "apps/dashboard/app/(marketing)/layout.tsx": {
     "mtime": 1787704202.0,
     "seen": 1787939870.085512,
     "ast_hash": "e96a903e516f0d72b23a3c89f8e6cfc0",
     "semantic_hash": "e96a903e516f0d72b23a3c89f8e6cfc0"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\page.tsx": {
-    "mtime": 1787706510.0,
-    "seen": 1787939870.0855143,
-    "ast_hash": "032fa7054b6246de397c24e20c0f7127",
-    "semantic_hash": "032fa7054b6246de397c24e20c0f7127"
+  "apps/dashboard/app/(marketing)/page.tsx": {
+    "mtime": 1788474034.0,
+    "seen": 1788474514.2432702,
+    "ast_hash": "8ba09fdaf270f64086d2a6087a9697b3",
+    "semantic_hash": "8ba09fdaf270f64086d2a6087a9697b3"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\scrape\\page.tsx": {
-    "mtime": 1787701526.0,
-    "seen": 1787939870.0855172,
-    "ast_hash": "6b3eabcd9eedb9d8287f4556516c73b1",
-    "semantic_hash": "6b3eabcd9eedb9d8287f4556516c73b1"
+  "apps/dashboard/app/(marketing)/scrape/page.tsx": {
+    "mtime": 1788474174.0,
+    "seen": 1788474514.243618,
+    "ast_hash": "decde7f22ae83731eb28ddce7a302ba4",
+    "semantic_hash": "decde7f22ae83731eb28ddce7a302ba4"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\parse\\page.tsx": {
-    "mtime": 1787701534.0,
-    "seen": 1787939870.0855153,
-    "ast_hash": "d819ea55419897103a27b1e5e76edf64",
-    "semantic_hash": "d819ea55419897103a27b1e5e76edf64"
+  "apps/dashboard/app/(marketing)/parse/page.tsx": {
+    "mtime": 1788474174.0,
+    "seen": 1788474514.2432728,
+    "ast_hash": "9e88baf057dddb26b6d51fd382f0c3b4",
+    "semantic_hash": "9e88baf057dddb26b6d51fd382f0c3b4"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\search\\page.tsx": {
-    "mtime": 1787701542.0,
-    "seen": 1787939870.0855181,
-    "ast_hash": "db1878402d67686c88583f3855f81d45",
-    "semantic_hash": "db1878402d67686c88583f3855f81d45"
+  "apps/dashboard/app/(marketing)/search/page.tsx": {
+    "mtime": 1788474174.0,
+    "seen": 1788474514.243621,
+    "ast_hash": "c9e7fd55510df385d4c9f77ed89e6f6b",
+    "semantic_hash": "c9e7fd55510df385d4c9f77ed89e6f6b"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\crawl\\page.tsx": {
-    "mtime": 1787701552.0,
-    "seen": 1787939870.0855079,
-    "ast_hash": "ac587c05223760bb093cf74faa576c44",
-    "semantic_hash": "ac587c05223760bb093cf74faa576c44"
+  "apps/dashboard/app/(marketing)/crawl/page.tsx": {
+    "mtime": 1788474174.0,
+    "seen": 1788474514.2422943,
+    "ast_hash": "ee6ec85ac0b1dacccf5762b021e3eae8",
+    "semantic_hash": "ee6ec85ac0b1dacccf5762b021e3eae8"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\interact\\page.tsx": {
-    "mtime": 1787701560.0,
-    "seen": 1787939870.0855112,
-    "ast_hash": "a94687593d4cbd3fcd7dc4b801848bd8",
-    "semantic_hash": "a94687593d4cbd3fcd7dc4b801848bd8"
+  "apps/dashboard/app/(marketing)/interact/page.tsx": {
+    "mtime": 1788474174.0,
+    "seen": 1788474514.2429497,
+    "ast_hash": "7a727f0e31ff8ba90f9963054f362155",
+    "semantic_hash": "7a727f0e31ff8ba90f9963054f362155"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\monitor\\page.tsx": {
-    "mtime": 1787701568.0,
-    "seen": 1787939870.085513,
-    "ast_hash": "ac90adf3c8024642a8f78b0b574aa48b",
-    "semantic_hash": "ac90adf3c8024642a8f78b0b574aa48b"
+  "apps/dashboard/app/(marketing)/monitor/page.tsx": {
+    "mtime": 1788474174.0,
+    "seen": 1788474514.2432673,
+    "ast_hash": "58b4a1e1cd28a2fac8a367644c4b3ce7",
+    "semantic_hash": "58b4a1e1cd28a2fac8a367644c4b3ce7"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\self-host\\page.tsx": {
+  "apps/dashboard/app/(marketing)/self-host/page.tsx": {
     "mtime": 1787938678.0,
     "seen": 1787939870.085519,
     "ast_hash": "5bd527da5caec9f4e5b82b03980c7359",
     "semantic_hash": "5bd527da5caec9f4e5b82b03980c7359"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\architecture\\page.tsx": {
+  "apps/dashboard/app/(marketing)/architecture/page.tsx": {
     "mtime": 1787938670.0,
     "seen": 1787939870.085507,
     "ast_hash": "08f3bfc56cef9a5d8ee9b540866f2880",
     "semantic_hash": "08f3bfc56cef9a5d8ee9b540866f2880"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\docs\\page.tsx": {
+  "apps/dashboard/app/(marketing)/docs/page.tsx": {
     "mtime": 1787614548.0,
     "seen": 1787939870.0855103,
     "ast_hash": "0e3ac1d83975f3defc5e0143ca92fdf5",
     "semantic_hash": "0e3ac1d83975f3defc5e0143ca92fdf5"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\docs\\[slug]\\page.tsx": {
+  "apps/dashboard/app/(marketing)/docs/[slug]/page.tsx": {
     "mtime": 1787968756.0,
     "seen": 1788018344.6264286,
     "ast_hash": "f88f82f56acb7f7763b9e4045775ca37",
     "semantic_hash": "f88f82f56acb7f7763b9e4045775ca37"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\md\\[[...slug]]\\route.ts": {
-    "mtime": 1787951224.0,
-    "seen": 1787952093.6062493,
-    "ast_hash": "6919ae5428d1e86a8eb7f880c253e63c",
-    "semantic_hash": "6919ae5428d1e86a8eb7f880c253e63c"
-  },
-  "E:\\Helix\\apps\\dashboard\\app\\llms.txt\\route.ts": {
-    "mtime": 1787609058.0,
-    "seen": 1787939870.0855472,
-    "ast_hash": "98e9e4541890cf160844eaf180ccc586",
-    "semantic_hash": "98e9e4541890cf160844eaf180ccc586"
-  },
-  "E:\\Helix\\apps\\dashboard\\app\\agent-onboarding\\SKILL.md\\route.ts": {
-    "mtime": 1787609142.0,
-    "seen": 1787939870.085521,
-    "ast_hash": "d9abccb42647afe431f8f4912a71cc81",
-    "semantic_hash": "d9abccb42647afe431f8f4912a71cc81"
-  },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\switch.tsx": {
+  "apps/dashboard/components/ui/switch.tsx": {
     "mtime": 1787608896.0,
     "seen": 1787939870.0856555,
     "ast_hash": "efc56e7ea2bf082449c219dda4d6454a",
     "semantic_hash": "efc56e7ea2bf082449c219dda4d6454a"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\avatar.tsx": {
+  "apps/dashboard/components/ui/avatar.tsx": {
     "mtime": 1787608900.0,
     "seen": 1787939870.085642,
     "ast_hash": "f93382ecc6db241d8c2a4a95ab231327",
     "semantic_hash": "f93382ecc6db241d8c2a4a95ab231327"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\tooltip.tsx": {
+  "apps/dashboard/components/ui/tooltip.tsx": {
     "mtime": 1787608900.0,
     "seen": 1787939870.0856586,
     "ast_hash": "3fd6a01ffd2244cf32196f3edfce87d0",
     "semantic_hash": "3fd6a01ffd2244cf32196f3edfce87d0"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\separator.tsx": {
+  "apps/dashboard/components/ui/separator.tsx": {
     "mtime": 1787608902.0,
     "seen": 1787939870.0856535,
     "ast_hash": "4be37e1a03bdb70a7abfb630b25438e2",
     "semantic_hash": "4be37e1a03bdb70a7abfb630b25438e2"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\scroll-area.tsx": {
+  "apps/dashboard/components/ui/scroll-area.tsx": {
     "mtime": 1787608908.0,
     "seen": 1787939870.0856516,
     "ast_hash": "c20d3104cd2e5ff0de27b21faba44382",
     "semantic_hash": "c20d3104cd2e5ff0de27b21faba44382"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\table.tsx": {
+  "apps/dashboard/components/ui/table.tsx": {
     "mtime": 1787608916.0,
     "seen": 1787939870.085657,
     "ast_hash": "cdd82721cf22b7490df11af6dfe5539e",
     "semantic_hash": "cdd82721cf22b7490df11af6dfe5539e"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\ui\\dropdown-menu.tsx": {
+  "apps/dashboard/components/ui/dropdown-menu.tsx": {
     "mtime": 1787609232.0,
     "seen": 1787939870.0856483,
     "ast_hash": "0950c18cfcafbf0af2b5c01f85514f65",
     "semantic_hash": "0950c18cfcafbf0af2b5c01f85514f65"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\shell\\providers.tsx": {
+  "apps/dashboard/components/shell/providers.tsx": {
     "mtime": 1787795290.0,
     "seen": 1787939870.0856392,
     "ast_hash": "5d42da065c4f0bde3491850c32bdf9fb",
     "semantic_hash": "5d42da065c4f0bde3491850c32bdf9fb"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\auth-frame.tsx": {
+  "apps/dashboard/components/marketing/auth-frame.tsx": {
     "mtime": 1787795620.0,
     "seen": 1787939870.0855849,
     "ast_hash": "994dd8bdbaf9d4e77d51e335f0bebec0",
     "semantic_hash": "994dd8bdbaf9d4e77d51e335f0bebec0"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\banner.tsx": {
+  "apps/dashboard/components/marketing/banner.tsx": {
     "mtime": 1787608874.0,
     "seen": 1787939870.0855858,
     "ast_hash": "9566635ccefd60e795f25ccbd4f3ff56",
     "semantic_hash": "9566635ccefd60e795f25ccbd4f3ff56"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\agent-block.tsx": {
+  "apps/dashboard/components/marketing/agent-block.tsx": {
     "mtime": 1787704328.0,
     "seen": 1787939870.085582,
     "ast_hash": "c795f1565f32ea8dfb8375b2ed62efee",
     "semantic_hash": "c795f1565f32ea8dfb8375b2ed62efee"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\footer.tsx": {
-    "mtime": 1787938638.0,
-    "seen": 1787939870.0855901,
-    "ast_hash": "5fcfa30445704e1176e0d2cdf72b312a",
-    "semantic_hash": "5fcfa30445704e1176e0d2cdf72b312a"
+  "apps/dashboard/components/marketing/footer.tsx": {
+    "mtime": 1788471040.0,
+    "seen": 1788474514.2528443,
+    "ast_hash": "a529cbafb99a643fc82f761489146402",
+    "semantic_hash": "a529cbafb99a643fc82f761489146402"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\pill-button.tsx": {
+  "apps/dashboard/components/marketing/pill-button.tsx": {
     "mtime": 1787609016.0,
     "seen": 1787939870.0855992,
     "ast_hash": "e64b8b2271eaa39f728e5b72f8341071",
     "semantic_hash": "e64b8b2271eaa39f728e5b72f8341071"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\terminal-replay.tsx": {
+  "apps/dashboard/components/marketing/terminal-replay.tsx": {
     "mtime": 1787609022.0,
     "seen": 1787939870.0856051,
     "ast_hash": "3e9b6572160accf66048eb893ab9b62d",
     "semantic_hash": "3e9b6572160accf66048eb893ab9b62d"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\section-eyebrow.tsx": {
+  "apps/dashboard/components/marketing/section-eyebrow.tsx": {
     "mtime": 1787702296.0,
     "seen": 1787939870.0856016,
     "ast_hash": "8461c9b2638e37399e925c114b79e8f8",
     "semantic_hash": "8461c9b2638e37399e925c114b79e8f8"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\hero.tsx": {
-    "mtime": 1787706536.0,
-    "seen": 1787939870.0855942,
-    "ast_hash": "3c5ec852e44658dc317dd4a10ed4b3e7",
-    "semantic_hash": "3c5ec852e44658dc317dd4a10ed4b3e7"
+  "apps/dashboard/components/marketing/hero.tsx": {
+    "mtime": 1788386976.0,
+    "seen": 1788474514.2530353,
+    "ast_hash": "828a6ee4a82bfc235245a691b790e127",
+    "semantic_hash": "828a6ee4a82bfc235245a691b790e127"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\ladder-explainer.tsx": {
+  "apps/dashboard/components/marketing/ladder-explainer.tsx": {
     "mtime": 1787619848.0,
     "seen": 1787939870.0855951,
     "ast_hash": "253c3448db4dccee1a575889bae6c98c",
     "semantic_hash": "253c3448db4dccee1a575889bae6c98c"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\self-host-promise.tsx": {
-    "mtime": 1787706924.0,
-    "seen": 1787939870.0856032,
-    "ast_hash": "329be6fa0e9f74e3fafd184dc9449c83",
-    "semantic_hash": "329be6fa0e9f74e3fafd184dc9449c83"
+  "apps/dashboard/components/marketing/self-host-promise.tsx": {
+    "mtime": 1788474034.0,
+    "seen": 1788474514.254987,
+    "ast_hash": "32ed16823762cfefbba7141f9a5eb142",
+    "semantic_hash": "32ed16823762cfefbba7141f9a5eb142"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\use-cases.tsx": {
-    "mtime": 1787706520.0,
-    "seen": 1787939870.085606,
-    "ast_hash": "26076f8fcf34056cd52d506a12b618e3",
-    "semantic_hash": "26076f8fcf34056cd52d506a12b618e3"
+  "apps/dashboard/components/marketing/use-cases.tsx": {
+    "mtime": 1788474034.0,
+    "seen": 1788474514.2553146,
+    "ast_hash": "66ca37aa9e33ceb11bd74ff092cc5e0a",
+    "semantic_hash": "66ca37aa9e33ceb11bd74ff092cc5e0a"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\nav.tsx": {
+  "apps/dashboard/components/marketing/nav.tsx": {
     "mtime": 1787698428.0,
     "seen": 1787939870.085596,
     "ast_hash": "92401a3c658d00e16f2a274dbcb2e364",
     "semantic_hash": "92401a3c658d00e16f2a274dbcb2e364"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\capabilities.tsx": {
-    "mtime": 1787968756.0,
-    "seen": 1788018344.6264913,
-    "ast_hash": "eac7a360e4aa48e1a480332f30a8654b",
-    "semantic_hash": "eac7a360e4aa48e1a480332f30a8654b"
+  "apps/dashboard/components/marketing/capabilities.tsx": {
+    "mtime": 1788474034.0,
+    "seen": 1788474514.2526562,
+    "ast_hash": "aa89e7c40703fe36e7d4ab88fd7317d3",
+    "semantic_hash": "aa89e7c40703fe36e7d4ab88fd7317d3"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\animated-code.tsx": {
+  "apps/dashboard/components/marketing/animated-code.tsx": {
     "mtime": 1787621370.0,
     "seen": 1787939870.085584,
     "ast_hash": "f506b821b7fc1c61b40c24c5091a279f",
     "semantic_hash": "f506b821b7fc1c61b40c24c5091a279f"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\code-panel.tsx": {
+  "apps/dashboard/components/marketing/code-panel.tsx": {
     "mtime": 1787621594.0,
     "seen": 1787939870.0855892,
     "ast_hash": "f7bbb1129aa1a1fbbd80f2d0ef90e4db",
     "semantic_hash": "f7bbb1129aa1a1fbbd80f2d0ef90e4db"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\hero-panel.tsx": {
-    "mtime": 1787968756.0,
-    "seen": 1788018344.6264997,
-    "ast_hash": "e3ae7043ef718e7b0d71bc418c50f3c6",
-    "semantic_hash": "e3ae7043ef718e7b0d71bc418c50f3c6"
+  "apps/dashboard/components/marketing/hero-panel.tsx": {
+    "mtime": 1788473548.0,
+    "seen": 1788474514.2530332,
+    "ast_hash": "fd102756e11fa01aa401db7c5a28c44d",
+    "semantic_hash": "fd102756e11fa01aa401db7c5a28c44d"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\pages\\capability-page.tsx": {
-    "mtime": 1787968756.0,
-    "seen": 1788018344.6265066,
-    "ast_hash": "b9eb15f588f217d614feed6d61ab9d38",
-    "semantic_hash": "b9eb15f588f217d614feed6d61ab9d38"
+  "apps/dashboard/components/marketing/pages/capability-page.tsx": {
+    "mtime": 1788474374.0,
+    "seen": 1788474514.2538643,
+    "ast_hash": "936a348a3e044eb7cf4bcf48e9e71d67",
+    "semantic_hash": "936a348a3e044eb7cf4bcf48e9e71d67"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\session-provider.tsx": {
+  "apps/dashboard/components/app/session-provider.tsx": {
     "mtime": 1787968646.0,
     "seen": 1788018344.6264715,
     "ast_hash": "9004dd6b768a4c0b381f9defc346055e",
     "semantic_hash": "9004dd6b768a4c0b381f9defc346055e"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\user-chip.tsx": {
+  "apps/dashboard/components/app/user-chip.tsx": {
     "mtime": 1787608968.0,
     "seen": 1787939870.0855787,
     "ast_hash": "26d9f59340a1805699e880de7b9b34ca",
     "semantic_hash": "26d9f59340a1805699e880de7b9b34ca"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\top-bar.tsx": {
+  "apps/dashboard/components/app/top-bar.tsx": {
     "mtime": 1787968886.0,
     "seen": 1788018344.6264775,
     "ast_hash": "eacdc80688f7505442a64ba83677cdbc",
     "semantic_hash": "eacdc80688f7505442a64ba83677cdbc"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\sidebar.tsx": {
+  "apps/dashboard/components/app/sidebar.tsx": {
     "mtime": 1787969154.0,
     "seen": 1788018344.626475,
     "ast_hash": "cefc6b4e3364c7fd872e77b60daf9546",
     "semantic_hash": "cefc6b4e3364c7fd872e77b60daf9546"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\status-badge.tsx": {
+  "apps/dashboard/components/app/status-badge.tsx": {
     "mtime": 1787968756.0,
     "seen": 1788018344.6264763,
     "ast_hash": "3a24973e00819a63207164a8d49b8a4b",
     "semantic_hash": "3a24973e00819a63207164a8d49b8a4b"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\app-shell.tsx": {
+  "apps/dashboard/components/app/app-shell.tsx": {
     "mtime": 1787795986.0,
     "seen": 1787939870.0855613,
     "ast_hash": "e2e22c83544af41fb33d340793fabc7e",
     "semantic_hash": "e2e22c83544af41fb33d340793fabc7e"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\sidebar-nav.tsx": {
+  "apps/dashboard/components/app/sidebar-nav.tsx": {
     "mtime": 1787969862.0,
     "seen": 1788018344.626474,
     "ast_hash": "cabe2202a6febfcded6b9d79e55d9267",
     "semantic_hash": "cabe2202a6febfcded6b9d79e55d9267"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\char-chart.tsx": {
+  "apps/dashboard/components/app/char-chart.tsx": {
     "mtime": 1787610268.0,
     "seen": 1787939870.0855634,
     "ast_hash": "b7700232ebc85c53dd655c27ad800143",
     "semantic_hash": "b7700232ebc85c53dd655c27ad800143"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\connect-sheet.tsx": {
+  "apps/dashboard/components/app/connect-sheet.tsx": {
     "mtime": 1787614548.0,
     "seen": 1787939870.0855644,
     "ast_hash": "7ce70259343a2fe8c4b8829488342d46",
     "semantic_hash": "7ce70259343a2fe8c4b8829488342d46"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\get-code-dialog.tsx": {
-    "mtime": 1787968756.0,
-    "seen": 1788018344.6265314,
-    "ast_hash": "5d907a96b78e02a5931a4e8f9dee11a1",
-    "semantic_hash": "5d907a96b78e02a5931a4e8f9dee11a1"
+  "apps/dashboard/components/playground/get-code-dialog.tsx": {
+    "mtime": 1788473564.0,
+    "seen": 1788474514.2578754,
+    "ast_hash": "ad95c660bd3437b3b1652a6f40b1f031",
+    "semantic_hash": "ad95c660bd3437b3b1652a6f40b1f031"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\playground.tsx": {
-    "mtime": 1787968852.0,
-    "seen": 1788018344.6265323,
-    "ast_hash": "de42190bc2b14b2e5d2124ce5b020875",
-    "semantic_hash": "de42190bc2b14b2e5d2124ce5b020875"
+  "apps/dashboard/components/playground/playground.tsx": {
+    "mtime": 1788473402.0,
+    "seen": 1788474514.2578785,
+    "ast_hash": "2182174d3ebbcfd5c245a8da4f902e1a",
+    "semantic_hash": "2182174d3ebbcfd5c245a8da4f902e1a"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\results.tsx": {
-    "mtime": 1787969886.0,
-    "seen": 1788018344.6265347,
-    "ast_hash": "7f4cb8d8ee1bbac4611d8d677bc912d9",
-    "semantic_hash": "7f4cb8d8ee1bbac4611d8d677bc912d9"
+  "apps/dashboard/components/playground/results.tsx": {
+    "mtime": 1788473490.0,
+    "seen": 1788474514.2578838,
+    "ast_hash": "b11c9508f14e6c7a2f1d734b6e431a13",
+    "semantic_hash": "b11c9508f14e6c7a2f1d734b6e431a13"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\prompt-box.tsx": {
-    "mtime": 1787968852.0,
-    "seen": 1788018344.6265337,
-    "ast_hash": "4dfbd97016017adb2d3552dfaa8d00b5",
-    "semantic_hash": "4dfbd97016017adb2d3552dfaa8d00b5"
+  "apps/dashboard/components/playground/prompt-box.tsx": {
+    "mtime": 1788473548.0,
+    "seen": 1788474514.2578816,
+    "ast_hash": "2c3853de032fbdb35e80117a145d703d",
+    "semantic_hash": "2c3853de032fbdb35e80117a145d703d"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\forms\\scrape-form.tsx": {
+  "apps/dashboard/components/playground/forms/scrape-form.tsx": {
     "mtime": 1787620156.0,
     "seen": 1787939870.0856216,
     "ast_hash": "61b26c80593d74a1543acc0c8159cdd7",
     "semantic_hash": "61b26c80593d74a1543acc0c8159cdd7"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\forms\\map-form.tsx": {
+  "apps/dashboard/components/playground/forms/map-form.tsx": {
     "mtime": 1787620174.0,
     "seen": 1787939870.0856183,
     "ast_hash": "a92b96d19d0b97d48e9b22c3f9640373",
     "semantic_hash": "a92b96d19d0b97d48e9b22c3f9640373"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\forms\\crawl-form.tsx": {
+  "apps/dashboard/components/playground/forms/crawl-form.tsx": {
     "mtime": 1787620180.0,
     "seen": 1787939870.085615,
     "ast_hash": "47e897ea1e587d52b2ace95c8ccf2b2b",
     "semantic_hash": "47e897ea1e587d52b2ace95c8ccf2b2b"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\forms\\monitor-form.tsx": {
+  "apps/dashboard/components/playground/forms/monitor-form.tsx": {
     "mtime": 1787620184.0,
     "seen": 1787939870.0856192,
     "ast_hash": "833d0e1b00847695fca3b7d76382a934",
     "semantic_hash": "833d0e1b00847695fca3b7d76382a934"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\forms\\search-form.tsx": {
+  "apps/dashboard/components/playground/forms/search-form.tsx": {
     "mtime": 1787620196.0,
     "seen": 1787939870.0856225,
     "ast_hash": "053439434d93a5e7cf2fd824af71ac9b",
     "semantic_hash": "053439434d93a5e7cf2fd824af71ac9b"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\forms\\interact-form.tsx": {
+  "apps/dashboard/components/playground/forms/interact-form.tsx": {
     "mtime": 1787620202.0,
     "seen": 1787939870.085617,
     "ast_hash": "b51f3f15f64c22f5bc57539e41a4d948",
     "semantic_hash": "b51f3f15f64c22f5bc57539e41a4d948"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\forms\\parse-form.tsx": {
+  "apps/dashboard/components/playground/forms/parse-form.tsx": {
     "mtime": 1787620222.0,
     "seen": 1787939870.0856204,
     "ast_hash": "4603c1de3ae84e33b6c40124e74edc78",
     "semantic_hash": "4603c1de3ae84e33b6c40124e74edc78"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\playground\\forms\\form-footer.tsx": {
+  "apps/dashboard/components/playground/forms/form-footer.tsx": {
     "mtime": 1787620326.0,
     "seen": 1787939870.085616,
     "ast_hash": "7b3b31b8ad4ed95f14ec84d703f3ae57",
     "semantic_hash": "7b3b31b8ad4ed95f14ec84d703f3ae57"
   },
-  "E:\\Helix\\packages\\cli\\package.json": {
-    "mtime": 1788018020.0,
-    "seen": 1788018344.62665,
-    "ast_hash": "60b9396b510e85747975923dcfd5814e",
-    "semantic_hash": "60b9396b510e85747975923dcfd5814e"
+  "packages/cli/package.json": {
+    "mtime": 1788400530.0,
+    "seen": 1788474514.2774282,
+    "ast_hash": "0405d1552bfc278249ccde6e65a110ad",
+    "semantic_hash": "0405d1552bfc278249ccde6e65a110ad"
   },
-  "E:\\Helix\\packages\\cli\\tsconfig.json": {
+  "packages/cli/tsconfig.json": {
     "mtime": 1787614550.0,
     "seen": 1787939870.0857227,
     "ast_hash": "7ad0dad31c557d5cf46ca531d915c263",
     "semantic_hash": "7ad0dad31c557d5cf46ca531d915c263"
   },
-  "E:\\Helix\\packages\\cli\\src\\args.ts": {
+  "packages/cli/src/args.ts": {
     "mtime": 1787614548.0,
     "seen": 1787939870.0857162,
     "ast_hash": "6a47dc9de87c128cb8c4203547e20758",
     "semantic_hash": "6a47dc9de87c128cb8c4203547e20758"
   },
-  "E:\\Helix\\packages\\cli\\src\\bin.ts": {
+  "packages/cli/src/bin.ts": {
     "mtime": 1787614548.0,
     "seen": 1787939870.085717,
     "ast_hash": "0824653c936f8a19dba9134627c8807e",
     "semantic_hash": "0824653c936f8a19dba9134627c8807e"
   },
-  "E:\\Helix\\packages\\cli\\src\\harnesses.ts": {
+  "packages/cli/src/harnesses.ts": {
     "mtime": 1787614548.0,
     "seen": 1787939870.085718,
     "ast_hash": "fd6a68cf044ab8626ebb6262257691e8",
     "semantic_hash": "fd6a68cf044ab8626ebb6262257691e8"
   },
-  "E:\\Helix\\packages\\cli\\src\\init.ts": {
+  "packages/cli/src/init.ts": {
     "mtime": 1788016060.0,
     "seen": 1788018344.6266556,
     "ast_hash": "667eeb35331a3cf7098a360448143328",
     "semantic_hash": "667eeb35331a3cf7098a360448143328"
   },
-  "E:\\Helix\\packages\\cli\\src\\skill.ts": {
+  "packages/cli/src/skill.ts": {
     "mtime": 1788013978.0,
     "seen": 1788018344.6266568,
     "ast_hash": "2cae2fdc5efa1d5f2892b890a9c34022",
     "semantic_hash": "2cae2fdc5efa1d5f2892b890a9c34022"
   },
-  "E:\\Helix\\packages\\cli\\src\\writers.test.ts": {
+  "packages/cli/src/writers.test.ts": {
     "mtime": 1788014040.0,
     "seen": 1788018344.6266577,
     "ast_hash": "9836f725a7bd944b6ebf1615af7647ed",
     "semantic_hash": "9836f725a7bd944b6ebf1615af7647ed"
   },
-  "E:\\Helix\\packages\\cli\\src\\writers.ts": {
+  "packages/cli/src/writers.ts": {
     "mtime": 1787614550.0,
     "seen": 1787939870.0857215,
     "ast_hash": "c71282869c40254494517ff60677a339",
     "semantic_hash": "c71282869c40254494517ff60677a339"
   },
-  "E:\\Helix\\research\\17-firecrawl-code-animation-prompt-box.md": {
+  "research/17-firecrawl-code-animation-prompt-box.md": {
     "mtime": 1787619984.0,
     "seen": 1787939870.085787,
     "ast_hash": "e25b645ac0658c229eb0d14c36dcda8b",
     "semantic_hash": "e25b645ac0658c229eb0d14c36dcda8b"
   },
-  "E:\\Helix\\packages\\cli\\README.md": {
+  "packages/cli/README.md": {
     "mtime": 1787614548.0,
     "seen": 1787939870.08577,
     "ast_hash": "3cfd51fda259757018edc158a0a8d481",
     "semantic_hash": "3cfd51fda259757018edc158a0a8d481"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\icon.svg": {
+  "apps/dashboard/app/icon.svg": {
     "mtime": 1787619832.0,
     "seen": 1787939870.0857968,
     "ast_hash": "6fabae14fdd40a1b2329eaf3e402773c",
     "semantic_hash": "6fabae14fdd40a1b2329eaf3e402773c"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-landing.mjs": {
+  "research/firecrawl-capture/shoot-landing.mjs": {
     "mtime": 1787698286.0,
     "seen": 1787939870.0857468,
     "ast_hash": "a29c39e61212538035a10e0b1fcb00ca",
     "semantic_hash": "a29c39e61212538035a10e0b1fcb00ca"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\scroll-motion.tsx": {
+  "apps/dashboard/components/marketing/scroll-motion.tsx": {
     "mtime": 1787697824.0,
     "seen": 1787939870.0856006,
     "ast_hash": "970449eaac81206e4fd42e9f2846944c",
     "semantic_hash": "970449eaac81206e4fd42e9f2846944c"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\github-mark.tsx": {
+  "apps/dashboard/components/marketing/github-mark.tsx": {
     "mtime": 1787697842.0,
     "seen": 1787939870.085591,
     "ast_hash": "9a66e035f3d9f95925a822a9d8a20565",
     "semantic_hash": "9a66e035f3d9f95925a822a9d8a20565"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\closing-cta.tsx": {
-    "mtime": 1788013942.0,
-    "seen": 1788018344.626493,
-    "ast_hash": "bc05a01365a74babcc7a21162adf0bf1",
-    "semantic_hash": "bc05a01365a74babcc7a21162adf0bf1"
+  "apps/dashboard/components/marketing/closing-cta.tsx": {
+    "mtime": 1788474034.0,
+    "seen": 1788474514.2526581,
+    "ast_hash": "69375340ecb3837a5197c09fecf67e84",
+    "semantic_hash": "69375340ecb3837a5197c09fecf67e84"
   },
-  "E:\\Helix\\.claude\\rules\\always-on-skills.md": {
+  ".claude/rules/always-on-skills.md": {
     "mtime": 1787696842.0,
     "seen": 1787939870.0857563,
     "ast_hash": "f476fdb25a25e8927bccdcdb0949b675",
     "semantic_hash": "f476fdb25a25e8927bccdcdb0949b675"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\setup-guides.tsx": {
-    "mtime": 1787706516.0,
-    "seen": 1787939870.0856044,
-    "ast_hash": "a1eede1d5527b04fadedd50ca8967ef6",
-    "semantic_hash": "a1eede1d5527b04fadedd50ca8967ef6"
+  "apps/dashboard/components/marketing/setup-guides.tsx": {
+    "mtime": 1788474034.0,
+    "seen": 1788474514.2549894,
+    "ast_hash": "9bb8ca0386b1c2afd221c9f50ae010ed",
+    "semantic_hash": "9bb8ca0386b1c2afd221c9f50ae010ed"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\ambient.tsx": {
+  "apps/dashboard/components/marketing/ambient.tsx": {
     "mtime": 1787795290.0,
     "seen": 1787939870.0855827,
     "ast_hash": "bb4ccebf1bd0afa765287901fd5cebc3",
     "semantic_hash": "bb4ccebf1bd0afa765287901fd5cebc3"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\agent.ts": {
+  "apps/api/src/routes/agent.ts": {
     "mtime": 1788016428.0,
     "seen": 1788018344.6263452,
     "ast_hash": "4c7188d61a579fb2b62fee2dd6861133",
     "semantic_hash": "4c7188d61a579fb2b62fee2dd6861133"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\agent.test.ts": {
+  "apps/api/src/routes/agent.test.ts": {
     "mtime": 1787706600.0,
     "seen": 1787939870.0854394,
     "ast_hash": "c2522fd722376f4e7e1ad6920861bd26",
     "semantic_hash": "c2522fd722376f4e7e1ad6920861bd26"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\schema_gen.py": {
+  "apps/extract/helix_extract/schema_gen.py": {
     "mtime": 1787939282.0,
     "seen": 1787939870.0856984,
     "ast_hash": "eb86436518604f11eda3cd2ce5be6587",
     "semantic_hash": "eb86436518604f11eda3cd2ce5be6587"
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_schema_gen.py": {
+  "apps/extract/tests/test_schema_gen.py": {
     "mtime": 1787707002.0,
     "seen": 1787939870.085709,
     "ast_hash": "f65422ce3624d9627d6b7767a5c98baa",
     "semantic_hash": "f65422ce3624d9627d6b7767a5c98baa"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\agent.ts": {
+  "apps/dashboard/lib/agent.ts": {
     "mtime": 1787969120.0,
     "seen": 1788018344.6265786,
     "ast_hash": "1a50b966d66c61b3c5eb571827ac2876",
     "semantic_hash": "1a50b966d66c61b3c5eb571827ac2876"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\agent\\page.tsx": {
+  "apps/dashboard/app/(app)/app/agent/page.tsx": {
     "mtime": 1787704496.0,
     "seen": 1787939870.0854917,
     "ast_hash": "440e11c1923b85110c944ec33a1cd6ba",
     "semantic_hash": "440e11c1923b85110c944ec33a1cd6ba"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(app)\\app\\agent\\agent-client.tsx": {
+  "apps/dashboard/app/(app)/app/agent/agent-client.tsx": {
     "mtime": 1787938404.0,
     "seen": 1787939870.0854907,
     "ast_hash": "c75195ff1cdaa577114a115b26f3652f",
     "semantic_hash": "c75195ff1cdaa577114a115b26f3652f"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\section-frame.tsx": {
+  "apps/dashboard/components/marketing/section-frame.tsx": {
     "mtime": 1787706544.0,
     "seen": 1787939870.0856023,
     "ast_hash": "486857f6db347c27517de29500faa204",
     "semantic_hash": "486857f6db347c27517de29500faa204"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\page-frame.tsx": {
+  "apps/dashboard/components/app/page-frame.tsx": {
     "mtime": 1787795412.0,
     "seen": 1787939870.085568,
     "ast_hash": "f8fe92c0fcb4b2fb3206849d18f9c1f5",
     "semantic_hash": "f8fe92c0fcb4b2fb3206849d18f9c1f5"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\schema-json.tsx": {
+  "apps/dashboard/components/app/agent/schema-json.tsx": {
     "mtime": 1787704368.0,
     "seen": 1787939870.0855575,
     "ast_hash": "c96be14210417f4e213bb971d3f8d438",
     "semantic_hash": "c96be14210417f4e213bb971d3f8d438"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\url-list.tsx": {
+  "apps/dashboard/components/app/agent/url-list.tsx": {
     "mtime": 1787704376.0,
     "seen": 1787939870.0855594,
     "ast_hash": "4432a82ea90f2cfd0db892bc9d24d293",
     "semantic_hash": "4432a82ea90f2cfd0db892bc9d24d293"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\output-toggle.tsx": {
+  "apps/dashboard/components/app/agent/output-toggle.tsx": {
     "mtime": 1787938404.0,
     "seen": 1787939870.0855541,
     "ast_hash": "96ce09810e2a7819dd4f15c3dfbabf1c",
     "semantic_hash": "96ce09810e2a7819dd4f15c3dfbabf1c"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\schema-panel.tsx": {
+  "apps/dashboard/components/app/agent/schema-panel.tsx": {
     "mtime": 1787704396.0,
     "seen": 1787939870.0855582,
     "ast_hash": "e247e16f47703ab8791929b16cb27efd",
     "semantic_hash": "e247e16f47703ab8791929b16cb27efd"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\results-panel.tsx": {
+  "apps/dashboard/components/app/agent/results-panel.tsx": {
     "mtime": 1787938404.0,
     "seen": 1787939870.0855565,
     "ast_hash": "663bd0efbce9b82979396d26952f9de6",
     "semantic_hash": "663bd0efbce9b82979396d26952f9de6"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\composer.tsx": {
+  "apps/dashboard/components/app/agent/composer.tsx": {
     "mtime": 1787938404.0,
     "seen": 1787939870.0855534,
     "ast_hash": "a29cff539e5df727b5bb1cb7caea1f62",
     "semantic_hash": "a29cff539e5df727b5bb1cb7caea1f62"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\agent\\refine-bar.tsx": {
+  "apps/dashboard/components/app/agent/refine-bar.tsx": {
     "mtime": 1787938404.0,
     "seen": 1787939870.0855553,
     "ast_hash": "3322d75025b704be19d94cfbcc283025",
     "semantic_hash": "3322d75025b704be19d94cfbcc283025"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\providers.ts": {
+  "apps/api/src/routes/providers.ts": {
     "mtime": 1788015686.0,
     "seen": 1788018344.62637,
     "ast_hash": "5136f564f49752c7f1c16192b6b600d3",
     "semantic_hash": "5136f564f49752c7f1c16192b6b600d3"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\providers.test.ts": {
+  "apps/api/src/routes/providers.test.ts": {
     "mtime": 1788015810.0,
     "seen": 1788018344.6263685,
     "ast_hash": "269b390518500623e91cd8bbf4cea7b5",
     "semantic_hash": "269b390518500623e91cd8bbf4cea7b5"
   },
-  "E:\\Helix\\apps\\api\\src\\providers\\repository.ts": {
+  "apps/api/src/providers/repository.ts": {
     "mtime": 1787938404.0,
     "seen": 1787939870.0854359,
     "ast_hash": "97ce76bd3e0f84900c25938a0e927163",
     "semantic_hash": "97ce76bd3e0f84900c25938a0e927163"
   },
-  "E:\\Helix\\apps\\api\\src\\providers\\resolve.ts": {
+  "apps/api/src/providers/resolve.ts": {
     "mtime": 1787938404.0,
     "seen": 1787939870.0854383,
     "ast_hash": "4599684268fdbbe50a30bbf6262243fc",
     "semantic_hash": "4599684268fdbbe50a30bbf6262243fc"
   },
-  "E:\\Helix\\apps\\api\\src\\providers\\crypto.ts": {
+  "apps/api/src/providers/crypto.ts": {
     "mtime": 1787706516.0,
     "seen": 1787939870.0854335,
     "ast_hash": "0204e5e7d42ce27462ede440b1a85900",
     "semantic_hash": "0204e5e7d42ce27462ede440b1a85900"
   },
-  "E:\\Helix\\apps\\api\\src\\providers\\crypto.test.ts": {
+  "apps/api/src/providers/crypto.test.ts": {
     "mtime": 1787706586.0,
     "seen": 1787939870.0854323,
     "ast_hash": "23a1d0dd588ff98389700b8903b59d27",
     "semantic_hash": "23a1d0dd588ff98389700b8903b59d27"
   },
-  "E:\\Helix\\apps\\api\\src\\providers\\resolve.test.ts": {
+  "apps/api/src/providers/resolve.test.ts": {
     "mtime": 1787938404.0,
     "seen": 1787939870.0854368,
     "ast_hash": "1947052873a712d23c4c5ebe00e5d508",
     "semantic_hash": "1947052873a712d23c4c5ebe00e5d508"
   },
-  "E:\\Helix\\apps\\api\\src\\providers\\integration.test.ts": {
+  "apps/api/src/providers/integration.test.ts": {
     "mtime": 1787938404.0,
     "seen": 1787939870.085435,
     "ast_hash": "7655f16b455555324776344cee28bee2",
     "semantic_hash": "7655f16b455555324776344cee28bee2"
   },
-  "E:\\Helix\\apps\\api\\migrations\\005_provider_keys.sql": {
+  "apps/api/migrations/005_provider_keys.sql": {
     "mtime": 1787706288.0,
     "seen": 1787939870.08535,
-    "ast_hash": "56f188ebe3164466f134d0f8a8b65bc0",
-    "semantic_hash": "56f188ebe3164466f134d0f8a8b65bc0"
+    "ast_hash": "",
+    "semantic_hash": ""
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_structured_endpoint.py": {
+  "apps/extract/tests/test_structured_endpoint.py": {
     "mtime": 1787707026.0,
     "seen": 1787939870.08571,
     "ast_hash": "346cb6cf25da3aa6df3dbffc428aca06",
     "semantic_hash": "346cb6cf25da3aa6df3dbffc428aca06"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\providers.ts": {
+  "apps/dashboard/lib/providers.ts": {
     "mtime": 1788015886.0,
     "seen": 1788018344.6266022,
     "ast_hash": "c9ea940ae9f4ec531ff54bb9cc8c1247",
     "semantic_hash": "c9ea940ae9f4ec531ff54bb9cc8c1247"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\hard-parts.tsx": {
-    "mtime": 1787706490.0,
-    "seen": 1787939870.085592,
-    "ast_hash": "6377fe59c3a35c55734179dcc75755ca",
-    "semantic_hash": "6377fe59c3a35c55734179dcc75755ca"
+  "apps/dashboard/components/marketing/hard-parts.tsx": {
+    "mtime": 1788474034.0,
+    "seen": 1788474514.2530315,
+    "ast_hash": "1cabf82a26e0ef12dcc45c22e90a21c5",
+    "semantic_hash": "1cabf82a26e0ef12dcc45c22e90a21c5"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\app-grid.tsx": {
+  "apps/dashboard/components/app/app-grid.tsx": {
     "mtime": 1787862996.0,
     "seen": 1787939870.0855603,
     "ast_hash": "66755d3aefdb68cc36a97d0aef4849f9",
     "semantic_hash": "66755d3aefdb68cc36a97d0aef4849f9"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\providers\\providers-panel.tsx": {
+  "apps/dashboard/components/app/providers/providers-panel.tsx": {
     "mtime": 1787938662.0,
     "seen": 1787939870.08557,
     "ast_hash": "2adc8051815aaf1839f5f8e20f4ed1a7",
     "semantic_hash": "2adc8051815aaf1839f5f8e20f4ed1a7"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\providers\\provider-row.tsx": {
+  "apps/dashboard/components/app/providers/provider-row.tsx": {
     "mtime": 1788016032.0,
     "seen": 1788018344.6264684,
     "ast_hash": "1ea5abb2ff3c84a4f501f0b003bd85d7",
     "semantic_hash": "1ea5abb2ff3c84a4f501f0b003bd85d7"
   },
-  "E:\\Helix\\apps\\dashboard\\public\\providers\\anthropic.png": {
+  "apps/dashboard/public/providers/anthropic.png": {
     "mtime": 1787706042.0,
     "seen": 1787939870.085799,
     "ast_hash": "69958d39f9b5572e140eedb22d7effce",
     "semantic_hash": "69958d39f9b5572e140eedb22d7effce"
   },
-  "E:\\Helix\\apps\\dashboard\\public\\providers\\openai.png": {
+  "apps/dashboard/public/providers/openai.png": {
     "mtime": 1787706042.0,
     "seen": 1787939870.0858018,
     "ast_hash": "1b355da1a80bc6122bfcea646606e175",
     "semantic_hash": "1b355da1a80bc6122bfcea646606e175"
   },
-  "E:\\Helix\\apps\\dashboard\\public\\providers\\gemini.png": {
+  "apps/dashboard/public/providers/gemini.png": {
     "mtime": 1787706042.0,
     "seen": 1787939870.0857997,
     "ast_hash": "2192d7220b5168824229d7b8d267ae55",
     "semantic_hash": "2192d7220b5168824229d7b8d267ae55"
   },
-  "E:\\Helix\\apps\\dashboard\\public\\providers\\openrouter.png": {
+  "apps/dashboard/public/providers/openrouter.png": {
     "mtime": 1787706042.0,
     "seen": 1787939870.085803,
     "ast_hash": "b6d485ae1ec900187f8553bfbfad4621",
     "semantic_hash": "b6d485ae1ec900187f8553bfbfad4621"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-self-host-settings.mjs": {
+  "research/firecrawl-capture/shoot-self-host-settings.mjs": {
     "mtime": 1787781006.0,
     "seen": 1787939870.0857477,
     "ast_hash": "b750acda33ec88de6b4d93ec96eb31b6",
     "semantic_hash": "b750acda33ec88de6b4d93ec96eb31b6"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\settings.ts": {
+  "apps/api/src/routes/settings.ts": {
     "mtime": 1787780002.0,
     "seen": 1787939870.085464,
     "ast_hash": "c2cded037196ec0d800229a360d77abe",
     "semantic_hash": "c2cded037196ec0d800229a360d77abe"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\settings.test.ts": {
+  "apps/api/src/routes/settings.test.ts": {
     "mtime": 1787780712.0,
     "seen": 1787939870.0854628,
     "ast_hash": "163ba58f0dd536a1c481c121ac91c5e6",
     "semantic_hash": "163ba58f0dd536a1c481c121ac91c5e6"
   },
-  "E:\\Helix\\apps\\api\\src\\settings\\registry.ts": {
+  "apps/api/src/settings/registry.ts": {
     "mtime": 1787779902.0,
     "seen": 1787939870.085473,
     "ast_hash": "5629ad34b5326380bdd0c523e520e598",
     "semantic_hash": "5629ad34b5326380bdd0c523e520e598"
   },
-  "E:\\Helix\\apps\\api\\src\\settings\\store.ts": {
+  "apps/api/src/settings/store.ts": {
     "mtime": 1787779916.0,
     "seen": 1787939870.0854762,
     "ast_hash": "52b26b750c6351043d67a712115babcb",
     "semantic_hash": "52b26b750c6351043d67a712115babcb"
   },
-  "E:\\Helix\\apps\\api\\src\\settings\\apply.ts": {
+  "apps/api/src/settings/apply.ts": {
     "mtime": 1787779952.0,
     "seen": 1787939870.0854714,
     "ast_hash": "d2dcba2e4f78092a53f76b6ea523cc82",
     "semantic_hash": "d2dcba2e4f78092a53f76b6ea523cc82"
   },
-  "E:\\Helix\\apps\\api\\src\\settings\\rotate.ts": {
+  "apps/api/src/settings/rotate.ts": {
     "mtime": 1787779974.0,
     "seen": 1787939870.085475,
     "ast_hash": "87e9c7fa49435af4eeb28487a3f58b91",
     "semantic_hash": "87e9c7fa49435af4eeb28487a3f58b91"
   },
-  "E:\\Helix\\apps\\api\\src\\settings\\rotate.test.ts": {
+  "apps/api/src/settings/rotate.test.ts": {
     "mtime": 1787780138.0,
     "seen": 1787939870.0854738,
     "ast_hash": "2a2ef9c01bf681558146111ddaf7698c",
     "semantic_hash": "2a2ef9c01bf681558146111ddaf7698c"
   },
-  "E:\\Helix\\apps\\api\\migrations\\006_instance_settings.sql": {
+  "apps/api/migrations/006_instance_settings.sql": {
     "mtime": 1787779802.0,
     "seen": 1787939870.0853515,
-    "ast_hash": "6fc4296ee6af5bf2b349c9b9dc84d17f",
-    "semantic_hash": "6fc4296ee6af5bf2b349c9b9dc84d17f"
+    "ast_hash": "",
+    "semantic_hash": ""
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\instance-settings.ts": {
+  "apps/dashboard/lib/instance-settings.ts": {
     "mtime": 1787780844.0,
     "seen": 1787939870.085671,
     "ast_hash": "45e3f872472125af60c4619758c43959",
     "semantic_hash": "45e3f872472125af60c4619758c43959"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\app\\settings\\instance-settings-panel.tsx": {
+  "apps/dashboard/components/app/settings/instance-settings-panel.tsx": {
     "mtime": 1787780874.0,
     "seen": 1787939870.0855722,
     "ast_hash": "a486609281483c7757e1fd4344949aa4",
     "semantic_hash": "a486609281483c7757e1fd4344949aa4"
   },
-  "E:\\Helix\\.vercel\\project.json": {
-    "mtime": 1787707814.0,
-    "ast_hash": "220e182726719e623a337826d27e86cb",
-    "semantic_hash": "220e182726719e623a337826d27e86cb"
-  },
-  "E:\\Helix\\research\\api-specs\\batch-scrape-api.md": {
+  "research/api-specs/batch-scrape-api.md": {
     "mtime": 1787783434.0,
     "seen": 1787939870.0857882,
     "ast_hash": "189a834ddebbe80a86249e7ed4ffd031",
     "semantic_hash": "189a834ddebbe80a86249e7ed4ffd031"
   },
-  "E:\\Helix\\research\\api-specs\\profiles-api.md": {
+  "research/api-specs/profiles-api.md": {
     "mtime": 1787784388.0,
     "seen": 1787939870.0857913,
     "ast_hash": "94bfbc705e806883e0eb109aae6d3c61",
     "semantic_hash": "94bfbc705e806883e0eb109aae6d3c61"
   },
-  "E:\\Helix\\.vercel\\README.txt": {
-    "mtime": 1787707814.0,
-    "ast_hash": "2b13c79d37d6ed82a3255b83b6815034",
-    "semantic_hash": "2b13c79d37d6ed82a3255b83b6815034"
-  },
-  "E:\\Helix\\apps\\api\\src\\routes\\batch.ts": {
+  "apps/api/src/routes/batch.ts": {
     "mtime": 1787783184.0,
     "seen": 1787939870.0854428,
     "ast_hash": "37c9a984c181b78aef6fae4eda41f212",
     "semantic_hash": "37c9a984c181b78aef6fae4eda41f212"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\batch.test.ts": {
+  "apps/api/src/routes/batch.test.ts": {
     "mtime": 1787783244.0,
     "seen": 1787939870.0854416,
     "ast_hash": "2bb7afe4acb4b4f24c63849193467212",
     "semantic_hash": "2bb7afe4acb4b4f24c63849193467212"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\profiles.ts": {
+  "apps/api/src/browser/profiles.ts": {
     "mtime": 1787789540.0,
     "seen": 1787939870.0853636,
     "ast_hash": "1979d5ffda368b808a08a8cf324b4c43",
     "semantic_hash": "1979d5ffda368b808a08a8cf324b4c43"
   },
-  "E:\\Helix\\apps\\api\\src\\browser\\profiles.test.ts": {
+  "apps/api/src/browser/profiles.test.ts": {
     "mtime": 1787789516.0,
     "seen": 1787939870.085362,
     "ast_hash": "eda861a7a6c8bc8f996bccb5e9214f0e",
     "semantic_hash": "eda861a7a6c8bc8f996bccb5e9214f0e"
   },
-  "E:\\Helix\\packages\\profiles\\definitions\\chrome-137-macos.json": {
+  "packages/profiles/definitions/chrome-137-macos.json": {
     "mtime": 1787794356.0,
     "seen": 1787939870.0857236,
     "ast_hash": "78e8b31c5f9f0815ef842db0252a8160",
     "semantic_hash": "78e8b31c5f9f0815ef842db0252a8160"
   },
-  "E:\\Helix\\DEPLOY.md": {
+  "DEPLOY.md": {
     "mtime": 1787782850.0,
     "seen": 1787939870.0857594,
     "ast_hash": "5593109a0901a02c7ba9fe85524e05ed",
     "semantic_hash": "5593109a0901a02c7ba9fe85524e05ed"
   },
-  "E:\\Helix\\packages\\profiles\\definitions\\chrome-148-windows.json": {
+  "packages/profiles/definitions/chrome-148-windows.json": {
     "mtime": 1787790984.0,
     "seen": 1787939870.0857246,
     "ast_hash": "03e51fe0bb7aafc9f2e16c3fbaf49b37",
     "semantic_hash": "03e51fe0bb7aafc9f2e16c3fbaf49b37"
   },
-  "E:\\Helix\\tools\\capture\\read-surface.js": {
+  "tools/capture/read-surface.js": {
     "mtime": 1787784826.0,
     "seen": 1787939870.0857553,
     "ast_hash": "74761499c7364f41a6200bc4d9c04874",
     "semantic_hash": "74761499c7364f41a6200bc4d9c04874"
   },
-  "E:\\Helix\\tools\\capture\\identity.mjs": {
+  "tools/capture/identity.mjs": {
     "mtime": 1787790352.0,
     "seen": 1787939870.0857525,
     "ast_hash": "4ff3d05cf395f7c582c8aa891c0cba72",
     "semantic_hash": "4ff3d05cf395f7c582c8aa891c0cba72"
   },
-  "E:\\Helix\\tools\\capture\\package.json": {
+  "tools/capture/package.json": {
     "mtime": 1787785296.0,
     "seen": 1787939870.0857546,
     "ast_hash": "fa95170c5b56bc53dea5913b63210969",
     "semantic_hash": "fa95170c5b56bc53dea5913b63210969"
   },
-  "E:\\Helix\\tools\\capture\\identity.test.mjs": {
+  "tools/capture/identity.test.mjs": {
     "mtime": 1787790366.0,
     "seen": 1787939870.0857537,
     "ast_hash": "2a7bc74d7ddcfed1ac3f6c5b66de0253",
     "semantic_hash": "2a7bc74d7ddcfed1ac3f6c5b66de0253"
   },
-  "E:\\Helix\\tools\\capture\\capture.mjs": {
+  "tools/capture/capture.mjs": {
     "mtime": 1787790972.0,
     "seen": 1787939870.0857515,
     "ast_hash": "c1c8a6bf40a0d88c5b82c536e570f2ac",
     "semantic_hash": "c1c8a6bf40a0d88c5b82c536e570f2ac"
   },
-  "E:\\Helix\\tools\\capture\\README.md": {
+  "tools/capture/README.md": {
     "mtime": 1787791650.0,
     "seen": 1787939870.0857959,
     "ast_hash": "5bad072243704e3359e9d89b40f09ee3",
     "semantic_hash": "5bad072243704e3359e9d89b40f09ee3"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\probe-clerk-signin.mjs": {
+  "research/firecrawl-capture/probe-clerk-signin.mjs": {
     "mtime": 1787794992.0,
     "seen": 1787939870.085735,
     "ast_hash": "1e53a6b64a8ce0190b0706458a73317d",
     "semantic_hash": "1e53a6b64a8ce0190b0706458a73317d"
   },
-  "E:\\Helix\\research\\firecrawl-capture\\shoot-auth.mjs": {
+  "research/firecrawl-capture/shoot-auth.mjs": {
     "mtime": 1787795418.0,
     "seen": 1787939870.0857441,
     "ast_hash": "c94a150c126f66a7e5848db6bb8302a7",
     "semantic_hash": "c94a150c126f66a7e5848db6bb8302a7"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\marketing\\ocean.tsx": {
+  "apps/dashboard/components/marketing/ocean.tsx": {
     "mtime": 1787795308.0,
     "seen": 1787939870.0855973,
     "ast_hash": "c4ae6664a2f273a240e96f348a4368c2",
     "semantic_hash": "c4ae6664a2f273a240e96f348a4368c2"
   },
-  "E:\\Helix\\apps\\api\\migrations\\007_local_providers.sql": {
+  "apps/api/migrations/007_local_providers.sql": {
     "mtime": 1787937848.0,
     "seen": 1787939870.085353,
-    "ast_hash": "91b8465d0decc57bc5777a0a31bba382",
-    "semantic_hash": "91b8465d0decc57bc5777a0a31bba382"
+    "ast_hash": "",
+    "semantic_hash": ""
   },
-  "E:\\Helix\\apps\\api\\src\\core\\favicon.test.ts": {
+  "apps/api/src/core/favicon.test.ts": {
     "mtime": 1787939160.0,
     "seen": 1787939870.0853772,
     "ast_hash": "099efc95ef58ece7981d93e416906f8e",
     "semantic_hash": "099efc95ef58ece7981d93e416906f8e"
   },
-  "E:\\Helix\\apps\\api\\src\\core\\favicon.ts": {
+  "apps/api/src/core/favicon.ts": {
     "mtime": 1787939104.0,
     "seen": 1787939870.0853784,
     "ast_hash": "0fc9bb25e48e5dc62eeeabbc3d798145",
     "semantic_hash": "0fc9bb25e48e5dc62eeeabbc3d798145"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\privacy\\page.tsx": {
+  "apps/dashboard/app/(marketing)/privacy/page.tsx": {
     "mtime": 1787938952.0,
     "seen": 1787939870.085516,
     "ast_hash": "9cc8bfac6657ec812f65e982d4ad1fc4",
     "semantic_hash": "9cc8bfac6657ec812f65e982d4ad1fc4"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(marketing)\\terms\\page.tsx": {
+  "apps/dashboard/app/(marketing)/terms/page.tsx": {
     "mtime": 1787939294.0,
     "seen": 1787939870.0855198,
     "ast_hash": "aee46c381d978f509f70f6ccce06a86d",
     "semantic_hash": "aee46c381d978f509f70f6ccce06a86d"
   },
-  "E:\\Helix\\apps\\dashboard\\components\\result\\site-icon.tsx": {
+  "apps/dashboard/components/result/site-icon.tsx": {
     "mtime": 1787939336.0,
     "seen": 1787939870.085633,
     "ast_hash": "9782c0e6c3e7c8768399a07933b166dd",
     "semantic_hash": "9782c0e6c3e7c8768399a07933b166dd"
   },
-  "E:\\Helix\\apps\\extract\\pyproject.toml": {
-    "mtime": 1788018036.0,
-    "seen": 1788018344.626631,
-    "ast_hash": "da79b0059bbcfff102c4add525e98450",
-    "semantic_hash": "da79b0059bbcfff102c4add525e98450"
+  "apps/extract/pyproject.toml": {
+    "mtime": 1788474074.0,
+    "seen": 1788474514.274793,
+    "ast_hash": "e9dfc29831e5a0ed005c0871dd3e746c",
+    "semantic_hash": "e9dfc29831e5a0ed005c0871dd3e746c"
   },
-  "E:\\Helix\\apps\\fetch\\Cargo.toml": {
-    "mtime": 1788018036.0,
-    "seen": 1788018344.6266453,
-    "ast_hash": "3d18e1c529f443f52cea929367da3d9a",
-    "semantic_hash": "3d18e1c529f443f52cea929367da3d9a"
+  "apps/fetch/Cargo.toml": {
+    "mtime": 1788400530.0,
+    "seen": 1788474514.276892,
+    "ast_hash": "6e6acb813c25e134ef3de3218b290e28",
+    "semantic_hash": "6e6acb813c25e134ef3de3218b290e28"
   },
-  "E:\\Helix\\apps\\dashboard\\public\\providers\\ollama.png": {
+  "apps/dashboard/public/providers/ollama.png": {
     "mtime": 1787938582.0,
     "seen": 1787939870.0858006,
     "ast_hash": "a5a0cfbfb5fe87b9a88637b6a2a00b05",
     "semantic_hash": "a5a0cfbfb5fe87b9a88637b6a2a00b05"
   },
-  "E:\\Helix\\apps\\dashboard\\public\\providers\\vllm.png": {
+  "apps/dashboard/public/providers/vllm.png": {
     "mtime": 1787938582.0,
     "seen": 1787939870.0858037,
     "ast_hash": "670806771b9628922baf2d6572269e74",
     "semantic_hash": "670806771b9628922baf2d6572269e74"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(auth)\\sign-in\\[[...sign-in]]\\page.hosted.tsx": {
+  "apps/dashboard/app/(auth)/sign-in/[[...sign-in]]/page.hosted.tsx": {
     "mtime": 1787610092.0,
     "seen": 1787952093.606203,
     "ast_hash": "f763b479a7618d26ee09848b0cb05c34",
     "semantic_hash": "f763b479a7618d26ee09848b0cb05c34"
   },
-  "E:\\Helix\\apps\\dashboard\\app\\(auth)\\sign-up\\[[...sign-up]]\\page.hosted.tsx": {
+  "apps/dashboard/app/(auth)/sign-up/[[...sign-up]]/page.hosted.tsx": {
     "mtime": 1787610092.0,
     "seen": 1787952093.6062045,
     "ast_hash": "0050fb89ef099d9eda2d4fd13f100f05",
     "semantic_hash": "0050fb89ef099d9eda2d4fd13f100f05"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\clerk-stub\\index.tsx": {
+  "apps/dashboard/lib/clerk-stub/index.tsx": {
     "mtime": 1787951224.0,
     "seen": 1787952093.606397,
     "ast_hash": "0e8d657ae25c533df0e90e276b8f1366",
     "semantic_hash": "0e8d657ae25c533df0e90e276b8f1366"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\clerk-stub\\server.ts": {
+  "apps/dashboard/lib/clerk-stub/server.ts": {
     "mtime": 1787951224.0,
     "seen": 1787952093.6063979,
     "ast_hash": "5bd89cc59f84700814d6b87434f1a220",
     "semantic_hash": "5bd89cc59f84700814d6b87434f1a220"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\ephemeral-keys.ts": {
+  "apps/dashboard/lib/ephemeral-keys.ts": {
     "mtime": 1787951254.0,
     "seen": 1787952093.6064029,
     "ast_hash": "7682b66c7210ccd44cd2013f7abf3f23",
     "semantic_hash": "7682b66c7210ccd44cd2013f7abf3f23"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\instance-keys.ts": {
+  "apps/dashboard/lib/instance-keys.ts": {
     "mtime": 1787944874.0,
     "seen": 1787952093.6064062,
     "ast_hash": "da3d99ae66639432c5252d9316b71ab0",
     "semantic_hash": "da3d99ae66639432c5252d9316b71ab0"
   },
-  "E:\\Helix\\apps\\api\\migrations\\008_monitor_json_options.sql": {
+  "apps/api/migrations/008_monitor_json_options.sql": {
     "mtime": 1788015996.0,
     "seen": 1788018344.6262088,
-    "ast_hash": "2c82828d55c2e5485c1c3fb22d1b6dfd",
-    "semantic_hash": "2c82828d55c2e5485c1c3fb22d1b6dfd"
+    "ast_hash": "",
+    "semantic_hash": ""
   },
-  "E:\\Helix\\apps\\api\\src\\crawl\\worker.test.ts": {
+  "apps/api/src/crawl/worker.test.ts": {
     "mtime": 1788015972.0,
     "seen": 1788018344.6262765,
     "ast_hash": "4bc389a36b902e4be338c805df263cc6",
     "semantic_hash": "4bc389a36b902e4be338c805df263cc6"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\confidence.ts": {
+  "apps/api/src/enrich/confidence.ts": {
     "mtime": 1788015830.0,
     "seen": 1788018344.6262815,
     "ast_hash": "6bbc267dbdcd0d422287fc23e5317121",
     "semantic_hash": "6bbc267dbdcd0d422287fc23e5317121"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\enrich.test.ts": {
+  "apps/api/src/enrich/enrich.test.ts": {
     "mtime": 1788016684.0,
     "seen": 1788018344.6262827,
     "ast_hash": "94123a787e900bd605a73036d7471d61",
     "semantic_hash": "94123a787e900bd605a73036d7471d61"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\enrich.ts": {
+  "apps/api/src/enrich/enrich.ts": {
     "mtime": 1788016672.0,
     "seen": 1788018344.626284,
     "ast_hash": "3a39db0c431ebfb1e68680f90512fb91",
     "semantic_hash": "3a39db0c431ebfb1e68680f90512fb91"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\fence.test.ts": {
+  "apps/api/src/enrich/fence.test.ts": {
     "mtime": 1788016232.0,
     "seen": 1788018344.6262848,
     "ast_hash": "741b54a0b2426743e5b65ad3fa769876",
     "semantic_hash": "741b54a0b2426743e5b65ad3fa769876"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\fence.ts": {
+  "apps/api/src/enrich/fence.ts": {
     "mtime": 1788016736.0,
     "seen": 1788018344.6262858,
     "ast_hash": "e65ca6845b6a869d18eb771f8f7201c1",
     "semantic_hash": "e65ca6845b6a869d18eb771f8f7201c1"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\grounding.test.ts": {
+  "apps/api/src/enrich/grounding.test.ts": {
     "mtime": 1788016164.0,
     "seen": 1788018344.6262872,
     "ast_hash": "4ee48ceb0ea96be0a93001e2c3767542",
     "semantic_hash": "4ee48ceb0ea96be0a93001e2c3767542"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\grounding.ts": {
+  "apps/api/src/enrich/grounding.ts": {
     "mtime": 1788017828.0,
     "seen": 1788018344.6262884,
     "ast_hash": "65ba59ded509cab7cd53422a5dc53a31",
     "semantic_hash": "65ba59ded509cab7cd53422a5dc53a31"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\guards.test.ts": {
+  "apps/api/src/enrich/guards.test.ts": {
     "mtime": 1788016132.0,
     "seen": 1788018344.6262894,
     "ast_hash": "7a739bd6dee127437b491feeaa57a771",
     "semantic_hash": "7a739bd6dee127437b491feeaa57a771"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\guards.ts": {
+  "apps/api/src/enrich/guards.ts": {
     "mtime": 1788016720.0,
     "seen": 1788018344.62629,
     "ast_hash": "42400324b33155f3e0dd6a2808cf538d",
     "semantic_hash": "42400324b33155f3e0dd6a2808cf538d"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\model-phase.ts": {
+  "apps/api/src/enrich/model-phase.ts": {
     "mtime": 1788015888.0,
     "seen": 1788018344.6262913,
     "ast_hash": "e43638f9f6b41da0a16835d0c374974e",
     "semantic_hash": "e43638f9f6b41da0a16835d0c374974e"
   },
-  "E:\\Helix\\apps\\api\\src\\enrich\\routing.ts": {
+  "apps/api/src/enrich/routing.ts": {
     "mtime": 1788016672.0,
     "seen": 1788018344.6262922,
     "ast_hash": "da761d7970a8951f8586ebeb69975ab8",
     "semantic_hash": "da761d7970a8951f8586ebeb69975ab8"
   },
-  "E:\\Helix\\apps\\api\\src\\providers\\models.test.ts": {
+  "apps/api/src/providers/models.test.ts": {
     "mtime": 1788015788.0,
     "seen": 1788018344.6263366,
     "ast_hash": "5fa2343bae534705e577550c0e5fabe0",
     "semantic_hash": "5fa2343bae534705e577550c0e5fabe0"
   },
-  "E:\\Helix\\apps\\api\\src\\providers\\models.ts": {
+  "apps/api/src/providers/models.ts": {
     "mtime": 1788015712.0,
     "seen": 1788018344.6263373,
     "ast_hash": "1fea78ab74b0cd86693e3989c4e81ddc",
     "semantic_hash": "1fea78ab74b0cd86693e3989c4e81ddc"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\enrich.test.ts": {
+  "apps/api/src/routes/enrich.test.ts": {
     "mtime": 1788017400.0,
     "seen": 1788018344.6263516,
     "ast_hash": "8eb345b94b365bfabfb6ed3ac168db0f",
     "semantic_hash": "8eb345b94b365bfabfb6ed3ac168db0f"
   },
-  "E:\\Helix\\apps\\api\\src\\routes\\enrich.ts": {
+  "apps/api/src/routes/enrich.ts": {
     "mtime": 1788017360.0,
     "seen": 1788018344.6263533,
     "ast_hash": "3111e67587ab1bc32e89acb1c9033cb2",
     "semantic_hash": "3111e67587ab1bc32e89acb1c9033cb2"
   },
-  "E:\\Helix\\apps\\dashboard\\lib\\endpoints.ts": {
-    "mtime": 1787968572.0,
-    "seen": 1788018344.6265922,
-    "ast_hash": "c48944a6120224639ae17d06fb83dbcd",
-    "semantic_hash": "c48944a6120224639ae17d06fb83dbcd"
+  "apps/dashboard/lib/endpoints.ts": {
+    "mtime": 1788473236.0,
+    "seen": 1788474514.268675,
+    "ast_hash": "d15943e361ae16a221774b4edbc6a9ab",
+    "semantic_hash": "d15943e361ae16a221774b4edbc6a9ab"
   },
-  "E:\\Helix\\apps\\extract\\helix_extract\\enrich.py": {
+  "apps/extract/helix_extract/enrich.py": {
     "mtime": 1788016924.0,
     "seen": 1788018344.626621,
     "ast_hash": "8fb42c33ff48b4e227917c986d9500e8",
     "semantic_hash": "8fb42c33ff48b4e227917c986d9500e8"
   },
-  "E:\\Helix\\apps\\extract\\tests\\test_enrich.py": {
+  "apps/extract/tests/test_enrich.py": {
     "mtime": 1788016890.0,
     "seen": 1788018344.6266356,
     "ast_hash": "780e29e82909214fe30ddcf80a547e23",
     "semantic_hash": "780e29e82909214fe30ddcf80a547e23"
   },
-  "E:\\Helix\\packages\\sdk-ts\\package.json": {
-    "mtime": 1788015110.0,
-    "seen": 1788018344.6266654,
-    "ast_hash": "58dc28a5fc66f18b4cb82cfcb8bc8918",
-    "semantic_hash": "58dc28a5fc66f18b4cb82cfcb8bc8918"
+  "packages/sdk-ts/package.json": {
+    "mtime": 1788474074.0,
+    "seen": 1788474514.280091,
+    "ast_hash": "4699bd019052a1b60b8baf7e5602f560",
+    "semantic_hash": "4699bd019052a1b60b8baf7e5602f560"
   },
-  "E:\\Helix\\packages\\sdk-ts\\src\\client.test.ts": {
+  "packages/sdk-ts/src/client.test.ts": {
     "mtime": 1788015744.0,
     "seen": 1788018344.6266665,
     "ast_hash": "acb18af37d5c78386720fb48d0d161b9",
     "semantic_hash": "acb18af37d5c78386720fb48d0d161b9"
   },
-  "E:\\Helix\\packages\\sdk-ts\\src\\client.ts": {
-    "mtime": 1788015644.0,
-    "seen": 1788018344.6266677,
-    "ast_hash": "a4d21965c0478ee75d1cba9266887685",
-    "semantic_hash": "a4d21965c0478ee75d1cba9266887685"
+  "packages/sdk-ts/src/client.ts": {
+    "mtime": 1788473162.0,
+    "seen": 1788474514.280303,
+    "ast_hash": "cacf6e3ac70285f49ae5192885df89bc",
+    "semantic_hash": "cacf6e3ac70285f49ae5192885df89bc"
   },
-  "E:\\Helix\\packages\\sdk-ts\\src\\index.ts": {
+  "packages/sdk-ts/src/index.ts": {
     "mtime": 1788015650.0,
     "seen": 1788018344.6266687,
     "ast_hash": "485a0c42586a3b8ce29f43d34a3f5c6d",
     "semantic_hash": "485a0c42586a3b8ce29f43d34a3f5c6d"
   },
-  "E:\\Helix\\packages\\sdk-ts\\src\\types.ts": {
-    "mtime": 1788015414.0,
-    "seen": 1788018344.62667,
-    "ast_hash": "c914a8e761d718ac64a8cef67540e7b0",
-    "semantic_hash": "c914a8e761d718ac64a8cef67540e7b0"
+  "packages/sdk-ts/src/types.ts": {
+    "mtime": 1788473162.0,
+    "seen": 1788474514.2805276,
+    "ast_hash": "68947fb443922e9d17e8e4e170b523d7",
+    "semantic_hash": "68947fb443922e9d17e8e4e170b523d7"
   },
-  "E:\\Helix\\packages\\sdk-ts\\tsconfig.json": {
+  "packages/sdk-ts/tsconfig.json": {
     "mtime": 1788015114.0,
     "seen": 1788018344.6266708,
     "ast_hash": "07726a1655ac221b400985dae686748e",
     "semantic_hash": "07726a1655ac221b400985dae686748e"
   },
-  "E:\\Helix\\packages\\sdk-ts\\README.md": {
+  "packages/sdk-ts/README.md": {
     "mtime": 1788015930.0,
     "seen": 1788018344.6267283,
     "ast_hash": "7737c9c31ff7d6c8b4f03746f2656c20",
     "semantic_hash": "7737c9c31ff7d6c8b4f03746f2656c20"
+  },
+  "apps/api/src/db/migrate.test.ts": {
+    "mtime": 1788383956.0,
+    "seen": 1788474514.211936,
+    "ast_hash": "f443f6efe6750960b5f09d456640da33",
+    "semantic_hash": "f443f6efe6750960b5f09d456640da33"
+  },
+  "apps/api/src/routes/metadata.test.ts": {
+    "mtime": 1788473746.0,
+    "seen": 1788474514.2287216,
+    "ast_hash": "b73fc97e0177e40fa89358614bf34df3",
+    "semantic_hash": "b73fc97e0177e40fa89358614bf34df3"
+  },
+  "apps/api/src/routes/metadata.ts": {
+    "mtime": 1788472680.0,
+    "seen": 1788474514.2287235,
+    "ast_hash": "a669e6c0c094628957e3d4a615c933dd",
+    "semantic_hash": "a669e6c0c094628957e3d4a615c933dd"
+  },
+  "apps/dashboard/app/(app)/onboarding/onboarding-client.tsx": {
+    "mtime": 1788470774.0,
+    "seen": 1788474514.2412505,
+    "ast_hash": "2cf9a6719378b8a7ab067b64e8b469cd",
+    "semantic_hash": "2cf9a6719378b8a7ab067b64e8b469cd"
+  },
+  "apps/dashboard/app/(app)/onboarding/page.hosted.tsx": {
+    "mtime": 1788470530.0,
+    "seen": 1788474514.2412536,
+    "ast_hash": "ba6990129b83c4bedd68a97b9f6a1339",
+    "semantic_hash": "ba6990129b83c4bedd68a97b9f6a1339"
+  },
+  "apps/dashboard/app/agent-onboarding/SKILL.md/route.tsx": {
+    "mtime": 1788387510.0,
+    "seen": 1788474514.2442696,
+    "ast_hash": "aac4b58343edd094532b68f3df0d5581",
+    "semantic_hash": "aac4b58343edd094532b68f3df0d5581"
+  },
+  "apps/dashboard/app/api/app/keys/route.ts": {
+    "mtime": 1788397122.0,
+    "seen": 1788474514.2442725,
+    "ast_hash": "f83f6248f6bda740ae9df136a9ebdc80",
+    "semantic_hash": "f83f6248f6bda740ae9df136a9ebdc80"
+  },
+  "apps/dashboard/app/api/app/onboarding/route.ts": {
+    "mtime": 1788470548.0,
+    "seen": 1788474514.2442744,
+    "ast_hash": "2dc2651323270564d0631841dc030657",
+    "semantic_hash": "2dc2651323270564d0631841dc030657"
+  },
+  "apps/dashboard/app/api/webhooks/clerk/route.ts": {
+    "mtime": 1788383890.0,
+    "seen": 1788474514.244276,
+    "ast_hash": "0dce39302f506a9b7caa5019e6809fb0",
+    "semantic_hash": "0dce39302f506a9b7caa5019e6809fb0"
+  },
+  "apps/dashboard/app/llms.txt/route.tsx": {
+    "mtime": 1787609058.0,
+    "seen": 1788474514.2446132,
+    "ast_hash": "98e9e4541890cf160844eaf180ccc586",
+    "semantic_hash": "98e9e4541890cf160844eaf180ccc586"
+  },
+  "apps/dashboard/app/md/[[...slug]]/route.tsx": {
+    "mtime": 1787951224.0,
+    "seen": 1788474514.2446158,
+    "ast_hash": "6919ae5428d1e86a8eb7f880c253e63c",
+    "semantic_hash": "6919ae5428d1e86a8eb7f880c253e63c"
+  },
+  "apps/dashboard/components/marketing/bento.tsx": {
+    "mtime": 1788474374.0,
+    "seen": 1788474514.2526536,
+    "ast_hash": "88790837552bd94944afd8b1071021eb",
+    "semantic_hash": "88790837552bd94944afd8b1071021eb"
+  },
+  "apps/dashboard/components/marketing/meter.tsx": {
+    "mtime": 1788473990.0,
+    "seen": 1788474514.253303,
+    "ast_hash": "b97d5568237e4055c2934c52b3510f0d",
+    "semantic_hash": "b97d5568237e4055c2934c52b3510f0d"
+  },
+  "apps/dashboard/components/marketing/performance.tsx": {
+    "mtime": 1788474006.0,
+    "seen": 1788474514.2538662,
+    "ast_hash": "5f3451a5d3080061637cab9c0fbb0c0f",
+    "semantic_hash": "5f3451a5d3080061637cab9c0fbb0c0f"
+  },
+  "apps/dashboard/components/marketing/setup-prompt.tsx": {
+    "mtime": 1788387176.0,
+    "seen": 1788474514.2549915,
+    "ast_hash": "da8a3d66ccd12e7b1ce62be6ec5dcc1b",
+    "semantic_hash": "da8a3d66ccd12e7b1ce62be6ec5dcc1b"
+  },
+  "apps/dashboard/components/playground/forms/metadata-form.tsx": {
+    "mtime": 1788473334.0,
+    "seen": 1788474514.2566104,
+    "ast_hash": "69c3fbbcc633d175c6a0c3767925d8bf",
+    "semantic_hash": "69c3fbbcc633d175c6a0c3767925d8bf"
+  },
+  "apps/dashboard/components/result/metadata-report.tsx": {
+    "mtime": 1788473368.0,
+    "seen": 1788474514.2588496,
+    "ast_hash": "d5ed485fb2f788028df4c7e63f34f2cf",
+    "semantic_hash": "d5ed485fb2f788028df4c7e63f34f2cf"
+  },
+  "apps/dashboard/lib/hosted-keys.ts": {
+    "mtime": 1788397122.0,
+    "seen": 1788474514.2692063,
+    "ast_hash": "605d0291aa0dd0700cc99b93aa6b08da",
+    "semantic_hash": "605d0291aa0dd0700cc99b93aa6b08da"
+  },
+  "apps/dashboard/lib/onboarding-gate.ts": {
+    "mtime": 1788470678.0,
+    "seen": 1788474514.2703352,
+    "ast_hash": "2c035680cb840447103ae68be2c2a28e",
+    "semantic_hash": "2c035680cb840447103ae68be2c2a28e"
+  },
+  "apps/dashboard/lib/onboarding-steps.ts": {
+    "mtime": 1788470774.0,
+    "seen": 1788474514.2703373,
+    "ast_hash": "3de4d6dd5395af3213e356e416ec08f8",
+    "semantic_hash": "3de4d6dd5395af3213e356e416ec08f8"
+  },
+  "apps/dashboard/lib/onboarding.ts": {
+    "mtime": 1788470766.0,
+    "seen": 1788474514.2703397,
+    "ast_hash": "647cdda94712ca5f226570bfe81a178e",
+    "semantic_hash": "647cdda94712ca5f226570bfe81a178e"
+  },
+  "apps/dashboard/lib/profiles.ts": {
+    "mtime": 1788383858.0,
+    "seen": 1788474514.2703419,
+    "ast_hash": "596db63c64c713693d02db5a4d738469",
+    "semantic_hash": "596db63c64c713693d02db5a4d738469"
+  },
+  "apps/dashboard/lib/setup-prompt.ts": {
+    "mtime": 1788387350.0,
+    "seen": 1788474514.2707386,
+    "ast_hash": "0e065f90f8daa619506eb1b6b3b8e47e",
+    "semantic_hash": "0e065f90f8daa619506eb1b6b3b8e47e"
+  },
+  "apps/dashboard/lib/supabase/database.types.ts": {
+    "mtime": 1788396122.0,
+    "seen": 1788474514.2707431,
+    "ast_hash": "dc69c4bfb8ed2b288a8d4af23d181e72",
+    "semantic_hash": "dc69c4bfb8ed2b288a8d4af23d181e72"
+  },
+  "apps/dashboard/lib/supabase/server.ts": {
+    "mtime": 1788383846.0,
+    "seen": 1788474514.2707448,
+    "ast_hash": "fb2dba0f2a0e273c45104f5a5e28de06",
+    "semantic_hash": "fb2dba0f2a0e273c45104f5a5e28de06"
+  },
+  "apps/dashboard/lib/supabase/types.ts": {
+    "mtime": 1788471040.0,
+    "seen": 1788474514.2707462,
+    "ast_hash": "e827f5ec1cf6328d9a54bab0a97ef237",
+    "semantic_hash": "e827f5ec1cf6328d9a54bab0a97ef237"
+  },
+  "apps/extract/helix_extract/metadata.py": {
+    "mtime": 1788472472.0,
+    "seen": 1788474514.2738993,
+    "ast_hash": "d451a3e29168996e90910c454cc11320",
+    "semantic_hash": "d451a3e29168996e90910c454cc11320"
+  },
+  "apps/extract/tests/test_metadata.py": {
+    "mtime": 1788472898.0,
+    "seen": 1788474514.2761157,
+    "ast_hash": "ae89044162921ae3c7f77c10d0651579",
+    "semantic_hash": "ae89044162921ae3c7f77c10d0651579"
+  },
+  "apps/persona/app/(app)/editor/[forkId]/page.tsx": {
+    "mtime": 1788396772.0,
+    "seen": 1788474514.277252,
+    "ast_hash": "44db33c028cf16c05ffb7f9ef00b2a52",
+    "semantic_hash": "44db33c028cf16c05ffb7f9ef00b2a52"
+  },
+  "apps/persona/app/(app)/editor/[forkId]/print/page.tsx": {
+    "mtime": 1788399390.0,
+    "seen": 1788474514.277254,
+    "ast_hash": "041e6703567e8aefedd5ed6c483db064",
+    "semantic_hash": "041e6703567e8aefedd5ed6c483db064"
+  },
+  "apps/persona/app/(app)/editor/new/create-fork-client.tsx": {
+    "mtime": 1788396758.0,
+    "seen": 1788474514.277256,
+    "ast_hash": "1086059383796642f265ffd0ac65cc87",
+    "semantic_hash": "1086059383796642f265ffd0ac65cc87"
+  },
+  "apps/persona/app/(app)/editor/new/page.tsx": {
+    "mtime": 1788396766.0,
+    "seen": 1788474514.277258,
+    "ast_hash": "1cf6600e00215402dbb0dcb4af0275aa",
+    "semantic_hash": "1cf6600e00215402dbb0dcb4af0275aa"
+  },
+  "apps/persona/app/(app)/layout.tsx": {
+    "mtime": 1788396642.0,
+    "seen": 1788474514.2772603,
+    "ast_hash": "90f049f521b901c87498654e7c975541",
+    "semantic_hash": "90f049f521b901c87498654e7c975541"
+  },
+  "apps/persona/app/(app)/roles/[slug]/loading.tsx": {
+    "mtime": 1788396746.0,
+    "seen": 1788474514.2772624,
+    "ast_hash": "caa6c408453315812e95e689f781f922",
+    "semantic_hash": "caa6c408453315812e95e689f781f922"
+  },
+  "apps/persona/app/(app)/roles/[slug]/page.tsx": {
+    "mtime": 1788471040.0,
+    "seen": 1788474514.2772644,
+    "ast_hash": "caa50867b80beaab8d4eb3018a6f462e",
+    "semantic_hash": "caa50867b80beaab8d4eb3018a6f462e"
+  },
+  "apps/persona/app/(app)/roles/loading.tsx": {
+    "mtime": 1788396656.0,
+    "seen": 1788474514.2772663,
+    "ast_hash": "d5667a02e56e54171e36dab88be2e21b",
+    "semantic_hash": "d5667a02e56e54171e36dab88be2e21b"
+  },
+  "apps/persona/app/(app)/roles/page.tsx": {
+    "mtime": 1788398566.0,
+    "seen": 1788474514.277268,
+    "ast_hash": "6bfadc58e93b5ca1ecaec34958297978",
+    "semantic_hash": "6bfadc58e93b5ca1ecaec34958297978"
+  },
+  "apps/persona/app/api/catalog/route.ts": {
+    "mtime": 1788396546.0,
+    "seen": 1788474514.2772703,
+    "ast_hash": "e0209dcab4ee48f231234b23ffe1160f",
+    "semantic_hash": "e0209dcab4ee48f231234b23ffe1160f"
+  },
+  "apps/persona/app/layout.tsx": {
+    "mtime": 1788396234.0,
+    "seen": 1788474514.2772725,
+    "ast_hash": "ce99e85e17c5c9af7dbbfca70c5794d1",
+    "semantic_hash": "ce99e85e17c5c9af7dbbfca70c5794d1"
+  },
+  "apps/persona/app/page.tsx": {
+    "mtime": 1788399352.0,
+    "seen": 1788474514.2772753,
+    "ast_hash": "b9de0c8902d78dd4ddc63b090d0e44e7",
+    "semantic_hash": "b9de0c8902d78dd4ddc63b090d0e44e7"
+  },
+  "apps/persona/components/app/actions.ts": {
+    "mtime": 1788396482.0,
+    "seen": 1788474514.2772775,
+    "ast_hash": "f9e70e68b36411f22b6d6465af7885f6",
+    "semantic_hash": "f9e70e68b36411f22b6d6465af7885f6"
+  },
+  "apps/persona/components/app/card-menu.tsx": {
+    "mtime": 1788396566.0,
+    "seen": 1788474514.2772799,
+    "ast_hash": "b16699ac7980489e4f2ff90729f548c8",
+    "semantic_hash": "b16699ac7980489e4f2ff90729f548c8"
+  },
+  "apps/persona/components/app/mobile-sidebar.tsx": {
+    "mtime": 1788398546.0,
+    "seen": 1788474514.2772825,
+    "ast_hash": "f6449ccd4b0fd6ed116f67ee4bed8979",
+    "semantic_hash": "f6449ccd4b0fd6ed116f67ee4bed8979"
+  },
+  "apps/persona/components/app/persona-select.tsx": {
+    "mtime": 1788396680.0,
+    "seen": 1788474514.2772846,
+    "ast_hash": "6607fe0618f652cf3743b00f0e9c026a",
+    "semantic_hash": "6607fe0618f652cf3743b00f0e9c026a"
+  },
+  "apps/persona/components/app/platform-tabs.tsx": {
+    "mtime": 1788399382.0,
+    "seen": 1788474514.277287,
+    "ast_hash": "02860f0c9060667d2c5e9399d004579f",
+    "semantic_hash": "02860f0c9060667d2c5e9399d004579f"
+  },
+  "apps/persona/components/app/role-actions.tsx": {
+    "mtime": 1788396726.0,
+    "seen": 1788474514.2772887,
+    "ast_hash": "b0aed6fd474021b17c08a248e476f7ed",
+    "semantic_hash": "b0aed6fd474021b17c08a248e476f7ed"
+  },
+  "apps/persona/components/app/role-card.tsx": {
+    "mtime": 1788396516.0,
+    "seen": 1788474514.2772913,
+    "ast_hash": "74b17c327458aaa942c493613dd8c927",
+    "semantic_hash": "74b17c327458aaa942c493613dd8c927"
+  },
+  "apps/persona/components/app/roles-grid.tsx": {
+    "mtime": 1788396534.0,
+    "seen": 1788474514.2772925,
+    "ast_hash": "11774e195a10247554c76f6140ee1701",
+    "semantic_hash": "11774e195a10247554c76f6140ee1701"
+  },
+  "apps/persona/components/app/sidebar-editor.tsx": {
+    "mtime": 1788398488.0,
+    "seen": 1788474514.277294,
+    "ast_hash": "62c9ca053b5e7d614ad2910121a30e03",
+    "semantic_hash": "62c9ca053b5e7d614ad2910121a30e03"
+  },
+  "apps/persona/components/app/sidebar-search.tsx": {
+    "mtime": 1788396796.0,
+    "seen": 1788474514.2772949,
+    "ast_hash": "15892ac4512efc11729496241dee4838",
+    "semantic_hash": "15892ac4512efc11729496241dee4838"
+  },
+  "apps/persona/components/app/sidebar-settings.tsx": {
+    "mtime": 1788398558.0,
+    "seen": 1788474514.2772963,
+    "ast_hash": "9d37aa0fa5d1efb5d7879ad76e4876b9",
+    "semantic_hash": "9d37aa0fa5d1efb5d7879ad76e4876b9"
+  },
+  "apps/persona/components/app/sidebar.tsx": {
+    "mtime": 1788398538.0,
+    "seen": 1788474514.2772977,
+    "ast_hash": "bdd5a7725c032318c121415925dc51b5",
+    "semantic_hash": "bdd5a7725c032318c121415925dc51b5"
+  },
+  "apps/persona/components/app/types.ts": {
+    "mtime": 1788398744.0,
+    "seen": 1788474514.2773,
+    "ast_hash": "b5b0ef79a09f4c400dc13bed74020ca2",
+    "semantic_hash": "b5b0ef79a09f4c400dc13bed74020ca2"
+  },
+  "apps/persona/components/app/use-catalog-filters.ts": {
+    "mtime": 1788396472.0,
+    "seen": 1788474514.277301,
+    "ast_hash": "0522148b56587b3dc1217ef7ae6a64ef",
+    "semantic_hash": "0522148b56587b3dc1217ef7ae6a64ef"
+  },
+  "apps/persona/components/editor/delete-fork-dialog.tsx": {
+    "mtime": 1788396866.0,
+    "seen": 1788474514.2773025,
+    "ast_hash": "f7352865de1223e5312c026e4a32f4dc",
+    "semantic_hash": "f7352865de1223e5312c026e4a32f4dc"
+  },
+  "apps/persona/components/editor/editor-shell.tsx": {
+    "mtime": 1788399352.0,
+    "seen": 1788474514.2773046,
+    "ast_hash": "4c9ec54d450a67a28b85a731b274a58f",
+    "semantic_hash": "4c9ec54d450a67a28b85a731b274a58f"
+  },
+  "apps/persona/components/editor/export-menu.tsx": {
+    "mtime": 1788396628.0,
+    "seen": 1788474514.277306,
+    "ast_hash": "81fd1d14e2d3d1d9f45108568b865835",
+    "semantic_hash": "81fd1d14e2d3d1d9f45108568b865835"
+  },
+  "apps/persona/components/editor/placeholder-rail.tsx": {
+    "mtime": 1788399352.0,
+    "seen": 1788474514.2773077,
+    "ast_hash": "9bf0e413cb7ae12a76c9f494fbce9aa8",
+    "semantic_hash": "9bf0e413cb7ae12a76c9f494fbce9aa8"
+  },
+  "apps/persona/components/editor/toolbar.tsx": {
+    "mtime": 1788396618.0,
+    "seen": 1788474514.2773094,
+    "ast_hash": "97e559ed49216b1863398775f541671b",
+    "semantic_hash": "97e559ed49216b1863398775f541671b"
+  },
+  "apps/persona/components/icons.tsx": {
+    "mtime": 1788398248.0,
+    "seen": 1788474514.277311,
+    "ast_hash": "01fca84ca2b5db59fcc0f8eed0a7f2d7",
+    "semantic_hash": "01fca84ca2b5db59fcc0f8eed0a7f2d7"
+  },
+  "apps/persona/components/marketing/animated-cursor.tsx": {
+    "mtime": 1788398514.0,
+    "seen": 1788474514.2773128,
+    "ast_hash": "9fe6ea1b236e3da4f9b067984a8606dd",
+    "semantic_hash": "9fe6ea1b236e3da4f9b067984a8606dd"
+  },
+  "apps/persona/components/marketing/app-mockup.tsx": {
+    "mtime": 1788399376.0,
+    "seen": 1788474514.2773147,
+    "ast_hash": "1991be4a9f11a930d7b56857fe2d8946",
+    "semantic_hash": "1991be4a9f11a930d7b56857fe2d8946"
+  },
+  "apps/persona/components/marketing/browser-window.tsx": {
+    "mtime": 1788399376.0,
+    "seen": 1788474514.277316,
+    "ast_hash": "79589ef239de2ef6c67908574ba31213",
+    "semantic_hash": "79589ef239de2ef6c67908574ba31213"
+  },
+  "apps/persona/components/marketing/editor-mockup.tsx": {
+    "mtime": 1788398592.0,
+    "seen": 1788474514.2773175,
+    "ast_hash": "2f9b54163a2712b9bc28c9cbb1b2a6a4",
+    "semantic_hash": "2f9b54163a2712b9bc28c9cbb1b2a6a4"
+  },
+  "apps/persona/components/marketing/nav.tsx": {
+    "mtime": 1788399352.0,
+    "seen": 1788474514.2773194,
+    "ast_hash": "0c155c4d9d1a86191f4adb5365f73045",
+    "semantic_hash": "0c155c4d9d1a86191f4adb5365f73045"
+  },
+  "apps/persona/components/marketing/role-pill.tsx": {
+    "mtime": 1788396842.0,
+    "seen": 1788474514.2773216,
+    "ast_hash": "d0caadb57d8145ae988a1124c2fb91c0",
+    "semantic_hash": "d0caadb57d8145ae988a1124c2fb91c0"
+  },
+  "apps/persona/components/marketing/roles-grid.tsx": {
+    "mtime": 1788398662.0,
+    "seen": 1788474514.2773252,
+    "ast_hash": "3490324bd785fdb437d2cf6f1b80d044",
+    "semantic_hash": "3490324bd785fdb437d2cf6f1b80d044"
+  },
+  "apps/persona/components/marketing/scroll-reveal.tsx": {
+    "mtime": 1788398600.0,
+    "seen": 1788474514.2773273,
+    "ast_hash": "90ccb2012bc639d34f7d55dab83d11d9",
+    "semantic_hash": "90ccb2012bc639d34f7d55dab83d11d9"
+  },
+  "apps/persona/components/marketing/search-demo.tsx": {
+    "mtime": 1788399376.0,
+    "seen": 1788474514.2773294,
+    "ast_hash": "14c1aba00aa756625c3dab1660ebf3cd",
+    "semantic_hash": "14c1aba00aa756625c3dab1660ebf3cd"
+  },
+  "apps/persona/components/marketing/wizard-card.tsx": {
+    "mtime": 1788399376.0,
+    "seen": 1788474514.2773323,
+    "ast_hash": "e3f823d91aeabb797adbfe96d8741b9a",
+    "semantic_hash": "e3f823d91aeabb797adbfe96d8741b9a"
+  },
+  "apps/persona/components/marketing/wizard-mockup.tsx": {
+    "mtime": 1788399352.0,
+    "seen": 1788474514.277334,
+    "ast_hash": "39f0ad0e5fc11fb05c896c37954c1172",
+    "semantic_hash": "39f0ad0e5fc11fb05c896c37954c1172"
+  },
+  "apps/persona/components/prompt-view.tsx": {
+    "mtime": 1788396668.0,
+    "seen": 1788474514.277336,
+    "ast_hash": "4b48bd8f37cd4466b05599d1f9399453",
+    "semantic_hash": "4b48bd8f37cd4466b05599d1f9399453"
+  },
+  "apps/persona/components/providers.tsx": {
+    "mtime": 1788399402.0,
+    "seen": 1788474514.2773376,
+    "ast_hash": "b01b7df2465396e005108e3b91b03721",
+    "semantic_hash": "b01b7df2465396e005108e3b91b03721"
+  },
+  "apps/persona/components/ui/button.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.277339,
+    "ast_hash": "6c0cc94711346ad8d828308ff6e263e6",
+    "semantic_hash": "6c0cc94711346ad8d828308ff6e263e6"
+  },
+  "apps/persona/components/ui/checkbox.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773407,
+    "ast_hash": "4634c41a1dfe048f2ddee32bc0f5119c",
+    "semantic_hash": "4634c41a1dfe048f2ddee32bc0f5119c"
+  },
+  "apps/persona/components/ui/dialog.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773418,
+    "ast_hash": "8d0fd347596809162800a271a2d378d7",
+    "semantic_hash": "8d0fd347596809162800a271a2d378d7"
+  },
+  "apps/persona/components/ui/dropdown-menu.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773435,
+    "ast_hash": "0950c18cfcafbf0af2b5c01f85514f65",
+    "semantic_hash": "0950c18cfcafbf0af2b5c01f85514f65"
+  },
+  "apps/persona/components/ui/input.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773452,
+    "ast_hash": "f1f83383037a776192a6670ec017c1bd",
+    "semantic_hash": "f1f83383037a776192a6670ec017c1bd"
+  },
+  "apps/persona/components/ui/label.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773466,
+    "ast_hash": "d7eb9aadea67c63f8c1f4527e964ae97",
+    "semantic_hash": "d7eb9aadea67c63f8c1f4527e964ae97"
+  },
+  "apps/persona/components/ui/scroll-area.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.277348,
+    "ast_hash": "c20d3104cd2e5ff0de27b21faba44382",
+    "semantic_hash": "c20d3104cd2e5ff0de27b21faba44382"
+  },
+  "apps/persona/components/ui/select.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773495,
+    "ast_hash": "4f6008b9bd610f43c0f6ee857d5762b1",
+    "semantic_hash": "4f6008b9bd610f43c0f6ee857d5762b1"
+  },
+  "apps/persona/components/ui/separator.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773511,
+    "ast_hash": "4be37e1a03bdb70a7abfb630b25438e2",
+    "semantic_hash": "4be37e1a03bdb70a7abfb630b25438e2"
+  },
+  "apps/persona/components/ui/skeleton.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.277353,
+    "ast_hash": "877eb14c4a9a3be801453fd6cf26c63d",
+    "semantic_hash": "877eb14c4a9a3be801453fd6cf26c63d"
+  },
+  "apps/persona/components/ui/switch.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773545,
+    "ast_hash": "efc56e7ea2bf082449c219dda4d6454a",
+    "semantic_hash": "efc56e7ea2bf082449c219dda4d6454a"
+  },
+  "apps/persona/components/ui/tabs.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773557,
+    "ast_hash": "0ce5059bcd8a61d1bff9918d7377d165",
+    "semantic_hash": "0ce5059bcd8a61d1bff9918d7377d165"
+  },
+  "apps/persona/components/ui/tooltip.tsx": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773578,
+    "ast_hash": "3fd6a01ffd2244cf32196f3edfce87d0",
+    "semantic_hash": "3fd6a01ffd2244cf32196f3edfce87d0"
+  },
+  "apps/persona/components/wizard/launcher.tsx": {
+    "mtime": 1788399352.0,
+    "seen": 1788474514.2773795,
+    "ast_hash": "117741b7ee8dbbcabc161fe4e6b7b397",
+    "semantic_hash": "117741b7ee8dbbcabc161fe4e6b7b397"
+  },
+  "apps/persona/components/wizard/wizard-dialog.tsx": {
+    "mtime": 1788399352.0,
+    "seen": 1788474514.2773829,
+    "ast_hash": "cd7d2733f1799ffab5e25b06b250b0a9",
+    "semantic_hash": "cd7d2733f1799ffab5e25b06b250b0a9"
+  },
+  "apps/persona/content/roles.json": {
+    "mtime": 1788398248.0,
+    "seen": 1788474514.2773848,
+    "ast_hash": "3e3073d75c591d2e504e2a6a6801d371",
+    "semantic_hash": "3e3073d75c591d2e504e2a6a6801d371"
+  },
+  "apps/persona/eslint.config.mjs": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773864,
+    "ast_hash": "2562a87eb3be2f9afd00dd9bc6b97b04",
+    "semantic_hash": "2562a87eb3be2f9afd00dd9bc6b97b04"
+  },
+  "apps/persona/lib/catalog.ts": {
+    "mtime": 1788398248.0,
+    "seen": 1788474514.277388,
+    "ast_hash": "8d79ee87d9bf1e3287a8e4c6e1dc14a7",
+    "semantic_hash": "8d79ee87d9bf1e3287a8e4c6e1dc14a7"
+  },
+  "apps/persona/lib/export.ts": {
+    "mtime": 1788396500.0,
+    "seen": 1788474514.27739,
+    "ast_hash": "be3a64b76fb7afe24461a9084bfe514e",
+    "semantic_hash": "be3a64b76fb7afe24461a9084bfe514e"
+  },
+  "apps/persona/lib/fork.ts": {
+    "mtime": 1788396484.0,
+    "seen": 1788474514.2773917,
+    "ast_hash": "418b43ba6c58047be1f1d802b77474e7",
+    "semantic_hash": "418b43ba6c58047be1f1d802b77474e7"
+  },
+  "apps/persona/lib/placeholders.ts": {
+    "mtime": 1788396188.0,
+    "seen": 1788474514.277393,
+    "ast_hash": "e8a094f7c283f920219049f521b96e8b",
+    "semantic_hash": "e8a094f7c283f920219049f521b96e8b"
+  },
+  "apps/persona/lib/store.ts": {
+    "mtime": 1788398374.0,
+    "seen": 1788474514.2773943,
+    "ast_hash": "ddf5debe66d50e5be2c68d0db4bebd0f",
+    "semantic_hash": "ddf5debe66d50e5be2c68d0db4bebd0f"
+  },
+  "apps/persona/lib/utils.ts": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773952,
+    "ast_hash": "2d01b535f0be7422af24560c9f31c327",
+    "semantic_hash": "2d01b535f0be7422af24560c9f31c327"
+  },
+  "apps/persona/next-env.d.ts": {
+    "mtime": 1788396710.0,
+    "seen": 1788474514.277397,
+    "ast_hash": "90426577ad8f38459f3e566411c85589",
+    "semantic_hash": "90426577ad8f38459f3e566411c85589"
+  },
+  "apps/persona/next.config.ts": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2773988,
+    "ast_hash": "543aeef28b512710332918136afb8ba5",
+    "semantic_hash": "543aeef28b512710332918136afb8ba5"
+  },
+  "apps/persona/package.json": {
+    "mtime": 1788400530.0,
+    "seen": 1788474514.2774005,
+    "ast_hash": "a29ef5187710f497eea31919c3a7abe7",
+    "semantic_hash": "a29ef5187710f497eea31919c3a7abe7"
+  },
+  "apps/persona/postcss.config.mjs": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.2774024,
+    "ast_hash": "c56b5f3c12f777a86e2513f45daab56a",
+    "semantic_hash": "c56b5f3c12f777a86e2513f45daab56a"
+  },
+  "apps/persona/scripts/build-index.ts": {
+    "mtime": 1788398714.0,
+    "seen": 1788474514.2774043,
+    "ast_hash": "3604e2fa6d9d4e14f951803a1a219874",
+    "semantic_hash": "3604e2fa6d9d4e14f951803a1a219874"
+  },
+  "apps/persona/scripts/check-content.ts": {
+    "mtime": 1788396284.0,
+    "seen": 1788474514.2774057,
+    "ast_hash": "c43eac691650fbcb010029c7d34e377f",
+    "semantic_hash": "c43eac691650fbcb010029c7d34e377f"
+  },
+  "apps/persona/tailwind.config.ts": {
+    "mtime": 1788399370.0,
+    "seen": 1788474514.27742,
+    "ast_hash": "025cca31efee0f5bfdf7126377cf1277",
+    "semantic_hash": "025cca31efee0f5bfdf7126377cf1277"
+  },
+  "apps/persona/tsconfig.json": {
+    "mtime": 1788395994.0,
+    "seen": 1788474514.277423,
+    "ast_hash": "20ecdeb0d4e4227c670014fe54fdbe07",
+    "semantic_hash": "20ecdeb0d4e4227c670014fe54fdbe07"
+  },
+  "research/firecrawl-capture/drive-firecrawl.mjs": {
+    "mtime": 1788473734.0,
+    "seen": 1788474514.2811794,
+    "ast_hash": "84547074a52139cbe3738f92297e7cd4",
+    "semantic_hash": "84547074a52139cbe3738f92297e7cd4"
+  },
+  "research/firecrawl-capture/probe-hosted-keys.mjs": {
+    "mtime": 1788396642.0,
+    "seen": 1788474514.283343,
+    "ast_hash": "16023fd44fdd1f15259330b44eea8755",
+    "semantic_hash": "16023fd44fdd1f15259330b44eea8755"
+  },
+  "research/firecrawl-capture/shoot-bento.mjs": {
+    "mtime": 1788474414.0,
+    "seen": 1788474514.2861238,
+    "ast_hash": "464381d1b32ebb6a2e9fb8c7d5d0c490",
+    "semantic_hash": "464381d1b32ebb6a2e9fb8c7d5d0c490"
+  },
+  "research/persona/role-pill.tsx": {
+    "mtime": 1788384738.0,
+    "seen": 1788474514.2869854,
+    "ast_hash": "1120d3d5a7f942979ada9cf6d90d1b4d",
+    "semantic_hash": "1120d3d5a7f942979ada9cf6d90d1b4d"
+  },
+  "supabase/build-schema.mjs": {
+    "mtime": 1788383928.0,
+    "seen": 1788474514.286988,
+    "ast_hash": "da1ae049886f03e69372b8b39fe77263",
+    "semantic_hash": "da1ae049886f03e69372b8b39fe77263"
   }
 }

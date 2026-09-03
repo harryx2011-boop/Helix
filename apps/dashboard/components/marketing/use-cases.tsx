@@ -91,7 +91,7 @@ export function UseCases() {
 
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="05" total="06" label="USE CASES" sub="What people build" />
+      <FrameBand step="06" total="07" label="USE CASES" sub="What people build" />
 
       <div className="py-16">
         <div data-reveal className="text-center">

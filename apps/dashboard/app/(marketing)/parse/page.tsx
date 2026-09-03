@@ -72,10 +72,19 @@ export default function ParsePage() {
 }`,
       }}
       features={[
-        { icon: FileStack, eyebrow: 'Docs to data', lead: 'Four formats, one envelope.', body: 'PDF, DOCX, PPTX and XLSX come back exactly like a scraped page.', evidence: 'https://example.com/files/invoice.pdf' },
+        { icon: FileStack, eyebrow: 'Docs to data', lead: 'Four formats, one envelope.', body: 'PDF, DOCX, PPTX and XLSX come back exactly like a scraped page.', evidence: 'documents by type · sample instance', meters: [
+          { label: 'pdf', value: 58, accent: true },
+          { label: 'docx', value: 24 },
+          { label: 'pptx', value: 11 },
+          { label: 'xlsx', value: 7 },
+        ] },
         { icon: ScanEye, eyebrow: 'Knows when to look', lead: 'OCR only when needed.', body: 'Scanned pages route to OCR; text-layer documents skip it.', evidence: '"ocr": "auto"  ·  "ocrUsed": false' },
         { icon: Table2, eyebrow: 'Structure kept', lead: 'Tables survive the trip.', body: 'Spreadsheet rows, slides and PDF tables land as markdown tables.', evidence: '| Item | Qty | Price |' },
-        { icon: Fingerprint, eyebrow: 'Parsed once', lead: 'Cached by content hash.', body: 'The same file from two mirrors parses once.', evidence: '"fromCache": true' },
+        { icon: Fingerprint, eyebrow: 'Parsed once', lead: 'Cached by content hash.', body: 'The same file from two mirrors parses once.', evidence: '"fromCache": true · hit rate', meterSize: 'thin', meters: [
+          { label: 'cache hit', value: 62, accent: true },
+          { label: 'parsed fresh', value: 38 },
+          { label: 'ocr run', value: 16 },
+        ] },
       ]}
       request={REQUEST}
       response={RESPONSE}

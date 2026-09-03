@@ -133,6 +133,64 @@ export interface ChunkResult {
   embeddingDimensions: number | undefined;
 }
 
+
+export interface MetadataOptions {
+  data: Buffer;
+  contentType: string;
+  timeoutMs?: number | undefined;
+}
+
+/** How much a disclosed value gives away. An ordinal band, not a probability. */
+export type MetadataRisk = 'high' | 'medium' | 'low';
+
+export type MetadataCategory =
+  | 'location'
+  | 'identity'
+  | 'device'
+  | 'software'
+  | 'timestamp'
+  | 'content'
+  | 'other';
+
+export interface MetadataFinding {
+  group: string;
+  key: string;
+  value: string;
+  risk: MetadataRisk;
+  category: MetadataCategory;
+  /** False where the format cannot drop the entry without corrupting the file. */
+  removable: boolean;
+}
+
+export interface MetadataScanResult {
+  fileType: string;
+  findings: MetadataFinding[];
+  /** Always carries all three bands, so absent and zero never have to be told apart. */
+  riskSummary: Record<MetadataRisk, number>;
+  warnings: string[];
+}
+
+export interface MetadataScrubResult {
+  data: Buffer;
+  fileType: string;
+  removed: MetadataFinding[];
+  /** Detected and NOT removed. A scrub that left something behind must name it. */
+  retained: MetadataFinding[];
+  riskSummary: Record<MetadataRisk, number>;
+  warnings: string[];
+  bytesBefore: number;
+  bytesAfter: number;
+}
+
+interface WireFinding {
+  group: string;
+  key: string;
+  value: string;
+  risk: MetadataRisk;
+  category: MetadataCategory;
+  removable: boolean;
+}
+
 /** helix-extract answered with a status the caller can act on (400 schema, 415 type, 503 provider). */
 export class ExtractHttpError extends Error {
   readonly status: number;
@@ -266,6 +324,87 @@ export class ExtractClient {
       ocrApplied: body.ocr_applied,
       suspectedGarbledText: body.suspected_garbled_text,
       parserUsed: body.parser_used,
+    };
+  }
+
+
+  /** Read what a file discloses about the person and machine that made it. */
+  async metadataScan(options: MetadataOptions): Promise<MetadataScanResult> {
+    const response = await fetch(`${this.#baseUrl}/metadata/scan`, {
+      method: 'POST',
+      headers: { 'content-type': options.contentType },
+      body: options.data as Uint8Array<ArrayBuffer>,
+      signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
+    });
+
+    if (!response.ok) {
+      throw new ExtractHttpError(response.status, await detailOf(response));
+    }
+
+    const body = (await response.json()) as {
+      file_type: string;
+      findings: WireFinding[];
+      risk_summary: Record<MetadataRisk, number>;
+      warnings: string[];
+    };
+
+    return {
+      fileType: body.file_type,
+      findings: body.findings,
+      riskSummary: body.risk_summary,
+      warnings: body.warnings ?? [],
+    };
+  }
+
+  /** Rewrite a file without its metadata; the report rides in a response header. */
+  async metadataScrub(options: MetadataOptions): Promise<MetadataScrubResult> {
+    const response = await fetch(`${this.#baseUrl}/metadata/scrub`, {
+      method: 'POST',
+      headers: { 'content-type': options.contentType },
+      body: options.data as Uint8Array<ArrayBuffer>,
+      signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
+    });
+
+    if (!response.ok) {
+      throw new ExtractHttpError(response.status, await detailOf(response));
+    }
+
+    const cleaned = Buffer.from(await response.arrayBuffer());
+    const header = response.headers.get('x-helix-metadata-report');
+    if (!header) {
+      // The bytes came back but the report did not. Returning the file with an
+      // empty report would claim nothing was found, which is a different and
+      // much worse answer than saying the report is missing.
+      throw new ExtractHttpError(502, 'helix-extract returned scrubbed bytes without a metadata report');
+    }
+
+    let report: {
+      file_type: string;
+      removed: WireFinding[];
+      retained: WireFinding[];
+      risk_summary: Record<MetadataRisk, number>;
+      warnings: string[];
+      bytes_before: number;
+      bytes_after: number;
+    };
+    try {
+      report = JSON.parse(header) as typeof report;
+    } catch (error) {
+      throw new ExtractHttpError(
+        502,
+        `helix-extract's metadata report was not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    return {
+      data: cleaned,
+      fileType: report.file_type,
+      removed: report.removed ?? [],
+      retained: report.retained ?? [],
+      riskSummary: report.risk_summary,
+      warnings: report.warnings ?? [],
+      bytesBefore: report.bytes_before,
+      bytesAfter: report.bytes_after,
     };
   }
 

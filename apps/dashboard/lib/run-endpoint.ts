@@ -8,6 +8,9 @@ import type {
   InteractResponse,
   MapRequest,
   MapResponse,
+  MetadataRequest,
+  MetadataResponse,
+  MetadataScrubResponse,
   MonitorRequest,
   MonitorResponse,
   ParseRequest,
@@ -18,6 +21,13 @@ import type {
   SearchResponse,
 } from '@/lib/api';
 import type { Endpoint } from '@/lib/endpoints';
+
+/**
+ * Metadata has two operations behind one tab, and the scrub answers with file
+ * bytes rather than JSON. The caller names which one it wants; everything else
+ * about the call path is unchanged.
+ */
+export type EndpointMode = 'scan' | 'scrub';
 
 export interface RunResult<T> {
   ok: boolean;
@@ -34,12 +44,13 @@ export async function runEndpoint<T>(
   endpoint: Endpoint,
   body: Record<string, unknown> | FormData,
   apiKey: string | null,
+  mode: EndpointMode = 'scan',
 ): Promise<RunResult<T>> {
   if (!apiKey) {
     throw new HelixApiError('No API key configured.', 401);
   }
   const client = new HelixClient({ apiKey });
-  const json = await callInstance(client, endpoint, body);
+  const json = await callInstance(client, endpoint, body, mode);
   return { ok: true, status: 200, body: json as T };
 }
 
@@ -48,7 +59,18 @@ async function callInstance(
   client: HelixClient,
   endpoint: Endpoint,
   body: Record<string, unknown> | FormData,
-): Promise<ScrapeResponse | MapResponse | SearchResponse | CrawlResponse | ParseResponse | InteractResponse | MonitorResponse> {
+  mode: EndpointMode,
+): Promise<
+  | ScrapeResponse
+  | MapResponse
+  | SearchResponse
+  | CrawlResponse
+  | ParseResponse
+  | MetadataResponse
+  | MetadataScrubResponse
+  | InteractResponse
+  | MonitorResponse
+> {
   switch (endpoint) {
     case 'scrape':
       return client.scrape(body as unknown as ScrapeRequest);
@@ -60,6 +82,10 @@ async function callInstance(
       return client.crawl(body as unknown as CrawlRequest);
     case 'parse':
       return client.parse(body as ParseRequest | FormData);
+    case 'metadata':
+      return mode === 'scrub'
+        ? client.metadataScrub(body as MetadataRequest | FormData)
+        : client.metadataScan(body as MetadataRequest | FormData);
     case 'interact':
       return client.interact(body as unknown as InteractRequest);
     case 'monitor':

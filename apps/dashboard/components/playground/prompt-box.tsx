@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 const PLACEHOLDERS: Record<Endpoint, string[]> = {
   scrape: ['https://example.com', 'https://docs.stripe.com/api', 'https://news.ycombinator.com'],
   parse: ['https://example.com/files/report.pdf', 'https://example.com/invoice.docx'],
+  metadata: ['https://example.com/files/report.pdf', 'https://example.com/photo.jpg'],
   search: ['transactional email APIs', 'latest news in AI infrastructure', 'headless browser pricing'],
   map: ['https://example.com', 'https://docs.example.com'],
   crawl: ['https://docs.example.com', 'https://example.com/blog'],
@@ -21,6 +22,7 @@ const PLACEHOLDERS: Record<Endpoint, string[]> = {
 const RUN_LABEL: Record<Endpoint, string> = {
   scrape: 'Run scrape',
   parse: 'Run parse',
+  metadata: 'Run metadata',
   search: 'Run search',
   map: 'Run map',
   crawl: 'Start crawl',

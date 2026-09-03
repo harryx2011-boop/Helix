@@ -17,9 +17,11 @@ interface GetCodeDialogProps {
   apiKey: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** For an endpoint with more than one operation, e.g. `/scrub` on Metadata. */
+  pathSuffix?: string | undefined;
 }
 
-export function GetCodeDialog({ endpoint, body, apiKey, open, onOpenChange }: GetCodeDialogProps) {
+export function GetCodeDialog({ endpoint, body, apiKey, open, onOpenChange, pathSuffix }: GetCodeDialogProps) {
   const [lang, setLang] = React.useState<Lang>('curl');
   const [includeKey, setIncludeKey] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
@@ -31,9 +33,10 @@ export function GetCodeDialog({ endpoint, body, apiKey, open, onOpenChange }: Ge
         body,
         baseUrl: PUBLIC_API_URL,
         mcpUrl: MCP_URL,
+        ...(pathSuffix ? { pathSuffix } : {}),
         ...(includeKey && apiKey ? { apiKey } : {}),
       }),
-    [lang, endpoint, body, includeKey, apiKey],
+    [lang, endpoint, body, includeKey, apiKey, pathSuffix],
   );
 
   const handleCopy = async () => {

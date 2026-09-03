@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Eye, FileScan, FileText, Map as MapIcon, MousePointerClick, Network, Search } from 'lucide-react';
+import { Eye, FileScan, FileText, Map as MapIcon, MousePointerClick, Network, ScanEye, Search } from 'lucide-react';
 import type { Endpoint } from './endpoints';
 
 /**
@@ -35,6 +35,7 @@ export interface EndpointDef {
 export const ENDPOINTS: readonly EndpointDef[] = [
   { id: 'scrape', name: 'Scrape', productName: 'Web Scraping API', sidebarLabel: 'Scrape', tagline: 'One URL in, clean markdown, JSON or a screenshot out. Documents return the same envelope as pages.', method: 'POST', path: '/v1/scrape', route: '/scrape', group: 'EXTRACT', status: 'live', icon: FileText, product: true, async: false },
   { id: 'parse', name: 'Parse', productName: 'Document Parsing API', sidebarLabel: 'Parse', tagline: 'PDF, DOCX, PPTX and XLSX by upload or URL. OCR only when the text layer is missing.', method: 'POST', path: '/v1/parse', route: '/parse', group: 'EXTRACT', status: 'live', icon: FileScan, product: true, async: false },
+  { id: 'metadata', name: 'Metadata', productName: 'Metadata API', sidebarLabel: 'Metadata', tagline: 'What a file gives away about who and what made it \u2014 and a copy without it.', method: 'POST', path: '/v1/metadata', route: '/metadata', group: 'EXTRACT', status: 'live', icon: ScanEye, product: true, async: false },
   { id: 'search', name: 'Search', productName: 'Web Search API', sidebarLabel: 'Search', tagline: 'Search the web and read every result in the same call. Bring your own search backend.', method: 'POST', path: '/v1/search', route: '/search', group: 'DISCOVER', status: 'live', icon: Search, product: true, async: false },
   { id: 'map', name: 'Map', productName: 'Site Map', sidebarLabel: 'Map', tagline: "List a site's URLs without reading them.", method: 'POST', path: '/v1/map', route: '/crawl', group: 'DISCOVER', status: 'live', icon: MapIcon, product: false, async: false },
   { id: 'crawl', name: 'Crawl', productName: 'Web Crawling API', sidebarLabel: 'Crawl', tagline: 'Discover and read a whole site. Robots-aware, adaptive politeness, and an estimate before it runs.', method: 'POST', path: '/v1/crawl', route: '/crawl', group: 'CRAWL', status: 'live', icon: Network, product: true, async: true },
@@ -61,6 +62,7 @@ export function orderBySelection(selected: readonly string[]): EndpointDef[] {
 export const EXAMPLE_REQUEST: Record<Endpoint, Record<string, unknown>> = {
   scrape: { url: 'https://example.com', formats: ['markdown'] },
   parse: { url: 'https://example.com/files/report.pdf', formats: ['markdown'], ocr: 'auto' },
+  metadata: { url: 'https://example.com/files/report.pdf' },
   search: { query: 'transactional email APIs', limit: 5, scrapeOptions: { formats: ['markdown'] } },
   map: { url: 'https://example.com' },
   crawl: { url: 'https://example.com', limit: 100, maxDepth: 3, estimate: true },

@@ -9,18 +9,20 @@ stack have no real equivalent in another ecosystem.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from . import chunking, documents, embeddings, enrich, extraction, llm, schema_gen
+from . import chunking, documents, embeddings, enrich, extraction, llm, metadata, schema_gen
 from .schema_compiler import SchemaError
 from .settings import settings
 
 app = FastAPI(
     title="helix-extract",
-    version="1.2.0",
+    version="1.4.0",
     description="Internal service. Not exposed publicly.",
 )
 
@@ -38,7 +40,7 @@ class Health(BaseModel):
 async def health() -> Health:
     return Health(
         status="ok",
-        version="1.2.0",
+        version="1.4.0",
         extractors=["trafilatura", "readability"],
         document_parsers=documents.available_parsers(),
         llm_configured=settings.llm_configured,
@@ -138,6 +140,115 @@ async def parse_document(
         ocr_applied=result.ocr_applied,
         suspected_garbled_text=result.suspected_garbled_text,
         parser_used=result.parser_used,
+    )
+
+
+class MetadataFinding(BaseModel):
+    group: str
+    key: str
+    value: str
+    risk: str
+    category: str
+    removable: bool
+
+
+class MetadataScanResponse(BaseModel):
+    file_type: str
+    findings: list[MetadataFinding]
+    # All three risk bands are always present, so a caller rendering a summary
+    # never has to tell an absent band from a zero one.
+    risk_summary: dict[str, int]
+    warnings: list[str] = Field(default_factory=list)
+
+
+def _as_findings(items: list[metadata.Finding]) -> list[MetadataFinding]:
+    return [
+        MetadataFinding(
+            group=item.group,
+            key=item.key,
+            value=item.value,
+            risk=item.risk.value,
+            category=item.category.value,
+            removable=item.removable,
+        )
+        for item in items
+    ]
+
+
+def _metadata_type(content_type: str) -> str:
+    kind = documents.CONTENT_TYPES.get(content_type.split(";")[0].strip().lower())
+    if kind is not None and kind.value in metadata.SUPPORTED_TYPES:
+        return kind.value
+    image = {"image/png": "png", "image/jpeg": "jpg", "image/jpg": "jpg"}.get(
+        content_type.split(";")[0].strip().lower()
+    )
+    if image is not None:
+        return image
+    raise ValueError(
+        f"metadata is not supported for {content_type or 'an unspecified type'}; "
+        f"supported: {', '.join(metadata.SUPPORTED_TYPES)}"
+    )
+
+
+@app.post("/metadata/scan", response_model=MetadataScanResponse)
+async def scan_metadata(request: Request) -> MetadataScanResponse:
+    # Same wire shape as /document: raw bytes, kind from Content-Type.
+    content_type = request.headers.get("content-type", "")
+    data = await request.body()
+    if not data:
+        raise HTTPException(status_code=400, detail="the request body is empty")
+
+    try:
+        file_type = _metadata_type(content_type)
+        result = metadata.scan(data, file_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=415, detail=str(exc)) from exc
+    except metadata.MetadataError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return MetadataScanResponse(
+        file_type=result.file_type,
+        findings=_as_findings(result.findings),
+        risk_summary=metadata.summarize(result.findings),
+        warnings=result.warnings,
+    )
+
+
+@app.post("/metadata/scrub")
+async def scrub_metadata(request: Request) -> Response:
+    """Return the cleaned bytes, with the report in headers.
+
+    The body is the file, not a JSON envelope: base64 would hold two more copies
+    of it for the whole request. The report rides in `X-Helix-Metadata-Report`
+    as compact JSON, which is why values are capped upstream — a header is not
+    a place for an unbounded payload.
+    """
+    content_type = request.headers.get("content-type", "")
+    data = await request.body()
+    if not data:
+        raise HTTPException(status_code=400, detail="the request body is empty")
+
+    try:
+        file_type = _metadata_type(content_type)
+        result = metadata.scrub(data, file_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=415, detail=str(exc)) from exc
+    except metadata.MetadataError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    report = {
+        "file_type": file_type,
+        "removed": [item.model_dump() for item in _as_findings(result.removed)],
+        "retained": [item.model_dump() for item in _as_findings(result.retained)],
+        "risk_summary": metadata.summarize(result.removed),
+        "warnings": result.warnings,
+        "bytes_before": len(data),
+        "bytes_after": len(result.data),
+    }
+    return Response(
+        content=result.data,
+        media_type=content_type.split(";")[0].strip() or "application/octet-stream",
+        headers={"x-helix-metadata-report": json.dumps(report, separators=(",", ":"))},
     )
 
 

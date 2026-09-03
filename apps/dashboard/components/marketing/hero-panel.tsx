@@ -153,6 +153,7 @@ const HERO_ENDPOINTS: { id: Endpoint; name: string; icon: typeof Globe }[] = [
 const PLACEHOLDERS: Record<Endpoint, string> = {
   scrape: 'https://example.com/pricing',
   parse: 'https://docs.stripe.com/webhooks',
+  metadata: 'https://example.com/files/report.pdf',
   search: 'https://news.ycombinator.com',
   map: 'https://example.com',
   crawl: 'https://example.com',
@@ -321,5 +322,15 @@ const RESPONSE_PREVIEW: Record<Endpoint, string> = {
   "status": "active",
   "nextCheckAt": "2026-08-24T13:00:00.000Z",
   "stats": { "checks": 0, "changes": 0 }
+}`,
+  metadata: `{
+  "success": true,
+  "data": {
+    "findings": [
+      { "key": "GPSLatitude", "risk": "high", "category": "location" },
+      { "key": "Artist", "risk": "high", "category": "identity" }
+    ],
+    "riskSummary": { "high": 2, "medium": 1, "low": 0 }
+  }
 }`,
 };

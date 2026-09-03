@@ -11,6 +11,9 @@ import type {
   InteractResponse,
   MapRequest,
   MapResponse,
+  MetadataRequest,
+  MetadataResponse,
+  MetadataScrubResponse,
   MonitorRequest,
   MonitorResponse,
   ParseRequest,
@@ -20,7 +23,7 @@ import type {
   SearchRequest,
   SearchResponse,
 } from '@/lib/api';
-import { runEndpoint } from '@/lib/run-endpoint';
+import { runEndpoint, type EndpointMode } from '@/lib/run-endpoint';
 import { useAppSession } from '@/components/app/session-provider';
 import { endpointById } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/endpoints';
@@ -30,6 +33,7 @@ import { MapForm } from './forms/map-form';
 import { SearchForm } from './forms/search-form';
 import { CrawlForm } from './forms/crawl-form';
 import { ParseForm } from './forms/parse-form';
+import { MetadataForm } from './forms/metadata-form';
 import { InteractForm } from './forms/interact-form';
 import { MonitorForm } from './forms/monitor-form';
 import { GetCodeDialog } from './get-code-dialog';
@@ -53,7 +57,9 @@ export function Playground() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | undefined>(undefined);
   const [timingMs, setTimingMs] = React.useState<number | undefined>(undefined);
-  const [codeDialog, setCodeDialog] = React.useState<{ endpoint: Endpoint; body: Record<string, unknown> } | undefined>(undefined);
+  const [codeDialog, setCodeDialog] = React.useState<
+    { endpoint: Endpoint; body: Record<string, unknown>; pathSuffix?: string } | undefined
+  >(undefined);
 
   const activeDef = endpointById(activeId) ?? endpointById('scrape')!;
 
@@ -67,13 +73,19 @@ export function Playground() {
   };
 
   const run = React.useCallback(
-    async (kind: PlaygroundResult['kind'], endpoint: Endpoint, body: Record<string, unknown> | FormData, async_: boolean) => {
+    async (
+      kind: PlaygroundResult['kind'],
+      endpoint: Endpoint,
+      body: Record<string, unknown> | FormData,
+      async_: boolean,
+      mode: EndpointMode = 'scan',
+    ) => {
       setLoading(true);
       setError(undefined);
       setResult(undefined);
       const started = performance.now();
       try {
-        const { body: responseBody } = await runEndpoint<unknown>(endpoint, body, apiKey);
+        const { body: responseBody } = await runEndpoint<unknown>(endpoint, body, apiKey, mode);
         setTimingMs(Math.round(performance.now() - started));
 
         if (async_ && isJobAcceptedShape(responseBody)) {
@@ -91,7 +103,8 @@ export function Playground() {
     [apiKey],
   );
 
-  const openCode = (endpoint: Endpoint, body: Record<string, unknown>) => setCodeDialog({ endpoint, body });
+  const openCode = (endpoint: Endpoint, body: Record<string, unknown>, mode: EndpointMode = 'scan') =>
+    setCodeDialog({ endpoint, body, ...(mode === 'scrub' ? { pathSuffix: '/scrub' } : {}) });
 
   // Each form owns its own submit-ready state (schema validity, actions, etc.); the
   // prompt box's Run button proxies to the mounted form's native submit so that
@@ -169,6 +182,22 @@ export function Playground() {
               onGetCode={(body) => openCode('parse', body)}
             />
           )}
+          {activeDef.id === 'metadata' && (
+            <MetadataForm
+              url={promptValue}
+              loading={loading}
+              onSubmit={(request: MetadataRequest | FormData, mode: EndpointMode) =>
+                run(
+                  mode === 'scrub' ? 'metadata-scrub' : 'metadata',
+                  'metadata',
+                  request instanceof FormData ? request : (request as unknown as Record<string, unknown>),
+                  false,
+                  mode,
+                )
+              }
+              onGetCode={(body, mode) => openCode('metadata', body, mode)}
+            />
+          )}
           {activeDef.id === 'interact' && (
             <InteractForm
               url={promptValue}
@@ -197,6 +226,7 @@ export function Playground() {
         <GetCodeDialog
           endpoint={codeDialog.endpoint}
           body={codeDialog.body}
+          pathSuffix={codeDialog.pathSuffix}
           apiKey={apiKey}
           open={Boolean(codeDialog)}
           onOpenChange={(open) => {
@@ -212,6 +242,8 @@ export function Playground() {
 export type {
   ScrapeResponse,
   MapResponse,
+  MetadataResponse,
+  MetadataScrubResponse,
   SearchResponse,
   CrawlResponse,
   ParseResponse,

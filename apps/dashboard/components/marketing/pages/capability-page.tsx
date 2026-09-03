@@ -4,6 +4,8 @@ import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { PillButton } from '@/components/marketing/pill-button';
 import { CodePanel } from '@/components/marketing/code-panel';
 import { AnimatedCode, type AnimatedCodeMode } from '@/components/marketing/animated-code';
+import { BentoCard, EvidenceChip } from '@/components/marketing/bento';
+import { MeterPanel, type MeterRow } from '@/components/marketing/meter';
 import { endpointById } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/endpoints';
 
@@ -11,6 +13,7 @@ import type { Endpoint } from '@/lib/endpoints';
 const MOCK_MODE: Record<Endpoint, AnimatedCodeMode> = {
   scrape: 'type',
   parse: 'type',
+  metadata: 'reveal',
   search: 'reveal',
   map: 'reveal',
   crawl: 'reveal',
@@ -24,6 +27,10 @@ export interface FeatureCardCopy {
   lead: string;
   body: string;
   evidence?: string;
+  /** When set, the cell renders a live meter panel labelled by `evidence` instead of the evidence chip. */
+  meters?: MeterRow[];
+  meterSize?: 'pill' | 'thin';
+  meterJitter?: number;
 }
 
 export interface CapabilityPageCopy {
@@ -100,9 +107,9 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
       </section>
 
       <section className="mx-auto mt-20 max-w-[960px]">
-        <div className="grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm sm:grid-cols-2">
+        <div className="grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm sm:grid-cols-6">
           {features.map((feature, i) => (
-            <FeatureCard key={feature.eyebrow} {...feature} delay={i * 60} />
+            <FeatureCell key={feature.eyebrow} {...feature} index={i} />
           ))}
         </div>
       </section>
@@ -122,29 +129,31 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
   );
 }
 
-function FeatureCard({ icon: Icon, eyebrow, lead, body, evidence, delay }: FeatureCardCopy & { delay: number }) {
+/** Bento rhythm: wide / narrow, then narrow / wide. */
+const SPAN: ('wide' | 'narrow')[] = ['wide', 'narrow', 'narrow', 'wide'];
+
+function FeatureCell({ icon, eyebrow, lead, body, evidence, meters, meterSize, meterJitter, index }: FeatureCardCopy & { index: number }) {
   return (
-    <div
-      className="flex flex-col animate-fade-up border-b border-m-border-faint p-6 transition-colors duration-200 ease-out hover:bg-m-ink/[0.031] last:border-b-0 sm:[&:nth-child(2n)]:border-l sm:[&:nth-last-child(-n+2)]:border-b-0"
-      style={{ animationDelay: `${delay}ms` }}
+    <BentoCard
+      icon={icon}
+      eyebrow={eyebrow}
+      lead={lead}
+      body={body}
+      span={SPAN[index % SPAN.length]!}
+      className="animate-fade-up"
+      style={{ animationDelay: `${index * 60}ms` }}
     >
-      <div className="flex items-center gap-1.5 font-mono text-[12px] text-m-ink/56">
-        <Icon className="h-3.5 w-3.5 text-violet" strokeWidth={1.75} aria-hidden />
-        {eyebrow}
-      </div>
-      <p className="mt-3 text-[18px] leading-snug tracking-tight sm:text-[20px]">
-        <span className="font-medium text-m-ink">{lead}</span> <span className="text-m-ink/64">{body}</span>
-      </p>
-      {evidence && (
-        <div className="mt-auto flex items-center gap-1.5 pt-5">
-          <span className="ml-1 h-2 w-2 shrink-0 rounded-full bg-m-ink/12" aria-hidden />
-          <span className="h-2 w-2 shrink-0 rounded-full bg-m-ink/12" aria-hidden />
-          <span className="h-2 w-2 shrink-0 rounded-full bg-m-ink/12" aria-hidden />
-          <span className="ml-1 flex-1 truncate rounded-card bg-m-bg px-2 py-1 font-mono text-[12px] text-m-ink/56">
-            {evidence}
-          </span>
-        </div>
-      )}
-    </div>
+      {meters ? (
+        <MeterPanel
+          rows={meters}
+          seed={index * 13 + 5}
+          {...(evidence ? { label: evidence } : {})}
+          {...(meterSize ? { size: meterSize } : {})}
+          {...(meterJitter !== undefined ? { jitter: meterJitter } : {})}
+        />
+      ) : evidence ? (
+        <EvidenceChip>{evidence}</EvidenceChip>
+      ) : null}
+    </BentoCard>
   );
 }

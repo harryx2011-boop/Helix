@@ -17,12 +17,17 @@ interface Opts {
   apiKey?: string;
   baseUrl?: string;
   mcpUrl?: string;
+  /** For an endpoint with more than one operation, e.g. `/scrub` on Metadata. */
+  pathSuffix?: string;
 }
 
 /** One request, four ways. Shared by the hero panel and the playground's Get code (WEBSITE.md §4.2, §7.4). */
 export function generateCode(lang: Lang, opts: Opts): string {
   const def = endpointById(opts.endpoint);
-  const path = def?.path ?? `/v1/${opts.endpoint}`;
+  const path = `${def?.path ?? `/v1/${opts.endpoint}`}${opts.pathSuffix ?? ''}`;
+  // The MCP tool name is generated from the spec path, so a sub-operation is
+  // `helix_metadata_scrub`, not `helix_metadata`.
+  const tool = `helix_${opts.endpoint}${(opts.pathSuffix ?? '').replace(/\//g, '_')}`;
   const base = (opts.baseUrl ?? 'https://api.helix.dev').replace(/\/$/, '');
   const key = opts.apiKey ?? KEY_PLACEHOLDER;
   const json = JSON.stringify(opts.body, null, 2);
@@ -61,7 +66,7 @@ export function generateCode(lang: Lang, opts: Opts): string {
         `  --header "Authorization: Bearer ${key}"`,
         '',
         `# then, in your agent:`,
-        `# use the helix_${opts.endpoint} tool with ${JSON.stringify(opts.body)}`,
+        `# use the ${tool} tool with ${JSON.stringify(opts.body)}`,
       ].join('\n');
   }
 }

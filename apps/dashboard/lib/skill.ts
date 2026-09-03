@@ -220,6 +220,8 @@ function reachWhen(endpoint: EndpointDef): string {
       return 'you have one specific URL and need its content as markdown, JSON, or a screenshot.';
     case 'parse':
       return 'the source is a document file (PDF, DOCX, PPTX, XLSX) rather than a web page — upload it as a multipart `file` part, or pass a `url` that serves the file. Add `formats: ["json"]` with `jsonOptions.schema` or `jsonOptions.prompt` for structured fields; leave `ocr` on `auto` unless you know the scan needs forcing.';
+    case 'metadata':
+      return 'you need to know what a file gives away about who and what made it — EXIF and GPS in images, XMP, PDF DocInfo, Office docProps — or you need a copy with that stripped before publishing. `POST /v1/metadata` reports; `POST /v1/metadata/scrub` returns the cleaned file itself as the body, with the report in the `X-Helix-Metadata-Report` header. Findings come back sorted worst-first with a `risk` band.';
     case 'search':
       return "you don't have a URL yet and need to find and read relevant pages in one call. Omit `scrapeOptions` for url, title and description only; set it to read each page. Narrow with `lang`, `country` and `tbs` (qdr:d / qdr:w / qdr:m / qdr:y). A page that cannot be read keeps its row with a `failure` and a `warnings` line; the call still succeeds.";
     case 'crawl':
@@ -239,6 +241,8 @@ function reachNotWhen(endpoint: EndpointDef): string {
       return "the source is a document file (use Parse) or you don't have the URL yet (use Search).";
     case 'parse':
       return 'the source is a live web page (use Scrape; Parse answers `unsupported_type` for HTML) or the file is larger than the instance upload ceiling (HTTP 413).';
+    case 'metadata':
+      return "you want the file's readable content (use Parse; Metadata never returns the document text) or the source is a web page rather than a file.";
     case 'search':
       return 'you already know the exact URL (use Scrape directly instead of searching for it).';
     case 'crawl':
@@ -258,6 +262,12 @@ function exampleDataShape(id: EndpointDef['id']): Record<string, unknown> {
       return { markdown: '...', metadata: { title: '...', sourceUrl: '...', statusCode: 200, tier: 'plain', tiersAttempted: ['plain'] } };
     case 'parse':
       return { markdown: '...', json: {}, metadata: { filename: '...', pageCount: 0, fileType: 'pdf', ocrUsed: false, fromCache: false } };
+    case 'metadata':
+      return {
+        findings: [{ group: 'exif', key: 'GPSLatitude', value: '51.507222', risk: 'high', category: 'location', removable: true }],
+        riskSummary: { high: 1, medium: 0, low: 0 },
+        metadata: { filename: '...', fileType: 'jpg', sizeBytes: 0, contentHash: '...' },
+      };
     case 'search':
       return { web: [{ url: '...', title: '...', description: '...', position: 1, markdown: '...', metadata: { statusCode: 200 } }] };
     case 'map':

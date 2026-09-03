@@ -17,6 +17,7 @@ import { SessionRegistry } from './browser/sessions.js';
 import { registerHealth } from './routes/health.js';
 import { registerScrape } from './routes/scrape.js';
 import { registerParse } from './routes/parse.js';
+import { registerMetadata } from './routes/metadata.js';
 import { registerKeys } from './routes/keys.js';
 import { registerProviders } from './routes/providers.js';
 import { deriveEncryptionKey } from './providers/crypto.js';
@@ -263,6 +264,12 @@ await app.register(
       maxInFlight: config.parseMaxInflight,
       userAgent: config.userAgent,
       encryptionKey: providerEncryptionKey,
+    });
+    await registerMetadata(instance, {
+      extractClient,
+      maxUploadBytes: config.parseMaxUploadMb * 1024 * 1024,
+      maxInFlight: config.parseMaxInflight,
+      userAgent: config.userAgent,
     });
     await registerKeys(instance);
     await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured });

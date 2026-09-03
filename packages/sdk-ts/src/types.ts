@@ -249,6 +249,117 @@ export interface ParseResponseFailure {
 
 export type ParseResponse = ParseResponseSuccess | ParseResponseFailure;
 
+export type MetadataFileType = 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'png' | 'jpg';
+
+/** How much a disclosed value gives away. An ordinal band, not a probability. */
+export type MetadataRisk = 'high' | 'medium' | 'low';
+
+export type MetadataCategory =
+  | 'location'
+  | 'identity'
+  | 'device'
+  | 'software'
+  | 'timestamp'
+  | 'content'
+  | 'other';
+
+export interface MetadataFinding {
+  /** Where it was read from: `exif`, `gps`, `xmp`, `docinfo`, `core`, `app`, `custom`, `png`, `tracked`. */
+  group: string;
+  key: string;
+  /** A long value is truncated and says so, so a cut value is never read as complete. */
+  value: string;
+  risk: MetadataRisk;
+  category: MetadataCategory;
+  /** False where the format cannot drop the entry without corrupting the file. */
+  removable: boolean;
+}
+
+/** Always carries all three bands, so absent and zero never have to be told apart. */
+export type MetadataRiskSummary = Record<MetadataRisk, number>;
+
+export interface MetadataRequest {
+  url: string;
+  timeout?: number;
+}
+
+export interface MetadataUpload {
+  file: Blob;
+  filename?: string;
+  timeout?: number;
+}
+
+export interface MetadataScanMetadata {
+  filename: string | null;
+  fileType: MetadataFileType;
+  sizeBytes: number;
+  contentHash: string;
+  sourceUrl?: string;
+  scannedAt: string;
+  timingMs: number;
+}
+
+export interface MetadataScan {
+  /** Sorted worst-first. */
+  findings: MetadataFinding[];
+  riskSummary: MetadataRiskSummary;
+  metadata: MetadataScanMetadata;
+}
+
+export interface MetadataResponseSuccess {
+  success: true;
+  data: MetadataScan;
+  /** A container opened but a part could not be read: the report is partial. */
+  warnings?: string[];
+}
+
+export interface MetadataResponseFailure {
+  success: false;
+  failure: FetchFailure;
+  warnings?: string[];
+}
+
+export type MetadataResponse = MetadataResponseSuccess | MetadataResponseFailure;
+
+export interface MetadataScrubReport {
+  /** Sorted worst-first. */
+  removed: MetadataFinding[];
+  /**
+   * Detected and NOT removed, each with `removable: false`. Non-empty means the
+   * file is not fully clean — check this before treating it as safe to publish.
+   */
+  retained: MetadataFinding[];
+  riskSummary: MetadataRiskSummary;
+  metadata: {
+    filename: string | null;
+    fileType: MetadataFileType;
+    bytesBefore: number;
+    bytesAfter: number;
+    sourceUrl?: string;
+    scrubbedAt: string;
+    timingMs: number;
+  };
+  warnings?: string[];
+}
+
+/** A successful scrub: the cleaned bytes, plus what was taken out and what stayed. */
+export interface MetadataScrubSuccess {
+  success: true;
+  /** The cleaned file. */
+  data: Blob;
+  /** The name the API suggests: `<original>.scrubbed.<ext>`. */
+  filename: string;
+  report: MetadataScrubReport;
+}
+
+export interface MetadataScrubFailure {
+  success: false;
+  failure: FetchFailure;
+  warnings?: string[];
+}
+
+export type MetadataScrubResponse = MetadataScrubSuccess | MetadataScrubFailure;
+
 export interface MapRequest {
   url: string;
   search?: string;

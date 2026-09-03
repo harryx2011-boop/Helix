@@ -609,6 +609,101 @@ export type ListModelsResponse =
   | { success: true; provider: ProviderName; models: ProviderModel[] }
   | { success: false; provider: ProviderName; failure: { reason: ListModelsFailureReason; message: string } };
 
+export type MetadataFileType = 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'png' | 'jpg';
+
+/** How much a disclosed value gives away. An ordinal band, not a probability. */
+export type MetadataRisk = 'high' | 'medium' | 'low';
+
+export type MetadataCategory =
+  | 'location'
+  | 'identity'
+  | 'device'
+  | 'software'
+  | 'timestamp'
+  | 'content'
+  | 'other';
+
+export interface MetadataFinding {
+  /** Where it was read from: `exif`, `gps`, `xmp`, `docinfo`, `core`, `app`, `custom`, `png`, `tracked`. */
+  group: string;
+  key: string;
+  value: string;
+  risk: MetadataRisk;
+  category: MetadataCategory;
+  /** False where the format cannot drop the entry without corrupting the file. */
+  removable: boolean;
+}
+
+/** Always carries all three bands, so absent and zero never have to be told apart. */
+export type MetadataRiskSummary = Record<MetadataRisk, number>;
+
+export interface MetadataRequest {
+  url: string;
+  timeout?: number;
+}
+
+export interface MetadataScanMetadata {
+  filename: string | null;
+  fileType: MetadataFileType;
+  sizeBytes: number;
+  contentHash: string;
+  sourceUrl?: string;
+  scannedAt: string;
+  timingMs: number;
+}
+
+export interface MetadataScan {
+  /** Sorted worst-first. */
+  findings: MetadataFinding[];
+  riskSummary: MetadataRiskSummary;
+  metadata: MetadataScanMetadata;
+}
+
+export interface MetadataResponseSuccess {
+  success: true;
+  data: MetadataScan;
+  /** A container opened but a part could not be read: the report is partial. */
+  warnings?: string[];
+}
+
+export interface MetadataResponseFailure {
+  success: false;
+  failure: FetchFailure;
+  warnings?: string[];
+}
+
+export type MetadataResponse = MetadataResponseSuccess | MetadataResponseFailure;
+
+export interface MetadataScrubReport {
+  removed: MetadataFinding[];
+  /**
+   * Detected and NOT removed, each with `removable: false`. Non-empty means the
+   * file is not fully clean.
+   */
+  retained: MetadataFinding[];
+  riskSummary: MetadataRiskSummary;
+  metadata: {
+    filename: string | null;
+    fileType: MetadataFileType;
+    bytesBefore: number;
+    bytesAfter: number;
+    sourceUrl?: string;
+    scrubbedAt: string;
+    timingMs: number;
+  };
+  warnings?: string[];
+}
+
+export interface MetadataScrubSuccess {
+  success: true;
+  /** The cleaned file, held in memory for the download button. */
+  blob: Blob;
+  filename: string;
+  report: MetadataScrubReport;
+}
+
+export type MetadataScrubResponse = MetadataScrubSuccess | MetadataResponseFailure;
+
 export interface HelixClientOptions {
   baseUrl?: string;
   apiKey: string;
@@ -675,6 +770,68 @@ export class HelixClient {
 
   async parse(request: ParseRequest | FormData, signal?: AbortSignal): Promise<ParseResponse> {
     return this.post<ParseResponse>('/parse', request, signal);
+  }
+
+  async metadataScan(request: MetadataRequest | FormData, signal?: AbortSignal): Promise<MetadataResponse> {
+    return this.post<MetadataResponse>('/metadata', request, signal);
+  }
+
+  /**
+   * `POST /v1/metadata/scrub` answers with the cleaned file and puts the report
+   * in a header, so this unwraps both rather than going through `post()`, which
+   * assumes a JSON body.
+   */
+  async metadataScrub(request: MetadataRequest | FormData, signal?: AbortSignal): Promise<MetadataScrubResponse> {
+    const isFormData = typeof FormData !== 'undefined' && request instanceof FormData;
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/metadata/scrub`, {
+        method: 'POST',
+        headers: isFormData
+          ? { Authorization: `Bearer ${this.apiKey}` }
+          : { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
+        body: isFormData ? (request as FormData) : JSON.stringify(request),
+        ...(signal ? { signal } : {}),
+      });
+    } catch (error) {
+      throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+    }
+
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => undefined)) as ApiErrorBody | undefined;
+      throw new HelixApiError(
+        errorBody?.message ?? `Request failed with status ${response.status}`,
+        response.status,
+        errorBody,
+      );
+    }
+
+    // A typed failure comes back as JSON in the usual envelope rather than as
+    // file bytes; the content type is what tells the two apart.
+    if (response.headers.get('content-type')?.includes('application/json')) {
+      return (await response.json()) as MetadataResponseFailure;
+    }
+
+    const header = response.headers.get('x-helix-metadata-report');
+    if (!header) {
+      // Showing the file with an invented empty report would claim nothing was
+      // found, which is worse than saying the report is missing.
+      throw new HelixApiError('The scrub returned a file without its metadata report.', 502);
+    }
+
+    let report: MetadataScrubReport;
+    try {
+      report = JSON.parse(header) as MetadataScrubReport;
+    } catch {
+      throw new HelixApiError('The scrub returned a metadata report that was not valid JSON.', 502);
+    }
+
+    return {
+      success: true,
+      blob: await response.blob(),
+      filename: filenameFromDisposition(response.headers.get('content-disposition')) ?? 'file.scrubbed',
+      report,
+    };
   }
 
   async interact(request: InteractRequest, signal?: AbortSignal): Promise<InteractResponse> {
@@ -793,4 +950,18 @@ export class HelixClient {
 
     return response.json() as Promise<T>;
   }
+}
+
+/** Pull the suggested filename out of a Content-Disposition header. */
+function filenameFromDisposition(header: string | null): string | undefined {
+  if (!header) return undefined;
+  const star = /filename\*=(?:UTF-8|utf-8)''([^;]+)/.exec(header);
+  if (star?.[1]) {
+    try {
+      return decodeURIComponent(star[1]);
+    } catch {
+      return star[1];
+    }
+  }
+  return /filename="?([^";]+)"?/.exec(header)?.[1]?.trim() || undefined;
 }

@@ -10,6 +10,8 @@ import type {
   InteractResponse,
   JobAccepted,
   MapResponse,
+  MetadataResponse,
+  MetadataScrubResponse,
   MonitorResponse,
   ParseResponse,
   ScrapeResponse,
@@ -19,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { MetadataStrip } from '@/components/result/metadata-strip';
+import { MetadataScanView, MetadataScrubView } from '@/components/result/metadata-report';
 import { MarkdownView } from '@/components/result/markdown-view';
 import { JsonView } from '@/components/result/json-view';
 import { FailurePanel } from '@/components/result/failure-panel';
@@ -46,6 +49,8 @@ export type PlaygroundResult =
   | { kind: 'search'; response: SearchResponse }
   | { kind: 'crawl'; response: CrawlResponse }
   | { kind: 'parse'; response: ParseResponse }
+  | { kind: 'metadata'; response: MetadataResponse }
+  | { kind: 'metadata-scrub'; response: MetadataScrubResponse }
   | { kind: 'interact'; response: InteractResponse }
   | { kind: 'monitor'; response: MonitorResponse }
   | { kind: 'handoff'; jobId: string }
@@ -286,6 +291,38 @@ export function Results({ result, loading, timingMs, error }: ResultsProps) {
       return (
         <div className={wrapperClass}>
           <DocumentResult data={response.data} timingMs={timingMs} warnings={response.warnings} {...(response.usage ? { usage: response.usage } : {})} />
+        </div>
+      );
+    }
+
+    case 'metadata': {
+      const response = result.response;
+      if (!response.success) {
+        return (
+          <div className={wrapperClass}>
+            <FailurePanel failure={response.failure} />
+          </div>
+        );
+      }
+      return (
+        <div className={wrapperClass}>
+          <MetadataScanView scan={response.data} {...(response.warnings ? { warnings: response.warnings } : {})} />
+        </div>
+      );
+    }
+
+    case 'metadata-scrub': {
+      const response = result.response;
+      if (!response.success) {
+        return (
+          <div className={wrapperClass}>
+            <FailurePanel failure={response.failure} />
+          </div>
+        );
+      }
+      return (
+        <div className={wrapperClass}>
+          <MetadataScrubView result={response} />
         </div>
       );
     }

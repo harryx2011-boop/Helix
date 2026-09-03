@@ -37,6 +37,16 @@ export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
     responseShape: '`{ success: true, data: { markdown, html, rawHtml, text, links, screenshot, json, chunks, metadata }, warnings, usage }` where only requested formats are present, `warnings` is always an array, and `usage` (model, tokens, blocks kept) appears only when a model ran. A format that failed after the page was read comes back `null` with a warning naming it. Otherwise `{ success: false, failure: { reason, detail, statusCode, detectedBy, tier, tiersAttempted, profile, escalationAvailable }, warnings }` inside a 200; a 400 means the request itself was wrong (`invalid_request`, `invalid_schema`, `proxy_unavailable`).',
     failureReasons: ALL_FAILURE_REASONS,
   },
+  metadata: {
+    id: 'metadata',
+    purpose:
+      'Report what a file discloses about the person and machine that made it — EXIF and GPS in images, XMP, PDF DocInfo, Office docProps — and return a copy with that removed. Send the file as a multipart `file` part or point at a `url` and Helix fetches it first.',
+    whenToUse:
+      'Reach for Metadata when the question is what a file reveals rather than what it says: EXIF and GPS in a photo, XMP, PDF DocInfo, Office docProps (core, app and custom). `POST /v1/metadata` reports and changes nothing; `POST /v1/metadata/scrub` answers with the cleaned file as the response body and puts the report in the `X-Helix-Metadata-Report` header, so you can stream it straight to disk. Findings are sorted worst-first and carry a `risk` band set from the key and raised — never lowered — when the value itself looks like an email address or a home-directory path. Read `retained` before treating a scrubbed file as clean: some entries cannot be dropped without corrupting the file, and those are reported rather than silently kept.',
+    responseShape:
+      "`{ success, data: { findings: [{ group, key, value, risk, category, removable }], riskSummary: { high, medium, low }, metadata: { filename, fileType, sizeBytes, contentHash, sourceUrl } }, warnings }` on scan. Scrub answers with the file bytes plus a `MetadataScrubReport` header carrying `removed`, `retained`, `riskSummary` and byte counts. A remote fetch problem, an unsupported type or a corrupt file is `{ success: false, failure: { reason, detail } }`; a file over the operator's upload ceiling is HTTP 413.",
+    failureReasons: ['unsupported_type', 'http_error', 'dns', 'tls', 'timeout', 'empty', 'service_unavailable'],
+  },
   parse: {
     id: 'parse',
     purpose: 'Convert a document (PDF, DOCX, PPTX, XLSX) into markdown, and optionally into JSON against a schema or prompt, in the same envelope Scrape returns for web pages. Send the file as a multipart `file` part or point at a `url` and Helix fetches it first.',

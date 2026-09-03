@@ -61,6 +61,10 @@ const REQUEST: Record<Endpoint, string> = {
   "schedule": "0 * * * *",
   "sensitivity": "significant"
 }`,
+  metadata: `POST /v1/metadata
+{
+  "url": "https://example.com/files/report.pdf"
+}`,
 };
 
 const RESPONSE: Record<Endpoint, string> = {
@@ -116,6 +120,22 @@ const RESPONSE: Record<Endpoint, string> = {
   "nextCheckAt": "2026-08-24T13:00:00.000Z",
   "stats": { "checks": 0, "changes": 0 }
 }`,
+  metadata: `{
+  "success": true,
+  "data": {
+    "findings": [
+      {
+        "group": "docinfo",
+        "key": "Author",
+        "value": "Jane Roe",
+        "risk": "high",
+        "category": "identity",
+        "removable": true
+      }
+    ],
+    "riskSummary": { "high": 1, "medium": 2, "low": 4 }
+  }
+}`,
 };
 
 /** One tabbed request/response panel covering all six capabilities, each tab linking to its own page. */
@@ -125,7 +145,7 @@ export function Capabilities() {
 
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="01" total="06" label="CAPABILITIES" sub="Six endpoints" />
+      <FrameBand step="01" total="07" label="CAPABILITIES" sub="Six endpoints" />
 
       <div className="py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">

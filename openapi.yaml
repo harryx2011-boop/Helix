@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Helix
-  version: 1.2.0
+  version: 1.4.0
   summary: Self-hostable, BYOK web-data API.
   description: |
     Helix turns web pages and documents into clean, structured, LLM-ready data.
@@ -59,6 +59,8 @@ tags:
     description: Single-resource read. Web pages and documents share one envelope.
   - name: Parse
     description: Documents by upload or URL, returned in the Scrape envelope.
+  - name: Metadata
+    description: What a file discloses about who and what made it, and a copy without it.
   - name: Crawl
     description: Multi-page discovery and read.
   - name: Search
@@ -236,6 +238,186 @@ paths:
         '429': { $ref: '#/components/responses/RateLimited' }
         '503':
           description: This instance is already holding `HELIX_PARSE_MAX_INFLIGHT` parses in memory. Retry after the `Retry-After` header.
+          headers:
+            Retry-After:
+              schema: { type: integer }
+              description: Seconds to wait before retrying.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /metadata:
+    post:
+      tags: [Metadata]
+      summary: Scan a file's metadata
+      description: |
+        Reports what a PDF, DOCX, PPTX, XLSX, PNG or JPEG discloses about the
+        person and machine that produced it: EXIF and GPS from images, XMP,
+        PDF DocInfo, and Office `docProps` (core, app and custom).
+
+        Two ways to send the file, the same as `/parse`. A JSON body with `url`
+        makes Helix fetch it first; a `multipart/form-data` body with a `file`
+        part uploads it directly.
+
+        **Findings are ranked, not merely listed.** Each carries a `risk` band
+        (`high`/`medium`/`low`) and a `category`, and the response is sorted
+        worst-first. The band comes from the key the value was read from, and is
+        raised — never lowered — when the value itself looks like an email
+        address or a home-directory path. GPS coordinates are additionally
+        resolved to a decimal `Coordinates` pair, because a raw DMS triple is
+        the least readable form of the most consequential finding.
+
+        `riskSummary` always carries all three bands, so a caller rendering a
+        summary never has to tell an absent band from a zero one. A container
+        that opened but whose part could not be read returns the findings it did
+        get plus a `warnings` entry: a partial report must never be read as a
+        clean one.
+
+        Synchronous, and nothing is stored. The upload ceiling and in-flight cap
+        are the operator's (`HELIX_PARSE_MAX_UPLOAD_MB`,
+        `HELIX_PARSE_MAX_INFLIGHT`), answered with `413` and `503`. The `url`
+        path only fetches public hosts over http or https, checked on the first
+        request and on every redirect.
+      operationId: metadataScan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MetadataRequest' }
+            examples:
+              url:
+                summary: Scan a remote file
+                value:
+                  url: 'https://example.com/files/report.pdf'
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/MetadataUpload' }
+            encoding:
+              file: { contentType: 'application/pdf, application/vnd.openxmlformats-officedocument.*, image/png, image/jpeg' }
+      responses:
+        '200':
+          description: |
+            The scan resolved. Check `success` — a remote fetch failure, an
+            unsupported file type or an unreachable reader is reported here as a
+            typed failure rather than as an HTTP error.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MetadataResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: The file (uploaded or fetched) exceeds this instance's upload ceiling.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '415':
+          description: The request body is neither JSON nor `multipart/form-data`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: This instance is already holding `HELIX_PARSE_MAX_INFLIGHT` files in memory. Retry after the `Retry-After` header.
+          headers:
+            Retry-After:
+              schema: { type: integer }
+              description: Seconds to wait before retrying.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /metadata/scrub:
+    post:
+      tags: [Metadata]
+      summary: Strip a file's metadata
+      description: |
+        Returns the same file with its metadata removed. **The response body is
+        the cleaned file**, not a JSON envelope — a base64 wrapper would hold two
+        more copies of a 25 MB upload — so the response can be streamed straight
+        to disk. `Content-Disposition` names it `<original>.scrubbed.<ext>`.
+
+        The report rides in the `X-Helix-Metadata-Report` header as compact JSON
+        (a `MetadataScrubReport`), with `X-Helix-Metadata-Removed` and
+        `X-Helix-Metadata-Retained` as bare counts for a caller that only needs
+        to branch.
+
+        **Read `retained` before treating a file as clean.** Formats differ in
+        what can be dropped without corrupting the result: a Word comments part
+        is still pointed at by a relationship, and pypdfium2 re-emits DocInfo it
+        cannot write. Those are reported as retained with `removable: false`,
+        and the PDF path proves the outcome by re-scanning its own output rather
+        than assuming the rewrite worked. Acting on "clean" while something
+        remains is the failure this endpoint exists to prevent.
+
+        Removal is structural, not cosmetic: a metadata segment is dropped whole
+        rather than emptied, since a zero-length EXIF segment still tells a
+        reader the file once carried one. Office containers are rebuilt with
+        flattened entry timestamps, because a zip entry's own mtime would leak
+        what the scrub just removed. Image data and rendering-relevant chunks
+        (colour profiles, gamma) are never touched.
+
+        On a typed failure — an unsupported type, a corrupt file, an unreachable
+        reader — the response is `application/json` in the usual envelope
+        instead of file bytes. Branch on `Content-Type`.
+      operationId: metadataScrub
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MetadataRequest' }
+            examples:
+              url:
+                summary: Scrub a remote file
+                value:
+                  url: 'https://example.com/files/photo.jpg'
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/MetadataUpload' }
+            encoding:
+              file: { contentType: 'application/pdf, application/vnd.openxmlformats-officedocument.*, image/png, image/jpeg' }
+      responses:
+        '200':
+          description: |
+            The cleaned file. On a typed failure the body is `application/json`
+            carrying a `MetadataResponse` with `success: false` instead.
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+              description: 'attachment; filename="<original>.scrubbed.<ext>"'
+            X-Helix-Metadata-Report:
+              schema: { $ref: '#/components/schemas/MetadataScrubReport' }
+              description: The report, as compact JSON on a single header line.
+            X-Helix-Metadata-Removed:
+              schema: { type: integer }
+              description: How many findings were removed.
+            X-Helix-Metadata-Retained:
+              schema: { type: integer }
+              description: How many were detected and could NOT be removed. Non-zero means the file is not fully clean.
+            X-RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+            application/json:
+              schema: { $ref: '#/components/schemas/MetadataResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: The file (uploaded or fetched) exceeds this instance's upload ceiling.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '415':
+          description: The request body is neither JSON nor `multipart/form-data`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: This instance is already holding `HELIX_PARSE_MAX_INFLIGHT` files in memory. Retry after the `Retry-After` header.
           headers:
             Retry-After:
               schema: { type: integer }
@@ -1895,6 +2077,133 @@ components:
           type: array
           items: { type: string }
           description: 'Non-fatal notes: a missing text layer with OCR off, or a failed model step when the parse itself succeeded.'
+
+    MetadataRequest:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The file to fetch. An HTML page here is a typed `unsupported_type` failure.
+        timeout:
+          type: integer
+          default: 30000
+          minimum: 1000
+          maximum: 300000
+          description: Remote fetch budget in milliseconds, for the `url` path.
+
+    MetadataUpload:
+      type: object
+      required: [file]
+      properties:
+        file: { type: string, format: binary }
+        timeout: { type: integer, description: Remote fetch budget in milliseconds; ignored on the upload path. }
+
+    MetadataFinding:
+      type: object
+      required: [group, key, value, risk, category, removable]
+      properties:
+        group:
+          type: string
+          description: Where it was read from, e.g. `exif`, `gps`, `xmp`, `docinfo`, `core`, `app`, `custom`, `png`, `tracked`.
+        key: { type: string, description: 'The tag or property name, e.g. GPSLatitude, lastModifiedBy.' }
+        value:
+          type: string
+          description: The disclosed value. A long value is truncated and says so, so a cut value is never read as a complete one.
+        risk:
+          type: string
+          enum: [high, medium, low]
+          description: |
+            How much it gives away. An ordinal band, not a probability. Set from
+            the key, then raised — never lowered — when the value itself looks
+            like an email address or a home-directory path.
+        category:
+          type: string
+          enum: [location, identity, device, software, timestamp, content, other]
+        removable:
+          type: boolean
+          description: False where the format cannot drop the entry without corrupting the file.
+
+    MetadataRiskSummary:
+      type: object
+      required: [high, medium, low]
+      description: Counts per band. Always carries all three, so absent and zero never have to be told apart.
+      properties:
+        high: { type: integer }
+        medium: { type: integer }
+        low: { type: integer }
+
+    MetadataScanMetadata:
+      type: object
+      required: [fileType, sizeBytes, contentHash, scannedAt, timingMs]
+      properties:
+        filename: { type: [string, 'null'] }
+        fileType:
+          type: string
+          enum: [pdf, docx, pptx, xlsx, png, jpg]
+        sizeBytes: { type: integer }
+        contentHash: { type: string, description: SHA-256 of the file bytes. }
+        sourceUrl: { type: string, format: uri, description: Present on the `url` path only. }
+        scannedAt: { type: string, format: date-time }
+        timingMs: { type: integer }
+
+    MetadataScan:
+      type: object
+      required: [findings, riskSummary, metadata]
+      properties:
+        findings:
+          type: array
+          description: Sorted worst-first, so the highest-consequence disclosure reads at the top.
+          items: { $ref: '#/components/schemas/MetadataFinding' }
+        riskSummary: { $ref: '#/components/schemas/MetadataRiskSummary' }
+        metadata: { $ref: '#/components/schemas/MetadataScanMetadata' }
+
+    MetadataResponse:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/MetadataScan' }
+        failure: { $ref: '#/components/schemas/FetchFailure' }
+        warnings:
+          type: array
+          items: { type: string }
+          description: A container opened but a part of it could not be read. The report is partial; do not read it as clean.
+
+    MetadataScrubReport:
+      type: object
+      required: [removed, retained, riskSummary, metadata]
+      description: The payload of the `X-Helix-Metadata-Report` header, as compact JSON.
+      properties:
+        removed:
+          type: array
+          description: Sorted worst-first.
+          items: { $ref: '#/components/schemas/MetadataFinding' }
+        retained:
+          type: array
+          description: |
+            Detected and NOT removed, each with `removable: false`. Non-empty
+            means the file is not fully clean; check this before treating it as
+            safe to publish.
+          items: { $ref: '#/components/schemas/MetadataFinding' }
+        riskSummary: { $ref: '#/components/schemas/MetadataRiskSummary' }
+        metadata:
+          type: object
+          required: [fileType, bytesBefore, bytesAfter, scrubbedAt, timingMs]
+          properties:
+            filename: { type: [string, 'null'] }
+            fileType:
+              type: string
+              enum: [pdf, docx, pptx, xlsx, png, jpg]
+            bytesBefore: { type: integer }
+            bytesAfter: { type: integer }
+            sourceUrl: { type: string, format: uri }
+            scrubbedAt: { type: string, format: date-time }
+            timingMs: { type: integer }
+        warnings:
+          type: array
+          items: { type: string }
 
     MapRequest:
       type: object

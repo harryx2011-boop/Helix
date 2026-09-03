@@ -29,6 +29,11 @@ import {
   type ParseRequest,
   type ParseResponse,
   type ParseUpload,
+  type MetadataRequest,
+  type MetadataResponse,
+  type MetadataScrubReport,
+  type MetadataScrubResponse,
+  type MetadataUpload,
   type RemoveProviderResponse,
   type ReplayDeliveryResponse,
   type SaveProviderRequest,
@@ -56,6 +61,13 @@ function buildParseFormData(upload: ParseUpload): FormData {
   return form;
 }
 
+function buildMetadataFormData(upload: MetadataUpload): FormData {
+  const form = new FormData();
+  form.set('file', upload.file, upload.filename);
+  if (upload.timeout !== undefined) form.set('timeout', String(upload.timeout));
+  return form;
+}
+
 export class HelixClient {
   private readonly baseUrl: string;
   private readonly apiKey: string;
@@ -72,6 +84,79 @@ export class HelixClient {
   async parse(request: ParseRequest | ParseUpload, signal?: AbortSignal): Promise<ParseResponse> {
     const body = 'file' in request ? buildParseFormData(request) : request;
     return this.post<ParseResponse>('/parse', body, signal);
+  }
+
+  /** Read what a file discloses about the person and machine that made it. */
+  async metadataScan(
+    request: MetadataRequest | MetadataUpload,
+    signal?: AbortSignal,
+  ): Promise<MetadataResponse> {
+    const body = 'file' in request ? buildMetadataFormData(request) : request;
+    return this.post<MetadataResponse>('/metadata', body, signal);
+  }
+
+  /**
+   * Strip a file's metadata and get the cleaned bytes back.
+   *
+   * The endpoint answers with the file itself and puts the report in a header,
+   * so this unwraps both into one value. Check `report.retained` before
+   * treating the result as clean: some formats cannot drop every entry without
+   * corrupting the file, and those are reported rather than silently kept.
+   */
+  async metadataScrub(
+    request: MetadataRequest | MetadataUpload,
+    signal?: AbortSignal,
+  ): Promise<MetadataScrubResponse> {
+    const isUpload = 'file' in request;
+    const body = isUpload ? buildMetadataFormData(request) : request;
+
+    let response: Response;
+    try {
+      response = await fetch(this.url('/metadata/scrub'), {
+        method: 'POST',
+        headers: isUpload ? this.headers() : this.headers({ 'Content-Type': 'application/json' }),
+        body: isUpload ? (body as FormData) : JSON.stringify(body),
+        ...(signal ? { signal } : {}),
+      });
+    } catch (error) {
+      throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+    }
+
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => undefined)) as ApiErrorBody | undefined;
+      throw new HelixApiError(
+        errorBody?.message ?? `Request failed with status ${response.status}`,
+        response.status,
+        errorBody,
+      );
+    }
+
+    // A typed failure comes back as JSON in the usual envelope rather than as
+    // file bytes, so the content type is what tells the two apart.
+    if (response.headers.get('content-type')?.includes('application/json')) {
+      return (await response.json()) as MetadataScrubResponse;
+    }
+
+    const header = response.headers.get('x-helix-metadata-report');
+    if (!header) {
+      // Handing back bytes with an invented empty report would claim nothing was
+      // found, which is a worse answer than saying the report is missing.
+      throw new HelixApiError('The scrub returned a file without its metadata report.', 502);
+    }
+
+    let report: MetadataScrubReport;
+    try {
+      report = JSON.parse(header) as MetadataScrubReport;
+    } catch {
+      throw new HelixApiError('The scrub returned a metadata report that was not valid JSON.', 502);
+    }
+
+    return {
+      success: true,
+      data: await response.blob(),
+      filename: filenameFromDisposition(response.headers.get('content-disposition')) ?? 'file.scrubbed',
+      report,
+    };
   }
 
   async map(request: MapRequest, signal?: AbortSignal): Promise<MapResponse> {
@@ -296,4 +381,18 @@ export class HelixClient {
     }
     return this.handle<T>(response, true);
   }
+}
+
+/** Pull the suggested filename out of a Content-Disposition header. */
+function filenameFromDisposition(header: string | null): string | undefined {
+  if (!header) return undefined;
+  const star = /filename\*=(?:UTF-8|utf-8)''([^;]+)/.exec(header);
+  if (star?.[1]) {
+    try {
+      return decodeURIComponent(star[1]);
+    } catch {
+      return star[1];
+    }
+  }
+  return /filename="?([^";]+)"?/.exec(header)?.[1]?.trim() || undefined;
 }

@@ -1,8 +1,8 @@
 # Persona — plan of record
 
-> A sub-brand under Helix at **persona-ai.vercel.app**: a searchable library of role-specific system prompts, each with setup guides, a live templating wizard and an in-browser editor with export. Free, anonymous by default, and a Helix account (Clerk) unlocks cloud-saved forks and shareable links. This file is the plan; the PRD it descends from is `research/persona/persona-prd-final.md`.
+> A sub-brand under Helix at **persona-helix.vercel.app**: a searchable library of role-specific system prompts, each with setup guides, a live templating wizard and an in-browser editor with export. Free, anonymous by default, and a Helix account (Clerk) unlocks cloud-saved forks and shareable links. This file is the plan; the PRD it descends from is `research/persona/persona-prd-final.md`.
 
-Decided 2026-09-02. Status: **Phase 0 shipped** (schema, dashboard keys); Phases 1–5 open.
+Decided 2026-09-02. Status: **Phases 0–3 shipped the same day** (schema, dashboard keys, the Supabase project, `apps/persona` with landing, library, role pages, wizard, editor and export, deployed to persona-helix.vercel.app); Phase 4 (accounts) and 5 open.
 
 ---
 
@@ -16,7 +16,7 @@ Persona's first three seconds sell **breadth**: the library is the hook, not spe
 
 | | Decision | Why |
 |---|---|---|
-| Code | `apps/persona` in this monorepo | Shares the Clerk application, the Supabase project, `packages/`, lint/tsc config and the deploy habit. A separate repo would mean a second copy of the auth glue and the profile row. |
+| Code | `apps/persona` in this monorepo (shipped 2026-09-02) | Shares the Clerk application, the Supabase project, `packages/`, lint/tsc config and the deploy habit. A separate repo would mean a second copy of the auth glue and the profile row. |
 | Stack | Next.js 15 · Tailwind · shadcn/ui · framer-motion (role pill, hero) · CSS for sidebar, progress bars, skeletons · `lucide-react` only | As the PRD. No company favicons anywhere: platforms are generic (`Mail`, `MessageCircle`, `Terminal`, `Shield`). |
 | Port | **4200** (the block Noted freed); no backend of its own | Supabase is the backend. Add it to the global port table when the app is scaffolded. |
 | Vercel | New project `persona-ai`, Root Directory `apps/persona`, `outputFileTracingRoot` = repo root (same trap Helix hit) | One repo, two Vercel projects, each watching its own root dir. |

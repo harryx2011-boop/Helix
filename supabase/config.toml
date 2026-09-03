@@ -7,9 +7,9 @@
 project_id = "helix"
 
 [db]
-# Matches the stack's Postgres (docker-compose runs pgvector/pgvector:pg16).
+# Matches the stack's Postgres (the Supabase project runs Postgres 17; compose runs pg16 locally).
 # A mismatch makes `db push` diff against the wrong shadow database.
-major_version = 16
+major_version = 17
 
 [db.migrations]
 schema_paths = []

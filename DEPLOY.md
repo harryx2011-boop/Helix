@@ -1,8 +1,13 @@
 # Deploying the hosted backend
 
-The dashboard is live at `https://helixapi-dev.vercel.app` with nothing behind
-it: no Supabase project, and neither `apps/api` nor `apps/extract` is deployed.
-Keys, playground, Agent and Providers therefore work locally and nowhere else.
+The dashboard is live at `https://helixapi-dev.vercel.app`. **Done on
+2026-09-02:** the Supabase project exists (`Helix`, ref `gytknetqttkdmkhmysbm`,
+us-east-2, Postgres 17), `schema.sql` is applied, the CLI is linked and the
+hosted migrations are marked applied, the dashboard's env is set locally and in
+Vercel production, and a Clerk sign-in → key → Supabase row round trip passed
+(`research/firecrawl-capture/probe-hosted-keys.mjs`). **Still open:** the Clerk
+webhook (step 3.2), and neither `apps/api` nor `apps/extract` is deployed, so
+the playground, Agent and Providers work locally and nowhere else.
 
 This is the sequence that changes that. Steps marked **you** need credentials or
 an account only you have; the rest is in the repo.
@@ -14,23 +19,25 @@ tables sit beside them. There is no second Postgres and no key sync.
 
 ---
 
-## 1. Create the Supabase project — **you**
+## 1. Create the Supabase project — **you** (done)
 
 1. Create a project at https://supabase.com/dashboard (region close to the
    Vercel deployment; the Micro compute tier is enough to start).
 2. From **Project Settings → API** copy:
    - the **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
    - the **secret / service_role** key → `SUPABASE_SECRET_KEY`
-3. From **Project Settings → Database** copy the **direct connection** string
-   (port 5432, not the transaction pooler on 6543 — the job queue's
-   `FOR UPDATE SKIP LOCKED` and the monitor claims need session state)
-   → `DATABASE_URL` for the API.
+3. From the **Connect** button at the top of the dashboard copy the
+   **Session pooler** string (port 5432, host `aws-…pooler.supabase.com`,
+   user `postgres.<ref>`) → `DATABASE_URL` for the API. Not the transaction
+   pooler on 6543 (the job queue's `FOR UPDATE SKIP LOCKED` and the monitor
+   claims need session state), and not the "direct connection" host, which is
+   IPv6-only and unreachable from most hosts and home networks.
 
 The dashboard treats Supabase as absent unless both of the first two are set
 (`apps/dashboard/lib/supabase/server.ts`); `/api/app/keys` then answers 503 and
 the keys page falls back to the instance/ephemeral flow.
 
-## 2. Apply the schema
+## 2. Apply the schema (done)
 
 Fresh project, one shot: open the SQL editor and run `supabase/schema.sql`. It
 contains the API's eight migrations, the hosted ones, and the
@@ -38,14 +45,17 @@ contains the API's eight migrations, the hosted ones, and the
 nothing to apply.
 
 Anything later goes in as a new file under `supabase/migrations/`, applied
-with the CLI:
+with the CLI (the repo is linked; `supabase/.temp/` holds the link and is
+gitignored, so a fresh clone runs `supabase link --project-ref gytknetqttkdmkhmysbm` once):
 
 ```bash
-supabase link --project-ref <ref>
-supabase migration repair --status applied 0001 0002   # once, after schema.sql
 supabase db push
 node supabase/build-schema.mjs                          # keep schema.sql current
+supabase gen types typescript --linked --schema public > apps/dashboard/lib/supabase/database.types.ts
 ```
+
+`migration repair --status applied 0001 0002` was run once after schema.sql, so
+`db push` only sees files newer than 0002.
 
 API-side schema changes stay in `apps/api/migrations/` and apply at boot as
 they always have; rerun the generator afterwards so `schema.sql` includes them.
@@ -60,7 +70,7 @@ they always have; rerun the generator afterwards so `schema.sql` includes them.
    events `user.created`, `user.updated`, `user.deleted`; copy the signing
    secret → `CLERK_WEBHOOK_SIGNING_SECRET`. This is what creates the
    `profiles` row a key hangs off.
-3. Persona (`persona-ai.vercel.app`) uses the **same** Clerk application; it
+3. Persona (`persona-helix.vercel.app`) uses the **same** Clerk application; it
    gets its own publishable/secret keys from that application and needs no
    second webhook.
 
@@ -81,13 +91,13 @@ Dockerfile: `apps/api/Dockerfile`.
 
 | Env | Notes |
 |---|---|
-| `DATABASE_URL` | the Supabase direct connection string from step 1 |
+| `DATABASE_URL` | the Supabase Session-pooler string from step 1 |
 | `HELIX_BOOTSTRAP_KEY` | the first API key; without it every request is rejected |
 | `HELIX_ENCRYPTION_KEY` | 32 bytes hex/base64. Set it explicitly in production so rotating the bootstrap key does not invalidate stored provider keys |
 | `HELIX_INTERNAL_ADMIN_TOKEN` | gates `/settings` and `/internal/*`. Unset means neither router is registered |
 | `HELIX_EXTRACT_URL` | the step-4 deployment |
 | `HELIX_FETCH_URL` | optional; the Rust tier. Unset degrades to the other tiers |
-| `HELIX_CORS_ORIGINS` | must include `https://helixapi-dev.vercel.app` and `https://persona-ai.vercel.app` |
+| `HELIX_CORS_ORIGINS` | must include `https://helixapi-dev.vercel.app` and `https://persona-helix.vercel.app` |
 | `HELIX_PUBLIC_URL` | the API's own public URL; live-view links are built from it |
 
 Boot log should show every migration `skipped` (schema.sql seeded them) or,

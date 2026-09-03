@@ -74,5 +74,5 @@ export async function createHostedKey(name: string, rateLimit?: number): Promise
 }
 
 export async function revokeHostedKey(id: string): Promise<void> {
-  await call(`/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await call(`?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
 }

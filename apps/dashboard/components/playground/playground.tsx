@@ -55,6 +55,7 @@ export function Playground() {
   const [optionsOpen, setOptionsOpen] = React.useState(false);
   const [result, setResult] = React.useState<PlaygroundResult | undefined>(undefined);
   const [loading, setLoading] = React.useState(false);
+  const [pending, setPending] = React.useState<{ kind: PlaygroundResult['kind']; filename?: string | undefined } | undefined>(undefined);
   const [error, setError] = React.useState<string | undefined>(undefined);
   const [timingMs, setTimingMs] = React.useState<number | undefined>(undefined);
   const [codeDialog, setCodeDialog] = React.useState<
@@ -83,6 +84,10 @@ export function Playground() {
       setLoading(true);
       setError(undefined);
       setResult(undefined);
+      // The filename is only known on the upload path; the animation falls back
+      // to its own copy when the request came from a URL.
+      const uploaded = body instanceof FormData ? body.get('file') : null;
+      setPending({ kind, filename: uploaded instanceof File ? uploaded.name : undefined });
       const started = performance.now();
       try {
         const { body: responseBody } = await runEndpoint<unknown>(endpoint, body, apiKey, mode);
@@ -98,6 +103,7 @@ export function Playground() {
         setError(err instanceof HelixApiError ? err.message : 'Unexpected error contacting the API.');
       } finally {
         setLoading(false);
+        setPending(undefined);
       }
     },
     [apiKey],
@@ -218,7 +224,7 @@ export function Playground() {
       </div>
 
       <div className="min-h-[300px] overflow-x-auto rounded-card border border-border bg-background">
-        <Results result={result} loading={loading} timingMs={timingMs} error={error} />
+        <Results result={result} loading={loading} timingMs={timingMs} error={error} pending={pending} />
       </div>
 
 

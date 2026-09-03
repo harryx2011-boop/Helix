@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { MetadataStrip } from '@/components/result/metadata-strip';
 import { MetadataScanView, MetadataScrubView } from '@/components/result/metadata-report';
+import { MetadataScanning } from '@/components/result/metadata-scanning';
 import { MarkdownView } from '@/components/result/markdown-view';
 import { JsonView } from '@/components/result/json-view';
 import { FailurePanel } from '@/components/result/failure-panel';
@@ -63,6 +64,13 @@ interface ResultsProps {
   loading: boolean;
   timingMs: number | undefined;
   error: string | undefined;
+  /**
+   * What is currently in flight. A skeleton is the right placeholder for a
+   * response whose shape is known; a metadata read is work of unknown length
+   * over a file the user just handed over, and gets an animation that shows
+   * the work instead.
+   */
+  pending?: { kind: PlaygroundResult['kind']; filename?: string | undefined } | undefined;
 }
 
 function isJobAccepted(response: CrawlResponse): response is JobAccepted {
@@ -216,8 +224,16 @@ function DocumentResult({
   );
 }
 
-export function Results({ result, loading, timingMs, error }: ResultsProps) {
+export function Results({ result, loading, timingMs, error, pending }: ResultsProps) {
   if (loading) {
+    if (pending?.kind === 'metadata' || pending?.kind === 'metadata-scrub') {
+      return (
+        <MetadataScanning
+          mode={pending.kind === 'metadata-scrub' ? 'scrub' : 'scan'}
+          filename={pending.filename}
+        />
+      );
+    }
     return (
       <div className="flex flex-col gap-4 p-4">
         <div className="flex gap-2">

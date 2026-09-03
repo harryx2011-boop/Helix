@@ -94,6 +94,27 @@ const config: Config = {
           '0%, 100%': { opacity: '0.55', transform: 'scale(0.9) rotate(0deg)' },
           '50%': { opacity: '1', transform: 'scale(1) rotate(45deg)' },
         },
+        // The scan sweep travels the page and resets above it, so the line
+        // re-enters from off-screen rather than snapping back into view.
+        'metadata-sweep': {
+          '0%': { transform: 'translateY(-64px)' },
+          '100%': { transform: 'translateY(184px)' },
+        },
+        // A tag surfaces as the sweep passes it, holds while the sweep finishes
+        // the page, then clears before the next pass so the loop reads as a
+        // fresh scan rather than an accumulating pile.
+        'metadata-tag-in': {
+          '0%, 4%': { opacity: '0', transform: 'scale(0.94)' },
+          '12%, 72%': { opacity: '1', transform: 'scale(1)' },
+          '86%, 100%': { opacity: '0', transform: 'scale(1)' },
+        },
+        // The scrub reads the same mechanism backwards: the tag is already
+        // there and the sweep takes it away.
+        'metadata-tag-out': {
+          '0%, 4%': { opacity: '1', transform: 'scale(1)' },
+          '16%, 72%': { opacity: '0', transform: 'scale(0.94)' },
+          '92%, 100%': { opacity: '1', transform: 'scale(1)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 150ms cubic-bezier(0, 0, 0.2, 1)',
@@ -104,6 +125,12 @@ const config: Config = {
         'text-swap-out': 'text-swap-out 150ms ease-in-out both',
         'text-swap-in': 'text-swap-in 150ms ease-in-out both',
         sparkle: 'sparkle 2400ms cubic-bezier(0, 0, 0.2, 1) infinite',
+        // Duration is set per-instance so the sweep and the tags stay locked to
+        // one cycle; linear is correct here because a sweep at constant speed
+        // is the point — easing it would read as hesitation.
+        'metadata-sweep': 'metadata-sweep 2600ms linear infinite',
+        'metadata-tag-in': 'metadata-tag-in 2600ms cubic-bezier(0, 0, 0.2, 1) infinite',
+        'metadata-tag-out': 'metadata-tag-out 2600ms cubic-bezier(0, 0, 0.2, 1) infinite',
       },
     },
   },

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Fails when supabase/schema.sql is older than the migrations it claims to contain.
+ * Fails when the generated schema files are older than the migrations they claim
+ * to contain.
  *
  * schema.sql is the fresh-project bootstrap, so drift is invisible until someone
  * provisions a new project and silently inherits whatever the missing migrations
@@ -9,7 +10,7 @@
  * dashboard key columns to any signed-in user over PostgREST.
  */
 
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,10 +20,15 @@ const hostedMigrations = join(here, 'migrations');
 const schemaPath = join(here, 'schema.sql');
 
 const sqlFiles = (dir) => readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+const sourcesLine = (path) =>
+  readFileSync(path, 'utf8')
+    .split('\n')
+    .map((l) => l.replace(/\r$/, ''))
+    .find((l) => l.startsWith('-- Sources:'));
 
 const expected = [...sqlFiles(apiMigrations), ...sqlFiles(hostedMigrations)];
 
-const header = readFileSync(schemaPath, 'utf8').split('\n').find((l) => l.startsWith('-- Sources:'));
+const header = sourcesLine(schemaPath);
 if (!header) {
   console.error('schema.sql has no "-- Sources:" line. Run: node supabase/build-schema.mjs');
   process.exit(1);
@@ -45,4 +51,16 @@ if (missing.length || extra.length) {
   process.exit(1);
 }
 
-console.log(`schema.sql is current (${expected.length} migrations).`);
+// The re-runnable variant is derived from schema.sql, so it drifts the moment
+// schema.sql does and the two have to be regenerated together.
+const idem = join(here, 'schema-idempotent.sql');
+if (!existsSync(idem)) {
+  console.error('schema-idempotent.sql is missing. Run: node supabase/build-schema-idempotent.mjs');
+  process.exit(1);
+}
+if (sourcesLine(idem) !== header) {
+  console.error('schema-idempotent.sql is out of date. Run: node supabase/build-schema-idempotent.mjs');
+  process.exit(1);
+}
+
+console.log(`schema.sql and schema-idempotent.sql are current (${expected.length} migrations).`);

@@ -210,6 +210,7 @@ kbd {
   --m-bg-lighter: #fbfbfb;
   --m-surface: #ffffff;
   --m-ink: #0b1220;
+  --m-ink-rgb: 11 18 32;
   --m-border-faint: #ededed;
   --m-border-muted: #e8e8e8;
   --m-border-loud: #e6e6e6;
@@ -227,6 +228,7 @@ kbd {
   --violet-12: #7c3aed1f;
   --violet-8: #7c3aed14;
   --violet-4: #7c3aed0a;
+  --violet-rgb: 124 58 237;
   --violet-hover: #6d28d9;
   --violet-deep: #5b21b6;
 

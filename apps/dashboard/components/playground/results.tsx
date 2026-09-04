@@ -1,7 +1,21 @@
 'use client';
 
 import * as React from 'react';
-import { Code2, ExternalLink, FileText } from 'lucide-react';
+import {
+  ArrowLeft,
+  Braces,
+  Check,
+  CircleCheck,
+  CircleX,
+  Download,
+  ExternalLink,
+  FileText,
+  Image as ImageIcon,
+  Link2,
+  Share2,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react';
 import type {
   CrawlResponse,
   Document,
@@ -17,9 +31,13 @@ import type {
   ScrapeResponse,
   SearchResponse,
 } from '@/lib/api';
+import { endpointById } from '@/lib/catalog';
+import type { Endpoint } from '@/lib/endpoints';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { FrameCells } from '@/components/app/page-frame';
 import { MetadataStrip } from '@/components/result/metadata-strip';
 import { MetadataScanView, MetadataScrubView } from '@/components/result/metadata-report';
 import { MetadataScanning } from '@/components/result/metadata-scanning';
@@ -57,8 +75,6 @@ export type PlaygroundResult =
   | { kind: 'handoff'; jobId: string }
   | { kind: 'coming' };
 
-type ViewMode = 'rendered' | 'raw';
-
 interface ResultsProps {
   result: PlaygroundResult | undefined;
   loading: boolean;
@@ -71,10 +87,299 @@ interface ResultsProps {
    * the work instead.
    */
   pending?: { kind: PlaygroundResult['kind']; filename?: string | undefined } | undefined;
+  /** The tab the run came from: names the Endpoint cell and the share link. */
+  endpoint: Endpoint;
+  /** The prompt value the run was made with (URL or query). */
+  input?: string | undefined;
+  /** Go back: return to the prompt with the result cleared. */
+  onBack?: (() => void) | undefined;
 }
 
 function isJobAccepted(response: CrawlResponse): response is JobAccepted {
   return typeof (response as JobAccepted).id === 'string';
+}
+
+function hostOf(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url).host;
+  } catch {
+    return undefined;
+  }
+}
+
+function downloadText(filename: string, content: string, mime: string) {
+  const href = URL.createObjectURL(new Blob([content], { type: mime }));
+  const anchor = document.createElement('a');
+  anchor.href = href;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(href);
+}
+
+function useCopy(): [boolean, (text: string) => void] {
+  const [copied, setCopied] = React.useState(false);
+  const copy = React.useCallback((text: string) => {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    });
+  }, []);
+  return [copied, copy];
+}
+
+/**
+ * Markdown against the raw HTML it came from, by byte size. A proxy for the
+ * token saving, hence the tilde; shown only when the API returned both.
+ */
+function tokenSaving(data: Document): number | undefined {
+  if (typeof data.rawHtml !== 'string' || typeof data.markdown !== 'string') return undefined;
+  const raw = new TextEncoder().encode(data.rawHtml).length;
+  const md = new TextEncoder().encode(data.markdown).length;
+  if (raw === 0 || md >= raw) return undefined;
+  return Math.round((1 - md / raw) * 100);
+}
+
+function Pill({
+  icon: Icon,
+  children,
+  onClick,
+  href,
+}: {
+  icon: LucideIcon;
+  children: React.ReactNode;
+  onClick?: () => void;
+  href?: string;
+}) {
+  const classes =
+    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-pill border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors duration-150 ease-out hover:bg-secondary';
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={classes}>
+        <Icon className="h-3.5 w-3.5" aria-hidden />
+        {children}
+      </a>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={classes}>
+      <Icon className="h-3.5 w-3.5" aria-hidden />
+      {children}
+    </button>
+  );
+}
+
+interface PillTab<T extends string> {
+  id: T;
+  label: string;
+  icon: LucideIcon;
+  chip?: string | undefined;
+}
+
+function PillTabs<T extends string>({
+  tabs,
+  value,
+  onChange,
+  label,
+}: {
+  tabs: PillTab<T>[];
+  value: T;
+  onChange: (id: T) => void;
+  label: string;
+}) {
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const index = tabs.findIndex((t) => t.id === value);
+    const next = tabs[(index + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
+    if (next) {
+      onChange(next.id);
+      (e.currentTarget.querySelector(`[data-id="${next.id}"]`) as HTMLElement | null)?.focus();
+    }
+  };
+  return (
+    <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className="inline-flex items-center gap-0.5 self-start rounded-pill border border-border p-0.5">
+      {tabs.map((tab) => {
+        const active = tab.id === value;
+        const Icon = tab.icon;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            data-id={tab.id}
+            aria-selected={active}
+            tabIndex={active ? 0 : -1}
+            onClick={() => onChange(tab.id)}
+            className={cn(
+              'inline-flex h-7 items-center gap-1.5 rounded-pill px-3 text-xs font-medium transition-colors duration-150 ease-out',
+              active ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" aria-hidden />
+            {tab.label}
+            {tab.chip && (
+              <span className="rounded-pill bg-accent px-1.5 py-px font-mono text-[10px] text-accent-foreground" title="By byte size, markdown against the raw HTML">
+                {tab.chip}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+interface DownloadDef {
+  label: string;
+  filename: string;
+  content: string;
+  mime: string;
+}
+
+interface Fact {
+  label: string;
+  value: React.ReactNode;
+}
+
+interface ChromeProps {
+  endpoint: Endpoint;
+  /** Identity bar centre: favicon + host for URLs, the query for search. */
+  subject: { url?: string | undefined; label: string };
+  status: { ok: boolean; label: string };
+  facts?: Fact[];
+  title?: string;
+  count?: number | undefined;
+  hint?: string | undefined;
+  downloads?: DownloadDef[];
+  /** Copied by Debug issue: everything needed to file a report. */
+  debug: unknown;
+  showBack?: boolean;
+  onBack?: (() => void) | undefined;
+  input?: string | undefined;
+  children: React.ReactNode;
+}
+
+/** One chrome for every kind: identity bar, fact cells, results header, then the body. */
+function Chrome({ endpoint, subject, status, facts = [], title = 'Result', count, hint, downloads = [], debug, showBack, onBack, input, children }: ChromeProps) {
+  const def = endpointById(endpoint);
+  const EndpointIcon = def?.icon ?? FileText;
+  const [shareCopied, copyShare] = useCopy();
+  const [debugCopied, copyDebug] = useCopy();
+
+  const share = () => {
+    const params = new URLSearchParams({ tab: endpoint });
+    if (input) params.set('url', input);
+    copyShare(`${window.location.origin}/app/playground?${params.toString()}`);
+  };
+
+  const cells: Fact[] = [
+    {
+      label: 'Endpoint',
+      value: (
+        <>
+          <EndpointIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
+          {def?.name ?? endpoint}
+        </>
+      ),
+    },
+    {
+      label: 'Status',
+      value: (
+        <>
+          {status.ok ? (
+            <CircleCheck className="h-4 w-4 text-success" aria-hidden />
+          ) : (
+            <CircleX className="h-4 w-4 text-destructive" aria-hidden />
+          )}
+          <span className={cn(!status.ok && 'font-mono text-xs')}>{status.label}</span>
+        </>
+      ),
+    },
+    ...facts,
+  ].slice(0, 4);
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border px-4 py-2.5">
+        <div>{showBack && onBack && <Pill icon={ArrowLeft} onClick={onBack}>Go back</Pill>}</div>
+        <div className="flex min-w-0 items-center justify-center gap-2">
+          {subject.url ? (
+            <SiteIcon url={subject.url} size={16} />
+          ) : (
+            <EndpointIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
+          )}
+          <span className="truncate font-mono text-[13px] text-foreground">{subject.label}</span>
+        </div>
+        <div className="flex justify-end">
+          {input && (
+            <Pill icon={shareCopied ? Check : Share2} onClick={share}>
+              {shareCopied ? 'Copied' : 'Share'}
+            </Pill>
+          )}
+        </div>
+      </div>
+
+      <FrameCells cols={cells.length as 2 | 3 | 4} className="border-b border-border">
+        {cells.map((cell) => (
+          <dl key={cell.label} className="flex flex-col gap-1 px-4 py-3">
+            <dt className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">{cell.label}</dt>
+            <dd className="flex min-w-0 items-center gap-1.5 text-sm text-foreground">{cell.value}</dd>
+          </dl>
+        ))}
+      </FrameCells>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h3 className="text-sm font-medium text-foreground">
+            {title}
+            {count !== undefined && <span className="text-muted-foreground"> ({count})</span>}
+          </h3>
+          {hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill icon={debugCopied ? Check : Sparkles} onClick={() => copyDebug(JSON.stringify(debug, null, 2))}>
+            {debugCopied ? 'Copied' : 'Debug issue'}
+          </Pill>
+          {downloads.map((d) => (
+            <Pill key={d.label} icon={Download} onClick={() => downloadText(d.filename, d.content, d.mime)}>
+              {d.label}
+            </Pill>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">{children}</div>
+    </div>
+  );
+}
+
+function NumberedRow({ index, url, title, children }: { index: number; url: string; title?: string | undefined; children?: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[2.5rem_1fr] gap-x-2 border-b border-border px-4 py-2.5 last:border-b-0">
+      <span className="pt-0.5 font-mono text-xs text-primary">#{index}</span>
+      <div className="flex min-w-0 flex-col gap-1">
+        <a href={url} target="_blank" rel="noreferrer" className="truncate text-sm text-foreground hover:underline">
+          {title || url}
+        </a>
+        <span className="flex min-w-0 items-center gap-1.5">
+          <SiteIcon url={url} size={13} />
+          <span className="truncate font-mono text-xs text-muted-foreground">{url}</span>
+        </span>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function documentDownloads(data: Document, base: string): DownloadDef[] {
+  const out: DownloadDef[] = [];
+  if (typeof data.markdown === 'string') out.push({ label: 'Markdown', filename: `${base}.md`, content: data.markdown, mime: 'text/markdown' });
+  const html = data.html ?? data.rawHtml;
+  if (typeof html === 'string') out.push({ label: 'HTML', filename: `${base}.html`, content: html, mime: 'text/html' });
+  if (data.links && data.links.length > 0) out.push({ label: 'Links', filename: `${base}-links.txt`, content: data.links.join('\n'), mime: 'text/plain' });
+  out.push({ label: 'JSON', filename: `${base}.json`, content: JSON.stringify(data, null, 2), mime: 'application/json' });
+  return out;
 }
 
 function EstimateCard({ estimate }: { estimate: Estimate }) {
@@ -142,32 +447,19 @@ function Stat({ label, value }: { label: string; value: string | number | undefi
   );
 }
 
-function ResultTabs({ mode, onChange }: { mode: ViewMode; onChange: (mode: ViewMode) => void }) {
+function HandoffCard({ title, jobId }: { title: string; jobId: string }) {
   return (
-    <div className="flex items-center gap-1 self-start rounded-md bg-muted p-1">
-      <Button
-        type="button"
-        variant={mode === 'rendered' ? 'secondary' : 'ghost'}
-        size="sm"
-        className="h-7 gap-1.5 px-2.5 text-xs"
-        onClick={() => onChange('rendered')}
-      >
-        <FileText className="h-3.5 w-3.5" />
-        Rendered
-      </Button>
-      <Button
-        type="button"
-        variant={mode === 'raw' ? 'secondary' : 'ghost'}
-        size="sm"
-        className="h-7 gap-1.5 px-2.5 text-xs"
-        onClick={() => onChange('raw')}
-      >
-        <Code2 className="h-3.5 w-3.5" />
-        Raw JSON
-      </Button>
+    <div className="flex flex-col gap-2 rounded-card border border-border bg-card p-4">
+      <span className="text-sm font-medium text-foreground">{title}</span>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        This is an async job. Poll GET /v1/jobs/:id on your instance for progress and results.
+      </p>
+      <span className="font-mono text-xs text-muted-foreground">Job {jobId}</span>
     </div>
   );
 }
+
+type DocTab = 'markdown' | 'json' | 'screenshot';
 
 function DocumentResult({
   data,
@@ -180,9 +472,16 @@ function DocumentResult({
   warnings?: string[];
   usage?: ExtractionUsage;
 }) {
-  const [mode, setMode] = React.useState<ViewMode>('rendered');
   const hasMarkdown = typeof data.markdown === 'string';
   const hasJson = data.json !== undefined && data.json !== null;
+  const saving = tokenSaving(data);
+  const [tab, setTab] = React.useState<DocTab>(hasMarkdown ? 'markdown' : 'json');
+
+  const tabs: PillTab<DocTab>[] = [
+    ...(hasMarkdown ? [{ id: 'markdown' as const, label: 'Markdown', icon: FileText, chip: saving !== undefined ? `~${saving}% fewer tokens` : undefined }] : []),
+    { id: 'json', label: 'JSON', icon: Braces },
+    ...(data.screenshot ? [{ id: 'screenshot' as const, label: 'Screenshot', icon: ImageIcon }] : []),
+  ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -194,8 +493,9 @@ function DocumentResult({
           ))}
         </ul>
       )}
-      <ResultTabs mode={mode} onChange={setMode} />
-      {mode === 'rendered' && hasJson && (
+      <PillTabs tabs={tabs} value={tab} onChange={setTab} label="Result view" />
+      {tab === 'markdown' && data.markdown && <MarkdownView content={data.markdown} />}
+      {tab === 'json' && hasJson && (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground">Extracted JSON</span>
@@ -208,23 +508,16 @@ function DocumentResult({
           <AnimatedJsonView data={data.json} />
         </div>
       )}
-      {mode === 'rendered' && hasMarkdown && data.markdown && <MarkdownView content={data.markdown} />}
-      {mode === 'rendered' && !hasMarkdown && !hasJson && (
-        <p className="text-sm text-muted-foreground">No markdown in this response. Check Raw JSON.</p>
-      )}
-      {mode === 'raw' && <JsonView data={data} />}
-      {data.screenshot && (
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground">Screenshot</span>
-          {/* eslint-disable-next-line @next/next/no-img-element -- signed, expiring URL from the API */}
-          <img src={data.screenshot} alt="Page screenshot" className="rounded-card border border-border" />
-        </div>
+      {tab === 'json' && <JsonView data={data} />}
+      {tab === 'screenshot' && data.screenshot && (
+        // eslint-disable-next-line @next/next/no-img-element -- inline data URL from the API
+        <img src={data.screenshot} alt="Page screenshot" className="rounded-card border border-border" />
       )}
     </div>
   );
 }
 
-export function Results({ result, loading, timingMs, error, pending }: ResultsProps) {
+export function Results({ result, loading, timingMs, error, pending, endpoint, input, onBack }: ResultsProps) {
   if (loading) {
     // File-shaped work gets the lens: an upload the user just handed over, a
     // wait of unknown length, and a skeleton that would be shaped like the
@@ -249,14 +542,22 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
     );
   }
 
+  const inputHost = hostOf(input);
+  const subjectFromInput = { url: inputHost ? input : undefined, label: inputHost ?? input ?? (endpointById(endpoint)?.name ?? endpoint) };
+  const timeFact: Fact[] = timingMs !== undefined ? [{ label: 'Time', value: <span className="font-mono text-xs">{timingMs}ms</span> }] : [];
+  const base = `${inputHost ?? endpoint}-${endpoint}`;
+
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center p-8 text-center">
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-medium text-destructive">Request failed</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-        </div>
-      </div>
+      <Chrome
+        endpoint={endpoint}
+        subject={subjectFromInput}
+        status={{ ok: false, label: 'Request failed' }}
+        debug={{ endpoint, input, error }}
+        input={input}
+      >
+        <p className="text-sm text-muted-foreground">{error}</p>
+      </Chrome>
     );
   }
 
@@ -264,7 +565,7 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
     return (
       <div className="flex h-full items-center justify-center p-8 text-center">
         <p className="max-w-xs text-sm text-muted-foreground leading-relaxed">
-          Fill in the form and run the request. Results — including a typed failure with its next step — appear here.
+          Run a request. Results, including a typed failure with its next step, appear here.
         </p>
       </div>
     );
@@ -280,35 +581,57 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
 
   if (result.kind === 'handoff') {
     return (
-      <div className="flex flex-col gap-3 p-4">
-        <div className="flex flex-col gap-2 rounded-card border border-border bg-card p-4">
-          <span className="text-sm font-medium text-foreground">Running as a background job</span>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            This is an async job. Poll GET /v1/jobs/:id on your instance for progress and results.
-          </p>
-          <span className="font-mono text-xs text-muted-foreground">Job {result.jobId}</span>
-        </div>
-      </div>
+      <Chrome
+        endpoint={endpoint}
+        subject={subjectFromInput}
+        status={{ ok: true, label: 'Accepted' }}
+        facts={timeFact}
+        title="Job"
+        debug={{ endpoint, input, timingMs, jobId: result.jobId }}
+        showBack={endpoint === 'crawl' || endpoint === 'map'}
+        onBack={onBack}
+        input={input}
+      >
+        <HandoffCard title="Running as a background job" jobId={result.jobId} />
+      </Chrome>
     );
   }
 
-  const wrapperClass = 'flex h-full flex-col gap-4 overflow-y-auto p-4';
+  const debug = { endpoint, input, timingMs, response: result.response };
 
   switch (result.kind) {
     case 'scrape': {
       const response = result.response;
       if (!response.success) {
+        const { failure } = response;
         return (
-          <div className={wrapperClass}>
-            {timingMs !== undefined && <span className="font-mono text-xs text-muted-foreground">{timingMs}ms round-trip</span>}
-            <FailurePanel failure={response.failure} />
-          </div>
+          <Chrome
+            endpoint={endpoint}
+            subject={subjectFromInput}
+            status={{ ok: false, label: failure.reason }}
+            facts={[...(failure.tier ? [{ label: 'Tier', value: <span className="font-mono text-xs">{failure.tier}</span> }] : []), ...timeFact]}
+            debug={debug}
+            input={input}
+          >
+            <FailurePanel failure={failure} />
+          </Chrome>
         );
       }
+      const meta = response.data.metadata;
+      const pageUrl = meta?.finalUrl ?? meta?.sourceUrl ?? input;
       return (
-        <div className={wrapperClass}>
+        <Chrome
+          endpoint={endpoint}
+          subject={{ url: pageUrl, label: hostOf(pageUrl) ?? subjectFromInput.label }}
+          status={{ ok: true, label: 'Success' }}
+          facts={[...(meta?.tier ? [{ label: 'Tier', value: <span className="font-mono text-xs">{meta.tier}</span> }] : []), ...timeFact]}
+          hint={meta?.title}
+          downloads={documentDownloads(response.data, base)}
+          debug={debug}
+          input={input}
+        >
           <DocumentResult data={response.data} timingMs={timingMs} warnings={response.warnings} {...(response.usage ? { usage: response.usage } : {})} />
-        </div>
+        </Chrome>
       );
     }
 
@@ -316,15 +639,24 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
       const response = result.response;
       if (!response.success) {
         return (
-          <div className={wrapperClass}>
+          <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: false, label: response.failure.reason }} facts={timeFact} debug={debug} input={input}>
             <FailurePanel failure={response.failure} />
-          </div>
+          </Chrome>
         );
       }
       return (
-        <div className={wrapperClass}>
+        <Chrome
+          endpoint={endpoint}
+          subject={subjectFromInput}
+          status={{ ok: true, label: 'Success' }}
+          facts={timeFact}
+          title="Findings"
+          downloads={[{ label: 'JSON', filename: `${base}.json`, content: JSON.stringify(response.data, null, 2), mime: 'application/json' }]}
+          debug={debug}
+          input={input}
+        >
           <MetadataScanView scan={response.data} {...(response.warnings ? { warnings: response.warnings } : {})} />
-        </div>
+        </Chrome>
       );
     }
 
@@ -332,15 +664,15 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
       const response = result.response;
       if (!response.success) {
         return (
-          <div className={wrapperClass}>
+          <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: false, label: response.failure.reason }} facts={timeFact} debug={debug} input={input}>
             <FailurePanel failure={response.failure} />
-          </div>
+          </Chrome>
         );
       }
       return (
-        <div className={wrapperClass}>
+        <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: true, label: 'Success' }} facts={timeFact} title="Scrubbed copy" debug={debug} input={input}>
           <MetadataScrubView result={response} />
-        </div>
+        </Chrome>
       );
     }
 
@@ -348,16 +680,29 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
       const response = result.response;
       if (!response.success) {
         return (
-          <div className={wrapperClass}>
+          <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: false, label: response.failure.reason }} facts={timeFact} debug={debug} input={input}>
             <FailurePanel failure={response.failure} />
-          </div>
+          </Chrome>
         );
       }
       const meta = response.data.metadata;
+      const doc: Document = {
+        ...(response.data.markdown !== undefined ? { markdown: response.data.markdown } : {}),
+        ...(response.data.json !== undefined ? { json: response.data.json } : {}),
+      };
       return (
-        <div className={wrapperClass}>
+        <Chrome
+          endpoint={endpoint}
+          subject={{ url: subjectFromInput.url, label: meta.filename ?? subjectFromInput.label }}
+          status={{ ok: true, label: 'Success' }}
+          facts={[{ label: 'Parser', value: <span className="font-mono text-xs">{meta.parser}</span> }, { label: 'Time', value: <span className="font-mono text-xs">{meta.timingMs}ms</span> }]}
+          hint={`${meta.fileType}${meta.pageCount > 0 ? ` · ${meta.pageCount} ${meta.pageCount === 1 ? 'page' : 'pages'}` : ''} · ${meta.ocrUsed ? 'ocr' : 'text layer'}${meta.fromCache ? ' · cached' : ''}`}
+          downloads={documentDownloads(doc, base)}
+          debug={debug}
+          input={input}
+        >
           <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-border pb-3 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
               {meta.filename && <span className="font-mono text-foreground">{meta.filename}</span>}
               <Badge variant="outline" className="font-mono">
                 {meta.fileType}
@@ -382,24 +727,19 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
                 ))}
               </ul>
             )}
-            <DocumentResult
-              data={{
-                ...(response.data.markdown !== undefined ? { markdown: response.data.markdown } : {}),
-                ...(response.data.json !== undefined ? { json: response.data.json } : {}),
-              }}
-              timingMs={timingMs}
-            />
+            <DocumentResult data={doc} timingMs={timingMs} />
           </div>
-        </div>
+        </Chrome>
       );
     }
 
     case 'interact': {
       const response = result.response;
+      const sessionFact: Fact[] = response.sessionId ? [{ label: 'Session', value: <span className="truncate font-mono text-xs">{response.sessionId}</span> }] : [];
       if (!response.success) {
         const { actionIndex, actionType } = response.failure;
         return (
-          <div className={wrapperClass}>
+          <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: false, label: response.failure.reason }} facts={[...sessionFact, ...timeFact]} debug={debug} input={input}>
             <SessionStrip sessionId={response.sessionId} sessionOpen={response.sessionOpen} />
             <p className="text-xs text-muted-foreground">
               {actionIndex === null || actionIndex === undefined
@@ -407,11 +747,19 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
                 : `Failed at action ${actionIndex}${actionType ? ` (${actionType})` : ''}. Earlier actions already ran.`}
             </p>
             <FailurePanel failure={response.failure} />
-          </div>
+          </Chrome>
         );
       }
       return (
-        <div className={wrapperClass}>
+        <Chrome
+          endpoint={endpoint}
+          subject={{ url: response.url ?? subjectFromInput.url, label: hostOf(response.url) ?? subjectFromInput.label }}
+          status={{ ok: true, label: 'Success' }}
+          facts={[...sessionFact, ...timeFact]}
+          downloads={[{ label: 'JSON', filename: `${base}.json`, content: JSON.stringify(response, null, 2), mime: 'application/json' }]}
+          debug={debug}
+          input={input}
+        >
           <SessionStrip sessionId={response.sessionId} sessionOpen={response.sessionOpen} url={response.url} timingMs={timingMs} />
           {response.output && (
             <div className="flex flex-col gap-1.5">
@@ -442,7 +790,7 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
             </div>
           )}
           <JsonView data={response} />
-        </div>
+        </Chrome>
       );
     }
 
@@ -450,29 +798,17 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
       const response = result.response;
       const links = response.links ?? [];
       return (
-        <div className={wrapperClass}>
-          <span className="text-xs text-muted-foreground">
-            {links.length} URL{links.length === 1 ? '' : 's'} discovered{response.truncated ? ' (truncated)' : ''}
-          </span>
-          <div className="flex flex-col divide-y divide-border overflow-x-auto rounded-card border border-border">
-            {links.map((link) => (
-              <a
-                key={link.url}
-                href={link.url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex flex-col gap-0.5 px-3 py-2 text-sm transition-colors duration-150 ease-out hover:bg-accent"
-              >
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <SiteIcon url={link.url} size={13} />
-                  <span className="truncate font-mono text-xs text-primary">{link.url}</span>
-                </span>
-                {link.title && <span className="truncate text-xs text-muted-foreground">{link.title}</span>}
-              </a>
-            ))}
-            {links.length === 0 && <span className="px-3 py-4 text-sm text-muted-foreground">No URLs discovered.</span>}
-          </div>
-        </div>
+        <MapResult
+          endpoint={endpoint}
+          subject={subjectFromInput}
+          links={links}
+          truncated={response.truncated ?? false}
+          facts={timeFact}
+          base={base}
+          debug={debug}
+          onBack={onBack}
+          input={input}
+        />
       );
     }
 
@@ -480,29 +816,30 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
       const response = result.response;
       const results = [...(response.data?.web ?? []), ...(response.data?.news ?? []), ...(response.data?.images ?? [])];
       const warnings = response.warnings ?? [];
+      const backendFact: Fact[] = response.metadata?.backend
+        ? [{ label: 'Backend', value: <span className="font-mono text-xs">{response.metadata.backend}{response.metadata.fromCache ? ' · cached' : ''}</span> }]
+        : [];
       return (
-        <div className={wrapperClass}>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{results.length} result{results.length === 1 ? '' : 's'}</span>
-            {response.metadata?.backend && <Badge variant="secondary">{response.metadata.backend}</Badge>}
-            {response.metadata?.fromCache && <Badge variant="secondary">cached</Badge>}
-          </div>
-          <div className="flex flex-col gap-3">
+        <Chrome
+          endpoint={endpoint}
+          subject={{ label: input ?? 'Search' }}
+          status={{ ok: response.success, label: response.success ? 'Success' : 'Failed' }}
+          facts={[...backendFact, ...timeFact]}
+          title="Results"
+          count={results.length}
+          downloads={[{ label: 'JSON', filename: `${base}.json`, content: JSON.stringify(response.data, null, 2), mime: 'application/json' }]}
+          debug={debug}
+          input={input}
+        >
+          <div className="-mx-4 -mt-4 flex flex-col">
             {results.map((item, i) => (
-              <div key={`${item.url}-${i}`} className="flex flex-col gap-1 rounded-card border border-border p-3">
-                <a href={item.url} target="_blank" rel="noreferrer" className="text-sm font-medium text-primary hover:underline">
-                  {item.title || item.url}
-                </a>
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <SiteIcon url={item.url} size={13} />
-                  <span className="truncate font-mono text-xs text-muted-foreground">{item.url}</span>
-                </span>
+              <NumberedRow key={`${item.url}-${i}`} index={i + 1} url={item.url} title={item.title}>
                 {item.description && <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>}
                 {item.failure && <FailurePanel failure={item.failure} />}
                 {item.markdown && <MarkdownView content={item.markdown} />}
-              </div>
+              </NumberedRow>
             ))}
-            {results.length === 0 && <span className="text-sm text-muted-foreground">No results.</span>}
+            {results.length === 0 && <span className="px-4 py-4 text-sm text-muted-foreground">No results.</span>}
           </div>
           {warnings.length > 0 && (
             <ul className="flex flex-col gap-1 font-mono text-xs text-muted-foreground">
@@ -511,7 +848,7 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
               ))}
             </ul>
           )}
-        </div>
+        </Chrome>
       );
     }
 
@@ -519,21 +856,37 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
       const response = result.response;
       if (isJobAccepted(response)) {
         return (
-          <div className={wrapperClass}>
-            <div className="flex flex-col gap-2 rounded-card border border-border bg-card p-4">
-              <span className="text-sm font-medium text-foreground">Crawl started</span>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Crawls run in the background. Poll GET /v1/jobs/:id on your instance for progress and results.
-              </p>
-              <span className="font-mono text-xs text-muted-foreground">Job {response.id}</span>
-            </div>
-          </div>
+          <Chrome
+            endpoint={endpoint}
+            subject={subjectFromInput}
+            status={{ ok: true, label: 'Accepted' }}
+            facts={timeFact}
+            title="Job"
+            debug={debug}
+            showBack
+            onBack={onBack}
+            input={input}
+          >
+            <HandoffCard title="Crawl started" jobId={response.id} />
+          </Chrome>
         );
       }
       return (
-        <div className={wrapperClass}>
+        <Chrome
+          endpoint={endpoint}
+          subject={subjectFromInput}
+          status={{ ok: true, label: 'Estimated' }}
+          facts={timeFact}
+          title="Estimate"
+          count={response.pages}
+          downloads={[{ label: 'JSON', filename: `${base}-estimate.json`, content: JSON.stringify(response, null, 2), mime: 'application/json' }]}
+          debug={debug}
+          showBack
+          onBack={onBack}
+          input={input}
+        >
           <EstimateCard estimate={response} />
-        </div>
+        </Chrome>
       );
     }
 
@@ -541,13 +894,22 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
       const response = result.response;
       if (!response.success || !response.id) {
         return (
-          <div className={wrapperClass}>
+          <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: false, label: 'Not created' }} facts={timeFact} debug={debug} input={input}>
             <JsonView data={response} />
-          </div>
+          </Chrome>
         );
       }
       return (
-        <div className={wrapperClass}>
+        <Chrome
+          endpoint={endpoint}
+          subject={subjectFromInput}
+          status={{ ok: true, label: response.status }}
+          facts={timeFact}
+          title="Monitor"
+          downloads={[{ label: 'JSON', filename: `${base}.json`, content: JSON.stringify(response, null, 2), mime: 'application/json' }]}
+          debug={debug}
+          input={input}
+        >
           <div className="flex flex-col gap-3 rounded-card border border-border p-4">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-medium text-foreground">Monitor created</span>
@@ -568,8 +930,68 @@ export function Results({ result, loading, timingMs, error, pending }: ResultsPr
             <span className="font-mono text-xs text-muted-foreground">GET /v1/monitor/{response.id}/history</span>
           </div>
           <JsonView data={response} />
-        </div>
+        </Chrome>
       );
     }
   }
+}
+
+type MapTab = 'links' | 'json';
+
+function MapResult({
+  endpoint,
+  subject,
+  links,
+  truncated,
+  facts,
+  base,
+  debug,
+  onBack,
+  input,
+}: {
+  endpoint: Endpoint;
+  subject: ChromeProps['subject'];
+  links: NonNullable<MapResponse['links']>;
+  truncated: boolean;
+  facts: Fact[];
+  base: string;
+  debug: unknown;
+  onBack: (() => void) | undefined;
+  input: string | undefined;
+}) {
+  const [tab, setTab] = React.useState<MapTab>('links');
+  const tabs: PillTab<MapTab>[] = [
+    { id: 'links', label: 'Links', icon: Link2 },
+    { id: 'json', label: 'JSON', icon: Braces },
+  ];
+  return (
+    <Chrome
+      endpoint={endpoint}
+      subject={subject}
+      status={{ ok: true, label: 'Success' }}
+      facts={facts}
+      title="Links"
+      count={links.length}
+      hint={truncated ? 'Truncated at the map limit. Raise it in Options for the full list.' : undefined}
+      downloads={[
+        { label: 'Links', filename: `${base}-links.txt`, content: links.map((l) => l.url).join('\n'), mime: 'text/plain' },
+        { label: 'JSON', filename: `${base}.json`, content: JSON.stringify(links, null, 2), mime: 'application/json' },
+      ]}
+      debug={debug}
+      showBack
+      onBack={onBack}
+      input={input}
+    >
+      <PillTabs tabs={tabs} value={tab} onChange={setTab} label="Map view" />
+      {tab === 'links' && (
+        <div className="-mx-4 flex flex-col border-t border-border">
+          {links.map((link, i) => (
+            <NumberedRow key={link.url} index={i + 1} url={link.url} title={link.title} />
+          ))}
+          {links.length === 0 && <span className="px-4 py-4 text-sm text-muted-foreground">No URLs discovered.</span>}
+        </div>
+      )}
+      {tab === 'json' && <JsonView data={links} />}
+    </Chrome>
+  );
 }

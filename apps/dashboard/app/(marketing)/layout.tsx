@@ -4,13 +4,15 @@ import { AgentBlock } from '@/components/marketing/agent-block';
 import { Footer } from '@/components/marketing/footer';
 import { ScrollMotion } from '@/components/marketing/scroll-motion';
 import { FrameColumn } from '@/components/marketing/section-frame';
+import { fetchGithubStars } from '@/lib/github-stars';
 
-export default function MarketingLayout({ children }: { children: React.ReactNode }) {
+export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
+  const stars = await fetchGithubStars();
   return (
     <div data-surface="marketing" className="bg-m-bg text-m-ink font-sans">
       <ScrollMotion />
       <Banner />
-      <Nav />
+      <Nav stars={stars} />
       <FrameColumn>
         {children}
         <AgentBlock />

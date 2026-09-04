@@ -2,15 +2,17 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Braces } from 'lucide-react';
 import { ENDPOINTS } from '@/lib/catalog';
 import { FrameBand } from './section-frame';
 import { CodeRain } from './ambient';
 import { CodePanel } from './code-panel';
 import { AnimatedCode } from './animated-code';
+import { Segmented } from './segmented';
 import type { Endpoint } from '@/lib/endpoints';
 
 const TABS = ENDPOINTS.filter((e) => e.product);
+const TAB_ITEMS = TABS.map((t) => ({ id: t.id, label: t.name, icon: t.icon, group: t.group }));
 
 /** Verbatim request/response pairs, one per tab — matched to each capability page's openapi-sourced examples. */
 const REQUEST: Record<Endpoint, string> = {
@@ -145,7 +147,7 @@ export function Capabilities() {
 
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="01" total="07" label="CAPABILITIES" sub="Six endpoints" />
+      <FrameBand step="01" total="07" label="CAPABILITIES" sub="Six endpoints" icon={Braces} />
 
       <div className="py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
@@ -166,25 +168,8 @@ export function Capabilities() {
           </div>
         </div>
 
-        <div data-reveal className="mt-10 flex flex-wrap gap-1 rounded-pill border border-m-border-muted bg-m-surface p-1">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const isActive = t.id === active;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setActive(t.id)}
-                aria-pressed={isActive}
-                className={`flex items-center gap-1.5 rounded-pill px-3.5 py-2 font-mono text-[13px] transition-colors duration-150 ease-out ${
-                  isActive ? 'bg-violet-12 text-violet' : 'text-m-ink/56 hover:text-m-ink/80'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" aria-hidden />
-                {t.name}
-              </button>
-            );
-          })}
+        <div data-reveal className="mt-10 overflow-x-auto">
+          <Segmented items={TAB_ITEMS} value={active} onChange={setActive} aria-label="Capability" />
         </div>
 
         <div data-reveal className="mt-5 flex flex-col gap-3 rounded-panel border border-m-border-muted bg-m-surface p-5 sm:flex-row sm:items-center sm:justify-between">

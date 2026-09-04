@@ -1,4 +1,4 @@
-import { Layers, Coins, ShieldAlert, Gauge } from 'lucide-react';
+import { Layers, Coins, OctagonX, Activity, Cpu } from 'lucide-react';
 import { FrameBand } from './section-frame';
 import { CodeRain } from './ambient';
 import { MeterPanel } from './meter';
@@ -27,11 +27,11 @@ const SIGNAL_LOG = `▸ GET /pricing   plain       403    5ms   cloudflare-mitig
 ▸ GET /pricing   tls         403   51ms   challenge-platform
 ● error: FetchFailure   signals: 2   next: lightpanda`;
 
-/** Home §3: what the ladder costs, what the model receives, what a block looks like. Bento of four. */
+/** Home §3: what the ladder costs, what the model receives, what a block looks like. One hero cell, three beneath. */
 export function Performance() {
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="03" total="07" label="PERFORMANCE" sub="Cheapest path, honest failures" />
+      <FrameBand step="03" total="07" label="PERFORMANCE" sub="Cheapest path, honest failures" icon={Cpu} />
 
       <div className="py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
@@ -63,7 +63,7 @@ export function Performance() {
             eyebrow="Cheapest tier wins"
             lead="Escalates on evidence."
             body="A plain fetch answers most pages. TLS identity, a light browser and Chromium only run once a block is proven."
-            span="wide"
+            span="hero"
           >
             <MeterPanel label="resolved at tier · sample instance" rows={TIER_ROWS} seed={11} />
           </BentoCard>
@@ -73,17 +73,17 @@ export function Performance() {
             eyebrow="Token-efficient"
             lead="Only the content that matters."
             body="Nav, footer and ads are dropped before your model sees the page."
-            span="narrow"
+            span="third"
           >
             <MeterPanel label="extraction ratio" rows={TOKEN_ROWS} size="thin" jitter={1} seed={19} />
           </BentoCard>
 
           <BentoCard
-            icon={ShieldAlert}
+            icon={OctagonX}
             eyebrow="Honest about blocks"
             lead="A block is a typed failure."
             body="A challenge page returning 200 never comes back as markdown."
-            span="narrow"
+            span="third"
           >
             <div className="overflow-x-auto rounded-panel border border-m-border-muted bg-m-bg px-3 py-3">
               <pre className="whitespace-pre font-mono text-[11px] leading-[1.7] text-m-ink/64">{SIGNAL_LOG}</pre>
@@ -91,11 +91,11 @@ export function Performance() {
           </BentoCard>
 
           <BentoCard
-            icon={Gauge}
+            icon={Activity}
             eyebrow="Adaptive politeness"
             lead="Per-host concurrency ramps and backs off."
             body="A 429 lowers the ceiling for that host alone. The rest of the crawl keeps its pace."
-            span="wide"
+            span="third"
           >
             <MeterPanel label="per-host concurrency · live" rows={HOST_ROWS} jitter={6} seed={29} />
           </BentoCard>

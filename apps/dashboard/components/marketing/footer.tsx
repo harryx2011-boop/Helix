@@ -4,6 +4,7 @@ import { GithubMark } from '@/components/marketing/github-mark';
 import { AsciiHelix, GridCells } from '@/components/marketing/ambient';
 import { PERSONA_URL } from '@/lib/mode';
 import { cn } from '@/lib/utils';
+import pkg from '@/package.json';
 
 /** WEBSITE.md §4.9. Three groups, hairline-divided rows, no Company column. */
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
@@ -37,6 +38,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: 'Architecture', href: '/architecture' },
       { label: 'Roadmap', href: '/architecture#roadmap' },
       { label: 'Security', href: '/self-host#security' },
+      { label: 'Status', href: '/status' },
     ],
   },
 ];
@@ -108,7 +110,7 @@ export function Footer() {
             href="https://github.com/helix-dev/helix"
             className="flex items-center gap-2 font-mono text-[12px] text-m-ink/56 transition-colors duration-150 ease-out hover:text-m-ink"
           >
-            <span>[ v0.1.0-pre ]</span>
+            <span>[ v{pkg.version} ]</span>
             <GithubMark className="h-[14px] w-[14px]" />
             <span>github.com/helix-dev/helix</span>
           </Link>

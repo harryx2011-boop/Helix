@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CodeRain, PixelSquares } from './ambient';
 
@@ -20,18 +21,20 @@ export interface FrameBandProps {
   total?: string;
   label: string;
   sub: string;
+  icon?: LucideIcon;
   className?: string;
 }
 
 /** `[ 01 / 05 ] · LABEL // sub //` band between sections, split at ~45% by a hairline. */
-export function FrameBand({ step, total, label, sub, className }: FrameBandProps) {
+export function FrameBand({ step, total, label, sub, icon: Icon, className }: FrameBandProps) {
   return (
     <div className={cn('relative flex h-16 items-stretch border-y border-m-border-faint', className)}>
       <span aria-hidden className="absolute -left-[100vw] -right-[100vw] top-0 h-px bg-m-border-faint" />
       <span aria-hidden className="absolute -left-[100vw] -right-[100vw] bottom-0 h-px bg-m-border-faint" />
       <span aria-hidden className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 bg-violet" />
 
-      <div className="flex w-full min-w-0 items-center pl-6 pr-4 lg:w-[45%] lg:border-r lg:border-m-border-faint">
+      <div className="flex w-full min-w-0 items-center gap-2.5 pl-6 pr-4 lg:w-[45%] lg:border-r lg:border-m-border-faint">
+        {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-violet" strokeWidth={1.75} aria-hidden />}
         <p className="truncate font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
           {step && total ? (
             <>

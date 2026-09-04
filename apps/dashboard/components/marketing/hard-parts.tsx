@@ -1,11 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { FileText, Braces, Check } from 'lucide-react';
+import { FileStack, Braces, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FrameBand } from './section-frame';
 import { CodePanel } from './code-panel';
-import { mulberry32, useReducedMotion } from './ambient';
+import { IconTile } from './icon-tile';
+import { CodeRain, mulberry32, useReducedMotion } from './ambient';
 import { AnimatedCode, type Token } from './animated-code';
 
 function useInView(ref: React.RefObject<Element | null>): boolean {
@@ -277,24 +278,33 @@ function JsonExtract({ quiet }: { quiet: boolean }) {
 export function HardParts() {
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="02" total="07" label="HARD PARTS" sub="Handled for you" />
+      <FrameBand step="02" total="07" label="HARD PARTS" sub="Handled for you" icon={FileStack} />
 
       <div className="py-16">
-        <div data-reveal className="text-center">
-          <h2 className="mx-auto max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
-            The messy parts of the web,
-            <br />
-            <span className="text-violet">already handled.</span>
-          </h2>
-          <p className="mx-auto mt-3 max-w-[480px] text-[16px] leading-relaxed text-m-ink/72">
-            Document formats and unstructured pages come back the way your agent actually needs them.
-          </p>
+        <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
+          <CodeRain
+            cols={22}
+            rows={6}
+            density={0.45}
+            seed={73}
+            className="hidden -inset-y-10 -inset-x-24 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_46%,black_66%,transparent_100%)]"
+          />
+          <div className="relative">
+            <h2 className="mx-auto max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
+              The messy parts of the web,
+              <br />
+              <span className="text-violet">already handled.</span>
+            </h2>
+            <p className="mx-auto mt-3 max-w-[480px] text-[16px] leading-relaxed text-m-ink/72">
+              Document formats and unstructured pages come back the way your agent actually needs them.
+            </p>
+          </div>
         </div>
 
         <div data-reveal-group className="mt-10 grid grid-cols-1 divide-y divide-m-border-muted rounded-panel border border-m-border-muted bg-m-surface sm:grid-cols-2 sm:divide-x sm:divide-y-0">
           <div data-reveal-item className="min-w-0 p-6 sm:p-8">
-            <p className="flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
-              <FileText className="h-3.5 w-3.5 shrink-0 text-violet" strokeWidth={1.75} aria-hidden />
+            <p className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
+              <IconTile icon={FileStack} size="sm" />
               Docs to data
             </p>
             <p className="mt-3 text-[15px] leading-relaxed">
@@ -305,8 +315,8 @@ export function HardParts() {
           </div>
 
           <div data-reveal-item className="min-w-0 p-6 sm:p-8">
-            <p className="flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
-              <Braces className="h-3.5 w-3.5 shrink-0 text-violet" strokeWidth={1.75} aria-hidden />
+            <p className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
+              <IconTile icon={Braces} size="sm" />
               Structured out
             </p>
             <p className="mt-3 text-[15px] leading-relaxed">

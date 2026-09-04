@@ -7,6 +7,7 @@ import { HelixApiError } from '@/lib/api';
 import type {
   CrawlRequest,
   CrawlResponse,
+  Format,
   InteractRequest,
   InteractResponse,
   MapRequest,
@@ -27,6 +28,7 @@ import { runEndpoint, type EndpointMode } from '@/lib/run-endpoint';
 import { useAppSession } from '@/components/app/session-provider';
 import { endpointById } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/endpoints';
+import { DEFAULT_FORMATS } from '@/lib/formats';
 import { cn } from '@/lib/utils';
 import { ScrapeForm } from './forms/scrape-form';
 import { MapForm } from './forms/map-form';
@@ -47,11 +49,14 @@ function isJobAcceptedShape(body: unknown): body is { id: string } {
 export function Playground() {
   const router = useRouter();
   const { apiKey } = useAppSession();
-  const requestedTab = useSearchParams().get('tab');
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const requestedUrl = searchParams.get('url');
   const [activeId, setActiveId] = React.useState<string>(
     requestedTab && endpointById(requestedTab) ? requestedTab : 'scrape',
   );
-  const [promptValue, setPromptValue] = React.useState('');
+  const [promptValue, setPromptValue] = React.useState(requestedUrl ?? '');
+  const [formats, setFormats] = React.useState<Format[]>([...DEFAULT_FORMATS]);
   const [optionsOpen, setOptionsOpen] = React.useState(false);
   const [result, setResult] = React.useState<PlaygroundResult | undefined>(undefined);
   const [loading, setLoading] = React.useState(false);
@@ -71,6 +76,21 @@ export function Playground() {
     setError(undefined);
     setTimingMs(undefined);
     router.replace(`/app/playground?tab=${id}`, { scroll: false });
+  };
+
+  const clearResult = () => {
+    setResult(undefined);
+    setError(undefined);
+    setTimingMs(undefined);
+  };
+
+  // The toolbar's Format picker owns the scrape `formats` array. The Options
+  // form still builds `extract` when a schema is set, and that only reaches
+  // the API alongside `json`, so the two are merged rather than one winning.
+  const withFormats = (request: ScrapeRequest): Record<string, unknown> => {
+    const merged = new Set<Format>(formats.length > 0 ? formats : DEFAULT_FORMATS);
+    if (request.extract || request.jsonOptions) merged.add('json');
+    return { ...request, formats: Array.from(merged) };
   };
 
   const run = React.useCallback(
@@ -130,6 +150,7 @@ export function Playground() {
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-6">
       <PromptBox
+        variant="app"
         activeId={activeDef.id}
         onSelectTab={selectTab}
         value={promptValue}
@@ -141,6 +162,8 @@ export function Playground() {
         onToggleOptions={() => setOptionsOpen((open) => !open)}
         onGetCode={submitGetCode}
         getCodeDisabled={promptDisabled}
+        formats={formats}
+        onFormatsChange={setFormats}
       />
 
       <div className={cn('rounded-card border border-border bg-card', !optionsOpen && 'sr-only')} aria-hidden={!optionsOpen}>
@@ -152,8 +175,8 @@ export function Playground() {
             <ScrapeForm
               url={promptValue}
               loading={loading}
-              onSubmit={(request: ScrapeRequest) => run('scrape', 'scrape', request as unknown as Record<string, unknown>, false)}
-              onGetCode={(body) => openCode('scrape', body)}
+              onSubmit={(request: ScrapeRequest) => run('scrape', 'scrape', withFormats(request), false)}
+              onGetCode={(body) => openCode('scrape', withFormats(body as unknown as ScrapeRequest))}
             />
           )}
           {activeDef.id === 'map' && (
@@ -224,9 +247,17 @@ export function Playground() {
       </div>
 
       <div className="min-h-[300px] overflow-x-auto rounded-card border border-border bg-background">
-        <Results result={result} loading={loading} timingMs={timingMs} error={error} pending={pending} />
+        <Results
+          result={result}
+          loading={loading}
+          timingMs={timingMs}
+          error={error}
+          pending={pending}
+          endpoint={activeDef.id}
+          input={promptValue}
+          onBack={clearResult}
+        />
       </div>
-
 
       {codeDialog && (
         <GetCodeDialog

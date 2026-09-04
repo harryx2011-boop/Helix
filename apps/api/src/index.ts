@@ -31,6 +31,8 @@ import { registerSearch } from './routes/search.js';
 import { registerAgent } from './routes/agent.js';
 import { registerEnrich } from './routes/enrich.js';
 import { registerInternal } from './routes/internal.js';
+import { registerStatus } from './routes/status.js';
+import { StatusSampler } from './status/sampler.js';
 import { registerSettings } from './routes/settings.js';
 import { readOverrides } from './settings/store.js';
 import { registerInteract } from './routes/interact.js';
@@ -224,6 +226,15 @@ const monitorWebhookDispatcher = new MonitorWebhookDispatcher({
   logger: app.log,
 });
 
+const statusSampler = new StatusSampler({
+  pool,
+  fetchClient,
+  extractClient,
+  browserPool,
+  lightpandaEnabled: config.lightpandaEnabled,
+  logger: app.log,
+});
+
 const limiter = new RateLimiter({
   limit: 1000,
   windowMs: 60_000,
@@ -245,11 +256,17 @@ await app.register(cors, { origin: config.corsOrigins });
 
 // `/settings` is exempt from API-key auth because it enforces a stricter gate
 // of its own: the operator's admin token, not any caller's key.
-registerAuth(app, { verifyApiKey, limiter, tickets, open: ['/v1/health', '/v1/interact/live/', '/settings'] });
+registerAuth(app, { verifyApiKey, limiter, tickets, open: ['/v1/health', '/v1/status', '/v1/interact/live/', '/settings'] });
 
 await app.register(
   async (instance) => {
-    await registerHealth(instance, { fetchClient, extractClient, browserPool });
+    await registerHealth(instance, {
+      fetchClient,
+      extractClient,
+      browserPool,
+      lightpandaEnabled: config.lightpandaEnabled,
+    });
+    await registerStatus(instance);
     await registerScrape(instance, {
       fetchClient,
       extractClient,
@@ -392,6 +409,7 @@ const start = async (): Promise<void> => {
     await monitorScheduler.start();
     monitorWebhookDispatcher.start();
     sessions.startSweeper();
+    statusSampler.start();
 
     await app.listen({ port: config.port, host: '0.0.0.0' });
     app.log.info(
@@ -417,6 +435,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
       monitorScheduler.stop();
       monitorWebhookDispatcher.stop();
       crawlWebhookDispatcher.stop();
+      statusSampler.stop();
       await sessions.closeAll().catch(() => undefined);
       await app.close().catch(() => undefined);
       await browserPool.close().catch(() => undefined);

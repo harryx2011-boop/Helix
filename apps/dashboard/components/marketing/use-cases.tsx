@@ -1,8 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { Bot, Search, SquareStack, UserPlus } from 'lucide-react';
+import { Bot, RefreshCw, Search, UserPlus, Wrench } from 'lucide-react';
 import { FrameBand } from './section-frame';
+import { CodeRain } from './ambient';
+import { IconTile } from './icon-tile';
 import { CodePanel } from './code-panel';
 import { AnimatedCode, type Token } from './animated-code';
 
@@ -37,7 +39,7 @@ const CASES: UseCase[] = [
     ],
   },
   {
-    icon: SquareStack,
+    icon: RefreshCw,
     title: 'Fresh context for chats',
     body: 'Pull the live page into context instead of a stale cached index.',
     label: 'scrape.sh',
@@ -52,7 +54,7 @@ const CASES: UseCase[] = [
     ],
   },
   {
-    icon: Bot,
+    icon: Wrench,
     title: 'Tools for agents',
     body: 'Six endpoints as MCP tools. One command wires up the agent.',
     label: 'init.sh',
@@ -91,18 +93,27 @@ export function UseCases() {
 
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="06" total="07" label="USE CASES" sub="What people build" />
+      <FrameBand step="06" total="07" label="USE CASES" sub="What people build" icon={Bot} />
 
       <div className="py-16">
-        <div data-reveal className="text-center">
-          <h2 className="mx-auto max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
-            Give your agents
-            <br />
-            <span className="text-violet">the live web.</span>
-          </h2>
-          <p className="mx-auto mt-3 max-w-[480px] text-[16px] leading-relaxed text-m-ink/72">
-            Four ways teams point an agent at the open web today.
-          </p>
+        <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
+          <CodeRain
+            cols={22}
+            rows={6}
+            density={0.4}
+            seed={131}
+            className="hidden -inset-y-10 -inset-x-24 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_46%,black_66%,transparent_100%)]"
+          />
+          <div className="relative">
+            <h2 className="mx-auto max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
+              Give your agents
+              <br />
+              <span className="text-violet">the live web.</span>
+            </h2>
+            <p className="mx-auto mt-3 max-w-[480px] text-[16px] leading-relaxed text-m-ink/72">
+              Four ways teams point an agent at the open web today.
+            </p>
+          </div>
         </div>
 
         <div data-reveal className="mt-10 grid w-full min-w-0 max-w-full grid-cols-1 gap-8 lg:grid-cols-[minmax(0,360px)_1fr] lg:gap-10">
@@ -120,7 +131,7 @@ export function UseCases() {
                     (isActive ? 'border-violet bg-violet-4' : 'border-transparent hover:bg-m-ink/[0.031]')
                   }
                 >
-                  <c.icon className="mt-0.5 h-5 w-5 shrink-0 text-violet" strokeWidth={1.75} aria-hidden />
+                  <IconTile icon={c.icon} />
                   <span className="min-w-0">
                     <span className="block text-[15px] font-medium leading-tight tracking-tight">{c.title}</span>
                     <span className="mt-1 block text-[13px] leading-relaxed text-m-ink/64">{c.body}</span>

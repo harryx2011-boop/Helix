@@ -7,6 +7,7 @@ const config: Config = {
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './lib/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      opacity: { 12: '0.12', 16: '0.16', 24: '0.24', 32: '0.32', 40: '0.4', 48: '0.48', 56: '0.56', 64: '0.64', 72: '0.72', 88: '0.88' },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -32,12 +33,12 @@ const config: Config = {
           bg: 'var(--m-bg)',
           'bg-lighter': 'var(--m-bg-lighter)',
           surface: 'var(--m-surface)',
-          ink: 'var(--m-ink)',
+          ink: 'rgb(var(--m-ink-rgb) / <alpha-value>)',
           border: { faint: 'var(--m-border-faint)', muted: 'var(--m-border-muted)', loud: 'var(--m-border-loud)' },
           illus: { faint: 'var(--m-illus-faint)', muted: 'var(--m-illus-muted)', DEFAULT: 'var(--m-illus-default)' },
         },
         violet: {
-          DEFAULT: 'var(--violet-100)',
+          DEFAULT: 'rgb(var(--violet-rgb) / <alpha-value>)',
           100: 'var(--violet-100)',
           90: 'var(--violet-90)',
           48: 'var(--violet-48)',

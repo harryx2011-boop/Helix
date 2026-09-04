@@ -1,36 +1,74 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronDown, Code2, Globe, Loader2, Play, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ENDPOINTS, TAB_GROUPS, endpointById } from '@/lib/catalog';
+import { ArrowRight, Code2, Loader2, Play, Search, SlidersHorizontal } from 'lucide-react';
+import type { Format } from '@/lib/api';
+import { ENDPOINTS, TAB_GROUPS, endpointById, type EndpointDef } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/endpoints';
 import { cn } from '@/lib/utils';
+import { Segmented, type SegmentedItem } from '@/components/marketing/segmented';
+import { FormatPicker, SURFACE, type PromptSurface } from './format-picker';
 
 const PLACEHOLDERS: Record<Endpoint, string[]> = {
-  scrape: ['https://example.com', 'https://docs.stripe.com/api', 'https://news.ycombinator.com'],
-  parse: ['https://example.com/files/report.pdf', 'https://example.com/invoice.docx'],
-  metadata: ['https://example.com/files/report.pdf', 'https://example.com/photo.jpg'],
+  scrape: ['example.com/pricing', 'docs.stripe.com/api', 'news.ycombinator.com'],
+  parse: ['example.com/files/report.pdf', 'example.com/invoice.docx'],
+  metadata: ['example.com/files/report.pdf', 'example.com/photo.jpg'],
   search: ['transactional email APIs', 'latest news in AI infrastructure', 'headless browser pricing'],
-  map: ['https://example.com', 'https://docs.example.com'],
-  crawl: ['https://docs.example.com', 'https://example.com/blog'],
-  interact: ['https://example.com/shop', 'https://example.com/login'],
-  monitor: ['https://example.com/pricing', 'https://example.com/status'],
+  map: ['example.com', 'docs.example.com'],
+  crawl: ['docs.example.com', 'example.com/blog'],
+  interact: ['example.com/shop', 'example.com/login'],
+  monitor: ['example.com/pricing', 'example.com/status'],
 };
 
-const RUN_LABEL: Record<Endpoint, string> = {
-  scrape: 'Run scrape',
-  parse: 'Run parse',
-  metadata: 'Run metadata',
-  search: 'Run search',
-  map: 'Run map',
+export const RUN_LABEL: Record<Endpoint, string> = {
+  scrape: 'Start scraping',
+  parse: 'Parse file',
+  metadata: 'Scan file',
+  search: 'Search',
+  map: 'Map site',
   crawl: 'Start crawl',
-  interact: 'Run interact',
+  interact: 'Run actions',
   monitor: 'Create monitor',
 };
 
+/** The five tabs the landing shows; the rest live in the Capabilities menu. */
+const HERO_TABS: readonly Endpoint[] = ['search', 'map', 'scrape', 'parse', 'crawl'];
+
+/** Endpoints that take a scrape `formats` array, so the Format button applies. */
+const FORMAT_TABS: readonly Endpoint[] = ['scrape'];
+
+const SCHEME = /^(https?:\/\/)/i;
+
+function splitScheme(value: string): { scheme: string; rest: string } {
+  const match = value.match(SCHEME);
+  return match ? { scheme: match[1]!, rest: value.slice(match[1]!.length) } : { scheme: '', rest: value };
+}
+
+/**
+ * The `/app` shell's dark tokens have no `m-*` values, and `Segmented` is
+ * written in them. Rather than a second track component, the track's tokens
+ * are re-pointed at the app's own palette for the duration of this subtree.
+ */
+const APP_TRACK_VARS = {
+  '--m-bg': 'hsl(var(--card))',
+  '--m-surface': 'hsl(var(--secondary))',
+  '--m-ink': 'hsl(var(--foreground))',
+  '--m-border-faint': 'hsl(var(--border))',
+  '--m-border-muted': 'hsl(var(--border))',
+  '--m-border-loud': 'hsl(var(--border))',
+  '--violet-100': 'hsl(var(--primary))',
+  '--shadow-card-sm': 'none',
+} as React.CSSProperties;
+
+function tabsFor(variant: PromptSurface): SegmentedItem<Endpoint>[] {
+  const visible: EndpointDef[] = TAB_GROUPS.flatMap((group) => ENDPOINTS.filter((e) => e.group === group));
+  return visible
+    .filter((e) => variant === 'app' || HERO_TABS.includes(e.id))
+    .map((e) => ({ id: e.id, label: e.name, icon: e.icon, group: e.group }));
+}
+
 interface PromptBoxProps {
+  variant: PromptSurface;
   activeId: string;
   onSelectTab: (id: string) => void;
   value: string;
@@ -38,13 +76,25 @@ interface PromptBoxProps {
   onSubmit: () => void;
   loading: boolean;
   disabled: boolean;
-  optionsOpen: boolean;
-  onToggleOptions: () => void;
-  onGetCode: () => void;
-  getCodeDisabled: boolean;
+  optionsOpen?: boolean;
+  /** Present on the app: the 36px sliders button opens the Options panel. */
+  onToggleOptions?: () => void;
+  onGetCode?: () => void;
+  getCodeDisabled?: boolean;
+  /** Present when the caller owns a scrape `formats` array; shows the Format button on scrape. */
+  formats?: readonly Format[];
+  onFormatsChange?: (formats: Format[]) => void;
+  className?: string;
 }
 
+/**
+ * The one prompt box: group-labelled endpoint track above, then input row,
+ * hairline, toolbar. Rendered on the landing (`hero`, light tokens) and on
+ * `/app/playground` (`app`, dark tokens). The URL value the parent holds is
+ * always the full URL; the `https://` chip is display only.
+ */
 export function PromptBox({
+  variant,
   activeId,
   onSelectTab,
   value,
@@ -52,16 +102,21 @@ export function PromptBox({
   onSubmit,
   loading,
   disabled,
-  optionsOpen,
+  optionsOpen = false,
   onToggleOptions,
   onGetCode,
-  getCodeDisabled,
+  getCodeDisabled = false,
+  formats,
+  onFormatsChange,
+  className,
 }: PromptBoxProps) {
+  const s = SURFACE[variant];
   const activeDef = endpointById(activeId) ?? ENDPOINTS[0]!;
   const isSearch = activeDef.id === 'search';
   const placeholders = PLACEHOLDERS[activeDef.id];
   const [placeholderIndex, setPlaceholderIndex] = React.useState(0);
   const [swapping, setSwapping] = React.useState(false);
+  const tabs = React.useMemo(() => tabsFor(variant), [variant]);
 
   React.useEffect(() => {
     setPlaceholderIndex(0);
@@ -79,13 +134,12 @@ export function PromptBox({
     return () => clearInterval(interval);
   }, [placeholders, value]);
 
-  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-    event.preventDefault();
-    const ids = ENDPOINTS.map((e) => e.id);
-    const currentIndex = ids.indexOf(activeDef.id as Endpoint);
-    const nextIndex = event.key === 'ArrowRight' ? (currentIndex + 1) % ids.length : (currentIndex - 1 + ids.length) % ids.length;
-    onSelectTab(ids[nextIndex]!);
+  const { scheme, rest } = isSearch ? { scheme: '', rest: value } : splitScheme(value);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const next = event.target.value;
+    if (isSearch || next === '' || SCHEME.test(next)) onValueChange(next);
+    else onValueChange(`${scheme || 'https://'}${next}`);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -95,106 +149,105 @@ export function PromptBox({
     }
   };
 
+  const showFormats = formats !== undefined && onFormatsChange !== undefined && FORMAT_TABS.includes(activeDef.id);
+  const showLeft = Boolean(onToggleOptions) || showFormats;
+
   return (
-    <div className="flex flex-col gap-3 rounded-card border border-border bg-card p-3 shadow-sm">
+    <div className={cn('flex w-full min-w-0 flex-col items-center gap-4', className)}>
       <style>{`
         @keyframes prompt-placeholder-out { from { opacity: 1; transform: translateY(0); filter: blur(0); } to { opacity: 0; transform: translateY(-4px); filter: blur(2px); } }
-        @keyframes prompt-placeholder-in { from { opacity: 0; transform: translateY(4px); filter: blur(2px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
-        .prompt-placeholder-swap { animation: prompt-placeholder-out 150ms ease-in-out both; }
+        .prompt-placeholder-swap::placeholder { animation: prompt-placeholder-out 150ms ease-in-out both; }
       `}</style>
 
-      <div className="flex items-center gap-3">
-        {isSearch ? (
-          <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        ) : (
-          <Globe className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        )}
-        <div className="relative min-w-0 flex-1">
+      <div className="max-w-full overflow-x-auto" style={variant === 'app' ? APP_TRACK_VARS : undefined}>
+        <Segmented items={tabs} value={activeDef.id} onChange={onSelectTab} aria-label="Endpoint" />
+      </div>
+
+      <div className={cn('w-full min-w-0 overflow-visible rounded-panel', s.box)}>
+        <div className={cn('flex min-w-0 items-center gap-2.5 border-b px-4 py-3.5', s.hairline)}>
+          {isSearch ? (
+            <Search className={cn('h-4 w-4 shrink-0', s.faint)} aria-hidden />
+          ) : (
+            <span className={cn('shrink-0 rounded-card px-1.5 py-0.5 font-mono text-[12px] leading-tight', s.chip)} aria-hidden>
+              {scheme || 'https://'}
+            </span>
+          )}
           <input
-            type={isSearch ? 'text' : 'url'}
+            type="text"
+            inputMode={isSearch ? 'search' : 'url'}
+            autoComplete="off"
+            spellCheck={false}
             name={isSearch ? 'query' : 'url'}
-            value={value}
-            onChange={(event) => onValueChange(event.target.value)}
+            value={rest}
+            onChange={handleChange}
             onKeyDown={handleKeyDown}
-            required
-            aria-label={isSearch ? 'Search query' : 'URL'}
+            aria-label={isSearch ? 'Search query' : 'URL to fetch'}
             placeholder={placeholders[placeholderIndex]}
             className={cn(
-              'w-full min-w-0 border-0 bg-transparent p-0 text-base text-foreground outline-none placeholder:text-muted-foreground',
+              'w-full min-w-0 border-0 bg-transparent p-0 font-mono text-[14px] outline-none placeholder:opacity-40',
+              s.ink,
+              variant === 'hero' ? 'placeholder:text-m-ink' : 'placeholder:text-foreground',
               swapping && 'prompt-placeholder-swap',
             )}
           />
         </div>
-      </div>
 
-      <div className="flex flex-col items-center gap-3 border-t border-border pt-3">
-        <div className="flex flex-wrap justify-center gap-x-5 gap-y-2.5">
-          {TAB_GROUPS.map((group) => {
-            const groupEndpoints = ENDPOINTS.filter((e) => e.group === group);
-            return (
-              <div key={group} className="flex flex-col items-center gap-1">
-                <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">{group}</span>
-                <div
-                  role="tablist"
-                  aria-label={group}
-                  onKeyDown={handleTabKeyDown}
-                  className="flex items-center gap-1 rounded-pill bg-muted p-1"
+        <div className="flex min-w-0 flex-wrap items-center gap-2 px-3 py-2.5">
+          {showLeft && (
+            <div className="flex min-w-0 items-center gap-2">
+              {onToggleOptions && (
+                <button
+                  type="button"
+                  aria-label="Options"
+                  aria-expanded={optionsOpen}
+                  onClick={onToggleOptions}
+                  className={cn(
+                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-card transition-colors duration-150 ease-out',
+                    s.outlined,
+                    optionsOpen && s.accent,
+                  )}
                 >
-                  {groupEndpoints.map((def) => {
-                    const Icon = def.icon;
-                    const active = def.id === activeDef.id;
-                    return (
-                      <button
-                        key={def.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={active}
-                        tabIndex={active ? 0 : -1}
-                        onClick={() => onSelectTab(def.id)}
-                        className={cn(
-                          'flex min-h-[32px] items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors duration-150 ease-out',
-                          active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
-                        )}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                        {def.name}
-                        {def.status === 'coming' && (
-                          <span className="rounded-pill bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                            Soon
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                  <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                </button>
+              )}
+              {showFormats && <FormatPicker surface={variant} formats={formats} onChange={onFormatsChange} />}
+            </div>
+          )}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="gap-1.5"
-          aria-expanded={optionsOpen}
-          onClick={onToggleOptions}
-        >
-          <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-150 ease-out', optionsOpen && 'rotate-180')} />
-          Options
-        </Button>
-
-        <div className="ml-auto flex items-center gap-2">
-          <Button type="button" variant="secondary" size="sm" className="gap-1.5" onClick={onGetCode} disabled={getCodeDisabled}>
-            <Code2 className="h-3.5 w-3.5" />
-            Get code
-          </Button>
-          <Button type="button" size="sm" className="gap-1.5" disabled={loading || disabled} onClick={onSubmit}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-            {RUN_LABEL[activeDef.id]}
-          </Button>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {onGetCode && (
+              <button
+                type="button"
+                onClick={onGetCode}
+                disabled={getCodeDisabled}
+                className={cn(
+                  'flex h-9 items-center gap-1.5 rounded-pill px-3.5 text-[13px] font-medium transition-colors duration-150 ease-out disabled:pointer-events-none disabled:opacity-50',
+                  s.secondary,
+                )}
+              >
+                <Code2 className="h-4 w-4" aria-hidden />
+                Get code
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={loading || disabled}
+              className={cn(
+                'flex h-9 items-center gap-1.5 rounded-pill px-4 text-[13px] font-medium transition-[box-shadow,background-color] duration-200 ease-out disabled:pointer-events-none disabled:opacity-50',
+                s.primary,
+              )}
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : variant === 'hero' ? (
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              ) : (
+                <Play className="h-4 w-4" aria-hidden />
+              )}
+              {RUN_LABEL[activeDef.id]}
+            </button>
+          </div>
         </div>
       </div>
     </div>

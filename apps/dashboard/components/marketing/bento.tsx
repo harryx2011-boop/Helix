@@ -1,44 +1,58 @@
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { IconTile } from './icon-tile';
+
+export type BentoSpan = 'wide' | 'narrow' | 'hero' | 'third';
 
 export interface BentoCardProps {
   icon: LucideIcon;
   eyebrow: string;
   lead: string;
   body: string;
-  /** On a six-column grid: wide spans four, narrow spans two. Rows alternate wide/narrow then narrow/wide. */
-  span: 'wide' | 'narrow';
+  /**
+   * Six-column grid. `wide` / `narrow` alternate two per row (four / two
+   * columns). `hero` takes the full row with its visual beside the text;
+   * `third` is one of three equal cells in the row beneath it.
+   */
+  span: BentoSpan;
   /** Bottom slot: a meter panel, a log, or an evidence chip. */
   children?: React.ReactNode;
   className?: string;
 }
 
+const SPAN_CLASS: Record<BentoSpan, string> = {
+  wide: 'border-b sm:col-span-4 sm:[&:nth-child(2n)]:border-l sm:[&:nth-last-child(-n+2)]:border-b-0',
+  narrow: 'border-b sm:col-span-2 sm:[&:nth-child(2n)]:border-l sm:[&:nth-last-child(-n+2)]:border-b-0',
+  hero: 'border-b sm:col-span-6 sm:flex-row sm:items-center sm:gap-10',
+  third: 'border-b last:border-b-0 sm:col-span-2 sm:border-b-0 sm:[&:nth-child(n+3)]:border-l',
+};
+
 /**
  * One cell of a hairline bento. Text sits on top, the visual fills the
  * bottom; borders come from the cell itself so the grid needs no gap.
  * The parent grid must carry `data-reveal-group` or the cells stay hidden.
- * Two cells per row at `sm:`; the second in each row gets a left hairline,
- * the last row loses its bottom one.
  */
-export function BentoCard({ icon: Icon, eyebrow, lead, body, span, children, className }: BentoCardProps) {
+export function BentoCard({ icon, eyebrow, lead, body, span, children, className }: BentoCardProps) {
+  const hero = span === 'hero';
   return (
     <div
       data-reveal-item
       className={cn(
-        'flex min-w-0 flex-col border-b border-m-border-faint p-6 transition-colors duration-200 ease-out hover:bg-m-ink/[0.031] sm:p-7',
-        'sm:[&:nth-child(2n)]:border-l sm:[&:nth-last-child(-n+2)]:border-b-0',
-        span === 'wide' ? 'sm:col-span-4' : 'sm:col-span-2',
+        'flex min-w-0 flex-col border-m-border-faint p-6 transition-colors duration-200 ease-out hover:bg-m-ink/[0.031] sm:p-7',
+        SPAN_CLASS[span],
         className,
       )}
     >
-      <div className="flex items-center gap-1.5 font-mono text-[12px] text-m-ink/56">
-        <Icon className="h-3.5 w-3.5 text-violet" strokeWidth={1.75} aria-hidden />
-        {eyebrow}
+      <div className={cn('min-w-0', hero && 'sm:flex-1')}>
+        <div className="flex items-center gap-2 font-mono text-[12px] text-m-ink/56">
+          <IconTile icon={icon} size="sm" />
+          {eyebrow}
+        </div>
+        <p className="mt-3 max-w-[520px] text-[18px] leading-snug tracking-tight sm:text-[20px]">
+          <span className="font-medium text-m-ink">{lead}</span> <span className="text-m-ink/64">{body}</span>
+        </p>
       </div>
-      <p className="mt-3 max-w-[520px] text-[18px] leading-snug tracking-tight sm:text-[20px]">
-        <span className="font-medium text-m-ink">{lead}</span> <span className="text-m-ink/64">{body}</span>
-      </p>
-      {children && <div className="mt-auto pt-6">{children}</div>}
+      {children && <div className={cn('mt-auto min-w-0 pt-6', hero && 'sm:w-1/2 sm:shrink-0 sm:pt-0')}>{children}</div>}
     </div>
   );
 }

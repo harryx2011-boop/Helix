@@ -77,13 +77,6 @@ export default async function RolePage({
         <React.Suspense fallback={null}>
           <PersonaSelect roleSlug={role.slug} personas={summaries} activeSlug={active.slug} />
         </React.Suspense>
-        <div>
-          <p className="text-[14px] font-medium text-p-ink">{active.tagline}</p>
-          <p className="mt-0.5 text-[12.5px] text-p-ink-3">
-            {active.tone} tone &middot; v{active.version}
-          </p>
-        </div>
-
         <RoleActions role={role} persona={active} />
       </header>
 

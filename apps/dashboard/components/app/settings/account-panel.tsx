@@ -208,7 +208,7 @@ export function AccountPanel() {
     return (
       <>
         <FrameRow>
-          <FrameHeading id="account" title="Account" description="Your profile and the answers you gave when you signed up." />
+          <FrameHeading id="account" title="Account" description="Who you are signed in as, and how you told us you would use Helix." />
         </FrameRow>
         <FrameRow flush className="flex flex-col gap-3 p-6">
           <Skeleton className="h-16 w-full" />
@@ -222,7 +222,7 @@ export function AccountPanel() {
     return (
       <>
         <FrameRow>
-          <FrameHeading id="account" title="Account" description="Your profile and the answers you gave when you signed up." />
+          <FrameHeading id="account" title="Account" description="Who you are signed in as, and how you told us you would use Helix." />
         </FrameRow>
         <FrameRow flush className="p-6">
           <p className="text-[13px] leading-snug text-muted-foreground">{error ?? 'Could not load your account.'}</p>
@@ -243,7 +243,7 @@ export function AccountPanel() {
         <FrameHeading
           id="account"
           title="Account"
-          description="Your profile and the answers you gave when you signed up."
+          description="Who you are signed in as, and how you told us you would use Helix."
         />
       </FrameRow>
 
@@ -276,48 +276,48 @@ export function AccountPanel() {
       <FrameRow>
         <FrameHeading
           id="account-answers"
-          title="Your answers"
-          description="Set during sign-up and editable here. Each change saves on its own."
+          title="How You Use Helix"
+          description="You chose these when you signed up. Change any of them here — each saves on its own."
         />
       </FrameRow>
 
       <FrameRow flush>
         <div className="divide-y divide-border">
           <ChoiceRow<OnboardingRole>
-            title="Role"
-            description="What you do, so the docs lead with the right examples."
+            title="Your Role"
+            description="We lead with examples that match the kind of work you do."
             choices={ROLE_CHOICES}
             value={answers.role}
             saving={saving}
             onPick={(role) => save({ role }, 'Role saved.')}
           />
           <MultiRow<UseCase>
-            title="Use cases"
-            description="What you are building. Pick as many as apply."
+            title="What You Are Building"
+            description="Pick as many as apply."
             choices={USE_CASE_CHOICES}
             values={answers.useCases}
             saving={saving}
             onToggle={(useCases) => save({ useCases }, 'Use cases saved.')}
           />
           <ChoiceRow<LlmProvider>
-            title="LLM provider"
-            description="Which model provider you bring for extraction and agent calls."
+            title="Your AI Provider"
+            description="The AI service Helix uses when a request needs one, like pulling structured data out of a page."
             choices={LLM_PROVIDER_CHOICES}
             value={answers.llmProvider}
             saving={saving}
             onPick={(llmProvider) => save({ llmProvider }, 'Provider saved.')}
           />
           <ChoiceRow<DeployIntent>
-            title="Deployment"
-            description="Where you plan to run Helix."
+            title="Where You Run Helix"
+            description="Our own hosted service, or on hardware you control."
             choices={DEPLOY_INTENT_CHOICES}
             value={answers.deployIntent}
             saving={saving}
             onPick={(deployIntent) => save({ deployIntent }, 'Deployment saved.')}
           />
           <MultiRow<OnboardingEndpoint>
-            title="Endpoints"
-            description="The ones you picked lead the sidebar, in this order."
+            title="Your Sidebar Order"
+            description="The tools you pick appear first in the sidebar, in this order."
             choices={ENDPOINT_CHOICES}
             values={answers.selectedEndpoints}
             saving={saving}

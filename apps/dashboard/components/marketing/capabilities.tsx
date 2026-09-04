@@ -9,10 +9,19 @@ import { AsciiNoise } from './ascii-fields';
 import { CodePanel } from './code-panel';
 import { AnimatedCode } from './animated-code';
 import { Segmented } from './segmented';
+import { EndpointCards, type EndpointCardItem } from './endpoint-cards';
 import type { Endpoint } from '@/lib/endpoints';
 
 const TABS = ENDPOINTS.filter((e) => e.product);
 const TAB_ITEMS = TABS.map((t) => ({ id: t.id, label: t.name, icon: t.icon, group: t.group }));
+
+/** The headline four. The rest reach through the track below and the Capabilities menu. */
+const CARDS: readonly EndpointCardItem[] = [
+  { id: 'search', blurb: 'Search the web and read every result in the same call.' },
+  { id: 'scrape', blurb: 'One URL in, clean markdown, JSON or a screenshot out.' },
+  { id: 'interact', blurb: 'A browser session your agent drives: click, type, scroll, extract.' },
+  { id: 'monitor', blurb: 'Re-read on a schedule, get a diff when something changes.', fresh: true },
+];
 
 /** Verbatim request/response pairs, one per tab — matched to each capability page's openapi-sourced examples. */
 const REQUEST: Record<Endpoint, string> = {
@@ -147,7 +156,7 @@ export function Capabilities() {
 
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="01" total="07" label="CAPABILITIES" sub="Six endpoints" icon={Braces} />
+      <FrameBand step="01" total="07" label="CAPABILITIES" sub="Eight endpoints" icon={Braces} />
 
       <div className="py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
@@ -167,15 +176,15 @@ export function Capabilities() {
           </div>
         </div>
 
-        <div data-reveal className="mt-10 overflow-x-auto">
-          <Segmented items={TAB_ITEMS} value={active} onChange={setActive} aria-label="Capability" />
-        </div>
+        <EndpointCards items={CARDS} className="mt-10" />
 
-        <div data-reveal className="mt-5 flex flex-col gap-3 rounded-panel border border-m-border-muted bg-m-surface p-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="max-w-[560px] text-[14px] leading-relaxed text-m-ink/72">{def.tagline}</p>
+        <div data-reveal className="mt-12 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 overflow-x-auto">
+            <Segmented items={TAB_ITEMS} value={active} onChange={setActive} aria-label="Capability" />
+          </div>
           <Link
             href={def.route}
-            className="group flex shrink-0 items-center gap-1.5 font-mono text-[13px] font-medium text-violet transition-colors duration-150 ease-out hover:text-violet-hover"
+            className="group flex w-fit shrink-0 items-center gap-1.5 pb-1 font-mono text-[13px] font-medium text-violet transition-colors duration-150 ease-out hover:text-violet-hover"
           >
             {def.name} docs
             <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 ease-out group-hover:translate-x-0.5" aria-hidden />
@@ -186,7 +195,7 @@ export function Capabilities() {
           <CodePanel chrome="terminal" label={def.path} copyText={REQUEST[active]}>
             <AnimatedCode key={`req-${active}`} code={REQUEST[active]} mode="reveal" lineMs={45} playOnView className="text-foreground" />
           </CodePanel>
-          <CodePanel chrome="terminal" label="response">
+          <CodePanel chrome="terminal" label="[ .JSON ]" lines={RESPONSE[active].split('\n').length}>
             <AnimatedCode key={`res-${active}`} code={RESPONSE[active]} mode="scramble" resolveMs={1800} playOnView className="text-foreground" />
           </CodePanel>
         </div>

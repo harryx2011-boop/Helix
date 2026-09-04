@@ -46,8 +46,8 @@ export function ProvidersPanel() {
     <>
       <FrameRow>
         <FrameHeading
-          title="Model providers"
-          description="Bring your own keys, or point at a local runtime. Requests made with your Helix API key use these providers for JSON extraction and the Agent."
+          title="AI Providers"
+          description="Helix uses your own AI account for the features that need one, so you are billed directly and your keys stay yours. You can also point at a model running on your own machine."
         />
       </FrameRow>
 
@@ -78,7 +78,7 @@ export function ProvidersPanel() {
               <React.Fragment key={meta.id}>
                 {enteringLocal && (
                   <FrameRow className="px-6 py-2.5">
-                    <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">Local runtimes</span>
+                    <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">On your own machine</span>
                   </FrameRow>
                 )}
                 <ProviderRow

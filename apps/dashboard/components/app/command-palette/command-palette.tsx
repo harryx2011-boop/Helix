@@ -20,6 +20,7 @@ import {
   SlidersHorizontal,
   Terminal,
   Trash2,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -86,7 +87,6 @@ export function CommandPalette({ selectedEndpoints }: { selectedEndpoints: reado
           data-surface="app"
           className="dark fixed left-1/2 top-[8vh] z-50 grid max-h-[min(32rem,calc(92vh-1rem))] w-[calc(100vw-2rem)] min-w-0 max-w-xl -translate-x-1/2 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-card border border-border bg-card text-foreground shadow-lg focus-within:ring-1 focus-within:ring-ring/40 data-[state=open]:animate-slide-up motion-reduce:animate-none sm:top-[12vh] sm:max-h-[min(32rem,calc(88vh-1rem))]"
         >
-          <DialogPrimitive.Title className="sr-only">Search and commands</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">
             Type to search pages, docs, keys, monitors and jobs. Use the arrow keys to move and Enter to open.
           </DialogPrimitive.Description>
@@ -348,27 +348,37 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
 
   return (
     <>
-      <div className="flex min-w-0 items-center gap-3 border-b border-border px-4">
-        <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        <input
-          data-palette-input=""
-          role="combobox"
-          aria-expanded="true"
-          aria-controls={listId}
-          aria-autocomplete="list"
-          aria-activedescendant={activeItem ? optionId(activeItem) : undefined}
-          aria-label="Search pages, docs, keys, monitors and jobs"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder="Search or jump to…"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setActive(0);
-          }}
-          onKeyDown={onKeyDown}
-          className="h-12 min-w-0 flex-1 bg-transparent text-sm text-foreground caret-primary placeholder:text-muted-foreground focus-visible:outline-none"
-        />
+      <div className="flex min-w-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <DialogPrimitive.Title className="text-sm font-medium text-foreground">Quick Search</DialogPrimitive.Title>
+        <DialogPrimitive.Close className="rounded-card p-1 text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <X className="h-4 w-4" aria-hidden="true" />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
+      </div>
+
+      <div className="min-w-0 px-3 pt-3">
+        <div className="flex min-w-0 items-center gap-2.5 rounded-card border border-border bg-background px-3 focus-within:border-primary/50">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <input
+            data-palette-input=""
+            role="combobox"
+            aria-expanded="true"
+            aria-controls={listId}
+            aria-autocomplete="list"
+            aria-activedescendant={activeItem ? optionId(activeItem) : undefined}
+            aria-label="Search pages, docs, keys, monitors and jobs"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="Search pages and sections…"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setActive(0);
+            }}
+            onKeyDown={onKeyDown}
+            className="h-10 min-w-0 flex-1 bg-transparent text-sm text-foreground caret-primary placeholder:text-muted-foreground focus-visible:outline-none"
+          />
+        </div>
       </div>
 
       <div ref={listRef} id={listId} role="listbox" aria-label="Results" aria-busy={isPending} className="min-h-0 overflow-y-auto overflow-x-hidden p-2">
@@ -412,16 +422,15 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
         })}
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2 font-mono text-[11px] text-muted-foreground">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1"><Key>↑</Key><Key>↓</Key> move</span>
-          <span className="flex items-center gap-1"><Key>↵</Key> open</span>
-          <span className="hidden items-center gap-1 sm:flex"><Key>esc</Key> close</span>
-        </div>
-        <button type="button" onClick={closePalette} className="rounded-card px-1.5 py-0.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:hidden">
-          Close
-        </button>
-        <span className="hidden items-center gap-1 sm:flex"><Clock className="h-3 w-3" aria-hidden="true" /> {recentRuns.length} recent</span>
+      <div className="flex items-center gap-4 border-t border-border px-4 py-2.5 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5"><Key>↑</Key><Key>↓</Key> Navigate</span>
+        <span className="flex items-center gap-1.5"><Key>Enter</Key> Select</span>
+        <span className="flex items-center gap-1.5"><Key>Esc</Key> Close</span>
+        {recentRuns.length > 0 && (
+          <span className="ml-auto hidden items-center gap-1.5 sm:flex">
+            <Clock className="h-3 w-3" aria-hidden="true" /> {recentRuns.length} recent
+          </span>
+        )}
       </div>
       <div aria-live="polite" className="sr-only">
         {query.trim() ? `${flat.length} results` : ''}
@@ -431,7 +440,11 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
 }
 
 function Key({ children }: { children: React.ReactNode }) {
-  return <kbd className="rounded-card border border-border bg-secondary px-1.5 py-px text-[10px] text-muted-foreground">{children}</kbd>;
+  return (
+    <kbd className="inline-flex min-w-[1.5rem] items-center justify-center rounded-card border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] leading-none text-foreground">
+      {children}
+    </kbd>
+  );
 }
 
 function OptionRow({ id, item, active, onHover, onSelect }: { id: string; item: PaletteItem; active: boolean; onHover: () => void; onSelect: () => void }) {

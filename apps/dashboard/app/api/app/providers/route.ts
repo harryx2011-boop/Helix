@@ -25,7 +25,16 @@ function failed(op: string, err: unknown): NextResponse {
     return NextResponse.json({ error: 'upstream_error', message: err.message }, { status: err.status || 502 });
   }
   console.error(`[providers] ${op} failed`, err);
-  return NextResponse.json({ error: 'proxy_error', message: 'Could not reach the Helix API.' }, { status: 502 });
+  // Provider keys live in the API's own database, so an API that is not running
+  // is the single most likely cause here — and "could not reach" alone sends
+  // people looking at their credentials instead of at the service.
+  return NextResponse.json(
+    {
+      error: 'proxy_error',
+      message: `No answer from the Helix API at ${apiBaseUrl().replace(/\/v1$/, '')}. Model providers are stored there, so it needs to be running before a key can be saved.`,
+    },
+    { status: 502 },
+  );
 }
 
 /** Every handler needs the same three things before it can call the instance on the user's behalf. */

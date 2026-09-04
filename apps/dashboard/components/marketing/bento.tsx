@@ -1,4 +1,5 @@
-import type { LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IconTile } from './icon-tile';
 
@@ -15,6 +16,9 @@ export interface BentoCardProps {
    * `third` is one of three equal cells in the row beneath it.
    */
   span: BentoSpan;
+  /** Optional "Read more" line under the lead. Both or neither. */
+  href?: string;
+  linkLabel?: string;
   /** Bottom slot: a meter panel, a log, or an evidence chip. */
   children?: React.ReactNode;
   className?: string;
@@ -32,7 +36,7 @@ const SPAN_CLASS: Record<BentoSpan, string> = {
  * bottom; borders come from the cell itself so the grid needs no gap.
  * The parent grid must carry `data-reveal-group` or the cells stay hidden.
  */
-export function BentoCard({ icon, eyebrow, lead, body, span, children, className }: BentoCardProps) {
+export function BentoCard({ icon, eyebrow, lead, body, span, href, linkLabel, children, className }: BentoCardProps) {
   const hero = span === 'hero';
   return (
     <div
@@ -51,6 +55,15 @@ export function BentoCard({ icon, eyebrow, lead, body, span, children, className
         <p className="mt-3 max-w-[520px] text-[18px] leading-snug tracking-tight sm:text-[20px]">
           <span className="font-medium text-m-ink">{lead}</span> <span className="text-m-ink/64">{body}</span>
         </p>
+        {href && linkLabel && (
+          <Link
+            href={href}
+            className="group mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-violet transition-colors duration-150 ease-out hover:text-violet-hover"
+          >
+            {linkLabel}
+            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 ease-out group-hover:translate-x-0.5" aria-hidden />
+          </Link>
+        )}
       </div>
       {children && <div className={cn('mt-auto min-w-0 pt-6', hero && 'sm:w-1/2 sm:shrink-0 sm:pt-0')}>{children}</div>}
     </div>

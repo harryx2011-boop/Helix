@@ -30,8 +30,8 @@ export default function SettingsPage() {
         <h1 className="relative text-[32px] font-medium leading-tight tracking-tight text-foreground">Settings</h1>
         <p className="relative mt-1 text-sm text-muted-foreground">
           {HOSTED
-            ? 'Your account, what you have used, and this instance’s configuration.'
-            : 'This instance’s configuration. The environment supplies the defaults; a change here overrides one.'}
+            ? 'Your account, how much you have used, and how this server is set up.'
+            : 'This instance’s configuration. Values come from the environment it was started with; changing one here overrides it.'}
         </p>
       </div>
       {HOSTED && <AccountPanel />}

@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse, type NextRequest } from 'next/server';
-import { supabaseConfigured } from '@/lib/supabase/server';
-import { createApiKey, ensureProfileForCurrentUser, listApiKeys, revokeApiKey } from '@/lib/profiles';
+import { supabaseAdmin, supabaseConfigured } from '@/lib/supabase/server';
+import { createApiKey, DASHBOARD_KEY_NAME, ensureProfileForCurrentUser, listApiKeys, revokeApiKey } from '@/lib/profiles';
 import type { ApiKeyRow } from '@/lib/supabase/types';
 
 export const dynamic = 'force-dynamic';
@@ -60,7 +60,7 @@ export async function GET(): Promise<NextResponse> {
     const profile = await ensureProfileForCurrentUser();
     if (!profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-    const rows = await listApiKeys(profile.id, profile.dashboard_key_id);
+    const rows = await listApiKeys(profile.id);
     return NextResponse.json({ keys: rows.map(toKeyJson) });
   } catch (err) {
     return failed('list', err);
@@ -117,10 +117,17 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
     const profile = await ensureProfileForCurrentUser();
     if (!profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-    // The listing hides this key, but a tab opened before that landed still
-    // offers its Revoke button — and revoking it breaks the hosted playground,
-    // agent and provider settings with no path back.
-    if (profile.dashboard_key_id && id === profile.dashboard_key_id) {
+    // The listing hides these, but a tab opened before that landed still offers
+    // a Revoke button — and revoking the live one breaks the hosted playground,
+    // agent and provider settings with no path back. Checked by name, since an
+    // unlinked internal key is exactly the case an id check misses.
+    const { data: target } = await supabaseAdmin()
+      .from('api_keys')
+      .select('name')
+      .eq('id', id)
+      .eq('profile_id', profile.id)
+      .maybeSingle();
+    if (target?.name === DASHBOARD_KEY_NAME) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
 

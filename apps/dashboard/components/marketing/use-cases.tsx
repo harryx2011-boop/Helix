@@ -57,7 +57,7 @@ const CASES: UseCase[] = [
   {
     icon: Wrench,
     title: 'Tools for agents',
-    body: 'Six endpoints as MCP tools. One command wires up the agent.',
+    body: 'Every endpoint as an MCP tool. One command wires up the agent.',
     label: 'init.sh',
     code: [
       [PL('$ '), K('npx'), PL(' -y @helix/cli@latest init --all')],

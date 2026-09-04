@@ -5,20 +5,69 @@ import { ArrowRight, Code2, Loader2, Play, Search, SlidersHorizontal } from 'luc
 import type { Format } from '@/lib/api';
 import { ENDPOINTS, TAB_GROUPS, endpointById, type EndpointDef } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/endpoints';
+import { usePrefersReducedMotion } from '@/lib/preferences';
 import { cn } from '@/lib/utils';
 import { Segmented, type SegmentedItem } from '@/components/marketing/segmented';
 import { FormatPicker, SURFACE, type PromptSurface } from './format-picker';
 
 const PLACEHOLDERS: Record<Endpoint, string[]> = {
-  scrape: ['example.com/pricing', 'docs.stripe.com/api', 'news.ycombinator.com'],
-  parse: ['example.com/files/report.pdf', 'example.com/invoice.docx'],
-  metadata: ['example.com/files/report.pdf', 'example.com/photo.jpg'],
-  search: ['transactional email APIs', 'latest news in AI infrastructure', 'headless browser pricing'],
-  map: ['example.com', 'docs.example.com'],
-  crawl: ['docs.example.com', 'example.com/blog'],
-  interact: ['example.com/shop', 'example.com/login'],
-  monitor: ['example.com/pricing', 'example.com/status'],
+  scrape: ['nextjs.org/docs', 'stripe.com/pricing', 'news.ycombinator.com'],
+  parse: ['arxiv.org/pdf/1706.03762', 'sec.gov/files/form10-k.pdf'],
+  metadata: ['upload.wikimedia.org/photo.jpg', 'arxiv.org/pdf/1706.03762'],
+  search: ['transactional email APIs', 'headless browser pricing', 'vector databases compared'],
+  map: ['nextjs.org', 'docs.anthropic.com'],
+  crawl: ['nextjs.org/docs', 'docs.anthropic.com/en/docs'],
+  interact: ['news.ycombinator.com/login', 'demo.playwright.dev/todomvc'],
+  monitor: ['stripe.com/pricing', 'status.openai.com'],
 };
+
+const TYPE_MS = 55;
+const HOLD_MS = 1900;
+const ERASE_MS = 28;
+
+/**
+ * Types each placeholder out a character at a time, holds, erases, moves on.
+ *
+ * It runs only while the field is empty and unfocused: a caret animating in a
+ * box someone is typing into competes with their own text, and the reason to
+ * show the sequence at all is to demonstrate what the field takes before they
+ * have committed to using it.
+ */
+function useTypedPlaceholder(phrases: readonly string[], active: boolean): string {
+  const [text, setText] = React.useState('');
+  const [index, setIndex] = React.useState(0);
+  const [erasing, setErasing] = React.useState(false);
+
+  React.useEffect(() => {
+    setIndex(0);
+    setText('');
+    setErasing(false);
+  }, [phrases]);
+
+  React.useEffect(() => {
+    if (!active) return;
+    const phrase = phrases[index % phrases.length] ?? '';
+    let timer: number;
+
+    // One timer per render, forward or back, so focusing the field mid-erase
+    // cannot leave an interval running against an unmounted state setter.
+    if (text.length < phrase.length) {
+      timer = window.setTimeout(() => setText(phrase.slice(0, text.length + 1)), TYPE_MS);
+    } else if (!erasing) {
+      timer = window.setTimeout(() => setErasing(true), HOLD_MS);
+    } else if (text.length > 0) {
+      timer = window.setTimeout(() => setText(text.slice(0, -1)), ERASE_MS);
+    } else {
+      setErasing(false);
+      setIndex((i) => i + 1);
+      return;
+    }
+
+    return () => window.clearTimeout(timer);
+  }, [text, index, phrases, active, erasing]);
+
+  return text;
+}
 
 export const RUN_LABEL: Record<Endpoint, string> = {
   scrape: 'Start scraping',
@@ -114,25 +163,15 @@ export function PromptBox({
   const activeDef = endpointById(activeId) ?? ENDPOINTS[0]!;
   const isSearch = activeDef.id === 'search';
   const placeholders = PLACEHOLDERS[activeDef.id];
-  const [placeholderIndex, setPlaceholderIndex] = React.useState(0);
-  const [swapping, setSwapping] = React.useState(false);
+  const [focused, setFocused] = React.useState(false);
+  const reduceMotion = usePrefersReducedMotion();
   const tabs = React.useMemo(() => tabsFor(variant), [variant]);
 
-  React.useEffect(() => {
-    setPlaceholderIndex(0);
-  }, [activeDef.id]);
-
-  React.useEffect(() => {
-    if (value.length > 0) return;
-    const interval = setInterval(() => {
-      setSwapping(true);
-      window.setTimeout(() => {
-        setPlaceholderIndex((i) => (i + 1) % placeholders.length);
-        setSwapping(false);
-      }, 150);
-    }, 3200);
-    return () => clearInterval(interval);
-  }, [placeholders, value]);
+  // Reduced motion gets the first URL as a plain placeholder: the point is to
+  // show a real example, and that survives without the animation.
+  const typing = value.length === 0 && !focused && !reduceMotion;
+  const typed = useTypedPlaceholder(placeholders, typing);
+  const placeholder = reduceMotion || !typing ? (placeholders[0] ?? '') : typed;
 
   const { scheme, rest } = isSearch ? { scheme: '', rest: value } : splitScheme(value);
 
@@ -155,8 +194,7 @@ export function PromptBox({
   return (
     <div className={cn('flex w-full min-w-0 flex-col items-center gap-4', className)}>
       <style>{`
-        @keyframes prompt-placeholder-out { from { opacity: 1; transform: translateY(0); filter: blur(0); } to { opacity: 0; transform: translateY(-4px); filter: blur(2px); } }
-        .prompt-placeholder-swap::placeholder { animation: prompt-placeholder-out 150ms ease-in-out both; }
+
       `}</style>
 
       <div className="max-w-full overflow-x-auto" style={variant === 'app' ? APP_TRACK_VARS : undefined}>
@@ -182,12 +220,13 @@ export function PromptBox({
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             aria-label={isSearch ? 'Search query' : 'URL to fetch'}
-            placeholder={placeholders[placeholderIndex]}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder={placeholder}
             className={cn(
               'w-full min-w-0 border-0 bg-transparent p-0 font-mono text-[14px] outline-none placeholder:opacity-40',
               s.ink,
               variant === 'hero' ? 'placeholder:text-m-ink' : 'placeholder:text-foreground',
-              swapping && 'prompt-placeholder-swap',
             )}
           />
         </div>

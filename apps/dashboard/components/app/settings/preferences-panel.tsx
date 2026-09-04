@@ -82,7 +82,7 @@ export function PreferencesPanel() {
         <FrameHeading
           id="preferences"
           title="Preferences"
-          description="Stored in this browser, so each machine you sign in from keeps its own answers."
+          description="Saved on this device, so your laptop and your phone can differ."
         />
       </FrameRow>
 
@@ -96,7 +96,7 @@ export function PreferencesPanel() {
         <FrameRow flush>
           <PreferenceRow
             label="Appearance"
-            description="The dashboard is dark by design; this sets the marketing pages and a self-host install."
+            description="The dashboard is always dark. This sets the rest of the site."
             control={
               <Select value={preferences.appearance} onValueChange={(v) => changeAppearance(v as Preferences['appearance'])}>
                 <SelectTrigger className="h-9 w-44 text-[13px]" aria-label="Appearance">
@@ -114,8 +114,8 @@ export function PreferencesPanel() {
           />
 
           <PreferenceRow
-            label="Default endpoint"
-            description="Which playground tab opens when you go there without naming one."
+            label="Default Tool"
+            description="Which tool the playground opens on."
             control={
               <Select
                 value={preferences.defaultEndpoint}
@@ -124,7 +124,7 @@ export function PreferencesPanel() {
                   toast.success(`Playground opens on ${v}.`);
                 }}
               >
-                <SelectTrigger className="h-9 w-44 text-[13px]" aria-label="Default endpoint">
+                <SelectTrigger className="h-9 w-44 text-[13px]" aria-label="Default Tool">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -139,8 +139,8 @@ export function PreferencesPanel() {
           />
 
           <PreferenceRow
-            label="Default format"
-            description="Preselected in the playground. Every request can still override it."
+            label="Default Output"
+            description="How results come back by default. You can change it on any request."
             control={
               <Select
                 value={preferences.defaultFormat}
@@ -149,7 +149,7 @@ export function PreferencesPanel() {
                   toast.success(`Default format is ${v}.`);
                 }}
               >
-                <SelectTrigger className="h-9 w-44 text-[13px]" aria-label="Default format">
+                <SelectTrigger className="h-9 w-44 text-[13px]" aria-label="Default Output">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -164,22 +164,22 @@ export function PreferencesPanel() {
           />
 
           <PreferenceRow
-            label="Reduce motion"
-            description="Stills the character fields and transitions. Your system setting already does this; turn it on to reduce motion here regardless."
+            label="Reduce Motion"
+            description="Stops the background animations. If your device already asks for less motion, that is honoured either way."
             htmlFor="pref-reduce-motion"
             control={
               <Switch
                 id="pref-reduce-motion"
                 checked={preferences.reduceMotion}
                 onCheckedChange={(v) => setPreference('reduceMotion', v)}
-                aria-label="Reduce motion"
+                aria-label="Reduce Motion"
               />
             }
           />
 
           <PreferenceRow
-            label="Start with the sidebar collapsed"
-            description="Applies on the next load; collapsing it by hand still wins for this session."
+            label="Start With a Narrow Sidebar"
+            description="Takes effect next time you load the app."
             htmlFor="pref-sidebar"
             last
             control={
@@ -187,7 +187,7 @@ export function PreferencesPanel() {
                 id="pref-sidebar"
                 checked={preferences.sidebarStartsCollapsed}
                 onCheckedChange={(v) => setPreference('sidebarStartsCollapsed', v)}
-                aria-label="Start with the sidebar collapsed"
+                aria-label="Start With a Narrow Sidebar"
               />
             }
           />

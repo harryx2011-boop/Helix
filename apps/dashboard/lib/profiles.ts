@@ -87,13 +87,13 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<CreatedApi
  * stored against it, since `provider_keys` is keyed on `api_key_id`. Filtered
  * on id rather than name so the name is not load-bearing.
  */
-export async function listApiKeys(profileId: string, excludeId?: string | null): Promise<ApiKeyRow[]> {
-  const query = supabaseAdmin()
+export async function listApiKeys(profileId: string): Promise<ApiKeyRow[]> {
+  const { data, error } = await supabaseAdmin()
     .from('api_keys')
     .select('*')
     .eq('profile_id', profileId)
+    .neq('name', DASHBOARD_KEY_NAME)
     .order('created_at', { ascending: false });
-  const { data, error } = await (excludeId ? query.neq('id', excludeId) : query);
   if (error) throw error;
   return data ?? [];
 }
@@ -118,6 +118,15 @@ function byteaToBuffer(value: string): Buffer {
 function bufferToBytea(value: Buffer): string {
   return `\\x${value.toString('hex')}`;
 }
+
+/**
+ * The proxy key's name is its identity, and the listing filters on it.
+ * Filtering on `profiles.dashboard_key_id` instead only ever hid the ONE key
+ * currently linked — a mint that failed before the link was written left a
+ * revoked row that no id-based filter could reach, and five of them showed up
+ * on a real Keys page.
+ */
+export const DASHBOARD_KEY_NAME = 'Dashboard (internal)';
 
 /**
  * The cached key, or null when there is no usable one.
@@ -159,7 +168,7 @@ export async function resolveDashboardApiKey(profile: ProfileRow): Promise<strin
   const cached = await readCachedDashboardKey(profile);
   if (cached) return cached;
 
-  const { key, row } = await createApiKey({ profileId: profile.id, name: 'Dashboard (internal)' });
+  const { key, row } = await createApiKey({ profileId: profile.id, name: DASHBOARD_KEY_NAME });
   const { ciphertext, iv } = encryptApiKey(key);
 
   // Conditional on the cache still being empty: the hosted app fires several

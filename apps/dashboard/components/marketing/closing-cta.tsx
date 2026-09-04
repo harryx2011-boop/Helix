@@ -38,8 +38,7 @@ export function ClosingCta() {
       />
 
       <div data-reveal className="relative mx-auto flex max-w-container flex-col items-center py-16 text-center">
-        <span className="font-mono text-[12px] text-m-ink/56">{'// get started \\\\'}</span>
-        <h2 className="mt-4 max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
+        <h2 className="max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
           Ready to run it?
         </h2>
         <p className="mt-3 max-w-[480px] text-[16px] leading-relaxed text-m-ink/72">

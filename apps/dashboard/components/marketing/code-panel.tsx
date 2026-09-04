@@ -15,6 +15,8 @@ interface CodePanelProps {
   children: React.ReactNode;
   className?: string;
   copyText?: string;
+  /** Line-number gutter for output panels. Hidden below `sm`, where long lines wrap and the numbers would drift. */
+  lines?: number;
 }
 
 /**
@@ -26,7 +28,7 @@ interface CodePanelProps {
  */
 const CodePanelToneContext = React.createContext(false);
 
-export function CodePanel({ chrome, label, tabs, children, className, copyText }: CodePanelProps) {
+export function CodePanel({ chrome, label, tabs, children, className, copyText, lines }: CodePanelProps) {
   const [copied, setCopied] = React.useState(false);
   const isTerminal = chrome === 'terminal';
 
@@ -59,7 +61,7 @@ export function CodePanel({ chrome, label, tabs, children, className, copyText }
         {label && (
           <span
             className={cn(
-              'flex-1 truncate rounded-md px-2 py-0.5 text-center font-mono text-[12px]',
+              'flex-1 truncate rounded-card px-2 py-0.5 text-center font-mono text-[12px]',
               isTerminal ? 'text-muted-foreground' : 'bg-m-bg text-m-ink/56',
             )}
           >
@@ -73,7 +75,7 @@ export function CodePanel({ chrome, label, tabs, children, className, copyText }
             onClick={handleCopy}
             aria-label="Copy code"
             className={cn(
-              'ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors duration-150 ease-out',
+              'ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-card transition-colors duration-150 ease-out',
               isTerminal ? 'text-muted-foreground hover:bg-white/[0.06] hover:text-foreground' : 'text-m-ink/40 hover:bg-m-ink/[0.039] hover:text-m-ink',
             )}
           >
@@ -81,8 +83,23 @@ export function CodePanel({ chrome, label, tabs, children, className, copyText }
           </button>
         )}
       </div>
-      <div className="w-full min-w-0 max-w-full overflow-x-auto px-4 py-4">
-        <CodePanelToneContext.Provider value={isTerminal}>{children}</CodePanelToneContext.Provider>
+      <div className="flex w-full min-w-0 max-w-full px-4 py-4">
+        {lines ? (
+          <ol
+            aria-hidden="true"
+            className={cn(
+              'mr-4 hidden shrink-0 select-none text-right font-mono text-[13px] leading-relaxed sm:block',
+              isTerminal ? 'text-white/40' : 'text-m-ink/40',
+            )}
+          >
+            {Array.from({ length: lines }, (_, i) => (
+              <li key={i}>{i + 1}</li>
+            ))}
+          </ol>
+        ) : null}
+        <div className="min-w-0 flex-1 overflow-x-auto">
+          <CodePanelToneContext.Provider value={isTerminal}>{children}</CodePanelToneContext.Provider>
+        </div>
       </div>
     </div>
   );

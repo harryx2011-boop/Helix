@@ -8,7 +8,7 @@ import { AsciiOrbit } from './ascii-fields';
 import { CodePanel, CodeBlock } from './code-panel';
 import { AnimatedCode } from './animated-code';
 import { Segmented } from './segmented';
-import { setupPrompt } from '@/lib/setup-prompt';
+import { SKILL_MD_PATH, setupPrompt } from '@/lib/setup-prompt';
 
 type SetupLang = 'python' | 'node' | 'curl' | 'cli' | 'agent';
 
@@ -23,7 +23,45 @@ interface LangTab {
 const CLI_INIT_SNIPPET = 'npx -y @helix/cli@latest init --all -k helix-YOUR_KEY';
 const MCP_SNIPPET =
   'claude mcp add --transport http helix \\\n  https://mcp.helix.dev/v1 \\\n  --header "Authorization: Bearer $HELIX_API_KEY"';
-const AGENT_ONBOARDING_SNIPPET = 'curl -s https://helix.dev/agent-onboarding/SKILL.md';
+type FetchMode = 'skill' | 'llms';
+const FETCH_SNIPPET: Record<FetchMode, string> = {
+  skill: 'curl -s https://helix.dev/agent-onboarding/SKILL.md',
+  llms: 'curl -s https://helix.dev/llms.txt',
+};
+const FETCH_LINK: Record<FetchMode, { href: string; label: string }> = {
+  skill: { href: SKILL_MD_PATH, label: 'View SKILL.md' },
+  llms: { href: '/llms.txt', label: 'View llms.txt' },
+};
+
+/** The two-option pill that sits in a terminal panel's chrome. */
+function PanelToggle<T extends string>({ options, value, onChange }: { options: readonly { id: T; label: string }[]; value: T; onChange: (id: T) => void }) {
+  return (
+    <div className="flex items-center gap-1 rounded-pill bg-white/[0.06] p-0.5">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          onClick={() => onChange(o.id)}
+          aria-pressed={value === o.id}
+          className={`rounded-pill px-2 py-1 font-mono text-[12px] transition-colors duration-150 ease-out ${
+            value === o.id ? 'bg-violet-12 text-violet' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const WIRE_OPTIONS = [
+  { id: 'skill', label: 'Skill' },
+  { id: 'mcp', label: 'MCP' },
+] as const;
+const FETCH_OPTIONS = [
+  { id: 'skill', label: 'SKILL.md' },
+  { id: 'llms', label: 'llms.txt' },
+] as const;
 
 const LANG_TABS: LangTab[] = [
   {
@@ -90,6 +128,7 @@ const SCRAPE_RESPONSE = `{
 export function SetupGuides() {
   const [active, setActive] = React.useState<SetupLang>('python');
   const [wireMode, setWireMode] = React.useState<'skill' | 'mcp'>('skill');
+  const [fetchMode, setFetchMode] = React.useState<FetchMode>('skill');
   const tab = LANG_TABS.find((t) => t.id === active) ?? LANG_TABS[0]!;
   const isAgent = tab.id === 'agent';
   const snippet = isAgent ? (wireMode === 'skill' ? CLI_INIT_SNIPPET : MCP_SNIPPET) : tab.snippet;
@@ -130,25 +169,7 @@ export function SetupGuides() {
             chrome="terminal"
             label={tab.panelLabel}
             copyText={snippet}
-            tabs={
-              isAgent ? (
-                <div className="flex items-center gap-1 rounded-pill bg-white/[0.06] p-0.5">
-                  {(['skill', 'mcp'] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setWireMode(m)}
-                      aria-pressed={wireMode === m}
-                      className={`rounded-pill px-2 py-1 font-mono text-[12px] transition-colors duration-150 ease-out ${
-                        wireMode === m ? 'bg-violet-12 text-violet' : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {m === 'skill' ? 'Skill' : 'MCP'}
-                    </button>
-                  ))}
-                </div>
-              ) : undefined
-            }
+            tabs={isAgent ? <PanelToggle options={WIRE_OPTIONS} value={wireMode} onChange={setWireMode} /> : undefined}
           >
             <AnimatedCode
               key={`setup-${active}-${isAgent ? wireMode : ''}`}
@@ -159,38 +180,58 @@ export function SetupGuides() {
               className="text-foreground"
             />
           </CodePanel>
-          <CodePanel chrome="terminal" label="response">
+          <CodePanel chrome="terminal" label="[ .JSON ]" lines={SCRAPE_RESPONSE.split('\n').length}>
             <AnimatedCode key={`setup-res-${active}`} code={SCRAPE_RESPONSE} mode="scramble" resolveMs={1800} playOnView className="text-foreground" />
           </CodePanel>
         </div>
 
-        <div data-reveal className="mt-5 rounded-panel border border-m-border-muted bg-m-surface p-5 shadow-card-sm sm:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
-            <div className="min-w-0">
-              <h3 className="text-[16px] font-medium leading-tight tracking-tight text-m-ink">Agent onboarding.</h3>
-              <p className="mt-1.5 max-w-[640px] text-[14px] leading-relaxed text-m-ink/64">
-                Paste this into your coding agent. It installs the skill, checks for a key without printing it, and smoke-tests
-                one request. An agent reading this page can fetch the skill directly instead.
-              </p>
+        <div
+          data-reveal
+          className="mt-5 grid grid-cols-1 divide-y divide-m-border-muted overflow-hidden rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm lg:grid-cols-2 lg:divide-x lg:divide-y-0"
+        >
+          <div className="flex min-w-0 flex-col p-5 sm:p-6">
+            <p className="text-[15px] leading-relaxed">
+              <span className="font-medium text-m-ink">Paste this into your coding agent.</span>{' '}
+              <span className="text-m-ink/64">It installs the skill, checks for a key without printing it, and smoke-tests one request.</span>
+            </p>
+            <div className="mt-4 flex-1">
+              <CodePanel chrome="terminal" label="setup prompt" copyText={setupPrompt()}>
+                <div className="max-h-[188px] overflow-y-auto [&_code]:whitespace-pre-wrap [&_code]:break-words [&_pre]:whitespace-pre-wrap">
+                  <CodeBlock dark>{setupPrompt()}</CodeBlock>
+                </div>
+              </CodePanel>
             </div>
             <Link
-              href="/agent-onboarding/SKILL.md"
-              className="group flex w-fit shrink-0 items-center gap-1.5 text-[13px] font-medium text-violet transition-colors duration-150 ease-out hover:text-violet-hover"
+              href="/docs/agents"
+              className="group mt-4 flex w-fit items-center gap-1.5 text-[13px] font-medium text-violet transition-colors duration-150 ease-out hover:text-violet-hover"
             >
-              View the skill
+              View the docs
               <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 ease-out group-hover:translate-x-0.5" aria-hidden />
             </Link>
           </div>
 
-          <div className="mt-4">
-            <CodePanel chrome="terminal" label="setup prompt" copyText={setupPrompt()}>
-              <div className="max-h-[188px] overflow-y-auto [&_code]:whitespace-pre-wrap [&_code]:break-words [&_pre]:whitespace-pre-wrap">
-                <CodeBlock dark>{setupPrompt()}</CodeBlock>
-              </div>
-            </CodePanel>
-            <CodePanel chrome="terminal" label="cURL" copyText={AGENT_ONBOARDING_SNIPPET} className="mt-3">
-              <CodeBlock dark>{AGENT_ONBOARDING_SNIPPET}</CodeBlock>
-            </CodePanel>
+          <div className="flex min-w-0 flex-col p-5 sm:p-6">
+            <p className="text-[15px] leading-relaxed">
+              <span className="font-medium text-m-ink">Already an agent reading this page?</span>{' '}
+              <span className="text-m-ink/64">Fetch the skill directly, or the index of every page here as markdown.</span>
+            </p>
+            <div className="mt-4 flex-1">
+              <CodePanel
+                chrome="terminal"
+                label="shell"
+                copyText={FETCH_SNIPPET[fetchMode]}
+                tabs={<PanelToggle options={FETCH_OPTIONS} value={fetchMode} onChange={setFetchMode} />}
+              >
+                <AnimatedCode key={`fetch-${fetchMode}`} code={FETCH_SNIPPET[fetchMode]} mode="reveal" lineMs={45} playOnView className="text-foreground" />
+              </CodePanel>
+            </div>
+            <Link
+              href={FETCH_LINK[fetchMode].href}
+              className="group mt-4 flex w-fit items-center gap-1.5 text-[13px] font-medium text-violet transition-colors duration-150 ease-out hover:text-violet-hover"
+            >
+              {FETCH_LINK[fetchMode].label}
+              <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 ease-out group-hover:translate-x-0.5" aria-hidden />
+            </Link>
           </div>
         </div>
       </div>

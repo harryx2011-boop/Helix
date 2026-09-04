@@ -210,8 +210,8 @@ export function DangerZonePanel() {
       <FrameRow>
         <FrameHeading
           id="danger-zone"
-          title="Danger zone"
-          description="Each of these is immediate and cannot be undone. You will be asked to type a confirmation."
+          title="Danger Zone"
+          description="These happen straight away and cannot be undone. We will ask you to type a short phrase to confirm."
         />
       </FrameRow>
 

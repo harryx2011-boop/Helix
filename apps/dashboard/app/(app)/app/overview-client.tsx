@@ -66,7 +66,7 @@ function ExploreRow({ endpoints }: { endpoints: EndpointSummary[] }) {
       <FrameRow>
         <FrameHeading
           title="Explore your endpoints"
-          description="Six endpoints, one envelope. Open any of them in the playground."
+          description="Every endpoint, one envelope. Open any of them in the playground."
           field={
             <AsciiNoise
               cols={90}

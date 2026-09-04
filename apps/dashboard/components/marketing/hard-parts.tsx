@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { FileStack, Braces, Check } from 'lucide-react';
+import { FileStack, Braces, Check, Navigation, MousePointerClick, TextCursorInput, Timer, MoveVertical, Keyboard, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FrameBand } from './section-frame';
 import { CodePanel } from './code-panel';
@@ -121,7 +121,7 @@ function DocParse({ quiet }: { quiet: boolean }) {
           <span className="h-1.5 w-1.5 rounded-full bg-m-ink/12" />
           <span className="h-1.5 w-1.5 rounded-full bg-m-ink/12" />
         </span>
-        <span className="flex-1 truncate rounded-md bg-m-surface px-2 py-0.5 text-center font-mono text-[11px] text-m-ink/48">
+        <span className="flex-1 truncate rounded-card bg-m-surface px-2 py-0.5 text-center font-mono text-[11px] text-m-ink/48">
           https://example.com/docs/<span className="text-m-ink/72">{file.name}</span>
         </span>
       </div>
@@ -231,7 +231,7 @@ function JsonExtract({ quiet }: { quiet: boolean }) {
           <span className="h-1.5 w-1.5 rounded-full bg-m-ink/12" />
           <span className="h-1.5 w-1.5 rounded-full bg-m-ink/12" />
         </span>
-        <span className="flex-1 truncate rounded-md bg-m-surface px-2 py-0.5 text-center font-mono text-[11px] text-m-ink/48">
+        <span className="flex-1 truncate rounded-card bg-m-surface px-2 py-0.5 text-center font-mono text-[11px] text-m-ink/48">
           https://example.com/pricing
         </span>
       </div>
@@ -272,6 +272,114 @@ function JsonExtract({ quiet }: { quiet: boolean }) {
 }
 
 /* ---------------------------------------------------------------------- */
+/* ActionGrid: the Interact action set as a 4x2 hairline grid. A run walks */
+/* the tiles in order, then holds on "done" before starting over.          */
+/* ---------------------------------------------------------------------- */
+
+/** The `InteractActionSchema` union minus `executeJavascript`, in the order a session usually runs them. */
+const ACTIONS = [
+  { type: 'navigate', label: 'Navigate', icon: Navigation },
+  { type: 'click', label: 'Click', icon: MousePointerClick },
+  { type: 'type', label: 'Type', icon: TextCursorInput },
+  { type: 'wait', label: 'Wait', icon: Timer },
+  { type: 'scroll', label: 'Scroll', icon: MoveVertical },
+  { type: 'press', label: 'Press', icon: Keyboard },
+  { type: 'screenshot', label: 'Screenshot', icon: Camera },
+  { type: 'extract', label: 'Extract', icon: Braces },
+] as const;
+
+const ACTION_STEP_MS = 650;
+const ACTION_HOLD_MS = 1100;
+
+function ActionGrid({ quiet }: { quiet: boolean }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const inView = useInView(ref);
+  const running = inView && !reduced && !quiet;
+  const [step, setStep] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!running) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    function tick(next: number) {
+      setStep(next);
+      const done = next >= ACTIONS.length;
+      timer = setTimeout(() => {
+        if (!cancelled) tick(done ? 0 : next + 1);
+      }, done ? ACTION_HOLD_MS : ACTION_STEP_MS);
+    }
+    tick(0);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [running]);
+
+  const done = !reduced && step >= ACTIONS.length;
+  const current = reduced ? -1 : step;
+
+  return (
+    <div ref={ref} aria-hidden="true" className="relative mt-6 select-none overflow-hidden rounded-panel border border-m-border-muted bg-m-bg">
+      <div className="flex items-center gap-1.5 border-b border-m-border-faint px-3 py-2">
+        <span className="flex gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-m-ink/12" />
+          <span className="h-1.5 w-1.5 rounded-full bg-m-ink/12" />
+          <span className="h-1.5 w-1.5 rounded-full bg-m-ink/12" />
+        </span>
+        <span className="flex-1 truncate rounded-card bg-m-surface px-2 py-0.5 text-center font-mono text-[11px] text-m-ink/48">
+          https://example.com/shop
+        </span>
+      </div>
+
+      <div className="grid grid-cols-4">
+        {ACTIONS.map((action, i) => {
+          const Icon = action.icon;
+          const active = i === current;
+          const ran = done || reduced || i < current;
+          return (
+            <div
+              key={action.type}
+              className="flex flex-col items-center gap-2 border-m-border-faint px-1 py-3.5 [&:nth-child(-n+4)]:border-b [&:not(:nth-child(4n))]:border-r"
+            >
+              <span
+                className={cn(
+                  'flex h-9 w-9 items-center justify-center rounded-card border transition-colors duration-150 ease-out',
+                  active
+                    ? 'border-violet bg-violet-4 text-violet'
+                    : ran
+                      ? 'border-m-border-muted bg-m-surface text-m-ink/72'
+                      : 'border-m-border-muted bg-m-surface text-m-ink/40',
+                )}
+              >
+                <Icon className="h-4 w-4" strokeWidth={1.75} />
+              </span>
+              <span className={cn('font-mono text-[11px] transition-colors duration-150 ease-out', active ? 'text-violet' : 'text-m-ink/56')}>
+                {action.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-center border-t border-m-border-faint py-4">
+        <span className="inline-flex items-center gap-1.5 rounded-pill border border-m-border-muted bg-m-surface px-2.5 py-1 font-mono text-[11px] text-m-ink/64">
+          {reduced || done ? (
+            <>
+              <Check className="h-3 w-3 text-success" aria-hidden />
+              {ACTIONS.length} actions run
+            </>
+          ) : (
+            <>{ACTIONS[current]?.label}…</>
+          )}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
 /* HardParts section                                                       */
 /* ---------------------------------------------------------------------- */
 
@@ -296,13 +404,13 @@ export function HardParts() {
               <span className="text-violet">already handled.</span>
             </h2>
             <p className="mx-auto mt-3 max-w-[480px] text-[16px] leading-relaxed text-m-ink/72">
-              Document formats and unstructured pages come back the way your agent actually needs them.
+              Documents, unstructured pages and pages that need a browser come back the way your agent actually needs them.
             </p>
           </div>
         </div>
 
-        <div data-reveal-group className="mt-10 grid grid-cols-1 divide-y divide-m-border-muted rounded-panel border border-m-border-muted bg-m-surface sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-          <div data-reveal-item className="min-w-0 p-6 sm:p-8">
+        <div data-reveal-group className="mt-10 grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-muted bg-m-surface sm:grid-cols-2 lg:grid-cols-3">
+          <div data-reveal-item className="min-w-0 border-b border-m-border-muted p-6 sm:border-r sm:p-8 lg:border-b-0">
             <p className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
               <IconTile icon={FileStack} size="sm" />
               Docs to data
@@ -314,7 +422,7 @@ export function HardParts() {
             <DocParse quiet={false} />
           </div>
 
-          <div data-reveal-item className="min-w-0 p-6 sm:p-8">
+          <div data-reveal-item className="min-w-0 border-b border-m-border-muted p-6 sm:p-8 lg:border-b-0 lg:border-r">
             <p className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
               <IconTile icon={Braces} size="sm" />
               Structured out
@@ -324,6 +432,18 @@ export function HardParts() {
               <span className="text-m-ink/64">Send a schema or a prompt; your own model fills it from the page.</span>
             </p>
             <JsonExtract quiet={false} />
+          </div>
+
+          <div data-reveal-item className="min-w-0 p-6 sm:col-span-2 sm:p-8 lg:col-span-1">
+            <p className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
+              <IconTile icon={MousePointerClick} size="sm" />
+              Needs a browser
+            </p>
+            <p className="mt-3 text-[15px] leading-relaxed">
+              <span className="font-medium text-m-ink">Browser actions.</span>{' '}
+              <span className="text-m-ink/64">Click, type, scroll, wait, press and extract on any page, in one request.</span>
+            </p>
+            <ActionGrid quiet={false} />
           </div>
         </div>
       </div>

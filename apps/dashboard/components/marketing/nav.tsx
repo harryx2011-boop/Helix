@@ -31,7 +31,7 @@ const MENUS: readonly { id: MenuId; label: string }[] = [
 ];
 
 const topLinkClass =
-  'flex items-center gap-1 rounded-md px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink focus-visible:text-m-ink';
+  'flex items-center gap-1 rounded-card px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink focus-visible:text-m-ink';
 
 export interface NavProps {
   /** Formatted star count (`1.2K`) or `null` when the repo is private or the fetch failed. */
@@ -144,7 +144,7 @@ export function Nav({ stars = null }: NavProps) {
             target="_blank"
             rel="noreferrer"
             aria-label={stars ? `Helix on GitHub, ${stars} stars` : 'Helix on GitHub'}
-            className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink"
+            className="flex items-center gap-2 rounded-card px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink"
           >
             <GithubMark className="h-4 w-4" />
             {stars ? <span className="font-mono text-[13px] tabular-nums">{stars}</span> : 'GitHub'}
@@ -166,7 +166,7 @@ export function Nav({ stars = null }: NavProps) {
           aria-expanded={mobileOpen}
           aria-controls="nav-mobile"
           onClick={() => setMobileOpen((v) => !v)}
-          className="flex h-9 w-9 items-center justify-center rounded-md text-m-ink lg:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-card text-m-ink lg:hidden"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>

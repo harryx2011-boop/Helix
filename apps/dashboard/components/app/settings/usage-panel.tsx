@@ -177,8 +177,8 @@ export function UsagePanel() {
       <FrameRow>
         <FrameHeading
           id="usage"
-          title="Usage and keys"
-          description="Requests recorded against your keys, and when each was last used."
+          title="Usage and API Keys"
+          description="How much you have used Helix, and when each of your keys was last used."
           action={ranges}
         />
       </FrameRow>
@@ -229,8 +229,8 @@ export function UsagePanel() {
           <FrameRow>
             <FrameHeading
               id="usage-endpoints"
-              title="By endpoint"
-              description="Which parts of the API your keys actually call."
+              title="By Tool"
+              description="Which parts of Helix your keys actually call."
             />
           </FrameRow>
           <FrameRow>
@@ -261,7 +261,7 @@ export function UsagePanel() {
           <FrameRow>
             <FrameHeading
               id="usage-keys"
-              title="Your keys"
+              title="Your API Keys"
               description="Rate limits are enforced per key, per minute."
             />
           </FrameRow>

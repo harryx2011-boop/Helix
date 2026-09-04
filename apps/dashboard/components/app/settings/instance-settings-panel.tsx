@@ -20,9 +20,9 @@ import {
 } from '@/lib/instance-settings';
 
 const GROUPS = [
-  { id: 'live', title: 'Applies immediately', description: 'Read on every request, so a change takes effect on the next one.' },
-  { id: 'restart', title: 'Applies on restart', description: 'Stored now; the instance reads these when it boots.' },
-  { id: 'guarded', title: 'Changes what the instance will reach', description: 'Each needs an explicit confirmation before it is saved.' },
+  { id: 'live', title: 'Takes Effect Immediately', description: 'The next request uses the new value.' },
+  { id: 'restart', title: 'Takes Effect After a Restart', description: 'Saved now, and used the next time the server starts.' },
+  { id: 'guarded', title: 'Changes What the Server Can Reach', description: 'These affect security, so each one asks you to confirm before it saves.' },
 ] as const;
 
 function displayValue(value: unknown): string {
@@ -205,9 +205,9 @@ function TokenGate({ onSaved }: { onSaved: () => void }) {
   return (
     <FrameRow flush className="px-6 py-5">
       <p className="max-w-[60ch] text-[13px] leading-snug text-muted-foreground">
-        These are the instance&apos;s own controls, so they take the operator&apos;s admin token rather than an API key.
-        Paste the <span className="font-mono text-foreground">HELIX_INTERNAL_ADMIN_TOKEN</span> this instance was started
-        with. It is kept in this browser only.
+        These settings change the server itself, so they need the admin token rather than an API key. Paste the{' '}
+        <span className="font-mono text-foreground">HELIX_INTERNAL_ADMIN_TOKEN</span> the server was started with. It
+        stays in this browser and is never sent anywhere else.
       </p>
       <form
         className="mt-4 flex flex-wrap items-center gap-2"

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { useInView, useReducedMotion } from './ambient';
+import { FIELD_TONE, type FieldTone } from './field-tone';
 
 /*
  * AsciiFluid: a character field whose glyph density follows a slowly
@@ -84,9 +85,11 @@ export interface AsciiFluidProps {
   fps?: number;
   quiet?: boolean;
   className?: string;
+  tone?: FieldTone;
 }
 
-export function AsciiFluid({ cols = 40, rows = 12, seed = 3, fps = 10, quiet, className }: AsciiFluidProps) {
+export function AsciiFluid({ cols = 40, rows = 12, seed = 3, fps = 10, quiet, className, tone = 'marketing' }: AsciiFluidProps) {
+  const t = FIELD_TONE[tone];
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const inView = useInView(ref);
@@ -109,8 +112,8 @@ export function AsciiFluid({ cols = 40, rows = 12, seed = 3, fps = 10, quiet, cl
       aria-hidden="true"
       className={cn('pointer-events-none relative select-none font-mono text-[11px] leading-[1.15]', className)}
     >
-      <pre className="whitespace-pre text-m-ink/24">{layers[0]}</pre>
-      <pre className="absolute inset-0 whitespace-pre text-violet-48">{layers[1]}</pre>
+      <pre className={cn('whitespace-pre', t.body)}>{layers[0]}</pre>
+      <pre className={cn('absolute inset-0 whitespace-pre', t.accent)}>{layers[1]}</pre>
     </div>
   );
 }

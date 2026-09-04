@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
+import { HeroField } from '@/components/marketing/hero-field';
 
 export const metadata: Metadata = {
   title: 'Terms',
@@ -9,11 +10,14 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <div className="mx-auto max-w-container px-4 pb-24 pt-16 lg:pt-24">
-      <div className="mx-auto max-w-[720px] animate-fade-up">
-        <SectionEyebrow step="LEGAL" label="TERMS" sub="hosted app and licence" />
-        <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
-          Terms of use.
-        </h1>
+      <div className="relative">
+        <HeroField motif="orbit" seed={47} className="translate-x-16 opacity-60" />
+        <div className="relative mx-auto max-w-[720px] animate-fade-up">
+          <SectionEyebrow step="LEGAL" label="TERMS" sub="hosted app and licence" />
+          <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
+            Terms of use.
+          </h1>
+        </div>
       </div>
 
       <article className="prose-helix mx-auto mt-14 max-w-[720px] animate-fade-up [animation-delay:60ms] space-y-8">

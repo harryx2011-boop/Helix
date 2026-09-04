@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Server, Terminal, Puzzle, type LucideIcon } from 'lucide-react';
 import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
+import { HeroField } from '@/components/marketing/hero-field';
 import { docsEndpointList, agentSurfaceDocs } from '@/lib/docs-content';
 import { MCP_URL, SITE_URL } from '@/lib/mode';
 
@@ -16,14 +17,17 @@ export default function DocsIndexPage() {
 
   return (
     <div className="mx-auto max-w-container px-4 pb-24 pt-16 lg:pt-24">
-      <div className="mx-auto max-w-[720px] animate-fade-up text-center">
-        <SectionEyebrow step="DOCS" label="REFERENCE" sub="every endpoint, one shape" />
-        <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
-          Documentation
-        </h1>
-        <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-relaxed text-m-ink/72">
-          Getting started, the self-host guide, and a reference page for every endpoint in the catalog.
-        </p>
+      <div className="relative">
+        <HeroField motif="cloud" seed={23} className="top-1/2 -translate-y-1/2" />
+        <div className="relative mx-auto max-w-[720px] animate-fade-up text-center">
+          <SectionEyebrow step="DOCS" label="REFERENCE" sub="every endpoint, one shape" />
+          <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
+            Documentation
+          </h1>
+          <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-relaxed text-m-ink/72">
+            Getting started, the self-host guide, and a reference page for every endpoint in the catalog.
+          </p>
+        </div>
       </div>
 
       <section className="mx-auto mt-16 max-w-[880px] animate-fade-up [animation-delay:60ms]">

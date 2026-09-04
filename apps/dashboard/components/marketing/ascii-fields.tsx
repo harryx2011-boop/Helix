@@ -4,6 +4,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { useInView, useReducedMotion } from './ambient';
 import { noise } from './ascii-fluid';
+import { FIELD_TONE, type FieldTone } from './field-tone';
 
 /*
  * Three more character fields, each a different motion so the page does not
@@ -33,25 +34,30 @@ interface FieldProps {
   fps?: number;
   quiet?: boolean;
   className?: string;
+  /** `app` swaps the marketing ink tokens for the dark surface's foreground and primary. */
+  tone?: FieldTone;
 }
 
 function Field({
   layers,
   className,
   fieldRef,
+  tone = 'marketing',
 }: {
   layers: [string, string];
   className?: string | undefined;
   fieldRef: React.RefObject<HTMLDivElement | null>;
+  tone?: FieldTone | undefined;
 }) {
+  const t = FIELD_TONE[tone];
   return (
     <div
       ref={fieldRef}
       aria-hidden="true"
       className={cn('pointer-events-none relative select-none font-mono text-[11px] leading-[1.15]', className)}
     >
-      <pre className="whitespace-pre text-m-ink/24">{layers[0]}</pre>
-      <pre className="absolute inset-0 whitespace-pre text-violet-48">{layers[1]}</pre>
+      <pre className={cn('whitespace-pre', t.body)}>{layers[0]}</pre>
+      <pre className={cn('absolute inset-0 whitespace-pre', t.accent)}>{layers[1]}</pre>
     </div>
   );
 }
@@ -84,13 +90,13 @@ function cloudLayers(cols: number, rows: number, time: number, seed: number): [s
   return [join(body), join(hot)];
 }
 
-export function AsciiNoise({ cols = 90, rows = 18, seed = 3, fps = 8, quiet, className }: FieldProps) {
+export function AsciiNoise({ cols = 90, rows = 18, seed = 3, fps = 8, quiet, className, tone }: FieldProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const inView = useInView(ref);
   const tick = useTicker(inView && !reduced && !quiet, fps);
   const layers = React.useMemo(() => cloudLayers(cols, rows, tick / fps, seed), [cols, rows, tick, fps, seed]);
-  return <Field layers={layers} className={className} fieldRef={ref} />;
+  return <Field layers={layers} className={className} fieldRef={ref} tone={tone} />;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -114,7 +120,7 @@ function seedParticles(cols: number, rows: number, seed: number): Particle[] {
   }));
 }
 
-export function AsciiFlow({ cols = 60, rows = 14, seed = 3, fps = 10, quiet, className }: FieldProps) {
+export function AsciiFlow({ cols = 60, rows = 14, seed = 3, fps = 10, quiet, className, tone }: FieldProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const inView = useInView(ref);
@@ -173,7 +179,7 @@ export function AsciiFlow({ cols = 60, rows = 14, seed = 3, fps = 10, quiet, cla
     return () => clearInterval(id);
   }, [running, fps, step, render]);
 
-  return <Field layers={layers} className={className} fieldRef={ref} />;
+  return <Field layers={layers} className={className} fieldRef={ref} tone={tone} />;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -210,11 +216,11 @@ function orbitLayers(cols: number, rows: number, time: number, seed: number): [s
   return [join(body), join(pulse)];
 }
 
-export function AsciiOrbit({ cols = 34, rows = 17, seed = 3, fps = 8, quiet, className }: FieldProps) {
+export function AsciiOrbit({ cols = 34, rows = 17, seed = 3, fps = 8, quiet, className, tone }: FieldProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const inView = useInView(ref);
   const tick = useTicker(inView && !reduced && !quiet, fps);
   const layers = React.useMemo(() => orbitLayers(cols, rows, tick / fps, seed), [cols, rows, tick, fps, seed]);
-  return <Field layers={layers} className={className} fieldRef={ref} />;
+  return <Field layers={layers} className={className} fieldRef={ref} tone={tone} />;
 }

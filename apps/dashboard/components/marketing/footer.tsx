@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/shell/logo';
 import { GithubMark } from '@/components/marketing/github-mark';
 import { AsciiHelix, GridCells } from '@/components/marketing/ambient';
+import { AsciiNoise } from '@/components/marketing/ascii-fields';
 import { PERSONA_URL } from '@/lib/mode';
 import { cn } from '@/lib/utils';
 import pkg from '@/package.json';
@@ -54,7 +55,13 @@ export function Footer() {
           </span>
         </div>
 
-        <div className="grid lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
+        <div className="relative grid lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute right-0 top-0 hidden h-[42px] w-[71.4%] overflow-hidden lg:block [mask-image:linear-gradient(to_bottom,black_40%,transparent)]"
+          >
+            <AsciiNoise cols={140} rows={4} seed={61} className="absolute left-0 top-0 opacity-40" />
+          </div>
           <div className="min-w-0 border-b border-m-border-faint p-8 lg:border-b-0 lg:border-r">
             <Logo className="h-10 w-auto text-m-ink/56" />
             <p className="mt-6 text-[20px] leading-tight tracking-tight text-m-ink/88">
@@ -77,7 +84,7 @@ export function Footer() {
                   i < COLUMNS.length - 1 && 'border-b sm:border-b-0 sm:border-r lg:border-b-0 lg:border-r',
                 )}
               >
-                <h3 className="px-6 py-3 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">{col.title}</h3>
+                <h3 className="relative px-6 py-3 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">{col.title}</h3>
                 <ul className="divide-y divide-m-border-faint border-t border-m-border-faint">
                   {col.links.map((link) => (
                     <li key={link.label}>

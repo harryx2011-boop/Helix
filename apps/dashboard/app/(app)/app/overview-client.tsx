@@ -12,6 +12,8 @@ import { ConnectSheet } from '@/components/app/connect-sheet';
 import { HOSTED, MCP_URL, SITE_URL } from '@/lib/mode';
 import { claudeMcpAddCommand, cliInitCommand } from '@/lib/connect';
 import { endpointById, PRODUCTS } from '@/lib/catalog';
+import { AsciiFluid } from '@/components/marketing/ascii-fluid';
+import { AsciiNoise, AsciiOrbit } from '@/components/marketing/ascii-fields';
 
 interface EndpointSummary {
   id: string;
@@ -62,7 +64,19 @@ function ExploreRow({ endpoints }: { endpoints: EndpointSummary[] }) {
   return (
     <>
       <FrameRow>
-        <FrameHeading title="Explore your endpoints" description="Six endpoints, one envelope. Open any of them in the playground." />
+        <FrameHeading
+          title="Explore your endpoints"
+          description="Six endpoints, one envelope. Open any of them in the playground."
+          field={
+            <AsciiNoise
+              cols={90}
+              rows={6}
+              seed={5}
+              tone="app"
+              className="absolute right-0 top-1/2 hidden -translate-y-1/2 opacity-40 md:block [mask-image:linear-gradient(to_right,transparent,black_35%,black_85%,transparent)]"
+            />
+          }
+        />
       </FrameRow>
       <FrameRow>
         <FrameCells cols={3}>
@@ -125,9 +139,20 @@ function ApiKeyRow({ welcome }: { welcome: boolean }) {
 
   return (
     <div className="flex flex-col gap-3 px-6 py-5">
-      <div>
-        <h3 className="text-[15px] font-medium leading-tight text-foreground">API key</h3>
-        <p className="text-[13px] text-muted-foreground">{welcome ? 'Copy it now — you can reveal it again anytime with the eye icon.' : 'Use it as a Bearer token'}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="text-[15px] font-medium leading-tight text-foreground">API key</h3>
+          <p className="text-[13px] text-muted-foreground">{welcome ? 'Copy it now — you can reveal it again anytime with the eye icon.' : 'Use it as a Bearer token'}</p>
+        </div>
+        <div aria-hidden className="pointer-events-none relative hidden h-10 w-24 shrink-0 overflow-hidden lg:block">
+          <AsciiOrbit
+            cols={16}
+            rows={7}
+            seed={2}
+            tone="app"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_75%)]"
+          />
+        </div>
       </div>
       {apiKey === null ? (
         <p className="text-[13px] text-muted-foreground">Key is held in this browser. Open the connect sheet below to generate one.</p>
@@ -262,8 +287,15 @@ export function OverviewClient({
       </FrameRow>
       <FrameRow flush={!interactLive}>
         <div className="grid min-w-0 lg:grid-cols-[1.4fr_1fr] lg:divide-x lg:divide-border">
-          <div className="flex min-w-0 flex-col divide-y divide-border">
+          <div className="relative flex min-w-0 flex-col divide-y divide-border overflow-hidden">
             {interactLive && <ActiveBrowsersRow />}
+            <AsciiFluid
+              cols={44}
+              rows={12}
+              seed={9}
+              tone="app"
+              className="absolute bottom-0 right-0 hidden !border-0 lg:block [mask-image:linear-gradient(to_left,black_60%,transparent)]"
+            />
           </div>
           <div className="flex min-w-0 flex-col divide-y divide-border">
             <ApiKeyRow welcome={welcome} />

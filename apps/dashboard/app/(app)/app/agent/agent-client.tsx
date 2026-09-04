@@ -14,6 +14,8 @@ import { requestAgentSchema, scrapeUrlsForSchema, scrapeForSchema, searchForSche
 import type { AgentPageResult } from '@/lib/agent';
 import { HelixApiError } from '@/lib/api';
 import { listProviders } from '@/lib/providers';
+import { AsciiFluid } from '@/components/marketing/ascii-fluid';
+import { AsciiOrbit } from '@/components/marketing/ascii-fields';
 
 type Stage = 'idle' | 'schema-loading' | 'schema-ready' | 'running' | 'done';
 
@@ -170,7 +172,28 @@ export function AgentClient() {
 
   if (stage === 'idle') {
     return (
-      <div className="relative flex h-full items-center justify-center px-4">
+      <div className="relative flex h-full items-center justify-center overflow-hidden px-4">
+        <AsciiOrbit
+          cols={22}
+          rows={11}
+          seed={4}
+          tone="app"
+          className="absolute right-4 top-1/2 hidden -translate-y-[110%] xl:block [mask-image:linear-gradient(to_right,transparent,black_30%,black_85%,transparent)]"
+        />
+        <AsciiFluid
+          cols={30}
+          rows={10}
+          seed={6}
+          tone="app"
+          className="absolute bottom-0 left-0 hidden lg:block [mask-image:linear-gradient(to_right,black_60%,transparent)]"
+        />
+        <AsciiFluid
+          cols={30}
+          rows={10}
+          seed={18}
+          tone="app"
+          className="absolute bottom-0 right-0 hidden lg:block [mask-image:linear-gradient(to_left,black_60%,transparent)]"
+        />
         <div className="relative flex w-full max-w-[640px] flex-col items-center gap-6">
           <h1 className="text-center text-[28px] font-medium leading-tight tracking-tight text-foreground">
             What data do you want to gather?

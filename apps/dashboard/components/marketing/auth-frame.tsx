@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/shell/logo';
 import { GridCells } from '@/components/marketing/ambient';
 import { AsciiOcean, AsciiWave } from '@/components/marketing/ocean';
+import { HeroField } from '@/components/marketing/hero-field';
 
 /**
  * Light marketing-surface frame around Clerk's components (WEBSITE.md §6.1),
@@ -41,7 +42,10 @@ export function AuthFrame({ title, subtitle, children }: { title: string; subtit
           <h1 className="text-[32px] font-normal leading-[1.1] tracking-tighter">{title}</h1>
           <p className="mt-2 text-[15px] text-m-ink/70">{subtitle}</p>
         </div>
-        {children}
+        <div className="relative flex w-full flex-col items-center">
+          <HeroField motif="cloud" seed={59} className="top-1/2 -translate-y-1/2" />
+          <div className="relative">{children}</div>
+        </div>
         <p className="mt-10 max-w-md text-center font-mono text-[12px] leading-relaxed tracking-wide text-m-ink/50">
           [ SELF-HOST ] no account needed. <Link href="/self-host" className="underline decoration-m-border-loud underline-offset-4 hover:text-m-ink">docker compose up</Link> and open localhost:3400.
         </p>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { LocalSetupOffer } from '@/components/app/local-setup-offer';
+import { AsciiFluid } from '@/components/marketing/ascii-fluid';
 import {
   DEPLOY_INTENT_CHOICES,
   ENDPOINT_CHOICES,
@@ -212,7 +213,7 @@ export function OnboardingClient({ initial }: { initial: Answers }) {
         </span>
       </div>
 
-      <div className="flex-1">
+      <div className="flex flex-1 flex-col">
         <h1
           ref={headingRef}
           tabIndex={-1}
@@ -324,6 +325,16 @@ export function OnboardingClient({ initial }: { initial: Answers }) {
             {error}
           </p>
         ) : null}
+
+        <div aria-hidden className="pointer-events-none relative mt-6 hidden h-14 w-56 self-end overflow-hidden md:block">
+          <AsciiFluid
+            cols={34}
+            rows={5}
+            seed={16}
+            tone="app"
+            className="absolute bottom-0 right-0 [mask-image:linear-gradient(to_left,black_60%,transparent)]"
+          />
+        </div>
       </div>
 
       <div className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-5">

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { AsciiNoise } from '@/components/marketing/ascii-fields';
 
 /**
  * Blocks the app behind a key prompt until one is stored. Not a login —
@@ -32,6 +33,15 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
         onEscapeKeyDown={(event) => event.preventDefault()}
         onPointerDownOutside={(event) => event.preventDefault()}
       >
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-lg">
+          <AsciiNoise
+            cols={70}
+            rows={8}
+            seed={14}
+            tone="app"
+            className="absolute left-1/2 top-6 hidden -translate-x-1/2 opacity-40 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_22%,black_50%,transparent_80%)]"
+          />
+        </div>
         <DialogHeader>
           <DialogTitle>Connect to your Helix instance</DialogTitle>
           <DialogDescription>

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
+import { HeroField } from '@/components/marketing/hero-field';
 
 /** Anchors `/architecture#roadmap` to the "Build order" heading without a rehype-slug dependency. */
 function H2({ children, ...props }: React.ComponentPropsWithoutRef<'h2'>) {
@@ -32,11 +33,18 @@ export default async function ArchitecturePage() {
 
   return (
     <div className="mx-auto max-w-container px-4 pb-24 pt-16 lg:pt-24">
-      <div className="mx-auto max-w-[720px] animate-fade-up">
-        <SectionEyebrow step="ENGINEERING" label="ARCHITECTURE" sub="how Helix is built" />
-        <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
-          Three runtimes, <span className="text-violet">one HTTP surface.</span>
-        </h1>
+      <div className="relative">
+        <HeroField
+          motif="flow"
+          seed={41}
+          className="opacity-50 [mask-image:radial-gradient(ellipse_at_center,transparent_56%,black_78%,transparent_100%)]"
+        />
+        <div className="relative mx-auto max-w-[720px] animate-fade-up">
+          <SectionEyebrow step="ENGINEERING" label="ARCHITECTURE" sub="how Helix is built" />
+          <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
+            Three runtimes, <span className="text-violet">one HTTP surface.</span>
+          </h1>
+        </div>
       </div>
 
       <article className="prose-helix mx-auto mt-14 max-w-[720px] animate-fade-up [animation-delay:60ms]">

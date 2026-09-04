@@ -16,6 +16,7 @@ import { createHostedKey, isHostedKeysNotConfigured, listHostedKeys, revokeHoste
 import { generateEphemeralKey } from '@/lib/ephemeral-keys';
 import { setApiKey } from '@/lib/auth';
 import { toast } from 'sonner';
+import { AsciiOrbit } from '@/components/marketing/ascii-fields';
 
 interface KeyRow {
   id: string;
@@ -298,15 +299,24 @@ export function KeysClient() {
   return (
     <div className="relative flex flex-col gap-4 bg-background p-4 lg:p-6">
       <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
+        <CardHeader className="relative flex-row items-center justify-between overflow-hidden">
+          <AsciiOrbit
+            cols={20}
+            rows={9}
+            seed={8}
+            tone="app"
+            className="absolute right-40 top-1/2 hidden -translate-y-1/2 lg:block [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_80%)]"
+          />
+          <div className="relative">
             <CardTitle className="flex items-center gap-2 font-mono text-xs uppercase tracking-wide text-muted-foreground">
               <KeyRound className="h-3.5 w-3.5" />
               API keys
             </CardTitle>
             <CardDescription>Named keys with an optional per-minute limit. Revoked keys stop authenticating immediately.</CardDescription>
           </div>
-          <CreateKeyDialog onCreated={refresh} ephemeral={!usingHosted && !instanceReachable} hosted={usingHosted} />
+          <div className="relative shrink-0">
+            <CreateKeyDialog onCreated={refresh} ephemeral={!usingHosted && !instanceReachable} hosted={usingHosted} />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading || !keys ? (

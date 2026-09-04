@@ -6,8 +6,29 @@ import { CodePanel } from '@/components/marketing/code-panel';
 import { AnimatedCode, type AnimatedCodeMode } from '@/components/marketing/animated-code';
 import { BentoCard, EvidenceChip } from '@/components/marketing/bento';
 import { MeterPanel, type MeterRow } from '@/components/marketing/meter';
+import { HeroField, type HeroMotif } from '@/components/marketing/hero-field';
+import { ScrollStrip } from '@/components/marketing/scroll-strip';
+import { AsciiFlow, AsciiOrbit } from '@/components/marketing/ascii-fields';
 import { endpointById } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/endpoints';
+
+/** Hero field per endpoint, chosen so neighbours in the nav never share one. */
+const HERO_MOTIF: Record<Endpoint, HeroMotif> = {
+  scrape: 'cloud',
+  parse: 'wave',
+  metadata: 'flow',
+  search: 'flow',
+  map: 'orbit',
+  crawl: 'orbit',
+  interact: 'wave',
+  monitor: 'cloud',
+};
+
+function seedFor(id: string): number {
+  let s = 0;
+  for (const ch of id) s += ch.charCodeAt(0);
+  return s;
+}
 
 /** Per-endpoint mock animation: type = content composing, reveal = results listing. */
 const MOCK_MODE: Record<Endpoint, AnimatedCodeMode> = {
@@ -59,10 +80,15 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
   const def = endpointById(endpoint);
   if (!def) return null;
   const isComing = def.status === 'coming';
+  const motif = HERO_MOTIF[endpoint];
+  const seed = seedFor(endpoint);
+  const SideField = motif === 'orbit' ? AsciiFlow : motif === 'flow' ? AsciiOrbit : seed % 2 ? AsciiOrbit : AsciiFlow;
 
   return (
     <div className="mx-auto max-w-container px-4 pb-24 pt-16 lg:pt-24">
-      <section className="mx-auto max-w-[720px] animate-fade-up text-center">
+      <div className="relative">
+      <HeroField motif={motif} seed={seed} />
+      <section className="relative mx-auto max-w-[720px] animate-fade-up text-center">
         {isComing && (
           <span className="rounded-pill bg-violet-12 px-2.5 py-1 font-mono text-[12px] tracking-wide text-violet">
             coming
@@ -91,6 +117,7 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
           </PillButton>
         </div>
       </section>
+      </div>
 
       <section className="relative mx-auto mt-14 max-w-[880px] animate-fade-up [animation-delay:60ms]">
         <div className="pointer-events-none absolute inset-0 rounded-panel shadow-cutout" aria-hidden />
@@ -114,9 +141,19 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
         </div>
       </section>
 
-      <section className="mx-auto mt-20 max-w-[960px] animate-fade-up">
-        <SectionEyebrow step="REQUEST" label="WIRE FORMAT" sub={isComing ? 'planned shape' : 'from openapi.yaml'} />
-        <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <ScrollStrip seed={seed} direction={seed % 2 ? 'left' : 'right'} className="mt-16" />
+
+      <section className="mx-auto mt-16 max-w-[960px] animate-fade-up">
+        <div className="relative">
+          <SideField
+            cols={56}
+            rows={6}
+            seed={seed + 7}
+            className="absolute -top-7 right-0 hidden opacity-70 lg:block [mask-image:linear-gradient(to_right,transparent,black_30%,black_85%,transparent)]"
+          />
+          <SectionEyebrow step="REQUEST" label="WIRE FORMAT" sub={isComing ? 'planned shape' : 'from openapi.yaml'} />
+        </div>
+        <div className="relative mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
           <CodePanel chrome="terminal" label={`${def.method} ${def.path}`} copyText={request}>
             <AnimatedCode code={request} mode="static" className="text-foreground" />
           </CodePanel>

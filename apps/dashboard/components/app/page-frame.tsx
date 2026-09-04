@@ -41,15 +41,37 @@ export function FrameRow({ children, className, bleed = true, flush, transparent
   );
 }
 
-/** Title + one-line description at the top of a row, optionally with an action on the right. */
-export function FrameHeading({ title, description, action, className }: { title: string; description?: string; action?: React.ReactNode; className?: string }) {
+/**
+ * Title + one-line description at the top of a row, optionally with an action on
+ * the right. `field` is an ambient character field: it mounts in a clipped,
+ * inert layer behind the text (position it with its own `absolute` classes) and
+ * never takes part in the row's layout.
+ */
+export function FrameHeading({
+  title,
+  description,
+  action,
+  field,
+  className,
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  field?: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={cn('flex items-start justify-between gap-4 px-6 py-5', className)}>
-      <div className="min-w-0">
+    <div className={cn('relative flex items-start justify-between gap-4 overflow-hidden px-6 py-5', className)}>
+      {field && (
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          {field}
+        </div>
+      )}
+      <div className="relative min-w-0">
         <h2 className="text-[17px] font-medium leading-tight tracking-tight text-foreground">{title}</h2>
         {description && <p className="mt-1 text-[13px] leading-snug text-muted-foreground">{description}</p>}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && <div className="relative shrink-0">{action}</div>}
     </div>
   );
 }

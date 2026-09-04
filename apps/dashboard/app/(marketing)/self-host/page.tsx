@@ -4,6 +4,9 @@ import { ArrowRight, Terminal } from 'lucide-react';
 import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { PillButton } from '@/components/marketing/pill-button';
 import { CodePanel, CodeBlock } from '@/components/marketing/code-panel';
+import { HeroField } from '@/components/marketing/hero-field';
+import { ScrollStrip } from '@/components/marketing/scroll-strip';
+import { AsciiFluid } from '@/components/marketing/ascii-fluid';
 
 export const metadata: Metadata = {
   title: 'Self-host',
@@ -68,24 +71,27 @@ const COMPARISON = [
 export default function SelfHostPage() {
   return (
     <div className="mx-auto max-w-container px-4 pb-24 pt-16 lg:pt-24">
-      <section className="mx-auto max-w-[720px] animate-fade-up text-center">
-        <SectionEyebrow step="SELF-HOST" label="THE WHOLE PRODUCT" sub="nothing withheld" />
-        <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
-          Run it yourself. <span className="block text-violet">All of it.</span>
-        </h1>
-        <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-relaxed text-m-ink/72">
-          The self-host build is the product. There is no cloud-only tier, no held-back stealth layer, no licence
-          that stops you embedding it.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <PillButton href="https://github.com" variant="primary">
-            View on GitHub <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-          </PillButton>
-          <PillButton href="/architecture" variant="secondary">
-            Read the architecture
-          </PillButton>
-        </div>
-      </section>
+      <div className="relative">
+        <HeroField motif="wave" seed={31} />
+        <section className="relative mx-auto max-w-[720px] animate-fade-up text-center">
+          <SectionEyebrow step="SELF-HOST" label="THE WHOLE PRODUCT" sub="nothing withheld" />
+          <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
+            Run it yourself. <span className="block text-violet">All of it.</span>
+          </h1>
+          <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-relaxed text-m-ink/72">
+            The self-host build is the product. There is no cloud-only tier, no held-back stealth layer, no licence
+            that stops you embedding it.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <PillButton href="https://github.com" variant="primary">
+              View on GitHub <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </PillButton>
+            <PillButton href="/architecture" variant="secondary">
+              Read the architecture
+            </PillButton>
+          </div>
+        </section>
+      </div>
 
       <section className="mx-auto mt-16 max-w-[880px] animate-fade-up [animation-delay:60ms]">
         <SectionEyebrow step="01" label="FIRST BOOT" sub="health-gated startup" />
@@ -106,7 +112,9 @@ export default function SelfHostPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-20 max-w-[880px] animate-fade-up">
+      <ScrollStrip seed={31} direction="right" className="mt-16" />
+
+      <section className="mx-auto mt-16 max-w-[880px] animate-fade-up">
         <SectionEyebrow step="02" label="CONFIGURATION" sub="bring your own keys" />
         <h2 id="security" className="mt-3 text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
           Your keys, your bill, your providers.
@@ -131,7 +139,9 @@ export default function SelfHostPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-20 max-w-[880px] animate-fade-up">
+      <ScrollStrip seed={37} direction="left" className="mt-16" />
+
+      <section className="mx-auto mt-16 max-w-[880px] animate-fade-up">
         <SectionEyebrow step="03" label="NOTHING WITHHELD" sub="one column against the category norm" />
         <h2 className="mt-3 text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
           No cloud-only tier.
@@ -156,24 +166,38 @@ export default function SelfHostPage() {
             </tbody>
           </table>
         </div>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <PillButton href="/sign-up" variant="primary">
-            Get an API key <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-          </PillButton>
-          <PillButton href="https://github.com" variant="secondary">
-            <Terminal className="h-3.5 w-3.5" aria-hidden /> View on GitHub
-          </PillButton>
-        </div>
       </section>
 
-      <section className="mx-auto mt-16 max-w-[720px] text-center">
-        <p className="text-[14px] text-m-ink/56">
-          Deploying at scale? Read the{' '}
-          <Link href="/architecture" className="text-violet underline decoration-violet-40 underline-offset-4 hover:decoration-violet">
-            architecture
-          </Link>{' '}
-          for the three-runtime shape and the fetch ladder.
-        </p>
+      <section className="relative mt-12">
+        <AsciiFluid
+          cols={44}
+          rows={14}
+          seed={5}
+          className="absolute bottom-0 left-[3%] hidden lg:block [mask-image:linear-gradient(to_right,black_60%,transparent)]"
+        />
+        <AsciiFluid
+          cols={44}
+          rows={14}
+          seed={9}
+          className="absolute bottom-0 right-[3%] hidden lg:block [mask-image:linear-gradient(to_left,black_60%,transparent)]"
+        />
+        <div className="relative mx-auto max-w-[720px] py-10 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <PillButton href="/sign-up" variant="primary">
+              Get an API key <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </PillButton>
+            <PillButton href="https://github.com" variant="secondary">
+              <Terminal className="h-3.5 w-3.5" aria-hidden /> View on GitHub
+            </PillButton>
+          </div>
+          <p className="mt-8 text-[14px] text-m-ink/56">
+            Deploying at scale? Read the{' '}
+            <Link href="/architecture" className="text-violet underline decoration-violet-40 underline-offset-4 hover:decoration-violet">
+              architecture
+            </Link>{' '}
+            for the three-runtime shape and the fetch ladder.
+          </p>
+        </div>
       </section>
     </div>
   );

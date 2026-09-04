@@ -16,6 +16,7 @@ import {
 } from '@/lib/status';
 import { useReducedMotion } from '@/components/marketing/ambient';
 import { PillButton } from '@/components/marketing/pill-button';
+import { HeroField } from '@/components/marketing/hero-field';
 
 const HEALTH_POLL_MS = 30_000;
 const BAR_COUNT = 90;
@@ -320,12 +321,17 @@ export function StatusView() {
   if (hydrated && !apiUrl) {
     return (
       <div className="mx-auto max-w-[640px] px-4 py-20 text-center">
-        <h1 className="text-[28px] font-normal leading-tight tracking-tight">No instance connected</h1>
-        <p className="mx-auto mt-3 max-w-[480px] text-[15px] leading-relaxed text-m-ink/64">
+        <div className="relative">
+          <HeroField motif="cloud" seed={53} className="top-1/2 -translate-y-1/2" />
+          <h1 className="relative text-[28px] font-normal leading-tight tracking-tight">No instance connected</h1>
+        </div>
+        <p className="relative mx-auto mt-3 max-w-[480px] text-[15px] leading-relaxed text-m-ink/64">
           The hosted app has no Helix instance behind it yet. Point this page at a self-hosted deployment&rsquo;s
           API to see its live status.
         </p>
-        <InstanceUrlForm onSubmit={connectInstance} />
+        <div className="relative">
+          <InstanceUrlForm onSubmit={connectInstance} />
+        </div>
       </div>
     );
   }
@@ -333,13 +339,20 @@ export function StatusView() {
   if (!loading && error && !health) {
     return (
       <div className="mx-auto max-w-[640px] px-4 py-20 text-center">
-        <CircleX className="mx-auto h-10 w-10 text-destructive" strokeWidth={1.5} aria-hidden />
-        <h1 className="mt-4 text-[28px] font-normal leading-tight tracking-tight">Instance unreachable</h1>
-        <p className="mx-auto mt-3 max-w-[480px] text-[15px] leading-relaxed text-m-ink/64">
+        <div className="relative">
+          <HeroField motif="cloud" seed={53} className="top-1/2 -translate-y-1/2" />
+          <div className="relative">
+            <CircleX className="mx-auto h-10 w-10 text-destructive" strokeWidth={1.5} aria-hidden />
+            <h1 className="mt-4 text-[28px] font-normal leading-tight tracking-tight">Instance unreachable</h1>
+          </div>
+        </div>
+        <p className="relative mx-auto mt-3 max-w-[480px] text-[15px] leading-relaxed text-m-ink/64">
           Could not reach <span className="font-mono text-m-ink/80">{apiUrl}</span>.
         </p>
         {HOSTED && (
-          <InstanceUrlForm onSubmit={connectInstance} />
+          <div className="relative">
+            <InstanceUrlForm onSubmit={connectInstance} />
+          </div>
         )}
       </div>
     );
@@ -350,12 +363,15 @@ export function StatusView() {
 
   return (
     <div className="px-4 pb-24 pt-16 lg:pt-20">
-      <div className="mx-auto max-w-[640px] text-center">
-        <Icon className={cn('mx-auto h-12 w-12', overall.tone)} strokeWidth={1.5} aria-hidden />
-        <h1 className="mt-4 text-[30px] font-normal leading-tight tracking-tight lg:text-[36px]">{overall.title}</h1>
-        <p className="mt-2 font-mono text-[12px] text-m-ink/48">
-          {lastUpdated ? `Last updated on ${formatLastUpdated(lastUpdated)}` : 'Connecting…'}
-        </p>
+      <div className="relative mx-auto max-w-[640px] text-center">
+        <HeroField motif="cloud" seed={53} className="top-1/2 -translate-y-1/2" />
+        <div className="relative">
+          <Icon className={cn('mx-auto h-12 w-12', overall.tone)} strokeWidth={1.5} aria-hidden />
+          <h1 className="mt-4 text-[30px] font-normal leading-tight tracking-tight lg:text-[36px]">{overall.title}</h1>
+          <p className="mt-2 font-mono text-[12px] text-m-ink/48">
+            {lastUpdated ? `Last updated on ${formatLastUpdated(lastUpdated)}` : 'Connecting…'}
+          </p>
+        </div>
       </div>
 
       <nav className="mt-8 flex justify-center gap-2 font-mono text-[12px]">

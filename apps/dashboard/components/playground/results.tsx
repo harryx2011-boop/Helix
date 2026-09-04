@@ -46,6 +46,7 @@ import { JsonView } from '@/components/result/json-view';
 import { FailurePanel } from '@/components/result/failure-panel';
 import { SiteIcon } from '@/components/result/site-icon';
 import { AnimatedCode } from '@/components/marketing/animated-code';
+import { AsciiFlow } from '@/components/marketing/ascii-fields';
 
 /**
  * A one-shot reveal (never `scramble` — that mode is reserved for decorative
@@ -563,8 +564,15 @@ export function Results({ result, loading, timingMs, error, pending, endpoint, i
 
   if (!result) {
     return (
-      <div className="flex h-full items-center justify-center p-8 text-center">
-        <p className="max-w-xs text-sm text-muted-foreground leading-relaxed">
+      <div className="relative flex h-full items-center justify-center overflow-hidden p-8 text-center">
+        <AsciiFlow
+          cols={100}
+          rows={14}
+          seed={7}
+          tone="app"
+          className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 opacity-80 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_44%,black_72%,transparent_100%)]"
+        />
+        <p className="relative max-w-xs text-sm text-muted-foreground leading-relaxed">
           Run a request. Results, including a typed failure with its next step, appear here.
         </p>
       </div>

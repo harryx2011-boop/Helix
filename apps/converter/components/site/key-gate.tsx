@@ -20,7 +20,7 @@ export function KeyGate({ compact = false }: { compact?: boolean }) {
     if (compact) return null;
     return (
       <div className="flex items-center gap-3">
-        <span className="font-mono text-[13px] text-p-ink-3">{maskKey(key)}</span>
+        <span className="font-mono text-note text-p-ink-3">{maskKey(key)}</span>
         <PillButton
           variant="ghost"
           size="sm"
@@ -48,7 +48,7 @@ export function KeyGate({ compact = false }: { compact?: boolean }) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-2">
-      <label htmlFor={inputId} className="text-[13px] font-medium text-p-ink">
+      <label htmlFor={inputId} className="text-note font-medium text-p-ink">
         Helix API key
       </label>
       <div className="flex flex-wrap items-center gap-2">
@@ -70,7 +70,7 @@ export function KeyGate({ compact = false }: { compact?: boolean }) {
             placeholder="helix-…"
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            className="h-11 w-full rounded-pill border border-p-line bg-p-surface pl-9 pr-4 font-mono text-[13px] text-p-ink placeholder:text-p-ink-3 focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue-ring"
+            className="h-11 w-full rounded-pill border border-p-line bg-p-surface pl-9 pr-4 font-mono text-note text-p-ink placeholder:text-p-ink-3 focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue-ring"
           />
         </div>
         <PillButton type="submit" variant="primary" size="md">
@@ -78,11 +78,11 @@ export function KeyGate({ compact = false }: { compact?: boolean }) {
         </PillButton>
       </div>
       {error ? (
-        <p id={errorId} role="alert" className="text-[13px] text-p-ink-2">
+        <p id={errorId} role="alert" className="text-note text-p-ink-2">
           {error}
         </p>
       ) : (
-        <p className="text-[13px] text-p-ink-3">
+        <p className="text-note text-p-ink-3">
           Stored on this device only. Create one in your Helix dashboard.
         </p>
       )}
@@ -94,8 +94,8 @@ export function KeyGate({ compact = false }: { compact?: boolean }) {
 export function SignedOutPanel() {
   return (
     <div className="rounded-panel border border-p-line bg-p-surface p-6 shadow-card-sm sm:p-8">
-      <h2 className="text-[18px] font-semibold text-p-ink">Sign in to convert</h2>
-      <p className="mt-2 max-w-[54ch] text-[15px] text-p-ink-2">
+      <h2 className="text-h4 font-semibold text-p-ink">Sign in to convert</h2>
+      <p className="mt-2 max-w-[54ch] text-body text-p-ink-2">
         Conversions run on your Helix instance, so they need a key. Paste one below and it stays in
         this browser.
       </p>

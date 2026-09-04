@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Download, X } from 'lucide-react';
-import { PillButton } from '@/components/ui/pill-button';
+import { PillButton, pillButtonClass } from '@/components/ui/pill-button';
 import { removeStoredJob, useStoredJobs } from '@/lib/jobs/store';
 import { withKey } from '@/lib/auth';
 import { API_BASE, formatBytes, label } from '@/lib/formats';
@@ -37,8 +37,8 @@ export default function HistoryPage() {
       <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-[30px] font-semibold tracking-[-0.02em] text-p-ink sm:text-[40px]">History</h1>
-            <p className="mt-2 max-w-[56ch] text-[15px] text-p-ink-2">
+            <h1 className="text-h1 font-semibold tracking-[-0.02em] text-p-ink sm:text-h1lg">History</h1>
+            <p className="mt-2 max-w-[56ch] text-body text-p-ink-2">
               Jobs from this browser. Each download works for one hour after the job finishes;
               after that the file is deleted from the server and the row goes with it.
             </p>
@@ -61,11 +61,11 @@ export default function HistoryPage() {
 
           {mounted && jobs.length === 0 && (
             <div className="rounded-panel border border-dashed border-p-line-2 px-6 py-12 text-center">
-              <p className="text-[15px] font-medium text-p-ink">No jobs yet</p>
-              <p className="mt-1 text-[13px] text-p-ink-3">They appear here as soon as one starts.</p>
+              <p className="text-body font-medium text-p-ink">No jobs yet</p>
+              <p className="mt-1 text-note text-p-ink-3">They appear here as soon as one starts.</p>
               <Link
                 href="/convert"
-                className="mt-5 inline-flex h-11 items-center rounded-pill bg-p-ink px-5 text-[14px] font-medium text-p-bg transition-transform duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.98]"
+                className={pillButtonClass({ variant: 'ink', size: 'md', className: 'mt-5' })}
               >
                 Open the converter
               </Link>
@@ -86,12 +86,12 @@ export default function HistoryPage() {
                     className="flex animate-fade-up items-center justify-between gap-4 rounded-card border border-p-line bg-p-surface py-3 pl-4 pr-2"
                   >
                     <div className="min-w-0">
-                      <p className="flex items-center gap-2 text-[14px] font-medium text-p-ink">
+                      <p className="flex items-center gap-2 text-sm font-medium text-p-ink">
                         <span className="font-mono">
                           {label(j.from)} → {label(j.to)}
                         </span>
                         <span
-                          className={`rounded-pill px-2 py-0.5 text-[11px] font-medium ${
+                          className={`rounded-pill px-2 py-0.5 text-micro font-medium ${
                             j.status === 'error'
                               ? 'bg-p-code text-destructive'
                               : j.status === 'done'
@@ -102,7 +102,7 @@ export default function HistoryPage() {
                           {j.status}
                         </span>
                       </p>
-                      <p className="mt-0.5 font-mono text-[12px] text-p-ink-3">
+                      <p className="mt-0.5 font-mono text-caption text-p-ink-3">
                         {j.id}
                         {j.size != null && ` · ${formatBytes(j.size)}`}
                         {j.status === 'done' && ` · deleted in ${relative(j.expiresAt - now)}`}
@@ -112,7 +112,7 @@ export default function HistoryPage() {
                       {live && (
                         <a
                           href={href}
-                          className="inline-flex h-11 items-center gap-1.5 rounded-pill bg-p-ink px-4 text-[13px] font-medium text-p-bg transition-transform duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.98]"
+                          className={pillButtonClass({ variant: 'ink', size: 'md', className: 'gap-1.5' })}
                         >
                           <Download className="h-3.5 w-3.5" aria-hidden="true" />
                           Download

@@ -84,7 +84,7 @@ export function FileRow({
         </span>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-p-ink">{item.name}</p>
-          <p className="flex flex-wrap items-center gap-x-2 font-mono text-xs text-p-ink-3">
+          <p className="flex flex-wrap items-center gap-x-2 font-mono text-caption text-p-ink-3">
             <span className="uppercase">{item.ext}</span>
             <span>{formatBytes(item.size)}</span>
             {item.meta.duration !== null && <span>{formatSeconds(item.meta.duration)}</span>}
@@ -94,13 +94,13 @@ export function FileRow({
               </span>
             )}
             {customised && (
-              <span className="rounded-pill bg-p-code px-2 py-0.5 text-xs font-medium leading-4 text-p-ink-2">custom</span>
+              <span className="rounded-pill bg-p-code px-2 py-0.5 text-caption font-medium leading-4 text-p-ink-2">custom</span>
             )}
           </p>
         </div>
         <div className="flex items-center gap-1">
           {item.phase === 'idle' && (
-            <span className="hidden rounded-pill bg-p-code px-3 py-1 font-mono text-xs uppercase text-p-ink-2 sm:inline">
+            <span className="hidden rounded-pill bg-p-code px-3 py-1 font-mono text-caption uppercase text-p-ink-2 sm:inline">
               → {effective.to}
             </span>
           )}

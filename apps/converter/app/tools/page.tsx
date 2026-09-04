@@ -14,8 +14,8 @@ export default function ToolsPage() {
       <main className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-[30px] font-semibold tracking-[-0.02em] text-p-ink sm:text-[40px]">All tools</h1>
-            <p className="mt-2 max-w-[56ch] text-[15px] text-p-ink-2">
+            <h1 className="text-h1 font-semibold tracking-[-0.02em] text-p-ink sm:text-h1lg">All tools</h1>
+            <p className="mt-2 max-w-[56ch] text-body text-p-ink-2">
               {FORMAT_PAIRS.length} entries. Each opens the converter with the pair pre-selected; press
               ⌘K anywhere to jump straight to one.
             </p>
@@ -25,10 +25,10 @@ export default function ToolsPage() {
               <Link
                 key={k}
                 href={`#${k}`}
-                className="inline-flex h-11 items-center gap-1.5 rounded-pill border border-p-line-2 px-4 text-[14px] font-medium text-p-ink transition-colors duration-150 ease-out hover:bg-p-code active:scale-[0.98]"
+                className="inline-flex h-11 items-center gap-1.5 rounded-pill border border-p-line-2 px-4 text-sm font-medium text-p-ink transition-colors duration-150 ease-out hover:bg-p-code active:scale-[0.98]"
               >
                 {KIND_LABELS[k]}
-                <span className="font-mono text-[12px] text-p-ink-3">{pairsByKind(k).length}</span>
+                <span className="font-mono text-caption text-p-ink-3">{pairsByKind(k).length}</span>
               </Link>
             ))}
           </nav>

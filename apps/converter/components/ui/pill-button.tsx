@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useReducedMotion } from '@/lib/theme';
 
-export type PillVariant = 'primary' | 'secondary' | 'ghost';
+export type PillVariant = 'primary' | 'ink' | 'secondary' | 'ghost';
 export type PillSize = 'sm' | 'md' | 'lg';
 export type PillState = 'idle' | 'queued' | 'running' | 'done';
 
@@ -25,6 +25,9 @@ const base =
 
 const variants: Record<PillVariant, string> = {
   primary: 'bg-blue text-[var(--p-on-blue)] hover:bg-blue-hover',
+  // Marketing's call to action. Blue is reserved for actions inside the app
+  // (PERSONA.md §2), so the page-level CTA is ink rather than a second blue.
+  ink: 'bg-p-ink text-p-bg hover:shadow-card',
   secondary: 'border border-p-line bg-p-surface text-p-ink hover:border-p-line-2 hover:bg-p-code',
   ghost: 'bg-transparent text-p-ink-2 hover:bg-p-code hover:text-p-ink',
 };

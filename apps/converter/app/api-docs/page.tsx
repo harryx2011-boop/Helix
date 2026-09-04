@@ -88,8 +88,8 @@ function Table({
 }) {
   return (
     <div className="overflow-x-auto rounded-card border border-p-line">
-      <table className="w-full text-left text-[14px]">
-        <thead className="bg-p-code text-[12px] font-medium text-p-ink-2">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-p-code text-caption font-medium text-p-ink-2">
           <tr>
             <th scope="col" className="px-4 py-2">{head[0]}</th>
             <th scope="col" className="px-4 py-2">{head[1]}</th>
@@ -99,8 +99,8 @@ function Table({
         <tbody>
           {rows.map((r) => (
             <tr key={r.a + r.b} className="border-t border-p-line">
-              <td className="whitespace-nowrap px-4 py-2 font-mono text-[13px] text-p-ink">{r.a}</td>
-              <td className="whitespace-nowrap px-4 py-2 font-mono text-[13px] text-p-ink-2">{r.b}</td>
+              <td className="whitespace-nowrap px-4 py-2 font-mono text-note text-p-ink">{r.a}</td>
+              <td className="whitespace-nowrap px-4 py-2 font-mono text-note text-p-ink-2">{r.b}</td>
               <td className="px-4 py-2 text-p-ink-2">{r.c}</td>
             </tr>
           ))}
@@ -115,8 +115,8 @@ export default function ApiDocsPage() {
     <>
       <main className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="max-w-2xl">
-          <h1 className="text-[30px] font-semibold tracking-[-0.02em] text-p-ink sm:text-[40px]">API</h1>
-          <p className="mt-2 text-[15px] leading-relaxed text-p-ink-2">
+          <h1 className="text-h1 font-semibold tracking-[-0.02em] text-p-ink sm:text-h1lg">API</h1>
+          <p className="mt-2 text-body leading-relaxed text-p-ink-2">
             Four operations, each its own multipart POST. Every call returns{' '}
             <span className="font-mono">202 {'{ id, status: "queued" }'}</span> at once; progress
             and the file come from the job routes. Base URL{' '}
@@ -137,7 +137,7 @@ export default function ApiDocsPage() {
                 <li key={l.href}>
                   <a
                     href={l.href}
-                    className="inline-flex h-11 items-center rounded-pill px-3 font-mono text-[13px] text-p-ink-2 transition-colors duration-150 ease-out hover:bg-p-code hover:text-p-ink"
+                    className="inline-flex h-11 items-center rounded-pill px-3 font-mono text-note text-p-ink-2 transition-colors duration-150 ease-out hover:bg-p-code hover:text-p-ink"
                   >
                     {l.label}
                   </a>
@@ -148,10 +148,10 @@ export default function ApiDocsPage() {
 
           <div className="min-w-0 space-y-16">
             <section id="auth" aria-labelledby="auth-heading" className="scroll-mt-24">
-              <h2 id="auth-heading" className="text-[22px] font-semibold tracking-[-0.01em] text-p-ink">
+              <h2 id="auth-heading" className="text-h3 font-semibold tracking-[-0.01em] text-p-ink">
                 Auth and limits
               </h2>
-              <p className="mt-2 text-[15px] leading-relaxed text-p-ink-2">
+              <p className="mt-2 text-body leading-relaxed text-p-ink-2">
                 Send your Helix key as{' '}
                 <span className="font-mono text-p-ink">Authorization: Bearer hx_…</span> on every
                 request. There is no anonymous access and nothing to pay for. Files up to 5 GB.
@@ -162,9 +162,9 @@ export default function ApiDocsPage() {
 
             {OPS.map((o) => (
               <section key={o.op} id={o.op} aria-labelledby={`${o.op}-heading`} className="scroll-mt-24">
-                <h2 id={`${o.op}-heading`} className="flex flex-wrap items-baseline gap-x-3 text-[22px] font-semibold tracking-[-0.01em] text-p-ink">
+                <h2 id={`${o.op}-heading`} className="flex flex-wrap items-baseline gap-x-3 text-h3 font-semibold tracking-[-0.01em] text-p-ink">
                   {o.title}
-                  <span className="font-mono text-[14px] font-medium text-p-ink-3">POST {ENDPOINTS[o.op]}</span>
+                  <span className="font-mono text-sm font-medium text-p-ink-3">POST {ENDPOINTS[o.op]}</span>
                 </h2>
                 <div className="mt-4">
                   <Table
@@ -179,7 +179,7 @@ export default function ApiDocsPage() {
             ))}
 
             <section id="jobs" aria-labelledby="jobs-heading" className="scroll-mt-24">
-              <h2 id="jobs-heading" className="text-[22px] font-semibold tracking-[-0.01em] text-p-ink">
+              <h2 id="jobs-heading" className="text-h3 font-semibold tracking-[-0.01em] text-p-ink">
                 Jobs
               </h2>
               <div className="mt-4">
@@ -188,30 +188,30 @@ export default function ApiDocsPage() {
                   rows={JOB_ROUTES.map((r) => ({ a: r.method, b: r.path, c: r.note }))}
                 />
               </div>
-              <pre className="mt-4 overflow-x-auto rounded-card border border-p-line bg-p-code px-4 py-3 font-mono text-[13px] leading-relaxed text-p-ink">
+              <pre className="mt-4 overflow-x-auto rounded-card border border-p-line bg-p-code px-4 py-3 font-mono text-note leading-relaxed text-p-ink">
                 <code>{JOB_TYPE}</code>
               </pre>
             </section>
 
             <section id="events" aria-labelledby="events-heading" className="scroll-mt-24">
-              <h2 id="events-heading" className="text-[22px] font-semibold tracking-[-0.01em] text-p-ink">
+              <h2 id="events-heading" className="text-h3 font-semibold tracking-[-0.01em] text-p-ink">
                 Progress stream
               </h2>
-              <p className="mt-2 text-[15px] leading-relaxed text-p-ink-2">
+              <p className="mt-2 text-body leading-relaxed text-p-ink-2">
                 <span className="font-mono text-p-ink">GET /v1/jobs/:id/events</span> is a
                 server-sent event stream. Frames arrive while ffmpeg runs, then one final frame
                 with either the download URL or the error and raw stderr.
               </p>
-              <pre className="mt-4 overflow-x-auto rounded-card border border-p-line bg-p-code px-4 py-3 font-mono text-[13px] leading-relaxed text-p-ink">
+              <pre className="mt-4 overflow-x-auto rounded-card border border-p-line bg-p-code px-4 py-3 font-mono text-note leading-relaxed text-p-ink">
                 <code>{SSE}</code>
               </pre>
             </section>
 
             <section id="retention" aria-labelledby="retention-heading" className="scroll-mt-24">
-              <h2 id="retention-heading" className="text-[22px] font-semibold tracking-[-0.01em] text-p-ink">
+              <h2 id="retention-heading" className="text-h3 font-semibold tracking-[-0.01em] text-p-ink">
                 Retention
               </h2>
-              <p className="mt-2 text-[15px] leading-relaxed text-p-ink-2">
+              <p className="mt-2 text-body leading-relaxed text-p-ink-2">
                 The input is deleted as soon as the job succeeds. The output is deleted one hour
                 after that (<span className="font-mono">expiresAt</span> on the job), by a sweeper
                 that runs every five minutes. The filename you send is display metadata only;

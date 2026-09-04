@@ -34,11 +34,11 @@ export default async function PairPage({ params }: { params: Promise<Params> }) 
     <>
       <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-[30px] font-semibold tracking-[-0.02em] text-p-ink sm:text-[40px]">
+          <h1 className="text-h1 font-semibold tracking-[-0.02em] text-p-ink sm:text-h1lg">
             {entry.title}
           </h1>
-          <p className="mx-auto mt-3 max-w-[56ch] text-[15px] leading-relaxed text-p-ink-2">{entry.description}</p>
-          <p className="mt-2 font-mono text-[12px] text-p-ink-3">
+          <p className="mx-auto mt-3 max-w-[56ch] text-body leading-relaxed text-p-ink-2">{entry.description}</p>
+          <p className="mt-2 font-mono text-caption text-p-ink-3">
             {KIND_LABELS[entry.kind]} · POST {ENDPOINTS[entry.op]}
           </p>
         </div>
@@ -49,7 +49,7 @@ export default async function PairPage({ params }: { params: Promise<Params> }) 
 
         {related.length > 0 && (
           <section aria-labelledby="related-heading" className="mt-16">
-            <h2 id="related-heading" className="text-[17px] font-semibold text-p-ink">
+            <h2 id="related-heading" className="text-lead font-semibold text-p-ink">
               Nearby tools
             </h2>
             <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -57,7 +57,7 @@ export default async function PairPage({ params }: { params: Promise<Params> }) 
                 <li key={p.slug}>
                   <Link
                     href={`/convert/${p.slug}`}
-                    className="flex min-h-[44px] items-center justify-between gap-3 rounded-card border border-p-line bg-p-surface px-4 py-3 text-[14px] font-medium text-p-ink transition-[transform,border-color] duration-150 ease-out hover:-translate-y-0.5 hover:border-p-line-2 active:scale-[0.98]"
+                    className="flex min-h-[44px] items-center justify-between gap-3 rounded-card border border-p-line bg-p-surface px-4 py-3 text-sm font-medium text-p-ink transition-[transform,border-color] duration-150 ease-out hover:-translate-y-0.5 hover:border-p-line-2 active:scale-[0.98]"
                   >
                     <span className="font-mono">
                       {p.op === 'compress' ? p.title : `${label(p.from)} → ${label(p.to)}`}

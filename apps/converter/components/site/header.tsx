@@ -58,14 +58,14 @@ export function SiteHeader() {
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
           <div className="flex items-baseline gap-2">
-            <Link href="/" className="text-[17px] font-semibold tracking-tight text-p-ink">
+            <Link href="/" className="text-lead font-semibold tracking-tight text-p-ink">
               Converter API
             </Link>
             <a
               href="https://helixapi-dev.vercel.app"
               target="_blank"
               rel="noreferrer"
-              className="hidden text-[13px] text-p-ink-3 transition-colors duration-150 ease-out hover:text-p-ink-2 sm:inline"
+              className="hidden text-note text-p-ink-3 transition-colors duration-150 ease-out hover:text-p-ink-2 sm:inline"
             >
               by Helix
             </a>
@@ -79,7 +79,7 @@ export function SiteHeader() {
                   key={l.href}
                   href={l.href}
                   aria-current={current ? 'page' : undefined}
-                  className={`inline-flex h-11 items-center rounded-pill px-2.5 text-[14px] font-medium transition-colors duration-150 ease-out hover:bg-p-code hover:text-p-ink sm:px-3 ${
+                  className={`inline-flex h-11 items-center rounded-pill px-2.5 text-sm font-medium transition-colors duration-150 ease-out hover:bg-p-code hover:text-p-ink sm:px-3 ${
                     current ? 'text-p-ink' : 'text-p-ink-2'
                   }`}
                 >
@@ -93,11 +93,11 @@ export function SiteHeader() {
               onClick={() => setPaletteOpen(true)}
               aria-label="Search tools"
               aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
-              className="ml-1 inline-flex h-11 items-center gap-2 rounded-pill px-3 text-[14px] text-p-ink-2 transition-colors duration-150 ease-out hover:bg-p-code hover:text-p-ink sm:border sm:border-p-line-2 sm:pl-3 sm:pr-2"
+              className="ml-1 inline-flex h-11 items-center gap-2 rounded-pill px-3 text-sm text-p-ink-2 transition-colors duration-150 ease-out hover:bg-p-code hover:text-p-ink sm:border sm:border-p-line-2 sm:pl-3 sm:pr-2"
             >
               <Search className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Search</span>
-              <kbd className="hidden rounded-pill bg-p-code px-1.5 py-0.5 font-mono text-[11px] text-p-ink-3 sm:inline">
+              <kbd className="hidden rounded-pill bg-p-code px-1.5 py-0.5 font-mono text-micro text-p-ink-3 sm:inline">
                 {isMac ? '⌘K' : 'Ctrl K'}
               </kbd>
             </button>
@@ -123,7 +123,7 @@ function KeyBadge() {
       onClick={() => setKey(null)}
       title="Sign out and forget this key"
       aria-label={`Signed in as ${maskKey(key)}. Sign out and forget this key.`}
-      className="hidden h-11 items-center rounded-pill px-3 font-mono text-[12px] text-p-ink-3 transition-colors duration-150 hover:bg-p-code hover:text-p-ink sm:inline-flex"
+      className="hidden h-11 items-center rounded-pill px-3 font-mono text-caption text-p-ink-3 transition-colors duration-150 hover:bg-p-code hover:text-p-ink sm:inline-flex"
     >
       {maskKey(key)}
     </button>

@@ -108,13 +108,13 @@ function CodeBlock({ code, title }: { code: string; title: string }) {
   return (
     <div className="relative rounded-card border border-p-line bg-p-code">
       <div className="flex items-center justify-between border-b border-p-line px-4">
-        <span className="font-mono text-[12px] text-p-ink-3">{title}</span>
+        <span className="font-mono text-caption text-p-ink-3">{title}</span>
         <button
           type="button"
           onClick={copy}
           aria-label={copied ? 'Copied' : `Copy ${title}`}
           aria-live="polite"
-          className="inline-flex h-11 items-center gap-1.5 rounded-pill px-2 text-[12px] font-medium text-p-ink-2 transition-colors duration-150 ease-out hover:text-p-ink active:scale-[0.98]"
+          className="inline-flex h-11 items-center gap-1.5 rounded-pill px-2 text-caption font-medium text-p-ink-2 transition-colors duration-150 ease-out hover:text-p-ink active:scale-[0.98]"
         >
           {copied ? (
             <Check className="h-3.5 w-3.5 text-blue" aria-hidden="true" />
@@ -124,7 +124,7 @@ function CodeBlock({ code, title }: { code: string; title: string }) {
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <pre className="overflow-x-auto px-4 py-3 font-mono text-[13px] leading-relaxed text-p-ink">
+      <pre className="overflow-x-auto px-4 py-3 font-mono text-note leading-relaxed text-p-ink">
         <code>{code}</code>
       </pre>
     </div>
@@ -155,7 +155,7 @@ export function ApiQuickstart({ op: pinned }: { op?: FormatOp }) {
                 aria-selected={selected}
                 aria-controls={`${id}-panel`}
                 onClick={() => setOp(o.op)}
-                className={`inline-flex h-11 items-center rounded-pill border px-4 text-[14px] font-medium transition-colors duration-150 ease-out active:scale-[0.98] ${
+                className={`inline-flex h-11 items-center rounded-pill border px-4 text-sm font-medium transition-colors duration-150 ease-out active:scale-[0.98] ${
                   selected
                     ? 'border-p-ink bg-p-ink text-p-bg'
                     : 'border-p-line-2 text-p-ink-2 hover:bg-p-code hover:text-p-ink'
@@ -170,7 +170,7 @@ export function ApiQuickstart({ op: pinned }: { op?: FormatOp }) {
 
       <div id={`${id}-panel`} role={pinned ? undefined : 'tabpanel'} className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[14px] text-p-ink-2">
+          <p className="text-sm text-p-ink-2">
             <span className="font-mono text-p-ink">POST {ENDPOINTS[op]}</span>
             <span className="mx-2 text-p-ink-3">·</span>
             {current.summary}
@@ -185,7 +185,7 @@ export function ApiQuickstart({ op: pinned }: { op?: FormatOp }) {
                   role="tab"
                   aria-selected={selected}
                   onClick={() => setLang(l.id)}
-                  className={`inline-flex h-9 min-w-[44px] items-center justify-center rounded-pill px-3 text-[13px] font-medium transition-colors duration-150 ease-out ${
+                  className={`inline-flex h-9 min-w-[44px] items-center justify-center rounded-pill px-3 text-note font-medium transition-colors duration-150 ease-out ${
                     selected ? 'bg-p-surface text-p-ink shadow-card-sm' : 'text-p-ink-2 hover:text-p-ink'
                   }`}
                 >

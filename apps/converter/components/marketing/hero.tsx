@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, FileWarning, Upload } from 'lucide-react';
-import { PillButton } from '@/components/ui/pill-button';
+import { PillButton, pillButtonClass } from '@/components/ui/pill-button';
 import { prefersReducedMotion } from '@/lib/theme';
 import {
   ACCEPTED_EXTS,
@@ -114,12 +114,12 @@ export function Hero() {
       <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-16 sm:px-6 sm:pb-24 sm:pt-24">
         <div className="mx-auto max-w-2xl text-center">
           <h1
-            className="text-[36px] font-semibold leading-[1.04] tracking-[-0.02em] text-p-ink sm:text-[56px]"
+            className="text-display font-semibold leading-[1.04] tracking-[-0.02em] text-p-ink sm:text-displaylg"
             style={{ textWrap: 'balance' }}
           >
             Convert video, audio and images. Up to 5 GB a file.
           </h1>
-          <p className="mx-auto mt-5 max-w-[56ch] text-[17px] leading-relaxed text-p-ink-2">
+          <p className="mx-auto mt-5 max-w-[56ch] text-lead leading-relaxed text-p-ink-2">
             Drop a file below and it opens in the converter with the right options already picked.
             Sixty-three conversions and six compressors, run by ffmpeg and libvips on your own
             machine. Every one of them is also an API call.
@@ -168,10 +168,10 @@ export function Hero() {
                 >
                   <Upload className="h-5 w-5" aria-hidden="true" />
                 </span>
-                <p className="text-[16px] font-medium text-p-ink">
+                <p className="text-base font-medium text-p-ink">
                   {over ? 'Let go to convert it' : 'Drop a file here'}
                 </p>
-                <p id="hero-drop-hint" className="text-[13px] text-p-ink-3">
+                <p id="hero-drop-hint" className="text-note text-p-ink-3">
                   Video, audio, image or GIF. Up to 5 GB. Output is kept for one hour.
                 </p>
                 <PillButton
@@ -192,12 +192,12 @@ export function Hero() {
               <div className="animate-fade-up" aria-live="polite">
                 <div className="flex items-center justify-between gap-4 rounded-card border border-p-line bg-p-bg px-4 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-[14px] font-medium text-p-ink">{state.file.name}</p>
-                    <p className="mt-0.5 font-mono text-[12px] text-p-ink-3">
+                    <p className="truncate text-sm font-medium text-p-ink">{state.file.name}</p>
+                    <p className="mt-0.5 font-mono text-caption text-p-ink-3">
                       {KIND_LABELS[state.kind]} · {formatBytes(state.file.size)}
                     </p>
                   </div>
-                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-blue-soft px-3 py-1 text-[13px] font-medium text-blue">
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-blue-soft px-3 py-1 text-note font-medium text-blue">
                     Opening
                     <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
@@ -213,7 +213,7 @@ export function Hero() {
                 <span className="inline-flex h-11 w-11 items-center justify-center rounded-pill bg-p-code text-destructive">
                   <FileWarning className="h-5 w-5" aria-hidden="true" />
                 </span>
-                <p className="text-[15px] font-medium text-p-ink">{state.reason}</p>
+                <p className="text-body font-medium text-p-ink">{state.reason}</p>
                 <PillButton
                   variant="secondary"
                   size="sm"
@@ -233,19 +233,19 @@ export function Hero() {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/convert"
-              className="inline-flex h-11 items-center gap-1.5 rounded-pill bg-p-ink px-6 text-[14px] font-medium text-p-bg transition-[transform,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:shadow-card active:scale-[0.98]"
+              className={pillButtonClass({ variant: 'ink', size: 'md', className: 'gap-1.5 px-6' })}
             >
               Open the converter
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link
               href="/api-docs"
-              className="inline-flex h-11 items-center rounded-pill border border-p-line-2 px-6 text-[14px] font-medium text-p-ink transition-colors duration-150 ease-out hover:bg-p-code active:scale-[0.98]"
+              className={pillButtonClass({ variant: 'secondary', size: 'md', className: 'px-6' })}
             >
               Read the API
             </Link>
           </div>
-          <p className="mt-4 text-center text-[13px] text-p-ink-3">Sign in with your Helix account to run a job.</p>
+          <p className="mt-4 text-center text-note text-p-ink-3">Sign in with your Helix account to run a job.</p>
         </div>
       </div>
 

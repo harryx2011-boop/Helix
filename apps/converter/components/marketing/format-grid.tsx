@@ -20,7 +20,7 @@ function Tile({ pair, index, shown }: { pair: FormatPair; index: number; shown: 
         href={`/convert/${pair.slug}`}
         className="flex h-full min-h-[44px] flex-col gap-1 rounded-card border border-p-line bg-p-surface px-4 py-3 transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-p-line-2 hover:shadow-card-sm active:scale-[0.98]"
       >
-        <span className="flex items-center gap-1.5 text-[14px] font-medium text-p-ink">
+        <span className="flex items-center gap-1.5 text-sm font-medium text-p-ink">
           {isCompress ? (
             pair.title
           ) : (
@@ -31,7 +31,7 @@ function Tile({ pair, index, shown }: { pair: FormatPair; index: number; shown: 
             </>
           )}
         </span>
-        <span className="line-clamp-2 text-[12px] leading-snug text-p-ink-3">{pair.description}</span>
+        <span className="line-clamp-2 text-caption leading-snug text-p-ink-3">{pair.description}</span>
       </Link>
     </li>
   );
@@ -67,14 +67,14 @@ function Group({ kind, limit }: { kind: FormatKind; limit: number | undefined })
   return (
     <div ref={ref} id={kind} className="scroll-mt-24">
       <div className="flex items-baseline justify-between gap-4">
-        <h3 className="flex items-baseline gap-2 text-[17px] font-semibold text-p-ink">
+        <h3 className="flex items-baseline gap-2 text-lead font-semibold text-p-ink">
           {KIND_LABELS[kind]}
-          <span className="font-mono text-[12px] font-medium text-p-ink-3">{all.length}</span>
+          <span className="font-mono text-caption font-medium text-p-ink-3">{all.length}</span>
         </h3>
         {remaining > 0 && (
           <Link
             href={`/tools#${kind}`}
-            className="inline-flex h-11 items-center gap-1 text-[13px] font-medium text-p-ink-2 transition-colors duration-150 ease-out hover:text-p-ink"
+            className="inline-flex h-11 items-center gap-1 text-note font-medium text-p-ink-2 transition-colors duration-150 ease-out hover:text-p-ink"
           >
             All {all.length} {KIND_LABELS[kind].toLowerCase()} tools
             <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />

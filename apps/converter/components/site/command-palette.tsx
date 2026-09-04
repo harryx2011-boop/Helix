@@ -136,9 +136,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             placeholder="mp4 to mp3, heic, compress…"
             autoComplete="off"
             spellCheck={false}
-            className="h-14 w-full bg-transparent text-[15px] text-p-ink outline-none placeholder:text-p-ink-3"
+            className="h-14 w-full bg-transparent text-body text-p-ink outline-none placeholder:text-p-ink-3"
           />
-          <kbd className="hidden rounded-pill bg-p-code px-1.5 py-0.5 font-mono text-[11px] text-p-ink-3 sm:inline">
+          <kbd className="hidden rounded-pill bg-p-code px-1.5 py-0.5 font-mono text-micro text-p-ink-3 sm:inline">
             esc
           </kbd>
         </div>
@@ -151,7 +151,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           className="max-h-[50vh] overflow-y-auto p-2"
         >
           {entries.length === 0 && (
-            <li className="px-3 py-6 text-center text-[14px] text-p-ink-3" role="presentation">
+            <li className="px-3 py-6 text-center text-sm text-p-ink-3" role="presentation">
               Nothing matches “{query}”. Try a format name, like webm or heic.
             </li>
           )}
@@ -168,8 +168,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 i === active ? 'bg-p-code text-p-ink' : 'text-p-ink-2'
               }`}
             >
-              <span className="text-[14px] font-medium">{entry.title}</span>
-              <span className="truncate text-[12px] text-p-ink-3">{entry.hint}</span>
+              <span className="text-sm font-medium">{entry.title}</span>
+              <span className="truncate text-caption text-p-ink-3">{entry.hint}</span>
             </li>
           ))}
         </ul>

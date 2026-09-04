@@ -28,7 +28,7 @@ function Field({ label, id, children, hint }: { label: string; id: string; child
         <span id={id} className="text-sm font-medium text-p-ink">
           {label}
         </span>
-        {hint && <p className="text-xs text-p-ink-3">{hint}</p>}
+        {hint && <p className="text-caption text-p-ink-3">{hint}</p>}
       </div>
       <div className="min-w-0">{children}</div>
     </div>
@@ -187,7 +187,7 @@ export function SettingsPanel({ scope, kind, inSize, meta, settings, onChange, i
                 className="h-11 w-24 rounded-pill border border-p-line bg-p-bg px-4 font-mono text-sm tabular-nums text-p-ink"
               />
             </label>
-            <span className="font-mono text-xs text-p-ink-3">px</span>
+            <span className="font-mono text-caption text-p-ink-3">px</span>
             {settings.resize && (
               <PillButton type="button" size="md" variant="ghost" onClick={() => onChange({ resize: null })}>
                 Original

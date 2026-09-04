@@ -217,7 +217,7 @@ export function FormatPicker({ kind, value, onChange, labelId }: Props) {
                   )}
                 >
                   <span className={cx('font-mono uppercase', selected && 'font-semibold text-p-ink')}>{f}</span>
-                  <span className="truncate text-xs text-p-ink-3">{LABEL[f] ?? ''}</span>
+                  <span className="truncate text-caption text-p-ink-3">{LABEL[f] ?? ''}</span>
                 </li>
               );
             })}

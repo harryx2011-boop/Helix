@@ -175,7 +175,7 @@ export function Slider({
         <span
           aria-hidden="true"
           data-visible={bubbleVisible ? 'true' : 'false'}
-          className="slider-bubble pointer-events-none absolute bottom-full left-1/2 mb-2 whitespace-nowrap rounded-pill bg-p-ink px-2 py-0.5 font-mono text-xs text-p-bg"
+          className="slider-bubble pointer-events-none absolute bottom-full left-1/2 mb-2 whitespace-nowrap rounded-pill bg-p-ink px-2 py-0.5 font-mono text-caption text-p-bg"
         >
           {text}
         </span>

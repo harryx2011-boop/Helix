@@ -54,7 +54,7 @@ export function JobProgress({ phase, pct, uploadPct, eta, fps, fileName, cancell
         />
       </div>
       <span className="w-[4.5rem] shrink-0 text-right font-mono text-sm tabular-nums text-p-ink-2">{text}</span>
-      <span className="hidden w-16 shrink-0 font-mono text-xs tabular-nums text-p-ink-3 sm:inline">
+      <span className="hidden w-16 shrink-0 font-mono text-caption tabular-nums text-p-ink-3 sm:inline">
         {phase === 'running' ? formatEta(eta) : ''}
         {phase === 'running' && fps !== null ? ` · ${fps}fps` : ''}
       </span>

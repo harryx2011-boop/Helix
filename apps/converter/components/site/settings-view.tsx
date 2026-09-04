@@ -44,7 +44,7 @@ export function SettingsView() {
       >
         <KeyGate />
         {key ? (
-          <p className="mt-3 flex items-center gap-1.5 text-[13px] text-p-ink-2">
+          <p className="mt-3 flex items-center gap-1.5 text-note text-p-ink-2">
             <Check aria-hidden className="h-[14px] w-[14px]" />
             Saved on this device.
           </p>
@@ -67,9 +67,9 @@ export function SettingsView() {
           <Row label="Concurrent jobs" value={health ? String(health.concurrency) : '—'} mono />
         </dl>
         {reachable === false ? (
-          <p className="mt-4 text-[13px] text-p-ink-2">
+          <p className="mt-4 text-note text-p-ink-2">
             Nothing answered at that address. Start the service, or set{' '}
-            <code className="rounded bg-p-code px-1.5 py-0.5 font-mono text-[12px]">
+            <code className="rounded bg-p-code px-1.5 py-0.5 font-mono text-caption">
               NEXT_PUBLIC_CONVERTER_API
             </code>{' '}
             to where it runs.
@@ -103,7 +103,7 @@ export function SettingsView() {
         <div className="flex flex-col gap-7">
           {ROLE_ORDER.filter((role) => providersByRole(role).length > 0).map((role) => (
             <div key={role}>
-              <h3 className="text-[15px] font-semibold text-p-ink">{ROLE_LABELS[role]}</h3>
+              <h3 className="text-body font-semibold text-p-ink">{ROLE_LABELS[role]}</h3>
               <ul className="mt-3 flex flex-col gap-2">
                 {providersByRole(role).map((p) => (
                   <li key={p.id}>
@@ -118,17 +118,17 @@ export function SettingsView() {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="text-[15px] font-medium text-p-ink">{p.name}</span>
+                          <span className="text-body font-medium text-p-ink">{p.name}</span>
                           {p.handles?.map((op) => (
                             <code
                               key={op}
-                              className="rounded-pill bg-p-code px-2 py-0.5 font-mono text-[11px] text-p-ink-2"
+                              className="rounded-pill bg-p-code px-2 py-0.5 font-mono text-micro text-p-ink-2"
                             >
                               /v1/{op}
                             </code>
                           ))}
                         </span>
-                        <span className="mt-0.5 block text-[13px] text-p-ink-2">{p.summary}</span>
+                        <span className="mt-0.5 block text-note text-p-ink-2">{p.summary}</span>
                       </span>
                       <ExternalLink
                         aria-hidden
@@ -141,7 +141,7 @@ export function SettingsView() {
             </div>
           ))}
         </div>
-        <p className="mt-5 text-[13px] text-p-ink-3">
+        <p className="mt-5 text-note text-p-ink-3">
           {PROVIDERS.length} projects. Formats depend on how FFmpeg and libvips were built on the
           machine running the service.
         </p>
@@ -161,8 +161,8 @@ function Section({
 }) {
   return (
     <section>
-      <h2 className="text-[18px] font-semibold text-p-ink">{title}</h2>
-      <p className="mt-1 max-w-[62ch] text-[14px] text-p-ink-2">{detail}</p>
+      <h2 className="text-h4 font-semibold text-p-ink">{title}</h2>
+      <p className="mt-1 max-w-[62ch] text-sm text-p-ink-2">{detail}</p>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -183,11 +183,11 @@ function Row({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-p-line py-2">
-      <dt className="text-[14px] text-p-ink-2">{label}</dt>
+      <dt className="text-sm text-p-ink-2">{label}</dt>
       <dd
         className={[
-          'truncate text-right text-[14px]',
-          mono ? 'font-mono text-[13px]' : '',
+          'truncate text-right text-sm',
+          mono ? 'font-mono text-note' : '',
           tone === 'bad' ? 'text-destructive' : tone === 'warn' ? 'text-p-ink-2' : 'text-p-ink',
         ].join(' ')}
       >

@@ -60,7 +60,7 @@ export function ErrorLog({ stderr }: Props) {
           <pre
             tabIndex={open ? 0 : -1}
             aria-label="ffmpeg output"
-            className="mt-2 max-h-64 select-text overflow-auto whitespace-pre-wrap break-words rounded-card border border-p-line bg-p-code p-3 font-mono text-xs leading-relaxed text-p-ink-2"
+            className="mt-2 max-h-64 select-text overflow-auto whitespace-pre-wrap break-words rounded-card border border-p-line bg-p-code p-3 font-mono text-caption leading-relaxed text-p-ink-2"
           >
             {stderr}
           </pre>

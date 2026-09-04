@@ -100,7 +100,8 @@ html {
 }
 
 body {
-  min-height: 100vh;
+  /* dvh, so mobile browser chrome collapsing does not leave a gap. */
+  min-height: 100dvh;
   font-size: 15px;
   line-height: 1.55;
 }

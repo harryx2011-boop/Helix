@@ -143,7 +143,7 @@ export function CompressionControls({ kind, inSize, meta, preset, targetBytes, q
             onClick={() => pickBuiltin(p)}
           >
             {p.label}
-            <span className="font-mono text-xs opacity-70">{p.targetBytes === null ? 'best' : formatBytes(p.targetBytes)}</span>
+            <span className="font-mono text-caption opacity-70">{p.targetBytes === null ? 'best' : formatBytes(p.targetBytes)}</span>
           </PillButton>
         ))}
         {userPresets.map((p) => (
@@ -156,7 +156,7 @@ export function CompressionControls({ kind, inSize, meta, preset, targetBytes, q
               onClick={() => pickUser(p.id, p.targetBytes, p.quality)}
             >
               {p.name}
-              <span className="font-mono text-xs opacity-70">{p.targetBytes === null ? 'best' : formatBytes(p.targetBytes)}</span>
+              <span className="font-mono text-caption opacity-70">{p.targetBytes === null ? 'best' : formatBytes(p.targetBytes)}</span>
             </PillButton>
             <PillButton
               type="button"
@@ -223,7 +223,7 @@ export function CompressionControls({ kind, inSize, meta, preset, targetBytes, q
               targetBytes !== null && targetBytes > inSize ? 'border-p-ink-3' : 'border-p-line',
             )}
           />
-          <span aria-hidden="true" className="pointer-events-none absolute right-4 font-mono text-xs text-p-ink-3">
+          <span aria-hidden="true" className="pointer-events-none absolute right-4 font-mono text-caption text-p-ink-3">
             MB
           </span>
         </span>

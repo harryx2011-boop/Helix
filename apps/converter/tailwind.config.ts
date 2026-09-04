@@ -44,6 +44,29 @@ const config: Config = {
         sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['var(--font-jetbrains)', 'JetBrains Mono', 'ui-monospace', 'monospace'],
       },
+      /**
+       * One type scale, replacing 15 arbitrary px sizes and a parallel set of
+       * Tailwind rungs. The values are the ones already in use — this names
+       * them rather than changing them, so nothing shifts visually.
+       */
+      fontSize: {
+        micro: ['11px', { lineHeight: '1.45' }],
+        caption: ['12px', { lineHeight: '1.5' }],
+        note: ['13px', { lineHeight: '1.55' }],
+        sm: ['14px', { lineHeight: '1.6' }],
+        base: ['16px', { lineHeight: '1.6' }],
+        h3x: ['24px', { lineHeight: '1.3', letterSpacing: '-0.01em' }],
+        body: ['15px', { lineHeight: '1.6' }],
+        lead: ['17px', { lineHeight: '1.55' }],
+        h4: ['18px', { lineHeight: '1.4', letterSpacing: '-0.005em' }],
+        h3: ['22px', { lineHeight: '1.3', letterSpacing: '-0.01em' }],
+        h2: ['26px', { lineHeight: '1.25', letterSpacing: '-0.01em' }],
+        h2lg: ['32px', { lineHeight: '1.2', letterSpacing: '-0.015em' }],
+        h1: ['30px', { lineHeight: '1.15', letterSpacing: '-0.02em' }],
+        h1lg: ['40px', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+        display: ['36px', { lineHeight: '1.06', letterSpacing: '-0.02em' }],
+        displaylg: ['56px', { lineHeight: '1.04', letterSpacing: '-0.02em' }],
+      },
       borderRadius: {
         pill: '999px',
         card: '10px',

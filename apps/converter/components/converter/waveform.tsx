@@ -242,13 +242,13 @@ export function AbPreview({ kind, sourceUrl, outputUrl, sourceLabel, outputLabel
         </PillButton>
         <div role="group" aria-label="Compare source and output" className="flex gap-1">
           <PillButton type="button" size="md" variant={which === 'source' ? 'primary' : 'ghost'} aria-pressed={which === 'source'} onClick={() => setWhich('source')}>
-            Source <span className="font-mono text-xs opacity-70">{sourceLabel}</span>
+            Source <span className="font-mono text-caption opacity-70">{sourceLabel}</span>
           </PillButton>
           <PillButton type="button" size="md" variant={which === 'output' ? 'primary' : 'ghost'} aria-pressed={which === 'output'} onClick={() => setWhich('output')}>
-            Output <span className="font-mono text-xs opacity-70">{outputLabel}</span>
+            Output <span className="font-mono text-caption opacity-70">{outputLabel}</span>
           </PillButton>
         </div>
-        <span className="font-mono text-xs tabular-nums text-p-ink-3">{formatSeconds(time)}</span>
+        <span className="font-mono text-caption tabular-nums text-p-ink-3">{formatSeconds(time)}</span>
         <div
           role="meter"
           aria-label="Playback level"

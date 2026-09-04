@@ -315,7 +315,7 @@ await app.register(
       maxInFlight: config.parseMaxInflight,
       userAgent: config.userAgent,
     });
-    await registerKeys(instance);
+    await registerKeys(instance, { multiTenant: config.multiTenant });
     await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured });
     await registerMap(instance, { fetchClient, extractClient, userAgent: config.userAgent });
     await registerCrawl(instance, {
@@ -323,6 +323,7 @@ await app.register(
       extractClient,
       userAgent: config.userAgent,
       defaultModel: process.env['HELIX_LLM_MODEL'] ?? 'unset',
+      multiTenant: config.multiTenant,
       limits: {
         defaultLimit: config.crawlDefaultLimit,
         maxLimit: config.crawlMaxLimit,
@@ -330,9 +331,9 @@ await app.register(
         respectRobots: config.respectRobots,
       },
     });
-    await registerBatch(instance);
-    await registerJobs(instance);
-    await registerUsage(instance);
+    await registerBatch(instance, { multiTenant: config.multiTenant });
+    await registerJobs(instance, { multiTenant: config.multiTenant });
+    await registerUsage(instance, { multiTenant: config.multiTenant });
     await registerSearch(instance, {
       provider: searchProvider,
       fetchClient,

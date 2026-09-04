@@ -863,6 +863,139 @@ export interface RemoveProviderResponse {
   success: true;
 }
 
+export type EnrichFieldType = 'string' | 'number' | 'boolean';
+
+export interface EnrichFieldSpec {
+  name: string;
+  type?: EnrichFieldType;
+  description?: string;
+}
+
+export interface EnrichRequest {
+  subject: string;
+  fields: EnrichFieldSpec[];
+  /** Sources to read. Omit to let the instance find them, which needs a search backend. */
+  urls?: string[];
+  maxSources?: number;
+  timeout?: number;
+  provider?: ExtractProvider;
+  model?: string;
+}
+
+/** Why a field came back null. A closed set, so a caller can branch on it. */
+export type EnrichNullReason =
+  | 'no_sources'
+  | 'all_sources_rejected'
+  | 'not_stated'
+  | 'no_citation'
+  | 'citation_not_in_source'
+  | 'value_not_in_citation'
+  | 'citation_too_short'
+  | 'unknown_source_url'
+  | 'model_unavailable';
+
+export type EnrichSourceRejection =
+  | 'parked_domain'
+  | 'placeholder_page'
+  | 'blocklisted_social'
+  | 'below_content_floor'
+  | 'unsafe_url'
+  | 'unreadable';
+
+export type EnrichConfidence = 'high' | 'medium' | 'low';
+
+export type EnrichPhase = 'metadata' | 'structural' | 'model';
+
+export interface EnrichCitation {
+  url: string;
+  /** The passage stating the value, verified to appear in the fetched page. */
+  quote: string;
+  /** Where it was read: an element for a structural hit, `body` for a model hit. */
+  locator: string;
+}
+
+/**
+ * One enriched column.
+ *
+ * `value` is non-null only where the API could tie it to a passage in a page it
+ * fetched itself; otherwise it is null and `reason` says why. There is no
+ * middle state, so `value !== null` is the only check a caller needs.
+ */
+export interface EnrichedField {
+  value: string | number | boolean | null;
+  confidence: EnrichConfidence | null;
+  citation: EnrichCitation | null;
+  phase: EnrichPhase | null;
+  reason: EnrichNullReason | null;
+  evidence: {
+    /** False for booleans, which cannot appear literally in their own citation. */
+    valueInCitation: boolean;
+    sourcesConsidered: number;
+  };
+}
+
+export interface EnrichRejectedSource {
+  url: string;
+  reason: EnrichSourceRejection;
+  detail: string;
+}
+
+export interface EnrichResponseSuccess {
+  success: true;
+  subject: string;
+  data: Record<string, EnrichedField>;
+  sources: { used: string[]; rejected: EnrichRejectedSource[] };
+  usage?: { tokens: { input: number; output: number }; model: string };
+  /** Present when there was nothing to read; every field is null for one reason. */
+  warnings?: string[];
+}
+
+export interface EnrichResponseFailure {
+  success: false;
+  failure: { reason: 'service_unavailable' | 'timeout'; detail?: string };
+}
+
+export type EnrichResponse = EnrichResponseSuccess | EnrichResponseFailure;
+
+export interface UsageOptions {
+  /** Window in hours, 1 to 2160. Defaults to 168 (seven days). */
+  hours?: number;
+}
+
+export interface UsagePoint {
+  bucketStart: string;
+  requests: number;
+}
+
+export interface UsageByEndpoint {
+  endpoint: string;
+  requests: number;
+}
+
+export interface UsageResponse {
+  since: string;
+  until: string;
+  total: number;
+  /** Requests the limiter rejected in the window. */
+  rateLimited: number;
+  errors: number;
+  series: UsagePoint[];
+  /** Grouped by route family, busiest first. Capped at 50 families. */
+  byEndpoint: UsageByEndpoint[];
+  key: {
+    id: string;
+    name: string;
+    keyPrefix: string;
+    rateLimit: number;
+    lastUsedAt: string | null;
+  };
+  /**
+   * Counts are stored hourly, so this is not live headroom. Read
+   * `X-RateLimit-Remaining` on any response for that.
+   */
+  window: { hours: number; unit: 'hour' };
+}
+
 export type ServiceHealthStatus = 'ok' | 'degraded' | 'unhealthy';
 
 export interface Health {

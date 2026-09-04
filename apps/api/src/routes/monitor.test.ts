@@ -165,6 +165,29 @@ describe('POST /v1/monitor', () => {
     });
   });
 
+  // Every other route validating a provider name uses this enum. Here it was a
+  // bare string, so an unknown name was stored and only failed later, on a
+  // scheduled check, where the caller sees it as lastError rather than a 400.
+  it('rejects a jsonOptions provider outside the supported set', async () => {
+    const response = await create({
+      url: 'https://example.com',
+      schedule: '0 * * * *',
+      jsonOptions: { schema: { type: 'object' }, provider: 'not-a-provider' },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: 'invalid_request' });
+    expect(response.json().field).toBe('jsonOptions.provider');
+  });
+
+  it('accepts a supported jsonOptions provider', async () => {
+    const response = await create({
+      url: 'https://example.com',
+      schedule: '0 * * * *',
+      jsonOptions: { schema: { type: 'object' }, provider: 'anthropic' },
+    });
+    expect(response.statusCode).toBe(201);
+  });
+
   it('rejects a jsonOptions schema with fabrication-inviting length keywords', async () => {
     const response = await create({
       url: 'https://example.com',
@@ -200,6 +223,8 @@ describe('GET /v1/monitor and /v1/monitor/:id', () => {
 
     const list = await app.inject({ method: 'GET', url: '/v1/monitor' });
     expect(list.json().monitors).toHaveLength(1);
+    // The list is capped; a caller must be able to tell a short list from a cut one.
+    expect(list.json().truncated).toBe(false);
 
     const beforeCheck = await app.inject({ method: 'GET', url: `/v1/monitor/${id}` });
     expect(beforeCheck.json().latestSnapshot).toBeNull();

@@ -170,8 +170,8 @@ function SettingRow({
   return (
     <div className={cn('flex items-start justify-between gap-6 px-6 py-4', !last && 'border-b border-border')}>
       <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[13px] text-foreground">{setting.env}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="min-w-0 break-all font-mono text-[13px] text-foreground">{setting.env}</span>
           <EffectBadge effect={setting.effect} />
           {setting.overridden && (
             <button
@@ -294,7 +294,11 @@ export function InstanceSettingsPanel() {
         return (
           <React.Fragment key={group.id}>
             <FrameRow>
-              <FrameHeading title={group.title} description={group.description} />
+              <FrameHeading
+                {...(group.id === 'live' ? { id: 'instance' } : {})}
+                title={group.title}
+                description={group.description}
+              />
             </FrameRow>
             <FrameRow flush>
               {rows.map((setting, index) => (

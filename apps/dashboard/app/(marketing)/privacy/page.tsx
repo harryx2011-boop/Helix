@@ -13,10 +13,10 @@ export default function PrivacyPage() {
       <div className="relative">
         <HeroField motif="orbit" seed={43} className="translate-x-16 opacity-60" />
         <div className="relative mx-auto max-w-[720px] animate-fade-up">
-          <SectionEyebrow step="LEGAL" label="PRIVACY" sub="what the hosted app stores" />
-          <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
+          <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
             Privacy.
           </h1>
+          <SectionEyebrow step="LEGAL" label="PRIVACY" sub="what the hosted app stores" className="mt-4" />
         </div>
       </div>
 

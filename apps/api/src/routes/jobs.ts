@@ -50,7 +50,41 @@ interface JobRow {
   expires_at: Date;
 }
 
-export interface JobViewOptions {
+/**
+ * Restricts a job read or cancellation to the calling key.
+ *
+ * Only on a multi-tenant instance. Under self-host every key belongs to the
+ * same operator, and an operator polling a job with a different key than
+ * created it is ordinary use, not a boundary crossing.
+ *
+ * `api_key_id IS NULL` stays readable either way: jobs created before the
+ * column was populated, and anything the workers write unattributed, would
+ * otherwise be orphaned by an upgrade.
+ */
+export interface JobOwner {
+  apiKeyId?: string | null | undefined;
+  multiTenant?: boolean | undefined;
+}
+
+/**
+ * The owner predicate and its parameters, or neither. Returned together so a
+ * caller cannot add the clause and forget the value that fills it.
+ */
+function ownerClause(
+  owner: JobOwner | undefined,
+  nextParam: number,
+): { sql: string; values: (string | null)[] } {
+  if (owner?.multiTenant !== true) return { sql: '', values: [] };
+  // A null key matches no attributed row rather than every one: `= NULL` is
+  // never true, so an unauthenticated caller is left with the unattributed
+  // jobs only. Passing a placeholder string instead would error on a uuid column.
+  return {
+    sql: ` AND (api_key_id = $${nextParam}::uuid OR api_key_id IS NULL)`,
+    values: [owner.apiKeyId ?? null],
+  };
+}
+
+export interface JobViewOptions extends JobOwner {
   cursor?: string | undefined;
   /** Path prefix used to build the `next` cursor link, e.g. `/v1/jobs`. */
   basePath: string;
@@ -79,11 +113,13 @@ export async function fetchJobView(id: string, options: JobViewOptions): Promise
     };
   }
 
+  const owner = ownerClause(options, 2);
+
   const { rows } = await getPool().query<JobRow>(
     `SELECT id, type, status, total, completed, failed, usage, error,
             created_at, started_at, finished_at, expires_at
-       FROM jobs WHERE id = $1`,
-    [id],
+       FROM jobs WHERE id = $1${owner.sql}`,
+    [id, ...owner.values],
   );
 
   const job = rows[0];
@@ -138,9 +174,11 @@ export async function fetchJobView(id: string, options: JobViewOptions): Promise
 
 export async function cancelJob(
   id: string,
-  options: { type?: string | undefined; requestId: string },
+  options: JobOwner & { type?: string | undefined; requestId: string },
 ): Promise<RouteResult> {
   if (!isJobId(id)) return notFound(options.requestId);
+
+  const owner = ownerClause(options, 3);
 
   // Cancelling drops queued work but leaves finished results retrievable —
   // and deliberately does not emit one failure webhook per abandoned URL,
@@ -149,16 +187,16 @@ export async function cancelJob(
     `UPDATE jobs
         SET status = 'cancelled', finished_at = now()
       WHERE id = $1 AND status IN ('queued', 'running')
-        AND ($2::text IS NULL OR type = $2::job_type)
+        AND ($2::text IS NULL OR type = $2::job_type)${owner.sql}
       RETURNING id, status`,
-    [id, options.type ?? null],
+    [id, options.type ?? null, ...owner.values],
   );
 
   const job = rows[0];
   if (!job) {
     const { rowCount } = await getPool().query(
-      `SELECT 1 FROM jobs WHERE id = $1 AND ($2::text IS NULL OR type = $2::job_type)`,
-      [id, options.type ?? null],
+      `SELECT 1 FROM jobs WHERE id = $1 AND ($2::text IS NULL OR type = $2::job_type)${owner.sql}`,
+      [id, options.type ?? null, ...owner.values],
     );
     if ((rowCount ?? 0) === 0) return notFound(options.requestId);
     return {
@@ -180,7 +218,11 @@ export async function cancelJob(
   return { code: 200, body: { id: job.id, jobId: job.id, status: job.status } };
 }
 
-export async function registerJobs(app: FastifyInstance): Promise<void> {
+export interface JobRouteDeps {
+  multiTenant?: boolean;
+}
+
+export async function registerJobs(app: FastifyInstance, deps: JobRouteDeps = {}): Promise<void> {
   app.get<{ Params: { id: string }; Querystring: { cursor?: string } }>(
     '/jobs/:id',
     async (request, reply) => {
@@ -188,13 +230,19 @@ export async function registerJobs(app: FastifyInstance): Promise<void> {
         cursor: request.query.cursor,
         basePath: '/v1/jobs',
         requestId: request.id,
+        apiKeyId: request.apiKey?.id ?? null,
+        multiTenant: deps.multiTenant === true,
       });
       return reply.code(result.code).send(result.body);
     },
   );
 
   app.delete<{ Params: { id: string } }>('/jobs/:id', async (request, reply) => {
-    const result = await cancelJob(request.params.id, { requestId: request.id });
+    const result = await cancelJob(request.params.id, {
+      requestId: request.id,
+      apiKeyId: request.apiKey?.id ?? null,
+      multiTenant: deps.multiTenant === true,
+    });
     return reply.code(result.code).send(result.body);
   });
 
@@ -203,9 +251,17 @@ export async function registerJobs(app: FastifyInstance): Promise<void> {
       const result = notFound(request.id);
       return reply.code(result.code).send(result.body);
     }
-    const { rowCount } = await getPool().query('SELECT 1 FROM jobs WHERE id = $1', [
-      request.params.id,
-    ]);
+    // The failure list names every URL the crawl touched and the tier and
+    // profile each was tried at. A job the caller cannot see must not be
+    // distinguishable here from one that does not exist.
+    const owner = ownerClause(
+      { apiKeyId: request.apiKey?.id ?? null, multiTenant: deps.multiTenant === true },
+      2,
+    );
+    const { rowCount } = await getPool().query(
+      `SELECT 1 FROM jobs WHERE id = $1${owner.sql}`,
+      [request.params.id, ...owner.values],
+    );
     if ((rowCount ?? 0) === 0) {
       const result = notFound(request.id);
       return reply.code(result.code).send(result.body);

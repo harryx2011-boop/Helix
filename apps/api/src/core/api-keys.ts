@@ -148,11 +148,18 @@ export async function revokeApiKeyByHash(plaintextHash: string): Promise<boolean
   return (rowCount ?? 0) > 0;
 }
 
+/**
+ * Ceiling on `listApiKeys`. /usage/all runs a query per key returned, so an
+ * unbounded list here is an unbounded fan-out there, not just a large response.
+ */
+export const API_KEY_LIST_LIMIT = 500;
+
 export async function listApiKeys(): Promise<ApiKey[]> {
   const { rows } = await getPool().query<KeyRow>(
     `SELECT id, name, key_prefix, rate_limit, created_at, last_used_at, revoked_at
        FROM api_keys
-      ORDER BY created_at DESC`,
+      ORDER BY created_at DESC
+      LIMIT ${API_KEY_LIST_LIMIT}`,
   );
   return rows.map(toApiKey);
 }

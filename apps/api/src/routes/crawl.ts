@@ -40,13 +40,23 @@ export const DEFAULT_CRAWL_LIMITS: CrawlLimits = {
 export interface CrawlRouteDeps extends MapRouteDeps {
   defaultModel: string;
   limits?: Partial<CrawlLimits> | undefined;
+  /** Restricts `/crawl/{id}` to the key that created the job. See `JobOwner`. */
+  multiTenant?: boolean | undefined;
 }
+
+/**
+ * The formats a crawled page can be asked for. openapi.yaml has always declared
+ * this as the closed `Format` enum; validating it as a bare string let an
+ * unknown name through to be dropped silently per page, which reads to the
+ * caller as the format simply not working.
+ */
+export const CRAWL_FORMATS = ['markdown', 'html', 'rawHtml', 'text', 'links', 'screenshot', 'json', 'chunks'] as const;
 
 export const TIERS = ['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox'] as const;
 export const EXTRACTORS = ['trafilatura', 'readability', 'auto'] as const;
 
 export const ScrapeOptionsSchema = z.object({
-  formats: z.array(z.string()).optional(),
+  formats: z.array(z.enum(CRAWL_FORMATS)).min(1).optional(),
   tier: z.enum(TIERS).optional(),
   extractor: z.enum(EXTRACTORS).optional(),
   onlyMainContent: z.boolean().optional(),
@@ -114,7 +124,7 @@ function crawlRequestSchema(limits: CrawlLimits) {
     delay: z.number().min(0).max(60).optional(),
     incremental: z.boolean().default(false),
     ignoreQueryParameters: z.boolean().default(false),
-    formats: z.array(z.string()).optional(),
+    formats: z.array(z.enum(CRAWL_FORMATS)).min(1).optional(),
     tier: z.enum(TIERS).optional(),
     extractor: z.enum(EXTRACTORS).optional(),
     onlyMainContent: z.boolean().optional(),
@@ -228,7 +238,7 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
       const concurrency = body.maxConcurrency ?? 4;
       const estimatedSeconds = Math.ceil((pages * perPageSeconds) / concurrency);
 
-      const needsModel = body.formats.includes('json') || body.formats.includes('summary');
+      const needsModel = body.formats.includes('json');
       const inputTokens = needsModel
         ? Math.ceil((pages * AVERAGE_PAGE_CHARS) / CHARS_PER_TOKEN)
         : 0;
@@ -301,13 +311,20 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
         basePath: '/v1/crawl',
         type: 'crawl',
         requestId: request.id,
+        apiKeyId: request.apiKey?.id ?? null,
+        multiTenant: deps.multiTenant === true,
       });
       return reply.code(result.code).send(result.body);
     },
   );
 
   app.delete<{ Params: { id: string } }>('/crawl/:id', async (request, reply) => {
-    const result = await cancelJob(request.params.id, { type: 'crawl', requestId: request.id });
+    const result = await cancelJob(request.params.id, {
+      type: 'crawl',
+      requestId: request.id,
+      apiKeyId: request.apiKey?.id ?? null,
+      multiTenant: deps.multiTenant === true,
+    });
     return reply.code(result.code).send(result.body);
   });
 }

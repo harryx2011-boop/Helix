@@ -74,10 +74,10 @@ export default function SelfHostPage() {
       <div className="relative">
         <HeroField motif="wave" seed={31} />
         <section className="relative mx-auto max-w-[720px] animate-fade-up text-center">
-          <SectionEyebrow step="SELF-HOST" label="THE WHOLE PRODUCT" sub="nothing withheld" />
-          <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
+          <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
             Run it yourself. <span className="block text-violet">All of it.</span>
           </h1>
+          <SectionEyebrow step="SELF-HOST" label="THE WHOLE PRODUCT" sub="nothing withheld" className="mt-4" />
           <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-relaxed text-m-ink/72">
             The self-host build is the product. There is no cloud-only tier, no held-back stealth layer, no licence
             that stops you embedding it.
@@ -115,10 +115,10 @@ export default function SelfHostPage() {
       <ScrollStrip seed={31} direction="right" className="mt-16" />
 
       <section className="mx-auto mt-16 max-w-[880px] animate-fade-up">
-        <SectionEyebrow step="02" label="CONFIGURATION" sub="bring your own keys" />
-        <h2 id="security" className="mt-3 text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
+        <h2 id="security" className="text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
           Your keys, your bill, your providers.
         </h2>
+        <SectionEyebrow step="02" label="CONFIGURATION" sub="bring your own keys" className="mt-3" />
         <p className="mt-3 max-w-[640px] text-[16px] leading-relaxed text-m-ink/72">
           Helix calls your models with your keys. Your provider bills you directly, and nothing here is ever sent
           to a Helix-operated service.
@@ -142,10 +142,10 @@ export default function SelfHostPage() {
       <ScrollStrip seed={37} direction="left" className="mt-16" />
 
       <section className="mx-auto mt-16 max-w-[880px] animate-fade-up">
-        <SectionEyebrow step="03" label="NOTHING WITHHELD" sub="one column against the category norm" />
-        <h2 className="mt-3 text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
+        <h2 className="text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
           No cloud-only tier.
         </h2>
+        <SectionEyebrow step="03" label="NOTHING WITHHELD" sub="one column against the category norm" className="mt-3" />
         <div className="mt-6 overflow-x-auto rounded-card border border-m-border-muted bg-m-surface shadow-card-sm">
           <table className="w-full min-w-[520px] border-collapse text-[14px]">
             <thead>

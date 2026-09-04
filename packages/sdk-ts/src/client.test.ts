@@ -181,6 +181,38 @@ describe('per-method request shape', () => {
     expect(c.interactLiveStreamUrl('sess_abc', 'tok_123')).toBe(`${BASE_URL}/interact/live/sess_abc/stream?token=tok_123`);
   });
 
+  it('enrich() posts the subject and field specs to /enrich', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse({ success: true, subject: 'Acme', data: {}, sources: { used: [], rejected: [] } }),
+    );
+    const c = client(fetchImpl);
+    await c.enrich({ subject: 'Acme Corp', fields: [{ name: 'headquarters', type: 'string' }], maxSources: 2 });
+    const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${BASE_URL}/enrich`);
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({
+      subject: 'Acme Corp',
+      fields: [{ name: 'headquarters', type: 'string' }],
+      maxSources: 2,
+    });
+  });
+
+  it('usage() encodes hours as a query param', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse({ total: 0, series: [], byEndpoint: [] }));
+    const c = client(fetchImpl);
+    await c.usage({ hours: 24 });
+    expect(fetchImpl.mock.calls[0]?.[0]).toBe(`${BASE_URL}/usage?hours=24`);
+  });
+
+  it('usage() omits the query string when no window is given', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse({ total: 0, series: [], byEndpoint: [] }));
+    const c = client(fetchImpl);
+    await c.usage();
+    const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${BASE_URL}/usage`);
+    expect(init.method).toBeUndefined();
+  });
+
   it('health() sends no Authorization header', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse({ status: 'ok' }));
     const c = client(fetchImpl);
@@ -227,6 +259,45 @@ describe('typed failure handling', () => {
     expect(result.success).toBe(false);
   });
 
+  it('enrich() resolves with a typed failure on a 200 response', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse({ success: false, failure: { reason: 'timeout', detail: 'budget exhausted' } }),
+    );
+    const c = client(fetchImpl);
+    const result = await c.enrich({ subject: 'Acme', fields: [{ name: 'ceo' }] });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.failure.reason).toBe('timeout');
+    }
+  });
+
+  it('enrich() surfaces a null field with the reason it could not be grounded', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse({
+        success: true,
+        subject: 'Acme',
+        data: {
+          ceo: {
+            value: null,
+            confidence: null,
+            citation: null,
+            phase: null,
+            reason: 'not_stated',
+            evidence: { valueInCitation: false, sourcesConsidered: 3 },
+          },
+        },
+        sources: { used: ['https://acme.test'], rejected: [] },
+      }),
+    );
+    const c = client(fetchImpl);
+    const result = await c.enrich({ subject: 'Acme', fields: [{ name: 'ceo' }] });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data['ceo']?.value).toBeNull();
+      expect(result.data['ceo']?.reason).toBe('not_stated');
+    }
+  });
+
   it('parse() resolves with a typed failure for an unreachable URL', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse({ success: false, failure: { reason: 'dns' } }));
     const c = client(fetchImpl);
@@ -266,6 +337,20 @@ describe('HTTP error mapping', () => {
     await expect(c.scrape({ url: 'https://example.com' })).rejects.toMatchObject({
       status: 0,
       message: 'fetch failed',
+    });
+  });
+
+  it('propagates a 400 on usage() for an out-of-range window', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(
+        { error: 'invalid_request', message: 'hours: must be an integer between 1 and 2160', field: 'hours' },
+        400,
+      ),
+    );
+    const c = client(fetchImpl);
+    await expect(c.usage({ hours: 99999 })).rejects.toMatchObject({
+      status: 400,
+      body: { error: 'invalid_request', field: 'hours' },
     });
   });
 

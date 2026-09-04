@@ -8,6 +8,8 @@ import {
   type CheckMonitorResponse,
   type CrawlRequest,
   type CrawlResponse,
+  type EnrichRequest,
+  type EnrichResponse,
   type Health,
   type InteractRequest,
   type InteractResponse,
@@ -43,6 +45,8 @@ import {
   type SearchRequest,
   type SearchResponse,
   type StoredProviderName,
+  type UsageOptions,
+  type UsageResponse,
 } from './types.js';
 
 export interface HelixClientOptions {
@@ -167,6 +171,17 @@ export class HelixClient {
     return this.post<SearchResponse>('/search', request, signal);
   }
 
+  /**
+   * Sparse identifier in, grounded columns out.
+   *
+   * Every value comes back tied to a passage in a page the API fetched, or null
+   * with the reason it could not be. A field is never a guess, so `value` alone
+   * is safe to trust without re-checking the citation.
+   */
+  async enrich(request: EnrichRequest, signal?: AbortSignal): Promise<EnrichResponse> {
+    return this.post<EnrichResponse>('/enrich', request, signal);
+  }
+
   async crawl(request: CrawlRequest, signal?: AbortSignal): Promise<CrawlResponse> {
     return this.post<CrawlResponse>('/crawl', request, signal);
   }
@@ -284,6 +299,13 @@ export class HelixClient {
 
   async removeProvider(provider: StoredProviderName, signal?: AbortSignal): Promise<RemoveProviderResponse> {
     return this.delete<RemoveProviderResponse>(`/providers/${provider}`, signal);
+  }
+
+  /** Request counts for the calling key. Scoped to that key and no other. */
+  async usage(options?: UsageOptions, signal?: AbortSignal): Promise<UsageResponse> {
+    const query: Record<string, string> = {};
+    if (options?.hours !== undefined) query['hours'] = String(options.hours);
+    return this.get<UsageResponse>('/usage', query, signal);
   }
 
   async health(signal?: AbortSignal): Promise<Health> {

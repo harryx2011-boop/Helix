@@ -110,6 +110,15 @@ const ConfigSchema = z.object({
   /** A page whose text exceeds this many bytes fails the check instead of being stored. */
   monitorMaxContentBytes: int(1_048_576),
 
+  /**
+   * Many tenants share this instance, so one API key stands for one tenant and
+   * must not reach another's jobs or keys. The API cannot infer this: the same
+   * code serves a single-operator self-host, where every key on the instance is
+   * the same person's and a flat model is correct. Off by default so upgrading
+   * a self-host changes nothing.
+   */
+  multiTenant: bool(false),
+
   // Comma-separated allowed origins for the dashboard. Defaults to the dev
   // origins for the split-port setup (dashboard 3400 -> API 7400). Set
   // explicitly in production to the dashboard's real origin.
@@ -176,6 +185,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     monitorRetainDays: env.HELIX_MONITOR_RETAIN_DAYS,
     monitorRetainChecks: env.HELIX_MONITOR_RETAIN_CHECKS,
     monitorMaxContentBytes: env.HELIX_MONITOR_MAX_CONTENT_BYTES,
+    multiTenant: env.HELIX_MULTI_TENANT,
     corsOrigins: env.HELIX_CORS_ORIGINS,
   });
 

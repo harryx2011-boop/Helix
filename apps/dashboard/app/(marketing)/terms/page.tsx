@@ -14,10 +14,10 @@ export default function TermsPage() {
       <div className="relative">
         <HeroField motif="orbit" seed={47} className="translate-x-16 opacity-60" />
         <div className="relative mx-auto max-w-[720px] animate-fade-up">
-          <SectionEyebrow step="LEGAL" label="TERMS" sub="hosted app and licence" />
-          <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
+          <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
             Terms of use.
           </h1>
+          <SectionEyebrow step="LEGAL" label="TERMS" sub="hosted app and licence" className="mt-4" />
         </div>
       </div>
 

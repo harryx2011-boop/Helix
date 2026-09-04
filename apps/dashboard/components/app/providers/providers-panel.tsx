@@ -46,6 +46,7 @@ export function ProvidersPanel() {
     <>
       <FrameRow>
         <FrameHeading
+          id="providers"
           title="AI Providers"
           description="Helix uses your own AI account for the features that need one, so you are billed directly and your keys stay yours. You can also point at a model running on your own machine."
         />

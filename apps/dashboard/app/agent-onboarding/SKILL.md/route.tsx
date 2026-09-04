@@ -29,7 +29,7 @@ function buildSkillMd(): string {
     '',
     `Sign up at ${site}/sign-up and create a key at ${site}/app/keys. On a self-hosted instance, \`POST /v1/keys\` with an existing key (the first one is HELIX_BOOTSTRAP_KEY). The key is shown once.`,
     '',
-    'The key is a secret. Resolve it from `HELIX_API_KEY` in your own shell or from `.env.local`; check for it with a presence test (`${HELIX_API_KEY:+set}`) or an HTTP status code, and never print, echo, cat or grep-with-output anything that may contain it. If it is exposed, revoke it (`DELETE /v1/keys/{id}`) and mint a new one.',
+    'The key is a secret. Resolve it from `HELIX_API_KEY` in your own shell or from `.env.local`; check for it with a presence test (`${HELIX_API_KEY:+set}`) or an HTTP status code, and never print, echo, cat or grep-with-output anything that may contain it. If it is exposed, revoke it and mint a new one — from the Keys page on a hosted account, or with `DELETE /v1/keys/{id}` on a self-hosted instance.',
     '',
     '## 2. Base URL',
     '',

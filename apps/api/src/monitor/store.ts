@@ -184,6 +184,13 @@ export interface CheckCounters {
   unchanged: boolean;
 }
 
+/**
+ * Ceiling on `list`. Both stores apply it, so a caller cannot tell them apart by
+ * how much they return; the route reports truncation rather than implying the
+ * page is the whole set.
+ */
+export const MONITOR_LIST_LIMIT = 500;
+
 export interface MonitorStore {
   create(input: NewMonitor): Promise<MonitorRecord>;
   get(id: string): Promise<MonitorRecord | undefined>;
@@ -277,6 +284,7 @@ export class MemoryMonitorStore implements MonitorStore {
     return [...this.monitors.values()]
       .filter((m) => apiKeyId === null || m.apiKeyId === apiKeyId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, MONITOR_LIST_LIMIT)
       .map((m) => ({ ...m }));
   }
 
@@ -669,7 +677,7 @@ export class PgMonitorStore implements MonitorStore {
       `SELECT ${MONITOR_COLUMNS} FROM monitors
         WHERE $1::uuid IS NULL OR api_key_id = $1
         ORDER BY created_at DESC
-        LIMIT 500`,
+        LIMIT ${MONITOR_LIST_LIMIT}`,
       [apiKeyId],
     );
     return rows.map(rowToMonitor);

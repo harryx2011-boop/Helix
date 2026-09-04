@@ -99,6 +99,7 @@ Dockerfile: `apps/api/Dockerfile`.
 | `HELIX_FETCH_URL` | optional; the Rust tier. Unset degrades to the other tiers |
 | `HELIX_CORS_ORIGINS` | must include `https://helixapi-dev.vercel.app` and `https://persona-helix.vercel.app` |
 | `HELIX_PUBLIC_URL` | the API's own public URL; live-view links are built from it |
+| `HELIX_MULTI_TENANT` | **set to `1` for the hosted deployment.** Scopes jobs to the API key that created them and withholds the instance-wide key and usage routes. Unset means the single-operator model, where every key on the instance can read and revoke every other — correct for self-host, a cross-tenant hole when several people share one instance |
 
 Boot log should show every migration `skipped` (schema.sql seeded them) or,
 on a project that skipped step 2, all eight `applied` — then run
@@ -131,13 +132,23 @@ curl -s -H "Authorization: Bearer <bootstrap>" \
 Then in the browser: sign in, open **Keys**, create a key, and
 
 ```bash
-curl -s -H "Authorization: Bearer helix-…" https://<api-host>/v1/keys
+curl -s -H "Authorization: Bearer helix-…" https://<api-host>/v1/usage
 ```
 
 That call succeeding is the whole point of the one-database model: the row
 the dashboard inserted is the row the API authenticated. Finish with
 **Settings → Providers**, a real provider key, and one Agent request — the
 only step that exercises the live LLM path end to end.
+
+Confirm the tenant boundary is on, too. With `HELIX_MULTI_TENANT=1` the
+instance-wide routes are not served; a 200 here means the variable did not
+reach the API and every tenant can still list and revoke every other's keys:
+
+```bash
+# both must answer 404
+curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer helix-…" https://<api-host>/v1/keys
+curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer helix-…" https://<api-host>/v1/usage/all
+```
 
 ---
 

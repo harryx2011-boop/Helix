@@ -70,7 +70,7 @@ Save it as \`SKILL.md\` under \`.claude/skills/helix/\` (Claude Code, project-lo
 
 ## The key is a secret
 
-Resolve it from \`HELIX_API_KEY\` in your own shell, or from \`.env.local\`. Check for it with a presence test (\`\${HELIX_API_KEY:+set}\`) or an HTTP status code — never print, echo, cat or grep-with-output anything that may contain it, and never paste it into a chat. If it is exposed, revoke it (\`DELETE /v1/keys/{id}\`) and mint a new one.
+Resolve it from \`HELIX_API_KEY\` in your own shell, or from \`.env.local\`. Check for it with a presence test (\`\${HELIX_API_KEY:+set}\`) or an HTTP status code — never print, echo, cat or grep-with-output anything that may contain it, and never paste it into a chat. If it is exposed, revoke it and mint a new one — from the Keys page on a hosted account, or with \`DELETE /v1/keys/{id}\` on a self-hosted instance.
 `;
 }
 

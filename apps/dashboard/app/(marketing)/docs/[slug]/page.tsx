@@ -79,13 +79,13 @@ function EndpointDoc({ def, docs }: { def: EndpointDef; docs: EndpointDocs }) {
       <div className="relative">
         <HeroField motif="orbit" seed={seedFor(def.id)} className="translate-x-16" />
         <div className="relative mx-auto max-w-[720px] animate-fade-up">
-          <SectionEyebrow step="DOCS" label={def.productName.toUpperCase()} sub={def.method + ' ' + def.path} />
-          <div className="mt-4 flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">{def.productName}</h1>
             {isComing && (
               <span className="rounded-pill bg-violet-12 px-2.5 py-1 font-mono text-[12px] tracking-wide text-violet">coming</span>
             )}
           </div>
+          <SectionEyebrow step="DOCS" label={def.productName.toUpperCase()} sub={def.method + ' ' + def.path} className="mt-4" />
           <p className="mt-4 text-[16px] leading-relaxed text-m-ink/72">{docs.purpose}</p>
         </div>
       </div>
@@ -189,8 +189,8 @@ function StaticShell({ h1, children }: { h1: string; children: React.ReactNode }
       <div className="relative">
         <HeroField motif="orbit" seed={seedFor(h1)} className="translate-x-16" />
         <div className="relative mx-auto max-w-[720px] animate-fade-up">
-          <SectionEyebrow step="DOCS" label={h1.toUpperCase()} sub="reference" />
-          <h1 className="mt-6 text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">{h1}</h1>
+          <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">{h1}</h1>
+          <SectionEyebrow step="DOCS" label={h1.toUpperCase()} sub="reference" className="mt-4" />
         </div>
       </div>
       <div className="mx-auto mt-14 max-w-[720px] animate-fade-up [animation-delay:60ms] space-y-12">{children}</div>

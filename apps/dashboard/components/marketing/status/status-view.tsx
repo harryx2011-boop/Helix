@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CircleCheck, CircleAlert, CircleX, ChevronDown } from 'lucide-react';
+import { ChevronDown, CircleAlert, CircleCheck, CircleX, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HOSTED } from '@/lib/mode';
 import {
@@ -190,15 +190,15 @@ export function StatusView() {
     );
   }
 
-  const overall = overallCopy(health?.status ?? 'ok');
-  const Icon = health?.status === 'ok' || !health ? CircleCheck : health.status === 'degraded' ? CircleAlert : CircleX;
+  const overall = health ? overallCopy(health.status) : { title: 'Checking every service', tone: 'text-m-ink/40' };
+  const Icon = !health ? Loader2 : health.status === 'ok' ? CircleCheck : health.status === 'degraded' ? CircleAlert : CircleX;
 
   return (
     <div className="px-4 pb-24 pt-16 lg:pt-20">
       <div className="relative mx-auto max-w-[640px] text-center">
         <HeroField motif="cloud" seed={53} className="top-1/2 -translate-y-1/2" />
         <div className="relative">
-          <Icon className={cn('mx-auto h-12 w-12', overall.tone)} strokeWidth={1.5} aria-hidden />
+          <Icon className={cn('mx-auto h-12 w-12', overall.tone, !health && 'animate-spin motion-reduce:animate-none')} strokeWidth={1.5} aria-hidden />
           <h1 className="mt-4 text-[30px] font-normal leading-tight tracking-tight lg:text-[36px]">{overall.title}</h1>
           <p className="mt-2 font-mono text-[12px] text-m-ink/48">
             {lastUpdated ? `Last updated on ${formatLastUpdated(lastUpdated)}` : 'Connecting…'}

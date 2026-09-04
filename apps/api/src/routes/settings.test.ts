@@ -86,6 +86,20 @@ describe('settings auth', () => {
 
     expect(response.statusCode).toBe(401);
   });
+
+  // The admin gate answered before any route did, and a caller with one error
+  // handler still needs `message` and `requestId` here like everywhere else.
+  it('refuses in the same error envelope every other route uses', async () => {
+    const { app } = await buildApp();
+    const response = await app.inject({ method: 'GET', url: '/settings' });
+
+    expect(response.statusCode).toBe(401);
+    const body = response.json();
+    expect(body).toMatchObject({ error: 'unauthorized' });
+    expect(typeof body.message).toBe('string');
+    expect(body.message.length).toBeGreaterThan(0);
+    expect(typeof body.requestId).toBe('string');
+  });
 });
 
 describe('the API-key auth hook', () => {

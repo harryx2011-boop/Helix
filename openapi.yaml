@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Helix
-  version: 1.10.3
+  version: 1.11.0
   summary: Self-hostable, BYOK web-data API.
   description: |
     Helix turns web pages and documents into clean, structured, LLM-ready data.
@@ -77,6 +77,8 @@ tags:
     description: Status, results and cancellation for asynchronous work.
   - name: Providers
     description: Your own LLM provider keys, used instead of the instance's environment credentials.
+  - name: Usage
+    description: Request counts for your own API key.
   - name: System
     description: Health, profiles and capability discovery.
 
@@ -525,6 +527,8 @@ paths:
         The same view as `GET /jobs/{id}`, restricted to crawl jobs. Results are
         paginated by `next`; `status` is `queued` until a worker claims the job,
         then `running`, then one of `completed`, `failed` or `cancelled`.
+
+        Ownership is scoped as on `GET /jobs/{id}`.
       operationId: getCrawl
       responses:
         '200':
@@ -539,6 +543,8 @@ paths:
       description: |
         Stops the crawl. Already-completed results stay retrievable. Cancellation
         does not emit a failure webhook per queued URL.
+
+        Ownership is scoped as on `GET /jobs/{id}`.
       operationId: cancelCrawl
       responses:
         '200':
@@ -617,6 +623,8 @@ paths:
       description: |
         The same view as `GET /jobs/{id}`, restricted to batch jobs. Each item in
         `data` carries the `/scrape` document shape plus the `url` it came from.
+
+        Ownership is scoped as on `GET /jobs/{id}`.
       operationId: getBatchScrape
       responses:
         '200':
@@ -630,6 +638,8 @@ paths:
       summary: Cancel a batch
       description: |
         Stops the batch. Already-completed results stay retrievable.
+
+        Ownership is scoped as on `GET /jobs/{id}`.
       operationId: cancelBatchScrape
       responses:
         '200':
@@ -1030,7 +1040,12 @@ paths:
     get:
       tags: [Monitors]
       summary: List monitors
-      description: Monitors created with the calling API key, newest first.
+      description: |
+        Monitors created with the calling API key, newest first.
+
+        Capped at 500. `truncated` is true when the cap was reached and more
+        exist; delete or pause monitors you no longer need rather than paging,
+        which this endpoint does not offer.
       operationId: listMonitors
       responses:
         '200':
@@ -1044,6 +1059,9 @@ paths:
                   monitors:
                     type: array
                     items: { $ref: '#/components/schemas/Monitor' }
+                  truncated:
+                    type: boolean
+                    description: More than 500 monitors exist; the list is cut at the cap.
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       tags: [Monitors]
@@ -1306,6 +1324,11 @@ paths:
     get:
       tags: [Jobs]
       summary: Get job status and results
+      description: |
+        On a multi-tenant instance a job is visible only to the API key that
+        created it; another key gets the same 404 as a job that does not exist.
+        Jobs with no key recorded stay readable. A single-operator instance is
+        unscoped, so any of its keys can read any of its jobs.
       operationId: getJob
       responses:
         '200':
@@ -1320,6 +1343,11 @@ paths:
       description: |
         Stops the job. Already-completed results stay retrievable. Cancellation does
         not emit a failure webhook per queued URL.
+
+        On a multi-tenant instance a job is visible only to the API key that
+        created it; another key gets the same 404 as a job that does not exist.
+        Jobs with no key recorded stay readable. A single-operator instance is
+        unscoped, so any of its keys can read any of its jobs.
       operationId: cancelJob
       responses:
         '200':
@@ -1335,7 +1363,10 @@ paths:
     get:
       tags: [Jobs]
       summary: Per-URL failures for a job
-      description: Every failure with its typed reason, the tier and profile tried, and whether escalation remains.
+      description: |
+        Every failure with its typed reason, the tier and profile tried, and
+        whether escalation remains. This names every URL the job touched, so
+        ownership is scoped as on `GET /jobs/{id}`.
       operationId: getJobErrors
       responses:
         '200':
@@ -1352,6 +1383,46 @@ paths:
                     type: array
                     items: { type: string, format: uri }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /usage:
+    get:
+      tags: [Usage]
+      summary: Request usage for your key
+      description: |
+        Request counts for the calling API key over a window, bucketed hourly.
+
+        Scoped to the key in the `Authorization` header and no other: there is no
+        parameter for reading another key's traffic. To total several keys, call
+        this once per key.
+
+        These are stored counts, not live headroom. `window` says what period they
+        cover; for remaining quota right now read `X-RateLimit-Remaining` on any
+        response. Counts are buffered in memory and flushed periodically, so the
+        most recent few seconds may be missing, and they are a reporting figure
+        rather than a billing ledger.
+      operationId: getUsage
+      parameters:
+        - name: hours
+          in: query
+          description: Window length in hours, ending now. Defaults to 168 (seven days).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 2160
+            default: 168
+      responses:
+        '200':
+          description: Usage over the window.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsageSummary' }
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
 
   /providers:
     get:
@@ -1661,6 +1732,51 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
+
+    UsageSummary:
+      type: object
+      description: |
+        Request counts for one API key over a window. Every count is requests
+        received, including those the limiter rejected.
+      properties:
+        since: { type: string, format: date-time }
+        until: { type: string, format: date-time }
+        total: { type: integer, description: Requests in the window, including rate-limited ones. }
+        rateLimited: { type: integer, description: Requests the limiter answered with 429. }
+        errors: { type: integer, description: Responses with a 4xx or 5xx status. }
+        series:
+          type: array
+          description: One entry per hour that saw traffic, ascending. Quiet hours are absent rather than zero.
+          items:
+            type: object
+            properties:
+              bucketStart: { type: string, format: date-time }
+              requests: { type: integer }
+        byEndpoint:
+          type: array
+          description: |
+            Grouped by route family rather than exact path, so `/jobs/{id}` is one
+            row and not one per job. Busiest first, capped at 50 families.
+          items:
+            type: object
+            properties:
+              endpoint: { type: string, example: '/scrape' }
+              requests: { type: integer }
+        key:
+          type: object
+          description: The key these counts belong to. Never includes the secret.
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            keyPrefix: { type: string }
+            rateLimit: { type: integer }
+            lastUsedAt: { type: string, format: date-time, nullable: true }
+        window:
+          type: object
+          description: The period the counts cover. Not live rate-limit headroom.
+          properties:
+            hours: { type: integer }
+            unit: { type: string, enum: [hour] }
 
     Format:
       type: string
@@ -3045,7 +3161,9 @@ components:
           type: object
           description: A JSON Schema describing the fields to extract. `minItems`/`maxItems` are rejected, same as `/scrape`'s `jsonOptions.schema`.
         prompt: { type: string, maxLength: 4000 }
-        provider: { type: string }
+        provider:
+          type: string
+          enum: [anthropic, openai, openrouter, google, gemini, ollama, vllm, openai-compatible]
         model: { type: string }
 
     MonitorTrigger:

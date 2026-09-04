@@ -29,10 +29,20 @@ const db = vi.hoisted(() => {
 vi.mock('../db/pool.js', () => ({ getPool: () => ({ query: db.query }) }));
 
 import { registerBatch } from './batch.js';
+import type { ApiKey } from '../core/api-keys.js';
 
-async function buildApp(limits?: { maxUrls?: number }) {
+const KEY_A = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
+
+async function buildApp(limits?: { maxUrls?: number }, options: { multiTenant?: boolean; caller?: string } = {}) {
   const app = Fastify();
-  await app.register(async (instance) => registerBatch(instance, { limits }), { prefix: '/v1' });
+  const caller = options.caller ?? KEY_A;
+  app.addHook('onRequest', async (request) => {
+    request.apiKey = { id: caller } as ApiKey;
+  });
+  await app.register(
+    async (instance) => registerBatch(instance, { limits, multiTenant: options.multiTenant === true }),
+    { prefix: '/v1' },
+  );
   await app.ready();
   return app;
 }
@@ -124,6 +134,19 @@ describe('POST /v1/batch/scrape', () => {
 
     expect(storedRequest()).toMatchObject({ formats: ['html'], tier: 'chromium' });
   });
+
+  // Same closed set as /scrape and /crawl; openapi declares it as the Format enum.
+  it('rejects a format outside the published set', async () => {
+    const app = await buildApp();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/batch/scrape',
+      payload: { urls: ['https://a.example/x'], scrapeOptions: { formats: ['summary'] } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: 'invalid_request' });
+  });
 });
 
 describe('batch validation', () => {
@@ -206,5 +229,47 @@ describe('GET /v1/batch/scrape/:id', () => {
     const response = await app.inject({ method: 'GET', url: '/v1/batch/scrape/not-a-uuid' });
 
     expect(response.statusCode).toBe(404);
+  });
+});
+
+/**
+ * `/batch/scrape/{id}` serves the same rows as `/jobs/{id}`. Scoping one and
+ * not the other would move the hole rather than close it.
+ */
+describe('batch job ownership', () => {
+  it('narrows the read by the calling key when multi-tenant', async () => {
+    const app = await buildApp(undefined, { multiTenant: true, caller: KEY_A });
+    db.state.job = undefined;
+
+    await app.inject({ method: 'GET', url: `/v1/batch/scrape/${JOB}` });
+
+    const select = db.state.calls.find((c) => c.text.startsWith('SELECT id, type, status'))!;
+    expect(select.text).toContain('api_key_id');
+    expect(select.values).toEqual([JOB, KEY_A]);
+    await app.close();
+  });
+
+  it('narrows the cancellation by the calling key when multi-tenant', async () => {
+    const app = await buildApp(undefined, { multiTenant: true, caller: KEY_A });
+
+    await app.inject({ method: 'DELETE', url: `/v1/batch/scrape/${JOB}` });
+
+    const update = db.state.calls.find((c) => c.text.startsWith('UPDATE jobs'))!;
+    expect(update.text).toContain('api_key_id');
+    expect(update.values).toEqual([JOB, 'batch_scrape', KEY_A]);
+    await app.close();
+  });
+
+  it('leaves both statements unscoped under self-host', async () => {
+    const app = await buildApp();
+
+    await app.inject({ method: 'GET', url: `/v1/batch/scrape/${JOB}` });
+    await app.inject({ method: 'DELETE', url: `/v1/batch/scrape/${JOB}` });
+
+    const select = db.state.calls.find((c) => c.text.startsWith('SELECT id, type, status'))!;
+    const update = db.state.calls.find((c) => c.text.startsWith('UPDATE jobs'))!;
+    expect(select.text).not.toContain('api_key_id');
+    expect(update.text).not.toContain('api_key_id');
+    await app.close();
   });
 });

@@ -44,7 +44,11 @@ export async function registerSettings(app: FastifyInstance, deps: SettingsRoute
     if (!request.url.startsWith('/settings')) return;
     const presented = request.headers.authorization?.replace(/^Bearer\s+/i, '') ?? '';
     if (!presented || !safeEqual(presented, expected)) {
-      return reply.code(401).send({ error: 'unauthorized', requestId: request.id });
+      return reply.code(401).send({
+        error: 'unauthorized',
+        message: 'Missing or invalid admin token.',
+        requestId: request.id,
+      });
     }
   });
 

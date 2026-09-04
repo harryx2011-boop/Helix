@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { generateKey, hashKey, safeEqual } from './api-keys.js';
+import { describe, expect, it, vi } from 'vitest';
+import { API_KEY_LIST_LIMIT, generateKey, hashKey, safeEqual } from './api-keys.js';
 
 describe('API key generation', () => {
   it('produces prefixed, high-entropy keys', () => {
@@ -55,5 +55,32 @@ describe('safeEqual', () => {
   it('handles empty input', () => {
     expect(safeEqual('', '')).toBe(true);
     expect(safeEqual('', 'x')).toBe(false);
+  });
+});
+
+describe('listApiKeys', () => {
+  /**
+   * /usage/all runs one aggregate query per key this returns, so an unbounded
+   * list here is an unbounded fan-out there rather than merely a large response.
+   */
+  it('asks the database for a bounded page', async () => {
+    const queries: string[] = [];
+    vi.doMock('../db/pool.js', () => ({
+      getPool: () => ({
+        query: async (text: string) => {
+          queries.push(text);
+          return { rows: [], rowCount: 0 };
+        },
+      }),
+    }));
+    vi.resetModules();
+    const { listApiKeys: scoped } = await import('./api-keys.js');
+
+    await scoped();
+
+    expect(queries).toHaveLength(1);
+    expect(queries[0]).toContain(`LIMIT ${API_KEY_LIST_LIMIT}`);
+    vi.doUnmock('../db/pool.js');
+    vi.resetModules();
   });
 });

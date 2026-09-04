@@ -12,12 +12,23 @@ import { summariseUsage } from '../core/usage.js';
  * the profile is known, which is the dashboard, not here.
  */
 
+export interface UsageRouteDeps {
+  /**
+   * Many tenants share this instance, so summing every key on it crosses the
+   * tenant boundary. `/usage/all` has no owner predicate to narrow — that
+   * fan-out belongs to the dashboard, where the profile is known — so it is
+   * withheld here instead. Per-key `/usage` is unaffected: it already reads
+   * only the calling key.
+   */
+  multiTenant?: boolean;
+}
+
 /** Hours. Bounded so a caller cannot ask for a scan of the whole table. */
 const MIN_WINDOW = 1;
 const MAX_WINDOW = 24 * 90;
 const DEFAULT_WINDOW = 24 * 7;
 
-export async function registerUsage(app: FastifyInstance): Promise<void> {
+export async function registerUsage(app: FastifyInstance, deps: UsageRouteDeps = {}): Promise<void> {
   app.get<{ Querystring: { hours?: string } }>('/usage', async (request, reply) => {
     const apiKey = request.apiKey;
     if (!apiKey) {
@@ -61,10 +72,12 @@ export async function registerUsage(app: FastifyInstance): Promise<void> {
     });
   });
 
+  if (deps.multiTenant === true) return;
+
   /**
-   * Usage across every key on this instance. Self-host only in practice: the
-   * hosted deployment never calls it, because a key there belongs to one
-   * profile and this would cross that boundary.
+   * Usage across every key on this instance. Self-host only, and now enforced
+   * as such: the hosted deployment never calls it, because a key there belongs
+   * to one profile and this would cross that boundary.
    */
   app.get<{ Querystring: { hours?: string } }>('/usage/all', async (request, reply) => {
     const raw = request.query.hours;

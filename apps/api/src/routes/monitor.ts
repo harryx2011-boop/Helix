@@ -13,7 +13,8 @@ import type {
   MonitorWebhook,
   SnapshotRecord,
 } from '../monitor/store.js';
-import { rejectFabricationKeywords } from './scrape.js';
+import { MONITOR_LIST_LIMIT } from '../monitor/store.js';
+import { PROVIDERS, rejectFabricationKeywords } from './scrape.js';
 
 /**
  * Monitor.
@@ -74,7 +75,7 @@ const DiffSchema = z.object({
 const JsonOptionsSchema = z.object({
   schema: z.record(z.unknown()),
   prompt: z.string().max(4_000).optional(),
-  provider: z.string().max(100).optional(),
+  provider: z.enum(PROVIDERS).optional(),
   model: z.string().max(200).optional(),
 });
 
@@ -344,7 +345,11 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
 
   app.get('/monitor', async (request, reply) => {
     const monitors = await deps.store.list(owner(request));
-    return reply.send({ success: true, monitors: monitors.map((m) => serializeMonitor(m)) });
+    return reply.send({
+      success: true,
+      monitors: monitors.map((m) => serializeMonitor(m)),
+      truncated: monitors.length >= MONITOR_LIST_LIMIT,
+    });
   });
 
   app.get<{ Params: { id: string } }>('/monitor/:id', async (request, reply) => {

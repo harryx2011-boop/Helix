@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { getPool } from '../db/pool.js';
 import type { CrawlJobRequest } from '../crawl/worker.js';
-import { ScrapeOptionsSchema, WebhookSchema, TIERS, EXTRACTORS } from './crawl.js';
+import { ScrapeOptionsSchema, WebhookSchema, TIERS, EXTRACTORS, CRAWL_FORMATS } from './crawl.js';
 import { cancelJob, fetchJobView } from './jobs.js';
 
 /**
@@ -30,6 +30,8 @@ export const DEFAULT_BATCH_LIMITS: BatchLimits = { maxUrls: 10_000 };
 
 export interface BatchRouteDeps {
   limits?: Partial<BatchLimits> | undefined;
+  /** Restricts `/batch/scrape/{id}` to the key that created the job. See `JobOwner`. */
+  multiTenant?: boolean | undefined;
 }
 
 const HttpUrlSchema = z
@@ -42,7 +44,7 @@ function batchRequestSchema(limits: BatchLimits) {
     urls: z.array(z.string()).min(1).max(limits.maxUrls),
     /** Drop unparseable URLs and report them, instead of rejecting the whole batch. */
     ignoreInvalidURLs: z.boolean().default(false),
-    formats: z.array(z.string()).optional(),
+    formats: z.array(z.enum(CRAWL_FORMATS)).min(1).optional(),
     tier: z.enum(TIERS).optional(),
     extractor: z.enum(EXTRACTORS).optional(),
     onlyMainContent: z.boolean().optional(),
@@ -209,13 +211,20 @@ export async function registerBatch(app: FastifyInstance, deps: BatchRouteDeps =
         basePath: '/v1/batch/scrape',
         type: 'batch_scrape',
         requestId: request.id,
+        apiKeyId: request.apiKey?.id ?? null,
+        multiTenant: deps.multiTenant === true,
       });
       return reply.code(result.code).send(result.body);
     },
   );
 
   app.delete<{ Params: { id: string } }>('/batch/scrape/:id', async (request, reply) => {
-    const result = await cancelJob(request.params.id, { type: 'batch_scrape', requestId: request.id });
+    const result = await cancelJob(request.params.id, {
+      type: 'batch_scrape',
+      requestId: request.id,
+      apiKeyId: request.apiKey?.id ?? null,
+      multiTenant: deps.multiTenant === true,
+    });
     return reply.code(result.code).send(result.body);
   });
 }

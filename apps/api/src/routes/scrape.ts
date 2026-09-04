@@ -21,7 +21,7 @@ const FORMATS = ['markdown', 'html', 'rawHtml', 'text', 'links', 'screenshot', '
 export type ScrapeFormat = (typeof FORMATS)[number];
 
 /** Providers helix-extract can route to. A request may pick one; the key must already be configured. */
-const PROVIDERS = [
+export const PROVIDERS = [
   'anthropic',
   'openai',
   'openrouter',

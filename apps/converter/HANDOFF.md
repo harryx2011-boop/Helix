@@ -137,6 +137,23 @@ naming a job the key already owns.
 - Keys are verified against the same `api_keys` table the rest of Helix writes,
   matched on a SHA-256 hash. Unknown and revoked are indistinguishable (401);
   an unreachable database is 503, not 401.
+
+**Helix has two databases, and the converter uses the self-host one.** The
+hosted dashboard talks to Supabase through the Supabase client
+(`apps/dashboard/.env.local`); the API and this service use Postgres over
+`DATABASE_URL`, which locally is `127.0.0.1:7432`. Both carry an `api_keys`
+table with the same `key_hash` / `rate_limit` / `revoked_at` columns (Supabase
+adds `profile_id`), so pointing `DATABASE_URL` at the Supabase connection string
+would work unchanged — that path is untested.
+
+Working credentials are in `apps/api/.env`, not the root `.env`, whose
+`DATABASE_URL` fails password auth against the running instance.
+
+Verified against the live database on 2026-09-03 with two disposable keys, since
+deleted: a real key converts and downloads (202/200), unknown and malformed keys
+are 401, one key cannot see another's job on any of the three routes (404, not
+403), the query-string key streams SSE frames, and revoking a key takes effect
+on the next request with no restart.
 - **Jobs are owned.** Every read, cancel and download checks `ownerId`, and a
   mismatch is 404 rather than 403 — existence is not disclosed.
 

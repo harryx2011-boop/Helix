@@ -56,6 +56,10 @@ export interface ProfileRow {
   /** Only ever set when `heard_from` is 'other'; capped at 200 chars by 0005. */
   heard_from_detail: string | null;
   onboarding_completed_at: string | null;
+  dashboard_key_id: string | null;
+  /** PostgREST bytea wire format: backslash-x + hex. */
+  dashboard_key_ciphertext: string | null;
+  dashboard_key_iv: string | null;
 }
 
 export interface ApiKeyRow {

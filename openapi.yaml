@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Helix
-  version: 1.6.0
+  version: 1.7.0
   summary: Self-hostable, BYOK web-data API.
   description: |
     Helix turns web pages and documents into clean, structured, LLM-ready data.
@@ -1683,8 +1683,28 @@ components:
 
         Framework detection alone never triggers escalation: server-rendered React
         and Vue frequently need no browser at all.
-      enum: [auto, plain, tls, lightpanda, chromium]
+
+        `camoufox` is a hardened Firefox above `chromium`, for sites the render
+        tier still loses. It is never reached by escalation: automatic climbing
+        stops at `chromium`, so the tier applies only when you name it here. It
+        must also be enabled on the instance, and a request for it otherwise
+        fails rather than quietly falling back.
+      enum: [auto, plain, tls, lightpanda, chromium, camoufox]
       default: auto
+
+    Engine:
+      type: string
+      description: |
+        Which browser drives the render tier. Defaults to the instance's
+        configured engine (Chromium unless the operator changed it), and is
+        ignored by the `plain`, `tls` and `lightpanda` tiers, which run no
+        browser.
+
+        A `profile` is applied only on the engine family it describes: asking for
+        a Chrome identity on `firefox` presents no identity at all and returns a
+        warning, because a Chrome user-agent over Gecko contradicts itself and is
+        easier to detect than an unmodified browser.
+      enum: [chromium, firefox, webkit]
 
     ScrapeOptions:
       type: object
@@ -1695,6 +1715,7 @@ components:
           items: { $ref: '#/components/schemas/Format' }
           default: [markdown]
         tier: { $ref: '#/components/schemas/Tier' }
+        engine: { $ref: '#/components/schemas/Engine' }
         onlyMainContent:
           type: boolean
           default: true
@@ -1733,7 +1754,8 @@ components:
             Render in a phone viewport (390x844, touch enabled). Forces the Chromium
             tier when `tier` is `auto`. With `plain`, `tls` or `lightpanda` no
             viewport exists, so the page is fetched as-is, a warning says so, and
-            `metadata.mobile` is `false`.
+            `metadata.mobile` is `false`. The `firefox` engine narrows the viewport
+            but does not emulate touch, so it is treated the same way.
         actions:
           type: array
           maxItems: 50
@@ -2260,14 +2282,14 @@ components:
             formats:
               type: array
               items: { type: string }
-            tier: { type: string, enum: [auto, plain, tls, lightpanda, chromium] }
+            tier: { type: string, enum: [auto, plain, tls, lightpanda, chromium, camoufox] }
             extractor: { type: string, enum: [trafilatura, readability, auto] }
             onlyMainContent: { type: boolean }
         formats:
           type: array
           description: Top-level alias of `scrapeOptions.formats`.
           items: { type: string }
-        tier: { type: string, enum: [auto, plain, tls, lightpanda, chromium] }
+        tier: { type: string, enum: [auto, plain, tls, lightpanda, chromium, camoufox] }
         extractor: { type: string, enum: [trafilatura, readability, auto] }
         onlyMainContent: { type: boolean }
         maxConcurrency:
@@ -3268,6 +3290,10 @@ components:
           type: array
           items: { $ref: '#/components/schemas/Tier' }
         profile: { type: string }
+        engine:
+          allOf:
+            - $ref: '#/components/schemas/Engine'
+          description: The browser that rendered the page. Absent when no browser tier ran.
         extractor: { type: string, description: 'The HTML-to-text engine that ran.' }
         mobile: { type: boolean }
         timingMs: { type: integer, description: 'Wall-clock for the fetch ladder, in milliseconds.' }

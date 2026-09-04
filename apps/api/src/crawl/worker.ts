@@ -4,6 +4,7 @@ import { runPipeline, type PipelineDeps } from '../core/pipeline.js';
 import { PersistentFrontier } from './persistent-frontier.js';
 import { conditionalHeaders, isUnchanged, loadStateForSite, recordVisit } from './state.js';
 import { PolitenessController } from './politeness.js';
+import { SessionPool } from './sessions.js';
 import { RobotsCache } from './robots.js';
 import { SitemapFetcher } from './sitemap.js';
 import { siteOf } from './url.js';
@@ -45,7 +46,7 @@ export interface CrawlJobRequest {
   incremental: boolean;
   ignoreQueryParameters: boolean;
   formats: string[];
-  tier: 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium';
+  tier: 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium' | 'camoufox';
   extractor: 'trafilatura' | 'readability' | 'auto';
   onlyMainContent: boolean;
   webhook?: WebhookConfig | undefined;
@@ -56,6 +57,18 @@ export interface WorkerDeps extends PipelineDeps {
   userAgent: string;
   /** Ceiling for adaptive per-host concurrency when a request names none. */
   maxHostConcurrency?: number | undefined;
+  /** Floor the adaptive controller may not back off below. */
+  minHostConcurrency?: number | undefined;
+  /**
+   * The operator's proxy (`HELIX_PROXY_URL`), the same one `/scrape` resolves
+   * `proxy: "auto" | "stealth"` against. The session pool rotates among the
+   * URLs it is given; it does not read the environment itself.
+   */
+  proxyUrl?: string | undefined;
+  /** Live identities a crawl holds at once. */
+  sessionPoolSize?: number | undefined;
+  /** Blocks one identity absorbs before it is retired and replaced. */
+  sessionMaxBlocks?: number | undefined;
   logger?: Log | undefined;
 }
 
@@ -135,7 +148,18 @@ export class CrawlWorker {
 
     const politeness = new PolitenessController({
       maxConcurrency: request.maxConcurrency ?? this.#deps.maxHostConcurrency ?? 8,
+      minConcurrency: this.#deps.minHostConcurrency,
       fixedDelayMs: request.delay !== undefined ? request.delay * 1000 : undefined,
+    });
+
+    // One pool per job. Identities are not shared between crawls: a session
+    // carries the cookie jar of the site it was used on, and handing that to a
+    // crawl of a different host leaks one caller's session state into another.
+    const sessions = new SessionPool({
+      proxyUrls: this.#deps.proxyUrl ? [this.#deps.proxyUrl] : undefined,
+      maxSessions: this.#deps.sessionPoolSize,
+      maxBlocks: this.#deps.sessionMaxBlocks,
+      logger: this.#logger,
     });
 
     const robots = new RobotsCache(this.#deps.userAgent, this.#logger);
@@ -155,9 +179,14 @@ export class CrawlWorker {
     // Resume before seeding: a restarted crawl already has a frontier, and
     // re-seeding it would duplicate work the dedup filter has forgotten.
     const resumed = await frontier.resume();
-    if (resumed.restored > 0 || resumed.alreadyDone > 0) {
+    if (resumed.restored > 0 || resumed.alreadyDone > 0 || resumed.reclaimed > 0) {
       this.#logger?.info(
-        { jobId, restored: resumed.restored, alreadyDone: resumed.alreadyDone },
+        {
+          jobId,
+          restored: resumed.restored,
+          alreadyDone: resumed.alreadyDone,
+          reclaimed: resumed.reclaimed,
+        },
         'resumed an interrupted crawl',
       );
     }
@@ -208,6 +237,12 @@ export class CrawlWorker {
       // ten thousand pages should not run ten thousand extra queries.
       if (Date.now() - cancelChecked > 2_000) {
         cancelChecked = Date.now();
+
+        // Leases have to be pushed forward while pages are still being fetched,
+        // or a crawl of slow pages reclaims its own live work out from under
+        // itself. The frontier decides whether a renewal is actually due.
+        await frontier.renewLeases();
+
         if (await this.#isCancelled(jobId)) {
           this.#logger?.info({ jobId }, 'crawl cancelled');
           await Promise.allSettled(inFlight);
@@ -241,6 +276,13 @@ export class CrawlWorker {
       const task = (async () => {
         const started = Date.now();
         let statusCode: number | undefined;
+        let blocked = false;
+        let retryAfterSeconds: number | undefined;
+
+        // One identity for this whole request, pinned before the fetch. The
+        // profile and the proxy travel together because splitting them is
+        // exactly the incoherence the Rust profile validator exists to refuse.
+        const session = sessions.acquire();
 
         try {
           if (request.respectRobots) {
@@ -261,6 +303,7 @@ export class CrawlWorker {
           // itself — a 304 carries no body. Everything else saves processing.
           const headers = request.incremental ? conditionalHeaders(known) : undefined;
 
+          const cookie = sessions.cookieHeader(session);
           const result = await runPipeline(
             {
               url: item.url,
@@ -268,7 +311,11 @@ export class CrawlWorker {
               tier: request.tier,
               extractor: request.extractor,
               onlyMainContent: request.onlyMainContent,
-              headers,
+              ...(headers || cookie
+                ? { headers: { ...(headers ?? {}), ...(cookie ? { Cookie: cookie } : {}) } }
+                : {}),
+              ...(session.profileId ? { profile: session.profileId } : {}),
+              ...(session.proxyUrl ? { proxy: session.proxyUrl } : {}),
             },
             this.#deps,
           );
@@ -276,6 +323,12 @@ export class CrawlWorker {
           statusCode = result.success ? result.statusCode : result.statusCode;
 
           if (!result.success) {
+            // The classifier's verdict, not the status code: a challenge page
+            // arrives as 200 and would otherwise be scored as a healthy fetch by
+            // both the concurrency controller and the session pool.
+            blocked = result.reason === 'blocked' || result.reason === 'challenge';
+            retryAfterSeconds = result.retryAfterSeconds;
+
             await this.#recordFailure(
               jobId,
               item.url,
@@ -363,7 +416,21 @@ export class CrawlWorker {
           politeness.release(item.site, {
             statusCode,
             latencyMs: Date.now() - started,
+            blocked,
+            retryAfterSeconds,
           });
+
+          // The same evidence, read for a different question. Politeness asks
+          // "how fast may I go"; the pool asks "is this identity still usable".
+          // A host that blocks one identity and accepts another is answering
+          // only the second question, so both have to be asked separately.
+          const { retired } = sessions.release(session, { blocked, statusCode });
+          if (retired) {
+            this.#logger?.debug(
+              { jobId, session: session.id, url: item.url },
+              'identity retired after a block; the next request uses a fresh one',
+            );
+          }
         }
       })();
 
@@ -411,7 +478,16 @@ export class CrawlWorker {
     }
 
     this.#logger?.info(
-      { jobId, completed, failed, unchanged, vectorFailures, rejections: frontier.rejections() },
+      {
+        jobId,
+        completed,
+        failed,
+        unchanged,
+        vectorFailures,
+        sessions: sessions.stats(),
+        hosts: politeness.stats(),
+        rejections: frontier.rejections(),
+      },
       'crawl finished',
     );
 

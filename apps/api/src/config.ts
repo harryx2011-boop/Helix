@@ -37,6 +37,9 @@ const ConfigSchema = z.object({
   userAgent: z.string().default('HelixBot/0.1'),
   politeness: z.enum(['adaptive', 'fixed']).default('adaptive'),
   maxHostConcurrency: int(8),
+  minHostConcurrency: int(1),
+  crawlSessionPoolSize: int(8),
+  crawlSessionMaxBlocks: int(2),
 
   // Guard rails for crawls. Without a billing layer nothing else bounds a
   // runaway job, so the operator sets the default and the ceiling.
@@ -54,6 +57,16 @@ const ConfigSchema = z.object({
   browserRecycleAfter: int(250),
   lightpandaEnabled: bool(false),
   lightpandaUrl: z.string().default('http://localhost:9222'),
+  /** Which browser drives the render tier when a request does not name one. */
+  browserEngine: z.enum(['chromium', 'firefox', 'webkit']).default('chromium'),
+  camoufoxEnabled: bool(false),
+  camoufoxUrl: z.string().default('ws://localhost:9223'),
+  /**
+   * A remote browser the render tier connects to instead of launching locally.
+   * Unset means launch locally, which is the only arrangement where the pages
+   * fetched and the headers sent stay on the operator's own machine.
+   */
+  remoteCdpUrl: z.string().optional(),
 
   /** Where callers reach this instance from outside; live-view URLs are built on it. */
   publicUrl: z.string().default('http://localhost:7400'),
@@ -126,6 +139,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     userAgent: env.HELIX_USER_AGENT,
     politeness: env.HELIX_DEFAULT_POLITENESS,
     maxHostConcurrency: env.HELIX_MAX_HOST_CONCURRENCY,
+    minHostConcurrency: env.HELIX_MIN_HOST_CONCURRENCY,
+    crawlSessionPoolSize: env.HELIX_CRAWL_SESSION_POOL_SIZE,
+    crawlSessionMaxBlocks: env.HELIX_CRAWL_SESSION_MAX_BLOCKS,
     crawlDefaultLimit: env.HELIX_CRAWL_DEFAULT_LIMIT,
     crawlMaxLimit: env.HELIX_CRAWL_MAX_LIMIT,
     crawlMaxDepth: env.HELIX_CRAWL_MAX_DEPTH,
@@ -136,6 +152,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     browserRecycleAfter: env.HELIX_BROWSER_RECYCLE_AFTER,
     lightpandaEnabled: env.HELIX_LIGHTPANDA_ENABLED,
     lightpandaUrl: env.HELIX_LIGHTPANDA_URL,
+    browserEngine: env.HELIX_BROWSER_ENGINE,
+    camoufoxEnabled: env.HELIX_CAMOUFOX_ENABLED,
+    camoufoxUrl: env.HELIX_CAMOUFOX_URL,
+    remoteCdpUrl: env.HELIX_REMOTE_CDP_URL || undefined,
     publicUrl: env.HELIX_PUBLIC_URL,
     interactMaxSessions: env.HELIX_INTERACT_MAX_SESSIONS,
     interactIdleTimeoutSeconds: env.HELIX_INTERACT_IDLE_TIMEOUT_SECONDS,

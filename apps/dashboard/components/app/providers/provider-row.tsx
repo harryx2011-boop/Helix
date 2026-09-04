@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 
 const CONFIRM_TIMEOUT_MS = 4000;
 
-interface ProviderMeta {
+export interface ProviderMeta {
   id: ProviderId;
   name: string;
   /** Local runtimes take a base URL instead of an API key. */
@@ -41,7 +41,7 @@ export const PROVIDER_META: ProviderMeta[] = [
 ];
 
 /** `docs.vllm.ai` / `ollama.com` ship real PNG marks; `openai-compatible` isn't a company and gets a lucide icon instead. */
-function ProviderIcon({ meta }: { meta: ProviderMeta }) {
+export function ProviderIcon({ meta }: { meta: ProviderMeta }) {
   if (meta.id === 'openai-compatible') {
     return (
       <span className="flex h-5 w-5 items-center justify-center rounded-card bg-muted text-muted-foreground">

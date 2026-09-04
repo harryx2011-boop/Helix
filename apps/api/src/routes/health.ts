@@ -9,6 +9,8 @@ export interface HealthDeps {
   extractClient: ExtractClient;
   browserPool?: BrowserPool;
   lightpandaEnabled?: boolean;
+  camoufoxEnabled?: boolean;
+  remoteCdpConfigured?: boolean;
 }
 
 /**

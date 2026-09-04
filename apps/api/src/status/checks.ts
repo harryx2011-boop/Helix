@@ -14,6 +14,10 @@ export interface ServiceCheckDeps {
   browserPool?: BrowserPool;
   /** Present only when the instance runs Lightpanda as a distinct render tier. */
   lightpandaEnabled?: boolean;
+  /** Present only when the instance offers the Camoufox tier. */
+  camoufoxEnabled?: boolean;
+  /** True when the render tier connects to a remote browser instead of launching one. */
+  remoteCdpConfigured?: boolean;
 }
 
 export interface ServiceStatus {
@@ -60,9 +64,13 @@ export async function runServiceChecks(deps: ServiceCheckDeps): Promise<Record<s
   if (deps.browserPool) {
     const started = Date.now();
     const stats = deps.browserPool.stats();
+    // Engines are listed as launched rather than as available: a non-default
+    // engine is launched on its first request, so an empty list before any
+    // traffic is the pool being warm for its default, not a missing browser.
+    const engines = stats.engines.length > 0 ? stats.engines.join(', ') : deps.browserPool.defaultEngine;
     services['browser'] = {
       status: 'ok',
-      detail: `${stats.browsers} browsers, ${stats.activeContexts} active contexts, ${stats.pagesServed} pages served`,
+      detail: `${stats.browsers} browsers, ${stats.activeContexts} active contexts, ${stats.pagesServed} pages served (engine: ${engines})`,
       latencyMs: Date.now() - started,
     };
   }
@@ -73,6 +81,20 @@ export async function runServiceChecks(deps: ServiceCheckDeps): Promise<Record<s
   // the instance has it enabled, so that is what a `lightpanda` entry reports.
   if (deps.lightpandaEnabled) {
     services['lightpanda'] = { status: 'ok', detail: 'enabled', latencyMs: 0 };
+  }
+
+  // Same caveat as lightpanda: both are endpoints connected to per-render, so
+  // "enabled" is the only fact available without spending a connection here.
+  if (deps.camoufoxEnabled) {
+    services['camoufox'] = { status: 'ok', detail: 'enabled', latencyMs: 0 };
+  }
+
+  if (deps.remoteCdpConfigured) {
+    services['remoteBrowser'] = {
+      status: 'ok',
+      detail: 'the render tier connects to a remote browser',
+      latencyMs: 0,
+    };
   }
 
   return services;

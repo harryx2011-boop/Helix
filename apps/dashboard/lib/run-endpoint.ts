@@ -10,6 +10,7 @@ import type {
   MapResponse,
   MetadataRequest,
   MetadataResponse,
+  MetadataScrubReport,
   MetadataScrubResponse,
   MonitorRequest,
   MonitorResponse,
@@ -21,6 +22,7 @@ import type {
   SearchResponse,
 } from '@/lib/api';
 import type { Endpoint } from '@/lib/endpoints';
+import { HOSTED } from '@/lib/mode';
 
 /**
  * Metadata has two operations behind one tab, and the scrub answers with file
@@ -36,9 +38,12 @@ export interface RunResult<T> {
 }
 
 /**
- * One call path for every playground form, in both modes: the browser calls
- * the operator's own instance with the key from `useApiKey()`. Nothing is
- * proxied through this app and no run is recorded anywhere but the instance.
+ * Self-host: the browser calls the operator's own instance directly with the
+ * key from `useApiKey()`, as it always has. Hosted mounts no ApiKeyProvider —
+ * the signed-in user has not minted a key — so this instead posts to the
+ * `/api/app/run` proxy, which resolves that user's own key server-side and
+ * forwards the call. `apiKey` is unused on that path; kept as a parameter so
+ * every caller of `runEndpoint` works unmodified in both modes.
  */
 export async function runEndpoint<T>(
   endpoint: Endpoint,
@@ -46,12 +51,54 @@ export async function runEndpoint<T>(
   apiKey: string | null,
   mode: EndpointMode = 'scan',
 ): Promise<RunResult<T>> {
+  if (HOSTED) return runViaProxy<T>(endpoint, body, mode);
   if (!apiKey) {
     throw new HelixApiError('No API key configured.', 401);
   }
   const client = new HelixClient({ apiKey });
   const json = await callInstance(client, endpoint, body, mode);
   return { ok: true, status: 200, body: json as T };
+}
+
+async function runViaProxy<T>(endpoint: Endpoint, body: Record<string, unknown> | FormData, mode: EndpointMode): Promise<RunResult<T>> {
+  const isFormData = body instanceof FormData;
+  const params = new URLSearchParams({ endpoint, mode });
+  const response = await fetch(`/api/app/run?${params.toString()}`, {
+    method: 'POST',
+    ...(isFormData
+      ? { body }
+      : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+  });
+
+  // The metadata scrub response is a file with its report in a header, not
+  // JSON — everything else is a typed envelope the caller asserts a shape onto.
+  if (endpoint === 'metadata' && mode === 'scrub' && response.ok) {
+    return { ok: true, status: response.status, body: (await scrubResultFromResponse(response)) as unknown as T };
+  }
+
+  const json = (await response.json().catch(() => null)) as (T & { message?: string; error?: string }) | null;
+  if (!response.ok) {
+    throw new HelixApiError(json?.message ?? `Request failed with status ${response.status}`, response.status);
+  }
+  return { ok: true, status: response.status, body: json as T };
+}
+
+/** Rebuilds the same `MetadataScrubSuccess` shape `HelixClient.metadataScrub` returns, from the proxied response. */
+async function scrubResultFromResponse(response: Response): Promise<MetadataScrubResponse> {
+  const header = response.headers.get('x-helix-metadata-report');
+  if (!header) {
+    throw new HelixApiError('The scrub returned a file without its metadata report.', 502);
+  }
+  let report: MetadataScrubReport;
+  try {
+    report = JSON.parse(header) as MetadataScrubReport;
+  } catch {
+    throw new HelixApiError('The scrub returned a metadata report that was not valid JSON.', 502);
+  }
+  const star = /filename\*=(?:UTF-8|utf-8)''([^;]+)/.exec(response.headers.get('content-disposition') ?? '');
+  const plain = /filename="?([^";]+)"?/.exec(response.headers.get('content-disposition') ?? '');
+  const filename = star?.[1] ? decodeURIComponent(star[1]) : plain?.[1]?.trim() || 'file.scrubbed';
+  return { success: true, blob: await response.blob(), filename, report };
 }
 
 // Each branch returns a different response shape; the caller asserts the union member it expects for the endpoint it asked for.

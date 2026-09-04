@@ -1,12 +1,13 @@
 /**
  * Fetch-tier escalation.
  *
- * Four tiers, cheapest first:
+ * Five tiers, cheapest first:
  *
  *   plain       ~5ms     raw HTTP, no TLS mimicry
  *   tls        ~50ms     coherent JA4 + HTTP/2 settings (helix-fetch)
  *   lightpanda ~25ms     JS execution, no layout or canvas
  *   chromium   ~2-5s     full render, screenshots, actions
+ *   camoufox   ~3-6s     hardened Firefox, for sites the render tier still loses
  *
  * The rule that matters: escalate on EVIDENCE, never on a guess about the
  * framework a site uses. Next.js, Nuxt and SvelteKit routinely server-render
@@ -17,9 +18,25 @@
 
 import { detectBlock, type ResponseFacts } from './block-detection.js';
 
-export type Tier = 'plain' | 'tls' | 'lightpanda' | 'chromium';
+export type Tier = 'plain' | 'tls' | 'lightpanda' | 'chromium' | 'camoufox';
 
-export const TIER_ORDER: readonly Tier[] = ['plain', 'tls', 'lightpanda', 'chromium'] as const;
+export const TIER_ORDER: readonly Tier[] = [
+  'plain',
+  'tls',
+  'lightpanda',
+  'chromium',
+  'camoufox',
+] as const;
+
+/**
+ * The ceiling when a caller does not set one.
+ *
+ * Camoufox sits above it deliberately. It is off by default, needs a separate
+ * process an operator opted into, and costs more than the tier below it — so it
+ * is reached by asking for it, never by walking up the ladder. `maxTier` opts
+ * a request in.
+ */
+export const DEFAULT_MAX_TIER: Tier = 'chromium';
 
 export interface Capabilities {
   screenshot?: boolean;
@@ -47,12 +64,12 @@ export interface EscalationDecision {
 function tierSupports(tier: Tier, caps: Capabilities): boolean {
   const needsRealBrowser =
     caps.screenshot || caps.actions || caps.visualLayout || caps.pdfRender;
-  if (needsRealBrowser) return tier === 'chromium';
+  if (needsRealBrowser) return tier === 'chromium' || tier === 'camoufox';
 
   if (caps.proxy && tier === 'lightpanda') return false;
 
   const needsJs = caps.waitFor !== undefined && caps.waitFor > 0;
-  if (needsJs) return tier === 'lightpanda' || tier === 'chromium';
+  if (needsJs) return tier === 'lightpanda' || tier === 'chromium' || tier === 'camoufox';
 
   return true;
 }
@@ -62,10 +79,15 @@ function tierSupports(tier: Tier, caps: Capabilities): boolean {
  * are known up front, so there is no reason to start below them.
  */
 export function minimumViableTier(caps: Capabilities): Tier {
+  // Bounded by the default ceiling, so a capability requirement can never
+  // *start* a request at the opt-in tier: camoufox supports everything chromium
+  // does, and picking the lowest viable tier without this bound would still
+  // never choose it — but the bound is stated rather than relied upon.
   for (const tier of TIER_ORDER) {
     if (tierSupports(tier, caps)) return tier;
+    if (tier === DEFAULT_MAX_TIER) break;
   }
-  return 'chromium';
+  return DEFAULT_MAX_TIER;
 }
 
 /**
@@ -106,7 +128,7 @@ export interface EscalationInput {
 }
 
 export function shouldEscalate(input: EscalationInput): EscalationDecision {
-  const { currentTier, response, capabilities, maxTier = 'chromium' } = input;
+  const { currentTier, response, capabilities, maxTier = DEFAULT_MAX_TIER } = input;
 
   const currentIndex = TIER_ORDER.indexOf(currentTier);
   const ceilingIndex = TIER_ORDER.indexOf(maxTier);

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { getPool } from '../db/pool.js';
 import { Frontier, type FrontierItem, type FrontierOptions } from './frontier.js';
 
@@ -11,10 +12,32 @@ import { Frontier, type FrontierItem, type FrontierOptions } from './frontier.js
  *
  * Writes are batched. One INSERT per discovered URL would make the database the
  * bottleneck long before the network was.
+ *
+ * Claims are LEASES, not flags. A worker that exits cleanly returns its claims;
+ * a worker that is killed cannot, and a bare 'running' status would strand those
+ * rows forever — the crawl completes reporting fewer pages than it queued, with
+ * no failure row to explain the gap. Every claim therefore carries an expiry
+ * that the holder extends while it works, and any worker may reclaim a task
+ * whose lease has passed. Expiry is decided by the database clock, never by the
+ * worker's: two machines whose clocks disagree by a minute would otherwise
+ * reclaim each other's live work.
  */
 
 const FLUSH_THRESHOLD = 50;
 const CLAIM_BATCH = 20;
+
+/**
+ * How long a claim is good for.
+ *
+ * Long enough that a slow chromium render plus its extraction finishes inside
+ * it, short enough that a crashed worker's queue is recovered while the crawl
+ * is still running. Too short is worse than too long: it hands live work to a
+ * second worker and pays for the same page twice.
+ */
+const LEASE_SECONDS = 300;
+
+/** Renewals are attempted at a third of the lease, so one lost round trip is survivable. */
+const RENEW_INTERVAL_MS = (LEASE_SECONDS / 3) * 1000;
 
 interface PendingRow {
   url: string;
@@ -26,11 +49,30 @@ interface PendingRow {
 export class PersistentFrontier {
   readonly #frontier: Frontier;
   readonly #jobId: string;
+  /**
+   * Identifies this worker's claims so `release()` returns only its own.
+   * Without it, a shutting-down worker would requeue tasks another worker had
+   * legitimately reclaimed and is fetching right now.
+   */
+  readonly #workerId: string;
   #pendingWrites: PendingRow[] = [];
+  /** Claimed in the database, not yet handed to a fetcher. */
   #claimed: FrontierItem[] = [];
+  /**
+   * Handed out and being fetched right now.
+   *
+   * Tracked separately from `#claimed` because these are the rows whose lease
+   * most needs renewing and whose loss on shutdown actually costs a page. Before
+   * this existed, `next()` spliced an item out of `#claimed` and the frontier
+   * forgot a row that was still 'running' in Postgres — so a shutdown requeued
+   * only the unstarted buffer, and every page mid-fetch was stranded.
+   */
+  #inFlight = new Map<string, FrontierItem>();
+  #lastRenewal = 0;
 
-  constructor(jobId: string, options: FrontierOptions) {
+  constructor(jobId: string, options: FrontierOptions, workerId: string = randomUUID()) {
     this.#jobId = jobId;
+    this.#workerId = workerId;
     this.#frontier = new Frontier(options);
   }
 
@@ -40,7 +82,12 @@ export class PersistentFrontier {
    * Completed URLs are re-added to the dedup filter — without that, a resumed
    * crawl would happily re-enqueue everything it had already finished.
    */
-  async resume(): Promise<{ restored: number; alreadyDone: number }> {
+  async resume(): Promise<{ restored: number; alreadyDone: number; reclaimed: number }> {
+    // Reclaim first: a task whose lease died with its worker is queued work,
+    // and reading the queue before recovering it would leave it out of the
+    // restored count and out of the crawl.
+    const reclaimed = await this.reclaimExpired();
+
     const { rows: done } = await getPool().query<{ url: string }>(
       `SELECT url FROM job_tasks WHERE job_id = $1 AND status IN ('completed', 'failed')`,
       [this.#jobId],
@@ -69,7 +116,62 @@ export class PersistentFrontier {
       this.#frontier.add(row.url, row.depth);
     }
 
-    return { restored: pending.length, alreadyDone: done.length };
+    return { restored: pending.length, alreadyDone: done.length, reclaimed };
+  }
+
+  /**
+   * Return tasks whose lease has expired to the queue.
+   *
+   * Safe to run while other workers hold live leases: the WHERE clause only
+   * matches rows whose expiry is already in the past by the database's own
+   * clock, so a task being actively renewed is never taken from under its
+   * holder. Comparing against a timestamp computed in Node would make that
+   * guarantee depend on two machines agreeing about the time.
+   *
+   * A task that has burned through its attempts is failed rather than requeued.
+   * A URL that kills three workers in a row will kill the fourth, and an
+   * unbounded reclaim loop turns one poison page into a crawl that never ends.
+   */
+  async reclaimExpired(): Promise<number> {
+    const { rowCount } = await getPool().query(
+      `UPDATE job_tasks
+          SET status = CASE WHEN attempts + 1 >= max_attempts THEN 'failed'::job_status
+                            ELSE 'queued'::job_status END,
+              attempts = attempts + 1,
+              claimed_at = NULL,
+              claimed_by = NULL,
+              lease_expires_at = NULL
+        WHERE job_id = $1
+          AND status = 'running'
+          AND lease_expires_at IS NOT NULL
+          AND lease_expires_at < now()`,
+      [this.#jobId],
+    );
+    return rowCount ?? 0;
+  }
+
+  /**
+   * Push this worker's leases forward.
+   *
+   * Rate-limited by the caller's clock rather than run per fetch: the renewal
+   * exists to outlive a slow page, not to be a round trip attached to every one.
+   * `status = 'running'` in the WHERE means a lease already reclaimed by another
+   * worker is not silently taken back — the row has moved on, and this worker's
+   * result for it will be discarded by the same condition on completion.
+   */
+  async renewLeases(now = Date.now()): Promise<number> {
+    const urls = this.#leased();
+    if (urls.length === 0) return 0;
+    if (this.#lastRenewal !== 0 && now - this.#lastRenewal < RENEW_INTERVAL_MS) return 0;
+    this.#lastRenewal = now;
+
+    const { rowCount } = await getPool().query(
+      `UPDATE job_tasks
+          SET lease_expires_at = now() + ($3 || ' seconds')::interval
+        WHERE job_id = $1 AND url = ANY($2) AND status = 'running'`,
+      [this.#jobId, urls, LEASE_SECONDS],
+    );
+    return rowCount ?? 0;
   }
 
   /** Offer a URL. Accepted URLs are queued for the next flush. */
@@ -131,6 +233,7 @@ export class PersistentFrontier {
     const ready = this.#claimed.findIndex((item) => canFetch(item.site));
     if (ready >= 0) {
       const [item] = this.#claimed.splice(ready, 1);
+      if (item) this.#inFlight.set(item.url, item);
       return item;
     }
 
@@ -146,9 +249,13 @@ export class PersistentFrontier {
     if (batch.length === 0) return undefined;
 
     await getPool().query(
-      `UPDATE job_tasks SET status = 'running', claimed_at = now()
+      `UPDATE job_tasks
+          SET status = 'running',
+              claimed_at = now(),
+              claimed_by = $3,
+              lease_expires_at = now() + ($4 || ' seconds')::interval
         WHERE job_id = $1 AND url = ANY($2) AND status = 'queued'`,
-      [this.#jobId, batch.map((item) => item.url)],
+      [this.#jobId, batch.map((item) => item.url), this.#workerId, LEASE_SECONDS],
     );
 
     this.#claimed.push(...batch);
@@ -157,19 +264,33 @@ export class PersistentFrontier {
     if (index < 0) return undefined;
 
     const [item] = this.#claimed.splice(index, 1);
+    if (item) this.#inFlight.set(item.url, item);
     return item;
   }
 
+  /** Every URL this worker holds a lease on, buffered or in flight. */
+  #leased(): string[] {
+    return [...this.#claimed.map((item) => item.url), ...this.#inFlight.keys()];
+  }
+
   async markCompleted(url: string): Promise<void> {
+    this.#inFlight.delete(url);
+    // The lease is cleared with the status. A terminal row keeping a stale
+    // expiry is what a reclaim sweep would read as abandoned work.
     await getPool().query(
-      `UPDATE job_tasks SET status = 'completed' WHERE job_id = $1 AND url = $2`,
+      `UPDATE job_tasks
+          SET status = 'completed', claimed_at = NULL, claimed_by = NULL, lease_expires_at = NULL
+        WHERE job_id = $1 AND url = $2`,
       [this.#jobId, url],
     );
   }
 
   async markFailed(url: string): Promise<void> {
+    this.#inFlight.delete(url);
     await getPool().query(
-      `UPDATE job_tasks SET status = 'failed', attempts = attempts + 1
+      `UPDATE job_tasks
+          SET status = 'failed', attempts = attempts + 1,
+              claimed_at = NULL, claimed_by = NULL, lease_expires_at = NULL
         WHERE job_id = $1 AND url = $2`,
       [this.#jobId, url],
     );
@@ -177,19 +298,22 @@ export class PersistentFrontier {
 
   /** Return unfetched claims to the queue, so a shutdown loses nothing. */
   async release(): Promise<void> {
-    if (this.#claimed.length === 0) return;
+    const urls = this.#leased();
+    if (urls.length === 0) return;
 
     await getPool().query(
-      `UPDATE job_tasks SET status = 'queued', claimed_at = NULL
-        WHERE job_id = $1 AND url = ANY($2) AND status = 'running'`,
-      [this.#jobId, this.#claimed.map((item) => item.url)],
+      `UPDATE job_tasks
+          SET status = 'queued', claimed_at = NULL, claimed_by = NULL, lease_expires_at = NULL
+        WHERE job_id = $1 AND url = ANY($2) AND status = 'running' AND claimed_by = $3`,
+      [this.#jobId, urls, this.#workerId],
     );
 
     this.#claimed = [];
+    this.#inFlight.clear();
   }
 
   get pending(): number {
-    return this.#frontier.pending + this.#claimed.length;
+    return this.#frontier.pending + this.#claimed.length + this.#inFlight.size;
   }
 
   get enqueued(): number {

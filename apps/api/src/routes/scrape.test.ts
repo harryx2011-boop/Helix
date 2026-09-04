@@ -62,7 +62,7 @@ function browserPool(html = ARTICLE): BrowserPool {
       screenshot: 'iVBORw0KGgo=',
       timingMs: 500,
     })),
-    stats: () => ({ browsers: 1, activeContexts: 0, pagesServed: 1 }),
+    stats: () => ({ browsers: 1, activeContexts: 0, pagesServed: 1, engines: ['chromium' as const] }),
     close: vi.fn(async () => undefined),
     start: vi.fn(async () => undefined),
   } as unknown as BrowserPool;
@@ -371,6 +371,123 @@ describe('POST /scrape proxy and mobile', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json().warnings[0]).toContain('lightpanda');
     expect(res.json().data.metadata).toMatchObject({ tier: 'lightpanda', mobile: false });
+  });
+});
+
+describe('POST /scrape engine and tier selection', () => {
+  it('passes the requested engine down to the render tier', async () => {
+    const { app, deps } = await build();
+    const res = await post(app, { url: 'https://example.com', tier: 'chromium', engine: 'firefox' });
+    expect(res.statusCode).toBe(200);
+    expect(deps.browserPool?.render).toHaveBeenCalledWith(
+      expect.objectContaining({ engine: 'chromium', renderEngine: 'firefox' }),
+    );
+  });
+
+  it('leaves the engine to the instance default when the request omits it', async () => {
+    const { app, deps } = await build();
+    await post(app, { url: 'https://example.com', tier: 'chromium' });
+    const call = (deps.browserPool?.render as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {
+      renderEngine?: string;
+    };
+    expect(call.renderEngine).toBeUndefined();
+  });
+
+  it('rejects an engine that is not one of the three', async () => {
+    const { app } = await build();
+    const res = await post(app, { url: 'https://example.com', engine: 'lightpanda' });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: 'invalid_request', field: 'engine' });
+  });
+
+  it('accepts camoufox as an explicit tier', async () => {
+    const { app, deps } = await build();
+    const res = await post(app, { url: 'https://example.com', tier: 'camoufox' });
+    expect(res.statusCode).toBe(200);
+    expect(deps.browserPool?.render).toHaveBeenCalledWith(expect.objectContaining({ engine: 'camoufox' }));
+  });
+
+  it('never reaches camoufox on its own when the tier is auto', async () => {
+    // The ladder escalates on evidence up to chromium; the opt-in tier is
+    // reached by naming it, never by a block.
+    const challenge = '<html><body><div class="cf-browser-verification">Checking your browser before accessing</div></body></html>';
+    const { app, deps } = await build({
+      fetchClient: fetchClientReturning(challenge),
+      browserPool: browserPool(challenge),
+    });
+    await post(app, { url: 'https://example.com', tier: 'auto' });
+    const engines = (deps.browserPool?.render as ReturnType<typeof vi.fn>).mock.calls.map(
+      (call) => (call[0] as { engine?: string }).engine,
+    );
+    expect(engines).not.toContain('camoufox');
+  });
+
+  it('reports the engine that rendered in the metadata', async () => {
+    const { app } = await build({
+      browserPool: {
+        render: vi.fn(async () => ({
+          html: ARTICLE,
+          status: 200,
+          headers: {},
+          finalUrl: 'https://example.com/',
+          engineUsed: 'webkit' as const,
+          timingMs: 10,
+        })),
+        stats: () => ({ browsers: 1, activeContexts: 0, pagesServed: 1, engines: ['webkit' as const] }),
+        close: vi.fn(async () => undefined),
+        start: vi.fn(async () => undefined),
+      } as unknown as BrowserPool,
+    });
+    const res = await post(app, { url: 'https://example.com', tier: 'chromium', engine: 'webkit' });
+    expect(res.json().data.metadata).toMatchObject({ engine: 'webkit' });
+  });
+
+  it('surfaces a dropped identity as a warning rather than silently ignoring it', async () => {
+    const { app } = await build({
+      browserPool: {
+        render: vi.fn(async () => ({
+          html: ARTICLE,
+          status: 200,
+          headers: {},
+          finalUrl: 'https://example.com/',
+          engineUsed: 'firefox' as const,
+          warnings: ['profile: "chrome-148" describes chrome, which contradicts the firefox engine, so no identity was applied.'],
+          timingMs: 10,
+        })),
+        stats: () => ({ browsers: 1, activeContexts: 0, pagesServed: 1, engines: ['firefox' as const] }),
+        close: vi.fn(async () => undefined),
+        start: vi.fn(async () => undefined),
+      } as unknown as BrowserPool,
+    });
+    const res = await post(app, {
+      url: 'https://example.com',
+      tier: 'chromium',
+      engine: 'firefox',
+      profile: 'chrome-148',
+    });
+    expect(res.json().warnings.join(' ')).toMatch(/contradicts the firefox engine/);
+  });
+
+  it('does not claim a phone render when firefox could not emulate one', async () => {
+    const { app } = await build({
+      browserPool: {
+        render: vi.fn(async () => ({
+          html: ARTICLE,
+          status: 200,
+          headers: {},
+          finalUrl: 'https://example.com/',
+          engineUsed: 'firefox' as const,
+          warnings: ['mobile: the firefox engine does not emulate touch, so the phone viewport was not applied.'],
+          timingMs: 10,
+        })),
+        stats: () => ({ browsers: 1, activeContexts: 0, pagesServed: 1, engines: ['firefox' as const] }),
+        close: vi.fn(async () => undefined),
+        start: vi.fn(async () => undefined),
+      } as unknown as BrowserPool,
+    });
+    const res = await post(app, { url: 'https://example.com', mobile: true, engine: 'firefox' });
+    expect(res.json().data.metadata.mobile).toBe(false);
+    expect(res.json().warnings.join(' ')).toMatch(/does not emulate touch/);
   });
 });
 

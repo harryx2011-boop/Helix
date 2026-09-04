@@ -60,7 +60,7 @@ export async function GET(): Promise<NextResponse> {
     const profile = await ensureProfileForCurrentUser();
     if (!profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-    const rows = await listApiKeys(profile.id);
+    const rows = await listApiKeys(profile.id, profile.dashboard_key_id);
     return NextResponse.json({ keys: rows.map(toKeyJson) });
   } catch (err) {
     return failed('list', err);
@@ -116,6 +116,13 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
   try {
     const profile = await ensureProfileForCurrentUser();
     if (!profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+    // The listing hides this key, but a tab opened before that landed still
+    // offers its Revoke button — and revoking it breaks the hosted playground,
+    // agent and provider settings with no path back.
+    if (profile.dashboard_key_id && id === profile.dashboard_key_id) {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
 
     const revoked = await revokeApiKey(profile.id, id);
     if (!revoked) return NextResponse.json({ error: 'not_found' }, { status: 404 });

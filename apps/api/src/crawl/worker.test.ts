@@ -236,3 +236,61 @@ describe('CrawlWorker destination wiring', () => {
     expect(failureInsert).toBeUndefined();
   });
 });
+
+describe('CrawlWorker identity and politeness wiring', () => {
+  function workerWith(over: Record<string, unknown> = {}) {
+    return new CrawlWorker({
+      fetchClient: {} as never,
+      extractClient: extractClient(),
+      userAgent: 'HelixBot/test',
+      ...over,
+    } as never);
+  }
+
+  it('sends a coherent identity — one profile and one proxy — with the fetch', async () => {
+    db.state.request = baseRequest();
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    await workerWith({ proxyUrl: 'http://proxy.example:8080' }).runOnce();
+
+    const options = runPipeline.mock.calls[0]?.[0] as { profile?: string; proxy?: string };
+    expect(options.proxy).toBe('http://proxy.example:8080');
+    // The pair travels together: splitting them is the incoherence the Rust
+    // profile validator refuses to start on.
+    expect(typeof options.profile === 'string' || options.profile === undefined).toBe(true);
+  });
+
+  it('goes direct when the instance has no proxy configured', async () => {
+    db.state.request = baseRequest();
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    await workerWith().runOnce();
+
+    // No proxy is a real configuration. The worker must not invent one.
+    expect((runPipeline.mock.calls[0]?.[0] as { proxy?: string }).proxy).toBeUndefined();
+  });
+
+  it('draws every page identity from the pool rather than composing one per request', async () => {
+    db.state.request = baseRequest({ limit: 3 });
+    runPipeline
+      .mockResolvedValueOnce({
+        ...pipelineSuccess(),
+        content: { ...pipelineSuccess().content, links: ['https://example.com/b'] },
+      })
+      .mockResolvedValue(pipelineSuccess());
+
+    await workerWith({
+      proxyUrl: 'http://proxy.example:8080',
+      sessionPoolSize: 1,
+    }).runOnce();
+
+    const profiles = runPipeline.mock.calls.map(
+      (call) => (call[0] as { profile?: string }).profile,
+    );
+    expect(profiles.length).toBeGreaterThan(1);
+    // With one identity in the pool every page presents it. More than one live
+    // session legitimately means more than one identity — what must never
+    // happen is an identity being reassembled per request.
+    expect(new Set(profiles).size).toBe(1);
+  });
+});

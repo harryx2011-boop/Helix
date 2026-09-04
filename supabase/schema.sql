@@ -6,7 +6,7 @@
 -- find so it does not re-apply its own files at boot.
 --
 -- Regenerate after any migration lands:  node supabase/build-schema.mjs
--- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql | 0001_hosted_identity.sql, 0002_persona.sql, 0003_onboarding.sql, 0004_persona_sync.sql
+-- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql | 0001_hosted_identity.sql, 0002_persona.sql, 0003_onboarding.sql, 0004_persona_sync.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql
 
 -- ============================================================================
 -- API migrations
@@ -420,6 +420,72 @@ ALTER TABLE provider_keys ADD CONSTRAINT provider_keys_key_or_base_url
 ALTER TABLE monitors
   ADD COLUMN IF NOT EXISTS json_options jsonb;
 
+-- ---- apps/api/migrations/009_uptime_samples.sql
+-- Uptime samples for the public status page.
+--
+-- One row per service per sampler tick (`src/status/sampler.ts`, every 60s),
+-- reusing the same checks `/health` runs so the two never drift. `days`
+-- bucketing and `okPct`/`p50Ms` are computed from this table at read time by
+-- `GET /status/history`; nothing here is pre-aggregated. 90 days of samples at
+-- one row per service per minute is a few million rows at most — small enough
+-- that the sampler prunes anything older on every tick rather than needing a
+-- separate job.
+--
+-- Rollback: `DROP TABLE IF EXISTS uptime_samples;` — nothing else reads it.
+
+CREATE TABLE IF NOT EXISTS uptime_samples (
+  service text NOT NULL,
+  sampled_at timestamptz NOT NULL DEFAULT now(),
+  ok boolean NOT NULL,
+  latency_ms integer
+);
+
+CREATE INDEX IF NOT EXISTS uptime_samples_service_sampled_at_idx
+  ON uptime_samples (service, sampled_at DESC);
+
+-- ---- apps/api/migrations/010_task_leases.sql
+-- Crawl task leases.
+--
+-- 002 made the frontier durable, but a claim was only half a lease. A worker
+-- that exits cleanly calls `release()` and returns its claims to the queue; a
+-- worker that is SIGKILLed, OOM-killed or loses its container does not, and
+-- those rows sit at 'running' with a `claimed_at` nobody ever reads again. The
+-- crawl then finishes reporting fewer pages than it queued, with no failure row
+-- to explain the difference — the worst shape a bug can take here, because it
+-- looks like a completed crawl.
+--
+-- A lease is a claim with an expiry. `lease_expires_at` is set when a task is
+-- claimed and extended while the worker still holds it; any task whose lease is
+-- in the past is reclaimable by any worker, whether or not the process that
+-- took it still exists. That is the difference between an 'in_progress' flag
+-- and a visibility timeout: the flag needs someone to clear it, the timeout
+-- clears itself.
+--
+-- `attempts` already existed and was only ever incremented on failure. Reclaim
+-- increments it too, so a URL that repeatedly kills its worker is visible as a
+-- task with rising attempts rather than an invisible retry loop.
+--
+-- Rollback:
+--   DROP INDEX IF EXISTS job_tasks_reclaimable;
+--   ALTER TABLE job_tasks DROP COLUMN IF EXISTS lease_expires_at;
+--   ALTER TABLE job_tasks DROP COLUMN IF EXISTS max_attempts;
+-- Nothing else reads either column; the worker falls back to the pre-lease
+-- behaviour, which loses interrupted tasks exactly as it did before.
+
+ALTER TABLE job_tasks ADD COLUMN IF NOT EXISTS lease_expires_at timestamptz;
+
+-- Bounded here rather than in code so a reclaim loop cannot outlive a migration
+-- that changes its mind. A task reclaimed this many times is recorded as failed
+-- instead of being handed to a fourth worker to kill.
+ALTER TABLE job_tasks ADD COLUMN IF NOT EXISTS max_attempts integer NOT NULL DEFAULT 3;
+
+-- The partial index carries the whole reclaim query: running tasks are a small
+-- fraction of a large crawl, and a full scan of job_tasks per sweep would make
+-- the reclaim more expensive than the work it recovers.
+CREATE INDEX IF NOT EXISTS job_tasks_reclaimable
+  ON job_tasks (lease_expires_at)
+  WHERE status = 'running';
+
 -- ============================================================================
 -- schema_migrations seed (what apps/api/src/db/migrate.ts would have recorded)
 -- ============================================================================
@@ -437,7 +503,9 @@ INSERT INTO schema_migrations (filename, checksum) VALUES
   ('005_provider_keys.sql', '181c528ba517261e00d2af068a6972efebfe6d589a47ae24eab097b493f68eaa'),
   ('006_instance_settings.sql', '69f594bbcac665266bb9bf6b4901e9d8b9097073269485882f796f9c760cc475'),
   ('007_local_providers.sql', 'fbd014e71586b7626e6208b4881cdbe17d9325efca6c15b2ed3f050c425fdcd9'),
-  ('008_monitor_json_options.sql', '28d1ca216258b985f27252b413d7511acbb18ccbb8d151c21f3b1b8a5323447a')
+  ('008_monitor_json_options.sql', '28d1ca216258b985f27252b413d7511acbb18ccbb8d151c21f3b1b8a5323447a'),
+  ('009_uptime_samples.sql', '44f4a473d4d6fe3bbe89df261c29a5fa9af0c476ba9a7b33fd7442fae1245860'),
+  ('010_task_leases.sql', 'be4ed9bdb767e68aab42f10d304f8df030bc0abee3e4ff6c7b08c3e36f73fb0f')
 ON CONFLICT (filename) DO NOTHING;
 
 -- ============================================================================
@@ -923,3 +991,77 @@ create trigger persona_template_values_touch before update on persona_template_v
 -- desktop narrow every phone. The wizard's model API key is deliberately NOT
 -- stored here either — it is a provider secret, and Persona has no server-side
 -- encryption path for it the way apps/api does for provider_keys.
+
+-- ---- supabase/migrations/0005_onboarding_attribution.sql
+-- Where the user heard about Helix, asked during onboarding.
+--
+-- A closed vocabulary like the other single-selects, plus one free-text field
+-- that is ONLY read when the answer is 'other'. Two columns rather than one
+-- because a free-text column that sometimes holds a vocabulary value and
+-- sometimes holds prose cannot be grouped without cleaning it first, and the
+-- entire point of asking is to count the answers.
+
+alter table profiles add column if not exists heard_from        text;
+alter table profiles add column if not exists heard_from_detail text;
+
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'profiles_heard_from_check') then
+    alter table profiles add constraint profiles_heard_from_check
+      check (heard_from is null or heard_from in (
+        'search', 'social', 'friend', 'hn', 'github', 'blog', 'ai_assistant', 'other'
+      ));
+  end if;
+
+  -- The detail is a note on 'other', never a second answer. Bounding it here
+  -- keeps a paste-bomb out of the column, and pinning it to 'other' stops the
+  -- free text from quietly becoming the real answer for a categorised row —
+  -- which would put the count and the prose out of step.
+  if not exists (select 1 from pg_constraint where conname = 'profiles_heard_from_detail_check') then
+    alter table profiles add constraint profiles_heard_from_detail_check
+      check (
+        heard_from_detail is null
+        or (heard_from = 'other' and char_length(heard_from_detail) <= 200)
+      );
+  end if;
+end $$;
+
+-- ---- supabase/migrations/0006_dashboard_keys.sql
+-- The proxy's own key per profile (WEBSITE.md — hosted playground/providers).
+--
+-- Every client caller in the dashboard reads its API key from a browser-held
+-- ApiKeyProvider, which hosted mode deliberately does not mount (a signed-in
+-- user has not minted one yet). The fix is server-side proxy routes under
+-- /api/app/*, and they need something to call the Helix API WITH. api_keys
+-- only stores a sha256 hash — by design, the plaintext is shown once at
+-- creation and is not recoverable — so there is no user key to read back.
+--
+-- Each profile instead gets exactly one dedicated api_keys row, minted lazily
+-- on first proxy use via the same insert lib/profiles.ts#createApiKey already
+-- does (WEBSITE.md's "no mirror" model: this IS a real key the API
+-- authenticates). Its plaintext is encrypted at rest with
+-- HELIX_KEY_ENCRYPTION_KEY (lib/keys.ts's AES-256-GCM helpers, provisioned but
+-- unused until now) and decrypted only inside a route handler; it never
+-- reaches the browser. Storing it on profiles rather than a new table keeps
+-- the 1:1 relationship explicit and gives BYOK provider config (provider_keys,
+-- keyed on api_key_id) somewhere to live exactly as it already does in
+-- self-host: scoped to the key a request actually authenticates with.
+--
+-- Rollback: drop the two columns. Any dashboard key already minted stays live
+-- in api_keys (it is a real key) but becomes unreachable by the proxy; either
+-- revoke those rows by name ('Dashboard (internal)') or leave them — they cost
+-- nothing idle.
+
+alter table profiles add column if not exists dashboard_key_id         uuid references api_keys(id) on delete set null;
+alter table profiles add column if not exists dashboard_key_ciphertext bytea;
+alter table profiles add column if not exists dashboard_key_iv         bytea;
+
+-- Never exposed to a browser, including the key owner's own session — same
+-- posture as api_keys.key_hash in 0001.
+revoke all on profiles from anon, authenticated;
+grant select (id, clerk_user_id, email, name, avatar_url, created_at, updated_at,
+              role, use_cases, llm_provider, deploy_intent, selected_endpoints,
+              heard_from, heard_from_detail, onboarding_completed_at)
+  on profiles to authenticated;
+grant update (name, avatar_url, role, use_cases, llm_provider, deploy_intent,
+              selected_endpoints, heard_from, heard_from_detail, onboarding_completed_at)
+  on profiles to authenticated;

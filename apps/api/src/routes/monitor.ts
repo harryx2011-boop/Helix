@@ -48,7 +48,7 @@ const ScheduleSchema = z.union([
 
 const ScrapeOptionsSchema = z.object({
   formats: z.array(z.literal('markdown')).optional(),
-  tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium']).optional(),
+  tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox']).optional(),
   onlyMainContent: z.boolean().optional(),
   includeSelectors: z.array(z.string()).optional(),
   excludeSelectors: z.array(z.string()).optional(),

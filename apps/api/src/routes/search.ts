@@ -20,7 +20,7 @@ const SOURCES = ['web', 'news', 'images'] as const;
 
 const ScrapeOptionsSchema = z.object({
   formats: z.array(z.enum(FORMATS)).min(1).default(['markdown']),
-  tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium']).default('auto'),
+  tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox']).default('auto'),
   onlyMainContent: z.boolean().default(true),
   includeSelectors: z.array(z.string()).default([]),
   excludeSelectors: z.array(z.string()).default([]),

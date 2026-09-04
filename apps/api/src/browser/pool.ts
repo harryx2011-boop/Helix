@@ -3,6 +3,13 @@ import type { Log } from '../core/logger.js';
 import { fingerprintScript, getProfile, type BrowserProfile } from './profiles.js';
 import { isPrivateHost } from '../core/url-guard.js';
 import { captureScreenshot } from './screenshot.js';
+import {
+  browserTypeFor,
+  launchArgsFor,
+  profileMatchesEngine,
+  supportsMobileEmulation,
+  type RenderEngine,
+} from './engines.js';
 
 /**
  * Browser pool — tiers 2 and 3.
@@ -17,7 +24,12 @@ import { captureScreenshot } from './screenshot.js';
  * 13% to 85% RAM after ~30 crawls and never recover without a restart.
  */
 
-export type Engine = 'chromium' | 'lightpanda';
+/**
+ * `chromium` here names the heavy render tier, not necessarily Chrome: which
+ * browser drives it is the `renderEngine` option. `camoufox` is a hardened
+ * Firefox reached over its own endpoint, one rung above.
+ */
+export type Engine = 'chromium' | 'lightpanda' | 'camoufox';
 
 /** A current phone-class viewport. Device scale stays at 1 so screenshots stay small. */
 const MOBILE_CONTEXT = {
@@ -29,6 +41,8 @@ const MOBILE_CONTEXT = {
 export interface RenderOptions {
   url: string;
   engine?: Engine | undefined;
+  /** Which browser drives the chromium tier. Ignored by the lightpanda and camoufox tiers. */
+  renderEngine?: RenderEngine | undefined;
   waitFor?: number | undefined;
   timeout?: number | undefined;
   headers?: Record<string, string> | undefined;
@@ -66,8 +80,12 @@ export interface RenderResult {
   headers: Record<string, string>;
   finalUrl?: string | undefined;
   screenshot?: string | undefined;
-  /** The identity actually applied. Absent when the requested name matched nothing. */
+  /** The identity actually applied. Absent when the requested name matched nothing, or did not fit the engine. */
   profileUsed?: string | undefined;
+  /** The browser that actually rendered, when the render tier ran one. */
+  engineUsed?: RenderEngine | undefined;
+  /** Said out loud when an option could not be honoured on the chosen engine. */
+  warnings?: string[] | undefined;
   error?: string | undefined;
   timingMs: number;
 }
@@ -88,6 +106,7 @@ export interface LeaseOptions {
   proxy?: string | undefined;
   viewport?: { width: number; height: number } | undefined;
   profile?: string | undefined;
+  engine?: RenderEngine | undefined;
 }
 
 export interface BrowserPoolOptions {
@@ -97,6 +116,13 @@ export interface BrowserPoolOptions {
   recycleAfter: number;
   lightpandaEnabled?: boolean | undefined;
   lightpandaUrl?: string | undefined;
+  /** Engine the render tier uses when a request does not name one. */
+  defaultEngine?: RenderEngine | undefined;
+  camoufoxEnabled?: boolean | undefined;
+  /** Playwright-protocol endpoint of a running Camoufox. */
+  camoufoxUrl?: string | undefined;
+  /** CDP endpoint of a remote browser the render tier connects to instead of launching locally. */
+  remoteCdpUrl?: string | undefined;
   logger?: Log | undefined;
 }
 
@@ -171,6 +197,30 @@ async function drivePage(
  * script overrides: a page can read the real values through Intl in ways a
  * getter patch does not cover.
  */
+/**
+ * The profile to actually apply on this engine, plus anything that could not be
+ * honoured.
+ *
+ * A profile naming a different browser family is dropped rather than forced:
+ * see `profileMatchesEngine`. The caller is told, because a silently ignored
+ * identity is the kind of thing an operator only discovers from a block.
+ */
+function resolveProfileForEngine(
+  id: string | undefined,
+  engine: RenderEngine,
+  logger: Log | undefined,
+): { profile: BrowserProfile | undefined; warnings: string[] } {
+  const profile = getProfile(id, logger);
+  if (!profile) return { profile: undefined, warnings: [] };
+  if (profileMatchesEngine(profile, engine)) return { profile, warnings: [] };
+  return {
+    profile: undefined,
+    warnings: [
+      `profile: "${profile.id}" describes ${profile.browser}, which contradicts the ${engine} engine, so no identity was applied.`,
+    ],
+  };
+}
+
 function profileContextOptions(profile: BrowserProfile | undefined): Record<string, unknown> {
   if (!profile) return {};
   const options: Record<string, unknown> = {};
@@ -186,6 +236,7 @@ function profileContextOptions(profile: BrowserProfile | undefined): Record<stri
 
 interface PooledBrowser {
   browser: Browser;
+  engine: RenderEngine;
   pagesServed: number;
   activeContexts: number;
   /** Set while the browser drains before being replaced. */
@@ -214,33 +265,41 @@ export class BrowserPool {
     if (limits.recycleAfter !== undefined) this.#options.recycleAfter = limits.recycleAfter;
   }
 
+  /** The engine a request gets when it does not name one. */
+  get defaultEngine(): RenderEngine {
+    return this.#options.defaultEngine ?? 'chromium';
+  }
+
   async start(): Promise<void> {
     if (this.#started) return;
     this.#started = true;
 
-    // Warm the pool up front. Cold-starting a browser inside a request adds
-    // seconds to a page that should have taken milliseconds.
+    // Warm the pool up front, but only for the default engine. Cold-starting a
+    // browser inside a request adds seconds to a page that should have taken
+    // milliseconds — while launching all three eagerly would spend three
+    // seconds and the better part of a gigabyte at boot to serve engines most
+    // instances never ask for. A non-default engine is launched lazily on its
+    // first request and then pooled exactly like the default, so only the first
+    // caller pays, and only on an instance that actually uses it.
     await Promise.all(
-      Array.from({ length: this.#options.size }, () => this.#launch()),
+      Array.from({ length: this.#options.size }, () => this.#launch(this.defaultEngine)),
     );
 
-    this.#logger?.info({ size: this.#browsers.length }, 'browser pool ready');
+    this.#logger?.info(
+      { size: this.#browsers.length, engine: this.defaultEngine },
+      'browser pool ready',
+    );
   }
 
-  async #launch(): Promise<PooledBrowser> {
-    const browser = await chromium.launch({
-      args: [
-        '--disable-dev-shm-usage',
-        '--no-sandbox',
-        '--disable-gpu',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-      ],
+  async #launch(engine: RenderEngine): Promise<PooledBrowser> {
+    const args = launchArgsFor(engine);
+    const browser = await browserTypeFor(engine).launch({
+      ...(args.length > 0 ? { args } : {}),
     });
 
     const pooled: PooledBrowser = {
       browser,
+      engine,
       pagesServed: 0,
       activeContexts: 0,
       retiring: false,
@@ -250,16 +309,23 @@ export class BrowserPool {
     return pooled;
   }
 
-  /** Least-loaded non-retiring browser, launching one if all are saturated. */
-  async #acquire(): Promise<PooledBrowser> {
+  /**
+   * Least-loaded non-retiring browser of the requested engine, launching one if
+   * all are saturated.
+   *
+   * Pools are keyed by engine rather than shared: a context inherits the process
+   * it is opened in, so a Firefox request cannot borrow a Chromium browser's
+   * spare capacity however idle it is.
+   */
+  async #acquire(engine: RenderEngine): Promise<PooledBrowser> {
     const available = this.#browsers
-      .filter((b) => !b.retiring && b.activeContexts < this.#options.maxContexts)
+      .filter((b) => b.engine === engine && !b.retiring && b.activeContexts < this.#options.maxContexts)
       .sort((a, b) => a.activeContexts - b.activeContexts);
 
     const chosen = available[0];
     if (chosen) return chosen;
 
-    return this.#launch();
+    return this.#launch(engine);
   }
 
   /**
@@ -275,7 +341,7 @@ export class BrowserPool {
     pooled.retiring = true;
     this.#logger?.debug({ pagesServed: pooled.pagesServed }, 'recycling browser');
 
-    const replacement = this.#closing ? undefined : this.#launch();
+    const replacement = this.#closing ? undefined : this.#launch(pooled.engine);
 
     const drain = async (): Promise<void> => {
       while (pooled.activeContexts > 0) {
@@ -292,11 +358,12 @@ export class BrowserPool {
   async lease(options: LeaseOptions = {}): Promise<PageLease> {
     if (!this.#started) await this.start();
 
-    const pooled = await this.#acquire();
+    const engine = options.engine ?? this.defaultEngine;
+    const pooled = await this.#acquire(engine);
     pooled.activeContexts++;
 
     try {
-      const profile = getProfile(options.profile, this.#logger);
+      const { profile } = resolveProfileForEngine(options.profile, engine, this.#logger);
       const context = await pooled.browser.newContext({
         ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
         ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
@@ -359,9 +426,41 @@ export class BrowserPool {
       return this.#renderLightpanda(options, started, deadline);
     }
 
+    if (options.engine === 'camoufox') {
+      if (!this.#options.camoufoxEnabled) {
+        return {
+          headers: {},
+          timingMs: Date.now() - started,
+          error: 'camoufox tier requested but not enabled',
+        };
+      }
+      return this.#renderCamoufox(options, started, deadline);
+    }
+
+    const engine = options.renderEngine ?? this.defaultEngine;
+    const warnings: string[] = [];
+
+    // Firefox takes `isMobile` without honouring it: the viewport narrows but
+    // touch never appears, so a page branching on touch still serves desktop.
+    const mobile = options.mobile === true;
+    const mobileApplied = mobile && supportsMobileEmulation(engine);
+    if (mobile && !mobileApplied) {
+      warnings.push(
+        'mobile: the firefox engine does not emulate touch, so the phone viewport was not applied.',
+      );
+    }
+
+    // Checked before the pool is warmed: an instance pointed at a remote browser
+    // has moved its rendering off-box deliberately, and launching a local fleet
+    // it will never use would spend the memory the remote exists to save.
+    const remote = this.#options.remoteCdpUrl;
+    if (remote) {
+      return this.#renderRemote(options, engine, remote, warnings, started, deadline);
+    }
+
     if (!this.#started) await this.start();
 
-    const pooled = await this.#acquire();
+    const pooled = await this.#acquire(engine);
     pooled.activeContexts++;
 
     let context: BrowserContext | undefined;
@@ -371,14 +470,16 @@ export class BrowserPool {
     try {
       // A fresh context per request: separate cookies, storage and cache
       // without the cost of a separate process.
-      const profile = getProfile(options.profile, this.#logger);
+      const resolved = resolveProfileForEngine(options.profile, engine, this.#logger);
+      const profile = resolved.profile;
+      warnings.push(...resolved.warnings);
       context = await pooled.browser.newContext({
         ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
         ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
         // A mobile viewport is the caller's explicit request; it wins over the
         // profile's desktop screen.
         ...profileContextOptions(profile),
-        ...(options.mobile ? MOBILE_CONTEXT : {}),
+        ...(mobileApplied ? MOBILE_CONTEXT : {}),
       });
 
       if (profile) await context.addInitScript(fingerprintScript(profile));
@@ -401,12 +502,16 @@ export class BrowserPool {
       return {
         ...result,
         ...(profile ? { profileUsed: profile.id } : {}),
+        engineUsed: engine,
+        ...(warnings.length > 0 ? { warnings } : {}),
         timingMs: Date.now() - started,
       };
     } catch (error) {
       pooled.pagesServed++;
       return {
         headers: {},
+        engineUsed: engine,
+        ...(warnings.length > 0 ? { warnings } : {}),
         timingMs: Date.now() - started,
         error: options.signal?.aborted
           ? abortMessage(options.signal)
@@ -491,11 +596,185 @@ export class BrowserPool {
     }
   }
 
-  stats(): { browsers: number; activeContexts: number; pagesServed: number } {
+  /**
+   * Camoufox — a hardened Firefox, one rung above the render tier.
+   *
+   * Connected to over a configured endpoint rather than bundled. Camoufox is a
+   * patched Firefox shipping as a per-platform binary of a few hundred
+   * megabytes; vendoring three of them would multiply the image size for a tier
+   * that is off by default and that most instances never reach. This repo has
+   * already refused a heavy native dependency on the same reasoning (MILESTONES
+   * M3). An operator who wants the tier runs the binary and points the instance
+   * at it, exactly as lightpanda works.
+   *
+   * It speaks the Playwright protocol rather than CDP, so it is `connect`, not
+   * `connectOverCDP`. That is also what makes the guard below enforceable: the
+   * routing API is the real one, not a CDP approximation of it.
+   */
+  async #renderCamoufox(
+    options: RenderOptions,
+    started: number,
+    deadline: number,
+  ): Promise<RenderResult> {
+    try {
+      const { firefox } = await import('playwright');
+      const browser = await firefox.connect(this.#options.camoufoxUrl ?? 'ws://localhost:9223', {
+        timeout: 5_000,
+      });
+
+      try {
+        const context = await browser.newContext({
+          ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
+          ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
+        });
+
+        if (!options.allowPrivate) {
+          // Same rule as every other tier: no guard, no fetch. Camoufox patches
+          // Firefox's internals, so its routing support is a property of the
+          // build in front of us rather than something to assume.
+          try {
+            await blockPrivateHosts(context);
+          } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            throw new Error(`camoufox tier cannot enforce the private-address guard (${detail})`);
+          }
+        }
+
+        const page = await context.newPage();
+        abortClosesPage(page, options.signal);
+        const result = await drivePage(page, options, deadline);
+        await context.close().catch(() => undefined);
+
+        return { ...result, engineUsed: 'firefox', timingMs: Date.now() - started };
+      } finally {
+        await browser.close().catch(() => undefined);
+      }
+    } catch (error) {
+      return {
+        headers: {},
+        timingMs: Date.now() - started,
+        error: options.signal?.aborted
+          ? abortMessage(options.signal)
+          : error instanceof Error
+            ? error.message
+            : 'camoufox unreachable',
+      };
+    }
+  }
+
+  /**
+   * A remote browser over CDP, so a small instance can burst without hosting
+   * the browsers itself.
+   *
+   * Two things an operator must understand, and which no amount of care here
+   * removes: the remote sees every page fetched and every header sent, and it
+   * is on a network this instance does not control. The second is the one with
+   * a technical answer — `blockPrivateHosts` classifies an address literally,
+   * so it is the *remote's* loopback and private ranges that a caller would
+   * reach, not this instance's. The guard still holds (the route is enforced by
+   * the driver, not the browser), and it is refused outright when it cannot be
+   * installed, but "private" now means private to somewhere else.
+   *
+   * CDP is Chromium's protocol, so a non-Chromium engine cannot be served this
+   * way; asking for one is refused rather than silently answered by whatever
+   * the endpoint happens to run.
+   */
+  async #renderRemote(
+    options: RenderOptions,
+    engine: RenderEngine,
+    endpoint: string,
+    warnings: string[],
+    started: number,
+    deadline: number,
+  ): Promise<RenderResult> {
+    if (engine !== 'chromium') {
+      return {
+        headers: {},
+        timingMs: Date.now() - started,
+        error: `the remote browser speaks CDP, which cannot drive the ${engine} engine; use chromium or unset the remote endpoint`,
+      };
+    }
+
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      const browser = await chromium.connectOverCDP(endpoint, { timeout: 10_000 });
+
+      try {
+        const resolved = resolveProfileForEngine(options.profile, engine, this.#logger);
+        const profile = resolved.profile;
+        warnings.push(...resolved.warnings);
+
+        const context = await browser.newContext({
+          ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
+          ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
+          ...profileContextOptions(profile),
+          ...(options.mobile ? MOBILE_CONTEXT : {}),
+        });
+
+        if (profile) await context.addInitScript(fingerprintScript(profile));
+
+        if (!options.allowPrivate) {
+          try {
+            await blockPrivateHosts(context);
+          } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            throw new Error(
+              `the remote browser cannot enforce the private-address guard (${detail})`,
+            );
+          }
+        }
+
+        const page = await context.newPage();
+        abortClosesPage(page, options.signal);
+
+        const expired = new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error(`render exceeded the ${deadline - started}ms timeout`)),
+            Math.max(0, deadline - Date.now()),
+          );
+        });
+
+        const result = await Promise.race([drivePage(page, options, deadline), expired]);
+        await context.close().catch(() => undefined);
+
+        return {
+          ...result,
+          ...(profile ? { profileUsed: profile.id } : {}),
+          engineUsed: engine,
+          ...(warnings.length > 0 ? { warnings } : {}),
+          timingMs: Date.now() - started,
+        };
+      } finally {
+        await browser.close().catch(() => undefined);
+      }
+    } catch (error) {
+      return {
+        headers: {},
+        engineUsed: engine,
+        ...(warnings.length > 0 ? { warnings } : {}),
+        timingMs: Date.now() - started,
+        error: options.signal?.aborted
+          ? abortMessage(options.signal)
+          : error instanceof Error
+            ? error.message
+            : 'remote browser unreachable',
+      };
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  stats(): {
+    browsers: number;
+    activeContexts: number;
+    pagesServed: number;
+    engines: RenderEngine[];
+  } {
     return {
       browsers: this.#browsers.length,
       activeContexts: this.#browsers.reduce((sum, b) => sum + b.activeContexts, 0),
       pagesServed: this.#browsers.reduce((sum, b) => sum + b.pagesServed, 0),
+      engines: [...new Set(this.#browsers.map((b) => b.engine))],
     };
   }
 

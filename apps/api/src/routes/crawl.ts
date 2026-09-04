@@ -42,7 +42,7 @@ export interface CrawlRouteDeps extends MapRouteDeps {
   limits?: Partial<CrawlLimits> | undefined;
 }
 
-export const TIERS = ['auto', 'plain', 'tls', 'lightpanda', 'chromium'] as const;
+export const TIERS = ['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox'] as const;
 export const EXTRACTORS = ['trafilatura', 'readability', 'auto'] as const;
 
 export const ScrapeOptionsSchema = z.object({
@@ -169,6 +169,7 @@ const TIER_SECONDS: Record<string, number> = {
   tls: 0.4,
   lightpanda: 0.6,
   chromium: 3.0,
+  camoufox: 4.0,
 };
 
 /** Characters per token, near enough for an estimate. */

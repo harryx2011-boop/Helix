@@ -62,7 +62,9 @@ const ChunkSchema = z.object({
 const ScrapeRequestSchema = z.object({
   url: z.string().url(),
   formats: z.array(z.enum(FORMATS)).min(1).default(['markdown']),
-  tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium']).default('auto'),
+  tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox']).default('auto'),
+  /** Which browser drives the render tier. The instance default when unset. */
+  engine: z.enum(['chromium', 'firefox', 'webkit']).optional(),
   onlyMainContent: z.boolean().default(true),
   includeSelectors: z.array(z.string()).default([]),
   excludeSelectors: z.array(z.string()).default([]),
@@ -268,6 +270,7 @@ export async function registerScrape(
         proxy: proxy.url,
         actions: body.actions,
         mobile: body.mobile,
+        ...(body.engine ? { renderEngine: body.engine } : {}),
         allowPrivate: deps.allowPrivateUrls,
       },
       {
@@ -297,6 +300,8 @@ export async function registerScrape(
         warnings,
       });
     }
+
+    if (result.warnings) warnings.push(...result.warnings);
 
     const { content } = result;
     const data: Record<string, unknown> = {};
@@ -391,8 +396,10 @@ export async function registerScrape(
       tiersAttempted: result.tiersAttempted,
       profile: result.profileUsed,
       extractor: content.extractorUsed,
-      // True only when a phone viewport was actually applied, which needs Chromium.
-      mobile: body.mobile && result.tier === 'chromium',
+      engine: result.engineUsed,
+      // True only when a phone viewport was actually applied. Firefox takes the
+      // option without emulating touch, so it does not count as applied.
+      mobile: body.mobile && result.tier === 'chromium' && result.engineUsed !== 'firefox',
       timingMs: result.timingMs,
       fromCache: false,
       favicon: content.favicon,

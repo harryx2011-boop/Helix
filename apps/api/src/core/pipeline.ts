@@ -1,5 +1,6 @@
 import type { Log } from './logger.js';
 import {
+  DEFAULT_MAX_TIER,
   minimumViableTier,
   shouldEscalate,
   TIER_ORDER,
@@ -11,6 +12,7 @@ import { resolveFavicon } from './favicon.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient, ExtractResult } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
+import type { RenderEngine } from '../browser/engines.js';
 
 /**
  * The scrape pipeline.
@@ -38,6 +40,8 @@ export interface PipelineOptions {
   proxy?: string | undefined;
   actions?: unknown[] | undefined;
   mobile?: boolean | undefined;
+  /** Which browser drives the render tier. The pool's default when unset. */
+  renderEngine?: RenderEngine | undefined;
   /** Operator opt-in: fetch loopback, link-local and private-range addresses. */
   allowPrivate?: boolean | undefined;
   /** Cancels the read between and during tier attempts; the reason becomes the failure detail. */
@@ -50,6 +54,9 @@ export interface PipelineSuccess {
   tier: Tier;
   tiersAttempted: Tier[];
   profileUsed?: string | undefined;
+  engineUsed?: RenderEngine | undefined;
+  /** Options the tier could not honour, e.g. a profile that did not fit the engine. */
+  warnings?: string[] | undefined;
   statusCode?: number | undefined;
   finalUrl?: string | undefined;
   /** Validators from the response, so a later crawl can ask "has this changed?". */
@@ -70,6 +77,14 @@ export interface PipelineFailure {
   profileUsed?: string | undefined;
   escalationAvailable: boolean;
   timingMs: number;
+  /**
+   * `Retry-After` as the host sent it, in seconds.
+   *
+   * Surfaced because it is the only backoff figure in the exchange the host
+   * actually stated. Everything else a crawler could use is a guess, and
+   * guessing shorter than asked is what earns the next block.
+   */
+  retryAfterSeconds?: number | undefined;
 }
 
 export type PipelineResult = PipelineSuccess | PipelineFailure;
@@ -91,6 +106,31 @@ function capabilitiesFor(options: PipelineOptions): Capabilities {
   return caps;
 }
 
+/**
+ * `Retry-After` in seconds, from either of the two forms the header takes.
+ *
+ * The HTTP-date form is the one implementations forget; a host that sends it and
+ * is met with a one-second default backoff gets hammered through its own stated
+ * cooldown. Anything unparseable, negative, or beyond a day is dropped rather
+ * than clamped — a nonsense value should fall back to our own backoff, not
+ * become a crawl that sleeps for a week.
+ */
+function retryAfterSeconds(headers: Record<string, string>): number | undefined {
+  const key = Object.keys(headers).find((h) => h.toLowerCase() === 'retry-after');
+  const raw = key ? headers[key]?.trim() : undefined;
+  if (!raw) return undefined;
+
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric)) {
+    return numeric >= 0 && numeric <= 86_400 ? numeric : undefined;
+  }
+
+  const at = Date.parse(raw);
+  if (Number.isNaN(at)) return undefined;
+  const seconds = Math.ceil((at - Date.now()) / 1000);
+  return seconds > 0 && seconds <= 86_400 ? seconds : undefined;
+}
+
 function abortDetail(signal: AbortSignal): string {
   return signal.reason instanceof Error ? signal.reason.message : 'the read was cancelled';
 }
@@ -98,6 +138,8 @@ function abortDetail(signal: AbortSignal): string {
 interface TierAttempt {
   facts: ResponseFacts;
   profileUsed?: string | undefined;
+  engineUsed?: RenderEngine | undefined;
+  warnings?: string[] | undefined;
   finalUrl?: string | undefined;
   screenshot?: string | undefined;
   transportError?: string | undefined;
@@ -140,7 +182,8 @@ async function attemptTier(
 
   const rendered = await deps.browserPool.render({
     url: options.url,
-    engine: tier === 'lightpanda' ? 'lightpanda' : 'chromium',
+    engine: tier === 'lightpanda' ? 'lightpanda' : tier === 'camoufox' ? 'camoufox' : 'chromium',
+    renderEngine: options.renderEngine,
     waitFor: options.waitFor,
     timeout: options.timeout,
     headers: options.headers,
@@ -164,6 +207,8 @@ async function attemptTier(
     // Reported the same way the fetch tiers report it, so a caller can tell
     // whether the identity they asked for was actually applied.
     profileUsed: rendered.profileUsed,
+    engineUsed: rendered.engineUsed,
+    warnings: rendered.warnings,
     transportError: rendered.error,
   };
 }
@@ -178,7 +223,9 @@ export async function runPipeline(
 
   const explicit = options.tier && options.tier !== 'auto' ? (options.tier as Tier) : undefined;
   // An explicit tier is both floor and ceiling: the caller asked for that tier.
-  const maxTier: Tier = explicit ?? 'chromium';
+  // Absent one, the ceiling stops below the opt-in tier, so evidence can walk
+  // the ladder up to chromium but never into camoufox on its own.
+  const maxTier: Tier = explicit ?? DEFAULT_MAX_TIER;
   let tier: Tier = explicit ?? minimumViableTier(capabilities);
 
   let last: TierAttempt | undefined;
@@ -280,6 +327,8 @@ export async function runPipeline(
           tier,
           tiersAttempted,
           profileUsed: attempt.profileUsed,
+          engineUsed: attempt.engineUsed,
+          ...(attempt.warnings && attempt.warnings.length > 0 ? { warnings: attempt.warnings } : {}),
           statusCode: attempt.facts.statusCode,
           finalUrl: attempt.finalUrl,
           etag: attempt.facts.headers['etag'],
@@ -330,6 +379,10 @@ export async function runPipeline(
       // A different profile or proxy may still work even when the ladder is spent.
       escalationAvailable: verdict.blocked,
       timingMs: Date.now() - started,
+      ...(() => {
+        const after = retryAfterSeconds(attempt.facts.headers);
+        return after === undefined ? {} : { retryAfterSeconds: after };
+      })(),
     };
   }
 

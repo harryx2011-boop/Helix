@@ -1,11 +1,12 @@
 'use client';
 
+import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { Activity, Home, KeyRound, Settings, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ENDPOINTS, orderBySelection } from '@/lib/catalog';
+import { orderBySelection } from '@/lib/catalog';
 
 interface NavRow {
   href: string;
@@ -66,15 +67,46 @@ export function buildNavGroups(selectedEndpoints: readonly string[]): NavGroup[]
   ];
 }
 
-function isActive(pathname: string, href: string): boolean {
-  const [hrefPath] = href.split('?');
+/**
+ * Every playground row shares one pathname and differs only in `?tab=`, so a
+ * path-only comparison lit all eight at once. A row that carries a tab must
+ * match the tab too; the bare playground path (no tab) falls back to the first
+ * row so the list is never entirely unlit.
+ */
+function isActive(pathname: string, href: string, activeTab: string | null, defaultTab: string | undefined): boolean {
+  const [hrefPath, hrefQuery] = href.split('?');
   if (hrefPath === '/app') return pathname === '/app';
-  return pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
+
+  const onPath = pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
+  if (!onPath) return false;
+
+  const rowTab = hrefQuery ? new URLSearchParams(hrefQuery).get('tab') : null;
+  if (!rowTab) return true;
+  return activeTab ? activeTab === rowTab : rowTab === defaultTab;
 }
 
-export function SidebarNav({ selectedEndpoints, collapsed }: { selectedEndpoints: readonly string[]; collapsed: boolean }) {
+interface SidebarNavProps {
+  selectedEndpoints: readonly string[];
+  collapsed: boolean;
+}
+
+/**
+ * `useSearchParams` opts a route out of static prerendering unless it sits
+ * under a Suspense boundary, and the self-host build is a static export.
+ */
+export function SidebarNav(props: SidebarNavProps) {
+  return (
+    <React.Suspense fallback={<nav className="flex flex-1 flex-col" aria-label="App navigation" />}>
+      <SidebarNavInner {...props} />
+    </React.Suspense>
+  );
+}
+
+function SidebarNavInner({ selectedEndpoints, collapsed }: SidebarNavProps) {
   const pathname = usePathname();
+  const activeTab = useSearchParams().get('tab');
   const groups = buildNavGroups(selectedEndpoints);
+  const defaultTab = orderBySelection(selectedEndpoints)[0]?.id;
 
   return (
     <nav className={cn('flex flex-1 flex-col gap-4 overflow-y-auto py-3', collapsed ? 'px-0' : 'px-2')} aria-label="App navigation">
@@ -87,7 +119,7 @@ export function SidebarNav({ selectedEndpoints, collapsed }: { selectedEndpoints
           )}
           {group.heading && collapsed && <div className="mx-2 my-1.5 h-px bg-border" />}
           {group.rows.map((row) => {
-            const active = isActive(pathname, row.href);
+            const active = isActive(pathname, row.href, activeTab, defaultTab);
             const Icon = row.icon;
             const dim = row.badge === 'coming';
             return (

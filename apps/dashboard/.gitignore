@@ -1,5 +1,7 @@
 node_modules
 .next
+# next.config.ts documents NEXT_DIST_DIR for running a second dev server on one checkout.
+.next-*
 out
 *.tsbuildinfo
 next-env.d.ts

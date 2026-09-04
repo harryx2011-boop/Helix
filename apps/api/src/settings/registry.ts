@@ -84,6 +84,27 @@ export const SETTINGS: readonly SettingDef[] = [
     description: 'Ceiling for adaptive per-host crawl concurrency.',
   },
   {
+    key: 'minHostConcurrency',
+    env: 'HELIX_MIN_HOST_CONCURRENCY',
+    effect: 'restart',
+    schema: positiveInt(64),
+    description: 'Floor the adaptive controller may not back off below, however hard a host pushes.',
+  },
+  {
+    key: 'crawlSessionPoolSize',
+    env: 'HELIX_CRAWL_SESSION_POOL_SIZE',
+    effect: 'restart',
+    schema: positiveInt(64),
+    description: 'Identities a crawl rotates between. Each pairs one browser profile with one proxy exit.',
+  },
+  {
+    key: 'crawlSessionMaxBlocks',
+    env: 'HELIX_CRAWL_SESSION_MAX_BLOCKS',
+    effect: 'restart',
+    schema: positiveInt(20),
+    description: 'Blocks one identity absorbs before it is retired and replaced.',
+  },
+  {
     key: 'crawlDefaultLimit',
     env: 'HELIX_CRAWL_DEFAULT_LIMIT',
     effect: 'restart',
@@ -233,6 +254,31 @@ export const SETTINGS: readonly SettingDef[] = [
     schema: z.boolean(),
     description: 'Use a Lightpanda CDP endpoint for the light browser tier.',
     warning: 'Helix drives whatever answers on the configured CDP URL. Point it only at a runtime you control.',
+  },
+  {
+    key: 'browserEngine',
+    env: 'HELIX_BROWSER_ENGINE',
+    effect: 'restart',
+    schema: z.enum(['chromium', 'firefox', 'webkit']),
+    description: 'Browser that drives the render tier when a request does not name one.',
+  },
+  {
+    key: 'camoufoxEnabled',
+    env: 'HELIX_CAMOUFOX_ENABLED',
+    effect: 'guarded',
+    schema: z.boolean(),
+    description: 'Offer the Camoufox tier, a hardened Firefox reached over a configured endpoint.',
+    warning:
+      'Helix drives whatever answers on the configured Camoufox URL, and the tier is only reachable when a request asks for it. Point it only at a runtime you control.',
+  },
+  {
+    key: 'remoteCdpUrl',
+    env: 'HELIX_REMOTE_CDP_URL',
+    effect: 'guarded',
+    schema: z.string().min(1).max(2_000),
+    description: 'Remote browser the render tier connects to over CDP instead of launching one locally.',
+    warning:
+      'Every page rendered and every header sent, credentials included, passes through that endpoint, and the private-address guard then covers the remote host network rather than this one. Set it only to a browser service you control or trust with the traffic. The URL itself often carries a token, so treat it as a secret.',
   },
 ] as const;
 

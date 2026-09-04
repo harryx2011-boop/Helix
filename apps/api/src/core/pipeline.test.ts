@@ -288,3 +288,76 @@ describe('runPipeline with a proxy', () => {
     );
   });
 });
+
+describe('runPipeline — Retry-After', () => {
+  const blockedWith = (headers: Record<string, string>) =>
+    deps({
+      fetchClient: fetchClientReturning([
+        { status: 429, body: CLOUDFLARE_CHALLENGE, headers },
+      ]),
+    });
+
+  it('surfaces a numeric Retry-After from a blocked response', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'tls' },
+      blockedWith({ 'retry-after': '120' }),
+    );
+
+    expect(result.success).toBe(false);
+    // The only backoff figure in the exchange the host actually stated.
+    if (!result.success) expect(result.retryAfterSeconds).toBe(120);
+  });
+
+  it('reads the header whatever case it arrives in', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'tls' },
+      blockedWith({ 'Retry-After': '45' }),
+    );
+
+    if (!result.success) expect(result.retryAfterSeconds).toBe(45);
+  });
+
+  it('parses the HTTP-date form', async () => {
+    const at = new Date(Date.now() + 90_000).toUTCString();
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'tls' },
+      blockedWith({ 'retry-after': at }),
+    );
+
+    // The form implementations forget. A host that sends it and is met with a
+    // one-second default gets hammered straight through its own cooldown.
+    if (!result.success) {
+      expect(result.retryAfterSeconds).toBeGreaterThan(80);
+      expect(result.retryAfterSeconds).toBeLessThanOrEqual(91);
+    }
+  });
+
+  it('drops a Retry-After beyond a day rather than clamping it', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'tls' },
+      blockedWith({ 'retry-after': '999999' }),
+    );
+
+    // A nonsense value should fall back to our own backoff, not become a crawl
+    // that sleeps for a week.
+    if (!result.success) expect(result.retryAfterSeconds).toBeUndefined();
+  });
+
+  it('drops an unparseable Retry-After', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'tls' },
+      blockedWith({ 'retry-after': 'soon' }),
+    );
+
+    if (!result.success) expect(result.retryAfterSeconds).toBeUndefined();
+  });
+
+  it('reports no Retry-After when the host sent none', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'tls' },
+      blockedWith({}),
+    );
+
+    if (!result.success) expect(result.retryAfterSeconds).toBeUndefined();
+  });
+});

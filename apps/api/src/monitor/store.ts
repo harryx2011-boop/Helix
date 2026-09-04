@@ -17,7 +17,7 @@ import type { TriggerOptions } from './triggers.js';
 export type MonitorStatus = 'active' | 'paused' | 'error';
 
 export interface MonitorScrapeOptions {
-  tier?: 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium' | undefined;
+  tier?: 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium' | 'camoufox' | undefined;
   onlyMainContent?: boolean | undefined;
   includeSelectors?: string[] | undefined;
   excludeSelectors?: string[] | undefined;

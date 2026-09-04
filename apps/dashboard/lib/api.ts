@@ -609,6 +609,47 @@ export type ListModelsResponse =
   | { success: true; provider: ProviderName; models: ProviderModel[] }
   | { success: false; provider: ProviderName; failure: { reason: ListModelsFailureReason; message: string } };
 
+// --- Health and status (GET /v1/health, GET /v1/status/history) ---
+
+export type HealthStatus = 'ok' | 'degraded' | 'unhealthy';
+
+export interface HealthService {
+  status: HealthStatus;
+  detail?: string;
+  latencyMs: number;
+}
+
+/** Instance-level env configuration: whether a credential is present and which model is selected. Never key material. */
+export interface HealthProviders {
+  llm: { configured: boolean; model: string };
+  embedding: { configured: boolean; model: string };
+  proxy: { configured: boolean };
+  search: { configured: boolean };
+}
+
+export interface HealthResponse {
+  status: HealthStatus;
+  version: string;
+  services: Record<string, HealthService>;
+  providers: HealthProviders;
+}
+
+export interface DayBucket {
+  day: string;
+  okPct: number | null;
+  p50Ms: number | null;
+  samples: number;
+}
+
+export interface ServiceHistory {
+  service: string;
+  days: DayBucket[];
+}
+
+export interface StatusHistoryResponse {
+  services: ServiceHistory[];
+}
+
 export type MetadataFileType = 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'png' | 'jpg';
 
 /** How much a disclosed value gives away. An ordinal band, not a probability. */
@@ -725,7 +766,7 @@ export interface HelixClientOptions {
 const DEV_PORT = '3400';
 const API_URL = process.env['NEXT_PUBLIC_HELIX_API_URL'];
 
-function resolveBaseUrl(explicit?: string): string {
+export function resolveBaseUrl(explicit?: string): string {
   if (explicit) return explicit;
   if (API_URL) return API_URL.replace(/\/$/, '') + '/v1';
   if (typeof window !== 'undefined' && window.location.port !== DEV_PORT) {
@@ -950,6 +991,42 @@ export class HelixClient {
 
     return response.json() as Promise<T>;
   }
+}
+
+/**
+ * `/health` and `/status/history` are open routes, so they sit outside
+ * `HelixClient` and its Bearer header: a browser with no key (hosted mode,
+ * the public status page) can still poll them. `baseUrl` is an instance's
+ * `/v1` base, defaulting to this build's own.
+ */
+export async function fetchHealth(baseUrl: string = resolveBaseUrl(), signal?: AbortSignal): Promise<HealthResponse> {
+  const response = await openGet(`${baseUrl}/health`, signal);
+  // 503 is the route's answer when a dependency is down; the body is still the full report.
+  if (!response.ok && response.status !== 503) throw await toApiError(response);
+  return response.json() as Promise<HealthResponse>;
+}
+
+export async function fetchStatusHistory(
+  baseUrl: string = resolveBaseUrl(),
+  days = 90,
+  signal?: AbortSignal,
+): Promise<StatusHistoryResponse> {
+  const response = await openGet(`${baseUrl}/status/history?days=${days}`, signal);
+  if (!response.ok) throw await toApiError(response);
+  return response.json() as Promise<StatusHistoryResponse>;
+}
+
+async function openGet(url: string, signal?: AbortSignal): Promise<Response> {
+  try {
+    return await fetch(url, { cache: 'no-store', ...(signal ? { signal } : {}) });
+  } catch (error) {
+    throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+  }
+}
+
+async function toApiError(response: Response): Promise<HelixApiError> {
+  const errorBody = (await response.json().catch(() => undefined)) as ApiErrorBody | undefined;
+  return new HelixApiError(errorBody?.message ?? `Request failed with status ${response.status}`, response.status, errorBody);
 }
 
 /** Pull the suggested filename out of a Content-Disposition header. */

@@ -184,6 +184,32 @@ describe('guarded settings', () => {
     expect(response.statusCode).toBe(409);
   });
 
+  it('guards the remote browser endpoint, which sees every page and header', async () => {
+    const { app } = await buildApp();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/settings/remoteCdpUrl',
+      headers: auth,
+      payload: { value: 'http://browser.example.com:3000' },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({ error: 'confirmation_required', confirm: 'remoteCdpUrl' });
+  });
+
+  it('guards the camoufox tier the same way lightpanda is guarded', async () => {
+    const { app } = await buildApp();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/settings/camoufoxEnabled',
+      headers: auth,
+      payload: { value: true },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({ error: 'confirmation_required', confirm: 'camoufoxEnabled' });
+  });
+
   it('accepts the change when the confirmation names the setting', async () => {
     const { app } = await buildApp();
     const response = await app.inject({

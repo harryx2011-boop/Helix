@@ -116,6 +116,10 @@ const browserPool = new BrowserPool({
   recycleAfter: config.browserRecycleAfter,
   lightpandaEnabled: config.lightpandaEnabled,
   lightpandaUrl: config.lightpandaUrl,
+  defaultEngine: config.browserEngine,
+  camoufoxEnabled: config.camoufoxEnabled,
+  camoufoxUrl: config.camoufoxUrl,
+  ...(config.remoteCdpUrl ? { remoteCdpUrl: config.remoteCdpUrl } : {}),
   logger: app.log,
 });
 
@@ -147,6 +151,10 @@ const crawlWorker = new CrawlWorker({
   browserPool,
   userAgent: config.userAgent,
   maxHostConcurrency: config.maxHostConcurrency,
+  minHostConcurrency: config.minHostConcurrency,
+  sessionPoolSize: config.crawlSessionPoolSize,
+  sessionMaxBlocks: config.crawlSessionMaxBlocks,
+  ...(config.proxyUrl ? { proxyUrl: config.proxyUrl } : {}),
   logger: app.log,
 });
 
@@ -232,6 +240,8 @@ const statusSampler = new StatusSampler({
   extractClient,
   browserPool,
   lightpandaEnabled: config.lightpandaEnabled,
+  camoufoxEnabled: config.camoufoxEnabled,
+  remoteCdpConfigured: Boolean(config.remoteCdpUrl),
   logger: app.log,
 });
 
@@ -265,6 +275,8 @@ await app.register(
       extractClient,
       browserPool,
       lightpandaEnabled: config.lightpandaEnabled,
+      camoufoxEnabled: config.camoufoxEnabled,
+      remoteCdpConfigured: Boolean(config.remoteCdpUrl),
     });
     await registerStatus(instance);
     await registerScrape(instance, {
@@ -346,6 +358,9 @@ const settingsEnvValues: Record<string, unknown> = {
   interactHardTimeoutSeconds: config.interactHardTimeoutSeconds,
   respectRobots: config.respectRobots,
   maxHostConcurrency: config.maxHostConcurrency,
+  minHostConcurrency: config.minHostConcurrency,
+  crawlSessionPoolSize: config.crawlSessionPoolSize,
+  crawlSessionMaxBlocks: config.crawlSessionMaxBlocks,
   crawlDefaultLimit: config.crawlDefaultLimit,
   crawlMaxLimit: config.crawlMaxLimit,
   crawlMaxDepth: config.crawlMaxDepth,
@@ -367,6 +382,9 @@ const settingsEnvValues: Record<string, unknown> = {
   corsOrigins: config.corsOrigins,
   allowPrivateUrls: config.allowPrivateUrls,
   lightpandaEnabled: config.lightpandaEnabled,
+  browserEngine: config.browserEngine,
+  camoufoxEnabled: config.camoufoxEnabled,
+  remoteCdpUrl: config.remoteCdpUrl,
 };
 
 await registerSettings(app, {

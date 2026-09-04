@@ -35,34 +35,7 @@ export function resolveStatusApiUrl(stored: string | null): string | null {
   return stored;
 }
 
-export interface HealthService {
-  status: 'ok' | 'degraded' | 'unhealthy';
-  detail?: string;
-  latencyMs: number;
-}
-
-export interface HealthResponse {
-  status: 'ok' | 'degraded' | 'unhealthy';
-  version: string;
-  services: Record<string, HealthService>;
-  providers: unknown;
-}
-
-export interface DayBucket {
-  day: string;
-  okPct: number | null;
-  p50Ms: number | null;
-  samples: number;
-}
-
-export interface ServiceHistory {
-  service: string;
-  days: DayBucket[];
-}
-
-export interface StatusHistoryResponse {
-  services: ServiceHistory[];
-}
+export type { HealthService, HealthResponse, DayBucket, ServiceHistory, StatusHistoryResponse } from './api';
 
 export const SERVICE_LABELS: Record<string, string> = {
   api: 'API',

@@ -62,7 +62,14 @@ export function ProvidersPanel() {
 
       {!loading && error && (
         <FrameRow flush className="flex flex-col items-start gap-3 p-6">
-          <span className="text-sm text-muted-foreground">{error}</span>
+          <span className="max-w-[68ch] text-sm leading-relaxed text-muted-foreground">{error}</span>
+          {/* The panel cannot tell a wrong key from an absent service, and the
+              second is far likelier on a fresh checkout — so it names the step
+              rather than leaving someone re-typing a credential that was fine. */}
+          <span className="max-w-[68ch] text-[13px] leading-relaxed text-muted-foreground/80">
+            Provider credentials are stored by the Helix API, not by this dashboard. If it is not running,
+            start it with <span className="font-mono text-foreground">pnpm dev</span> from the repo root and try again.
+          </span>
           <Button variant="outline" size="sm" onClick={load} className="rounded-pill">
             Retry
           </Button>

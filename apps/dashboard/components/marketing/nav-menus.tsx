@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import {
-  ArrowLeftRight,
   ArrowUpRight,
   BookOpen,
   Bot,
@@ -107,8 +106,6 @@ export const DOCS_ROWS: readonly MenuRow[] = [
 export const UTILITY_ROWS: readonly MenuRow[] = [
   { label: 'Persona', href: PERSONA_URL, tagline: 'System prompts for 36 roles, ready to paste.', icon: Users, external: true },
   { label: 'Playground', href: '/app/playground', tagline: 'Try every endpoint against a live URL.', icon: FlaskConical },
-  { label: 'Converter', href: '/app/playground?tab=scrape', tagline: 'Paste a URL, get its markdown.', icon: ArrowLeftRight },
-  { label: 'Metadata scanner', href: '/app/playground?tab=metadata', tagline: 'See what a file says about who made it.', icon: metadata.icon },
 ];
 
 export interface MenuRowProps {
@@ -236,7 +233,7 @@ export function UtilitiesPanel({ onNavigate }: { onNavigate: () => void }) {
   return (
     <div>
       <ColumnHeader>Utilities</ColumnHeader>
-      <div className="grid grid-cols-4 gap-x-2 p-1 pb-2 pt-1.5">
+      <div className="grid grid-cols-2 gap-x-2 p-1 pb-2 pt-1.5">
         {UTILITY_ROWS.map((row) => (
           <MenuRowItem key={row.label} row={row} onNavigate={onNavigate} />
         ))}

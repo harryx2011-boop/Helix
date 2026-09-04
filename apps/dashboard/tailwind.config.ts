@@ -83,7 +83,6 @@ const config: Config = {
         'fade-up': { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'none' } },
         'cursor-blink': { '0%, 100%': { opacity: '0' }, '50%': { opacity: '1' } },
         'fade-in-up': { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-        'gutter-scroll': { from: { transform: 'translateY(0)' }, to: { transform: 'translateY(-50%)' } },
         'text-swap-out': {
           '0%': { opacity: '1', transform: 'translateY(0)', filter: 'blur(0)' },
           '100%': { opacity: '0', transform: 'translateY(-4px)', filter: 'blur(2px)' },
@@ -140,7 +139,6 @@ const config: Config = {
         'fade-up': 'fade-up 300ms cubic-bezier(0, 0, 0.2, 1) both',
         'cursor-blink': 'cursor-blink 1s step-end infinite',
         'fade-in-up': 'fade-in-up 300ms cubic-bezier(0, 0, 0.2, 1) both',
-        'gutter-scroll': 'gutter-scroll 140s linear infinite',
         'text-swap-out': 'text-swap-out 150ms ease-in-out both',
         'text-swap-in': 'text-swap-in 150ms ease-in-out both',
         sparkle: 'sparkle 2400ms cubic-bezier(0, 0, 0.2, 1) infinite',

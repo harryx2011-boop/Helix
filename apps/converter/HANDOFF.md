@@ -29,8 +29,18 @@ at `http://localhost:8400`. Set `MOCK=true` to run the UI with no backend.
 
 ```bash
 cd apps/converter-api && npm test      # vitest
-cd apps/converter && npm run e2e       # playwright, needs both servers up
+
+# The E2E suite drives the real UI against the real service, and seeds a fake
+# browser key, so the API must be running WITHOUT the auth gate. The suite
+# checks /health first and fails in seconds with this instruction if not.
+cd apps/converter-api && CONVERT_AUTH=off npm run dev
+cd apps/converter && npm run dev
+cd apps/converter && npm run e2e
 ```
+
+The gate itself is covered server-side by `test/auth.integration.test.ts`
+(11 tests) and was verified against the live database, so running the browser
+suite open loses no coverage.
 
 ## What exists
 

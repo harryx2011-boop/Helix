@@ -19,6 +19,37 @@ let dir: string;
 let clip: string;
 let image: string;
 
+/**
+ * These tests drive the UI against a real service, so a misconfigured
+ * environment must say so immediately rather than spending 60s per test
+ * timing out on a button that will never change.
+ */
+test.beforeAll(async ({ request }) => {
+  const base = process.env.CONVERTER_API_URL ?? 'http://localhost:8400';
+
+  let health: { status?: string; auth?: boolean };
+  try {
+    health = await (await request.get(`${base}/health`)).json();
+  } catch {
+    throw new Error(
+      `The converter API is not answering at ${base}. Start it with:
+` +
+        `  cd apps/converter-api && CONVERT_AUTH=off npm run dev`,
+    );
+  }
+
+  if (health.auth) {
+    throw new Error(
+      `The API at ${base} requires a real database key, but this suite seeds a ` +
+        `fake one (${TEST_KEY}). Restart it with CONVERT_AUTH=off:
+` +
+        `  cd apps/converter-api && CONVERT_AUTH=off npm run dev
+` +
+        `The auth gate itself is covered by test/auth.integration.test.ts.`,
+    );
+  }
+});
+
 test.beforeEach(async ({ page }) => {
   // Runs on every navigation, so it honours an explicit sign-out rather than
   // re-seeding the key on the next reload.

@@ -18,12 +18,9 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from .llm import (
-    ProviderError,
-    _describe_failure,
-    _openai_wire_credentials,
-    _resolve,
-)
+from .context import system_prompt
+from .llm import _openai_wire_credentials, _resolve
+from .provider import ProviderError, call_structured, describe_failure
 from .schema_compiler import SchemaError, compile_anthropic, compile_gemini, compile_openai
 
 # A schema for schemas: loose enough to admit any valid JSON Schema object, but
@@ -40,17 +37,7 @@ META_SCHEMA: dict[str, Any] = {
     "required": ["type", "properties"],
 }
 
-SYSTEM_PROMPT = (
-    "You design JSON Schemas for web-data extraction. Given a description of the "
-    "data someone wants pulled from a web page, produce a strict JSON Schema: "
-    "`type` is always \"object\"; every field in `properties` has a `description` "
-    "explaining what to extract; a field that is a list of records is `type: "
-    "array` with `items` as a nested object schema; use `enum` when the request "
-    "names a fixed set of categories or options; mark fields that must be "
-    "present in `required`. Do not use minItems, maxItems, minProperties or "
-    "maxProperties — these cause models to invent data to satisfy them. "
-    "Return only the schema."
-)
+SYSTEM_PROMPT = system_prompt("schema_design")
 
 REPAIR_SUFFIX = (
     "\n\nThe previous answer was not a valid JSON Schema object (it needs a "
@@ -100,24 +87,27 @@ async def _call_openai_json(
     key, url = _openai_wire_credentials(provider, caller_key, caller_base_url)
     client = AsyncOpenAI(api_key=key, base_url=url) if url else AsyncOpenAI(api_key=key)
 
-    response = await client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ],
-        response_format=compile_openai(META_SCHEMA, name="schema_design"),
-    )
+    async def run() -> tuple[dict[str, Any], int, int, str]:
+        response = await client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format=compile_openai(META_SCHEMA, name="schema_design"),
+        )
+        choice = response.choices[0]
+        raw = choice.message.content or "{}"
+        usage = response.usage
+        return (
+            json.loads(raw),
+            usage.prompt_tokens if usage else 0,
+            usage.completion_tokens if usage else 0,
+            response.model,
+        )
 
-    choice = response.choices[0]
-    raw = choice.message.content or "{}"
-    usage = response.usage
-    return (
-        json.loads(raw),
-        usage.prompt_tokens if usage else 0,
-        usage.completion_tokens if usage else 0,
-        response.model,
-    )
+    outcome = await call_structured(provider, model, run)
+    return outcome.data, outcome.tokens_input, outcome.tokens_output, outcome.model_used
 
 
 async def _call_anthropic_json(
@@ -134,22 +124,24 @@ async def _call_anthropic_json(
     client = AsyncAnthropic(api_key=api_key)
     compiled = compile_anthropic(META_SCHEMA, name="schema_design")
 
-    response = await client.messages.create(
-        model=model,
-        max_tokens=2048,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_prompt}],
-        tools=compiled["tools"],
-        tool_choice=compiled["tool_choice"],
-    )
+    async def run() -> tuple[dict[str, Any], int, int, str]:
+        response = await client.messages.create(
+            model=model,
+            max_tokens=2048,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_prompt}],
+            tools=compiled["tools"],
+            tool_choice=compiled["tool_choice"],
+        )
+        data: dict[str, Any] = {}
+        for block in response.content:
+            if getattr(block, "type", None) == "tool_use":
+                data = dict(getattr(block, "input", {}))
+                break
+        return data, response.usage.input_tokens, response.usage.output_tokens, response.model
 
-    data: dict[str, Any] = {}
-    for block in response.content:
-        if getattr(block, "type", None) == "tool_use":
-            data = dict(getattr(block, "input", {}))
-            break
-
-    return data, response.usage.input_tokens, response.usage.output_tokens, response.model
+    outcome = await call_structured("anthropic", model, run)
+    return outcome.data, outcome.tokens_input, outcome.tokens_output, outcome.model_used
 
 
 async def _call_gemini_json(
@@ -166,23 +158,26 @@ async def _call_gemini_json(
 
     client = genai.Client(api_key=api_key)
 
-    response = await client.aio.models.generate_content(
-        model=model,
-        contents=user_prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            response_mime_type="application/json",
-            response_schema=compile_gemini(META_SCHEMA),
-        ),
-    )
+    async def run() -> tuple[dict[str, Any], int, int, str]:
+        response = await client.aio.models.generate_content(
+            model=model,
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+                response_mime_type="application/json",
+                response_schema=compile_gemini(META_SCHEMA),
+            ),
+        )
+        usage = getattr(response, "usage_metadata", None)
+        return (
+            json.loads(response.text or "{}"),
+            getattr(usage, "prompt_token_count", 0) or 0,
+            getattr(usage, "candidates_token_count", 0) or 0,
+            model,
+        )
 
-    usage = getattr(response, "usage_metadata", None)
-    return (
-        json.loads(response.text or "{}"),
-        getattr(usage, "prompt_token_count", 0) or 0,
-        getattr(usage, "candidates_token_count", 0) or 0,
-        model,
-    )
+    outcome = await call_structured(provider="gemini", model=model, call=run)
+    return outcome.data, outcome.tokens_input, outcome.tokens_output, outcome.model_used
 
 
 _GEMINI_PROVIDERS = frozenset({"gemini", "google"})
@@ -251,7 +246,7 @@ async def generate_schema(
     except (ProviderError, SchemaError):
         raise
     except Exception as exc:
-        raise ProviderError(_describe_failure(resolved_provider, resolved_model, exc)) from exc
+        raise ProviderError(describe_failure(resolved_provider, resolved_model, exc)) from exc
 
     if not _is_usable_schema(schema):
         # One repair attempt: re-prompt with the failure named, rather than
@@ -265,7 +260,7 @@ async def generate_schema(
         except (ProviderError, SchemaError):
             raise
         except Exception as exc:
-            raise ProviderError(_describe_failure(resolved_provider, resolved_model, exc)) from exc
+            raise ProviderError(describe_failure(resolved_provider, resolved_model, exc)) from exc
 
         if not _is_usable_schema(schema):
             raise ProviderError(

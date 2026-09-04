@@ -3,12 +3,17 @@ import { Logo } from '@/components/shell/logo';
 import { GithubMark } from '@/components/marketing/github-mark';
 import { AsciiHelix, GridCells } from '@/components/marketing/ambient';
 import { AsciiNoise } from '@/components/marketing/ascii-fields';
-import { PERSONA_URL } from '@/lib/mode';
+import { CONVERTER_URL, PERSONA_URL } from '@/lib/mode';
 import { cn } from '@/lib/utils';
 import pkg from '@/package.json';
 
 /** WEBSITE.md §4.9. Three groups, hairline-divided rows, no Company column. */
-const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
+interface FooterLink {
+  label: string;
+  href: string;
+}
+
+const COLUMNS: { title: string; links: FooterLink[] }[] = [
   {
     title: 'Capabilities',
     links: [
@@ -26,6 +31,21 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     ],
   },
   {
+    title: 'Tools',
+    links: [
+      { label: 'Playground', href: '/app/playground' },
+      { label: 'Agent', href: '/app/agent' },
+      { label: 'Health', href: '/app/self-host/health' },
+      { label: 'API keys', href: '/app/keys' },
+      { label: 'Settings', href: '/app/settings' },
+      { label: 'Persona', href: PERSONA_URL },
+      // Empty until the app has a public URL; filtered below rather than linked
+      // at a placeholder, because a footer link that goes nowhere is worse than
+      // an absent one.
+      { label: 'Converter API', href: CONVERTER_URL },
+    ],
+  },
+  {
     title: 'Documentation',
     links: [
       { label: 'Getting started', href: '/docs' },
@@ -38,7 +58,6 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: 'Project',
     links: [
-      { label: 'Persona', href: PERSONA_URL },
       { label: 'GitHub', href: 'https://github.com/helix-dev/helix' },
       { label: 'Licence (Apache-2.0)', href: 'https://github.com/helix-dev/helix/blob/main/LICENSE' },
       { label: 'Architecture', href: '/architecture' },
@@ -47,7 +66,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: 'Status', href: '/status' },
     ],
   },
-];
+].map((column) => ({ ...column, links: column.links.filter((l) => l.href) }));
 
 export function Footer() {
   return (
@@ -60,7 +79,7 @@ export function Footer() {
           </span>
         </div>
 
-        <div className="relative grid lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
+        <div className="relative grid lg:grid-cols-[1.2fr_1fr_1fr_1fr_1fr]">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute right-0 top-0 hidden h-[42px] w-[71.4%] overflow-hidden lg:block [mask-image:linear-gradient(to_bottom,black_40%,transparent)]"

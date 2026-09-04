@@ -81,7 +81,6 @@ export const ENDPOINT_ROWS: readonly MenuRow[] = [
     href: '/app/agent',
     tagline: 'Give it a goal. It picks the endpoints, runs them, and reports back.',
     icon: Bot,
-    pill: 'Research preview',
   },
 ];
 

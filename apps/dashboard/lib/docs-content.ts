@@ -61,6 +61,16 @@ export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
     responseShape: '`{ success, data: { web: [{ url, title, description, position, markdown, metadata }] }, warnings, metadata: { backend, fromCache } }`. A result page that cannot be read keeps its row with a typed `failure` and adds a line to `warnings`; the search itself still succeeds. No backend configured is a 503 `search_unavailable`; a backend error is a 502 `search_failed`.',
     failureReasons: ['blocked', 'challenge', 'timeout', 'dns', 'tls', 'http_error', 'empty', 'service_unavailable'],
   },
+  map: {
+    id: 'map',
+    purpose:
+      "List a site's URLs without reading any of them. Reads the sitemap, follows links from the starting page, and returns the set it found. Nothing is scraped, so a map costs a fraction of a crawl.",
+    whenToUse:
+      'Reach for Map when you want to know what exists before deciding what to read: sizing a crawl, auditing coverage, or picking the handful of pages you actually want. Follow it with Scrape for the pages you choose, or Crawl when you want everything under a path. `sitemap` controls where URLs come from: `include` reads it alongside link discovery, `only` trusts it alone, `skip` ignores it. `search` is a plain substring filter over url, title and description, not a relevance ranking. Set `ignoreQueryParameters: false` to keep `?page=2` and `?page=3` apart.',
+    responseShape:
+      '`{ success, links: [{ url }], truncated }`. `truncated` is true when more URLs were found than `limit` allowed, so raise `limit` (up to 100000) to see the rest. `title` and `description` are typed on a link but are not populated by this route today. A malformed body is a 400 `invalid_request` naming the offending `field`.',
+    failureReasons: ['blocked', 'timeout', 'dns', 'tls', 'http_error', 'service_unavailable'],
+  },
   crawl: {
     id: 'crawl',
     purpose: 'Discover and read every page under a starting URL, with depth, page-count and glob path controls. Asynchronous: the call returns a job id, and pages arrive as the crawl walks the site. Pass `estimate: true` to see the projected page count before anything is fetched.',

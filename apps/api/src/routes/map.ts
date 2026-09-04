@@ -43,16 +43,38 @@ export async function discoverUrls(
     sitemap: 'include' | 'skip' | 'only';
     limit: number;
     ignoreQueryParameters: boolean;
+    includeSubdomains?: boolean | undefined;
     search?: string | undefined;
   },
   deps: MapRouteDeps,
 ): Promise<{ links: DiscoveredLink[]; truncated: boolean }> {
-  const origin = new URL(seedUrl).origin;
+  const seed = new URL(seedUrl);
+  const origin = seed.origin;
   const found = new Map<string, DiscoveredLink>();
+
+  /**
+   * A page links off-site constantly, so discovery has to be bounded by host or
+   * a map of one site returns half the web. `includeSubdomains` widens that
+   * bound to `*.example.com`; without it the map stays on the seed's own host.
+   */
+  const registrable = seed.hostname.split('.').slice(-2).join('.');
+  const inScope = (url: string): boolean => {
+    let host: string;
+    try {
+      host = new URL(url).hostname;
+    } catch {
+      return false;
+    }
+    if (host === seed.hostname) return true;
+    return options.includeSubdomains === true
+      ? host === registrable || host.endsWith(`.${registrable}`)
+      : false;
+  };
 
   const record = (url: string, source: 'sitemap' | 'links', extra: Partial<DiscoveredLink> = {}) => {
     const normalised = normaliseUrl(url, { ignoreQuery: options.ignoreQueryParameters });
     if (!normalised) return;
+    if (!inScope(normalised)) return;
 
     const existing = found.get(normalised);
     if (existing) {
@@ -134,6 +156,7 @@ export async function registerMap(app: FastifyInstance, deps: MapRouteDeps): Pro
         sitemap: body.sitemap,
         limit: body.limit,
         ignoreQueryParameters: body.ignoreQueryParameters,
+        includeSubdomains: body.includeSubdomains,
         search: body.search,
       },
       deps,

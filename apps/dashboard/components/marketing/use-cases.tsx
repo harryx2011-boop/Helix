@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { Bot, RefreshCw, Search, UserPlus, Wrench } from 'lucide-react';
 import { FrameBand } from './section-frame';
-import { AmbientCode, CodeRain } from './ambient';
+import { AmbientCode } from './ambient';
+import { AsciiNoise } from './ascii-fields';
 import { IconTile } from './icon-tile';
 import { CodePanel } from './code-panel';
 import { AnimatedCode, type Token } from './animated-code';
@@ -99,12 +100,11 @@ export function UseCases() {
 
       <div className="relative py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
-          <CodeRain
-            cols={22}
-            rows={6}
-            density={0.4}
+          <AsciiNoise
+            cols={120}
+            rows={18}
             seed={131}
-            className="hidden -inset-y-10 -inset-x-24 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_46%,black_66%,transparent_100%)]"
+            className="absolute -inset-x-24 -inset-y-10 hidden overflow-hidden opacity-80 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_40%,black_68%,transparent_100%)]"
           />
           <div className="relative">
             <h2 className="mx-auto max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">

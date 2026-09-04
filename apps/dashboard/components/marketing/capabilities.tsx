@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, Braces } from 'lucide-react';
 import { ENDPOINTS } from '@/lib/catalog';
 import { FrameBand } from './section-frame';
-import { CodeRain } from './ambient';
+import { AsciiNoise } from './ascii-fields';
 import { CodePanel } from './code-panel';
 import { AnimatedCode } from './animated-code';
 import { Segmented } from './segmented';
@@ -151,12 +151,11 @@ export function Capabilities() {
 
       <div className="py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
-          <CodeRain
-            cols={22}
-            rows={6}
-            density={0.45}
+          <AsciiNoise
+            cols={120}
+            rows={18}
             seed={41}
-            className="hidden -inset-y-10 -inset-x-24 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_46%,black_66%,transparent_100%)]"
+            className="absolute -inset-x-24 -inset-y-10 hidden overflow-hidden opacity-80 sm:block [mask-image:radial-gradient(ellipse_at_center,transparent_40%,black_68%,transparent_100%)]"
           />
           <div className="relative">
             <h2 className="mx-auto max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">

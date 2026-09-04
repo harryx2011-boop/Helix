@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { Terminal } from 'lucide-react';
 import { PillButton } from './pill-button';
 import { GithubMark } from './github-mark';
-import { GridCells, AsciiHelix } from './ambient';
+import { GridCells } from './ambient';
+import { AsciiFluid } from './ascii-fluid';
 import { FrameBand } from './section-frame';
 
 /** Final section: repeats the hero's CTA pair over a cell grid, flanked by ASCII flame pillars. No stats, no logos. */
@@ -23,21 +24,17 @@ export function ClosingCta() {
         crosshairs
       />
 
-      <AsciiHelix
-        orientation="vertical"
-        cols={22}
-        rows={30}
-        pitch={16}
+      <AsciiFluid
+        cols={44}
+        rows={14}
         seed={5}
-        className="pointer-events-none absolute bottom-0 left-[8%] hidden lg:block"
+        className="absolute bottom-6 left-[3%] hidden lg:block [mask-image:linear-gradient(to_right,black_60%,transparent)]"
       />
-      <AsciiHelix
-        orientation="vertical"
-        cols={22}
-        rows={30}
-        pitch={16}
+      <AsciiFluid
+        cols={44}
+        rows={14}
         seed={9}
-        className="pointer-events-none absolute bottom-0 right-[8%] hidden lg:block"
+        className="absolute bottom-6 right-[3%] hidden lg:block [mask-image:linear-gradient(to_left,black_60%,transparent)]"
       />
 
       <div data-reveal className="relative mx-auto flex max-w-container flex-col items-center py-16 text-center">

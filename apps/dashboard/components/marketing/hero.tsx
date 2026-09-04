@@ -1,5 +1,7 @@
 import { HeroPanel } from './hero-panel';
-import { GridCells, AsciiHelix, CodeRain } from './ambient';
+import { GridCells, AsciiHelix } from './ambient';
+import { AsciiFluid } from './ascii-fluid';
+import { AsciiNoise } from './ascii-fields';
 import { PillButton } from './pill-button';
 import { GithubMark } from './github-mark';
 import { SetupPrompt } from './setup-prompt';
@@ -21,19 +23,23 @@ export function Hero() {
         fade="bottom"
       />
 
-      <CodeRain
-        cols={8}
-        rows={6}
-        density={0.35}
-        seed={71}
-        className="absolute left-6 top-1/2 hidden max-w-[160px] -translate-y-1/2 xl:block"
+      <AsciiNoise
+        cols={150}
+        rows={24}
+        seed={7}
+        className="absolute left-1/2 top-6 hidden -translate-x-1/2 opacity-50 md:block [mask-image:radial-gradient(ellipse_at_center,transparent_26%,black_52%,transparent_78%)]"
       />
-      <CodeRain
-        cols={8}
-        rows={6}
-        density={0.35}
+      <AsciiFluid
+        cols={30}
+        rows={12}
+        seed={71}
+        className="absolute left-0 top-[36%] hidden lg:block [mask-image:linear-gradient(to_right,black_70%,transparent)]"
+      />
+      <AsciiFluid
+        cols={30}
+        rows={12}
         seed={83}
-        className="absolute right-6 top-1/2 hidden max-w-[160px] -translate-y-1/2 xl:block"
+        className="absolute right-0 top-[36%] hidden lg:block [mask-image:linear-gradient(to_left,black_70%,transparent)]"
       />
 
       <div className="mx-auto flex min-w-0 max-w-container flex-col items-center px-4 text-center">

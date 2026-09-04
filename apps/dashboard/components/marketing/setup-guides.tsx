@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Bot, Braces, Code2, Plug, SquareTerminal, Terminal } from 'lucide-react';
 import { FrameBand } from './section-frame';
-import { CodeRain } from './ambient';
+import { AsciiOrbit } from './ascii-fields';
 import { CodePanel, CodeBlock } from './code-panel';
 import { AnimatedCode } from './animated-code';
 import { Segmented } from './segmented';
@@ -100,12 +100,11 @@ export function SetupGuides() {
 
       <div className="py-16">
         <div data-reveal className="relative">
-          <CodeRain
-            cols={18}
-            rows={5}
-            density={0.4}
+          <AsciiOrbit
+            cols={44}
+            rows={17}
             seed={67}
-            className="absolute inset-y-0 right-0 hidden w-[44%] lg:block [mask-image:linear-gradient(to_right,transparent,black_35%,black_85%,transparent)]"
+            className="absolute -top-6 right-0 hidden lg:block [mask-image:linear-gradient(to_right,transparent,black_30%,black_85%,transparent)]"
           />
           <div className="relative">
             <h2 className="max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">

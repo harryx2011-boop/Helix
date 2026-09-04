@@ -18,16 +18,53 @@ function toKeyJson(row: ApiKeyRow) {
   };
 }
 
+/**
+ * Supabase errors arrive as bare throws from lib/profiles, and an uncaught
+ * throw in a route handler is an opaque 500 with nothing in the response and
+ * nothing useful in the log. Every handler routes failures through here so the
+ * cause is recorded server-side and the caller gets a status that says which
+ * side is at fault.
+ */
+type Postgrestish = { code?: string; message?: string; details?: string; hint?: string };
+
+function failed(op: string, err: unknown): NextResponse {
+  const e = (err ?? {}) as Postgrestish;
+  console.error(`[keys] ${op} failed`, {
+    code: e.code,
+    message: e.message ?? String(err),
+    details: e.details,
+    hint: e.hint,
+  });
+
+  // 42P01 unknown table, 42501 RLS denial, 28P01 bad credentials: the key store
+  // is misconfigured, not the request.
+  if (e.code && ['42P01', '42501', '28P01', '3D000'].includes(e.code)) {
+    return NextResponse.json(
+      { error: 'key_store_unavailable', message: 'The key store rejected the request.' },
+      { status: 503 },
+    );
+  }
+
+  return NextResponse.json(
+    { error: 'key_store_error', message: 'Could not reach the key store.' },
+    { status: 502 },
+  );
+}
+
 export async function GET(): Promise<NextResponse> {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   if (!supabaseConfigured()) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
 
-  const profile = await ensureProfileForCurrentUser();
-  if (!profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  try {
+    const profile = await ensureProfileForCurrentUser();
+    if (!profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const rows = await listApiKeys(profile.id);
-  return NextResponse.json({ keys: rows.map(toKeyJson) });
+    const rows = await listApiKeys(profile.id);
+    return NextResponse.json({ keys: rows.map(toKeyJson) });
+  } catch (err) {
+    return failed('list', err);
+  }
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -35,18 +72,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   if (!supabaseConfigured()) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
 
-  const profile = await ensureProfileForCurrentUser();
-  if (!profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-
   const body = (await req.json().catch(() => null)) as { name?: string; rateLimit?: number } | null;
   const name = body?.name?.trim();
   if (!name) return NextResponse.json({ error: 'name is required' }, { status: 400 });
 
-  const { key, row } = await createApiKey({
-    profileId: profile.id,
-    name,
-    ...(body?.rateLimit ? { rateLimit: body.rateLimit } : {}),
-  });
+  let key: string;
+  let row: ApiKeyRow;
+  try {
+    const profile = await ensureProfileForCurrentUser();
+    if (!profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+    ({ key, row } = await createApiKey({
+      profileId: profile.id,
+      name,
+      ...(body?.rateLimit ? { rateLimit: body.rateLimit } : {}),
+    }));
+  } catch (err) {
+    return failed('create', err);
+  }
 
   return NextResponse.json(
     {
@@ -67,14 +110,18 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
   if (!userId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   if (!supabaseConfigured()) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
 
-  const profile = await ensureProfileForCurrentUser();
-  if (!profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
-  const revoked = await revokeApiKey(profile.id, id);
-  if (!revoked) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  try {
+    const profile = await ensureProfileForCurrentUser();
+    if (!profile) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+    const revoked = await revokeApiKey(profile.id, id);
+    if (!revoked) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  } catch (err) {
+    return failed('revoke', err);
+  }
 
   return new NextResponse(null, { status: 204 });
 }

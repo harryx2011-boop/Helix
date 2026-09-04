@@ -39,9 +39,6 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: 'API keys', href: '/app/keys' },
       { label: 'Settings', href: '/app/settings' },
       { label: 'Persona', href: PERSONA_URL },
-      // Empty until the app has a public URL; filtered below rather than linked
-      // at a placeholder, because a footer link that goes nowhere is worse than
-      // an absent one.
       { label: 'Converter API', href: CONVERTER_URL },
     ],
   },
@@ -66,6 +63,8 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: 'Status', href: '/status' },
     ],
   },
+  // A link is dropped rather than rendered href-less when its URL is blanked,
+  // which is how a self-host build removes a sibling app it does not run.
 ].map((column) => ({ ...column, links: column.links.filter((l) => l.href) }));
 
 export function Footer() {

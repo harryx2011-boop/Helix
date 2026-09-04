@@ -1,6 +1,6 @@
 import { Layers, Coins, OctagonX, Activity, Cpu } from 'lucide-react';
 import { FrameBand } from './section-frame';
-import { CodeRain } from './ambient';
+import { AmbientCode, CodeRain } from './ambient';
 import { MeterPanel } from './meter';
 import { BentoCard } from './bento';
 
@@ -30,10 +30,12 @@ const SIGNAL_LOG = `▸ GET /pricing   plain       403    5ms   cloudflare-mitig
 /** Home §3: what the ladder costs, what the model receives, what a block looks like. One hero cell, three beneath. */
 export function Performance() {
   return (
-    <section className="px-6 py-16 sm:px-10">
+    <section className="relative overflow-hidden px-6 py-16 sm:px-10">
+      <AmbientCode count={6} seed={31} className="bottom-auto left-0 right-auto top-40 hidden h-[280px] w-[17%] opacity-60 lg:block [mask-image:linear-gradient(to_right,black_60%,transparent)]" />
+      <AmbientCode count={6} seed={32} className="bottom-auto left-auto right-0 top-40 hidden h-[280px] w-[17%] opacity-60 lg:block [mask-image:linear-gradient(to_left,black_60%,transparent)]" />
       <FrameBand step="03" total="07" label="PERFORMANCE" sub="Cheapest path, honest failures" icon={Cpu} />
 
-      <div className="py-16">
+      <div className="relative py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
           <CodeRain
             cols={22}

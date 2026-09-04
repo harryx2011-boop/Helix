@@ -13,12 +13,15 @@ export default function LandingPage() {
     <>
       <Hero />
       <Capabilities />
+      <ScrollStrip seed={11} direction="right" />
       <HardParts />
       <ScrollStrip seed={3} direction="left" />
       <Performance />
+      <ScrollStrip seed={13} direction="right" />
       <SetupGuides />
-      <ScrollStrip seed={5} direction="right" />
+      <ScrollStrip seed={5} direction="left" />
       <SelfHostPromise />
+      <ScrollStrip seed={17} direction="right" />
       <UseCases />
       <ScrollStrip seed={7} direction="left" />
       <ClosingCta />

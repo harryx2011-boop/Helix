@@ -68,12 +68,12 @@ export const ENDPOINT_ROWS: readonly MenuRow[] = [
   fromCatalog(scrape, [
     { label: 'URLs', href: scrape.route },
     { label: 'Documents', href: parse.route },
-    { label: 'Metadata', href: '/app/playground?tab=metadata' },
+    { label: 'Metadata', href: metadata.route },
   ]),
   fromCatalog(search),
   fromCatalog(crawl, [
     { label: 'Crawl', href: crawl.route },
-    { label: 'Map', href: `${map.route}#map` },
+    { label: 'Map', href: map.route },
   ]),
   fromCatalog(interact),
   fromCatalog(monitor),

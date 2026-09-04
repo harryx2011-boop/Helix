@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
+import { usePreferences } from '@/lib/preferences';
 import { useRouter } from 'next/navigation';
 import { HelixApiError } from '@/lib/api';
 import type {
@@ -29,6 +30,7 @@ import { useAppSession } from '@/components/app/session-provider';
 import { endpointById } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/endpoints';
 import { DEFAULT_FORMATS } from '@/lib/formats';
+import { recordRun, subjectOf } from '@/lib/recent-runs';
 import { cn } from '@/lib/utils';
 import { ScrapeForm } from './forms/scrape-form';
 import { MapForm } from './forms/map-form';
@@ -52,11 +54,43 @@ export function Playground() {
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get('tab');
   const requestedUrl = searchParams.get('url');
+  const { preferences, hydrated: prefsHydrated } = usePreferences();
   const [activeId, setActiveId] = React.useState<string>(
     requestedTab && endpointById(requestedTab) ? requestedTab : 'scrape',
   );
+
+  // Preferences arrive after mount (localStorage), so the default endpoint is
+  // applied once, and only when the URL did not already name a tab — a link
+  // into a specific tab must win over a stored preference.
+  const appliedDefault = React.useRef(false);
+  React.useEffect(() => {
+    if (appliedDefault.current || !prefsHydrated || requestedTab) return;
+    appliedDefault.current = true;
+    if (endpointById(preferences.defaultEndpoint)) setActiveId(preferences.defaultEndpoint);
+  }, [prefsHydrated, requestedTab, preferences.defaultEndpoint]);
   const [promptValue, setPromptValue] = React.useState(requestedUrl ?? '');
+
+  // `selectTab` replaces the URL without `url`, so only a link that carries
+  // one (the hero, the command palette) re-targets an already-mounted playground.
+  const lastDeepLink = React.useRef(`${requestedTab ?? ''}|${requestedUrl ?? ''}`);
+  React.useEffect(() => {
+    const key = `${requestedTab ?? ''}|${requestedUrl ?? ''}`;
+    if (key === lastDeepLink.current) return;
+    lastDeepLink.current = key;
+    if (!requestedUrl) return;
+    if (requestedTab && endpointById(requestedTab)) setActiveId(requestedTab);
+    setPromptValue(requestedUrl);
+    setResult(undefined);
+    setError(undefined);
+    setTimingMs(undefined);
+  }, [requestedTab, requestedUrl]);
   const [formats, setFormats] = React.useState<Format[]>([...DEFAULT_FORMATS]);
+  const appliedFormat = React.useRef(false);
+  React.useEffect(() => {
+    if (appliedFormat.current || !prefsHydrated) return;
+    appliedFormat.current = true;
+    setFormats([preferences.defaultFormat]);
+  }, [prefsHydrated, preferences.defaultFormat]);
   const [optionsOpen, setOptionsOpen] = React.useState(false);
   const [result, setResult] = React.useState<PlaygroundResult | undefined>(undefined);
   const [loading, setLoading] = React.useState(false);
@@ -117,6 +151,12 @@ export function Playground() {
           setResult({ kind: 'handoff', jobId: responseBody.id });
         } else {
           setResult({ kind, response: responseBody } as PlaygroundResult);
+        }
+
+        const subject = subjectOf(body);
+        const succeeded = !(responseBody && typeof responseBody === 'object' && (responseBody as { success?: unknown }).success === false);
+        if (subject && succeeded) {
+          recordRun({ endpoint, url: subject, ...(async_ && isJobAcceptedShape(responseBody) ? { id: responseBody.id } : {}) });
         }
       } catch (err) {
         setResult(undefined);

@@ -5,6 +5,7 @@ import { Sidebar } from './sidebar';
 import { TopBar } from './top-bar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AppGrid } from './app-grid';
+import { CommandPalette } from './command-palette/command-palette';
 
 export function AppShell({ selectedEndpoints, children }: { selectedEndpoints: readonly string[]; children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -34,6 +35,7 @@ export function AppShell({ selectedEndpoints, children }: { selectedEndpoints: r
           </main>
         </div>
       </div>
+      <CommandPalette selectedEndpoints={selectedEndpoints} />
     </TooltipProvider>
   );
 }

@@ -40,7 +40,7 @@ export function FetchLadder({ tiersAttempted, resolvedTier }: FetchLadderProps) 
           <div key={tier} className="flex items-center gap-1" role="listitem">
             <div
               className={cn(
-                'flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-mono transition-colors duration-150 ease-out',
+                'flex items-center gap-1.5 rounded-card border px-2 py-1 text-xs font-mono transition-colors duration-150 ease-out',
                 resolved && 'border-success bg-success/10 text-success',
                 attempted && !resolved && 'border-border bg-secondary text-foreground',
                 skipped && 'border-border/50 text-muted-foreground/60 line-through',

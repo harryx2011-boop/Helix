@@ -80,7 +80,7 @@ export function ResultPanel({ result, loading, timingMs, error }: ResultPanelPro
         <MetadataStrip metadata={data.metadata} timingMs={timingMs} contentHash={data.metadata.contentHash} />
       )}
 
-      <div className="flex items-center gap-1 self-start rounded-md bg-muted p-1">
+      <div className="flex items-center gap-1 self-start rounded-card bg-muted p-1">
         <Button
           variant={mode === 'rendered' ? 'secondary' : 'ghost'}
           size="sm"
@@ -116,7 +116,7 @@ export function ResultPanel({ result, loading, timingMs, error }: ResultPanelPro
           <img
             src={data.screenshot}
             alt="Page screenshot"
-            className="rounded-md border border-border"
+            className="rounded-card border border-border"
           />
         </div>
       )}

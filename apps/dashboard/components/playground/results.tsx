@@ -57,7 +57,7 @@ import { AsciiFlow } from '@/components/marketing/ascii-fields';
 function AnimatedJsonView({ data }: { data: unknown }) {
   const text = JSON.stringify(data, null, 2);
   return (
-    <pre className="overflow-x-auto rounded-md bg-secondary p-3 font-mono text-xs leading-relaxed">
+    <pre className="overflow-x-auto rounded-card bg-secondary p-3 font-mono text-xs leading-relaxed">
       <AnimatedCode key={text} code={text} mode="reveal" lineMs={45} playOnView={false} />
     </pre>
   );

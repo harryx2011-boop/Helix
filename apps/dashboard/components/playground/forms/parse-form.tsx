@@ -197,7 +197,7 @@ export function ParseForm({ url, onSubmit, onGetCode, loading }: ParseFormProps)
             placeholder={'{"type":"object","properties":{"invoiceTotal":{"type":"number"}}}\nor: the invoice total and due date'}
             value={instruction}
             onChange={(event) => setInstruction(event.target.value)}
-            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="flex w-full rounded-card border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
           <p className="text-xs text-muted-foreground">
             A JSON object is sent as <code className="font-mono">jsonOptions.schema</code>; plain text as <code className="font-mono">jsonOptions.prompt</code>. Resolved by the model configured on the server.

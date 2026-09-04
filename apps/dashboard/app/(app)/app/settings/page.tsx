@@ -1,8 +1,21 @@
 import { PageFrame } from '@/components/app/page-frame';
+import { AccountPanel } from '@/components/app/settings/account-panel';
+import { DangerZonePanel } from '@/components/app/settings/danger-zone-panel';
 import { InstanceSettingsPanel } from '@/components/app/settings/instance-settings-panel';
+import { PreferencesPanel } from '@/components/app/settings/preferences-panel';
+import { UsagePanel } from '@/components/app/settings/usage-panel';
 import { ProvidersPanel } from '@/components/app/providers/providers-panel';
 import { AsciiFlow } from '@/components/marketing/ascii-fields';
+import { HOSTED } from '@/lib/mode';
 
+/**
+ * Account sections render in hosted mode only.
+ *
+ * Self-host has no accounts at all — the browser holds an instance key and
+ * there is no profile, no Clerk user and nothing for "delete account" to mean.
+ * Rendering them there would show a signed-out visitor a panel that can only
+ * ever fail, so they are omitted rather than disabled.
+ */
 export default function SettingsPage() {
   return (
     <PageFrame>
@@ -16,11 +29,17 @@ export default function SettingsPage() {
         />
         <h1 className="relative text-[32px] font-medium leading-tight tracking-tight text-foreground">Settings</h1>
         <p className="relative mt-1 text-sm text-muted-foreground">
-          This instance&apos;s configuration. The environment supplies the defaults; a change here overrides one.
+          {HOSTED
+            ? 'Your account, what you have used, and this instance’s configuration.'
+            : 'This instance’s configuration. The environment supplies the defaults; a change here overrides one.'}
         </p>
       </div>
+      {HOSTED && <AccountPanel />}
+      <PreferencesPanel />
+      {HOSTED && <UsagePanel />}
       <ProvidersPanel />
       <InstanceSettingsPanel />
+      {HOSTED && <DangerZonePanel />}
     </PageFrame>
   );
 }

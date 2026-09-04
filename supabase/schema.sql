@@ -6,7 +6,7 @@
 -- find so it does not re-apply its own files at boot.
 --
 -- Regenerate after any migration lands:  node supabase/build-schema.mjs
--- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql | 0001_hosted_identity.sql, 0002_persona.sql, 0003_onboarding.sql, 0004_persona_sync.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql
+-- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql | 0001_hosted_identity.sql, 0002_persona.sql, 0003_onboarding.sql, 0004_persona_sync.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql
 
 -- ============================================================================
 -- API migrations
@@ -486,6 +486,60 @@ CREATE INDEX IF NOT EXISTS job_tasks_reclaimable
   ON job_tasks (lease_expires_at)
   WHERE status = 'running';
 
+-- ---- apps/api/migrations/011_request_usage.sql
+-- Per-key request usage, rolled up by hour.
+--
+-- Nothing recorded before this file could answer "how many requests did this
+-- key make". `jobs` is written by exactly two routes (crawl and batch_scrape);
+-- scrape, parse, search, map, metadata and interact are synchronous and record
+-- nothing at all, so a count derived from `jobs` would under-report by most of
+-- the product and look like a working chart while doing it. `last_used_at` on
+-- api_keys is a single timestamp with no history behind it, and the rate
+-- limiter's buckets are in-memory and per-process — they vanish on restart and
+-- disagree between nodes.
+--
+-- Hourly buckets rather than a row per request: a row per request is unbounded
+-- write amplification on the hot path for a number nobody reads at that
+-- resolution, and it would need its own retention job. One UPSERT per key per
+-- endpoint per status-class per hour keeps the table small enough that the
+-- dashboard's range queries stay index-only.
+--
+-- `bucket_start` is truncated to the hour in UTC by the writer, so the primary
+-- key doubles as the upsert conflict target and no separate unique index is
+-- needed.
+--
+-- Rollback:
+--   DROP TABLE IF EXISTS request_usage;
+-- The recorder tolerates its own table being absent (it is fire-and-forget and
+-- swallows errors), so dropping this leaves the API serving traffic exactly as
+-- it did before, with the usage endpoint reporting unavailable.
+
+CREATE TABLE IF NOT EXISTS request_usage (
+  api_key_id   uuid        NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
+  bucket_start timestamptz NOT NULL,
+  -- The route family, not the raw path: `/v1/scrape` and `/v1/jobs/:id` are
+  -- products, `/v1/jobs/9f3c…` is cardinality. Normalised by the recorder.
+  endpoint     text        NOT NULL,
+  -- 2xx | 4xx | 429 | 5xx. 429 is split out of 4xx because "am I being rate
+  -- limited" is the question the headroom panel exists to answer, and it is
+  -- invisible once it is averaged into client errors.
+  status_class text        NOT NULL,
+  requests     bigint      NOT NULL DEFAULT 0,
+  PRIMARY KEY (api_key_id, bucket_start, endpoint, status_class)
+);
+
+-- The dashboard's only query shape: one key, a time range, grouped. Leading
+-- api_key_id then bucket_start means the range scan touches only that key's
+-- rows rather than every key's hour.
+CREATE INDEX IF NOT EXISTS request_usage_key_time
+  ON request_usage (api_key_id, bucket_start DESC);
+
+-- Retention. Ninety days of hourly buckets is ~2k rows per key per endpoint
+-- family and bounds the table without a separate job: the sweep runs from the
+-- same place the crawl expiry sweep does.
+CREATE INDEX IF NOT EXISTS request_usage_expiry
+  ON request_usage (bucket_start);
+
 -- ============================================================================
 -- schema_migrations seed (what apps/api/src/db/migrate.ts would have recorded)
 -- ============================================================================
@@ -505,7 +559,8 @@ INSERT INTO schema_migrations (filename, checksum) VALUES
   ('007_local_providers.sql', 'fbd014e71586b7626e6208b4881cdbe17d9325efca6c15b2ed3f050c425fdcd9'),
   ('008_monitor_json_options.sql', '28d1ca216258b985f27252b413d7511acbb18ccbb8d151c21f3b1b8a5323447a'),
   ('009_uptime_samples.sql', '44f4a473d4d6fe3bbe89df261c29a5fa9af0c476ba9a7b33fd7442fae1245860'),
-  ('010_task_leases.sql', 'be4ed9bdb767e68aab42f10d304f8df030bc0abee3e4ff6c7b08c3e36f73fb0f')
+  ('010_task_leases.sql', 'be4ed9bdb767e68aab42f10d304f8df030bc0abee3e4ff6c7b08c3e36f73fb0f'),
+  ('011_request_usage.sql', 'da301b5ca5498b03c69266b85b533a01d229020d9e0d0c9a8b6155547191684c')
 ON CONFLICT (filename) DO NOTHING;
 
 -- ============================================================================
@@ -1065,3 +1120,34 @@ grant select (id, clerk_user_id, email, name, avatar_url, created_at, updated_at
 grant update (name, avatar_url, role, use_cases, llm_provider, deploy_intent,
               selected_endpoints, heard_from, heard_from_detail, onboarding_completed_at)
   on profiles to authenticated;
+
+-- ---- supabase/migrations/0007_request_usage_rls.sql
+-- RLS for request_usage (apps/api/migrations/011_request_usage.sql).
+--
+-- 0001 turned row level security on for every table in `public` and explained
+-- why: once the anon/authenticated roles hold Supabase's default grants, every
+-- table is reachable through the Data API. A table added by a later API
+-- migration is not covered by that statement, so it arrives readable by any
+-- signed-in browser — and request_usage is a per-key traffic log, which is
+-- exactly the kind of thing that should not be.
+--
+-- No policy is added. The dashboard reads this table through the service-role
+-- client in app/api/app/usage/route.ts, which bypasses RLS; a browser has no
+-- business querying it directly, and RLS with no policy denies everything.
+-- That is the intended posture, not an omission.
+--
+-- Requires 011 to have run. The API applies its own migrations against this
+-- database at boot, so a deployment that has not restarted the API yet will
+-- not have the table: the guard below skips rather than failing the whole
+-- migration, and the next run picks it up.
+--
+-- Rollback:
+--   ALTER TABLE request_usage DISABLE ROW LEVEL SECURITY;
+--   -- and re-grant only if something other than the service role needs it.
+
+do $$ begin
+  if to_regclass('public.request_usage') is not null then
+    execute 'alter table request_usage enable row level security';
+    execute 'revoke all on request_usage from anon, authenticated';
+  end if;
+end $$;

@@ -114,6 +114,10 @@ function CreateKeyDialog({
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState('');
   const [rateLimit, setRateLimit] = React.useState('');
+
+  React.useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('new') === '1') setOpen(true);
+  }, []);
   const [creating, setCreating] = React.useState(false);
   const [createdKey, setCreatedKey] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
@@ -183,7 +187,7 @@ function CreateKeyDialog({
                   : 'Copy it now. For your security this is the only time the full key is shown.'}
               </DialogDescription>
             </DialogHeader>
-            <div className="flex items-center justify-between gap-3 rounded-card border border-border bg-secondary/40 px-3 py-2.5">
+            <div className="flex min-w-0 items-center justify-between gap-3 rounded-card border border-border bg-secondary/40 px-3 py-2.5">
               <span className="truncate font-mono text-sm text-primary">{createdKey}</span>
               <Button variant="ghost" size="icon" onClick={copyKey} aria-label="Copy key">
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

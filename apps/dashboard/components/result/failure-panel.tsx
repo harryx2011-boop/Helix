@@ -111,7 +111,7 @@ export function FailurePanel({ failure }: { failure: FetchFailure }) {
   const Icon = copy.icon;
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+    <div className="flex flex-col gap-4 rounded-card border border-destructive/30 bg-destructive/5 p-4">
       <div className="flex items-start gap-3">
         <Icon className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
         <div className="flex flex-col gap-1">
@@ -148,7 +148,7 @@ export function FailurePanel({ failure }: { failure: FetchFailure }) {
         </div>
       )}
 
-      <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
+      <div className="flex items-start gap-2 rounded-card border border-border bg-card p-3">
         <ArrowUpCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-medium text-foreground">Next step</span>

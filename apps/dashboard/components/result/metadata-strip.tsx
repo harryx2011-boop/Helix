@@ -20,7 +20,7 @@ export function MetadataStrip({ metadata, timingMs, contentHash }: MetadataStrip
   return (
     <div className="flex flex-col gap-3 border-b border-border pb-3">
       {displayedUrl && (
-        <div className="flex items-center gap-1.5 text-xs">
+        <div className="flex min-w-0 items-center gap-1.5 text-xs">
           <SiteIcon url={displayedUrl} src={metadata.favicon} size={14} />
           <span className="truncate font-mono text-muted-foreground">{displayedUrl}</span>
         </div>

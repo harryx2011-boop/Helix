@@ -1,6 +1,6 @@
 {
   "name": "helix",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "private": true,
   "description": "Self-hostable, BYOK web-data API",
   "license": "Apache-2.0",
@@ -11,9 +11,10 @@
   "scripts": {
     "dev": "pnpm --filter @helix/api dev",
     "build": "pnpm -r build",
-    "test": "pnpm -r test",
+    "test": "node supabase/check-schema.mjs && pnpm -r test",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
+    "check:schema": "node supabase/check-schema.mjs",
     "codegen": "pnpm --filter @helix/schema codegen",
     "up": "docker compose up --build",
     "down": "docker compose down -v"

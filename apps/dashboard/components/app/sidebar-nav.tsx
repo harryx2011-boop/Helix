@@ -129,7 +129,7 @@ function SidebarNavInner({ selectedEndpoints, collapsed }: SidebarNavProps) {
                 title={collapsed ? row.label : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'group flex items-center gap-2.5 rounded-card px-2.5 py-1.5 text-sm transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                  'group flex min-w-0 items-center gap-2.5 rounded-card px-2.5 py-1.5 text-sm transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                   active ? 'bg-primary/12 text-primary' : 'text-foreground/80 hover:bg-secondary/60 hover:text-foreground',
                   dim && !active && 'text-muted-foreground/70',
                   collapsed && 'justify-center px-0',

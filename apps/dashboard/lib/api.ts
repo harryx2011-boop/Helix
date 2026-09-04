@@ -424,6 +424,12 @@ export interface MonitorResponse {
   stats: { checks: number; changes: number; pagesUnchanged: number };
 }
 
+/** `GET /v1/monitor`: every monitor owned by the calling key. */
+export interface MonitorListResponse {
+  success: boolean;
+  monitors: Omit<MonitorResponse, 'success'>[];
+}
+
 export interface DocumentImage {
   url: string;
   alt?: string;
@@ -881,6 +887,10 @@ export class HelixClient {
 
   async monitor(request: MonitorRequest, signal?: AbortSignal): Promise<MonitorResponse> {
     return this.post<MonitorResponse>('/monitor', request, signal);
+  }
+
+  async listMonitors(signal?: AbortSignal): Promise<MonitorListResponse> {
+    return this.get<MonitorListResponse>('/monitor', signal);
   }
 
   async agentSchema(request: AgentSchemaRequest, signal?: AbortSignal): Promise<AgentSchemaResponse> {

@@ -9,6 +9,7 @@ import { Logo } from '@/components/shell/logo';
 import { SidebarNav } from './sidebar-nav';
 import { UserChip } from './user-chip';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { onSidebarToggle } from './command-palette/store';
 
 const STORAGE_KEY = 'helix.app.sidebarCollapsed';
 const EXPANDED_WIDTH = 256;
@@ -95,6 +96,12 @@ export function Sidebar({
       return next;
     });
   }, []);
+
+  // Below lg the desktop rail is not rendered, so "toggle" means the drawer.
+  React.useEffect(
+    () => onSidebarToggle(() => (window.matchMedia('(min-width: 1024px)').matches ? toggle() : onMobileOpenChange(true))),
+    [toggle, onMobileOpenChange],
+  );
 
   const width = collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
 

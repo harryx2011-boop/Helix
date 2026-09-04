@@ -25,7 +25,7 @@ interface CrawlFormProps {
 }
 
 const TEXTAREA_CLASS =
-  'flex w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+  'flex w-full rounded-card border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 export function CrawlForm({ url, onSubmit, onGetCode, loading }: CrawlFormProps) {
   const [limit, setLimit] = React.useState(100);

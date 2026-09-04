@@ -26,6 +26,8 @@ import { registerMap } from './routes/map.js';
 import { registerCrawl } from './routes/crawl.js';
 import { registerBatch } from './routes/batch.js';
 import { registerJobs } from './routes/jobs.js';
+import { registerUsage } from './routes/usage.js';
+import { UsageRecorder, pruneUsage } from './core/usage.js';
 import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerAgent } from './routes/agent.js';
@@ -257,6 +259,13 @@ const limiter = new RateLimiter({
 
 setInterval(() => limiter.prune(), 60_000).unref();
 
+// Counts every authenticated response into hourly buckets (011_request_usage.sql).
+// Buffered rather than written inline: a database round-trip per reply for a
+// number read at hourly resolution is the wrong price.
+const usageRecorder = new UsageRecorder({
+  onError: (error) => app.log.warn({ error }, 'usage flush failed — counts for this interval are lost'),
+});
+
 const tickets = new InternalTickets();
 
 await app.register(helmet, { contentSecurityPolicy: false });
@@ -266,7 +275,13 @@ await app.register(cors, { origin: config.corsOrigins });
 
 // `/settings` is exempt from API-key auth because it enforces a stricter gate
 // of its own: the operator's admin token, not any caller's key.
-registerAuth(app, { verifyApiKey, limiter, tickets, open: ['/v1/health', '/v1/status', '/v1/interact/live/', '/settings'] });
+registerAuth(app, {
+  verifyApiKey,
+  limiter,
+  tickets,
+  usage: usageRecorder,
+  open: ['/v1/health', '/v1/status', '/v1/interact/live/', '/settings'],
+});
 
 await app.register(
   async (instance) => {
@@ -317,6 +332,7 @@ await app.register(
     });
     await registerBatch(instance);
     await registerJobs(instance);
+    await registerUsage(instance);
     await registerSearch(instance, {
       provider: searchProvider,
       fetchClient,
@@ -428,6 +444,15 @@ const start = async (): Promise<void> => {
     monitorWebhookDispatcher.start();
     sessions.startSweeper();
     statusSampler.start();
+    usageRecorder.start();
+
+    // Ninety days, swept hourly. Bounds request_usage without its own service:
+    // the table is the only thing here that grows purely with traffic.
+    setInterval(() => {
+      void pruneUsage(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)).catch((error: unknown) =>
+        app.log.warn({ error }, 'usage retention sweep failed'),
+      );
+    }, 60 * 60 * 1000).unref();
 
     await app.listen({ port: config.port, host: '0.0.0.0' });
     app.log.info(
@@ -454,6 +479,10 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
       monitorWebhookDispatcher.stop();
       crawlWebhookDispatcher.stop();
       statusSampler.stop();
+      usageRecorder.stop();
+      // Flushed before the pool closes, or the final interval of counts is lost
+      // on every clean restart rather than only on a crash.
+      await usageRecorder.flush().catch(() => undefined);
       await sessions.closeAll().catch(() => undefined);
       await app.close().catch(() => undefined);
       await browserPool.close().catch(() => undefined);

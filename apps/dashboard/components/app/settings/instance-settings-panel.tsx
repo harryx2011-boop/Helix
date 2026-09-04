@@ -210,7 +210,7 @@ function TokenGate({ onSaved }: { onSaved: () => void }) {
         with. It is kept in this browser only.
       </p>
       <form
-        className="mt-4 flex items-center gap-2"
+        className="mt-4 flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           if (!draft.trim()) return;
@@ -223,7 +223,7 @@ function TokenGate({ onSaved }: { onSaved: () => void }) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Admin token"
-          className="h-9 w-80 font-mono text-[13px]"
+          className="h-9 w-full max-w-80 font-mono text-[13px]"
           aria-label="Admin token"
         />
         <Button type="submit" size="sm" className="h-9 rounded-pill px-4 text-xs" disabled={!draft.trim()}>

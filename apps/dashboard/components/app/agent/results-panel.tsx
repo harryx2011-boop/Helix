@@ -86,7 +86,7 @@ export function ResultsPanel({
       <div className="flex flex-col divide-y divide-border">
         {results.map((result) => (
           <div key={result.url} className="p-4">
-            <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
               <span className="truncate font-mono text-xs text-muted-foreground">{result.url}</span>
               {!result.ok && (
                 <Button type="button" variant="ghost" size="sm" className="h-6 shrink-0 gap-1 rounded-pill px-2 text-xs" onClick={() => onRetry(result.url)}>

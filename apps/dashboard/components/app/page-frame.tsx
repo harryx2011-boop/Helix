@@ -53,15 +53,18 @@ export function FrameHeading({
   action,
   field,
   className,
+  id,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
   field?: React.ReactNode;
   className?: string;
+  /** Anchor for a deep link, so the command palette can jump to one section. */
+  id?: string;
 }) {
   return (
-    <div className={cn('relative flex items-start justify-between gap-4 overflow-hidden px-6 py-5', className)}>
+    <div id={id} className={cn('relative flex items-start justify-between gap-4 overflow-hidden px-6 py-5 scroll-mt-16', className)}>
       {field && (
         <div aria-hidden className="pointer-events-none absolute inset-0">
           {field}

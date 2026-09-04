@@ -33,7 +33,7 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
         onEscapeKeyDown={(event) => event.preventDefault()}
         onPointerDownOutside={(event) => event.preventDefault()}
       >
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-lg">
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-card">
           <AsciiNoise
             cols={70}
             rows={8}

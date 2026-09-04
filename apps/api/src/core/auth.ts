@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type { ApiKey } from './api-keys.js';
 import { rateLimitHeaders, type RateLimiter } from './rate-limit.js';
+import type { UsageRecorder } from './usage.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -49,6 +50,11 @@ export interface AuthDeps {
   tickets: InternalTickets;
   /** URL prefixes served without a key. */
   open?: string[];
+  /**
+   * Records one row per response for the usage panel. Optional: a deployment
+   * without it (and every existing test) authenticates exactly as before.
+   */
+  usage?: UsageRecorder;
 }
 
 /**
@@ -121,5 +127,18 @@ export function registerAuth(app: FastifyInstance, deps: AuthDeps): void {
         requestId: request.id,
       });
     }
+  });
+
+  if (!deps.usage) return;
+  const usage = deps.usage;
+
+  // onResponse, not onRequest: the status code is the point, and a 429 counted
+  // as a request is the only way the headroom figure means anything. Open
+  // routes and unauthenticated rejections have no key to attribute and are
+  // skipped rather than bucketed under a placeholder.
+  app.addHook('onResponse', async (request, reply) => {
+    const apiKeyId = request.apiKey?.id;
+    if (!apiKeyId) return;
+    usage.record(apiKeyId, request.url, reply.statusCode);
   });
 }

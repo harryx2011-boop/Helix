@@ -40,7 +40,14 @@ COPY --from=build /app/apps/api/package.json ./package.json
 COPY --from=build /app/apps/api/migrations ./migrations
 COPY --from=build /app/openapi.yaml ./openapi.yaml
 
-RUN npx playwright install chromium --with-deps 2>/dev/null || npx playwright install chromium
+# Chromium is the default engine and always ships. Firefox and WebKit are
+# selectable per request (HELIX_BROWSER_ENGINE, or `engine` on a scrape), and
+# each adds a few hundred MB — so they are opt-in at build time rather than
+# doubling every image for engines most instances never ask for. Without this,
+# selecting one in a container fails at launch rather than at validation.
+ARG HELIX_BROWSER_ENGINES=chromium
+RUN npx playwright install --with-deps ${HELIX_BROWSER_ENGINES} 2>/dev/null \
+    || npx playwright install ${HELIX_BROWSER_ENGINES}
 
 ENV NODE_ENV=production
 EXPOSE 7400

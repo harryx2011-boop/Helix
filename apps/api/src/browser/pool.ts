@@ -293,9 +293,27 @@ export class BrowserPool {
 
   async #launch(engine: RenderEngine): Promise<PooledBrowser> {
     const args = launchArgsFor(engine);
-    const browser = await browserTypeFor(engine).launch({
-      ...(args.length > 0 ? { args } : {}),
-    });
+    let browser: Browser;
+    try {
+      browser = await browserTypeFor(engine).launch({
+        ...(args.length > 0 ? { args } : {}),
+      });
+    } catch (error) {
+      // The container ships Chromium only unless it was built with
+      // HELIX_BROWSER_ENGINES, so a request naming firefox or webkit fails here
+      // rather than at validation. Playwright's own message says "Executable
+      // doesn't exist" and names a cache path, which tells an operator nothing
+      // about the build arg that would fix it.
+      const message = error instanceof Error ? error.message : String(error);
+      if (/executable doesn't exist|please run the following command/i.test(message)) {
+        throw new Error(
+          `The ${engine} browser is not installed in this deployment. ` +
+            `Rebuild the image with --build-arg HELIX_BROWSER_ENGINES="chromium ${engine}", ` +
+            `or use the chromium engine.`,
+        );
+      }
+      throw error;
+    }
 
     const pooled: PooledBrowser = {
       browser,

@@ -7,6 +7,7 @@ const LINKS = [
   { href: '/tools', label: 'Tools' },
   { href: '/api-docs', label: 'API' },
   { href: '/history', label: 'History' },
+  { href: '/settings', label: 'Settings' },
 ] as const;
 
 /** Bottom of every page: wordmark, the same five links, Helix credit, retention line. */

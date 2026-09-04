@@ -1,4 +1,6 @@
+import { cpus } from 'node:os';
 import { describe, expect, it } from 'vitest';
+import { JOB_TIMEOUT_MS, MAX_OUTPUT_BYTES } from '../src/ffmpeg/limits.js';
 import { bitrateForTarget, compressArgs, convertArgs, gifArgs } from '../src/ffmpeg/args.js';
 import { convertOptions, gifOptions, imageOptions } from '../src/ffmpeg/options.js';
 import { containersFromProbe, formatSchema, resolveContainer } from '../src/ffmpeg/formats.js';
@@ -181,5 +183,25 @@ describe('size target on the convert path', () => {
     const a = convertArgs('/i.mp4', '/o.mp3', 'mp3', { targetBytes: 5_000_000 }, 'mp4', 60);
     expect(a).toContain('-vn');
     expect(a).not.toContain('-b:v');
+  });
+});
+
+describe('per-job resource limits', () => {
+  it('bounds ffmpeg threads so one job cannot take the whole box', () => {
+    const a = convertArgs('/i.mp4', '/o.mp4', 'mp4', {}, 'mp4');
+    const threads = Number(a[a.indexOf('-threads') + 1]);
+    expect(threads).toBeGreaterThanOrEqual(2);
+    expect(threads).toBeLessThanOrEqual(cpus().length);
+  });
+
+  it('bounds the output ceiling above the 5 GB input cap', () => {
+    // A conversion may legitimately grow (wav from a small mp3), so the
+    // ceiling sits above the input limit rather than at it.
+    expect(MAX_OUTPUT_BYTES).toBeGreaterThan(5 * 1024 * 1024 * 1024);
+  });
+
+  it('keeps a wall clock on every job', () => {
+    expect(JOB_TIMEOUT_MS).toBeGreaterThan(0);
+    expect(JOB_TIMEOUT_MS).toBeLessThanOrEqual(60 * 60 * 1000);
   });
 });

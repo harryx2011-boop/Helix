@@ -21,7 +21,13 @@ export const KIND_LABELS: Record<FormatKind, string> = {
 
 export const KIND_ORDER: FormatKind[] = ['video', 'audio', 'image', 'gif'];
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8400';
+/**
+ * The one base URL for the converter service. Everything that builds a request
+ * or a code sample reads this; a second copy reading a different variable is
+ * how downloads ended up pointed at the frontend.
+ */
+export const API_BASE =
+  process.env.NEXT_PUBLIC_CONVERTER_API ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8400';
 
 export const ENDPOINTS: Record<FormatOp, string> = {
   convert: '/v1/convert',
@@ -40,6 +46,31 @@ export const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'jfif',
 export const GIF_EXTS = ['gif', 'apng'] as const;
 
 export const ACCEPTED_EXTS: string[] = [...VIDEO_EXTS, ...AUDIO_EXTS, ...IMAGE_EXTS, ...GIF_EXTS];
+
+/**
+ * What the API will actually accept as a target, mirroring the enums in
+ * apps/converter-api/src/ffmpeg/formats.ts. Inputs are broader than outputs —
+ * `heif`, `jfif` and `tif` are read but written as their canonical spelling —
+ * so offering anything outside this set produces a 400 the user cannot act on.
+ */
+export const OUTPUT_TARGETS: Record<FormatKind, { likely: string[]; all: string[] }> = {
+  video: {
+    likely: ['mp4', 'webm', 'mov', 'gif', 'mp3', 'mkv'],
+    all: ['mp4', 'webm', 'mov', 'mkv', 'avi', 'gif', 'mp3', 'm4a', 'wav', 'aac', 'flac', 'ogg'],
+  },
+  audio: {
+    likely: ['mp3', 'wav', 'm4a', 'flac', 'ogg'],
+    all: ['mp3', 'wav', 'm4a', 'flac', 'ogg', 'aac'],
+  },
+  image: {
+    likely: ['jpg', 'png', 'webp', 'avif', 'tiff'],
+    all: ['jpg', 'png', 'webp', 'avif', 'tiff', 'gif'],
+  },
+  gif: {
+    likely: ['gif', 'mp4', 'webm', 'apng'],
+    all: ['gif', 'apng', 'mp4', 'webm', 'mov', 'png', 'webp'],
+  },
+};
 
 export function label(format: string): string {
   if (format === 'video' || format === 'image') return format;

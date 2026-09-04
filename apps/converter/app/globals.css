@@ -144,12 +144,20 @@ body {
   background-size: 28px 28px;
   animation: stripes 700ms linear infinite;
 }
+@keyframes stripes {
+  from { background-position: 0 0; }
+  to { background-position: 28px 0; }
+}
 
 /* Skeleton shimmer. */
 .shimmer {
   background: linear-gradient(90deg, var(--p-code) 0%, var(--p-line) 50%, var(--p-code) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
 }
 
 .prose-persona {

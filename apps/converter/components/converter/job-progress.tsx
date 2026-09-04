@@ -40,11 +40,17 @@ export function JobProgress({ phase, pct, uploadPct, eta, fps, fileName, cancell
       >
         <div
           className={cx(
-            'absolute inset-y-0 left-0 rounded-pill transition-[width] duration-150',
+            // clip-path rather than width: this updates on every SSE frame, and
+            // width is a layout property. Same approach as .pill-fill.
+            'absolute inset-y-0 left-0 rounded-pill transition-[clip-path] duration-150',
             phase === 'running' ? 'stripe-bar' : 'bg-blue',
-            phase === 'queued' && 'animate-blink w-2',
+            phase === 'queued' ? 'animate-blink w-2' : 'w-full',
           )}
-          style={phase === 'queued' ? undefined : { width: `${value}%` }}
+          style={
+            phase === 'queued'
+              ? undefined
+              : { clipPath: `inset(0 ${100 - Math.max(0, Math.min(100, value))}% 0 0)` }
+          }
         />
       </div>
       <span className="w-[4.5rem] shrink-0 text-right font-mono text-sm tabular-nums text-p-ink-2">{text}</span>

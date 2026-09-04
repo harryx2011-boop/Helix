@@ -1,6 +1,7 @@
 import type { Format } from './formats.js';
 import { kindOf } from './formats.js';
 import type { CompressOptions, ConvertOptions, GifOptions } from './options.js';
+import { MAX_THREADS } from './limits.js';
 
 /**
  * Every argv is built here and nowhere else. Values reaching this module have
@@ -67,6 +68,9 @@ export function convertArgs(
     '-hide_banner',
     '-nostdin',
     '-y',
+    // Bounded so one job cannot take every core off the other queue slots.
+    '-threads',
+    String(MAX_THREADS),
     ...PROTOCOL_GUARD,
     inputFormat === 'mkv' ? 'matroska' : inputFormat,
     ...trimArgs(o),

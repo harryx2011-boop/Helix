@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { CommandPalette } from '@/components/site/command-palette';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { maskKey, setKey, useApiKey } from '@/lib/auth';
 
 const LINKS = [
   { href: '/convert', label: 'Convert' },
@@ -101,6 +102,7 @@ export function SiteHeader() {
               </kbd>
             </button>
 
+            <KeyBadge />
             <ThemeToggle size="md" className="w-11 px-0" />
           </nav>
         </div>
@@ -108,5 +110,22 @@ export function SiteHeader() {
 
       <CommandPalette open={paletteOpen} onClose={closePalette} />
     </>
+  );
+}
+
+/** Shows which key is in use, and lets it be cleared. */
+function KeyBadge() {
+  const key = useApiKey();
+  if (!key) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => setKey(null)}
+      title="Sign out and forget this key"
+      aria-label={`Signed in as ${maskKey(key)}. Sign out and forget this key.`}
+      className="hidden h-11 items-center rounded-pill px-3 font-mono text-[12px] text-p-ink-3 transition-colors duration-150 hover:bg-p-code hover:text-p-ink sm:inline-flex"
+    >
+      {maskKey(key)}
+    </button>
   );
 }

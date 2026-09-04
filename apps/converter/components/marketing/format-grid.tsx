@@ -4,13 +4,16 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { KIND_LABELS, KIND_ORDER, label, pairsByKind, type FormatKind, type FormatPair } from '@/lib/formats';
-import { prefersReducedMotion } from '@/lib/theme';
+import { prefersReducedMotion, useReducedMotion } from '@/lib/theme';
 
 function Tile({ pair, index, shown }: { pair: FormatPair; index: number; shown: boolean }) {
   const isCompress = pair.op === 'compress';
+  // The global guard zeroes duration but not delay, so without this the tiles
+  // sit at opacity 0 for up to 550ms and then pop.
+  const reduced = useReducedMotion();
   return (
     <li
-      style={{ animationDelay: `${Math.min(index, 11) * 50}ms` }}
+      style={{ animationDelay: reduced ? '0ms' : `${Math.min(index, 11) * 50}ms` }}
       className={shown ? 'animate-fade-up' : 'opacity-0'}
     >
       <Link

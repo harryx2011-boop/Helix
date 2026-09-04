@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import {
   compressBody,
@@ -10,9 +10,21 @@ import {
   PRESET_TARGETS,
 } from '../ffmpeg/options.js';
 import { JobManager } from '../jobs/manager.js';
+import type { Format } from '../ffmpeg/formats.js';
 import { createJobDir, removeJobDir } from '../storage/temp.js';
 import { publicJob, type JobEvent, type JobOp } from '../jobs/types.js';
 import { MAX_FILE_BYTES, parseOptions, saveUpload, UploadError } from './upload.js';
+
+type JobParams = { Params: { id: string } };
+
+/** @fastify/multipart's parts() iterator, narrowed to what this route uses. */
+type Part =
+  | { type: 'file'; fieldname: string; filename?: string; file: NodeJS.ReadableStream & { truncated: boolean; bytesRead: number } }
+  | { type: 'field'; fieldname: string; value: unknown };
+
+type PartsRequest = FastifyRequest & {
+  parts: (opts?: { limits?: { fileSize?: number } }) => AsyncIterableIterator<Part>;
+};
 
 const CONTENT_TYPES: Record<string, string> = {
   mp4: 'video/mp4',
@@ -38,7 +50,8 @@ const CONTENT_TYPES: Record<string, string> = {
 };
 
 export function registerJobRoutes(app: FastifyInstance, manager: JobManager): void {
-  const submit = (op: JobOp, schema: z.ZodTypeAny) => async (request: any, reply: any) => {
+  const submit =
+    (op: JobOp, schema: z.ZodTypeAny) => async (request: FastifyRequest, reply: FastifyReply) => {
     // Fields that arrive AFTER the file part are absent from `file.fields`, and
     // curl sends -F file=@... first. Walking every part is the only ordering
     // that works for real clients, so the file is streamed to disk mid-walk and
@@ -50,7 +63,7 @@ export function registerJobRoutes(app: FastifyInstance, manager: JobManager): vo
     let upload: Awaited<ReturnType<typeof saveUpload>> | null = null;
 
     try {
-      for await (const part of request.parts({ limits: { fileSize: MAX_FILE_BYTES } })) {
+      for await (const part of (request as PartsRequest).parts({ limits: { fileSize: MAX_FILE_BYTES } })) {
         if (part.type === 'file') {
           if (upload) {
             await part.file.resume();
@@ -72,7 +85,7 @@ export function registerJobRoutes(app: FastifyInstance, manager: JobManager): vo
       return reply.code(400).send({ error: 'No file was uploaded.' });
     }
 
-    let body: any;
+    let body: { to?: Format; options: Record<string, unknown> };
     try {
       body = schema.parse({
         to: fields.to?.value,
@@ -100,6 +113,7 @@ export function registerJobRoutes(app: FastifyInstance, manager: JobManager): vo
     }
 
     const job = manager.submit(id, {
+      ownerId: request.apiKey?.id ?? null,
       op,
       to,
       filename: upload.filename,
@@ -117,20 +131,23 @@ export function registerJobRoutes(app: FastifyInstance, manager: JobManager): vo
   app.post('/v1/gif', submit('gif', gifBody));
   app.post('/v1/image', submit('image', imageBody));
 
-  app.get('/v1/jobs/:id', async (request: any, reply) => {
-    const job = manager.get(request.params.id);
+  app.get<JobParams>('/v1/jobs/:id', async (request, reply) => {
+    const job = manager.getOwned(request.params.id, request.apiKey?.id ?? null);
     if (!job) return reply.code(404).send({ error: 'No such job.' });
     return publicJob(job);
   });
 
-  app.delete('/v1/jobs/:id', async (request: any, reply) => {
+  app.delete<JobParams>('/v1/jobs/:id', async (request, reply) => {
+    if (!manager.getOwned(request.params.id, request.apiKey?.id ?? null)) {
+      return reply.code(404).send({ error: 'No such job.' });
+    }
     const cancelled = manager.cancel(request.params.id);
     if (!cancelled) return reply.code(404).send({ error: 'No such job, or it already finished.' });
     return { status: 'cancelled' };
   });
 
-  app.get('/v1/jobs/:id/events', (request: any, reply) => {
-    const job = manager.get(request.params.id);
+  app.get<JobParams>('/v1/jobs/:id/events', (request, reply) => {
+    const job = manager.getOwned(request.params.id, request.apiKey?.id ?? null);
     if (!job) return reply.code(404).send({ error: 'No such job.' });
 
     // Writing to reply.raw bypasses the CORS plugin's onSend hook, so the
@@ -190,8 +207,8 @@ export function registerJobRoutes(app: FastifyInstance, manager: JobManager): vo
     return reply;
   });
 
-  app.get('/v1/jobs/:id/download', async (request: any, reply) => {
-    const job = manager.get(request.params.id);
+  app.get<JobParams>('/v1/jobs/:id/download', async (request, reply) => {
+    const job = manager.getOwned(request.params.id, request.apiKey?.id ?? null);
     if (!job) return reply.code(404).send({ error: 'No such job.' });
     if (job.status !== 'done' || !job.outputPath) {
       return reply.code(409).send({ error: 'This job has not finished.' });

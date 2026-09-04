@@ -7,6 +7,8 @@ export type JobError = { message: string; stderr: string };
 
 export type Job = {
   id: string;
+  /** The key that submitted it; null when auth is disabled. */
+  ownerId: string | null;
   op: JobOp;
   from: Format | null;
   to: Format;
@@ -30,7 +32,7 @@ export type JobEvent =
   | { status: 'cancelled' };
 
 export function publicJob(job: Job) {
-  const { outputPath: _outputPath, ...rest } = job;
+  const { outputPath: _outputPath, ownerId: _ownerId, ...rest } = job;
   return {
     ...rest,
     // History shows what the user dropped, not just `mp4 → mp3`.

@@ -4,29 +4,14 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { PillButton } from '@/components/ui/pill-button';
 import type { FileKind } from '@/lib/jobs/types';
+import { OUTPUT_TARGETS } from '@/lib/formats';
 
 const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(' ');
 
 // Likely targets first; `all` feeds the searchable popover. Move to
 // lib/formats.ts once the /convert/[pair] manifest lands.
-export const TARGETS: Record<FileKind, { likely: string[]; all: string[] }> = {
-  video: {
-    likely: ['mp4', 'webm', 'mov', 'gif', 'mp3', 'mkv'],
-    all: ['mp4', 'webm', 'mov', 'mkv', 'avi', 'gif', 'mp3', 'm4a', 'wav', 'aac', 'flac', 'ogg', 'opus', 'm4v', 'mpg', 'ts', '3gp', 'webp', 'png', 'jpg'],
-  },
-  audio: {
-    likely: ['mp3', 'wav', 'm4a', 'flac', 'ogg', 'opus'],
-    all: ['mp3', 'wav', 'm4a', 'flac', 'ogg', 'opus', 'aac', 'aiff', 'wma'],
-  },
-  image: {
-    likely: ['jpg', 'png', 'webp', 'avif', 'heic', 'tiff'],
-    all: ['jpg', 'png', 'webp', 'avif', 'heic', 'tiff', 'gif', 'bmp'],
-  },
-  gif: {
-    likely: ['mp4', 'webm', 'png', 'webp', 'apng'],
-    all: ['mp4', 'webm', 'png', 'webp', 'apng', 'jpg', 'mov', 'mkv'],
-  },
-};
+/** The API's accepted targets, so the picker can never offer a 400. */
+export const TARGETS = OUTPUT_TARGETS;
 
 const LABEL: Record<string, string> = {
   mp4: 'MP4 · H.264 video',

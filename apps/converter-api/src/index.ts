@@ -3,6 +3,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
+import { postgresVerifier, registerAuth, type Verifier } from './auth.js';
 import { JobManager } from './jobs/manager.js';
 import { registerJobRoutes } from './routes/jobs.js';
 import { MAX_FILE_BYTES } from './routes/upload.js';
@@ -12,7 +13,16 @@ const PORT = Number(process.env.PORT ?? 8400);
 const HOST = process.env.HOST ?? '127.0.0.1';
 const ORIGIN = process.env.CONVERT_ORIGIN ?? 'http://localhost:4400';
 
-export async function build() {
+/**
+ * Auth is on unless explicitly disabled. A converter that spawns ffmpeg on
+ * uploaded files should not be open by default, and defaulting to off means a
+ * missing env var silently removes the gate.
+ */
+function authEnabled(): boolean {
+  return process.env.CONVERT_AUTH !== 'off';
+}
+
+export async function build(options: { verify?: Verifier } = {}) {
   const app = Fastify({
     logger: process.env.NODE_ENV === 'test' ? false : { level: process.env.LOG_LEVEL ?? 'info' },
     bodyLimit: MAX_FILE_BYTES,
@@ -24,11 +34,21 @@ export async function build() {
     limits: { fileSize: MAX_FILE_BYTES, files: 1, fields: 8 },
   });
 
+  const gated = authEnabled() || Boolean(options.verify);
+
+  if (gated) {
+    const verify = options.verify ?? (await postgresVerifier());
+    registerAuth(app, { verify, open: ['/health'] });
+  } else {
+    app.log.warn('CONVERT_AUTH=off — every endpoint is open');
+  }
+
   const manager = new JobManager();
   registerJobRoutes(app, manager);
 
   app.get('/health', async () => ({
     status: 'ok',
+    auth: gated,
     concurrency: manager.queue.concurrency,
     queued: manager.queue.depth,
   }));

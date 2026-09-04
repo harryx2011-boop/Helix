@@ -62,7 +62,10 @@ beforeAll(async () => {
   ]);
   sourceMp4 = await readFile(path);
 
+  // This suite covers the conversion path; auth has its own suite.
+  process.env.CONVERT_AUTH = 'off';
   app = await build();
+  delete process.env.CONVERT_AUTH;
   await app.ready();
 }, 180_000);
 

@@ -1,15 +1,15 @@
+// Limits live in limits.ts so args.ts can read them without cycling back here.
 import { spawn } from 'node:child_process';
+import { stat } from 'node:fs/promises';
 import { containersFromProbe, type Format } from './formats.js';
+import { JOB_TIMEOUT_MS, MAX_OUTPUT_BYTES } from './limits.js';
 import { probeArgs } from './args.js';
 
 export const FFMPEG_BIN = process.env.FFMPEG_PATH ?? 'ffmpeg';
 export const FFPROBE_BIN = process.env.FFPROBE_PATH ?? 'ffprobe';
 
-/**
- * A wedged encode would otherwise hold a queue slot forever, so every process
- * carries a wall clock and is killed when it runs past it.
- */
-export const JOB_TIMEOUT_MS = Number(process.env.CONVERT_TIMEOUT_MS ?? 30 * 60 * 1000);
+
+
 
 export class FfmpegError extends Error {
   constructor(
@@ -89,7 +89,13 @@ export type Progress = { pct: number; fps: number; eta: number | null };
 export function spawnProcess(
   bin: string,
   args: string[],
-  opts: { timeoutMs?: number; durationSec?: number; onProgress?: (p: Progress) => void } = {},
+  opts: {
+    timeoutMs?: number;
+    durationSec?: number;
+    onProgress?: (p: Progress) => void;
+    /** Killed if this file grows past MAX_OUTPUT_BYTES. */
+    watchOutput?: string;
+  } = {},
 ): RunHandle {
   // argv array, no shell — a user value can never become a command.
   const child = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'], shell: false });
@@ -98,10 +104,24 @@ export function spawnProcess(
   let stderr = '';
   let cancelled = false;
 
+  let oversize = false;
   const timeout = setTimeout(() => {
     cancelled = true;
     child.kill('SIGKILL');
   }, opts.timeoutMs ?? JOB_TIMEOUT_MS);
+
+  const sizeWatch = opts.watchOutput
+    ? setInterval(() => {
+        void stat(opts.watchOutput as string)
+          .then((info) => {
+            if (info.size > MAX_OUTPUT_BYTES) {
+              oversize = true;
+              child.kill('SIGKILL');
+            }
+          })
+          .catch(() => {});
+      }, 5_000)
+    : undefined;
 
   child.stdout.on('data', (buf: Buffer) => {
     const chunk = buf.toString();
@@ -118,13 +138,26 @@ export function spawnProcess(
   });
 
   const promise = new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-    child.on('error', (err) => {
+    const done = () => {
       clearTimeout(timeout);
+      if (sizeWatch) clearInterval(sizeWatch);
+    };
+
+    child.on('error', (err) => {
+      done();
       reject(new FfmpegError(err.message, stderr, null));
     });
     child.on('close', (code) => {
-      clearTimeout(timeout);
-      if (cancelled) reject(new FfmpegError('Cancelled', stderr, code));
+      done();
+      if (oversize) {
+        reject(
+          new FfmpegError(
+            'The output grew past the size limit, so the job was stopped.',
+            stderr,
+            code,
+          ),
+        );
+      } else if (cancelled) reject(new FfmpegError('Cancelled', stderr, code));
       else if (code === 0) resolve({ stdout, stderr });
       else reject(new FfmpegError(describe(stderr), stderr, code));
     });

@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { PillButton } from '@/components/ui/pill-button';
+import { SignedOutPanel } from '@/components/site/key-gate';
+import { useApiKey } from '@/lib/auth';
 import { Dropzone } from './dropzone';
 import { FileRow } from './file-row';
 import { SettingsPanel } from './settings-panel';
 import { chimeError, chimeSuccess, installAudioUnlock, primeAudio } from '@/lib/audio/chimes';
-import { cancelJob, downloadUrl, submitJob, subscribe, type JobOptions, type SubmitRequest } from '@/lib/jobs/client';
+import { MOCK, cancelJob, downloadUrl, submitJob, subscribe, type JobOptions, type SubmitRequest } from '@/lib/jobs/client';
 import { setSoundOn, upsertJob, useSoundOn } from '@/lib/jobs/store';
 import {
   defaultSettings,
@@ -120,6 +122,8 @@ type PanelProps = {
 };
 
 export function ConverterPanel({ preset }: PanelProps = {}) {
+  const apiKey = useApiKey();
+
   const [items, setItems] = useState<QueueItem[]>([]);
   const [shared, setShared] = useState<ConvertSettings | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -275,9 +279,26 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
             patch(item.localId, { phase: 'running', pct: frame.pct, eta: frame.eta, fps: frame.fps ?? null });
             break;
           case 'done': {
-            patch(item.localId, { phase: 'done', pct: 100, eta: 0, url: frame.url, outSize: frame.size });
+            // The frame's url is relative to the API, so it must be resolved
+            // against API_BASE (and carry the key) before anything fetches it.
+            patch(item.localId, {
+              phase: 'done',
+              pct: 100,
+              eta: 0,
+              url: downloadUrl(accepted.id),
+              outSize: frame.size,
+            });
             chimeSuccess();
-            upsertJob({ id: accepted.id, from: item.ext, to: s.to, status: 'done', url: frame.url, size: frame.size, expiresAt: Date.now() + 3600_000 });
+            upsertJob({
+              id: accepted.id,
+              from: item.ext,
+              to: s.to,
+              status: 'done',
+              // Stored relative: history re-resolves it, and a key can change.
+              url: frame.url,
+              size: frame.size,
+              expiresAt: Date.now() + 3600_000,
+            });
             setAnnounce(`${item.name} is ready. ${formatBytes(frame.size)}, ${formatDelta(item.size, frame.size)}.`);
             settle(item.localId, { localId: item.localId, name: item.name, ok: true, inSize: item.size, outSize: frame.size });
             unsubs.current.delete(item.localId);
@@ -418,6 +439,10 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
   const hasFiles = items.length > 0;
   const settingsLocked = summary.active > 0;
 
+  // Every hook above runs unconditionally; the gate is the last thing before
+  // render, so hook order is stable whether or not a key is present.
+  if (!MOCK && !apiKey) return <SignedOutPanel />;
+
   return (
     <section
       aria-label="Converter"
@@ -514,7 +539,9 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
               state={primaryState}
               progress={summary.pct}
               sheen={primaryState === 'idle'}
-              disabled={primaryState === 'queued' || primaryState === 'running'}
+              /* Busy is not disabled: disabling dims the progress fill to half
+                 and drops focus, so the label change goes unannounced.
+                 onPrimary already no-ops while a batch is running. */
               aria-busy={primaryState === 'queued' || primaryState === 'running'}
               onClick={onPrimary}
             >

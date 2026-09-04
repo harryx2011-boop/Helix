@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Download, X } from 'lucide-react';
 import { PillButton } from '@/components/ui/pill-button';
 import { removeStoredJob, useStoredJobs } from '@/lib/jobs/store';
+import { withKey } from '@/lib/auth';
 import { API_BASE, formatBytes, label } from '@/lib/formats';
 
 function relative(ms: number): string {
@@ -75,7 +76,9 @@ export default function HistoryPage() {
             <ul className="space-y-3">
               {jobs.map((j, i) => {
                 const live = j.status === 'done' && j.url;
-                const href = j.url ? (j.url.startsWith('http') ? j.url : `${API_BASE}${j.url}`) : '';
+                // Followed as a plain link, so it needs the key like any other
+                // download URL; the stored value is relative to the API.
+                const href = j.url ? withKey(j.url.startsWith('http') ? j.url : `${API_BASE}${j.url}`) : '';
                 return (
                   <li
                     key={j.id}

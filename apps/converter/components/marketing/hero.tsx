@@ -163,7 +163,7 @@ export function Hero() {
               <div className="flex flex-col items-center gap-3 py-4 text-center">
                 <span
                   className={`inline-flex h-11 w-11 items-center justify-center rounded-pill transition-colors duration-150 ease-out ${
-                    over ? 'bg-blue text-white' : 'bg-p-code text-p-ink-2'
+                    over ? 'bg-blue text-[var(--p-on-blue)]' : 'bg-p-code text-p-ink-2'
                   }`}
                 >
                   <Upload className="h-5 w-5" aria-hidden="true" />

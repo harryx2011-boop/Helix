@@ -12,7 +12,11 @@ export async function convertImage(
   to: Format,
   o: ImageOptions,
 ): Promise<void> {
-  let pipeline = sharp(input, { failOn: 'none' }).rotate();
+  // A second .rotate() is ignored by sharp, so the EXIF auto-orient call and
+  // the user's rotation have to be the same one: pass the angle when there is
+  // one, and use the bare call for auto-orient only when there is not.
+  let pipeline = sharp(input, { failOn: 'none' });
+  pipeline = o.rotate ? pipeline.rotate(o.rotate) : pipeline.rotate();
 
   if (o.width || o.height) {
     pipeline = pipeline.resize({
@@ -22,7 +26,6 @@ export async function convertImage(
       withoutEnlargement: true,
     });
   }
-  if (o.rotate) pipeline = pipeline.rotate(o.rotate);
   if (o.flip === 'v' || o.flip === 'hv') pipeline = pipeline.flip();
   if (o.flip === 'h' || o.flip === 'hv') pipeline = pipeline.flop();
 
@@ -46,6 +49,11 @@ export async function convertImage(
       break;
     case 'gif':
       pipeline = pipeline.gif();
+      break;
+    case 'heic':
+      // libvips requires the codec to be named; without it sharp throws
+      // "Expected one of: av1, hevc for compression".
+      pipeline = pipeline.heif({ quality, compression: 'av1' });
       break;
     default:
       throw new Error(`Unsupported image target: ${to}`);

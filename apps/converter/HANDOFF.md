@@ -8,10 +8,11 @@ root, derived from 40 scoping answers.
 
 | | |
 |---|---|
-| Backend tests | 48 passing (24 unit, 8 ffmpeg integration, 16 HTTP) |
-| Frontend E2E | 6 passing (Playwright, real browser against real API) |
-| Typecheck | clean, both apps |
-| Verified by hand | curl for all four operations, browser round trip, light + dark |
+| Backend tests | 74 passing (27 unit, 8 ffmpeg, 12 image, 16 HTTP, 11 auth) |
+| Frontend E2E | 11 passing (Playwright, real browser against real API) |
+| Typecheck + lint | clean, both apps |
+| Endpoints | all 9 operations verified end to end, outputs opened and checked |
+| Verified by hand | curl per endpoint, browser round trip, light + dark, motion states |
 
 ## Run it
 
@@ -80,6 +81,28 @@ cd apps/converter && npm run e2e       # playwright, needs both servers up
 6. **Malformed options JSON** returned 500 instead of 400.
 7. **`/convert` had no header or footer** — the only page missing them. Chrome
    hoisted into the layout.
+8. **Downloads pointed at the frontend.** Two different `API_BASE` constants
+   read two different env vars, and the SSE frame's relative `url` was stored
+   raw, so every download and A/B preview 404'd against :4400. One constant now,
+   resolved through `downloadUrl()`.
+9. **The running-state stripes never animated.** `@keyframes stripes` and
+   `shimmer` lived only in the Tailwind config, and Tailwind emits a keyframe
+   only when its `animate-*` utility appears in content — nothing used them. The
+   progress fill was a static stripe pattern. Moved into `globals.css`.
+10. **The busy primary button was `disabled`**, rendering the progress fill at
+   50% opacity under a not-allowed cursor. It is `aria-busy` now, so it keeps
+   full contrast and stays focusable for the label change.
+11. **Image rotation silently did nothing.** `sharp().rotate()` was called
+   twice; the second call is ignored, so the EXIF auto-orient won and the user's
+   angle was dropped.
+12. **HEIC output threw.** libvips needs an explicit codec; without
+   `compression: 'av1'` sharp raises "Expected one of: av1, hevc". HEIC was the
+   reason sharp was chosen and had never been converted until now.
+13. **The picker offered 8 formats the API rejects** (`opus`, `aiff`, `wma`,
+   `bmp`, `mpg`, `ts`, `3gp`, `m4v`) — each a guaranteed 400. Targets now derive
+   from one list mirroring the server enums.
+14. **The key badge had no accessible name** — only a `title` — and the first
+   fix leaked the full key into `aria-label`. It is masked in both.
 
 ## Decisions from the 40 answers
 
@@ -100,13 +123,43 @@ cd apps/converter && npm run e2e       # playwright, needs both servers up
 - `publicJob` exposes `name`, so `/history` can show the filename rather than
   only `mp4 → mp3`.
 
+## Auth
+
+Helix has **no session layer** — it authenticates with `helix-` bearer keys
+only. So the browser holds a key the same way an API client does: entered on
+`/settings` or the sign-in panel, kept in `localStorage` under `converter:key`,
+sent as a header on XHR and fetch. `EventSource` and plain download links
+cannot set headers, so those two URLs alone carry `?key=` — same origin,
+naming a job the key already owns.
+
+- On by default. `CONVERT_AUTH=off` opens it for local use, and `/health`
+  reports which mode is live so the UI can say so.
+- Keys are verified against the same `api_keys` table the rest of Helix writes,
+  matched on a SHA-256 hash. Unknown and revoked are indistinguishable (401);
+  an unreachable database is 503, not 401.
+- **Jobs are owned.** Every read, cancel and download checks `ownerId`, and a
+  mismatch is 404 rather than 403 — existence is not disclosed.
+
+## Settings and providers
+
+`/settings` carries the key field, live service state read from `/health`, the
+sound switch, and what actually runs a conversion. Each provider wears its
+**real mark** from `public/providers/`, never a monogram: FFmpeg, sharp,
+libvips, Helix, PostgreSQL, Vercel. Marks were fetched, opened and compared by
+eye — the favicon service returned a generic globe for the Helix domain, so
+that one uses the project's own `logo.svg` instead. A test asserts all six load
+and that no two share a file.
+
+The app's own icon (`app/icon.png`) is the Helix glyph rendered from that SVG.
+
 ## Not done
 
-- **Helix auth is not wired.** Every endpoint is currently open; the contract
-  says account-required. This is the main gap before it is usable as specified.
-- Two format lists exist — `lib/formats.ts` (`ACCEPTED_EXTS`) and the picker's
-  own `TARGETS`. One should own the supported set.
-- No `eslint.config.mjs` for either app.
+- The `/settings` page is read-only about the service; it cannot change
+  server-side configuration. Helix's own `/settings` registry pattern would be
+  the way to do that.
 - sharp installs with `--ignore-scripts` in some flows; run `npm rebuild sharp`
   if the image path throws.
-- HEIC depends on the libvips build; verify before promising it in the UI.
+- Design review left three open items, all judgement calls: two primary-button
+  languages (marketing uses ink-black pills, the app uses the blue PillButton),
+  two type scales (arbitrary px in marketing, Tailwind rungs in the converter),
+  and `body { min-height: 100vh }` which should be `100dvh`.

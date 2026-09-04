@@ -17,6 +17,7 @@ import { Queue } from './queue.js';
 import type { Job, JobEvent, JobOp } from './types.js';
 
 export type SubmitInput = {
+  ownerId: string | null;
   op: JobOp;
   to: Format;
   filename: string;
@@ -35,6 +36,18 @@ export class JobManager extends EventEmitter {
     return this.jobs.get(id);
   }
 
+  /**
+   * A job id is a capability, so ownership is checked on every read: a valid
+   * key must not be able to reach another key's job by guessing or replaying
+   * an id.
+   */
+  getOwned(id: string, ownerId: string | null): Job | undefined {
+    const job = this.jobs.get(id);
+    if (!job) return undefined;
+    if (job.ownerId !== null && job.ownerId !== ownerId) return undefined;
+    return job;
+  }
+
   /** Allocates the id (and its directory) so the upload can stream straight in. */
   static allocateId(): string {
     return `cv_${nanoid(10)}`;
@@ -44,6 +57,7 @@ export class JobManager extends EventEmitter {
     const now = Date.now();
     const job: Job = {
       id,
+      ownerId: input.ownerId,
       op: input.op,
       from: input.claimedFormat,
       to: input.to,
@@ -185,6 +199,7 @@ export class JobManager extends EventEmitter {
       const pass2 = spawnProcess(FFMPEG_BIN, builder.render(palettePath, outPath), {
         durationSec: source.duration,
         onProgress,
+        watchOutput: outPath,
       });
       this.handles.set(job.id, pass2);
       await pass2.promise;
@@ -214,6 +229,7 @@ export class JobManager extends EventEmitter {
     const handle = spawnProcess(FFMPEG_BIN, args, {
       durationSec: source.duration,
       onProgress,
+      watchOutput: outPath,
     });
     this.handles.set(job.id, handle);
     await handle.promise;

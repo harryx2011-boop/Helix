@@ -1,0 +1,22 @@
+import type { Metadata } from 'next';
+import { SettingsView } from '@/components/site/settings-view';
+
+export const metadata: Metadata = {
+  title: 'Settings',
+  description: 'Your API key, sound, and what runs each conversion.',
+};
+
+export default function SettingsPage() {
+  return (
+    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
+      <h1 className="text-[30px] font-semibold tracking-[-0.02em] text-p-ink sm:text-[36px]">
+        Settings
+      </h1>
+      <p className="mt-2 max-w-[58ch] text-[15px] text-p-ink-2">
+        Everything here is stored in this browser. Nothing is sent anywhere except your key, which
+        goes only to the converter.
+      </p>
+      <SettingsView />
+    </main>
+  );
+}

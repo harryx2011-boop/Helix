@@ -6,6 +6,7 @@ import { PillButton } from '@/components/ui/pill-button';
 import { getAudioContext, primeAudio } from '@/lib/audio/chimes';
 import { API_BASE } from '@/lib/jobs/client';
 import { formatSeconds } from '@/lib/jobs/types';
+import { prefersReducedMotion } from '@/lib/theme';
 
 const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(' ');
 const MAX_DECODE_BYTES = 64 * 1024 ** 2;
@@ -160,9 +161,19 @@ export function AbPreview({ kind, sourceUrl, outputUrl, sourceLabel, outputLabel
       for (let i = 0; i < buf.length; i++) sum += (buf[i] ?? 0) ** 2;
       const rms = Math.sqrt(sum / buf.length);
       const scaled = Math.min(1, rms * 3);
-      meter.style.transform = `scaleX(${scaled.toFixed(3)})`;
       const now = performance.now();
-      if (now - lastLevelAt.current > 250) {
+      const stepped = now - lastLevelAt.current > 250;
+
+      // The CSS guard cannot reach an inline transform written every frame, so
+      // under reduced motion the meter steps with the 250ms throttle instead of
+      // animating continuously. It still indicates level, just not per frame.
+      if (!prefersReducedMotion()) {
+        meter.style.transform = `scaleX(${scaled.toFixed(3)})`;
+      } else if (stepped) {
+        meter.style.transform = `scaleX(${scaled.toFixed(2)})`;
+      }
+
+      if (stepped) {
         lastLevelAt.current = now;
         setLevel(Math.round(scaled * 100));
       }

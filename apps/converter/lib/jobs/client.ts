@@ -2,10 +2,12 @@
 // UI and apps/converter-api: `MOCK` swaps every call for an in-memory
 // simulation that produces the same frames the real SSE stream will.
 
+import { authHeaders, withKey } from '@/lib/auth';
+import { API_BASE } from '@/lib/formats';
 import type { CompressPreset, Job, JobOp, SseFrame } from './types';
 
 export const MOCK = process.env.NEXT_PUBLIC_CONVERTER_MOCK !== 'false';
-export const API_BASE = process.env.NEXT_PUBLIC_CONVERTER_API ?? '';
+export { API_BASE };
 
 export type JobOptions = {
   crf?: number; // video, 0–51
@@ -71,7 +73,8 @@ export function cancelJob(id: string): Promise<void> {
 
 export function downloadUrl(id: string): string {
   if (MOCK) return mock.get(id)?.url ?? '';
-  return `${API_BASE}/v1/jobs/${encodeURIComponent(id)}/download`;
+  // Followed as a plain link, so the key rides in the query like the SSE URL.
+  return withKey(`${API_BASE}/v1/jobs/${encodeURIComponent(id)}/download`);
 }
 
 // ---------------------------------------------------------------- real path
@@ -102,7 +105,7 @@ function realSubmit(req: SubmitRequest, { onUpload, signal }: SubmitHandlers): P
   return new Promise<Accepted>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_BASE}/v1/${req.op}`);
-    xhr.withCredentials = true;
+    for (const [name, value] of Object.entries(authHeaders())) xhr.setRequestHeader(name, value);
     xhr.responseType = 'json';
     xhr.upload.onprogress = (e) => {
       onUpload?.(e.loaded, e.lengthComputable ? e.total : req.file.size);
@@ -123,13 +126,16 @@ function realSubmit(req: SubmitRequest, { onUpload, signal }: SubmitHandlers): P
 }
 
 async function realGet(id: string): Promise<Job> {
-  const res = await fetch(`${API_BASE}/v1/jobs/${encodeURIComponent(id)}`, { credentials: 'include' });
+  const res = await fetch(`${API_BASE}/v1/jobs/${encodeURIComponent(id)}`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new ApiError(res.status, `Job ${id} not found`);
   return (await res.json()) as Job;
 }
 
 function realSubscribe(id: string, { onFrame, onError }: FrameHandlers): () => void {
-  const es = new EventSource(`${API_BASE}/v1/jobs/${encodeURIComponent(id)}/events`, { withCredentials: true });
+  // EventSource cannot set headers, so this one URL carries the key in its query.
+  const es = new EventSource(withKey(`${API_BASE}/v1/jobs/${encodeURIComponent(id)}/events`));
   es.onmessage = (e: MessageEvent<string>) => {
     let frame: SseFrame;
     try {
@@ -149,7 +155,7 @@ function realSubscribe(id: string, { onFrame, onError }: FrameHandlers): () => v
 async function realCancel(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/v1/jobs/${encodeURIComponent(id)}`, {
     method: 'DELETE',
-    credentials: 'include',
+    headers: authHeaders(),
   });
   if (!res.ok && res.status !== 404) throw new ApiError(res.status, 'Cancel failed');
 }

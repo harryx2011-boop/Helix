@@ -28,6 +28,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: 'Agent Schemas', href: '/agent' },
       { label: 'Browser Interaction', href: '/interact' },
       { label: 'Web Monitoring', href: '/monitor' },
+      { label: 'Converter API', href: CONVERTER_URL },
     ],
   },
   {
@@ -39,7 +40,6 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: 'API keys', href: '/app/keys' },
       { label: 'Settings', href: '/app/settings' },
       { label: 'Persona', href: PERSONA_URL },
-      { label: 'Converter API', href: CONVERTER_URL },
     ],
   },
   {

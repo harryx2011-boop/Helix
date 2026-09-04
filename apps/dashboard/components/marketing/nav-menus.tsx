@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   ArrowUpRight,
   BookOpen,
+  FileCog,
   Bot,
   Braces,
   FileText,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/components/shell/logo';
 import { endpointById, type EndpointDef } from '@/lib/catalog';
-import { PERSONA_URL } from '@/lib/mode';
+import { CONVERTER_URL, PERSONA_URL } from '@/lib/mode';
 import { GITHUB_URL } from '@/lib/github-stars';
 import { cn } from '@/lib/utils';
 import { IconTile } from './icon-tile';
@@ -81,6 +82,13 @@ export const ENDPOINT_ROWS: readonly MenuRow[] = [
     href: '/app/agent',
     tagline: 'Give it a goal. It picks the endpoints, runs them, and reports back.',
     icon: Bot,
+  },
+  {
+    label: 'Converter API',
+    href: CONVERTER_URL,
+    tagline: 'Convert audio, video, images and documents between formats.',
+    icon: FileCog,
+    external: true,
   },
 ];
 

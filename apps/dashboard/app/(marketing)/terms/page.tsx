@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { HeroField } from '@/components/marketing/hero-field';
+import { GITHUB_URL } from '@/lib/github-stars';
 
 export const metadata: Metadata = {
   title: 'Terms',
@@ -41,7 +42,7 @@ export default function TermsPage() {
             use, modify, self-host and redistribute the software. Nothing here restricts what the licence already
             grants you. The full licence text lives in the repository at{' '}
             <a
-              href="https://github.com/helix-dev/helix/blob/main/LICENSE"
+              href={`${GITHUB_URL}/blob/main/LICENSE`}
               className="text-violet underline decoration-violet-40 underline-offset-4 hover:decoration-violet"
             >
               LICENSE

@@ -1,4 +1,4 @@
-export const GITHUB_REPO = 'helix-dev/helix';
+export const GITHUB_REPO = 'harryx2011-boop/Helix';
 export const GITHUB_URL = `https://github.com/${GITHUB_REPO}`;
 
 /**

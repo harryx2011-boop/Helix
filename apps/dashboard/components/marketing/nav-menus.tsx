@@ -90,7 +90,10 @@ export const ENDPOINT_ROWS: readonly MenuRow[] = [
     icon: FileCog,
     external: true,
   },
-];
+  // A row whose URL is blank is dropped rather than rendered as a dead link:
+  // Converter has no public deployment, so a hosted build has nowhere to send
+  // anyone. Same rule the footer applies.
+].filter((row) => row.href);
 
 export const SURFACE_ROWS: readonly MenuRow[] = [
   { label: 'MCP', href: '/docs/mcp', tagline: 'Every endpoint as a tool for Claude, Cursor and any MCP client.', icon: Plug },

@@ -5,6 +5,7 @@ import { AsciiNoise } from './ascii-fields';
 import { PillButton } from './pill-button';
 import { GithubMark } from './github-mark';
 import { SetupPrompt } from './setup-prompt';
+import { GITHUB_URL } from '@/lib/github-stars';
 
 /** WEBSITE.md §4.2. H1 + subhead + CTA pair + hero panel, over a hairline grid texture. */
 export function Hero() {
@@ -80,7 +81,7 @@ export function Hero() {
             <PillButton href="/sign-up" variant="primary">
               Get started
             </PillButton>
-            <PillButton href="https://github.com/helix-dev/helix" variant="secondary">
+            <PillButton href={GITHUB_URL} variant="secondary">
               <GithubMark className="h-4 w-4" />
               View on GitHub
             </PillButton>

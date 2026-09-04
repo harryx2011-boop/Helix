@@ -8,6 +8,7 @@ import { TerminalReplay } from './terminal-replay';
 import { AmbientCode, CodeRain } from './ambient';
 import { Segmented } from './segmented';
 import { IconTile } from './icon-tile';
+import { GITHUB_URL } from '@/lib/github-stars';
 
 type ClaimId = 'tiers' | 'keys' | 'license' | 'cost';
 
@@ -122,7 +123,7 @@ export function SelfHostPromise() {
           <PillButton href="/self-host" variant="primary">
             Read the self-host guide
           </PillButton>
-          <PillButton href="https://github.com/helix-dev/helix" variant="secondary">
+          <PillButton href={GITHUB_URL} variant="secondary">
             View on GitHub
           </PillButton>
         </div>

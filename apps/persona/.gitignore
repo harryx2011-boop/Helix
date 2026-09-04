@@ -1,0 +1,11 @@
+node_modules
+.next
+# next.config documents NEXT_DIST_DIR for a second dev server on one checkout.
+.next-*
+out
+*.tsbuildinfo
+next-env.d.ts
+.env*
+.vercel
+# This is a pnpm workspace; npm regenerates this locally but it must not be committed.
+package-lock.json

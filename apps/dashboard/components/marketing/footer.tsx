@@ -6,6 +6,7 @@ import { AsciiNoise } from '@/components/marketing/ascii-fields';
 import { CONVERTER_URL, PERSONA_URL } from '@/lib/mode';
 import { cn } from '@/lib/utils';
 import pkg from '@/package.json';
+import { GITHUB_REPO, GITHUB_URL } from '@/lib/github-stars';
 
 /** WEBSITE.md §4.9. Three groups, hairline-divided rows, no Company column. */
 interface FooterLink {
@@ -55,8 +56,8 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
   {
     title: 'Project',
     links: [
-      { label: 'GitHub', href: 'https://github.com/helix-dev/helix' },
-      { label: 'Licence (Apache-2.0)', href: 'https://github.com/helix-dev/helix/blob/main/LICENSE' },
+      { label: 'GitHub', href: GITHUB_URL },
+      { label: 'Licence (Apache-2.0)', href: `${GITHUB_URL}/blob/main/LICENSE` },
       { label: 'Architecture', href: '/architecture' },
       { label: 'Roadmap', href: '/architecture#roadmap' },
       { label: 'Security', href: '/self-host#security' },
@@ -137,12 +138,12 @@ export function Footer() {
             </Link>
           </p>
           <Link
-            href="https://github.com/helix-dev/helix"
+            href={GITHUB_URL}
             className="flex items-center gap-2 font-mono text-[12px] text-m-ink/56 transition-colors duration-150 ease-out hover:text-m-ink"
           >
             <span>[ v{pkg.version} ]</span>
             <GithubMark className="h-[14px] w-[14px]" />
-            <span>github.com/helix-dev/helix</span>
+            <span>{GITHUB_REPO}</span>
           </Link>
         </div>
       </div>

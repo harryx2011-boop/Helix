@@ -1,7 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/(app)/roles/[slug]/page": "app/(app)/roles/[slug]/page.js",
-  "/(app)/roles/page": "app/(app)/roles/page.js",
-  "/(app)/editor/[forkId]/page": "app/(app)/editor/[forkId]/page.js",
-  "/(app)/editor/new/page": "app/(app)/editor/new/page.js"
-}

@@ -5,6 +5,7 @@ import { GithubMark } from './github-mark';
 import { GridCells } from './ambient';
 import { AsciiFluid } from './ascii-fluid';
 import { FrameBand } from './section-frame';
+import { GITHUB_URL } from '@/lib/github-stars';
 
 /** Final section: repeats the hero's CTA pair over a cell grid, flanked by ASCII flame pillars. No stats, no logos. */
 export function ClosingCta() {
@@ -49,7 +50,7 @@ export function ClosingCta() {
           <PillButton href="/sign-up" variant="primary">
             Get started
           </PillButton>
-          <PillButton href="https://github.com/helix-dev/helix" variant="secondary">
+          <PillButton href={GITHUB_URL} variant="secondary">
             <GithubMark className="h-4 w-4" />
             View on GitHub
           </PillButton>

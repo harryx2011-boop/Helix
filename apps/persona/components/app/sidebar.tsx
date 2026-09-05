@@ -2,49 +2,68 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { PanelLeftClose, PanelLeftOpen, PenLine, Search as SearchIcon, Settings as SettingsIcon } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChevronDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useSettings } from '@/lib/store';
+import { useForks, useSettings } from '@/lib/store';
 import type { Role } from '@/lib/catalog';
 import { SidebarSearch } from './sidebar-search';
 import { SidebarEditor } from './sidebar-editor';
-import { SidebarSettings } from './sidebar-settings';
+import { ThemeToggle } from './sidebar-settings';
 
 const MIN_WIDTH = 240;
 const MAX_WIDTH = 400;
 const COLLAPSE_THRESHOLD = 200;
 const COLLAPSED_WIDTH = 64;
 
-function SidebarBody({ roles }: { roles: Role[] }) {
+/** Your forks, under the search: a collapsible group with a count, so the sidebar has one job and one shelf. */
+function SidebarLibrary({ roles }: { roles: Role[] }) {
+  const { forks } = useForks();
+  const [open, setOpen] = React.useState(true);
   return (
-    <Tabs defaultValue="search" className="flex h-full flex-col">
-      <TabsList className="mx-4 mt-3 grid grid-cols-3 rounded-card bg-p-code p-1">
-        <TabsTrigger value="search" className="gap-1.5 rounded-[8px] text-[12.5px] data-[state=active]:bg-p-surface data-[state=active]:shadow-card-sm">
-          <SearchIcon className="h-3.5 w-3.5" />
-          Search
-        </TabsTrigger>
-        <TabsTrigger value="editor" className="gap-1.5 rounded-[8px] text-[12.5px] data-[state=active]:bg-p-surface data-[state=active]:shadow-card-sm">
-          <PenLine className="h-3.5 w-3.5" />
-          Editor
-        </TabsTrigger>
-        <TabsTrigger value="settings" className="gap-1.5 rounded-[8px] text-[12.5px] data-[state=active]:bg-p-surface data-[state=active]:shadow-card-sm">
-          <SettingsIcon className="h-3.5 w-3.5" />
-          Settings
-        </TabsTrigger>
-      </TabsList>
-      <div className="flex-1 overflow-y-auto">
-        <TabsContent value="search" className="mt-0">
-          <SidebarSearch roles={roles} />
-        </TabsContent>
-        <TabsContent value="editor" className="mt-0">
-          <SidebarEditor roles={roles} />
-        </TabsContent>
-        <TabsContent value="settings" className="mt-0">
-          <SidebarSettings />
-        </TabsContent>
+    <section className="border-t border-p-line">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors duration-150 ease-out hover:bg-p-code"
+      >
+        <span className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-p-ink-3">Library</span>
+          <span className="rounded-pill bg-p-code px-1.5 font-mono text-[11px] text-p-ink-2">{forks.length}</span>
+        </span>
+        <ChevronDown className={cn('h-3.5 w-3.5 text-p-ink-3 transition-transform duration-200 ease-out', !open && '-rotate-90')} />
+      </button>
+      {open ? <SidebarEditor roles={roles} /> : null}
+    </section>
+  );
+}
+
+function SidebarFooter() {
+  return (
+    <div className="flex h-12 shrink-0 items-center justify-between border-t border-p-line px-4">
+      <a
+        href="https://helixapi-dev.vercel.app"
+        target="_blank"
+        rel="noreferrer"
+        className="text-[12px] text-p-ink-3 transition-colors duration-150 ease-out hover:text-p-ink"
+      >
+        by Helix
+      </a>
+      <ThemeToggle />
+    </div>
+  );
+}
+
+/** Search and filters, then the fork library, then the footer control. Shared with the mobile sheet. */
+export function SidebarBody({ roles }: { roles: Role[] }) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <SidebarSearch roles={roles} />
+        <SidebarLibrary roles={roles} />
       </div>
-    </Tabs>
+      <SidebarFooter />
+    </div>
   );
 }
 
@@ -97,7 +116,7 @@ export function Sidebar({ roles }: { roles: Role[] }) {
 
   return (
     <aside
-      className="sticky top-0 relative hidden h-screen shrink-0 border-r border-p-line bg-p-surface transition-[width] duration-150 ease-out lg:flex lg:flex-col"
+      className="sticky top-0 relative hidden h-dvh shrink-0 border-r border-p-line bg-p-surface transition-[width] duration-150 ease-out lg:flex lg:flex-col"
       style={{ width: effectiveWidth }}
     >
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-p-line px-4">
@@ -121,11 +140,7 @@ export function Sidebar({ roles }: { roles: Role[] }) {
         </button>
       </div>
 
-      {!collapsed ? (
-        <div className="min-h-0 flex-1">
-          <SidebarBody roles={roles} />
-        </div>
-      ) : null}
+      {!collapsed ? <SidebarBody roles={roles} /> : null}
 
       {!collapsed ? (
         <div

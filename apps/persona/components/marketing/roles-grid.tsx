@@ -27,7 +27,7 @@ const curated = CURATED_SLUGS.map((slug) => roles.find((r) => r.slug === slug)).
 const curatedSlugs = new Set(curated.map((r) => r.slug));
 const remaining = roles.filter((r) => !curatedSlugs.has(r.slug));
 
-const SKELETON_MS = 1000;
+const SKELETON_MS = 600;
 
 /** Eight curated role cards plus a "browse the library" card chip-listing the rest. */
 export function RolesGrid() {
@@ -62,7 +62,7 @@ export function RolesGrid() {
           <Link
             key={role.slug}
             href={`/roles/${role.slug}`}
-            className="group animate-fade-up rounded-card border border-p-line bg-p-surface p-5 transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-p-line-2 hover:shadow-card-sm focus-visible:-translate-y-0.5"
+            className="group animate-fade-up rounded-card border border-p-line bg-p-surface p-5 transition-[box-shadow,border-color] duration-200 ease-out hover:border-p-line-2 hover:shadow-card"
             style={{ animationDelay: `${i * 50}ms` }}
           >
             <span
@@ -80,7 +80,7 @@ export function RolesGrid() {
 
       <Link
         href="/roles"
-        className="group animate-fade-up flex flex-col rounded-card border border-p-line bg-p-surface p-5 transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-p-line-2 hover:shadow-card-sm focus-visible:-translate-y-0.5"
+        className="group animate-fade-up flex flex-col rounded-card border border-p-line bg-p-surface p-5 transition-[box-shadow,border-color] duration-200 ease-out hover:border-p-line-2 hover:shadow-card"
         style={{ animationDelay: `${curated.length * 50}ms` }}
       >
         <h3 className="flex items-center gap-1.5 text-[15px] font-semibold text-p-ink">

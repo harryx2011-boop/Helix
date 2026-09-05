@@ -27,7 +27,7 @@ export function WizardLauncher({ persona }: { persona: Persona; role: Role }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-10 items-center gap-2 rounded-pill bg-p-ink px-5 text-sm font-medium text-p-bg shadow-card-sm transition-colors duration-150 ease-out hover:bg-p-ink/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-ring focus-visible:ring-offset-2"
+        className="inline-flex h-10 items-center gap-2 rounded-pill bg-p-ink px-5 text-sm font-medium text-p-bg shadow-btn transition-shadow duration-200 ease-out hover:shadow-btn-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-ring focus-visible:ring-offset-2"
       >
         Fill in the blanks
       </button>

@@ -32,12 +32,16 @@ const config: Config = {
           'line-2': 'var(--p-line-2)',
           code: 'var(--p-code)',
           highlight: 'var(--p-highlight)',
+          illus: 'var(--p-illus)',
+          wash: 'var(--p-wash)',
+          'wash-hover': 'var(--p-wash-hover)',
         },
         blue: {
           DEFAULT: 'var(--p-blue)',
           hover: 'var(--p-blue-hover)',
           soft: 'var(--p-blue-soft)',
           ring: 'var(--p-blue-ring)',
+          60: 'var(--p-blue-60)',
         },
       },
       fontFamily: {
@@ -53,6 +57,8 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       boxShadow: {
+        btn: 'var(--shadow-btn)',
+        'btn-hover': 'var(--shadow-btn-hover)',
         'card-sm': 'var(--shadow-card-sm)',
         card: 'var(--shadow-card)',
         panel: 'var(--shadow-panel)',

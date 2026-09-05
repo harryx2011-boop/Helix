@@ -249,11 +249,11 @@ export function SidebarEditor({ roles }: { roles: Role[] }) {
 
   if (sorted.length === 0) {
     return (
-      <div className="flex flex-col gap-2 p-4">
+      <div className="px-4 pb-4">
         <p className="text-[12.5px] leading-relaxed text-p-ink-3">
-          Nothing here yet.{' '}
+          No forks yet.{' '}
           <Link href="/roles" className="font-medium text-blue hover:text-blue-hover">
-            Fork a persona from any role page.
+            Open a role and fork a persona.
           </Link>
         </p>
       </div>
@@ -261,7 +261,7 @@ export function SidebarEditor({ roles }: { roles: Role[] }) {
   }
 
   return (
-    <ul className="flex flex-col gap-0.5 p-3">
+    <ul className="flex flex-col gap-0.5 px-3 pb-3">
       {sorted.map((fork) => (
         <ForkRow
           key={fork.id}

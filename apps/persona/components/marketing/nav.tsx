@@ -50,7 +50,7 @@ export function Nav() {
           </a>
           <Link
             href="/roles"
-            className="inline-flex h-9 items-center rounded-pill bg-p-ink px-4 text-[13px] font-medium text-p-bg transition-transform duration-150 ease-out hover:-translate-y-0.5"
+            className="inline-flex h-9 items-center rounded-pill bg-p-ink px-4 text-[13px] font-medium text-p-bg shadow-btn transition-shadow duration-200 ease-out hover:shadow-btn-hover"
           >
             Browse the library
           </Link>

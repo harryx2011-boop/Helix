@@ -62,8 +62,9 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                 </span>
               ) : null}
             </div>
-            <p className="mt-1 text-[14px] text-p-ink-2">
-              Shared snapshot from {formatDay(share.createdAt)}. Fork it to edit your own copy.
+            <p className="mt-1.5 flex flex-wrap items-center gap-2 text-[14px] text-p-ink-2">
+              <span className="rounded-pill bg-p-code px-2 py-0.5 font-mono text-[11px] text-p-ink-2">shared · {formatDay(share.createdAt)}</span>
+              A frozen snapshot. Fork it to edit your own copy.
             </p>
           </div>
         </div>

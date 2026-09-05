@@ -10,8 +10,8 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { question: 'Company or product name', answer: 'Acme Cloud', token: '{{COMPANY_NAME}}' },
-  { question: 'Help centre URL', answer: 'help.acmecloud.com', token: '{{HELP_CENTER_URL}}' },
+  { question: 'Company or product name', answer: 'Lumen Books', token: '{{COMPANY_NAME}}' },
+  { question: 'Help centre URL', answer: 'help.lumenbooks.com', token: '{{HELP_CENTER_URL}}' },
   { question: 'Human handoff queue', answer: 'tier-2-support', token: '{{HANDOFF_QUEUE_NAME}}' },
   { question: 'Attempts before escalating', answer: '3', token: '{{MAX_TROUBLESHOOTING_STEPS}}' },
 ];
@@ -97,21 +97,7 @@ export function WizardCard() {
   const current = STEPS[step]!;
 
   return (
-    <div ref={containerRef} className="grid gap-8 lg:grid-cols-2 lg:items-center">
-      <div>
-        <h2 className="text-3xl font-semibold tracking-tight text-p-ink sm:text-[34px]">
-          Fill in the blanks, not the whole prompt.
-        </h2>
-        <p className="mt-4 max-w-md text-[15px] leading-relaxed text-p-ink-2">
-          The engine scans every persona for its <span className="font-mono text-[0.92em] text-p-ink">{'{{PLACEHOLDER}}'}</span> tokens
-          and asks for each value once, in plain language.
-        </p>
-        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-p-ink-2">
-          Answers are saved, so filling in your company name and help centre URL once carries through to every persona that needs them.
-        </p>
-      </div>
-
-      <div className="relative overflow-hidden rounded-panel border border-p-line bg-p-surface p-6 shadow-panel ring-1 ring-p-highlight grid-glow">
+    <div ref={containerRef} className="relative overflow-hidden rounded-panel border border-p-line bg-p-surface p-6 shadow-panel ring-1 ring-p-highlight grid-glow">
         <div className="relative">
           <div className="h-1.5 w-full overflow-hidden rounded-pill bg-p-line">
             {!reduced && !visible && (
@@ -158,7 +144,6 @@ export function WizardCard() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

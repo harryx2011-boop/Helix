@@ -22,6 +22,7 @@ from typing import Any
 
 from . import relevance
 from .context import system_prompt
+from .fence import wrap
 from .provider import ProviderError, RequestError, call_structured, describe_failure
 from .schema_compiler import SchemaError, compile_anthropic, compile_gemini, compile_openai
 from .settings import settings
@@ -338,7 +339,14 @@ async def extract_structured(
     caller_base_url = (provider_base_urls or {}).get(provider)
 
     selection = relevance.select(content, schema, prompt, max_tokens=max_input_tokens)
-    trimmed = selection.text
+    fenced = wrap(selection.text, origin="page")
+    if selection.kept_count and selection.kept_count < selection.total:
+        fenced += (
+            f"\n\n[content clipped: {selection.kept_count} of {selection.total} blocks "
+            "shown by relevance ranking; missing blocks may hold the answer — do not "
+            "conclude a value is absent]"
+        )
+    trimmed = fenced
 
     try:
         if provider == "anthropic":

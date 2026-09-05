@@ -28,7 +28,10 @@ export type FailureReason =
   // The fetch could not even be attempted — a Helix service was unreachable.
   // This is our own infrastructure failing, not the target site, and must never
   // be reported as a block or challenge: those name something the site did.
-  | 'service_unavailable';
+  | 'service_unavailable'
+  // The caller's own connection closed before the call finished — distinct
+  // from `timeout`, which is this side giving up on its own budget.
+  | 'aborted';
 
 /**
  * Classify a transport-layer error string into a typed reason.

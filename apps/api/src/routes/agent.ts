@@ -65,6 +65,12 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
 
     const body = parsed.data;
 
+    const controller = new AbortController();
+    const onClose = (): void => {
+      if (!reply.raw.writableFinished) controller.abort();
+    };
+    request.raw.on('close', onClose);
+
     try {
       const apiKeyId = request.apiKey?.id;
       const resolved = apiKeyId && deps.encryptionKey ? await resolveProviderKeys(apiKeyId, deps.encryptionKey) : {};
@@ -80,6 +86,7 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
         providerKeys,
         providerModels,
         providerBaseUrls,
+        signal: controller.signal,
       });
 
       return reply.send({
@@ -112,7 +119,13 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
         return reply.code(200).send({ success: false, failure: providerFailure(error) });
       }
       const err = error as { name?: string; message?: string };
-      if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      if (err.name === 'AbortError') {
+        return reply.code(200).send({
+          success: false,
+          failure: { reason: 'aborted', detail: 'the caller disconnected before schema generation finished' },
+        });
+      }
+      if (err.name === 'TimeoutError') {
         return reply.code(200).send({
           success: false,
           failure: { reason: 'timeout', detail: 'helix-extract did not finish generating a schema in time' },
@@ -122,6 +135,8 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
         success: false,
         failure: { reason: 'service_unavailable', detail: err.message ?? 'helix-extract is unreachable' },
       });
+    } finally {
+      request.raw.off('close', onClose);
     }
   });
 }

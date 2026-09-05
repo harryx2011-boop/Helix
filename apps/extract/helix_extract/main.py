@@ -390,6 +390,16 @@ class StructuredResponse(BaseModel):
     # missing field apart from a trimmed-away one.
     blocks_kept: int = 0
     blocks_total: int = 0
+    # The provider that actually answered, and every provider tried and
+    # abandoned before it. Empty `fallback_from` means the first provider
+    # the request resolved to succeeded outright.
+    provider_used: str = ""
+    fallback_from: list[dict[str, str]] = Field(default_factory=list)
+    # From pricing.PRICE_TABLE; null when (provider_used, model_used) is
+    # unpriced rather than free — see that module's note on the distinction.
+    cost_usd: float | None = None
+    tokens_cache_read: int | None = None
+    tokens_cache_write: int | None = None
 
 
 @app.post("/structured", response_model=StructuredResponse)
@@ -427,6 +437,11 @@ async def structured(request: StructuredRequest) -> StructuredResponse:
         model_used=result.model_used,
         blocks_kept=result.blocks_kept,
         blocks_total=result.blocks_total,
+        provider_used=result.provider_used,
+        fallback_from=result.fallback_from,
+        cost_usd=result.cost_usd,
+        tokens_cache_read=result.tokens_cache_read,
+        tokens_cache_write=result.tokens_cache_write,
     )
 
 

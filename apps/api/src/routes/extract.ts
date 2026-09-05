@@ -156,91 +156,108 @@ export async function registerExtract(app: FastifyInstance, deps: ExtractRouteDe
       ? `${body.prompt ?? ''}\n\n${body.instruction}`.trim()
       : body.prompt;
 
-    for (const url of body.urls) {
-      const page = await runPipeline(
-        {
-          url,
-          formats: ['markdown'],
-          ...(body.tier ? { tier: body.tier } : {}),
-          timeout: body.timeout,
-          onlyMainContent: true,
-          ...(deps.proxyUrl ? { proxy: deps.proxyUrl } : {}),
-          allowPrivate: deps.allowPrivateUrls,
-        },
-        deps,
-      );
+    const controller = new AbortController();
+    const onClose = (): void => {
+      if (!reply.raw.writableFinished) controller.abort();
+    };
+    request.raw.on('close', onClose);
 
-      if (!page.success) {
-        warnings.push(`${url}: ${page.reason}${page.detail ? ` — ${page.detail}` : ''}`);
-        continue;
-      }
-
-      try {
-        const structured = await deps.extractClient.structured({
-          content: page.content.markdown,
-          ...(body.schema ? { schema: body.schema } : {}),
-          ...(promptWithInstruction ? { prompt: promptWithInstruction } : {}),
-          ...(body.provider ? { provider: body.provider } : {}),
-          ...(body.model ? { model: body.model } : {}),
-          includeSources: true,
-          ...providerAuth,
-        });
-
-        const split = splitByGrounding(url, structured.data, structured.sources);
-        if (split.dropped.length > 0) dropped.push(...split.dropped);
-
-        rows.push({
-          ...(body.allowUngrounded ? structured.data : split.kept),
-          _source: {
+    try {
+      for (const url of body.urls) {
+        if (controller.signal.aborted) break;
+        const page = await runPipeline(
+          {
             url,
-            spans: structured.sources,
-            // Said per row: a page whose blocks were clipped answered from part
-            // of itself, and the values alone cannot show that.
-            blocksKept: structured.blocksKept,
-            blocksTotal: structured.blocksTotal,
+            formats: ['markdown'],
+            ...(body.tier ? { tier: body.tier } : {}),
+            timeout: body.timeout,
+            onlyMainContent: true,
+            ...(deps.proxyUrl ? { proxy: deps.proxyUrl } : {}),
+            allowPrivate: deps.allowPrivateUrls,
           },
-        });
-
-        if (structured.sources.length === 0) {
-          warnings.push(`${url}: the extractor returned no source spans, so no field could be verified.`);
-        }
-
-        blocksKept += structured.blocksKept;
-        blocksTotal += structured.blocksTotal;
-        tokensInput += structured.tokensInput;
-        tokensOutput += structured.tokensOutput;
-        modelUsed ??= structured.modelUsed;
-      } catch (error) {
-        // A bad schema is the caller's to fix and will fail identically on every
-        // URL, so it stops the request rather than repeating n times.
-        if (error instanceof StructuredError && error.status === 400) {
-          return reply.code(400).send({
-            error: error.field ? 'invalid_request' : 'invalid_schema',
-            message: error.message,
-            field: error.field ?? 'schema',
-            requestId: request.id,
-          });
-        }
-        warnings.push(
-          `${url}: extraction failed — ${error instanceof Error ? error.message : String(error)}`,
+          deps,
         );
-      }
-    }
 
-    return reply.code(200).send({
-      success: true,
-      data: rows,
-      dropped,
-      warnings,
-      usage: {
-        urls: body.urls.length,
-        rows: rows.length,
-        model: modelUsed ?? null,
-        tokens: { input: tokensInput, output: tokensOutput },
-        blocksKept,
-        blocksTotal,
-        providerCost: { amount: null, currency: 'USD' },
-      },
-    });
+        if (!page.success) {
+          warnings.push(`${url}: ${page.reason}${page.detail ? ` — ${page.detail}` : ''}`);
+          continue;
+        }
+
+        try {
+          const structured = await deps.extractClient.structured({
+            content: page.content.markdown,
+            ...(body.schema ? { schema: body.schema } : {}),
+            ...(promptWithInstruction ? { prompt: promptWithInstruction } : {}),
+            ...(body.provider ? { provider: body.provider } : {}),
+            ...(body.model ? { model: body.model } : {}),
+            includeSources: true,
+            ...providerAuth,
+            signal: controller.signal,
+          });
+
+          const split = splitByGrounding(url, structured.data, structured.sources);
+          if (split.dropped.length > 0) dropped.push(...split.dropped);
+
+          rows.push({
+            ...(body.allowUngrounded ? structured.data : split.kept),
+            _source: {
+              url,
+              spans: structured.sources,
+              // Said per row: a page whose blocks were clipped answered from part
+              // of itself, and the values alone cannot show that.
+              blocksKept: structured.blocksKept,
+              blocksTotal: structured.blocksTotal,
+            },
+          });
+
+          if (structured.sources.length === 0) {
+            warnings.push(`${url}: the extractor returned no source spans, so no field could be verified.`);
+          }
+
+          blocksKept += structured.blocksKept;
+          blocksTotal += structured.blocksTotal;
+          tokensInput += structured.tokensInput;
+          tokensOutput += structured.tokensOutput;
+          modelUsed ??= structured.modelUsed;
+        } catch (error) {
+          // A bad schema is the caller's to fix and will fail identically on every
+          // URL, so it stops the request rather than repeating n times.
+          if (error instanceof StructuredError && error.status === 400) {
+            return reply.code(400).send({
+              error: error.field ? 'invalid_request' : 'invalid_schema',
+              message: error.message,
+              field: error.field ?? 'schema',
+              requestId: request.id,
+            });
+          }
+          const err = error as { name?: string };
+          // The caller disconnecting mid-run is not a per-URL extraction
+          // failure worth reporting in `warnings` — the loop above already
+          // stops issuing new calls once `controller.signal` is aborted.
+          if (err.name === 'AbortError') break;
+          warnings.push(
+            `${url}: extraction failed — ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+
+      return reply.code(200).send({
+        success: true,
+        data: rows,
+        dropped,
+        warnings,
+        usage: {
+          urls: body.urls.length,
+          rows: rows.length,
+          model: modelUsed ?? null,
+          tokens: { input: tokensInput, output: tokensOutput },
+          blocksKept,
+          blocksTotal,
+          providerCost: { amount: null, currency: 'USD' },
+        },
+      });
+    } finally {
+      request.raw.off('close', onClose);
+    }
   });
 }

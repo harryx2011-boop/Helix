@@ -54,6 +54,35 @@ def test_structured_omits_provider_keys_when_absent(monkeypatch: pytest.MonkeyPa
     assert seen["provider_models"] is None
 
 
+def test_structured_response_includes_cost_usd(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_extract_structured(**_kwargs: object) -> llm.ExtractionResult:
+        return llm.ExtractionResult(
+            data={"title": "T"},
+            tokens_input=100_000,
+            tokens_output=50_000,
+            model_used="claude-sonnet-5",
+            tokens_cache_read=200_000,
+            tokens_cache_write=0,
+            cost_usd=0.74,
+        )
+
+    monkeypatch.setattr(llm, "extract_structured", fake_extract_structured)
+
+    response = client.post(
+        "/structured",
+        json={
+            "content": "some content",
+            "schema": {"type": "object", "properties": {"title": {"type": "string"}}},
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["cost_usd"] == 0.74
+    assert body["tokens_cache_read"] == 200_000
+    assert body["tokens_cache_write"] == 0
+
+
 def test_schema_forwards_provider_keys_to_schema_gen(monkeypatch: pytest.MonkeyPatch) -> None:
     seen: dict[str, object] = {}
 

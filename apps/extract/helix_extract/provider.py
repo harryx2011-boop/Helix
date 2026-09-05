@@ -32,7 +32,19 @@ MAX_DELAY_SECONDS = 4.0
 
 
 class ProviderError(RuntimeError):
-    """A provider call failed, or none was configured."""
+    """A provider call failed, or none was configured.
+
+    `fallback_eligible` marks a transport-class failure — retries exhausted on
+    429/5xx/network, or no usable credential for the chosen provider — as
+    opposed to the model's own answer (a schema mismatch, a refusal, malformed
+    JSON). Only the former is worth trying a different provider for; the
+    latter would just be asked again and answer the same way. Defaults to
+    False so a raise that forgets to set it fails closed into "no fallback".
+    """
+
+    def __init__(self, message: str, *, fallback_eligible: bool = False) -> None:
+        super().__init__(message)
+        self.fallback_eligible = fallback_eligible
 
 
 class RequestError(ValueError):
@@ -110,8 +122,11 @@ async def call_structured(
             raise
         except Exception as exc:  # noqa: BLE001 - every SDK has its own exception tree
             last_exc = exc
-            if attempt >= MAX_ATTEMPTS or not _is_retryable(exc):
-                raise ProviderError(describe_failure(provider, model, exc)) from exc
+            retryable = _is_retryable(exc)
+            if attempt >= MAX_ATTEMPTS or not retryable:
+                raise ProviderError(
+                    describe_failure(provider, model, exc), fallback_eligible=retryable
+                ) from exc
             # Full jitter: spreads retries from concurrent callers instead of
             # having them all wake up and hit the same rate limit together.
             delay = min(MAX_DELAY_SECONDS, BASE_DELAY_SECONDS * (2 ** (attempt - 1)))

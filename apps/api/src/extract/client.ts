@@ -7,6 +7,16 @@ import { redactSecrets, type Log } from '../core/logger.js';
  * Python service, one internal HTTP hop away.
  */
 
+// Cancellation stops at this HTTP boundary: helix-extract's own LLM SDKs
+// (openai, anthropic, google-genai) accept a timeout but no cooperative
+// cancellation token, so aborting the fetch here cannot interrupt a call
+// already in flight to a model provider — it only stops Node from waiting
+// on the response.
+function withCallerSignal(timeoutMs: number, signal: AbortSignal | undefined): AbortSignal {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  return signal ? AbortSignal.any([timeout, signal]) : timeout;
+}
+
 export interface ExtractOptions {
   html: string;
   url: string;
@@ -34,6 +44,8 @@ export interface DocumentOptions {
   maxPages?: number | undefined;
   tables?: 'auto' | 'high-fidelity' | undefined;
   timeoutMs?: number | undefined;
+  /** Aborts the call when the caller disconnects, combined with the timeout above. */
+  signal?: AbortSignal | undefined;
 }
 
 export interface DocumentResult {
@@ -79,6 +91,8 @@ export interface StructuredOptions {
   providerModels?: ProviderModelMap | undefined;
   /** The caller's own local-runtime base URLs, when they have any stored. Override the instance's environment default. */
   providerBaseUrls?: ProviderBaseUrlMap | undefined;
+  /** Aborts the call when the caller disconnects, combined with the timeout above. */
+  signal?: AbortSignal | undefined;
 }
 
 export interface StructuredResult {
@@ -107,6 +121,8 @@ export interface SchemaOptions {
   providerModels?: ProviderModelMap | undefined;
   /** The caller's own local-runtime base URLs, when they have any stored. Override the instance's environment default. */
   providerBaseUrls?: ProviderBaseUrlMap | undefined;
+  /** Aborts the call when the caller disconnects, combined with the timeout above. */
+  signal?: AbortSignal | undefined;
 }
 
 export interface SchemaResult {
@@ -331,7 +347,7 @@ export class ExtractClient {
       headers: { 'content-type': options.contentType },
       body: options.data as Uint8Array<ArrayBuffer>,
       // OCR over a long scan is the slowest thing Helix does; the default is generous on purpose.
-      signal: AbortSignal.timeout(options.timeoutMs ?? 300_000),
+      signal: withCallerSignal(options.timeoutMs ?? 300_000, options.signal),
     });
 
     if (!response.ok) {
@@ -514,7 +530,7 @@ export class ExtractClient {
         provider_models: options.providerModels ?? null,
         provider_base_urls: options.providerBaseUrls ?? null,
       }),
-      signal: AbortSignal.timeout(options.timeoutMs ?? 120_000),
+      signal: withCallerSignal(options.timeoutMs ?? 120_000, options.signal),
     });
 
     if (!response.ok) {
@@ -572,7 +588,7 @@ export class ExtractClient {
         provider_models: options.providerModels ?? null,
         provider_base_urls: options.providerBaseUrls ?? null,
       }),
-      signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
+      signal: withCallerSignal(options.timeoutMs ?? 60_000, options.signal),
     });
 
     if (!response.ok) {

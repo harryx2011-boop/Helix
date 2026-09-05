@@ -23,6 +23,8 @@ from typing import Any
 from . import relevance
 from .context import system_prompt
 from .fence import wrap
+from .pricing import Usage as PricingUsage
+from .pricing import cost_usd as price_cost_usd
 from .provider import ProviderError, RequestError, call_structured, describe_failure
 from .schema_compiler import SchemaError, compile_anthropic, compile_gemini, compile_openai
 from .settings import settings
@@ -41,6 +43,15 @@ class ExtractionResult:
     blocks_total: int = 0
     # The passages that reached the model, when the caller asked for them.
     sources: list[dict[str, Any]] = field(default_factory=list)
+    # Which provider actually answered, and every provider tried and abandoned
+    # before it — empty when the first (resolved) provider succeeded.
+    provider_used: str = ""
+    fallback_from: list[dict[str, str]] = field(default_factory=list)
+    # From pricing.PRICE_TABLE; None when (provider, model) is unpriced rather
+    # than free — see that module's note on the distinction.
+    cost_usd: float | None = None
+    tokens_cache_read: int | None = None
+    tokens_cache_write: int | None = None
 
 
 # What a provider override runs when the request names no model. The instance's
@@ -90,6 +101,48 @@ def _auto_pick_caller_provider(provider_keys: dict[str, str] | None) -> str | No
         if provider_keys.get(candidate):
             return candidate
     return None
+
+
+def _has_usable_credential(
+    provider: str,
+    provider_keys: dict[str, str] | None,
+    provider_base_urls: dict[str, str] | None,
+) -> bool:
+    """Whether `provider` could actually be called: a caller key/base-url, or the instance's own."""
+    if (provider_keys or {}).get(provider) or (provider_base_urls or {}).get(provider):
+        return True
+    return _instance_has_key(provider, provider_base_urls)
+
+
+def _model_for_provider(
+    provider: str, provider_models: dict[str, str] | None, default_provider: str
+) -> str:
+    """The model a fallback candidate uses. Never the failed provider's model — a name like
+    `gpt-4o-mini` means nothing to Anthropic — so this ignores the original request's explicit
+    `model` and re-derives one the same way `_resolve` would for a request naming this provider."""
+    caller_model = (provider_models or {}).get(provider)
+    if caller_model:
+        return caller_model
+    if _same_family(provider, default_provider):
+        return settings.helix_llm_model
+    return DEFAULT_MODELS[provider]
+
+
+def _fallback_candidates(
+    current: str,
+    provider_keys: dict[str, str] | None,
+    provider_base_urls: dict[str, str] | None,
+) -> list[str]:
+    """Remaining providers to try, in `_CALLER_KEY_PRIORITY` order, skipping `current` and anything
+    with no usable credential. Order matches `_auto_pick_caller_provider` so the same caller
+    preference governs both the initial pick and every hop after it. This only excludes the
+    provider just tried, not the full attempt history — the caller (`call_structured`'s loop)
+    re-filters this list against its complete `tried` set before selecting the next provider."""
+    return [
+        candidate
+        for candidate in _CALLER_KEY_PRIORITY
+        if candidate != current and _has_usable_credential(candidate, provider_keys, provider_base_urls)
+    ]
 
 
 def _resolve(
@@ -157,7 +210,7 @@ def _openai_wire_credentials(
         if caller_key:
             return caller_key, settings.openrouter_base_url
         if not settings.openrouter_api_key:
-            raise ProviderError("OPENROUTER_API_KEY is not set.")
+            raise ProviderError("OPENROUTER_API_KEY is not set.", fallback_eligible=True)
         return settings.openrouter_api_key, settings.openrouter_base_url
 
     if provider in _LOCAL_OPENAI_WIRE:
@@ -165,7 +218,8 @@ def _openai_wire_credentials(
         if not base_url:
             raise ProviderError(
                 f"No base URL configured for provider \"{provider}\"; store one or set "
-                "OPENAI_COMPATIBLE_BASE_URL."
+                "OPENAI_COMPATIBLE_BASE_URL.",
+                fallback_eligible=True,
             )
         # A local runtime needs no real key, but the SDK requires the field.
         return caller_key or settings.openai_compatible_api_key or "not-needed", base_url
@@ -178,7 +232,8 @@ def _openai_wire_credentials(
         return settings.openai_compatible_api_key or "not-needed", settings.openai_compatible_base_url
     raise ProviderError(
         "No LLM credentials configured. Set OPENAI_API_KEY, or point "
-        "OPENAI_COMPATIBLE_BASE_URL at a local runtime."
+        "OPENAI_COMPATIBLE_BASE_URL at a local runtime.",
+        fallback_eligible=True,
     )
 
 
@@ -197,7 +252,12 @@ async def _call_openai(
     key, url = _openai_wire_credentials(provider, caller_key, caller_base_url)
     client = AsyncOpenAI(api_key=key, base_url=url) if url else AsyncOpenAI(api_key=key)
 
+    # OpenAI reports only a cache READ count (`prompt_tokens_details.cached_tokens`);
+    # there is no separate write charge on this wire format, so writes stay 0.
+    cache_read = 0
+
     async def run() -> tuple[dict[str, Any], int, int, str]:
+        nonlocal cache_read
         response = await client.chat.completions.create(
             model=model,
             messages=[
@@ -209,6 +269,8 @@ async def _call_openai(
         choice = response.choices[0]
         raw = choice.message.content or "{}"
         usage = response.usage
+        details = getattr(usage, "prompt_tokens_details", None)
+        cache_read = getattr(details, "cached_tokens", 0) or 0
         return (
             json.loads(raw),
             usage.prompt_tokens if usage else 0,
@@ -222,6 +284,17 @@ async def _call_openai(
         tokens_input=outcome.tokens_input,
         tokens_output=outcome.tokens_output,
         model_used=outcome.model_used,
+        tokens_cache_read=cache_read,
+        tokens_cache_write=0,
+        cost_usd=price_cost_usd(
+            provider,
+            outcome.model_used,
+            PricingUsage(
+                tokens_input=outcome.tokens_input,
+                tokens_output=outcome.tokens_output,
+                tokens_cache_read=cache_read,
+            ),
+        ),
     )
 
 
@@ -237,12 +310,18 @@ async def _call_anthropic(
 
     api_key = caller_key or settings.anthropic_api_key
     if not api_key:
-        raise ProviderError("ANTHROPIC_API_KEY is not set.")
+        raise ProviderError("ANTHROPIC_API_KEY is not set.", fallback_eligible=True)
 
     client = AsyncAnthropic(api_key=api_key)
     compiled = compile_anthropic(schema)
 
+    # Populated only when the request set `cache_control` (not currently the
+    # case here); absent on a plain call, so both default to 0 rather than None.
+    cache_read = 0
+    cache_write = 0
+
     async def run() -> tuple[dict[str, Any], int, int, str]:
+        nonlocal cache_read, cache_write
         response = await client.messages.create(
             model=model,
             max_tokens=4096,
@@ -257,6 +336,8 @@ async def _call_anthropic(
             if getattr(block, "type", None) == "tool_use":
                 data = dict(getattr(block, "input", {}))
                 break
+        cache_read = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+        cache_write = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
         return data, response.usage.input_tokens, response.usage.output_tokens, response.model
 
     outcome = await call_structured("anthropic", model, run)
@@ -265,6 +346,18 @@ async def _call_anthropic(
         tokens_input=outcome.tokens_input,
         tokens_output=outcome.tokens_output,
         model_used=outcome.model_used,
+        tokens_cache_read=cache_read,
+        tokens_cache_write=cache_write,
+        cost_usd=price_cost_usd(
+            "anthropic",
+            outcome.model_used,
+            PricingUsage(
+                tokens_input=outcome.tokens_input,
+                tokens_output=outcome.tokens_output,
+                tokens_cache_read=cache_read,
+                tokens_cache_write=cache_write,
+            ),
+        ),
     )
 
 
@@ -281,11 +374,16 @@ async def _call_gemini(
 
     api_key = caller_key or settings.gemini_api_key or settings.google_api_key
     if not api_key:
-        raise ProviderError("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set.")
+        raise ProviderError("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set.", fallback_eligible=True)
 
     client = genai.Client(api_key=api_key)
 
+    # Gemini reports only a cache READ count; there is no separate write
+    # charge reported back to the caller, so writes stay 0.
+    cache_read = 0
+
     async def run() -> tuple[dict[str, Any], int, int, str]:
+        nonlocal cache_read
         response = await client.aio.models.generate_content(
             model=model,
             contents=f"{prompt}\n\n{content}" if prompt else content,
@@ -296,6 +394,7 @@ async def _call_gemini(
             ),
         )
         usage = getattr(response, "usage_metadata", None)
+        cache_read = getattr(usage, "cached_content_token_count", 0) or 0
         return (
             json.loads(response.text or "{}"),
             getattr(usage, "prompt_token_count", 0) or 0,
@@ -309,7 +408,48 @@ async def _call_gemini(
         tokens_input=outcome.tokens_input,
         tokens_output=outcome.tokens_output,
         model_used=outcome.model_used,
+        tokens_cache_read=cache_read,
+        tokens_cache_write=0,
+        cost_usd=price_cost_usd(
+            "gemini",
+            outcome.model_used,
+            PricingUsage(
+                tokens_input=outcome.tokens_input,
+                tokens_output=outcome.tokens_output,
+                tokens_cache_read=cache_read,
+            ),
+        ),
     )
+
+
+async def _dispatch(
+    provider: str,
+    resolved_model: str,
+    content: str,
+    schema: dict[str, Any],
+    prompt: str | None,
+    caller_key: str | None,
+    caller_base_url: str | None,
+) -> ExtractionResult:
+    if provider == "anthropic":
+        return await _call_anthropic(content, schema, prompt, resolved_model, caller_key=caller_key)
+    if provider in _GEMINI:
+        return await _call_gemini(content, schema, prompt, resolved_model, caller_key=caller_key)
+    if provider == "openai" or provider == "openrouter" or provider in _LOCAL_OPENAI_WIRE:
+        return await _call_openai(
+            content,
+            schema,
+            prompt,
+            resolved_model,
+            provider=provider,
+            caller_key=caller_key,
+            caller_base_url=caller_base_url,
+        )
+    raise ProviderError(f"Unknown provider: {provider}")
+
+
+# Total providers a single call will try, the resolved one plus fallback hops.
+MAX_PROVIDERS = 3
 
 
 async def extract_structured(
@@ -333,11 +473,27 @@ async def extract_structured(
     first. Sending a whole page costs more and scores worse, because the
     fields being asked about end up buried in the middle where attention is
     weakest.
-    """
-    provider, resolved_model = _resolve(model, provider, provider_keys, provider_models, provider_base_urls)
-    caller_key = (provider_keys or {}).get(provider)
-    caller_base_url = (provider_base_urls or {}).get(provider)
 
+    When the resolved provider fails with a transport-class error (retries
+    exhausted on a 429/5xx/network fault, or a missing/invalid stored key)
+    this falls through to the next provider the caller can actually use, in
+    `_CALLER_KEY_PRIORITY` order, capped at `MAX_PROVIDERS` total attempts. A
+    schema or content failure — the model's own answer — never triggers this;
+    neither does a request that pinned an explicit `provider`, since silently
+    answering from a provider the caller did not choose is a bigger surprise
+    than the failure it would be hiding. Each hop uses only that provider's own
+    BYOK key or base URL — never one borrowed from the provider that failed.
+    """
+    pinned = provider is not None
+    resolved_provider, resolved_model = _resolve(
+        model, provider, provider_keys, provider_models, provider_base_urls
+    )
+    default_provider = settings.helix_llm_provider.lower()
+
+    # N of M below is always this call's own selection — one `content` string,
+    # one `relevance.select()` result — never a crawl- or batch-level aggregate;
+    # callers sum blocks_kept/blocks_total across pages downstream of this
+    # return, but nothing summed ever flows back into the notice itself.
     selection = relevance.select(content, schema, prompt, max_tokens=max_input_tokens)
     fenced = wrap(selection.text, origin="page")
     if selection.kept_count and selection.kept_count < selection.total:
@@ -348,33 +504,54 @@ async def extract_structured(
         )
     trimmed = fenced
 
-    try:
-        if provider == "anthropic":
-            result = await _call_anthropic(trimmed, schema, prompt, resolved_model, caller_key=caller_key)
-        elif provider in _GEMINI:
-            result = await _call_gemini(trimmed, schema, prompt, resolved_model, caller_key=caller_key)
-        elif provider == "openai" or provider == "openrouter" or provider in _LOCAL_OPENAI_WIRE:
-            result = await _call_openai(
-                trimmed,
-                schema,
-                prompt,
-                resolved_model,
-                provider=provider,
-                caller_key=caller_key,
-                caller_base_url=caller_base_url,
+    fallback_from: list[dict[str, str]] = []
+    tried: list[str] = []
+    current_provider, current_model = resolved_provider, resolved_model
+
+    while True:
+        tried.append(current_provider)
+        caller_key = (provider_keys or {}).get(current_provider)
+        caller_base_url = (provider_base_urls or {}).get(current_provider)
+        try:
+            result = await _dispatch(
+                current_provider, current_model, trimmed, schema, prompt, caller_key, caller_base_url
             )
-        else:
-            raise ProviderError(f"Unknown provider: {provider}")
-    except (ProviderError, SchemaError):
-        raise
-    except Exception as exc:
-        # Every SDK has its own exception tree (auth, not-found, rate limit,
-        # transport, a runtime answering with something other than JSON). To the
-        # caller they are all one thing: the model step failed, and here is why.
-        raise ProviderError(describe_failure(provider, resolved_model, exc)) from exc
+            break
+        except SchemaError:
+            raise
+        except Exception as exc:
+            if isinstance(exc, ProviderError):
+                fallback_eligible = exc.fallback_eligible
+                reason = str(exc)
+            else:
+                # Every SDK has its own exception tree (auth, not-found, rate
+                # limit, transport, a runtime answering with something other
+                # than JSON). To the caller they are all one thing: the model
+                # step failed, and here is why. A raw exception reaching here
+                # already survived `call_structured`'s own retry+classify, so
+                # it is content-class, not transport — never fallback-eligible.
+                reason = describe_failure(current_provider, current_model, exc)
+                fallback_eligible = False
+
+            candidates = (
+                []
+                if pinned or not fallback_eligible or len(tried) >= MAX_PROVIDERS
+                else _fallback_candidates(current_provider, provider_keys, provider_base_urls)
+            )
+            next_provider = next((c for c in candidates if c not in tried), None)
+            if next_provider is None:
+                if not isinstance(exc, ProviderError):
+                    raise ProviderError(reason, fallback_eligible=fallback_eligible) from exc
+                raise
+
+            fallback_from.append({"provider": current_provider, "reason": reason})
+            current_provider = next_provider
+            current_model = _model_for_provider(current_provider, provider_models, default_provider)
 
     result.blocks_kept = selection.kept_count
     result.blocks_total = selection.total
+    result.provider_used = current_provider
+    result.fallback_from = fallback_from
     if include_sources:
         result.sources = [
             {"text": block.text, "score": round(block.score, 4), "index": block.index}

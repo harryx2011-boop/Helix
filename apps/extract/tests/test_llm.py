@@ -392,3 +392,203 @@ class TestExtractStructured:
         result = await llm.extract_structured("Short page, all of it kept.", SCHEMA)
         assert result.blocks_kept == result.blocks_total
         assert "content clipped" not in seen["content"]
+
+
+class TestCrossProviderFallback:
+    @pytest.mark.asyncio
+    async def test_transport_failure_falls_through_to_the_next_usable_provider(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        async def anthropic_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
+            raise llm.ProviderError("anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True)
+
+        openai_calls: list[str | None] = []
+
+        async def openai_stub(
+            _content: str,
+            _schema: dict,
+            _prompt: str | None,
+            model: str,
+            *,
+            provider: str = "openai",
+            caller_key: str | None = None,
+            caller_base_url: str | None = None,
+        ) -> llm.ExtractionResult:
+            openai_calls.append(caller_key)
+            return _result(model)
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(settings, "anthropic_api_key", "sk-ant-instance")
+        monkeypatch.setattr(llm, "_call_anthropic", anthropic_stub)
+        monkeypatch.setattr(llm, "_call_openai", openai_stub)
+
+        result = await llm.extract_structured(
+            "content", SCHEMA, provider_keys={"openai": "sk-openai-caller"}
+        )
+
+        assert len(openai_calls) == 1
+        assert result.provider_used == "openai"
+        assert result.fallback_from == [
+            {"provider": "anthropic", "reason": "anthropic (claude-sonnet-4-5): HTTP 503"}
+        ]
+
+    @pytest.mark.asyncio
+    async def test_schema_error_on_the_primary_never_triggers_fallback(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        openai_calls = 0
+
+        async def anthropic_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
+            raise llm.SchemaError("model answered with an extra field")
+
+        async def openai_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
+            nonlocal openai_calls
+            openai_calls += 1
+            return _result("gpt-4o-mini")
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(settings, "anthropic_api_key", "sk-ant-instance")
+        monkeypatch.setattr(llm, "_call_anthropic", anthropic_stub)
+        monkeypatch.setattr(llm, "_call_openai", openai_stub)
+
+        with pytest.raises(llm.SchemaError):
+            await llm.extract_structured(
+                "content", SCHEMA, provider_keys={"openai": "sk-openai-caller"}
+            )
+        assert openai_calls == 0
+
+    @pytest.mark.asyncio
+    async def test_an_explicit_provider_pin_does_not_fall_back(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        openai_calls = 0
+
+        async def anthropic_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
+            raise llm.ProviderError("anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True)
+
+        async def openai_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
+            nonlocal openai_calls
+            openai_calls += 1
+            return _result("gpt-4o-mini")
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "openai")
+        monkeypatch.setattr(llm, "_call_anthropic", anthropic_stub)
+        monkeypatch.setattr(llm, "_call_openai", openai_stub)
+
+        with pytest.raises(llm.ProviderError):
+            await llm.extract_structured(
+                "content", SCHEMA, provider="anthropic", provider_keys={"openai": "sk-openai-caller"}
+            )
+        assert openai_calls == 0
+
+    @pytest.mark.asyncio
+    async def test_a_candidate_provider_with_no_usable_credential_is_skipped(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Priority order is anthropic, openai, gemini, openrouter. The primary
+        # is anthropic itself; openai has no caller key and no instance key,
+        # so the hop must skip straight to gemini.
+        async def anthropic_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
+            raise llm.ProviderError("anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True)
+
+        gemini_calls: list[str | None] = []
+
+        async def gemini_stub(
+            _content: str, _schema: dict, _prompt: str | None, model: str, *, caller_key: str | None = None
+        ) -> llm.ExtractionResult:
+            gemini_calls.append(caller_key)
+            return _result(model)
+
+        async def openai_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
+            raise AssertionError("openai has no usable credential and must not be called")
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(settings, "anthropic_api_key", "sk-ant-instance")
+        monkeypatch.setattr(settings, "openai_api_key", None)
+        monkeypatch.setattr(settings, "openai_compatible_base_url", None)
+        monkeypatch.setattr(llm, "_call_anthropic", anthropic_stub)
+        monkeypatch.setattr(llm, "_call_openai", openai_stub)
+        monkeypatch.setattr(llm, "_call_gemini", gemini_stub)
+
+        result = await llm.extract_structured(
+            "content", SCHEMA, provider_keys={"gemini": "g-caller"}
+        )
+
+        assert gemini_calls == ["g-caller"]
+        assert result.provider_used == "gemini"
+
+    @pytest.mark.asyncio
+    async def test_the_fallback_hop_uses_its_own_key_never_the_failed_providers(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        async def anthropic_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
+            raise llm.ProviderError("anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True)
+
+        openai_keys_seen: list[str | None] = []
+
+        async def openai_stub(
+            _content: str,
+            _schema: dict,
+            _prompt: str | None,
+            model: str,
+            *,
+            provider: str = "openai",
+            caller_key: str | None = None,
+            caller_base_url: str | None = None,
+        ) -> llm.ExtractionResult:
+            openai_keys_seen.append(caller_key)
+            return _result(model)
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(llm, "_call_anthropic", anthropic_stub)
+        monkeypatch.setattr(llm, "_call_openai", openai_stub)
+
+        await llm.extract_structured(
+            "content",
+            SCHEMA,
+            provider_keys={"anthropic": "sk-ant-caller", "openai": "sk-openai-caller"},
+        )
+
+        assert openai_keys_seen == ["sk-openai-caller"]
+        assert "sk-ant-caller" not in openai_keys_seen
+
+    @pytest.mark.asyncio
+    async def test_two_documents_in_one_request_each_get_their_own_notice(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Guards against the notice ever being (or becoming) a crawl/batch
+        # aggregate: two pages with different kept/total, processed back to
+        # back as one caller request would, must not leak one page's counts
+        # into the other's notice.
+        seen: list[str] = []
+
+        async def stub(content: str, *_args: object, **_kwargs: object) -> llm.ExtractionResult:
+            seen.append(content)
+            return _result("m")
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(llm, "_call_anthropic", stub)
+
+        small_doc = "\n\n".join(f"Paragraph {i} about pricing and plans." for i in range(20))
+        large_doc = "\n\n".join(f"Paragraph {i} about pricing and plans." for i in range(40))
+
+        first = await llm.extract_structured(small_doc, SCHEMA, max_input_tokens=20)
+        second = await llm.extract_structured(large_doc, SCHEMA, max_input_tokens=20)
+
+        assert first.blocks_kept < first.blocks_total
+        assert second.blocks_kept < second.blocks_total
+        assert (first.blocks_kept, first.blocks_total) != (second.blocks_kept, second.blocks_total)
+
+        first_notice = f"[content clipped: {first.blocks_kept} of {first.blocks_total} blocks"
+        second_notice = f"[content clipped: {second.blocks_kept} of {second.blocks_total} blocks"
+
+        assert first_notice in seen[0]
+        assert second_notice not in seen[0]
+        assert second_notice in seen[1]
+        assert first_notice not in seen[1]
+
+        # The notice sits inside the user-message content, after the fenced page.
+        for content in seen:
+            fence_close = content.index("</untrusted>")
+            notice_pos = content.index("[content clipped:")
+            assert notice_pos > fence_close

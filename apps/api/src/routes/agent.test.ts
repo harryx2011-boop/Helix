@@ -57,8 +57,12 @@ describe('POST /v1/agent/schema', () => {
       urls: undefined,
       hint: undefined,
       instruction: undefined,
+      provider: undefined,
+      model: undefined,
       providerKeys: undefined,
       providerModels: undefined,
+      providerBaseUrls: undefined,
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -78,8 +82,12 @@ describe('POST /v1/agent/schema', () => {
       urls: ['https://example.com/shop'],
       hint: { type: 'object', properties: { name: { type: 'string' } } },
       instruction: 'also capture SKU',
+      provider: undefined,
+      model: undefined,
       providerKeys: undefined,
       providerModels: undefined,
+      providerBaseUrls: undefined,
+      signal: expect.any(AbortSignal),
     });
   });
 

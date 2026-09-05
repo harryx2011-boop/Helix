@@ -386,7 +386,10 @@ function documentFailure(error: unknown): ParseFailure | RequestError {
     return { reason: 'service_unavailable', detail: error.detail || `helix-extract answered HTTP ${error.status}` };
   }
   const err = error as { name?: string; message?: string };
-  if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+  if (err.name === 'AbortError') {
+    return { reason: 'aborted', detail: 'the caller disconnected before parsing finished' };
+  }
+  if (err.name === 'TimeoutError') {
     return { reason: 'timeout', detail: 'helix-extract did not finish parsing in time' };
   }
   return { reason: 'service_unavailable', detail: err.message ?? 'helix-extract is unreachable' };
@@ -475,6 +478,13 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
       const contentType = request.headers['content-type'] ?? '';
       const isMultipart = contentType.toLowerCase().startsWith('multipart/form-data');
 
+      const controller = new AbortController();
+      const onClose = (): void => {
+        if (!reply.raw.writableFinished) controller.abort();
+      };
+      request.raw.on('close', onClose);
+
+      try {
       let file: FileInput;
       let options: ParseOptions;
 
@@ -580,6 +590,7 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
             ocr: OCR_MODE[options.ocr],
             maxPages: options.maxPages,
             tables: options.tables,
+            signal: controller.signal,
           });
         } catch (error) {
           const outcome = documentFailure(error);
@@ -627,6 +638,7 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
             providerKeys,
             providerModels,
             providerBaseUrls,
+            signal: controller.signal,
           });
           data['json'] = structured.data;
           data['usage'] = {
@@ -666,6 +678,9 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
         data,
         ...(warnings.length > 0 ? { warnings } : {}),
       });
+      } finally {
+        request.raw.off('close', onClose);
+      }
     }
   });
 }

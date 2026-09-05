@@ -89,8 +89,19 @@ function pipelineSuccess(markdown = '# Title\n\nSome content.') {
   };
 }
 
-function extractClient(chunkImpl?: () => Promise<unknown>) {
+function extractClient(chunkImpl?: () => Promise<unknown>, structuredImpl?: (opts: { signal?: AbortSignal }) => Promise<unknown>) {
   return {
+    structured:
+      structuredImpl ??
+      vi.fn(async () => ({
+        data: { title: 'Pro' },
+        sources: [{ field: 'title', span: [0, 3] }],
+        tokensInput: 10,
+        tokensOutput: 2,
+        modelUsed: 'test-model',
+        blocksKept: 2,
+        blocksTotal: 2,
+      })),
     chunk:
       chunkImpl ??
       vi.fn(async () => ({
@@ -105,6 +116,14 @@ function buildWorker(chunkImpl?: () => Promise<unknown>) {
   return new CrawlWorker({
     fetchClient: {} as never,
     extractClient: extractClient(chunkImpl),
+    userAgent: 'HelixBot/test',
+  });
+}
+
+function buildWorkerWithStructured(structuredImpl: (opts: { signal?: AbortSignal }) => Promise<unknown>) {
+  return new CrawlWorker({
+    fetchClient: {} as never,
+    extractClient: extractClient(undefined, structuredImpl),
     userAgent: 'HelixBot/test',
   });
 }
@@ -293,4 +312,164 @@ describe('CrawlWorker identity and politeness wiring', () => {
     // happen is an identity being reassembled per request.
     expect(new Set(profiles).size).toBe(1);
   });
+});
+
+describe('a cancelled job stops the work it is paying for', () => {
+  /** Makes `SELECT status FROM jobs` answer 'cancelled' from the first poll. */
+  function cancelImmediately(): void {
+    const original = db.query.getMockImplementation()!;
+    db.query.mockImplementation((async (text: string, values: unknown[] = []) => {
+      if (text.includes('SELECT status FROM jobs')) {
+        return { rows: [{ status: 'cancelled' }], rowCount: 1 };
+      }
+      return original(text, values);
+      // The fake answers several different row shapes; the mock's inferred
+      // signature only knows the first one it saw.
+    }) as unknown as typeof original);
+  }
+
+  it('passes a signal into the per-page structured call', async () => {
+    const seen: (AbortSignal | undefined)[] = [];
+    runPipeline.mockResolvedValue(pipelineSuccess());
+    db.state.request = baseRequest({
+      formats: ['markdown', 'json'],
+      jsonOptions: { prompt: 'the title' },
+    });
+
+    const worker = buildWorkerWithStructured(async (opts) => {
+      seen.push(opts.signal);
+      return {
+        data: { title: 'Pro' },
+        sources: [{ field: 'title', span: [0, 3] }],
+        tokensInput: 1,
+        tokensOutput: 1,
+        modelUsed: 'm',
+        blocksKept: 1,
+        blocksTotal: 1,
+      };
+    });
+    await worker.runOnce();
+
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen[0]).toBeInstanceOf(AbortSignal);
+  });
+
+  it('does not count an aborted extraction as a failed one', async () => {
+    runPipeline.mockResolvedValue(pipelineSuccess());
+    db.state.request = baseRequest({
+      formats: ['markdown', 'json'],
+      jsonOptions: { prompt: 'the title' },
+    });
+
+    const worker = buildWorkerWithStructured(async () => {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    });
+    await worker.runOnce();
+
+    // `usage` is written on the completing UPDATE; an abort must not appear
+    // there as a page the extractor tried and lost.
+    const update = db.state.calls.find(
+      (c) => c.text.includes('UPDATE jobs') && c.text.includes('usage'),
+    );
+    const usage = update ? JSON.parse(update.values[4] as string) : {};
+    expect(usage.jsonFailed ?? 0).toBe(0);
+  });
+
+  it('still counts a genuine extraction failure', async () => {
+    runPipeline.mockResolvedValue(pipelineSuccess());
+    db.state.request = baseRequest({
+      formats: ['markdown', 'json'],
+      jsonOptions: { prompt: 'the title' },
+    });
+
+    const worker = buildWorkerWithStructured(async () => {
+      throw new Error('the provider returned 500');
+    });
+    await worker.runOnce();
+
+    const update = db.state.calls.find(
+      (c) => c.text.includes('UPDATE jobs') && c.text.includes('usage'),
+    );
+    const usage = update ? JSON.parse(update.values[4] as string) : {};
+    expect(usage.jsonFailed).toBe(1);
+  });
+
+  it('passes a signal to the fetch as well, not only the model call', async () => {
+    let seen: AbortSignal | undefined;
+    runPipeline.mockImplementation(async (options: { signal?: AbortSignal }) => {
+      seen = options.signal;
+      return pipelineSuccess();
+    });
+    db.state.request = baseRequest();
+
+    await buildWorker().runOnce();
+
+    expect(seen).toBeInstanceOf(AbortSignal);
+  });
+
+  it('does not record a page aborted by the cancellation as a fetch failure', async () => {
+    cancelImmediately();
+    runPipeline.mockImplementation(async (options: { signal?: AbortSignal }) => {
+      // Wait for the cancellation poll to fire, then answer the way the
+      // pipeline does once its signal is aborted.
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      if (!options.signal?.aborted) return pipelineSuccess();
+      return {
+        success: false as const,
+        reason: 'aborted' as const,
+        detail: 'the read was cancelled',
+        statusCode: undefined,
+        tier: 'tls' as const,
+        tiersAttempted: ['tls'] as const,
+        timingMs: 1,
+      };
+    });
+    db.state.request = baseRequest();
+
+    await buildWorker().runOnce();
+
+    // A cancelled crawl reporting hundreds of broken URLs is the failure this
+    // avoids; the row is left leased so `release()` can requeue it.
+    expect(db.state.calls.some((c) => c.text.includes('INSERT INTO fetch_failures'))).toBe(false);
+    expect(db.state.calls.some((c) => c.text.includes("SET status = 'failed'"))).toBe(false);
+  });
+
+  it('does record an abort that did not come from the cancellation', async () => {
+    runPipeline.mockResolvedValue({
+      success: false as const,
+      reason: 'aborted' as const,
+      detail: 'the upstream connection dropped',
+      statusCode: undefined,
+      tier: 'tls' as const,
+      tiersAttempted: ['tls'] as const,
+      timingMs: 1,
+    });
+    db.state.request = baseRequest();
+
+    await buildWorker().runOnce();
+
+    // Left unmarked it would stay leased and the loop would spin until the
+    // lease expired, so this one still has to reach the frontier.
+    expect(db.state.calls.some((c) => c.text.includes("SET status = 'failed'"))).toBe(true);
+  });
+
+  it('aborts before waiting on the pages already in flight', async () => {
+    cancelImmediately();
+    let aborted = false;
+    runPipeline.mockImplementation(async (options: { signal?: AbortSignal }) => {
+      options.signal?.addEventListener('abort', () => {
+        aborted = true;
+      });
+      // The cancellation poll only fires 2s after the loop starts, so a page
+      // has to still be outstanding then for the abort to reach it at all —
+      // which is exactly the situation this guards.
+      await new Promise((resolve) => setTimeout(resolve, 2_500));
+      return pipelineSuccess();
+    });
+    db.state.request = baseRequest();
+
+    await buildWorker().runOnce();
+
+    expect(aborted).toBe(true);
+  }, 15_000);
 });

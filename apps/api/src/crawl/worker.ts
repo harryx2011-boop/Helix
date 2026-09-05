@@ -98,6 +98,32 @@ interface PageStructured {
   blocksTotal: number;
 }
 
+/**
+ * Whether a rejection is this side stopping the call, rather than the call
+ * going wrong.
+ *
+ * `AbortSignal.any` surfaces its reason as a DOMException named `AbortError`;
+ * `fetch` in some runtimes reports the same condition as a plain Error whose
+ * message says so. Both are the job being cancelled, and neither is a fault
+ * worth counting or retrying — `TimeoutError` deliberately is not matched here,
+ * because that is this side giving up on its own budget.
+ */
+function isAbort(error: unknown): boolean {
+  if (error instanceof DOMException) return error.name === 'AbortError';
+  const named = error as { name?: string; message?: string } | null;
+  if (named?.name === 'AbortError') return true;
+  return typeof named?.message === 'string' && /abort/i.test(named.message);
+}
+
+/**
+ * How often a running crawl asks whether it has been cancelled.
+ *
+ * A poll rather than a listener: a crawl of ten thousand pages should not run
+ * ten thousand extra queries, and two seconds of extra work after a cancel is
+ * cheaper than that.
+ */
+const CANCEL_POLL_MS = 2_000;
+
 /** Path prefix a `maxPagesPerPath` budget is counted against. */
 function pathPrefixOf(url: string): string {
   try {
@@ -302,6 +328,17 @@ export class CrawlWorker {
     let jsonFailed = 0;
     let cancelChecked = Date.now();
 
+    /**
+     * Aborted when the job is cancelled or the worker is shutting down.
+     *
+     * The frontier stops handing out pages the moment cancellation is seen, but
+     * a page already inside `extractClient.structured()` keeps running — and
+     * that call is billed to the caller's own provider. Without a signal
+     * reaching it, cancelling a crawl stops the fetching and pays for the
+     * thinking anyway.
+     */
+    const jobAbort = new AbortController();
+
     // Resolved once per job: every page of a crawl runs against the same
     // owner's keys, and re-decrypting them per page would be the crawl's
     // slowest step on a site of any size.
@@ -318,10 +355,32 @@ export class CrawlWorker {
     const inFlight = new Set<Promise<void>>();
     const maxParallel = request.maxConcurrency ?? 8;
 
+    /**
+     * Wait for the next page to finish, or for the cancellation poll to be due,
+     * whichever comes first.
+     *
+     * A bare `Promise.race(inFlight)` blocks until a page completes, so a crawl
+     * whose last outstanding page takes two minutes cannot notice it was
+     * cancelled for two minutes — the signal exists but nothing reaches the
+     * check that fires it. Racing a timer bounds that to the poll interval.
+     */
+    const raceInFlight = async (): Promise<void> => {
+      const dueIn = Math.max(0, CANCEL_POLL_MS - (Date.now() - cancelChecked));
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const due = new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, dueIn);
+      });
+      try {
+        await Promise.race([...inFlight, due]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    };
+
     while (frontier.pending > 0 || inFlight.size > 0) {
       // Poll for cancellation rather than checking every iteration: a crawl of
       // ten thousand pages should not run ten thousand extra queries.
-      if (Date.now() - cancelChecked > 2_000) {
+      if (Date.now() - cancelChecked > CANCEL_POLL_MS) {
         cancelChecked = Date.now();
 
         // Leases have to be pushed forward while pages are still being fetched,
@@ -331,23 +390,29 @@ export class CrawlWorker {
 
         if (await this.#isCancelled(jobId)) {
           this.#logger?.info({ jobId }, 'crawl cancelled');
+          // Before awaiting them: settling first would wait for the very model
+          // calls the cancellation is meant to stop.
+          jobAbort.abort();
           await Promise.allSettled(inFlight);
           await frontier.release();
           return;
         }
       }
 
-      if (this.#stopping) break;
+      if (this.#stopping) {
+        jobAbort.abort();
+        break;
+      }
 
       if (inFlight.size >= maxParallel) {
-        await Promise.race(inFlight);
+        await raceInFlight();
         continue;
       }
 
       const item = await frontier.next((site) => politeness.tryAcquire(site).allowed);
       if (!item) {
         if (inFlight.size > 0) {
-          await Promise.race(inFlight);
+          await raceInFlight();
           continue;
         }
         // Every queued host is paced out; wait for the shortest delay.
@@ -402,6 +467,9 @@ export class CrawlWorker {
                 : {}),
               ...(session.profileId ? { profile: session.profileId } : {}),
               ...(session.proxyUrl ? { proxy: session.proxyUrl } : {}),
+              // The fetch stops too, not only the model call: a cancelled crawl
+              // that keeps loading pages in a browser tier is still spending.
+              signal: jobAbort.signal,
             },
             this.#deps,
           );
@@ -409,6 +477,27 @@ export class CrawlWorker {
           statusCode = result.success ? result.statusCode : result.statusCode;
 
           if (!result.success) {
+            // A page the job itself stopped is not a page that failed. Writing
+            // it to `fetch_failures` would leave a cancelled crawl reporting
+            // hundreds of broken URLs it never actually tried to read.
+            //
+            // The row is left leased rather than marked either way: the
+            // cancellation path calls `frontier.release()` immediately after
+            // this, which returns every still-leased row to `queued`, so a
+            // resumed job retries the page instead of skipping it as done or
+            // spending an attempt on it.
+            //
+            // Only when the abort came from this job stopping, though. An
+            // `aborted` from anywhere else still has to reach the frontier, or
+            // the URL stays leased and `pending` never drains — the loop then
+            // spins until the lease expires.
+            if (result.reason === 'aborted' && jobAbort.signal.aborted) return;
+            if (result.reason === 'aborted') {
+              await frontier.markFailed(item.url);
+              failed++;
+              return;
+            }
+
             // The classifier's verdict, not the status code: a challenge page
             // arrives as 200 and would otherwise be scored as a healthy fetch by
             // both the concurrency controller and the session pool.
@@ -487,6 +576,7 @@ export class CrawlWorker {
                   provider: request.jsonOptions.provider,
                   model: request.jsonOptions.model,
                   ...(providerAuth ?? {}),
+                  signal: jobAbort.signal,
                 });
                 structured = {
                   json: out.data,
@@ -498,11 +588,19 @@ export class CrawlWorker {
                 };
                 jsonExtracted++;
               } catch (error) {
-                jsonFailed++;
-                this.#logger?.warn(
-                  { jobId, url: item.url, error: error instanceof Error ? error.message : String(error) },
-                  'structured extraction failed for a crawled page',
-                );
+                // A cancelled job is not a failed extraction. Counting it in
+                // `jsonFailed` would report the crawl as having tried and lost
+                // pages it deliberately stopped, and a retry layer reading that
+                // count would re-fire the call the cancellation just killed.
+                if (isAbort(error)) {
+                  this.#logger?.info({ jobId, url: item.url }, 'structured extraction aborted with the job');
+                } else {
+                  jsonFailed++;
+                  this.#logger?.warn(
+                    { jobId, url: item.url, error: error instanceof Error ? error.message : String(error) },
+                    'structured extraction failed for a crawled page',
+                  );
+                }
               }
             }
 

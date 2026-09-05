@@ -1,19 +1,22 @@
 # Canvas Connect → Helix: merge scope
 
-> Status: **merged and shipped as Helix 1.17.0, 2026-09-05.** All five phases done bar the
-> final GitHub deletion, which is a deliberate hold. Sits alongside CONVERTER-CONTRACT.md
-> and PERSONA.md as the third sibling-product doc.
+> Status: **complete, 2026-09-05.** Shipped as Helix 1.17.0. All five phases done, including
+> the GitHub deletion. Sits alongside CONVERTER-CONTRACT.md and PERSONA.md as the third
+> sibling-product doc.
 >
-> **Both previously-open items are now closed:**
+> **Every open item is now closed:**
 >
 > 1. **The unmerged `http_auth` branch is cherry-picked in** as canvas-mcp **1.1.0**
 >    (`58c1561`). See below.
 > 2. **Shipped as Helix 1.17.0**, which names Canvas in its own release line.
+> 3. **The GitHub repo is deleted** (by another session, on Harry's authorisation), after
+>    `git ls-remote` was compared against the archive ref by ref. Verified independently
+>    here: `git ls-remote` and `gh repo view` both report it gone, and `git fsck` on
+>    `e:/archive/CanvasLMS-API.git` is clean with all six refs present.
 >
-> **One item remains, and it is a deliberate hold:** the GitHub repo
-> `harryx2011-boop/CanvasLMS-API` is archived at `e:/archive/` but not deleted. With the
-> auth branch now merged, nothing unique remains on it — deletion is safe whenever wanted,
-> but it is irreversible and stays a human call.
+> The leftover checkout at `e:/CanvasLMS - MCP` had its dead `origin` repointed at the
+> archive and carries a `MOVED.md`. It was clean — nothing uncommitted, nothing unpushed —
+> so nothing was stranded there.
 
 ## What shipped
 
@@ -21,7 +24,7 @@
 |---|---|
 | `d0ef9d8` | The presentation: four routes, the real Canvas mark, the `segments` hero motif |
 | `70b4788` | The server: `tools/canvas-mcp/` by subtree merge, history preserved |
-| `0193d16` | Decommission: URLs repointed at Helix, old repo archived (not deleted) |
+| `0193d16` | Decommission: URLs repointed at Helix, old repo archived (deleted later, after the cherry-pick) |
 | `3a73562` | The markdown twin, which also fixed the search index |
 | `58c1561` | `http_auth` cherry-picked from the archived branch — canvas-mcp 1.1.0 |
 
@@ -326,10 +329,11 @@ real content rather than an empty shell:
     site, not to this merge — discovery for Canvas is already covered by `/llms.txt`, the
     markdown twin and the search index. Per-page `metadata` is set in each `page.tsx`.
 
-### Phase 5 — decommission and verify — **archived 2026-09-05; deletion NOT done, and should not be**
+### Phase 5 — decommission and verify — **DONE 2026-09-05**
 
-**The archive is taken and verified. The GitHub deletion is deliberately left undone**
-because taking it surfaced work that only exists there — see step 23.
+Archived, then deleted — **in that order, and the order mattered.** Taking the archive
+surfaced work that existed nowhere else (see step 23); deleting first would have destroyed
+it. The branch was cherry-picked into Helix before the repo was removed.
 
 Findings that changed this phase:
 
@@ -370,7 +374,9 @@ mirror and confirming HEAD, all four tags and the extra branch.
     **Deletion is permanent and takes issue history and stars with it.** Confirm at the
     time; do not run it as part of an unattended phase.
 
-    **STATUS: steps 1–3 done, step 4 NOT done and blocked on a decision.**
+    **STATUS: all four steps done.** The branch was cherry-picked in as `58c1561`
+    (canvas-mcp 1.1.0), then the repo was deleted on Harry's authorisation after
+    `git ls-remote` was compared against the archive ref by ref.
 
     Mirroring found an **unmerged branch that is not in Helix**:
 

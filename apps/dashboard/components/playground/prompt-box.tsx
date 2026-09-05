@@ -13,6 +13,9 @@ import { FormatPicker, SURFACE, type PromptSurface } from './format-picker';
 const PLACEHOLDERS: Record<Endpoint, string[]> = {
   scrape: ['nextjs.org/docs', 'stripe.com/pricing', 'news.ycombinator.com'],
   parse: ['arxiv.org/pdf/1706.03762', 'sec.gov/files/form10-k.pdf'],
+  document: ['arxiv.org/pdf/1706.03762', 'sec.gov/files/form10-k.pdf'],
+  extract: ['stripe.com/pricing', 'news.ycombinator.com'],
+  screenshot: ['stripe.com/pricing', 'nextjs.org', 'linear.app'],
   metadata: ['upload.wikimedia.org/photo.jpg', 'arxiv.org/pdf/1706.03762'],
   convert: ['arxiv.org/pdf/1706.03762', 'upload.wikimedia.org/photo.png'],
   search: ['transactional email APIs', 'headless browser pricing', 'vector databases compared'],
@@ -51,6 +54,9 @@ function useRotatingPlaceholder(phrases: readonly string[], active: boolean): st
 export const RUN_LABEL: Record<Endpoint, string> = {
   scrape: 'Start scraping',
   parse: 'Parse file',
+  document: 'Run operation',
+  extract: 'Extract rows',
+  screenshot: 'Take screenshot',
   metadata: 'Scan file',
   convert: 'Convert file',
   search: 'Search',

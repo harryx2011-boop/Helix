@@ -781,6 +781,91 @@ export interface ConvertResponseFailure {
 
 export type ConvertResponse = ConvertSuccess | ConvertResponseFailure;
 
+export type ScreenshotFormat = 'png' | 'jpeg' | 'webp';
+
+export interface ScreenshotRequest {
+  url: string;
+  fullPage?: boolean;
+  selector?: string;
+  clip?: { x: number; y: number; width: number; height: number };
+  format?: ScreenshotFormat;
+  quality?: number;
+  omitBackground?: boolean;
+  viewport?: { width: number; height: number; dpr?: number };
+  darkMode?: boolean;
+  blockAds?: boolean;
+  mobile?: boolean;
+  tier?: 'auto' | 'chromium' | 'camoufox';
+  waitFor?: number;
+  timeout?: number;
+}
+
+export interface ScreenshotSuccess {
+  success: true;
+  data: {
+    /** A `data:` URL, or null when the tier that succeeded captured no image. */
+    screenshot: string | null;
+    format: ScreenshotFormat;
+    bytes: number | null;
+    metadata: Record<string, unknown>;
+  };
+  warnings: string[];
+}
+
+export type ScreenshotResponse = ScreenshotSuccess | { success: false; failure: FetchFailure };
+
+export interface ExtractRequest {
+  urls: string[];
+  schema?: Record<string, unknown>;
+  prompt?: string;
+  instruction?: string;
+  allowUngrounded?: boolean;
+  tier?: Tier | 'camoufox';
+  timeout?: number;
+}
+
+/** A field the model returned that nothing in the page supports. */
+export interface DroppedField {
+  url: string;
+  field: string;
+  reason: string;
+}
+
+export interface ExtractRow {
+  _source: {
+    url: string;
+    spans: Record<string, unknown>[];
+    blocksKept: number;
+    blocksTotal: number;
+  };
+  [field: string]: unknown;
+}
+
+export interface ExtractResponse {
+  success: true;
+  data: ExtractRow[];
+  /** Fields discarded for want of a grounding span. Never silently absent. */
+  dropped: DroppedField[];
+  warnings: string[];
+  usage: {
+    urls: number;
+    rows: number;
+    model: string | null;
+    tokens: { input: number; output: number };
+    blocksKept: number;
+    blocksTotal: number;
+    providerCost: { amount: number | null; currency: string };
+  };
+}
+
+/** The operations `POST /document` dispatches to. */
+export type DocumentOp = 'parse' | 'convert' | 'metadata' | 'scrub' | 'assess';
+
+export type DocumentRequest = { op: DocumentOp } & Record<string, unknown>;
+
+/** Whatever the dispatched operation answered with; the form knows which it asked for. */
+export type DocumentResponse = Record<string, unknown>;
+
 export interface HelixClientOptions {
   baseUrl?: string;
   apiKey: string;
@@ -822,6 +907,23 @@ export class HelixClient {
 
   async scrape(request: ScrapeRequest, signal?: AbortSignal): Promise<ScrapeResponse> {
     return this.post<ScrapeResponse>('/scrape', request, signal);
+  }
+
+  async screenshot(request: ScreenshotRequest, signal?: AbortSignal): Promise<ScreenshotResponse> {
+    return this.post<ScreenshotResponse>('/screenshot', request, signal);
+  }
+
+  async extract(request: ExtractRequest, signal?: AbortSignal): Promise<ExtractResponse> {
+    return this.post<ExtractResponse>('/extract', request, signal);
+  }
+
+  /**
+   * `/document` forwards by `op`, so the body goes through as given. A `scrub`
+   * answers with file bytes rather than JSON and is not reachable this way —
+   * the metadata tab calls `/metadata/scrub` directly for that.
+   */
+  async document(request: DocumentRequest, signal?: AbortSignal): Promise<DocumentResponse> {
+    return this.post<DocumentResponse>('/document', request, signal);
   }
 
   async map(request: MapRequest, signal?: AbortSignal): Promise<MapResponse> {

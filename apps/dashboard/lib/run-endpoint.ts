@@ -3,6 +3,12 @@
 import { HelixClient, HelixApiError } from '@/lib/api';
 import type {
   ConvertRequest,
+  DocumentRequest,
+  DocumentResponse,
+  ExtractRequest,
+  ExtractResponse,
+  ScreenshotRequest,
+  ScreenshotResponse,
   ConvertResponse,
   CrawlRequest,
   CrawlResponse,
@@ -143,6 +149,9 @@ async function callInstance(
   | MetadataResponse
   | MetadataScrubResponse
   | ConvertResponse
+  | DocumentResponse
+  | ExtractResponse
+  | ScreenshotResponse
   | InteractResponse
   | MonitorResponse
 > {
@@ -163,6 +172,16 @@ async function callInstance(
         : client.metadataScan(body as MetadataRequest | FormData);
     case 'convert':
       return client.convert(body as ConvertRequest | FormData);
+    case 'document':
+      // The dispatcher forwards by `op`, which the form puts in the body. An
+      // upload goes to the operation's own route instead: `/document` would
+      // have to name the op in the query string, and the file tabs already
+      // call `/parse` and `/metadata` directly.
+      return client.document(body as unknown as DocumentRequest);
+    case 'extract':
+      return client.extract(body as unknown as ExtractRequest);
+    case 'screenshot':
+      return client.screenshot(body as unknown as ScreenshotRequest);
     case 'interact':
       return client.interact(body as unknown as InteractRequest);
     case 'monitor':

@@ -32,6 +32,43 @@ interface UsageRow {
 
 type Postgrestish = { code?: string; message?: string; details?: string; hint?: string };
 
+const STATUS_CLASSES = ['2xx', '4xx', '429', '5xx'] as const;
+type StatusClass = (typeof STATUS_CLASSES)[number];
+type StatusCounts = Record<StatusClass, number>;
+
+interface EndpointDay {
+  /** UTC calendar day, YYYY-MM-DD. */
+  day: string;
+  counts: StatusCounts;
+  /** Hours in the day with at least one recorded request. */
+  observedHours: number;
+  /** Observed hours in which at least one request answered 5xx. */
+  badHours: number;
+}
+
+/**
+ * Outcomes for one route family. The health page derives "is this tool
+ * working" from these, so the split is by status class, not just a total,
+ * and the hour is the unit of uptime: an hour is bad if any request in it
+ * answered 5xx, and an hour with no rows is unobserved rather than good.
+ */
+interface EndpointOutcomes {
+  endpoint: string;
+  requests: number;
+  counts: StatusCounts;
+  /** 2xx and 5xx in the hourly buckets that start within the last 24 hours. */
+  last24h: { ok: number; failed: number };
+  days: EndpointDay[];
+}
+
+function emptyCounts(): StatusCounts {
+  return { '2xx': 0, '4xx': 0, '429': 0, '5xx': 0 };
+}
+
+function isStatusClass(value: string): value is StatusClass {
+  return (STATUS_CLASSES as readonly string[]).includes(value);
+}
+
 function failed(op: string, err: unknown): NextResponse {
   const e = (err ?? {}) as Postgrestish;
   console.error(`[usage] ${op} failed`, {
@@ -102,6 +139,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         errors: 0,
         series: [],
         byEndpoint: [],
+        endpoints: [],
         keys: [],
       });
     }
@@ -125,6 +163,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const byBucket = new Map<string, number>();
     const byEndpoint = new Map<string, number>();
+    // Per family, per UTC day, which hours were seen and which of those had a 5xx.
+    const outcomes = new Map<
+      string,
+      { counts: StatusCounts; last24h: { ok: number; failed: number }; days: Map<string, { counts: StatusCounts; hours: Map<string, boolean> }> }
+    >();
+    const last24hStart = until.getTime() - 24 * 60 * 60 * 1000;
     let total = 0;
     let rateLimited = 0;
     let errors = 0;
@@ -138,7 +182,44 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       const bucket = new Date(row.bucket_start).toISOString();
       byBucket.set(bucket, (byBucket.get(bucket) ?? 0) + count);
       byEndpoint.set(row.endpoint, (byEndpoint.get(row.endpoint) ?? 0) + count);
+
+      if (!isStatusClass(row.status_class)) continue;
+      let outcome = outcomes.get(row.endpoint);
+      if (!outcome) {
+        outcome = { counts: emptyCounts(), last24h: { ok: 0, failed: 0 }, days: new Map() };
+        outcomes.set(row.endpoint, outcome);
+      }
+      outcome.counts[row.status_class] += count;
+      const at = new Date(row.bucket_start).getTime();
+      if (at >= last24hStart) {
+        if (row.status_class === '2xx') outcome.last24h.ok += count;
+        if (row.status_class === '5xx') outcome.last24h.failed += count;
+      }
+      const day = bucket.slice(0, 10);
+      let dayEntry = outcome.days.get(day);
+      if (!dayEntry) {
+        dayEntry = { counts: emptyCounts(), hours: new Map() };
+        outcome.days.set(day, dayEntry);
+      }
+      dayEntry.counts[row.status_class] += count;
+      const wasBad = dayEntry.hours.get(bucket) ?? false;
+      dayEntry.hours.set(bucket, wasBad || (row.status_class === '5xx' && count > 0));
     }
+
+    const endpoints: EndpointOutcomes[] = [...outcomes.entries()].map(([endpoint, outcome]) => ({
+      endpoint,
+      requests: STATUS_CLASSES.reduce((sum, cls) => sum + outcome.counts[cls], 0),
+      counts: outcome.counts,
+      last24h: outcome.last24h,
+      days: [...outcome.days.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([day, { counts, hours }]) => ({
+          day,
+          counts,
+          observedHours: hours.size,
+          badHours: [...hours.values()].filter(Boolean).length,
+        })),
+    }));
 
     return NextResponse.json({
       since: since.toISOString(),
@@ -155,6 +236,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       byEndpoint: [...byEndpoint.entries()]
         .sort(([, a], [, b]) => b - a)
         .map(([endpoint, requests]) => ({ endpoint, requests })),
+      endpoints,
       keys: keys.map((k) => ({
         id: k.id,
         name: k.name,

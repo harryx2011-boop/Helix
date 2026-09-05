@@ -423,8 +423,21 @@ export interface WebhookConfig {
   metadata?: Record<string, unknown>;
 }
 
+export interface JsonOptions {
+  schema?: Record<string, unknown>;
+  prompt?: string;
+  provider?: string;
+  model?: string;
+}
+
 export interface CrawlRequest extends ScrapeOptions {
-  url: string;
+  /** Required unless `resume` names an existing job, whose seed is already known. */
+  url?: string;
+  /**
+   * Revive a cancelled crawl under its original id. Mutually exclusive with
+   * `url`: a resumed crawl keeps the seed it started with.
+   */
+  resume?: string;
   estimate?: boolean;
   limit?: number;
   maxDepth?: number;
@@ -439,8 +452,18 @@ export interface CrawlRequest extends ScrapeOptions {
   maxConcurrency?: number;
   delay?: number;
   incremental?: boolean;
+  /** Omit unchanged pages from the result set. Implies `incremental`. */
+  changesOnly?: boolean;
+  /** Cap on pages sharing a path prefix; bounds calendar and facet traps. */
+  maxPagesPerPath?: number;
+  /** Glob or regex matched against extracted content, after the fetch. */
+  includeContent?: string[];
+  excludeContent?: string[];
   ignoreQueryParameters?: boolean;
-  scrapeOptions?: Pick<ScrapeOptions, 'formats' | 'tier' | 'extractor' | 'onlyMainContent'>;
+  scrapeOptions?: Pick<ScrapeOptions, 'formats' | 'tier' | 'extractor' | 'onlyMainContent'> & {
+    /** Structured extraction applied to every page of the crawl. */
+    jsonOptions?: JsonOptions;
+  };
   destination?: Destination;
   webhook?: string | WebhookConfig;
 }
@@ -1023,3 +1046,123 @@ export class HelixApiError extends Error {
     this.body = body;
   }
 }
+
+/** A resumed crawl answers with its original id rather than a new one. */
+export interface CrawlResumeResponse {
+  id: string;
+  status: string;
+  resumed: true;
+  requeued: number;
+}
+
+export type ScreenshotFormat = 'png' | 'jpeg' | 'webp';
+
+export interface ScreenshotRequest {
+  url: string;
+  /** Everything below the fold, capped server-side and reported in `warnings` when clipped. */
+  fullPage?: boolean;
+  /** Capture one element. A selector matching nothing warns rather than silently framing the page. */
+  selector?: string;
+  clip?: { x: number; y: number; width: number; height: number };
+  format?: ScreenshotFormat;
+  /** JPEG and WebP only; ignored on PNG. */
+  quality?: number;
+  /** Transparent where the page paints nothing. Ignored on JPEG. */
+  omitBackground?: boolean;
+  /** Cannot be combined with `mobile`, which sets its own phone viewport. */
+  viewport?: { width: number; height: number; dpr?: number };
+  darkMode?: boolean;
+  blockAds?: boolean;
+  mobile?: boolean;
+  proxy?: string;
+  tier?: 'auto' | 'chromium' | 'camoufox';
+  waitFor?: number;
+  timeout?: number;
+  profile?: string;
+}
+
+export interface ScreenshotSuccess {
+  success: true;
+  data: {
+    /** A `data:` URL, or null when the tier that succeeded captured no image. */
+    screenshot: string | null;
+    format: ScreenshotFormat;
+    bytes: number | null;
+    metadata: Record<string, unknown>;
+  };
+  warnings: string[];
+}
+
+export type ScreenshotResponse = ScreenshotSuccess | ScrapeResponseFailure;
+
+export interface ExtractRequest {
+  urls: string[];
+  /** One of `schema` or `prompt` is required. */
+  schema?: Record<string, unknown>;
+  prompt?: string;
+  instruction?: string;
+  provider?: string;
+  model?: string;
+  /** Keep fields the source does not support. They are reported in `dropped` either way. */
+  allowUngrounded?: boolean;
+  tier?: Tier | 'camoufox';
+  timeout?: number;
+}
+
+/** A field the model returned that nothing in the page supports. */
+export interface DroppedField {
+  url: string;
+  field: string;
+  reason: string;
+}
+
+export interface ExtractRow {
+  _source: {
+    url: string;
+    spans: Record<string, unknown>[];
+    /** How much of the page reached the model, so a thin answer is explicable. */
+    blocksKept: number;
+    blocksTotal: number;
+  };
+  [field: string]: unknown;
+}
+
+export interface ExtractResponse {
+  success: true;
+  data: ExtractRow[];
+  /** Fields discarded for want of a grounding span. Never silently absent. */
+  dropped: DroppedField[];
+  /** A URL that could not be read appears here rather than failing the request. */
+  warnings: string[];
+  usage: {
+    urls: number;
+    rows: number;
+    model: string | null;
+    tokens: { input: number; output: number };
+    blocksKept: number;
+    blocksTotal: number;
+    providerCost: { amount: number | null; currency: string };
+  };
+}
+
+/** The operations `POST /document` dispatches to. */
+export type DocumentOp = 'parse' | 'convert' | 'metadata' | 'scrub' | 'assess';
+
+/**
+ * A `/document` request: the operation, plus whatever that operation takes.
+ *
+ * The fields are the union of the four underlying requests rather than a
+ * discriminated type, because the dispatcher forwards the body untouched and
+ * each operation validates its own.
+ */
+export type DocumentRequest = { op: DocumentOp } & Record<string, unknown>;
+
+/**
+ * Whatever the dispatched operation answers with.
+ *
+ * Left open rather than a union of the four: the operation is chosen at
+ * runtime, so a caller that wants a narrow type should call the operation's own
+ * method instead. `scrub` in particular answers with file bytes, which
+ * `metadataScrub` unwraps and this does not.
+ */
+export type DocumentResponse = ParseResponse | MetadataResponse | Record<string, unknown>;

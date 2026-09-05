@@ -2,7 +2,7 @@ import { chromium, type Browser, type BrowserContext, type Page } from 'playwrig
 import type { Log } from '../core/logger.js';
 import { fingerprintScript, getProfile, type BrowserProfile } from './profiles.js';
 import { isPrivateHost } from '../core/url-guard.js';
-import { captureScreenshot } from './screenshot.js';
+import { capture, type ScreenshotOptions, type ScreenshotResult } from './screenshot.js';
 import {
   browserTypeFor,
   launchArgsFor,
@@ -49,9 +49,17 @@ export interface RenderOptions {
   proxy?: string | undefined;
   screenshot?: boolean | undefined;
   fullPage?: boolean | undefined;
+  /** Format, quality, element selector and clip. `fullPage` above still applies. */
+  screenshotOptions?: ScreenshotOptions | undefined;
+  /** Overrides the context viewport, for callers that need a specific device size. */
+  viewport?: { width: number; height: number; deviceScaleFactor?: number | undefined } | undefined;
   actions?: unknown[] | undefined;
   /** Phone-sized viewport with touch events, for pages that serve a different layout to phones. */
   mobile?: boolean | undefined;
+  /** Abort requests to known ad, tracker and consent-dialog hosts. */
+  blockAds?: boolean | undefined;
+  /** Emulate `prefers-color-scheme: dark`. Pages that ignore the query are unaffected. */
+  darkMode?: boolean | undefined;
   /** Browser identity to present to the page's own JavaScript. Unknown names are ignored. */
   profile?: string | undefined;
   /** Operator opt-in: let the page, its redirects and its subresources reach private addresses. */
@@ -80,6 +88,8 @@ export interface RenderResult {
   headers: Record<string, string>;
   finalUrl?: string | undefined;
   screenshot?: string | undefined;
+  /** Format, byte count and any warning from the capture. Absent when none was taken. */
+  screenshotResult?: ScreenshotResult | undefined;
   /** The identity actually applied. Absent when the requested name matched nothing, or did not fit the engine. */
   profileUsed?: string | undefined;
   /** The browser that actually rendered, when the render tier ran one. */
@@ -135,7 +145,62 @@ export interface BrowserPoolOptions {
  * so a public name that resolves privately at render time is the one case it
  * does not close.
  */
-async function blockPrivateHosts(context: BrowserContext): Promise<void> {
+/**
+ * Hosts serving ads, trackers and consent dialogs.
+ *
+ * Deliberately a short list of the networks that actually change what a
+ * screenshot looks like, not an EasyList clone: every entry costs a comparison
+ * on every request the page makes, and a stale blocklist that silently breaks
+ * a page is worse than a banner in the frame.
+ */
+const AD_HOSTS = [
+  'doubleclick.net',
+  'googlesyndication.com',
+  'googleadservices.com',
+  'google-analytics.com',
+  'googletagmanager.com',
+  'adservice.google.com',
+  'adnxs.com',
+  'criteo.com',
+  'taboola.com',
+  'outbrain.com',
+  'scorecardresearch.com',
+  'quantserve.com',
+  'moatads.com',
+  'cookielaw.org',
+  'onetrust.com',
+  'cookiebot.com',
+  'usercentrics.eu',
+  'trustarc.com',
+  'hotjar.com',
+  'facebook.net',
+];
+
+function isAdHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return AD_HOSTS.some((ad) => host === ad || host.endsWith(`.${ad}`));
+}
+
+/**
+ * Abort every request bound for a loopback, link-local or private address, and
+ * optionally every ad and consent-dialog host.
+ *
+ * The route already checked the URL the caller sent, including what its name
+ * resolves to. This covers what the check cannot: redirects, and fetches the
+ * page itself makes once it runs. It is a literal check (no DNS per request),
+ * so a public name that resolves privately at render time is the one case it
+ * does not close.
+ *
+ * Both filters share one handler deliberately. Playwright runs `route`
+ * handlers most-recently-registered first and stops at the one that answers,
+ * so two handlers that each call `continue()` would race to decide, and the
+ * private-host check could be bypassed by whichever registered later.
+ */
+async function blockRequests(
+  context: BrowserContext,
+  options: { blockPrivate: boolean; blockAds: boolean },
+): Promise<void> {
+  if (!options.blockPrivate && !options.blockAds) return;
   await context.route(
     () => true,
     (route) => {
@@ -146,7 +211,10 @@ async function blockPrivateHosts(context: BrowserContext): Promise<void> {
         return route.abort('blockedbyclient');
       }
       const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
-      return isHttp && isPrivateHost(url) ? route.abort('blockedbyclient') : route.continue();
+      if (!isHttp) return route.continue();
+      if (options.blockPrivate && isPrivateHost(url)) return route.abort('blockedbyclient');
+      if (options.blockAds && isAdHost(url.hostname)) return route.abort('blockedbyclient');
+      return route.continue();
     },
   );
 }
@@ -177,8 +245,13 @@ async function drivePage(
   const html = await page.content();
 
   let screenshot: string | undefined;
+  let screenshotResult: ScreenshotResult | undefined;
   if (options.screenshot) {
-    screenshot = await captureScreenshot(page, options.fullPage ?? false);
+    screenshotResult = await capture(page, {
+      ...(options.screenshotOptions ?? {}),
+      fullPage: options.screenshotOptions?.fullPage ?? options.fullPage ?? false,
+    });
+    screenshot = screenshotResult.data;
   }
 
   return {
@@ -187,6 +260,7 @@ async function drivePage(
     headers: response ? await response.allHeaders().catch(() => ({})) : {},
     finalUrl: page.url(),
     screenshot,
+    screenshotResult,
   };
 }
 
@@ -498,10 +572,24 @@ export class BrowserPool {
         // profile's desktop screen.
         ...profileContextOptions(profile),
         ...(mobileApplied ? MOBILE_CONTEXT : {}),
+        ...(options.darkMode ? { colorScheme: 'dark' as const } : {}),
+        // Last, so an explicit viewport wins over both the profile's screen and
+        // the phone preset: a caller naming a size means that size.
+        ...(options.viewport
+          ? {
+              viewport: { width: options.viewport.width, height: options.viewport.height },
+              ...(options.viewport.deviceScaleFactor !== undefined
+                ? { deviceScaleFactor: options.viewport.deviceScaleFactor }
+                : {}),
+            }
+          : {}),
       });
 
       if (profile) await context.addInitScript(fingerprintScript(profile));
-      if (!options.allowPrivate) await blockPrivateHosts(context);
+      await blockRequests(context, {
+        blockPrivate: !options.allowPrivate,
+        blockAds: options.blockAds === true,
+      });
 
       page = await context.newPage();
       abortClosesPage(page, options.signal);
@@ -573,7 +661,7 @@ export class BrowserPool {
           // hop and subresource. A build that lacks it declines the tier rather
           // than fetching unguarded.
           try {
-            await blockPrivateHosts(context);
+            await blockRequests(context, { blockPrivate: true, blockAds: false });
           } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);
             throw new Error(`lightpanda tier cannot enforce the private-address guard (${detail})`);
@@ -651,7 +739,7 @@ export class BrowserPool {
           // Firefox's internals, so its routing support is a property of the
           // build in front of us rather than something to assume.
           try {
-            await blockPrivateHosts(context);
+            await blockRequests(context, { blockPrivate: true, blockAds: false });
           } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);
             throw new Error(`camoufox tier cannot enforce the private-address guard (${detail})`);
@@ -687,7 +775,7 @@ export class BrowserPool {
    * Two things an operator must understand, and which no amount of care here
    * removes: the remote sees every page fetched and every header sent, and it
    * is on a network this instance does not control. The second is the one with
-   * a technical answer — `blockPrivateHosts` classifies an address literally,
+   * a technical answer — `blockRequests` classifies an address literally,
    * so it is the *remote's* loopback and private ranges that a caller would
    * reach, not this instance's. The guard still holds (the route is enforced by
    * the driver, not the browser), and it is refused outright when it cannot be
@@ -733,7 +821,7 @@ export class BrowserPool {
 
         if (!options.allowPrivate) {
           try {
-            await blockPrivateHosts(context);
+            await blockRequests(context, { blockPrivate: true, blockAds: false });
           } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);
             throw new Error(

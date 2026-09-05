@@ -13,6 +13,7 @@ import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient, ExtractResult } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
 import type { RenderEngine } from '../browser/engines.js';
+import type { ScreenshotOptions, ScreenshotResult } from '../browser/screenshot.js';
 
 /**
  * The scrape pipeline.
@@ -40,6 +41,14 @@ export interface PipelineOptions {
   proxy?: string | undefined;
   actions?: unknown[] | undefined;
   mobile?: boolean | undefined;
+  /** Format, quality, element selector and clip for the screenshot format. */
+  screenshotOptions?: ScreenshotOptions | undefined;
+  /** Explicit device size, overriding both the profile's screen and the phone preset. */
+  viewport?: { width: number; height: number; deviceScaleFactor?: number | undefined } | undefined;
+  /** Abort requests to known ad, tracker and consent-dialog hosts. */
+  blockAds?: boolean | undefined;
+  /** Emulate `prefers-color-scheme: dark`. */
+  darkMode?: boolean | undefined;
   /** Which browser drives the render tier. The pool's default when unset. */
   renderEngine?: RenderEngine | undefined;
   /** Operator opt-in: fetch loopback, link-local and private-range addresses. */
@@ -65,6 +74,8 @@ export interface PipelineSuccess {
   warnings?: string[] | undefined;
   statusCode?: number | undefined;
   finalUrl?: string | undefined;
+  /** Format, byte count and any warning from the screenshot. Absent when none was taken. */
+  screenshotResult?: ScreenshotResult | undefined;
   /** Validators from the response, so a later crawl can ask "has this changed?". */
   etag?: string | undefined;
   lastModified?: string | undefined;
@@ -148,6 +159,7 @@ interface TierAttempt {
   warnings?: string[] | undefined;
   finalUrl?: string | undefined;
   screenshot?: string | undefined;
+  screenshotResult?: ScreenshotResult | undefined;
   transportError?: string | undefined;
 }
 
@@ -195,6 +207,10 @@ async function attemptTier(
     headers: options.headers,
     proxy: options.proxy,
     screenshot: options.formats.includes('screenshot'),
+    screenshotOptions: options.screenshotOptions,
+    viewport: options.viewport,
+    blockAds: options.blockAds,
+    darkMode: options.darkMode,
     actions: options.actions,
     mobile: options.mobile,
     profile: options.profile,
@@ -210,6 +226,7 @@ async function attemptTier(
     },
     finalUrl: rendered.finalUrl,
     screenshot: rendered.screenshot,
+    screenshotResult: rendered.screenshotResult,
     // Reported the same way the fetch tiers report it, so a caller can tell
     // whether the identity they asked for was actually applied.
     profileUsed: rendered.profileUsed,
@@ -337,6 +354,7 @@ export async function runPipeline(
           },
           tier,
           tiersAttempted,
+          screenshotResult: attempt.screenshotResult,
           profileUsed: attempt.profileUsed,
           engineUsed: attempt.engineUsed,
           ...(attempt.warnings && attempt.warnings.length > 0 ? { warnings: attempt.warnings } : {}),

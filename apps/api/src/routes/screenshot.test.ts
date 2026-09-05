@@ -20,7 +20,15 @@ function extractClient(): ExtractClient {
   } as unknown as ExtractClient;
 }
 
-function browserPool(over: { screenshot?: string | undefined; noScreenshot?: boolean; html?: string } = {}): BrowserPool {
+function browserPool(
+  over: {
+    screenshot?: string | undefined;
+    noScreenshot?: boolean;
+    html?: string;
+    /** Echoed back as the capture result, so a test can assert what reached the pool. */
+    result?: { format: string; bytes: number; warning?: string };
+  } = {},
+): BrowserPool {
   const html = over.html ?? '<html><body>Some real content here that is long enough to not look truncated at all.</body></html>';
   return {
     render: vi.fn(async () => ({
@@ -29,6 +37,9 @@ function browserPool(over: { screenshot?: string | undefined; noScreenshot?: boo
       headers: {},
       finalUrl: 'https://example.com/',
       screenshot: over.noScreenshot ? undefined : (over.screenshot ?? 'iVBORw0KGgo='),
+      ...(over.result
+        ? { screenshotResult: { data: over.screenshot ?? 'iVBORw0KGgo=', ...over.result } }
+        : {}),
       timingMs: 500,
     })),
     stats: () => ({ browsers: 1, activeContexts: 0, pagesServed: 1, engines: ['chromium' as const] }),
@@ -183,5 +194,120 @@ describe('POST /screenshot', () => {
     expect(body.success).toBe(false);
     expect(body.failure.reason).toBe('challenge');
     expect(body.failure.detectedBy).toContain('cloudflare-challenge');
+  });
+});
+
+describe('screenshot options', () => {
+  it('carries fullPage, format, quality and the selector to the pool', async () => {
+    const pool = browserPool();
+    const instance = await build({ browserPool: pool });
+
+    await instance.inject({
+      method: 'POST',
+      url: '/screenshot',
+      payload: {
+        url: 'https://example.com',
+        fullPage: true,
+        format: 'webp',
+        quality: 70,
+        selector: '#pricing',
+        omitBackground: true,
+      },
+    });
+
+    const call = (pool.render as unknown as ReturnType<typeof vi.fn>).mock.calls[0]![0];
+    expect(call.screenshotOptions).toMatchObject({
+      fullPage: true,
+      format: 'webp',
+      quality: 70,
+      selector: '#pricing',
+      omitBackground: true,
+    });
+  });
+
+  it('carries the viewport, dpr, darkMode and blockAds to the pool', async () => {
+    const pool = browserPool();
+    const instance = await build({ browserPool: pool });
+
+    await instance.inject({
+      method: 'POST',
+      url: '/screenshot',
+      payload: {
+        url: 'https://example.com',
+        viewport: { width: 1440, height: 900, dpr: 2 },
+        darkMode: true,
+        blockAds: true,
+      },
+    });
+
+    const call = (pool.render as unknown as ReturnType<typeof vi.fn>).mock.calls[0]![0];
+    expect(call.viewport).toEqual({ width: 1440, height: 900, deviceScaleFactor: 2 });
+    expect(call.darkMode).toBe(true);
+    expect(call.blockAds).toBe(true);
+  });
+
+  it('reports the format and byte count it actually produced', async () => {
+    const instance = await build({
+      browserPool: browserPool({ result: { format: 'jpeg', bytes: 41_233 } }),
+    });
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: '/screenshot',
+      payload: { url: 'https://example.com', format: 'jpeg' },
+    });
+
+    const data = response.json().data;
+    expect(data.format).toBe('jpeg');
+    expect(data.bytes).toBe(41_233);
+    expect(data.screenshot.startsWith('data:image/jpeg;base64,')).toBe(true);
+  });
+
+  it('surfaces a capture warning rather than returning a clipped image silently', async () => {
+    const instance = await build({
+      browserPool: browserPool({
+        result: { format: 'png', bytes: 900, warning: 'fullPage: the page is 12000px tall; captured the top 4096px (the cap).' },
+      }),
+    });
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: '/screenshot',
+      payload: { url: 'https://example.com', fullPage: true },
+    });
+
+    expect(response.json().warnings).toContain(
+      'fullPage: the page is 12000px tall; captured the top 4096px (the cap).',
+    );
+  });
+
+  it('rejects selector and clip together rather than picking one', async () => {
+    const instance = await build();
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: '/screenshot',
+      payload: {
+        url: 'https://example.com',
+        selector: '#a',
+        clip: { x: 0, y: 0, width: 100, height: 100 },
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('clip');
+  });
+
+  it('rejects an explicit viewport combined with mobile', async () => {
+    const instance = await build();
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: '/screenshot',
+      payload: { url: 'https://example.com', mobile: true, viewport: { width: 1440, height: 900 } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('viewport');
   });
 });

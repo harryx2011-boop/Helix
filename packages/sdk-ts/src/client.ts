@@ -8,8 +8,14 @@ import {
   type CheckMonitorResponse,
   type CrawlRequest,
   type CrawlResponse,
+  type CrawlResumeResponse,
+  type DocumentRequest,
+  type DocumentResponse,
   type EnrichRequest,
   type EnrichResponse,
+  type Estimate,
+  type ExtractRequest,
+  type ExtractResponse,
   type Health,
   type InteractRequest,
   type InteractResponse,
@@ -41,6 +47,8 @@ import {
   type SaveProviderRequest,
   type SaveProviderResponse,
   type ScrapeRequest,
+  type ScreenshotRequest,
+  type ScreenshotResponse,
   type ScrapeResponse,
   type SearchRequest,
   type SearchResponse,
@@ -186,6 +194,21 @@ export class HelixClient {
     return this.post<CrawlResponse>('/crawl', request, signal);
   }
 
+  /**
+   * Price a crawl without submitting one.
+   *
+   * `crawl({ estimate: true })` answers the same thing; this exists so a caller
+   * does not have to construct a job body it has no intention of running.
+   */
+  async estimateCrawl(request: CrawlRequest, signal?: AbortSignal): Promise<Estimate> {
+    return this.post<Estimate>('/crawl/estimate', request, signal);
+  }
+
+  /** Revive a cancelled crawl under its original id. */
+  async resumeCrawl(jobId: string, signal?: AbortSignal): Promise<CrawlResumeResponse> {
+    return this.post<CrawlResumeResponse>('/crawl', { resume: jobId }, signal);
+  }
+
   async getCrawl(jobId: string, cursor?: string, signal?: AbortSignal): Promise<Job> {
     return this.get<Job>(`/crawl/${jobId}`, cursor ? { cursor } : undefined, signal);
   }
@@ -216,6 +239,31 @@ export class HelixClient {
 
   async getJobErrors(id: string, signal?: AbortSignal): Promise<JobErrorsResponse> {
     return this.get<JobErrorsResponse>(`/jobs/${id}/errors`, undefined, signal);
+  }
+
+  /**
+   * One surface over parse, convert, metadata and assess; `op` picks which.
+   *
+   * The four original methods still work and are better typed — reach for this
+   * when the operation is chosen at runtime rather than written in the code.
+   */
+  async document(request: DocumentRequest | FormData, signal?: AbortSignal): Promise<DocumentResponse> {
+    return this.post<DocumentResponse>('/document', request, signal);
+  }
+
+  /** One screenshot and nothing else: full page, viewport, or a single element. */
+  async screenshot(request: ScreenshotRequest, signal?: AbortSignal): Promise<ScreenshotResponse> {
+    return this.post<ScreenshotResponse>('/screenshot', request, signal);
+  }
+
+  /**
+   * The same shape across a set of URLs, as a table.
+   *
+   * A field with no grounding span in its source is dropped and reported in
+   * `dropped` rather than returned, so check that alongside `data`.
+   */
+  async extract(request: ExtractRequest, signal?: AbortSignal): Promise<ExtractResponse> {
+    return this.post<ExtractResponse>('/extract', request, signal);
   }
 
   async agentSchema(request: AgentSchemaRequest, signal?: AbortSignal): Promise<AgentSchemaResponse> {

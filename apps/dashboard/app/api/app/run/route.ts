@@ -7,7 +7,20 @@ import type { EndpointMode } from '@/lib/run-endpoint';
 
 export const dynamic = 'force-dynamic';
 
-const ENDPOINTS: Endpoint[] = ['scrape', 'parse', 'metadata', 'convert', 'map', 'search', 'crawl', 'interact', 'monitor'];
+const ENDPOINTS: Endpoint[] = [
+  'scrape',
+  'parse',
+  'metadata',
+  'convert',
+  'document',
+  'extract',
+  'screenshot',
+  'map',
+  'search',
+  'crawl',
+  'interact',
+  'monitor',
+];
 
 /** The agent panel's schema step isn't a playground tab, but it is the same "forward to the instance with the user's key" shape as the rest, so it rides the same route rather than earning its own. */
 type ProxyEndpoint = Endpoint | 'agent-schema';

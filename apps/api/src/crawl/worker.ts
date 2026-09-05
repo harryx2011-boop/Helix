@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { getPool } from '../db/pool.js';
 import { runPipeline, type PipelineDeps } from '../core/pipeline.js';
+import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
+import { compilePathPatterns, matchesAny, type PathMatcher } from './url.js';
 import { PersistentFrontier } from './persistent-frontier.js';
 import { conditionalHeaders, isUnchanged, loadStateForSite, recordVisit } from './state.js';
 import { PolitenessController } from './politeness.js';
@@ -44,6 +46,20 @@ export interface CrawlJobRequest {
   maxConcurrency?: number | undefined;
   delay?: number | undefined;
   incremental: boolean;
+  /** Omit unchanged pages from the result set. Implies `incremental`. */
+  changesOnly?: boolean | undefined;
+  /** Regex/glob patterns matched against extracted content, after the fetch. */
+  includeContent?: string[] | undefined;
+  excludeContent?: string[] | undefined;
+  /** Cap on pages sharing a path prefix; bounds calendar and facet traps. */
+  maxPagesPerPath?: number | undefined;
+  /** Structured extraction applied to every page. */
+  jsonOptions?: {
+    schema?: Record<string, unknown> | undefined;
+    prompt?: string | undefined;
+    provider?: string | undefined;
+    model?: string | undefined;
+  } | undefined;
   ignoreQueryParameters: boolean;
   formats: string[];
   tier: 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium' | 'camoufox';
@@ -51,6 +67,46 @@ export interface CrawlJobRequest {
   onlyMainContent: boolean;
   webhook?: WebhookConfig | undefined;
   destination?: DestinationConfig | undefined;
+}
+
+/**
+ * Content filters, compiled once per job.
+ *
+ * Reuses `compilePathPattern` so a caller learns one pattern syntax for paths
+ * and content rather than two. An include set keeps only matching pages; an
+ * exclude set drops matching ones, and exclude wins where both match.
+ */
+function compileContentFilters(request: CrawlJobRequest): {
+  include: PathMatcher[];
+  exclude: PathMatcher[];
+} {
+  return {
+    include: compilePathPatterns(request.includeContent ?? []),
+    exclude: compilePathPatterns(request.excludeContent ?? []),
+  };
+}
+
+/**
+ * Per-page structured-extraction result.
+ *
+ * `blocksKept`/`blocksTotal` travel with the value because a page whose blocks
+ * were clipped answered from part of itself, and nothing in the value says so.
+ */
+interface PageStructured {
+  json: unknown;
+  blocksKept: number;
+  blocksTotal: number;
+}
+
+/** Path prefix a `maxPagesPerPath` budget is counted against. */
+function pathPrefixOf(url: string): string {
+  try {
+    const { pathname } = new URL(url);
+    const segments = pathname.split('/').filter(Boolean);
+    return segments.length ? `/${segments[0]}` : '/';
+  } catch {
+    return '/';
+  }
 }
 
 export interface WorkerDeps extends PipelineDeps {
@@ -70,6 +126,11 @@ export interface WorkerDeps extends PipelineDeps {
   /** Blocks one identity absorbs before it is retired and replaced. */
   sessionMaxBlocks?: number | undefined;
   logger?: Log | undefined;
+  /**
+   * Decrypts the job owner's stored provider keys, so per-page structured
+   * extraction runs against their model rather than failing for want of a key.
+   */
+  encryptionKey?: Buffer | undefined;
 }
 
 export class CrawlWorker {
@@ -89,8 +150,14 @@ export class CrawlWorker {
    * `FOR UPDATE SKIP LOCKED` is what makes several workers safe against one
    * queue without a broker: each claims a different row, and none blocks.
    */
-  async #claimJob(): Promise<{ id: string; request: CrawlJobRequest } | undefined> {
-    const { rows } = await getPool().query<{ id: string; request: CrawlJobRequest }>(
+  async #claimJob(): Promise<
+    { id: string; request: CrawlJobRequest; api_key_id: string | null } | undefined
+  > {
+    const { rows } = await getPool().query<{
+      id: string;
+      request: CrawlJobRequest;
+      api_key_id: string | null;
+    }>(
       `UPDATE jobs
           SET status = 'running', started_at = now()
         WHERE id = (
@@ -100,7 +167,7 @@ export class CrawlWorker {
            FOR UPDATE SKIP LOCKED
            LIMIT 1
         )
-        RETURNING id, request`,
+        RETURNING id, request, api_key_id`,
     );
     return rows[0];
   }
@@ -120,7 +187,7 @@ export class CrawlWorker {
     this.#logger?.info({ jobId: job.id, url: job.request.url }, 'crawl started');
 
     try {
-      await this.#crawl(job.id, job.request);
+      await this.#crawl(job.id, job.request, job.api_key_id);
     } catch (error) {
       this.#logger?.error({ error, jobId: job.id }, 'crawl failed');
       const message = error instanceof Error ? error.message : String(error);
@@ -134,7 +201,7 @@ export class CrawlWorker {
     return true;
   }
 
-  async #crawl(jobId: string, request: CrawlJobRequest): Promise<void> {
+  async #crawl(jobId: string, request: CrawlJobRequest, apiKeyId?: string | null): Promise<void> {
     const frontier = new PersistentFrontier(jobId, {
       seedUrl: request.url,
       limit: request.limit,
@@ -227,7 +294,26 @@ export class CrawlWorker {
     let completed = 0;
     let failed = 0;
     let unchanged = 0;
+    /** Pages dropped by a content filter, reported rather than silently missing. */
+    let filtered = 0;
+    /** Pages dropped for exceeding their path's budget. */
+    let pathCapped = 0;
+    let jsonExtracted = 0;
+    let jsonFailed = 0;
     let cancelChecked = Date.now();
+
+    // Resolved once per job: every page of a crawl runs against the same
+    // owner's keys, and re-decrypting them per page would be the crawl's
+    // slowest step on a site of any size.
+    const providerAuth =
+      request.jsonOptions && apiKeyId && this.#deps.encryptionKey
+        ? toClientKeys(await resolveProviderKeys(apiKeyId, this.#deps.encryptionKey))
+        : undefined;
+
+    const contentFilters = compileContentFilters(request);
+    const hasContentFilters = contentFilters.include.length > 0 || contentFilters.exclude.length > 0;
+    /** Pages kept per path prefix, against `maxPagesPerPath`. */
+    const perPathKept = new Map<string, number>();
 
     const inFlight = new Set<Promise<void>>();
     const maxParallel = request.maxConcurrency ?? 8;
@@ -358,10 +444,69 @@ export class CrawlWorker {
             });
           }
 
+          // Content filters run after extraction, because that is the first
+          // point the page's text exists. A dropped page still contributes its
+          // links, for the same reason an unchanged one does.
+          let dropped: 'filter' | 'path-cap' | undefined;
+          if (hasContentFilters && !contentUnchanged) {
+            const text = result.content.markdown ?? '';
+            const included =
+              contentFilters.include.length === 0 || matchesAny(text, contentFilters.include);
+            const excluded = matchesAny(text, contentFilters.exclude);
+            if (!included || excluded) dropped = 'filter';
+          }
+
+          // A budget per path prefix bounds calendar and facet traps, where one
+          // path would otherwise consume the whole crawl limit.
+          if (!dropped && !contentUnchanged && request.maxPagesPerPath !== undefined) {
+            const prefix = pathPrefixOf(item.url);
+            const kept = perPathKept.get(prefix) ?? 0;
+            if (kept >= request.maxPagesPerPath) dropped = 'path-cap';
+            else perPathKept.set(prefix, kept + 1);
+          }
+
+          if (dropped) {
+            if (dropped === 'filter') filtered++;
+            else pathCapped++;
+          }
+
           // An unchanged page still contributes its links — the page did not
           // move, but the pages it points at may have.
-          if (!contentUnchanged) {
-            await this.#recordDocument(jobId, item.url, result);
+          if (!contentUnchanged && !dropped) {
+            // Structured extraction, applied to every kept page. A model
+            // failure costs the page its `json` field, never the crawl: the
+            // page was read, and dropping 4,000 markdown documents because one
+            // provider call timed out is a worse answer than a null field.
+            let structured: PageStructured | undefined;
+            if (request.jsonOptions) {
+              try {
+                const out = await this.#deps.extractClient.structured({
+                  content: result.content.markdown,
+                  schema: request.jsonOptions.schema,
+                  prompt: request.jsonOptions.prompt,
+                  provider: request.jsonOptions.provider,
+                  model: request.jsonOptions.model,
+                  ...(providerAuth ?? {}),
+                });
+                structured = {
+                  json: out.data,
+                  // Reported per page, because a page whose blocks were clipped
+                  // produced an answer from part of itself and the caller
+                  // cannot see that from the value alone.
+                  blocksKept: out.blocksKept,
+                  blocksTotal: out.blocksTotal,
+                };
+                jsonExtracted++;
+              } catch (error) {
+                jsonFailed++;
+                this.#logger?.warn(
+                  { jobId, url: item.url, error: error instanceof Error ? error.message : String(error) },
+                  'structured extraction failed for a crawled page',
+                );
+              }
+            }
+
+            await this.#recordDocument(jobId, item.url, result, structured);
             completed++;
 
             if (sink && request.destination) {
@@ -392,7 +537,9 @@ export class CrawlWorker {
                 favicon: result.content.favicon,
               },
             });
-          } else {
+          } else if (contentUnchanged) {
+            // Counted only for the unchanged case: a page dropped by a filter
+            // or a path budget was read and is not evidence the site is static.
             unchanged++;
           }
 
@@ -463,6 +610,11 @@ export class CrawlWorker {
         JSON.stringify({
           pagesFetched: completed,
           pagesUnchanged: unchanged,
+          // Named even at zero when the caller asked for the filter, so an
+          // empty result is distinguishable from a filter that matched nothing.
+          ...(hasContentFilters ? { pagesFiltered: filtered } : {}),
+          ...(request.maxPagesPerPath !== undefined ? { pagesOverPathCap: pathCapped } : {}),
+          ...(request.jsonOptions ? { jsonExtracted, jsonFailed } : {}),
           ...(request.destination ? { vectorFailures } : {}),
         }),
         JSON.stringify(frontier.rejections()),
@@ -568,6 +720,7 @@ export class CrawlWorker {
     jobId: string,
     url: string,
     result: Extract<Awaited<ReturnType<typeof runPipeline>>, { success: true }>,
+    structured?: PageStructured | undefined,
   ): Promise<void> {
     await getPool().query(
       `INSERT INTO documents
@@ -585,6 +738,7 @@ export class CrawlWorker {
           markdown: result.content.markdown,
           text: result.content.text,
           links: result.content.links,
+          ...(structured ? { json: structured.json } : {}),
         }),
         JSON.stringify({
           title: result.content.title,
@@ -594,6 +748,12 @@ export class CrawlWorker {
           extractor: result.content.extractorUsed,
           timingMs: result.timingMs,
           favicon: result.content.favicon,
+          // A page whose blocks were clipped answered from part of itself.
+          // Reported per page so a caller reading one row can see it, rather
+          // than only in a job-level total that averages the fact away.
+          ...(structured
+            ? { blocksKept: structured.blocksKept, blocksTotal: structured.blocksTotal }
+            : {}),
         }),
       ],
     );

@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Helix
-  version: 1.13.0
+  version: 1.14.0
   summary: Self-hostable, BYOK web-data API.
   description: |
     Helix turns web pages and documents into clean, structured, LLM-ready data.
@@ -200,6 +200,63 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ScreenshotResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /extract:
+    post:
+      tags: [Scrape]
+      summary: The same shape across a set of URLs
+      description: |
+        Applies one schema to many pages and returns rows. `/scrape` with
+        `jsonOptions` already extracts a single page; this exists for the other
+        shape of the question — the same fields across a URL set, as a table.
+
+        Two rules distinguish it from a model call with a schema attached.
+        **A field with no grounding span in its source is dropped**, and
+        reported in `dropped`, rather than returned: a plausible number nobody
+        can check is the expensive failure. Set `allowUngrounded` to keep those
+        values; they are reported either way. **A URL that could not be read is
+        a warning, not a failed request** — nineteen good rows and one
+        unreachable page is a useful answer.
+
+        Provide `schema`, or `prompt` to have one designed from a description.
+        `POST /agent/schema` returns a schema you can keep and reuse.
+      operationId: extract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExtractRequest' }
+            examples:
+              prompt:
+                summary: Describe the shape in words
+                value:
+                  urls: ['https://example.com/pricing']
+                  prompt: every plan name and its monthly price
+              schema:
+                summary: Bring your own schema, across several pages
+                value:
+                  urls: ['https://example.com/pricing', 'https://example.com/enterprise']
+                  schema:
+                    type: object
+                    properties:
+                      plan: { type: string }
+                      monthlyPrice: { type: number }
+      responses:
+        '200':
+          description: |
+            The request resolved. `data` holds one row per page that was read
+            and extracted; anything skipped is named in `warnings`, and any
+            field discarded for want of grounding is named in `dropped`.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExtractResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/RateLimited' }
@@ -619,6 +676,76 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
+  /document:
+    post:
+      tags: [Parse, Metadata]
+      summary: One surface over every document operation
+      description: |
+        Parse, convert, inspect and scrub a document through one endpoint. `op`
+        picks the operation; every other field is whatever that operation takes.
+
+        | `op` | Does what `/v1/…` does |
+        |---|---|
+        | `parse` | `/parse` — markdown, or JSON against a schema |
+        | `convert` | `/convert` — a PDF page as an image |
+        | `metadata` | `/metadata` — what the file discloses |
+        | `scrub` | `/metadata/scrub` — a cleaned copy, as file bytes |
+        | `assess` | `/pdf-assess` — text-layer quality before OCR |
+
+        It **dispatches** rather than reimplements: each operation keeps its own
+        multipart parsing, upload ceiling, in-flight cap and result cache, so a
+        request behaves identically whether it arrives here or at the original
+        path. Those four paths remain valid and unchanged — this is an addition,
+        not a migration.
+
+        A multipart upload cannot name `op` in the body without the body being
+        parsed twice, so it names it in the query string instead: `?op=parse`.
+
+        `scrub` answers with file bytes and a report header rather than JSON,
+        exactly as `/metadata/scrub` does.
+      operationId: document
+      parameters:
+        - name: op
+          in: query
+          required: false
+          description: The operation, for multipart uploads that cannot carry it in the body.
+          schema: { $ref: '#/components/schemas/DocumentOp' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DocumentRequest' }
+            examples:
+              parse:
+                summary: A PDF as markdown
+                value: { op: parse, url: 'https://example.com/files/invoice.pdf', formats: [markdown], ocr: auto }
+              assess:
+                summary: Is OCR needed before paying for it?
+                value: { op: assess, url: 'https://example.com/files/scan.pdf' }
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/DocumentRequest' }
+      responses:
+        '200':
+          description: |
+            Whatever the dispatched operation answers with, forwarded unchanged —
+            including its status, its headers and, for `scrub`, its file bytes.
+          content:
+            application/json:
+              schema:
+                description: The target operation's own response.
+                type: object
+                additionalProperties: true
+            application/pdf:
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: The file (uploaded or fetched) exceeds this instance's upload ceiling.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
   /map:
     post:
       tags: [Crawl]
@@ -687,7 +814,17 @@ paths:
         adaptive: concurrency ramps while a host stays healthy and backs off on 429s
         or latency spikes.
 
-        Pass `estimate: true` to get projected pages, time and cost without crawling.
+        Pass `estimate: true` to get projected pages, time and cost without crawling,
+        or call `POST /crawl/estimate` for the same answer without a job body you
+        do not intend to submit.
+
+        `url` is required **unless** `resume` names a cancelled job, which keeps
+        the seed it started with; the two cannot be combined. Resuming re-queues
+        the pages that job had not finished, under its original id.
+
+        A `formats` list including `json` requires `scrapeOptions.jsonOptions`
+        with a `schema` or a `prompt`. Without one the request is rejected, rather
+        than the field being dropped silently on every page of the crawl.
 
         `includePaths` and `excludePaths` take globs (`/blog/*`); a pattern using
         regular-expression syntax (`^/blog`) is treated as one. Exclusion wins
@@ -732,9 +869,69 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Estimate' }
-        '202': { $ref: '#/components/responses/JobAccepted' }
+        '202':
+          description: |
+            The job is queued. A new crawl answers with a fresh id; a resumed one
+            answers with its original id and the number of pages re-queued.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/JobAccepted'
+                  - $ref: '#/components/schemas/CrawlResumed'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: |
+            No such crawl job to resume. A job belonging to another API key reads
+            as absent rather than forbidden, so an id cannot be confirmed by
+            asking for it.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: |
+            The job cannot be resumed: `expired` (its queue was released at
+            `expiresAt`), `already_running` (it is queued or running and needs
+            nothing), or `nothing_to_resume` (no unfinished pages remain).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /crawl/estimate:
+    post:
+      tags: [Crawl]
+      summary: Price a crawl without running it
+      description: |
+        The same answer `estimate: true` gives on `/crawl`, on its own route, so
+        a caller can price a crawl without constructing a job body it does not
+        intend to submit.
+
+        Takes the same request as `/crawl` and creates nothing. `resume` is
+        rejected here: that work is already queued and its cost already spent.
+
+        The projection assumes the cheap tier unless one is named — a page
+        needing a browser costs more, and the assumptions are listed in the
+        response rather than buried.
+      operationId: estimateCrawl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CrawlRequest' }
+            examples:
+              basic:
+                summary: What would this cost?
+                value: { url: 'https://example.com', limit: 500 }
+      responses:
+        '200':
+          description: Projected pages, time, tokens and provider spend, with the assumptions behind them.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Estimate' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
 
   /crawl/{jobId}:
     parameters:
@@ -2902,9 +3099,20 @@ components:
     CrawlRequest:
       allOf:
         - type: object
-          required: [url]
           properties:
-            url: { type: string, format: uri }
+            url:
+              type: string
+              format: uri
+              description: The seed. Required unless `resume` names an existing job, which keeps the seed it started with.
+            resume:
+              type: string
+              format: uuid
+              description: |
+                Revive a cancelled crawl under its original id, re-queueing the
+                pages it had not finished. Cannot be combined with `url` or
+                `estimate`. A job belonging to another key reads as absent (404);
+                one past `expiresAt`, still running, or with nothing left queued
+                is a 409.
             estimate:
               type: boolean
               default: false
@@ -2951,6 +3159,34 @@ components:
               type: boolean
               default: false
               description: Skip pages whose content hash is unchanged since the last crawl of this site.
+            changesOnly:
+              type: boolean
+              default: false
+              description: |
+                Omit unchanged pages from the result set. `incremental` decides
+                what is fetched; this decides what is returned, so a weekly
+                re-crawl answers with the pages that moved rather than all of
+                them. Implies `incremental`, since filtering needs the hashes.
+            maxPagesPerPath:
+              type: integer
+              minimum: 1
+              maximum: 100000
+              description: |
+                Cap on pages sharing a first path segment. Bounds calendar and
+                facet traps, where one path would otherwise consume the whole
+                limit. Pages turned away are counted as `pagesOverPathCap`.
+            includeContent:
+              type: array
+              description: |
+                Globs or regular expressions matched against the extracted text,
+                after the fetch. Only matching pages are kept. Path patterns
+                cannot express "skip the login wall" when each such page has a
+                distinct URL.
+              items: { type: string }
+            excludeContent:
+              type: array
+              description: As `includeContent`, but drops matching pages. Wins where both match.
+              items: { type: string }
             ignoreQueryParameters: { type: boolean, default: false }
             scrapeOptions:
               description: Per-page options in the nested form the spec uses. Overrides the same fields given at the top level.
@@ -2962,6 +3198,19 @@ components:
                 tier: { $ref: '#/components/schemas/Tier' }
                 extractor: { type: string, enum: [trafilatura, readability, auto] }
                 onlyMainContent: { type: boolean }
+                jsonOptions:
+                  type: object
+                  description: |
+                    Structured extraction applied to every page, so one schema
+                    turns a crawl into a table rather than a set of documents.
+                    Required when `formats` includes `json`: without a `schema`
+                    or `prompt` the request is rejected, rather than the field
+                    being dropped silently on every page.
+                  properties:
+                    schema: { type: object, additionalProperties: true }
+                    prompt: { type: string, maxLength: 2000 }
+                    provider: { type: string, maxLength: 64 }
+                    model: { type: string, maxLength: 200 }
             destination: { $ref: '#/components/schemas/Destination' }
             webhook:
               description: A bare URL subscribes to every event; the object form adds headers, an event filter and metadata.
@@ -3922,11 +4171,206 @@ components:
           description: 'Always present. Each entry names the format it concerns, e.g. `json: No LLM credentials configured.`'
         usage: { $ref: '#/components/schemas/ExtractionUsage' }
 
+    CrawlResumed:
+      type: object
+      description: A resumed crawl answers with the id it already had, not a new one.
+      required: [id, status, resumed, requeued]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string }
+        resumed: { type: boolean, const: true }
+        requeued:
+          type: integer
+          description: Pages put back on the queue, counting those the cancelled worker had claimed but not finished.
+
+    ExtractRequest:
+      type: object
+      required: [urls]
+      description: One of `schema` or `prompt` is required.
+      properties:
+        urls:
+          type: array
+          minItems: 1
+          maxItems: 25
+          items: { type: string, format: uri }
+        schema:
+          type: object
+          additionalProperties: true
+          description: JSON Schema describing one row.
+        prompt:
+          type: string
+          maxLength: 2000
+          description: A description of the data to extract, when you have no schema to hand.
+        instruction:
+          type: string
+          maxLength: 2000
+          description: Extra direction for the model, alongside the schema rather than instead of it.
+        provider: { type: string, maxLength: 64 }
+        model: { type: string, maxLength: 200 }
+        allowUngrounded:
+          type: boolean
+          default: false
+          description: |
+            Keep fields the source does not support. They are listed in
+            `dropped` either way; this only decides whether they also appear in
+            `data`.
+        tier: { type: string, enum: [auto, plain, tls, lightpanda, chromium, camoufox] }
+        timeout: { type: integer, default: 60000, minimum: 1000, maximum: 300000 }
+
+    ExtractedRowSource:
+      type: object
+      description: Where a row came from, and how much of the page the model actually saw.
+      properties:
+        url: { type: string, format: uri }
+        spans:
+          type: array
+          description: The grounding spans the extractor reported, one per field it could support.
+          items: { type: object, additionalProperties: true }
+        blocksKept:
+          type: integer
+          description: |
+            Blocks that reached the model. Lower than `blocksTotal` means the
+            row was produced from part of the page, which the values alone
+            cannot show.
+        blocksTotal: { type: integer }
+
+    ExtractDroppedField:
+      type: object
+      description: A field the model returned that nothing in the page supports.
+      properties:
+        url: { type: string, format: uri }
+        field: { type: string }
+        reason: { type: string }
+
+    ExtractResponse:
+      type: object
+      required: [success, data, dropped, warnings]
+      properties:
+        success: { type: boolean }
+        data:
+          type: array
+          description: One row per page read, carrying the schema's fields plus `_source`.
+          items:
+            type: object
+            additionalProperties: true
+            properties:
+              _source: { $ref: '#/components/schemas/ExtractedRowSource' }
+        dropped:
+          type: array
+          description: Fields discarded for want of a grounding span. Never silently absent.
+          items: { $ref: '#/components/schemas/ExtractDroppedField' }
+        warnings:
+          type: array
+          description: A URL that could not be read, or a page whose extraction failed, appears here rather than failing the request.
+          items: { type: string }
+        usage:
+          type: object
+          properties:
+            urls: { type: integer }
+            rows: { type: integer }
+            model: { type: [string, 'null'] }
+            tokens:
+              type: object
+              properties:
+                input: { type: integer }
+                output: { type: integer }
+            blocksKept: { type: integer }
+            blocksTotal: { type: integer }
+            providerCost:
+              type: object
+              description: Tokens are billed by your provider; the amount is reported as unknown rather than zero.
+              properties:
+                amount: { type: [number, 'null'] }
+                currency: { type: string }
+
+    DocumentOp:
+      type: string
+      enum: [parse, convert, metadata, scrub, assess]
+      description: Which document operation `/document` dispatches to.
+
+    DocumentRequest:
+      type: object
+      required: [op]
+      description: |
+        `op` plus whatever that operation takes. The fields are the union of the
+        four underlying requests rather than a discriminated union, because the
+        dispatcher forwards the body untouched and each operation validates its
+        own — a `oneOf` here would imply a contract this endpoint does not
+        itself enforce.
+      additionalProperties: true
+      properties:
+        op: { $ref: '#/components/schemas/DocumentOp' }
+        url: { type: string, format: uri, description: The document. Omit when uploading a `file` part. }
+        file: { type: string, format: binary, description: 'multipart only. Name the operation as `?op=` when uploading.' }
+        formats:
+          type: array
+          description: '`parse` only.'
+          items: { $ref: '#/components/schemas/Format' }
+        ocr: { type: string, enum: [auto, force, off], description: '`parse` only.' }
+        jsonOptions: { type: object, additionalProperties: true, description: '`parse` only.' }
+        to: { type: string, enum: [png, jpeg], description: '`convert` only.' }
+        page: { type: integer, minimum: 1, description: '`convert` only. 1-based.' }
+        dpi: { type: integer, description: '`convert` only.' }
+        timeout: { type: integer }
+
     ScreenshotRequest:
       type: object
       required: [url]
       properties:
         url: { type: string, format: uri }
+        fullPage:
+          type: boolean
+          default: false
+          description: |
+            Capture everything below the fold. Height is capped server-side; a
+            page taller than the cap is captured to it and the clipping is
+            reported in `warnings` rather than passing as a whole-page image.
+        selector:
+          type: string
+          maxLength: 500
+          description: |
+            Capture one element instead of the page. A selector matching nothing
+            captures the viewport and says so in `warnings`, rather than
+            returning the page as though it were the element. Cannot be combined
+            with `clip`.
+        clip:
+          type: object
+          description: Capture a fixed region. Cannot be combined with `selector`.
+          required: [x, y, width, height]
+          properties:
+            x: { type: integer, minimum: 0 }
+            y: { type: integer, minimum: 0 }
+            width: { type: integer, minimum: 1, maximum: 10000 }
+            height: { type: integer, minimum: 1, maximum: 10000 }
+        format:
+          type: string
+          enum: [png, jpeg, webp]
+          default: png
+        quality:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: JPEG and WebP only. Ignored on PNG, which has no lossy setting.
+        omitBackground:
+          type: boolean
+          default: false
+          description: Transparent where the page paints no background. Ignored on JPEG, which has no alpha channel.
+        viewport:
+          type: object
+          description: Explicit device size, overriding both the profile's screen and any preset. Cannot be combined with `mobile`.
+          required: [width, height]
+          properties:
+            width: { type: integer, minimum: 200, maximum: 3840 }
+            height: { type: integer, minimum: 200, maximum: 2160 }
+            dpr: { type: number, minimum: 1, maximum: 3, description: Device pixel ratio, for retina output. }
+        darkMode:
+          type: boolean
+          default: false
+          description: 'Emulates `prefers-color-scheme: dark`. A page that ignores the query is unaffected.'
+        blockAds:
+          type: boolean
+          default: false
+          description: Aborts requests to known ad, tracker and consent-dialog hosts, so banners stay out of the frame.
         mobile:
           type: boolean
           default: false
@@ -3969,7 +4413,14 @@ components:
           properties:
             screenshot:
               type: [string, 'null']
-              description: 'A `data:image/png;base64,...` URI. `null` with a warning when no image was captured.'
+              description: 'A `data:` URI carrying the requested format, e.g. `data:image/webp;base64,...`. `null` with a warning when no image was captured.'
+            format:
+              type: string
+              enum: [png, jpeg, webp]
+              description: The format actually produced.
+            bytes:
+              type: [integer, 'null']
+              description: Encoded size of the capture.
             metadata:
               type: object
               properties:

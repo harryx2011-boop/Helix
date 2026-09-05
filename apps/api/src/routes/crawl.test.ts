@@ -23,6 +23,9 @@ const db = vi.hoisted(() => {
     documents: [] as Record<string, unknown>[],
     cancelled: undefined as { id: string; status: string } | undefined,
     exists: false,
+    /** The row POST /crawl { resume } reads, and how many tasks it re-queues. */
+    resumable: undefined as Record<string, unknown> | undefined,
+    requeued: 0,
   };
   const query = vi.fn(async (text: string, values: unknown[] = []) => {
     state.calls.push({ text, values });
@@ -34,6 +37,10 @@ const db = vi.hoisted(() => {
       return { rows: state.cancelled ? [state.cancelled] : [], rowCount: state.cancelled ? 1 : 0 };
     }
     if (text.startsWith('SELECT 1 FROM jobs')) return { rows: [], rowCount: state.exists ? 1 : 0 };
+    if (text.includes('SELECT api_key_id, status, request, expires_at')) {
+      return { rows: state.resumable ? [state.resumable] : [], rowCount: state.resumable ? 1 : 0 };
+    }
+    if (text.includes('UPDATE job_tasks')) return { rows: [], rowCount: state.requeued };
     return { rows: [], rowCount: 0 };
   });
   return { state, query };
@@ -86,6 +93,8 @@ beforeEach(() => {
   db.state.documents = [];
   db.state.cancelled = undefined;
   db.state.exists = false;
+  db.state.resumable = undefined;
+  db.state.requeued = 0;
   discoverUrls.mockReset();
 });
 
@@ -382,11 +391,27 @@ describe('POST /v1/crawl', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/v1/crawl',
-      payload: { url: 'https://example.com', estimate: true, scrapeOptions: { formats: ['json'] } },
+      payload: {
+        url: 'https://example.com',
+        estimate: true,
+        scrapeOptions: { formats: ['json'], jsonOptions: { prompt: 'the page title' } },
+      },
     });
 
     expect(response.json().estimatedProviderCost).toEqual({ amount: null, currency: 'USD', model: 'test-model' });
     expect(response.json().estimatedTokens.input).toBeGreaterThan(0);
+  });
+
+  it('rejects json without a schema or a prompt, rather than dropping it per page', async () => {
+    const app = await buildApp();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/crawl',
+      payload: { url: 'https://example.com', scrapeOptions: { formats: ['json'] } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('scrapeOptions.jsonOptions');
   });
 });
 
@@ -553,5 +578,172 @@ describe('crawl job ownership', () => {
     expect(select.text).not.toContain('api_key_id');
     expect(update.text).not.toContain('api_key_id');
     await app.close();
+  });
+});
+
+describe('crawl expansion', () => {
+  const future = () => new Date(Date.now() + 86_400_000);
+
+  it('re-queues a cancelled job and keeps its id', async () => {
+    db.state.resumable = { api_key_id: null, status: 'cancelled', request: {}, expires_at: future() };
+    db.state.requeued = 37;
+    const app = await buildApp();
+
+    const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { resume: JOB } });
+
+    expect(response.statusCode).toBe(202);
+    expect(response.json()).toMatchObject({ id: JOB, status: 'queued', resumed: true, requeued: 37 });
+  });
+
+  it('refuses to resume a job that has nothing left queued', async () => {
+    db.state.resumable = { api_key_id: null, status: 'cancelled', request: {}, expires_at: future() };
+    db.state.requeued = 0;
+    const app = await buildApp();
+
+    const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { resume: JOB } });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error).toBe('nothing_to_resume');
+  });
+
+  it('refuses to resume a job whose queue has expired', async () => {
+    db.state.resumable = {
+      api_key_id: null,
+      status: 'cancelled',
+      request: {},
+      expires_at: new Date(Date.now() - 1000),
+    };
+    db.state.requeued = 5;
+    const app = await buildApp();
+
+    const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { resume: JOB } });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error).toBe('expired');
+  });
+
+  it('refuses to resume a job that is still running', async () => {
+    db.state.resumable = { api_key_id: null, status: 'running', request: {}, expires_at: future() };
+    const app = await buildApp();
+
+    const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { resume: JOB } });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error).toBe('already_running');
+  });
+
+  it('rejects url and resume together rather than guessing which seed wins', async () => {
+    const app = await buildApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/crawl',
+      payload: { url: 'https://example.com', resume: JOB },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('resume');
+  });
+
+  it('requires a url when no job is being resumed', async () => {
+    const app = await buildApp();
+
+    const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { limit: 10 } });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('url');
+  });
+
+  it('estimates from its own route without submitting a job', async () => {
+    discoverUrls.mockResolvedValue({
+      links: [{ url: 'https://example.com/a' }, { url: 'https://example.com/b' }],
+      truncated: false,
+    });
+    const app = await buildApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/crawl/estimate',
+      payload: { url: 'https://example.com' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().pages).toBe(2);
+    expect(db.state.calls.some((c) => c.text.includes('INSERT INTO jobs'))).toBe(false);
+  });
+
+  it('does not route "estimate" as a job id', async () => {
+    discoverUrls.mockResolvedValue({ links: [], truncated: false });
+    const app = await buildApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/crawl/estimate',
+      payload: { url: 'https://example.com' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toHaveProperty('assumptions');
+  });
+
+  it('carries changesOnly, the content filters and the path cap to the worker', async () => {
+    const app = await buildApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/crawl',
+      payload: {
+        url: 'https://example.com',
+        changesOnly: true,
+        includeContent: ['pricing'],
+        excludeContent: ['^Sign in'],
+        maxPagesPerPath: 25,
+      },
+    });
+
+    expect(response.statusCode).toBe(202);
+    const insert = db.state.calls.find((c) => c.text.includes('INSERT INTO jobs'));
+    const stored = JSON.parse(insert!.values[1] as string);
+    expect(stored).toMatchObject({
+      changesOnly: true,
+      includeContent: ['pricing'],
+      excludeContent: ['^Sign in'],
+      maxPagesPerPath: 25,
+    });
+    // changesOnly filters on hashes the crawl must have loaded to compare.
+    expect(stored.incremental).toBe(true);
+  });
+
+  it('carries a site-wide json schema to the worker', async () => {
+    const app = await buildApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/crawl',
+      payload: {
+        url: 'https://example.com',
+        scrapeOptions: {
+          formats: ['markdown', 'json'],
+          jsonOptions: { schema: { type: 'object', properties: { price: { type: 'number' } } } },
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(202);
+    const insert = db.state.calls.find((c) => c.text.includes('INSERT INTO jobs'));
+    const stored = JSON.parse(insert!.values[1] as string);
+    expect(stored.jsonOptions.schema).toEqual({ type: 'object', properties: { price: { type: 'number' } } });
+  });
+
+  it('rejects a content pattern that is neither a glob nor a regular expression', async () => {
+    const app = await buildApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/crawl',
+      payload: { url: 'https://example.com', excludePaths: ['('] },
+    });
+
+    expect(response.statusCode).toBe(400);
   });
 });

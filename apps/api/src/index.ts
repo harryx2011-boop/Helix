@@ -37,6 +37,8 @@ import { registerDiff } from './routes/diff.js';
 import { registerProfiles } from './routes/profiles.js';
 import { registerScreenshot } from './routes/screenshot.js';
 import { registerPdfAssess } from './routes/pdf-assess.js';
+import { registerDocument } from './routes/document.js';
+import { registerExtract } from './routes/extract.js';
 import { registerRobots } from './routes/robots.js';
 import { registerInternal } from './routes/internal.js';
 import { registerStatus } from './routes/status.js';
@@ -163,6 +165,7 @@ const crawlWorker = new CrawlWorker({
   sessionPoolSize: config.crawlSessionPoolSize,
   sessionMaxBlocks: config.crawlSessionMaxBlocks,
   ...(config.proxyUrl ? { proxyUrl: config.proxyUrl } : {}),
+  encryptionKey: providerEncryptionKey,
   logger: app.log,
 });
 
@@ -327,6 +330,14 @@ await app.register(
       maxInFlight: config.parseMaxInflight,
       userAgent: config.userAgent,
     });
+    await registerExtract(instance, {
+      fetchClient,
+      extractClient,
+      browserPool,
+      proxyUrl: config.proxyUrl,
+      allowPrivateUrls: config.allowPrivateUrls,
+      encryptionKey: providerEncryptionKey,
+    });
     await registerKeys(instance, { multiTenant: config.multiTenant });
     await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured });
     await registerMap(instance, { fetchClient, extractClient, userAgent: config.userAgent });
@@ -391,6 +402,8 @@ await app.register(
       userAgent: config.userAgent,
     });
     await registerRobots(instance, { userAgent: config.userAgent });
+    // Last: it forwards to the four routes above, which must already exist.
+    await registerDocument(instance);
   },
   { prefix: '/v1' },
 );

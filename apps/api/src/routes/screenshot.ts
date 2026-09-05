@@ -16,16 +16,63 @@ import { checkUrl, type HostResolver } from '../core/url-guard.js';
  * neither this route nor its caller ever reads.
  */
 
-const ScreenshotRequestSchema = z.object({
-  url: z.string().url(),
-  mobile: z.boolean().default(false),
-  proxy: z.string().optional(),
-  tier: z.enum(['auto', 'chromium', 'camoufox']).default('auto'),
-  waitFor: z.number().int().min(0).max(30_000).optional(),
-  timeout: z.number().int().min(1_000).max(300_000).default(30_000),
-  actions: z.array(z.unknown()).max(50).optional(),
-  profile: z.string().optional(),
-});
+const ScreenshotRequestSchema = z
+  .object({
+    url: z.string().url(),
+    /** Everything below the fold, capped at `MAX_FULL_PAGE_HEIGHT` and said so when clipped. */
+    fullPage: z.boolean().default(false),
+    /** Capture one element. A selector matching nothing warns rather than silently framing the page. */
+    selector: z.string().min(1).max(500).optional(),
+    clip: z
+      .object({
+        x: z.number().int().min(0),
+        y: z.number().int().min(0),
+        width: z.number().int().min(1).max(10_000),
+        height: z.number().int().min(1).max(10_000),
+      })
+      .optional(),
+    format: z.enum(['png', 'jpeg', 'webp']).default('png'),
+    /** JPEG and WebP only; ignored on PNG, which has no lossy setting. */
+    quality: z.number().int().min(1).max(100).optional(),
+    /** Transparent where the page paints nothing. Ignored on JPEG, which has no alpha. */
+    omitBackground: z.boolean().default(false),
+    viewport: z
+      .object({
+        width: z.number().int().min(200).max(3840),
+        height: z.number().int().min(200).max(2160),
+        dpr: z.number().min(1).max(3).optional(),
+      })
+      .optional(),
+    /** Emulates the dark colour scheme, for pages that honour prefers-color-scheme. */
+    darkMode: z.boolean().default(false),
+    /** Keeps ad and consent-dialog chrome out of the frame. */
+    blockAds: z.boolean().default(false),
+    mobile: z.boolean().default(false),
+    proxy: z.string().optional(),
+    tier: z.enum(['auto', 'chromium', 'camoufox']).default('auto'),
+    waitFor: z.number().int().min(0).max(30_000).optional(),
+    timeout: z.number().int().min(1_000).max(300_000).default(30_000),
+    actions: z.array(z.unknown()).max(50).optional(),
+    profile: z.string().optional(),
+  })
+  .superRefine((body, ctx) => {
+    // Both name a region; honouring one silently would return an image that
+    // is not what either asked for.
+    if (body.selector && body.clip) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['clip'],
+        message: 'cannot be combined with `selector`: both choose what to capture',
+      });
+    }
+    if (body.viewport && body.mobile) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['viewport'],
+        message: 'cannot be combined with `mobile`, which sets its own phone viewport',
+      });
+    }
+  });
 
 export interface ScreenshotRouteDeps {
   fetchClient: FetchClient;
@@ -68,6 +115,25 @@ export async function registerScreenshot(app: FastifyInstance, deps: ScreenshotR
         formats: ['screenshot'],
         tier: body.tier,
         mobile: body.mobile,
+        screenshotOptions: {
+          fullPage: body.fullPage,
+          format: body.format,
+          ...(body.quality !== undefined ? { quality: body.quality } : {}),
+          ...(body.selector ? { selector: body.selector } : {}),
+          ...(body.clip ? { clip: body.clip } : {}),
+          omitBackground: body.omitBackground,
+        },
+        blockAds: body.blockAds,
+        darkMode: body.darkMode,
+        ...(body.viewport
+          ? {
+              viewport: {
+                width: body.viewport.width,
+                height: body.viewport.height,
+                ...(body.viewport.dpr !== undefined ? { deviceScaleFactor: body.viewport.dpr } : {}),
+              },
+            }
+          : {}),
         waitFor: body.waitFor,
         timeout: body.timeout,
         actions: body.actions,
@@ -100,11 +166,22 @@ export async function registerScreenshot(app: FastifyInstance, deps: ScreenshotR
     if (!result.content.screenshot) {
       warnings.push('screenshot: no image was captured at the tier that succeeded.');
     }
+    // A clipped full-page capture, or a selector that matched nothing, returns
+    // an image that looks like what was asked for. The capture layer says so;
+    // this is where the caller hears it.
+    if (result.screenshotResult?.warning) warnings.push(result.screenshotResult.warning);
+
+    const captured = result.screenshotResult;
+    const format = captured?.format ?? body.format;
 
     return reply.code(200).send({
       success: true,
       data: {
-        screenshot: result.content.screenshot ? `data:image/png;base64,${result.content.screenshot}` : null,
+        screenshot: result.content.screenshot
+          ? `data:image/${format};base64,${result.content.screenshot}`
+          : null,
+        format,
+        bytes: captured?.bytes ?? null,
         metadata: {
           sourceUrl: body.url,
           finalUrl: result.finalUrl ?? body.url,

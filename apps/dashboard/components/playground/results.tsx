@@ -20,8 +20,12 @@ import type {
   ConvertResponse,
   CrawlResponse,
   Document,
+  DocumentResponse,
   Estimate,
+  ExtractResponse,
+  ExtractRow,
   ExtractionUsage,
+  FetchFailure,
   InteractResponse,
   JobAccepted,
   MapResponse,
@@ -30,6 +34,7 @@ import type {
   MonitorResponse,
   ParseResponse,
   ScrapeResponse,
+  ScreenshotResponse,
   SearchResponse,
 } from '@/lib/api';
 import { endpointById } from '@/lib/catalog';
@@ -73,6 +78,9 @@ export type PlaygroundResult =
   | { kind: 'metadata'; response: MetadataResponse }
   | { kind: 'metadata-scrub'; response: MetadataScrubResponse }
   | { kind: 'convert'; response: ConvertResponse }
+  | { kind: 'document'; response: DocumentResponse }
+  | { kind: 'extract'; response: ExtractResponse }
+  | { kind: 'screenshot'; response: ScreenshotResponse }
   | { kind: 'interact'; response: InteractResponse }
   | { kind: 'monitor'; response: MonitorResponse }
   | { kind: 'handoff'; jobId: string }
@@ -425,6 +433,118 @@ function ConvertView({ result }: { result: Extract<ConvertResponse, { success: t
   );
 }
 
+function ScreenshotView({ result }: { result: Extract<ScreenshotResponse, { success: true }> }) {
+  const { screenshot, format, bytes } = result.data;
+
+  if (!screenshot) {
+    return (
+      <p className="p-4 text-sm text-muted-foreground">
+        The fetch succeeded but no image came back. The warnings above say which tier answered.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Stat label="Format" value={format.toUpperCase()} />
+        {bytes !== null && <Stat label="Size" value={formatBytes(bytes)} />}
+      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element -- a data: URL, and next/image cannot size one it has not fetched. */}
+      <img
+        src={screenshot}
+        alt="Captured screenshot"
+        className="w-full rounded-card border border-border bg-secondary"
+      />
+    </div>
+  );
+}
+
+function ExtractView({ result }: { result: ExtractResponse }) {
+  const rows = result.data;
+  // Every field except the provenance envelope, in first-row order so the table
+  // reads the way the schema was written.
+  const columns = React.useMemo(() => {
+    const seen = new Set<string>();
+    for (const row of rows) {
+      for (const key of Object.keys(row)) if (key !== '_source') seen.add(key);
+    }
+    return [...seen];
+  }, [rows]);
+
+  if (rows.length === 0) {
+    return (
+      <p className="p-4 text-sm text-muted-foreground">
+        No rows came back. Any URL that could not be read is listed in the warnings above.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 p-4">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border text-left">
+              {columns.map((column) => (
+                <th key={column} className="px-2 py-1.5 font-medium text-muted-foreground">
+                  {column}
+                </th>
+              ))}
+              <th className="px-2 py-1.5 font-medium text-muted-foreground">source</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row: ExtractRow, index: number) => (
+              <tr key={index} className="border-b border-border/60 last:border-0">
+                {columns.map((column) => (
+                  <td key={column} className="px-2 py-1.5 align-top">
+                    {row[column] === undefined ? (
+                      <span className="text-muted-foreground/40">—</span>
+                    ) : (
+                      String(row[column])
+                    )}
+                  </td>
+                ))}
+                <td className="px-2 py-1.5 align-top font-mono text-xs text-muted-foreground">
+                  {hostOf(row._source.url) ?? row._source.url}
+                  {row._source.blocksTotal > row._source.blocksKept && (
+                    <span
+                      className="ml-1"
+                      title={`Only ${row._source.blocksKept} of ${row._source.blocksTotal} blocks reached the model.`}
+                    >
+                      ({row._source.blocksKept}/{row._source.blocksTotal})
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {result.dropped.length > 0 && (
+        <div className="flex flex-col gap-1.5 rounded-card border border-border bg-secondary/40 p-3">
+          <p className="text-sm font-medium text-foreground">
+            {result.dropped.length} field{result.dropped.length === 1 ? '' : 's'} dropped
+          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Nothing in the page supported these, so they were removed rather than returned. Tick
+            &ldquo;keep ungrounded fields&rdquo; to get them anyway.
+          </p>
+          <ul className="mt-1 flex flex-col gap-0.5">
+            {result.dropped.map((entry: { url: string; field: string; reason: string }, index: number) => (
+              <li key={index} className="font-mono text-xs text-muted-foreground">
+                {entry.field} — {hostOf(entry.url) ?? entry.url}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EstimateCard({ estimate }: { estimate: Estimate }) {
   return (
     <div className="flex flex-col gap-3 rounded-card border border-border p-4">
@@ -738,6 +858,65 @@ export function Results({ result, loading, timingMs, error, pending, endpoint, i
       return (
         <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: true, label: 'Success' }} facts={timeFact} title="Converted file" debug={debug} input={input}>
           <ConvertView result={response} />
+        </Chrome>
+      );
+    }
+
+    case 'screenshot': {
+      const response = result.response;
+      if (!response.success) {
+        return (
+          <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: false, label: response.failure.reason }} facts={timeFact} debug={debug} input={input}>
+            <FailurePanel failure={response.failure} />
+          </Chrome>
+        );
+      }
+      return (
+        <Chrome
+          endpoint={endpoint}
+          subject={subjectFromInput}
+          status={{ ok: true, label: 'Success' }}
+          facts={timeFact}
+          title="Screenshot"
+          debug={debug}
+          input={input}
+        >
+          <ScreenshotView result={response} />
+        </Chrome>
+      );
+    }
+
+    case 'extract': {
+      const response = result.response;
+      return (
+        <Chrome
+          endpoint={endpoint}
+          subject={subjectFromInput}
+          status={{ ok: true, label: `${response.data.length} row${response.data.length === 1 ? '' : 's'}` }}
+          facts={timeFact}
+          title="Extracted rows"
+          debug={debug}
+          input={input}
+        >
+          <ExtractView result={response} />
+        </Chrome>
+      );
+    }
+
+    case 'document': {
+      const response = result.response as { success?: boolean; failure?: FetchFailure };
+      if (response.success === false && response.failure) {
+        return (
+          <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: false, label: response.failure.reason }} facts={timeFact} debug={debug} input={input}>
+            <FailurePanel failure={response.failure} />
+          </Chrome>
+        );
+      }
+      // The operation is chosen at runtime, so the shape is only known to the
+      // caller. JSON is the honest rendering rather than guessing a view.
+      return (
+        <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: true, label: 'Success' }} facts={timeFact} title="Document" debug={debug} input={input}>
+          <AnimatedJsonView data={result.response} />
         </Chrome>
       );
     }

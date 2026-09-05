@@ -24,6 +24,12 @@ function sourceKindOf(file: File | null): SourceKind {
 }
 
 /** Mirrors apps/api's SUPPORTED_TARGETS. `unknown` (a URL source, or an unrecognised extension) offers both — the server is the source of truth and answers a typed `unsupported_type` failure otherwise. */
+const ALL_TARGETS: readonly ConvertFormat[] = ['png', 'jpeg'];
+
+function sourceLabel(kind: SourceKind): string {
+  return kind === 'pdf' ? 'A PDF' : kind === 'png' ? 'A PNG' : kind === 'jpg' ? 'A JPEG' : 'This source';
+}
+
 const TARGETS_FOR: Record<SourceKind, readonly ConvertFormat[]> = {
   pdf: ['png', 'jpeg'],
   png: ['jpeg'],
@@ -42,6 +48,7 @@ export function ConvertForm({ url, onSubmit, onGetCode, loading }: ConvertFormPr
   const [file, setFile] = React.useState<File | null>(null);
   const [to, setTo] = React.useState<ConvertFormat>('png');
   const [page, setPage] = React.useState('1');
+  const [timeoutSeconds, setTimeoutSeconds] = React.useState('30');
   const [dpi, setDpi] = React.useState('144');
 
   const sourceKind = sourceKindOf(file);
@@ -64,8 +71,13 @@ export function ConvertForm({ url, onSubmit, onGetCode, loading }: ConvertFormPr
       if (Number.isFinite(pageNum) && pageNum > 0) body.page = pageNum;
       if (Number.isFinite(dpiNum) && dpiNum > 0) body.dpi = dpiNum;
     }
+
+    const timeoutSec = Number.parseInt(timeoutSeconds, 10);
+    if (Number.isFinite(timeoutSec) && timeoutSec > 0) {
+      body.timeout = timeoutSec * 1000;
+    }
     return body;
-  }, [url, to, isPdf, page, dpi]);
+  }, [url, to, isPdf, page, dpi, timeoutSeconds]);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -78,6 +90,7 @@ export function ConvertForm({ url, onSubmit, onGetCode, loading }: ConvertFormPr
       formData.set('to', to);
       if (body.page !== undefined) formData.set('page', String(body.page));
       if (body.dpi !== undefined) formData.set('dpi', String(body.dpi));
+      if (body.timeout !== undefined) formData.set('timeout', String(body.timeout));
       onSubmit(formData);
       return;
     }
@@ -100,24 +113,34 @@ export function ConvertForm({ url, onSubmit, onGetCode, loading }: ConvertFormPr
 
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-medium">Convert to</legend>
-        <div className={cn('grid gap-2', targets.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
-          {targets.map((format) => (
-            <button
-              key={format}
-              type="button"
-              aria-pressed={to === format}
-              onClick={() => setTo(format)}
-              className={cn(
-                'rounded-card border px-3 py-2 text-sm font-medium transition-colors duration-fast',
-                to === format
-                  ? 'border-violet bg-violet-8 text-foreground'
-                  : 'border-border text-muted-foreground hover:bg-secondary',
-              )}
-            >
-              {format.toUpperCase()}
-            </button>
-          ))}
+        <div className="grid grid-cols-2 gap-2">
+          {ALL_TARGETS.map((format) => {
+            const available = targets.includes(format);
+            return (
+              <button
+                key={format}
+                type="button"
+                disabled={!available}
+                aria-pressed={to === format}
+                title={available ? undefined : `${sourceLabel(sourceKind)} is already ${format.toUpperCase()}.`}
+                onClick={() => setTo(format)}
+                className={cn(
+                  'rounded-card border px-3 py-2 text-sm font-medium transition-colors duration-fast',
+                  !available && 'cursor-not-allowed border-border/60 text-muted-foreground/40',
+                  available && to === format && 'border-violet bg-violet-8 text-foreground',
+                  available && to !== format && 'border-border text-muted-foreground hover:bg-secondary',
+                )}
+              >
+                {format.toUpperCase()}
+              </button>
+            );
+          })}
         </div>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {sourceKind === 'unknown'
+            ? 'PDF pages rasterise to either format. An image converts to the one it is not.'
+            : `${sourceLabel(sourceKind)} converts to ${targets.map((t) => t.toUpperCase()).join(' or ')}.`}
+        </p>
       </fieldset>
 
       {isPdf && (
@@ -147,6 +170,22 @@ export function ConvertForm({ url, onSubmit, onGetCode, loading }: ConvertFormPr
           </div>
         </div>
       )}
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="convert-timeout">Timeout (seconds)</Label>
+        <Input
+          id="convert-timeout"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={300}
+          value={timeoutSeconds}
+          onChange={(event) => setTimeoutSeconds(event.target.value)}
+        />
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          How long to allow for fetching and converting. A large PDF at a high DPI needs more.
+        </p>
+      </div>
 
       {CONVERTER_URL && (
         <a

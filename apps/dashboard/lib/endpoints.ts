@@ -14,10 +14,12 @@ export type Endpoint =
   | 'screenshot';
 
 /**
- * The subset the SDK client and the playground can actually call. `document`,
- * `extract` and `screenshot` are catalogued and documented ahead of their SDK
- * methods, so they are deliberately absent here until those land.
+ * The subset the SDK client and the playground can actually call.
+ *
+ * Currently every endpoint, kept as its own name so a catalogued-but-not-yet-
+ * callable endpoint stays a compile error at the four surfaces that render a
+ * playground link, rather than a 404 discovered by clicking one.
  */
-export type RunnableEndpoint = Exclude<Endpoint, 'document' | 'extract' | 'screenshot'>;
+export type RunnableEndpoint = Endpoint;
 
 export type RunStatus = 'success' | 'failure' | 'running' | 'cancelled';

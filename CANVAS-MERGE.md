@@ -1,8 +1,33 @@
 # Canvas Connect → Helix: merge scope
 
-> Status: **fully scoped, not started.** Shape and all four open questions decided
-> 2026-09-05. Sits alongside CONVERTER-CONTRACT.md and PERSONA.md as the third
-> sibling-product doc. Nothing has been moved, committed or deleted yet.
+> Status: **merged and shipped 2026-09-05.** Phases 0–4 complete; Phase 5 archived but the
+> repo deletion is deliberately **not** done. Sits alongside CONVERTER-CONTRACT.md and
+> PERSONA.md as the third sibling-product doc.
+>
+> **Two things are still open, both needing a human decision:**
+>
+> 1. **An unmerged branch exists that Helix does not have** —
+>    `claude/mcp-browser-connection-0ew1qj`, shared-secret HTTP auth so claude.ai can
+>    connect, 506 insertions and a new `http_auth.py`. Preserved in `e:/archive/`. Deleting
+>    the GitHub repo is blocked until it is cherry-picked or knowingly abandoned. See
+>    Phase 5 step 23.
+> 2. **Canvas never got its own version bump.** The three commits were swept up in another
+>    session's push of `Helix 1.16.2`, so no release line names Canvas. The plan called for
+>    a MINOR of its own; it can take the next one instead.
+
+## What shipped
+
+| Commit | What |
+|---|---|
+| `d0ef9d8` | The presentation: four routes, the real Canvas mark, the `segments` hero motif |
+| `70b4788` | The server: `tools/canvas-mcp/` by subtree merge, history preserved |
+| `0193d16` | Decommission: URLs repointed at Helix, old repo archived (not deleted) |
+| `3a73562` | The markdown twin, which also fixed the search index |
+
+Verified rather than assumed: both build gates pass on NTFS (self-host `output: export` and
+`HELIX_HOSTED=1`, 79/79 static pages each), 135 Python tests pass and ruff is clean from the
+new location, and `src/`, `tests/` and `skills/` are **byte-identical by tree hash** to
+`a8ecb12` — the utility is unchanged, which was the requirement.
 
 ## The decision in one line
 
@@ -291,8 +316,12 @@ real content rather than an empty shell:
     The three sub-routes (`/canvas/tools`, `/canvas/skills`, `/canvas/changelog`) have no
     twins by design — `/tools` is a filterable UI over a JSON catalog and `/changelog` is
     already markdown at source, so a twin would be a worse copy of each.
-21. **Still to do.** Sitemap entries for the four routes. Per-page `metadata` is already
-    set in each `page.tsx`.
+21. **Moot — the dashboard has no sitemap.** There is no `app/sitemap.ts` and no
+    `robots.ts`; the only "sitemap" hits in the tree are prose on `/crawl` and `/map`
+    describing the *feature*. So there is nothing for Canvas to be added to. Adding a
+    sitemap is a site-wide decision that belongs to whoever owns SEO for the marketing
+    site, not to this merge — discovery for Canvas is already covered by `/llms.txt`, the
+    markdown twin and the search index. Per-page `metadata` is set in each `page.tsx`.
 
 ### Phase 5 — decommission and verify — **archived 2026-09-05; deletion NOT done, and should not be**
 

@@ -26,11 +26,32 @@ from .fence import wrap
 from .pricing import Usage as PricingUsage
 from .pricing import cost_usd as price_cost_usd
 from .provider import ProviderError, RequestError, call_structured, describe_failure
-from .schema_compiler import SchemaError, compile_anthropic, compile_gemini, compile_openai
+from .schema_compiler import (
+    SchemaError,
+    compile_anthropic,
+    compile_anthropic_output_format,
+    compile_gemini,
+    compile_openai,
+)
 from .settings import settings
 
 
 SYSTEM_PROMPT = system_prompt("extract")
+
+
+def _anthropic_supports_output_format() -> bool:
+    """Whether the installed SDK accepts ``output_config`` on `messages.create`.
+
+    A feature check rather than a version guess: `anthropic` added
+    `output_config`/structured outputs across a range of point releases, and
+    pinning a cutoff version here would drift the moment either side updates
+    independently of the other.
+    """
+    import inspect
+
+    from anthropic.resources.messages.messages import AsyncMessages
+
+    return "output_config" in inspect.signature(AsyncMessages.create).parameters
 
 
 @dataclass
@@ -313,7 +334,8 @@ async def _call_anthropic(
         raise ProviderError("ANTHROPIC_API_KEY is not set.", fallback_eligible=True)
 
     client = AsyncAnthropic(api_key=api_key)
-    compiled = compile_anthropic(schema)
+    use_output_format = _anthropic_supports_output_format()
+    compiled = None if use_output_format else compile_anthropic(schema)
 
     # Populated only when the request set `cache_control` (not currently the
     # case here); absent on a plain call, so both default to 0 rather than None.
@@ -322,22 +344,54 @@ async def _call_anthropic(
 
     async def run() -> tuple[dict[str, Any], int, int, str]:
         nonlocal cache_read, cache_write
-        response = await client.messages.create(
+        kwargs: dict[str, Any] = dict(
             model=model,
             max_tokens=4096,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": f"{prompt}\n\n{content}" if prompt else content}],
-            tools=compiled["tools"],
-            tool_choice=compiled["tool_choice"],
         )
-        # Forced tool use means the answer arrives as tool input, not as text.
-        data: dict[str, Any] = {}
-        for block in response.content:
-            if getattr(block, "type", None) == "tool_use":
-                data = dict(getattr(block, "input", {}))
-                break
+        if use_output_format:
+            kwargs["output_config"] = {"format": compile_anthropic_output_format(schema)}
+        else:
+            assert compiled is not None
+            kwargs["tools"] = compiled["tools"]
+            kwargs["tool_choice"] = compiled["tool_choice"]
+
+        response = await client.messages.create(**kwargs)
         cache_read = getattr(response.usage, "cache_read_input_tokens", 0) or 0
         cache_write = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
+
+        if use_output_format:
+            text = next((b.text for b in response.content if getattr(b, "type", None) == "text"), None)
+            if text is None:
+                raise SchemaError(
+                    f"anthropic ({response.model}) returned no text content for a structured-output request "
+                    f"(stop_reason: {response.stop_reason})."
+                )
+            try:
+                data = json.loads(text)
+            except json.JSONDecodeError as exc:
+                raise SchemaError(
+                    f"anthropic ({response.model}) returned text that was not valid JSON for a "
+                    "structured-output request."
+                ) from exc
+        else:
+            # Auto tool choice plus a system-prompt instruction, not a forced
+            # tool_choice (a 400 on Claude Fable 5.1) — so a model can still
+            # answer in text instead of calling the tool; that is a content
+            # failure (the model's own answer), not a transport one, so it
+            # must not trigger cross-provider fallback.
+            data = None
+            for block in response.content:
+                if getattr(block, "type", None) == "tool_use":
+                    data = dict(getattr(block, "input", {}))
+                    break
+            if data is None:
+                raise SchemaError(
+                    f"anthropic ({response.model}) did not call the \"extract\" tool "
+                    f"(stop_reason: {response.stop_reason})."
+                )
+
         return data, response.usage.input_tokens, response.usage.output_tokens, response.model
 
     outcome = await call_structured("anthropic", model, run)

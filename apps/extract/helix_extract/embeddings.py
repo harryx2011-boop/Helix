@@ -14,6 +14,7 @@ import asyncio
 from dataclasses import dataclass
 from functools import lru_cache
 
+from .provider import CALL_TIMEOUT_SECONDS
 from .settings import settings
 
 # all-MiniLM-L6-v2, matching the pgvector column width in the schema.
@@ -80,10 +81,17 @@ async def _embed_openai(texts: list[str]) -> EmbeddingResult:
 
     client = AsyncOpenAI(api_key=key, base_url=url) if url else AsyncOpenAI(api_key=key)
 
-    response = await client.embeddings.create(
-        model=settings.helix_embedding_model,
-        input=texts,
-    )
+    # No client-level timeout is set above, so this is the only ceiling on a
+    # stalled connection — same reasoning as provider.py's own CALL_TIMEOUT_SECONDS.
+    try:
+        response = await asyncio.wait_for(
+            client.embeddings.create(model=settings.helix_embedding_model, input=texts),
+            timeout=CALL_TIMEOUT_SECONDS,
+        )
+    except TimeoutError as exc:
+        raise EmbeddingError(
+            f"the embedding provider did not respond within {CALL_TIMEOUT_SECONDS:.0f}s."
+        ) from exc
 
     vectors = [item.embedding for item in response.data]
 

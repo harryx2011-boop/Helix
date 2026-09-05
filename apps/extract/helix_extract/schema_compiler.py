@@ -136,10 +136,13 @@ def compile_openai(schema: dict[str, Any], name: str = "extraction") -> dict[str
 
 
 def compile_anthropic(schema: dict[str, Any], name: str = "extract") -> dict[str, Any]:
-    """A forced-tool-use payload for the Anthropic Messages API.
+    """A strict-tool payload for the Anthropic Messages API, used when the
+    installed SDK has no ``output_config.format`` support.
 
-    Anthropic has no response-format parameter; structured output is expressed by
-    defining a tool and requiring the model to call it.
+    Forcing ``tool_choice`` (``{"type": "tool", ...}`` or ``"any"``) is a 400 on
+    Claude Fable 5.1 and a migration hazard even where it still works — the
+    call site uses ``{"type": "auto"}`` instead and relies on ``strict`` for
+    schema-valid arguments plus a system-prompt instruction naming the tool.
     """
     validate_schema(schema)
     return {
@@ -147,11 +150,23 @@ def compile_anthropic(schema: dict[str, Any], name: str = "extract") -> dict[str
             {
                 "name": name,
                 "description": "Return the extracted data.",
-                "input_schema": schema,
+                "input_schema": _strictify(schema),
+                "strict": True,
             }
         ],
-        "tool_choice": {"type": "tool", "name": name},
+        "tool_choice": {"type": "auto"},
     }
+
+
+def compile_anthropic_output_format(schema: dict[str, Any], name: str = "extraction") -> dict[str, Any]:
+    """An ``output_config.format`` payload for the Anthropic Messages API.
+
+    Preferred over :func:`compile_anthropic`'s tool trick wherever the
+    installed SDK supports it — no tool, no forced choice, just a schema-
+    constrained text response.
+    """
+    validate_schema(schema)
+    return {"type": "json_schema", "schema": _strictify(schema)}
 
 
 # Gemini uses uppercase type names and understands only a subset of JSON Schema.

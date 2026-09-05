@@ -7,6 +7,7 @@ import pytest
 from helix_extract.schema_compiler import (
     SchemaError,
     compile_anthropic,
+    compile_anthropic_output_format,
     compile_for,
     compile_gemini,
     compile_openai,
@@ -121,19 +122,59 @@ class TestOpenAI:
 
 
 class TestAnthropic:
-    def test_expresses_extraction_as_a_forced_tool_call(self) -> None:
-        # Anthropic has no response-format parameter; a required tool is how
-        # structured output is requested.
+    def test_uses_auto_choice_with_a_strict_tool(self) -> None:
+        # A forced tool_choice (`{"type": "tool", ...}` or "any") is a 400 on
+        # Claude Fable 5.1; strict mode plus auto choice gets schema-valid
+        # arguments without forcing the call.
         compiled = compile_anthropic(SIMPLE)
 
-        assert compiled["tool_choice"]["type"] == "tool"
-        assert compiled["tools"][0]["input_schema"] == SIMPLE
+        assert compiled["tool_choice"] == {"type": "auto"}
+        assert compiled["tools"][0]["strict"] is True
+        assert compiled["tools"][0]["input_schema"] == compile_openai(SIMPLE)["json_schema"]["schema"]
 
     def test_names_the_tool_consistently(self) -> None:
         compiled = compile_anthropic(SIMPLE, name="pull_data")
 
         assert compiled["tools"][0]["name"] == "pull_data"
-        assert compiled["tool_choice"]["name"] == "pull_data"
+
+    def test_strictifies_the_input_schema(self) -> None:
+        # Same strict-mode compilation OpenAI gets: every property required,
+        # optional fields nullable, additionalProperties false.
+        compiled = compile_anthropic(SIMPLE)
+        schema = compiled["tools"][0]["input_schema"]
+
+        assert set(schema["required"]) == {"title", "price"}
+        assert schema["additionalProperties"] is False
+        assert schema["properties"]["price"]["type"] == ["number", "null"]
+
+    def test_leaves_a_free_form_map_open(self) -> None:
+        # A property-less object is a free-form map; additionalProperties:
+        # false on it would make the field structurally unfillable.
+        compiled = compile_anthropic(
+            {
+                "type": "object",
+                "properties": {"properties": {"type": "object"}},
+                "required": ["properties"],
+            }
+        )
+        field = compiled["tools"][0]["input_schema"]["properties"]["properties"]
+
+        assert field == {"type": "object"}
+        assert "additionalProperties" not in field
+
+
+class TestAnthropicOutputFormat:
+    def test_produces_a_json_schema_format_payload(self) -> None:
+        compiled = compile_anthropic_output_format(SIMPLE)
+
+        assert compiled["type"] == "json_schema"
+        assert compiled["schema"] == compile_anthropic(SIMPLE)["tools"][0]["input_schema"]
+
+    def test_carries_no_tool_or_tool_choice(self) -> None:
+        compiled = compile_anthropic_output_format(SIMPLE)
+
+        assert "tools" not in compiled
+        assert "tool_choice" not in compiled
 
 
 class TestGemini:

@@ -19,9 +19,15 @@ from dataclasses import dataclass
 from typing import Any
 
 from .context import system_prompt
-from .llm import _openai_wire_credentials, _resolve
+from .llm import _anthropic_supports_output_format, _openai_wire_credentials, _resolve
 from .provider import ProviderError, call_structured, describe_failure
-from .schema_compiler import SchemaError, compile_anthropic, compile_gemini, compile_openai
+from .schema_compiler import (
+    SchemaError,
+    compile_anthropic,
+    compile_anthropic_output_format,
+    compile_gemini,
+    compile_openai,
+)
 
 # A schema for schemas: loose enough to admit any valid JSON Schema object, but
 # it pins down the shape a model reaches for reliably (object/array/properties)
@@ -122,22 +128,43 @@ async def _call_anthropic_json(
         raise ProviderError("ANTHROPIC_API_KEY is not set.")
 
     client = AsyncAnthropic(api_key=api_key)
-    compiled = compile_anthropic(META_SCHEMA, name="schema_design")
+    use_output_format = _anthropic_supports_output_format()
+    compiled = None if use_output_format else compile_anthropic(META_SCHEMA, name="schema_design")
 
     async def run() -> tuple[dict[str, Any], int, int, str]:
-        response = await client.messages.create(
+        kwargs: dict[str, Any] = dict(
             model=model,
             max_tokens=2048,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}],
-            tools=compiled["tools"],
-            tool_choice=compiled["tool_choice"],
         )
+        if use_output_format:
+            kwargs["output_config"] = {"format": compile_anthropic_output_format(META_SCHEMA, name="schema_design")}
+        else:
+            assert compiled is not None
+            kwargs["tools"] = compiled["tools"]
+            kwargs["tool_choice"] = compiled["tool_choice"]
+
+        response = await client.messages.create(**kwargs)
+
+        # An unusable answer here (no tool call, or text that isn't valid
+        # JSON) returns `{}` rather than raising `SchemaError` — `generate_schema`
+        # already has its own repair-retry for exactly this shape of failure
+        # via `_is_usable_schema`, and short-circuiting it would drop that.
         data: dict[str, Any] = {}
-        for block in response.content:
-            if getattr(block, "type", None) == "tool_use":
-                data = dict(getattr(block, "input", {}))
-                break
+        if use_output_format:
+            text = next((b.text for b in response.content if getattr(b, "type", None) == "text"), None)
+            if text is not None:
+                try:
+                    data = json.loads(text)
+                except json.JSONDecodeError:
+                    data = {}
+        else:
+            for block in response.content:
+                if getattr(block, "type", None) == "tool_use":
+                    data = dict(getattr(block, "input", {}))
+                    break
+
         return data, response.usage.input_tokens, response.usage.output_tokens, response.model
 
     outcome = await call_structured("anthropic", model, run)

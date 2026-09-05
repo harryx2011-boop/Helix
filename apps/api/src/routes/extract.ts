@@ -174,6 +174,7 @@ export async function registerExtract(app: FastifyInstance, deps: ExtractRouteDe
             onlyMainContent: true,
             ...(deps.proxyUrl ? { proxy: deps.proxyUrl } : {}),
             allowPrivate: deps.allowPrivateUrls,
+            signal: controller.signal,
           },
           deps,
         );

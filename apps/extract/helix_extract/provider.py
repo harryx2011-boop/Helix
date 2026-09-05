@@ -23,12 +23,21 @@ import random
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, TypeVar
 
+from .schema_compiler import SchemaError
+
 T = TypeVar("T")
 
 # Attempts include the first try, so 3 means up to 2 retries.
 MAX_ATTEMPTS = 3
 BASE_DELAY_SECONDS = 0.5
 MAX_DELAY_SECONDS = 4.0
+
+# A ceiling on the one genuinely unbounded step here: the SDK call itself. None
+# of the three SDKs accept a cooperative cancellation token, and none is given
+# a client-level timeout, so a stalled connection would otherwise hang this
+# coroutine (and the request awaiting it) indefinitely. Generous on purpose —
+# this is a ceiling for a stuck connection, not a latency budget.
+CALL_TIMEOUT_SECONDS = 120.0
 
 
 class ProviderError(RuntimeError):
@@ -114,12 +123,21 @@ async def call_structured(
     last_exc: Exception | None = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            data, tokens_in, tokens_out, model_used = await call()
+            data, tokens_in, tokens_out, model_used = await asyncio.wait_for(call(), timeout=CALL_TIMEOUT_SECONDS)
             return CallOutcome(
                 data=data, tokens_input=tokens_in, tokens_output=tokens_out, model_used=model_used, attempts=attempt
             )
-        except (ProviderError, RequestError):
+        except (ProviderError, RequestError, SchemaError):
             raise
+        except TimeoutError as exc:
+            # asyncio.wait_for's own TimeoutError, not a status the SDK
+            # reported — nothing here says the far end would answer
+            # differently a second time, so this does not retry or fall back,
+            # only stops the wait and reports what happened.
+            raise ProviderError(
+                f"{provider} ({model}) did not respond within {CALL_TIMEOUT_SECONDS:.0f}s.",
+                fallback_eligible=False,
+            ) from exc
         except Exception as exc:  # noqa: BLE001 - every SDK has its own exception tree
             last_exc = exc
             retryable = _is_retryable(exc)

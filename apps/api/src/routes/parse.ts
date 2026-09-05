@@ -229,7 +229,15 @@ function classifyRemoteError(error: unknown): ParseFailure {
 
 export async function fetchRemote(
   url: string,
-  deps: { fetchImpl: typeof fetch; lookup: Lookup; userAgent: string; timeoutMs: number; maxBytes: number },
+  deps: {
+    fetchImpl: typeof fetch;
+    lookup: Lookup;
+    userAgent: string;
+    timeoutMs: number;
+    maxBytes: number;
+    /** Aborts the download when the caller disconnects, combined with the per-hop timeout above. */
+    signal?: AbortSignal | undefined;
+  },
 ): Promise<{ ok: true; file: FileInput } | { ok: false; failure: ParseFailure } | { ok: false; tooLarge: true }> {
   const deadline = Date.now() + deps.timeoutMs;
   let current = new URL(url);
@@ -239,6 +247,9 @@ export async function fetchRemote(
   // policy: an allowed public host answering 302 to an internal address is the
   // usual way around a check made only on the first URL.
   for (let hop = 0; ; hop += 1) {
+    if (deps.signal?.aborted) {
+      return { ok: false, failure: classifyRemoteError({ name: 'AbortError' }) };
+    }
     await assertPublicUrl(current, deps.lookup);
 
     const remaining = deadline - Date.now();
@@ -247,6 +258,7 @@ export async function fetchRemote(
     }
 
     try {
+      const timeout = AbortSignal.timeout(remaining);
       response = await deps.fetchImpl(current.toString(), {
         redirect: 'manual',
         headers: {
@@ -254,9 +266,15 @@ export async function fetchRemote(
           accept:
             'application/pdf, application/vnd.openxmlformats-officedocument.*, image/png, image/jpeg, */*;q=0.5',
         },
-        signal: AbortSignal.timeout(remaining),
+        signal: deps.signal ? AbortSignal.any([timeout, deps.signal]) : timeout,
       });
     } catch (error) {
+      // `AbortSignal.any` loses which of the two signals actually fired, so
+      // the caller's is checked directly rather than reporting a caller
+      // disconnect as this hop's own download timeout.
+      if (deps.signal?.aborted) {
+        return { ok: false, failure: { reason: 'aborted', detail: 'the caller disconnected before the download finished' } };
+      }
       return { ok: false, failure: classifyRemoteError(error) };
     }
 
@@ -519,6 +537,7 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
             userAgent: deps.userAgent,
             timeoutMs: options.timeout,
             maxBytes: deps.maxUploadBytes,
+            signal: controller.signal,
           });
           if (!fetched.ok) {
             if ('tooLarge' in fetched) {

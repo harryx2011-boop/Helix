@@ -7,9 +7,13 @@ routing, defaults and error translation around them are what is under test.
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+from typing import Any, Callable
+
 import pytest
 
 from helix_extract import llm
+from helix_extract.schema_compiler import SchemaError
 from helix_extract.settings import settings
 
 SCHEMA = {"type": "object", "properties": {"title": {"type": "string"}}}
@@ -17,6 +21,63 @@ SCHEMA = {"type": "object", "properties": {"title": {"type": "string"}}}
 
 def _result(model: str) -> llm.ExtractionResult:
     return llm.ExtractionResult(data={"title": "T"}, tokens_input=1, tokens_output=1, model_used=model)
+
+
+# Minimal stand-ins for the Anthropic SDK shapes `_call_anthropic` reads from a
+# response: a text block, a tool_use block, and the usage/model wrapper.
+@dataclass
+class _TextBlock:
+    text: str
+    type: str = "text"
+
+
+@dataclass
+class _ToolUseBlock:
+    input: dict[str, Any]
+    type: str = "tool_use"
+
+
+@dataclass
+class _Usage:
+    input_tokens: int = 3
+    output_tokens: int = 5
+    cache_read_input_tokens: int = 0
+    cache_creation_input_tokens: int = 0
+
+
+@dataclass
+class _FakeMessage:
+    content: list[Any]
+    stop_reason: str = "end_turn"
+    model: str = "claude-sonnet-4-5"
+    usage: _Usage = field(default_factory=_Usage)
+
+
+class _FakeMessages:
+    def __init__(self, response: _FakeMessage, *, captured: dict[str, Any]) -> None:
+        self._response = response
+        self._captured = captured
+
+    async def create(self, **kwargs: Any) -> _FakeMessage:
+        self._captured["kwargs"] = kwargs
+        return self._response
+
+
+class _FakeAsyncAnthropic:
+    """Stands in for `anthropic.AsyncAnthropic(api_key=...)`; `_call_anthropic`
+    only ever touches `.messages.create`."""
+
+    def __init__(self, response: _FakeMessage, captured: dict[str, Any]) -> None:
+        self.messages = _FakeMessages(response, captured=captured)
+
+    @classmethod
+    def factory(
+        cls, response: _FakeMessage, captured: dict[str, Any]
+    ) -> Callable[..., "_FakeAsyncAnthropic"]:
+        def _make(*_args: object, **_kwargs: object) -> "_FakeAsyncAnthropic":
+            return cls(response, captured)
+
+        return _make
 
 
 class TestResolve:
@@ -592,3 +653,176 @@ class TestCrossProviderFallback:
             fence_close = content.index("</untrusted>")
             notice_pos = content.index("[content clipped:")
             assert notice_pos > fence_close
+
+
+class TestAnthropicRequestShape:
+    """`_call_anthropic` against a stubbed SDK client — no forced tool_choice,
+    strict schema compilation, and the schema/content failure kind."""
+
+    @pytest.mark.asyncio
+    async def test_output_format_path_carries_no_tool_or_forced_choice(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: True)
+        captured: dict[str, Any] = {}
+        response = _FakeMessage(content=[_TextBlock(text='{"title": "T"}')])
+        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+
+        result = await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+
+        kwargs = captured["kwargs"]
+        assert "tools" not in kwargs
+        assert "tool_choice" not in kwargs
+        assert kwargs["output_config"]["format"]["type"] == "json_schema"
+        assert result.data == {"title": "T"}
+
+    @pytest.mark.asyncio
+    async def test_tool_path_uses_strict_schema_and_auto_choice_never_forced(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: False)
+        captured: dict[str, Any] = {}
+        response = _FakeMessage(content=[_ToolUseBlock(input={"title": "T"})])
+        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+
+        result = await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+
+        kwargs = captured["kwargs"]
+        assert kwargs["tool_choice"] == {"type": "auto"}
+        assert kwargs["tool_choice"]["type"] != "tool"
+        assert kwargs["tool_choice"]["type"] != "any"
+        assert kwargs["tools"][0]["strict"] is True
+        schema = kwargs["tools"][0]["input_schema"]
+        assert schema["additionalProperties"] is False
+        assert result.data == {"title": "T"}
+
+    @pytest.mark.asyncio
+    async def test_property_less_nested_object_keeps_additional_properties_open(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: False)
+        captured: dict[str, Any] = {}
+        response = _FakeMessage(content=[_ToolUseBlock(input={"meta": {}})])
+        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+
+        schema = {
+            "type": "object",
+            "properties": {"meta": {"type": "object", "properties": {}}},
+            "required": ["meta"],
+        }
+        await llm._call_anthropic("content", schema, None, "claude-sonnet-4-5", caller_key="sk-ant")
+
+        meta_field = captured["kwargs"]["tools"][0]["input_schema"]["properties"]["meta"]
+        assert meta_field == {"type": "object", "properties": {}}
+        assert "additionalProperties" not in meta_field
+
+    @pytest.mark.asyncio
+    async def test_text_only_response_on_the_tool_path_is_a_schema_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: False)
+        captured: dict[str, Any] = {}
+        response = _FakeMessage(
+            content=[_TextBlock(text="I can't find that on the page.")], stop_reason="end_turn"
+        )
+        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+
+        with pytest.raises(SchemaError) as excinfo:
+            await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+        assert "did not call" in str(excinfo.value)
+        assert "end_turn" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_text_only_response_on_the_output_format_path_is_a_schema_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: True)
+        captured: dict[str, Any] = {}
+        response = _FakeMessage(content=[], stop_reason="max_tokens")
+        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+
+        with pytest.raises(SchemaError) as excinfo:
+            await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+        assert "no text content" in str(excinfo.value)
+        assert "max_tokens" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_invalid_json_on_the_output_format_path_is_a_schema_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: True)
+        captured: dict[str, Any] = {}
+        response = _FakeMessage(content=[_TextBlock(text="not json")])
+        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+
+        with pytest.raises(SchemaError) as excinfo:
+            await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+        assert "not valid JSON" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_schema_error_from_the_anthropic_call_does_not_trigger_cross_provider_fallback(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Exercises the same guarantee through the real `extract_structured`
+        # entry point, using the actual `_call_anthropic` (not a stub), so the
+        # SchemaError raised deep in the SDK-response parsing is what proves
+        # out — not a hand-raised one a stub could get wrong.
+        monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: False)
+        captured: dict[str, Any] = {}
+        response = _FakeMessage(content=[_TextBlock(text="no tool call here")], stop_reason="end_turn")
+        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+
+        openai_calls = 0
+
+        async def openai_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
+            nonlocal openai_calls
+            openai_calls += 1
+            return _result("gpt-4o-mini")
+
+        monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
+        monkeypatch.setattr(settings, "anthropic_api_key", "sk-ant-instance")
+        monkeypatch.setattr(llm, "_call_openai", openai_stub)
+
+        with pytest.raises(SchemaError):
+            await llm.extract_structured(
+                "content", SCHEMA, provider_keys={"openai": "sk-openai-caller"}
+            )
+        assert openai_calls == 0
+
+
+class TestAnthropicOutputFormatFeatureGate:
+    @pytest.mark.asyncio
+    async def test_supported_sdk_uses_output_format_and_never_touches_tools(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: True)
+        captured: dict[str, Any] = {}
+        response = _FakeMessage(content=[_TextBlock(text='{"title": "T"}')])
+        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+
+        await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+
+        assert "output_config" in captured["kwargs"]
+        assert "tools" not in captured["kwargs"]
+        assert "tool_choice" not in captured["kwargs"]
+
+    @pytest.mark.asyncio
+    async def test_unsupported_sdk_uses_tools_and_never_touches_output_format(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: False)
+        captured: dict[str, Any] = {}
+        response = _FakeMessage(content=[_ToolUseBlock(input={"title": "T"})])
+        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+
+        await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+
+        assert "tools" in captured["kwargs"]
+        assert "tool_choice" in captured["kwargs"]
+        assert "output_config" not in captured["kwargs"]
+
+    def test_feature_check_reflects_the_installed_sdk(self) -> None:
+        # Not mocked: proves the real feature-check function runs against the
+        # SDK actually installed in this venv, rather than only ever being
+        # exercised through a monkeypatched stand-in.
+        assert isinstance(llm._anthropic_supports_output_format(), bool)

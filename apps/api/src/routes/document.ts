@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { abortable } from '../core/abortable.js';
 
 /**
  * POST /v1/document — one endpoint over every document operation.
@@ -83,12 +84,38 @@ export async function registerDocument(app: FastifyInstance): Promise<void> {
     const headers: Record<string, string> = { ...(request.headers as Record<string, string>) };
     delete headers['content-length'];
 
-    const response = await app.inject({
-      method: 'POST',
-      url: OPERATIONS[op],
-      headers,
-      payload: request.body as Buffer,
-    });
+    // `inject` gives the injected request no real socket, so a disconnect on
+    // this outer connection cannot reach it — only stop this handler waiting
+    // on it, which is what `abortable` does.
+    const controller = new AbortController();
+    const onClose = (): void => {
+      if (!reply.raw.writableFinished) controller.abort();
+    };
+    request.raw.on('close', onClose);
+
+    let response;
+    try {
+      response = await abortable(
+        app.inject({
+          method: 'POST',
+          url: OPERATIONS[op],
+          headers,
+          payload: request.body as Buffer,
+        }),
+        controller.signal,
+      );
+    } catch (error) {
+      const err = error as { name?: string };
+      if (err.name === 'AbortError' || controller.signal.aborted) {
+        return reply.code(200).send({
+          success: false,
+          failure: { reason: 'aborted', detail: 'the caller disconnected before the operation finished' },
+        });
+      }
+      throw error;
+    } finally {
+      request.raw.off('close', onClose);
+    }
 
     for (const [header, value] of Object.entries(response.headers)) {
       // `inject` reports the length of its own response; letting it through

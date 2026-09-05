@@ -37,7 +37,8 @@ _TASK_INSTRUCTIONS: dict[PassKind, str] = {
     "extract": (
         "Extract the requested fields from the content. Use only what the "
         "content states. When a field is not present, return null for it "
-        "rather than guessing."
+        "rather than guessing. When a tool named \"extract\" is available, "
+        "call it with the extracted data rather than answering in text."
     ),
     "schema_design": (
         "You design JSON Schemas for web-data extraction. Given a description of "
@@ -48,7 +49,9 @@ _TASK_INSTRUCTIONS: dict[PassKind, str] = {
         "`enum` when the request names a fixed set of categories or options; "
         "mark fields that must be present in `required`. Do not use minItems, "
         "maxItems, minProperties or maxProperties — these cause models to "
-        "invent data to satisfy them. Return only the schema."
+        "invent data to satisfy them. Return only the schema. When a tool "
+        "named \"schema_design\" is available, call it with the schema "
+        "rather than answering in text."
     ),
 }
 

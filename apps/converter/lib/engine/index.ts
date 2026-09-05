@@ -1,6 +1,6 @@
 'use client';
 
-import { convertArgs, compressArgs, gifArgs } from './args';
+import { convertArgs, compressArgs, gifArgs, thumbsArgs } from './args';
 import { engineFor, isFormat, type Format } from './formats';
 import {
   PRESET_TARGETS,
@@ -10,10 +10,12 @@ import {
   validateFormat,
   validateGifOptions,
   validateImageOptions,
+  validateThumbsOptions,
   type CompressOptions,
   type ConvertOptions,
   type GifOptions,
   type ImageOptions,
+  type ThumbsOptions,
 } from './options';
 import type { EngineRequest, FfmpegWorkerRequest, ImageWorkerRequest, JobHandle, ProgressFrame, WorkerMessage } from './types';
 import { probeDuration } from './probe';
@@ -106,6 +108,60 @@ function resolveCompressOptions(req: Extract<EngineRequest, { op: 'compress' }>)
   if (req.target !== undefined) options.target = req.target;
   validateCompressOptions(options);
   return options;
+}
+
+/**
+ * Thumbnails run through ffmpeg like everything else, but produce an image, so
+ * the output name and mime come from the mode rather than from a `to` the
+ * caller never gives.
+ */
+function submitThumbsJob(req: Extract<EngineRequest, { op: 'thumbs' }>): JobHandle {
+  const id = nextId();
+  const { emit, onProgress } = makeListenable();
+  const options: ThumbsOptions = { ...req.options };
+  validateThumbsOptions(options);
+
+  const outputFormat = options.mode === 'preview' ? 'webp' : 'png';
+
+  let handle: RunningWorker | null = null;
+  let cancelled = false;
+
+  const promise = (async (): Promise<{ url: string; size: number }> => {
+    const buffer = await req.file.arrayBuffer();
+    // A sprite spaces its frames across the whole clip, so it needs the length
+    // before it can pick them; the other two modes seek to a known point.
+    const durationSec = options.mode === 'sprite' ? await probeDuration(req.file).catch(() => 0) : 0;
+    if (cancelled) throw new DOMException('Cancelled', 'AbortError');
+
+    const inputExt = extOf(req.file.name);
+    const inputName = `in.${isFormat(inputExt) ? inputExt : 'mp4'}`;
+    const outputName = `out.${outputFormat}`;
+
+    const workerReq: FfmpegWorkerRequest = {
+      kind: 'ffmpeg',
+      inputName,
+      outputName,
+      data: buffer,
+      args: thumbsArgs(inputName, outputName, options, durationSec),
+      durationSec,
+      mime: MIME_BY_FORMAT[outputFormat],
+    };
+
+    handle = runWorker('/workers/ffmpeg.worker.js', workerReq, emit);
+    return handle.promise;
+  })();
+
+  return {
+    id,
+    promise,
+    onProgress,
+    cancel() {
+      cancelled = true;
+      handle?.worker.terminate();
+      handle?.revoke();
+      emit({ status: 'cancelled' });
+    },
+  };
 }
 
 function submitFfmpegJob(req: Extract<EngineRequest, { op: 'convert' | 'compress' | 'gif' }>): JobHandle {
@@ -216,6 +272,7 @@ function submitImageJob(req: Extract<EngineRequest, { op: 'image' }>): JobHandle
 
 /** One entry point; routes to the ffmpeg worker or the image worker by the output kind. */
 export function submitEngineJob(req: EngineRequest): JobHandle {
+  if (req.op === 'thumbs') return submitThumbsJob(req);
   if (req.op === 'image') return submitImageJob(req);
   if (req.op === 'gif') return submitFfmpegJob(req);
   const to = req.op === 'convert' ? req.to : (req.to ?? extOf(req.file.name));

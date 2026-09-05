@@ -5,6 +5,7 @@ const LINKS = [
   { href: '/convert', label: 'Convert' },
   { href: '/compress', label: 'Compress' },
   { href: '/tools', label: 'Tools' },
+  { href: '/record', label: 'Record' },
   { href: '/history', label: 'History' },
   { href: '/settings', label: 'Settings' },
 ] as const;

@@ -1,12 +1,13 @@
-import type { CompressOptions, ConvertOptions, GifOptions, ImageOptions } from './options';
+import type { CompressOptions, ConvertOptions, GifOptions, ImageOptions, ThumbsOptions } from './options';
 
-export type EngineOp = 'convert' | 'compress' | 'gif' | 'image';
+export type EngineOp = 'convert' | 'compress' | 'gif' | 'image' | 'thumbs';
 
 export type EngineRequest =
   | { op: 'convert'; file: File; to: string; options: ConvertOptions }
   | { op: 'compress'; file: File; to?: string; target?: number; preset?: CompressOptions['quality']; options: ConvertOptions }
   | { op: 'gif'; file: File; fps: number; width: number; options: Partial<Omit<GifOptions, 'fps' | 'width'>> }
-  | { op: 'image'; file: File; to: string; resize?: { width: number; height: number }; quality?: number; options: ImageOptions };
+  | { op: 'image'; file: File; to: string; resize?: { width: number; height: number }; quality?: number; options: ImageOptions }
+  | { op: 'thumbs'; file: File; options: ThumbsOptions };
 
 export type ProgressFrame =
   | { status: 'running'; pct: number; fps: number; eta: number | null }

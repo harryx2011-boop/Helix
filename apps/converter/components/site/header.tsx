@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 const LINKS = [
   { href: '/convert', label: 'Convert' },
   { href: '/compress', label: 'Compress' },
+  { href: '/record', label: 'Record' },
   { href: '/tools', label: 'Tools' },
 ] as const;
 

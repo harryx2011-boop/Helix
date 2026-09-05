@@ -1,5 +1,5 @@
 import { type Format, kindOf } from './formats';
-import { bitrateForTarget, type CompressOptions, type ConvertOptions, type GifOptions } from './options';
+import { bitrateForTarget, type CompressOptions, type ConvertOptions, type GifOptions, type ThumbsOptions } from './options';
 
 const VIDEO_CODEC: Partial<Record<Format, string[]>> = {
   mp4: ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'],
@@ -111,6 +111,63 @@ export function gifArgs(
       output,
     ],
   };
+}
+
+/**
+ * Thumbnails: one poster frame, a contact sheet, or an animated preview.
+ *
+ * `poster` seeks to a single timestamp. `sprite` lays evenly-spaced frames
+ * into one grid image, which is what a scrubbing preview strip loads instead
+ * of fetching n separate files. `preview` is an animated WebP — the same
+ * two-pass palette dance GIF needs is unnecessary here, since WebP carries its
+ * own colour.
+ */
+export function thumbsArgs(input: string, output: string, o: ThumbsOptions, durationSec = 0): string[] {
+  const base = ['-hide_banner', '-nostdin', '-y'];
+  const scale = `scale=${o.width}:-2:flags=lanczos`;
+
+  if (o.mode === 'poster') {
+    // -ss before -i seeks rather than decoding to the timestamp and discarding.
+    return [...base, '-ss', String(o.at ?? 0), '-i', input, '-frames:v', '1', '-vf', scale, output];
+  }
+
+  if (o.mode === 'sprite') {
+    const count = o.count ?? 25;
+    const columns = o.columns ?? 5;
+    const rows = Math.ceil(count / columns);
+    // A duration of zero means the probe failed; one frame per second is a
+    // sane fallback that still produces a usable sheet for a short clip.
+    const fps = durationSec > 0 ? count / durationSec : 1;
+    return [
+      ...base,
+      '-i',
+      input,
+      '-vf',
+      `fps=${fps.toFixed(6)},${scale},tile=${columns}x${rows}`,
+      '-frames:v',
+      '1',
+      '-progress',
+      'pipe:1',
+      '-nostats',
+      output,
+    ];
+  }
+
+  return [
+    ...base,
+    ...(o.at !== undefined ? ['-ss', String(o.at)] : []),
+    '-i',
+    input,
+    ...(o.durationSec !== undefined ? ['-t', String(o.durationSec)] : []),
+    '-vf',
+    `fps=${o.fps ?? 10},${scale}`,
+    '-loop',
+    '0',
+    '-progress',
+    'pipe:1',
+    '-nostats',
+    output,
+  ];
 }
 
 export function compressArgs(

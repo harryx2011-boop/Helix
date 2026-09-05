@@ -37,6 +37,24 @@ export type CompressOptions = ConvertOptions & {
   quality?: 'email' | 'discord' | 'web' | 'archive';
 };
 
+/**
+ * Thumbnail extraction. One shape covers all three modes rather than three
+ * near-identical types, because the width and the source are always the same
+ * question and only the framing differs.
+ */
+export type ThumbsOptions = {
+  mode: 'poster' | 'sprite' | 'preview';
+  width: number;
+  /** poster and preview: where to start, in seconds. */
+  at?: number;
+  /** sprite: how many frames to lay out, and how many per row. */
+  count?: number;
+  columns?: number;
+  /** preview: how long, and how smooth. */
+  durationSec?: number;
+  fps?: number;
+};
+
 export type GifOptions = {
   fps: number;
   width: number;
@@ -125,6 +143,25 @@ export function validateGifOptions(o: GifOptions): void {
   checkTrim(o.trim);
   assert(typeof o.loop === 'boolean', 'loop must be a boolean.');
   assert(DITHERS.has(o.dither), 'dither is not a known algorithm.');
+}
+
+export function validateThumbsOptions(o: ThumbsOptions): void {
+  assert(
+    o.mode === 'poster' || o.mode === 'sprite' || o.mode === 'preview',
+    'mode must be poster, sprite or preview.',
+  );
+  checkDimension(o.width, 'width');
+  if (o.at !== undefined) assert(o.at >= 0, 'at must not be negative.');
+  if (o.count !== undefined) inRange(o.count, 1, 200, 'count');
+  if (o.columns !== undefined) inRange(o.columns, 1, 20, 'columns');
+  if (o.durationSec !== undefined) inRange(o.durationSec, 0.1, 60, 'durationSec');
+  if (o.fps !== undefined) inRange(o.fps, 1, 30, 'fps');
+  // A sheet wider than a browser will decode is a failed job dressed up as a
+  // valid request: 200 frames at 320px is already 64,000 pixels across.
+  if (o.mode === 'sprite') {
+    const columns = o.columns ?? 5;
+    assert(columns * o.width <= 16_384, 'columns x width exceeds the maximum image width of 16384px.');
+  }
 }
 
 export function validateImageOptions(o: ImageOptions): void {

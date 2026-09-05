@@ -10,6 +10,7 @@ import encodeAvif, { init as initAvifEnc } from '@jsquash/avif/encode';
 import resizeImageData from '@jsquash/resize';
 import UTIF from 'utif2';
 import type { ImageWorkerRequest, WorkerMessage } from '../types';
+import type { ImageOptions } from '../options';
 import { HEIC_INPUT_EXTS } from '../formats';
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -110,7 +111,7 @@ async function run(req: ImageWorkerRequest): Promise<void> {
 
     const target = req.options.resize;
     if (target) {
-      image = await resizeImageData(image, { width: target.width, height: target.height, fitMethod: 'stretch', method: 'lanczos3' });
+      image = await applyResize(image, target, req.options.fit ?? 'fill');
     }
 
     const { buffer, mime } = await encodeTarget(image, req.to, req.options.quality ?? 82, req.options.lossless ?? false);
@@ -124,6 +125,69 @@ async function run(req: ImageWorkerRequest): Promise<void> {
     };
     self.postMessage(message);
   }
+}
+
+/**
+ * Resize honouring `fit`.
+ *
+ * jSquash offers only `stretch` and `contain`, so the other three modes are
+ * computed here rather than declared and ignored. `cover` is the one that
+ * needs real work: scale so the shorter side fills the box, then crop the
+ * overflow from the centre — a plain `contain` would letterbox instead, which
+ * is a different picture, not a differently-sized one.
+ */
+async function applyResize(
+  image: ImageData,
+  target: { width: number; height: number },
+  fit: NonNullable<ImageOptions['fit']>,
+): Promise<ImageData> {
+  const scaleX = target.width / image.width;
+  const scaleY = target.height / image.height;
+
+  if (fit === 'fill') {
+    return resizeImageData(image, { ...target, fitMethod: 'stretch', method: 'lanczos3' });
+  }
+
+  if (fit === 'contain') {
+    return resizeImageData(image, { ...target, fitMethod: 'contain', method: 'lanczos3' });
+  }
+
+  if (fit === 'inside' || fit === 'outside') {
+    // Both keep the aspect ratio and neither crops; they differ only in which
+    // side the box constrains, so the target is a bound rather than a size.
+    const scale = fit === 'inside' ? Math.min(scaleX, scaleY) : Math.max(scaleX, scaleY);
+    return resizeImageData(image, {
+      width: Math.max(1, Math.round(image.width * scale)),
+      height: Math.max(1, Math.round(image.height * scale)),
+      fitMethod: 'stretch',
+      method: 'lanczos3',
+    });
+  }
+
+  // cover: fill the box, then take the middle.
+  const scale = Math.max(scaleX, scaleY);
+  const scaled = await resizeImageData(image, {
+    width: Math.max(target.width, Math.round(image.width * scale)),
+    height: Math.max(target.height, Math.round(image.height * scale)),
+    fitMethod: 'stretch',
+    method: 'lanczos3',
+  });
+  return cropCentre(scaled, target.width, target.height);
+}
+
+/** Centre crop. Rows are copied whole, so this is one memcpy per row rather than per pixel. */
+function cropCentre(src: ImageData, width: number, height: number): ImageData {
+  const w = Math.min(width, src.width);
+  const h = Math.min(height, src.height);
+  const left = Math.floor((src.width - w) / 2);
+  const top = Math.floor((src.height - h) / 2);
+
+  const out = new ImageData(w, h);
+  for (let y = 0; y < h; y += 1) {
+    const from = ((top + y) * src.width + left) * 4;
+    out.data.set(src.data.subarray(from, from + w * 4), y * w * 4);
+  }
+  return out;
 }
 
 function rotate90(src: ImageData, counterClockwise: boolean): ImageData {

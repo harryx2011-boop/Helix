@@ -249,6 +249,9 @@ export default function HomePage() {
               <a href="#how" className="transition-colors duration-150 ease-out hover:text-p-ink">
                 How it works
               </a>
+              <a href="/skill.md" className="transition-colors duration-150 ease-out hover:text-p-ink">
+                For agents
+              </a>
               <a href="https://helixapi-dev.vercel.app" target="_blank" rel="noreferrer" className="transition-colors duration-150 ease-out hover:text-p-ink">
                 Helix
               </a>

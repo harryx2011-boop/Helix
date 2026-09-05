@@ -1,4 +1,5 @@
 import type { Fork } from './store';
+import { isTableRow, isTableSeparator, splitTableRow } from './fork';
 
 /**
  * Export formats for a fork (PERSONA.md §6): .md, .txt, .json, and the .pdf
@@ -20,9 +21,35 @@ export function exportFilename(fork: Pick<Fork, 'personaSlug' | 'title'>, ext: s
   return `${fork.personaSlug}-${kebab(fork.title)}.${ext}`;
 }
 
+/** Pipe tables become space-aligned columns with a dashed rule under the header. */
+function layoutTables(text: string): string {
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i] ?? '';
+    if (isTableRow(line) && isTableSeparator(lines[i + 1] ?? '')) {
+      const rows = [splitTableRow(line)];
+      i += 2;
+      while (i < lines.length && isTableRow(lines[i] ?? '')) {
+        rows.push(splitTableRow(lines[i] ?? ''));
+        i++;
+      }
+      const width = Math.max(...rows.map((r) => r.length));
+      const widths = Array.from({ length: width }, (_, c) => Math.max(1, ...rows.map((r) => (r[c] ?? '').length)));
+      const format = (row: string[]) => widths.map((w, c) => (row[c] ?? '').padEnd(w)).join('  ').trimEnd();
+      out.push(format(rows[0]!), widths.map((w) => '-'.repeat(w)).join('  '), ...rows.slice(1).map(format));
+      continue;
+    }
+    out.push(line);
+    i++;
+  }
+  return out.join('\n');
+}
+
 /** Markdown with formatting characters stripped sensibly, for plain-text targets. */
 export function toPlainText(markdown: string): string {
-  return markdown
+  const stripped = markdown
     .replace(/\r\n/g, '\n')
     .replace(/^```[a-z]*\n?/gm, '')
     .replace(/```/g, '')
@@ -30,13 +57,13 @@ export function toPlainText(markdown: string): string {
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/__(.+?)__/g, '$1')
     .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1')
-    .replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '$1')
+    .replace(/(?<![A-Za-z0-9_])_(?!_)(.+?)(?<!_)_(?![A-Za-z0-9_])/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
-    .replace(/^\s*[-*+]\s+/gm, '- ')
-    .replace(/^\s*\d+\.\s+/gm, (m) => m)
+    .replace(/^[ \t]*[-*+][ \t]+/gm, '- ')
     .replace(/^-{3,}$/gm, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+  return layoutTables(stripped);
 }
 
 export interface ForkJsonExport {

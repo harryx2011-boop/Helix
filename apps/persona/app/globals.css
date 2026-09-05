@@ -182,6 +182,15 @@ body {
 .prose-persona table { width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 0.92em; }
 .prose-persona th, .prose-persona td { border: 1px solid var(--p-line); padding: 6px 10px; text-align: left; }
 .prose-persona th { background: var(--p-code); font-weight: 600; }
+.prose-persona td > p, .prose-persona th > p { margin: 0; }
+.prose-persona td, .prose-persona th { min-width: 3em; vertical-align: top; position: relative; }
+.prose-persona .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--p-blue-soft);
+  pointer-events: none;
+}
 .prose-persona .placeholder {
   font-family: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.86em;

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, PenSquare, Download, Copy, CopyPlus, Link2, Star, Loader2 } from 'lucide-react';
+import { MoreHorizontal, PenSquare, Download, Copy, CopyPlus, Star, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { useFavorites, useForks } from '@/lib/store';
 import type { Role } from '@/lib/catalog';
 import type { PersonaClient } from './types';
-import { copyPrompt, downloadMarkdown, forkPersona, shareRoleLink } from './actions';
+import { copyPrompt, downloadMarkdown, forkPersona } from './actions';
 import { cn } from '@/lib/utils';
 
 /** Grid cards pass a summary-derived persona with no body (kept out of the client bundle); fetch it on demand. */
@@ -111,10 +111,6 @@ export function CardMenu({
         >
           {pending === 'fork' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CopyPlus className="h-3.5 w-3.5" />}
           Duplicate / fork
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => shareRoleLink(role.slug, persona.slug)}>
-          <Link2 className="h-3.5 w-3.5" />
-          Share link
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => toggle(favId)}>

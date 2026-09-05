@@ -17,7 +17,7 @@
 -- find so it does not re-apply its own files at boot.
 --
 -- Regenerate after any migration lands:  node supabase/build-schema.mjs
--- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql | 0001_hosted_identity.sql, 0002_persona.sql, 0003_onboarding.sql, 0004_persona_sync.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql, 0008_browser_role_hardening.sql
+-- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql | 0001_hosted_identity.sql, 0002_persona.sql, 0003_onboarding.sql, 0004_persona_sync.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql, 0008_browser_role_hardening.sql, 0009_persona_share_origin.sql
 
 -- ============================================================================
 -- API migrations
@@ -1240,3 +1240,16 @@ revoke all on uptime_samples from anon, authenticated;
 -- the moment that role changes.
 alter table request_usage  force row level security;
 alter table uptime_samples force row level security;
+
+-- ---- supabase/migrations/0009_persona_share_origin.sql
+-- Persona shares record their origin by slug, the way forks do since 0004.
+--
+-- Persona's catalog is markdown on disk, so a share created from the editor
+-- has no catalog uuid to point `persona_id` at. The recipient's "Fork this"
+-- needs the role and persona slugs plus the source version to build a fork
+-- the sidebar and the version chip can render. All three are nullable so
+-- rows written before this migration still resolve.
+
+alter table persona_shares add column if not exists role_slug      text;
+alter table persona_shares add column if not exists persona_slug   text;
+alter table persona_shares add column if not exists source_version integer;

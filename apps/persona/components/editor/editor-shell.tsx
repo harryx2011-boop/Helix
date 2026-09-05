@@ -5,13 +5,19 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { ArrowLeft, Copy, Check, Files, Trash2 } from 'lucide-react';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
+import { ArrowLeft, Copy, Check, Files, Share2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EditorToolbar } from './toolbar';
 import { ExportMenu } from './export-menu';
 import { PlaceholderRail } from './placeholder-rail';
 import { DeleteForkDialog } from './delete-fork-dialog';
+import { ShareDialog } from './share-dialog';
+import { VersionChip } from './version-chip';
 import { WizardDialog, type WizardTarget } from '@/components/wizard/wizard-dialog';
 import { markdownToHtml, htmlToMarkdown } from '@/lib/fork';
 import { useForks, newForkId } from '@/lib/store';
@@ -27,6 +33,7 @@ export function EditorShell({ forkId }: { forkId: string }) {
   const [saveState, setSaveState] = React.useState<'idle' | 'saving' | 'saved'>('idle');
   const [wizardOpen, setWizardOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [shareOpen, setShareOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -56,7 +63,7 @@ export function EditorShell({ forkId }: { forkId: string }) {
   }, []);
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, Table.configure({ resizable: false }), TableRow, TableHeader, TableCell],
     content: '',
     immediatelyRender: false,
     editorProps: {
@@ -170,6 +177,15 @@ export function EditorShell({ forkId }: { forkId: string }) {
               <span className="w-14 text-right text-xs text-p-ink-3">
                 {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : ''}
               </span>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShareOpen(true)}
+                className="h-8 rounded-pill border-p-line px-3 text-sm text-p-ink hover:bg-p-code"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+                Share
+              </Button>
               <ExportMenu fork={fork} />
               <Button
                 type="button"
@@ -207,6 +223,9 @@ export function EditorShell({ forkId }: { forkId: string }) {
             aria-label="Fork title"
             className="relative mt-4 w-full bg-transparent text-2xl font-semibold leading-tight text-p-ink outline-none placeholder:text-p-ink-3"
           />
+          <div className="relative mt-3">
+            <VersionChip fork={fork} />
+          </div>
         </header>
 
         <main className="mx-auto max-w-3xl px-6 py-8">
@@ -222,6 +241,7 @@ export function EditorShell({ forkId }: { forkId: string }) {
       <PlaceholderRail remaining={remaining} total={placeholders.length} onFill={() => setWizardOpen(true)} />
 
       <WizardDialog target={wizardOpen ? wizardTarget : null} open={wizardOpen} onOpenChange={setWizardOpen} />
+      <ShareDialog fork={fork} open={shareOpen} onOpenChange={setShareOpen} />
       <DeleteForkDialog
         open={deleteOpen}
         title={fork.title}

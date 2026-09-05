@@ -5,6 +5,7 @@ import type { Editor } from '@tiptap/react';
 import {
   Bold,
   Code,
+  Columns3,
   Heading1,
   Heading2,
   Heading3,
@@ -12,6 +13,9 @@ import {
   List,
   ListOrdered,
   Redo2,
+  Rows3,
+  Table,
+  Trash2,
   Undo2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -42,7 +46,7 @@ function ToolbarButton({ label, active, disabled, onClick, children }: ToolbarBu
   );
 }
 
-/** Compact toolbar for the editor floor: bold, italic, headings, lists, code, undo/redo. */
+/** Compact toolbar: bold, italic, headings, lists, code block, table, undo/redo. Row and column actions appear only inside a table. */
 export function EditorToolbar({ editor }: { editor: Editor | null }) {
   if (!editor) return null;
 
@@ -106,6 +110,27 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
       >
         <Code className="h-4 w-4" />
       </ToolbarButton>
+      <div className="mx-1 h-5 w-px bg-p-line" />
+      {editor.isActive('table') ? (
+        <>
+          <ToolbarButton label="Add row below" onClick={() => editor.chain().focus().addRowAfter().run()}>
+            <Rows3 className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton label="Add column after" onClick={() => editor.chain().focus().addColumnAfter().run()}>
+            <Columns3 className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton label="Delete table" onClick={() => editor.chain().focus().deleteTable().run()}>
+            <Trash2 className="h-4 w-4" />
+          </ToolbarButton>
+        </>
+      ) : (
+        <ToolbarButton
+          label="Insert table"
+          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        >
+          <Table className="h-4 w-4" />
+        </ToolbarButton>
+      )}
       <div className="mx-1 h-5 w-px bg-p-line" />
       <ToolbarButton label="Undo" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}>
         <Undo2 className="h-4 w-4" />

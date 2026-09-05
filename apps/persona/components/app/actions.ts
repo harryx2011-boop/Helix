@@ -25,15 +25,6 @@ export function downloadMarkdown(persona: Pick<PersonaClient, 'name' | 'slug' | 
   toast.success('Downloaded');
 }
 
-export function shareRoleLink(roleSlug: string, personaSlug?: string) {
-  const url = new URL(`/roles/${roleSlug}`, window.location.origin);
-  if (personaSlug) url.searchParams.set('persona', personaSlug);
-  navigator.clipboard
-    .writeText(url.toString())
-    .then(() => toast.success('Link copied'))
-    .catch(() => toast.error('Could not copy link'));
-}
-
 export function forkPersona(role: Role, persona: PersonaClient): Fork {
   const now = new Date().toISOString();
   return {

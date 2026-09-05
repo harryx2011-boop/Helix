@@ -3,11 +3,15 @@
 import * as React from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from 'sonner';
-import { useSettings, STORE_KEYS } from '@/lib/store';
+import { useSettings, scrubLegacySettings, STORE_KEYS } from '@/lib/store';
 
 /** Applies the stored theme to <html> and mounts the toaster. */
 export function Providers({ children }: { children: React.ReactNode }) {
   const { settings } = useSettings();
+
+  React.useEffect(() => {
+    scrubLegacySettings();
+  }, []);
 
   React.useEffect(() => {
     const hasStoredSettings = window.localStorage.getItem(STORE_KEYS.settings) !== null;

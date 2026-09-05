@@ -23,7 +23,6 @@ export interface Fork {
 
 export interface Settings {
   theme: 'light' | 'dark';
-  apiKey: string;
   sidebarWidth: number;
   sidebarCollapsed: boolean;
 }
@@ -35,7 +34,7 @@ const KEYS = {
   settings: 'persona.settings',
 } as const;
 
-const DEFAULT_SETTINGS: Settings = { theme: 'light', apiKey: '', sidebarWidth: 288, sidebarCollapsed: false };
+const DEFAULT_SETTINGS: Settings = { theme: 'light', sidebarWidth: 288, sidebarCollapsed: false };
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
@@ -155,6 +154,14 @@ export function useTemplateValues() {
   const setValue = React.useCallback((key: string, value: string) => setValues((prev) => ({ ...prev, [key]: value })), [setValues]);
   const clear = React.useCallback(() => setValues({}), [setValues]);
   return { values, setValue, setValues, clear };
+}
+
+/** The 1.2.x Settings tab stored a provider key nothing ever read; drop it from any browser that still holds one. */
+export function scrubLegacySettings(): void {
+  const stored = read<Record<string, unknown>>(KEYS.settings, {});
+  if (!('apiKey' in stored)) return;
+  const { apiKey: _dropped, ...rest } = stored;
+  write(KEYS.settings, rest);
 }
 
 export function useSettings() {

@@ -9,3 +9,4 @@ next-env.d.ts
 .vercel
 # This is a pnpm workspace; npm regenerates this locally but it must not be committed.
 package-lock.json
+.screenshots

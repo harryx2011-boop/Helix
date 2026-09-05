@@ -1,0 +1,3015 @@
+[
+  {
+    "name": "add_module_item",
+    "group": "Modules",
+    "module": "modules",
+    "description": "Add an item to a module.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "module_id",
+        "required": true,
+        "description": "Canvas module id to add the item to."
+      },
+      {
+        "name": "item_type",
+        "required": true,
+        "description": "One of File, Page, Discussion, Assignment, Quiz, SubHeader, ExternalUrl, ExternalTool."
+      },
+      {
+        "name": "content_id",
+        "required": false,
+        "description": "Id of the linked content; required for File, Discussion, Assignment, Quiz."
+      },
+      {
+        "name": "title",
+        "required": false,
+        "description": "Item title; required for SubHeader, optional label override otherwise."
+      },
+      {
+        "name": "position",
+        "required": false,
+        "description": "Position within the module (1-indexed)."
+      },
+      {
+        "name": "indent",
+        "required": false,
+        "description": "Visual indent level (0-based)."
+      },
+      {
+        "name": "page_url",
+        "required": false,
+        "description": "Page url slug; required for Page items."
+      },
+      {
+        "name": "external_url",
+        "required": false,
+        "description": "Target URL; required for ExternalUrl and ExternalTool items."
+      },
+      {
+        "name": "new_tab",
+        "required": false,
+        "description": "Open ExternalUrl/ExternalTool items in a new tab."
+      },
+      {
+        "name": "completion_requirement_type",
+        "required": false,
+        "description": "One of must_view, must_submit, must_contribute, min_score, must_mark_done."
+      },
+      {
+        "name": "completion_requirement_min_score",
+        "required": false,
+        "description": "Minimum score, required when completion_requirement_type is min_score."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to add the item; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "analyze_peer_review_quality",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "Score each peer review's comment quality on a 1-5 scale with heuristic flags.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "min_words",
+        "required": false,
+        "description": "Minimum combined word count before a review is flagged \"too short\"."
+      }
+    ]
+  },
+  {
+    "name": "assign_peer_review",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "Manually assign a peer review: one reviewer to one reviewee's submission.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "reviewer_id",
+        "required": true,
+        "description": "Canvas user id of the student who will review."
+      },
+      {
+        "name": "reviewee_id",
+        "required": true,
+        "description": "Canvas user id of the student whose submission is reviewed."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually create the assignment."
+      }
+    ]
+  },
+  {
+    "name": "associate_rubric",
+    "group": "Rubrics",
+    "module": "rubrics",
+    "description": "Associate an existing rubric with an assignment.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "rubric_id",
+        "required": true,
+        "description": "Id of the rubric to associate."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Id of the assignment to associate it with."
+      },
+      {
+        "name": "use_for_grading",
+        "required": false,
+        "description": "Use the rubric for grade calculation."
+      },
+      {
+        "name": "purpose",
+        "required": false,
+        "description": "Association purpose: \"grading\" or \"bookmark\"."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually create the association."
+      }
+    ]
+  },
+  {
+    "name": "bulk_grade_submissions",
+    "group": "Assignments & grading",
+    "module": "assignments",
+    "description": "Grade multiple submissions for an assignment concurrently.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "grades",
+        "required": true,
+        "description": "Maps user_id (as string) to either a grade value (e.g. \"85\" or \"A\"),\nor a dict {\"grade\": ..., \"comment\": \"...\"}."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually submit the grades."
+      }
+    ]
+  },
+  {
+    "name": "bulk_update_pages",
+    "group": "Pages",
+    "module": "pages",
+    "description": "Apply the same settings change to multiple pages at once.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "pages",
+        "required": true,
+        "description": "List of page url slugs or numeric page ids, up to 50."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Publish or unpublish all listed pages."
+      },
+      {
+        "name": "editing_roles",
+        "required": false,
+        "description": "Set editing roles on all listed pages."
+      },
+      {
+        "name": "notify_of_update",
+        "required": false,
+        "description": "Notify students of the change on all listed pages."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to apply the change; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "check_enrollment",
+    "group": "People & privacy",
+    "module": "people",
+    "description": "Check whether a specific login id is enrolled in a course. Never returns the roster.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "login_id",
+        "required": true,
+        "description": "Campus login id, SIS user id, or email to check. Matched exactly."
+      },
+      {
+        "name": "role",
+        "required": false,
+        "description": "Restrict the match to one enrollment type: student, teacher, ta, observer, or designer."
+      },
+      {
+        "name": "active_only",
+        "required": false,
+        "description": "Only count active enrollments."
+      }
+    ]
+  },
+  {
+    "name": "clear_cache",
+    "group": "Courses",
+    "module": "identity",
+    "description": "Clear the course-code cache, forcing a fresh fetch on the next course lookup.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": false,
+    "params": []
+  },
+  {
+    "name": "comment_on_submission",
+    "group": "Student",
+    "module": "student",
+    "description": "Add a comment to your own submission.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "comment",
+        "required": true,
+        "description": "The comment text."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to post the comment; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "create_announcement",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Post a course announcement.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "title",
+        "required": true,
+        "description": "Announcement title."
+      },
+      {
+        "name": "message",
+        "required": true,
+        "description": "Announcement content."
+      },
+      {
+        "name": "delayed_post_at",
+        "required": false,
+        "description": "ISO 8601 datetime to schedule posting."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Set true to actually post; without it, only a preview is returned."
+      }
+    ]
+  },
+  {
+    "name": "create_assignment",
+    "group": "Assignments & grading",
+    "module": "assignments",
+    "description": "Create a new assignment in a course.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "name",
+        "required": true,
+        "description": "Assignment name/title."
+      },
+      {
+        "name": "description",
+        "required": false,
+        "description": "HTML content for the assignment body."
+      },
+      {
+        "name": "submission_types",
+        "required": false,
+        "description": "Comma-separated list, e.g. \"online_text_entry,online_upload\"."
+      },
+      {
+        "name": "due_at",
+        "required": false,
+        "description": "Due date in ISO 8601 format."
+      },
+      {
+        "name": "points_possible",
+        "required": false,
+        "description": "Maximum points for the assignment."
+      },
+      {
+        "name": "grading_type",
+        "required": false,
+        "description": "One of: points, percent, letter_grade, gpa_scale, pass_fail, not_graded."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Whether to publish immediately (default: false for safety)."
+      },
+      {
+        "name": "peer_reviews",
+        "required": false,
+        "description": "Enable peer reviews."
+      },
+      {
+        "name": "automatic_peer_reviews",
+        "required": false,
+        "description": "Automatically assign peer reviews when enabled."
+      },
+      {
+        "name": "unlock_at",
+        "required": false,
+        "description": "When the assignment becomes available (ISO 8601 format)."
+      },
+      {
+        "name": "lock_at",
+        "required": false,
+        "description": "When the assignment locks (ISO 8601 format)."
+      },
+      {
+        "name": "assignment_group_id",
+        "required": false,
+        "description": "Id of the assignment group to place this in."
+      },
+      {
+        "name": "allowed_extensions",
+        "required": false,
+        "description": "Comma-separated file extensions for online_upload, e.g. \"pdf,docx\"."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually create the assignment."
+      }
+    ]
+  },
+  {
+    "name": "create_content_migration",
+    "group": "Course copy",
+    "module": "migrations",
+    "description": "Copy all content from one course into another via a Canvas content migration.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "target_course",
+        "required": true,
+        "description": "Course id, code, name fragment, or \"sis_course_id:XXX\" to copy content into."
+      },
+      {
+        "name": "source_course",
+        "required": true,
+        "description": "Course id, code, name fragment, or \"sis_course_id:XXX\" to copy content from."
+      },
+      {
+        "name": "old_start_date",
+        "required": false,
+        "description": "Original course start date; provide all four date fields or none."
+      },
+      {
+        "name": "old_end_date",
+        "required": false,
+        "description": "Original course end date; provide all four date fields or none."
+      },
+      {
+        "name": "new_start_date",
+        "required": false,
+        "description": "New course start date; provide all four date fields or none."
+      },
+      {
+        "name": "new_end_date",
+        "required": false,
+        "description": "New course end date; provide all four date fields or none."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to start the migration; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "create_discussion_topic",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Create a new discussion topic in a course.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "title",
+        "required": true,
+        "description": "Discussion topic title."
+      },
+      {
+        "name": "message",
+        "required": true,
+        "description": "Discussion topic body content."
+      },
+      {
+        "name": "delayed_post_at",
+        "required": false,
+        "description": "ISO 8601 datetime to schedule posting."
+      },
+      {
+        "name": "lock_at",
+        "required": false,
+        "description": "ISO 8601 datetime to auto-lock the discussion."
+      },
+      {
+        "name": "require_initial_post",
+        "required": false,
+        "description": "Students must post before seeing other replies."
+      },
+      {
+        "name": "pinned",
+        "required": false,
+        "description": "Pin this discussion topic."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Publish the topic immediately."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Set true to actually create; without it, only a preview is returned."
+      }
+    ]
+  },
+  {
+    "name": "create_module",
+    "group": "Modules",
+    "module": "modules",
+    "description": "Create a new module in a course.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "name",
+        "required": true,
+        "description": "Module name."
+      },
+      {
+        "name": "position",
+        "required": false,
+        "description": "Position in the module list (1-indexed)."
+      },
+      {
+        "name": "unlock_at",
+        "required": false,
+        "description": "ISO 8601 timestamp when the module unlocks."
+      },
+      {
+        "name": "require_sequential_progress",
+        "required": false,
+        "description": "Require items to be completed in order."
+      },
+      {
+        "name": "prerequisite_module_ids",
+        "required": false,
+        "description": "Module ids that must be completed first."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Whether the module should be published."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to create the module; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "create_page",
+    "group": "Pages",
+    "module": "pages",
+    "description": "Create a new page in a course.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "title",
+        "required": true,
+        "description": "Page title."
+      },
+      {
+        "name": "body",
+        "required": true,
+        "description": "Page body as HTML. Plain text is accepted and wrapped in a paragraph."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Whether the page should be published."
+      },
+      {
+        "name": "front_page",
+        "required": false,
+        "description": "Whether to set this page as the course front page."
+      },
+      {
+        "name": "editing_roles",
+        "required": false,
+        "description": "Who can edit the page, e.g. \"teachers\", \"students\", \"public\"."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to create the page; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "create_rubric",
+    "group": "Rubrics",
+    "module": "rubrics",
+    "description": "Create a rubric in a course, optionally associating it with an assignment.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "title",
+        "required": true,
+        "description": "Rubric title."
+      },
+      {
+        "name": "criteria",
+        "required": true,
+        "description": "List of {\"description\": str, \"points\": number, \"long_description\"?: str,\n\"ratings\"?: [{\"description\", \"points\", \"long_description\"?}]}. When ratings\nare omitted, Full Marks / No Marks ratings are generated."
+      },
+      {
+        "name": "assignment_id",
+        "required": false,
+        "description": "Optional assignment id to immediately associate the rubric with."
+      },
+      {
+        "name": "use_for_grading",
+        "required": false,
+        "description": "When associating with an assignment, use the rubric for grade calculation."
+      },
+      {
+        "name": "reusable",
+        "required": false,
+        "description": "Make the rubric reusable across courses (default: true)."
+      },
+      {
+        "name": "free_form_criterion_comments",
+        "required": false,
+        "description": "Allow free-form comments per criterion instead of rating selection."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually create the rubric."
+      }
+    ]
+  },
+  {
+    "name": "create_rubric_from_csv",
+    "group": "Rubrics",
+    "module": "rubrics",
+    "description": "Create one or more rubrics in a course from a CSV string.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "csv_content",
+        "required": true,
+        "description": "The CSV file content as a string."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually create the rubrics."
+      }
+    ]
+  },
+  {
+    "name": "delete_announcement",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Delete a single announcement.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "announcement_id",
+        "required": true,
+        "description": "Announcement (discussion topic) id to delete."
+      },
+      {
+        "name": "require_title_match",
+        "required": false,
+        "description": "Only delete if the announcement's title equals this string exactly."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Set true to actually delete; without it, only a preview is returned."
+      }
+    ]
+  },
+  {
+    "name": "delete_announcements",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Delete multiple announcements by id.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "announcement_ids",
+        "required": true,
+        "description": "Announcement ids to delete, up to 50."
+      },
+      {
+        "name": "stop_on_error",
+        "required": false,
+        "description": "Stop at the first failure instead of continuing with the rest."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Set true to actually delete; without it, only a preview is returned."
+      }
+    ]
+  },
+  {
+    "name": "delete_announcements_matching",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Delete announcements matching title and/or date criteria.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "title_contains",
+        "required": false,
+        "description": "Only match announcements whose title contains this text (case-insensitive)."
+      },
+      {
+        "name": "posted_before",
+        "required": false,
+        "description": "ISO 8601 datetime; only match announcements posted before this."
+      },
+      {
+        "name": "posted_after",
+        "required": false,
+        "description": "ISO 8601 datetime; only match announcements posted after this."
+      },
+      {
+        "name": "limit",
+        "required": false,
+        "description": "Maximum number of matches to delete in one call."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Set true to actually delete; without it, only a preview is returned."
+      }
+    ]
+  },
+  {
+    "name": "delete_module",
+    "group": "Modules",
+    "module": "modules",
+    "description": "Delete a module from a course. The module's content items are not deleted.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "module_id",
+        "required": true,
+        "description": "Canvas module id."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to delete; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "delete_module_item",
+    "group": "Modules",
+    "module": "modules",
+    "description": "Remove an item from a module. The underlying content is not deleted.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "module_id",
+        "required": true,
+        "description": "Canvas module id containing the item."
+      },
+      {
+        "name": "item_id",
+        "required": true,
+        "description": "Canvas module item id."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to remove the item; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "delete_page",
+    "group": "Pages",
+    "module": "pages",
+    "description": "Delete a page from a course.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "page",
+        "required": true,
+        "description": "The page's url slug or numeric page id."
+      },
+      {
+        "name": "require_title_match",
+        "required": false,
+        "description": "If given, the delete is refused unless it exactly matches the page's title."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to delete; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "download_file",
+    "group": "Files",
+    "module": "files",
+    "description": "Download a Canvas file to the local filesystem.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "file_id",
+        "required": true,
+        "description": "Canvas file id."
+      },
+      {
+        "name": "save_directory",
+        "required": false,
+        "description": "Local directory to save into. Defaults to the configured\ndownload directory, or the system temp directory."
+      }
+    ]
+  },
+  {
+    "name": "edit_page_content",
+    "group": "Pages",
+    "module": "pages",
+    "description": "Replace a page's body content.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "page",
+        "required": true,
+        "description": "The page's url slug or numeric page id."
+      },
+      {
+        "name": "body",
+        "required": true,
+        "description": "New page body as HTML. Plain text is accepted and wrapped in a paragraph."
+      },
+      {
+        "name": "title",
+        "required": false,
+        "description": "Optionally rename the page at the same time."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to save the change; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "export_anonymization_map",
+    "group": "People & privacy",
+    "module": "people",
+    "description": "Write a local CSV mapping each enrolled student's real name and id to their anonymous id.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "save_directory",
+        "required": false,
+        "description": "Local directory to save into. Defaults to the configured\ndownload directory, or the system temp directory."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to write the file; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "extract_peer_review_dataset",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "Export peer review data as rows: review id, reviewer, reviewee, state, comment, word count, created_at.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "output_format",
+        "required": false,
+        "description": "\"csv\" or \"json\"."
+      },
+      {
+        "name": "anonymize",
+        "required": false,
+        "description": "Replace student names with stable anonymous ids."
+      },
+      {
+        "name": "save_locally",
+        "required": false,
+        "description": "Save the dataset to disk instead of returning it inline.\nInline output is capped at 200 rows regardless of this flag."
+      },
+      {
+        "name": "filename",
+        "required": false,
+        "description": "Custom filename when saving."
+      }
+    ]
+  },
+  {
+    "name": "fetch_ufixit_report",
+    "group": "Accessibility",
+    "module": "accessibility",
+    "description": "Find a course page whose title mentions \"ufixit\" and return its text plus any embedded JSON.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "page_title",
+        "required": false,
+        "description": "Exact or partial page title to look for instead of the default \"ufixit\" match."
+      }
+    ]
+  },
+  {
+    "name": "fix_accessibility_issues",
+    "group": "Accessibility",
+    "module": "accessibility",
+    "description": "Apply safe automatic rewrites for a subset of accessibility issues.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "fix_types",
+        "required": false,
+        "description": "Comma-separated fixes to apply: alt_text, heading_order, link_text, table_headers."
+      },
+      {
+        "name": "content_types",
+        "required": false,
+        "description": "Comma-separated types to fix: pages, assignments, discussions."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to write the changes; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "format_accessibility_summary",
+    "group": "Accessibility",
+    "module": "accessibility",
+    "description": "Format normalized violations into a summary grouped by severity and type, with top priorities.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "violations_json",
+        "required": true,
+        "description": "Same JSON shape as parse_ufixit_violations accepts."
+      }
+    ]
+  },
+  {
+    "name": "generate_peer_review_feedback_report",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "Generate an instructor-facing report on the feedback students received.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "report_type",
+        "required": false,
+        "description": "\"summary\" (aggregate stats), \"detailed\" (per-review comment table),\nor \"student\" (one section per reviewee with all feedback they received)."
+      },
+      {
+        "name": "include_student_names",
+        "required": false,
+        "description": "Show resolved names instead of raw user ids."
+      }
+    ]
+  },
+  {
+    "name": "generate_peer_review_report",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "Generate a composed Markdown report: completion, quality, follow-ups, action items.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "include_student_details",
+        "required": false,
+        "description": "Include the per-student completion breakdown."
+      },
+      {
+        "name": "save_to_file",
+        "required": false,
+        "description": "Save the report to disk instead of only returning it inline."
+      },
+      {
+        "name": "filename",
+        "required": false,
+        "description": "Custom filename when saving; defaults to a name derived from the assignment."
+      }
+    ]
+  },
+  {
+    "name": "get_assignment",
+    "group": "Assignments & grading",
+    "module": "assignments",
+    "description": "Get full details for one assignment, including description and rubric summary.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      }
+    ]
+  },
+  {
+    "name": "get_assignment_analytics",
+    "group": "Assignments & grading",
+    "module": "assignments",
+    "description": "Get performance analytics for an assignment: completion, grade distribution, late/missing counts.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      }
+    ]
+  },
+  {
+    "name": "get_cache_status",
+    "group": "Courses",
+    "module": "identity",
+    "description": "Report the course-code cache's size, age, and TTL for diagnostics.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": []
+  },
+  {
+    "name": "get_content_migration_status",
+    "group": "Course copy",
+    "module": "migrations",
+    "description": "Check the status of a content migration and list any migration issues.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"\nthat the migration was run against."
+      },
+      {
+        "name": "migration_id",
+        "required": true,
+        "description": "Canvas content migration id."
+      }
+    ]
+  },
+  {
+    "name": "get_conversation",
+    "group": "Messaging",
+    "module": "messaging",
+    "description": "Get a full conversation thread with all its messages.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "conversation_id",
+        "required": true,
+        "description": "Canvas conversation id."
+      },
+      {
+        "name": "auto_mark_read",
+        "required": false,
+        "description": "Mark the conversation as read when viewing it."
+      }
+    ]
+  },
+  {
+    "name": "get_course",
+    "group": "Courses",
+    "module": "identity",
+    "description": "Get course details: identity, term, dates, your role, grade, syllabus preview.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      }
+    ]
+  },
+  {
+    "name": "get_course_overview",
+    "group": "Courses",
+    "module": "identity",
+    "description": "Get a one-call overview of a course: syllabus preview, modules, and pages.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "include_pages",
+        "required": false,
+        "description": "Include the list of course pages."
+      },
+      {
+        "name": "include_modules",
+        "required": false,
+        "description": "Include the module list with item counts."
+      },
+      {
+        "name": "include_syllabus",
+        "required": false,
+        "description": "Include a syllabus preview."
+      }
+    ]
+  },
+  {
+    "name": "get_course_structure",
+    "group": "Courses",
+    "module": "identity",
+    "description": "Get the full module -> item tree for a course.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "include_unpublished",
+        "required": false,
+        "description": "Request unpublished modules/items too (ignored where Canvas hides them)."
+      }
+    ]
+  },
+  {
+    "name": "get_discussion_entry",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Get one discussion entry in full, optionally with its replies.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "topic_id",
+        "required": true,
+        "description": "Discussion topic id."
+      },
+      {
+        "name": "entry_id",
+        "required": true,
+        "description": "Discussion entry id."
+      },
+      {
+        "name": "include_replies",
+        "required": false,
+        "description": "Fetch and include replies to this entry."
+      }
+    ]
+  },
+  {
+    "name": "get_discussion_thread",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Get the whole discussion as one nested conversation tree.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "topic_id",
+        "required": true,
+        "description": "Discussion topic id."
+      },
+      {
+        "name": "include_replies",
+        "required": false,
+        "description": "Include nested replies; if False, only top-level entries are shown."
+      }
+    ]
+  },
+  {
+    "name": "get_discussion_topic",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Get full details for one discussion topic or announcement.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "topic_id",
+        "required": true,
+        "description": "Discussion topic id."
+      }
+    ]
+  },
+  {
+    "name": "get_enrollments",
+    "group": "Courses",
+    "module": "identity",
+    "description": "List the courses you are enrolled in, with your role in each.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "include_concluded",
+        "required": false,
+        "description": "Also include concluded/completed enrollments."
+      }
+    ]
+  },
+  {
+    "name": "get_front_page",
+    "group": "Pages",
+    "module": "pages",
+    "description": "Get the course's front page: title and full body text.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      }
+    ]
+  },
+  {
+    "name": "get_grades",
+    "group": "Student",
+    "module": "student",
+    "description": "Show your current grades.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": false,
+        "description": "Restrict to one course (id, code, name fragment, or\n\"sis_course_id:XXX\"). Omit to summarize every active course."
+      }
+    ]
+  },
+  {
+    "name": "get_page",
+    "group": "Pages",
+    "module": "pages",
+    "description": "Get one page's metadata and a short body preview.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "page",
+        "required": true,
+        "description": "The page's url slug or numeric page id."
+      }
+    ]
+  },
+  {
+    "name": "get_page_content",
+    "group": "Pages",
+    "module": "pages",
+    "description": "Get a page's full body as text, untruncated unless max_chars is given.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "page",
+        "required": true,
+        "description": "The page's url slug or numeric page id."
+      },
+      {
+        "name": "max_chars",
+        "required": false,
+        "description": "Optional cap on returned characters; truncation is marked explicitly."
+      }
+    ]
+  },
+  {
+    "name": "get_peer_review_assignments",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "Show who reviews whom for an assignment, with completion state.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "include_names",
+        "required": false,
+        "description": "Resolve reviewer/reviewee names instead of raw ids."
+      },
+      {
+        "name": "include_submission_details",
+        "required": false,
+        "description": "Include the reviewee's submitted-at time and late flag."
+      }
+    ]
+  },
+  {
+    "name": "get_peer_review_comments",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "List every comment an assessor left on a reviewee's submission for an assignment.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "include_reviewer_info",
+        "required": false,
+        "description": "Show the reviewer's name."
+      },
+      {
+        "name": "include_reviewee_info",
+        "required": false,
+        "description": "Show the reviewee's name."
+      }
+    ]
+  },
+  {
+    "name": "get_peer_review_completion_analytics",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "Get completion analytics for peer reviews on an assignment.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "include_student_details",
+        "required": false,
+        "description": "Include a per-student assigned/completed/pending table."
+      }
+    ]
+  },
+  {
+    "name": "get_peer_review_followup_list",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "List students with pending peer reviews, ranked by follow-up priority.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "priority_filter",
+        "required": false,
+        "description": "Restrict to one priority level: high, medium, or low."
+      },
+      {
+        "name": "days_threshold",
+        "required": false,
+        "description": "Days past the due date before an all-pending reviewer is high priority."
+      }
+    ]
+  },
+  {
+    "name": "get_pending_peer_reviews",
+    "group": "Student",
+    "module": "student",
+    "description": "List peer reviews assigned to you that you have not completed yet.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": false,
+        "description": "Restrict to one course (id, code, name fragment, or\n\"sis_course_id:XXX\"). Omit to scan every active course."
+      },
+      {
+        "name": "assignment_id",
+        "required": false,
+        "description": "Restrict to one assignment within the course.\nRequires course to be given."
+      }
+    ]
+  },
+  {
+    "name": "get_privacy_status",
+    "group": "People & privacy",
+    "module": "people",
+    "description": "Report the current student-anonymization configuration.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": []
+  },
+  {
+    "name": "get_profile",
+    "group": "Courses",
+    "module": "identity",
+    "description": "Get your own Canvas identity.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": []
+  },
+  {
+    "name": "get_rubric",
+    "group": "Rubrics",
+    "module": "rubrics",
+    "description": "Get a rubric's criteria, ratings, and points. Give exactly one of rubric_id or assignment_id.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "rubric_id",
+        "required": false,
+        "description": "Canvas rubric id for a direct lookup."
+      },
+      {
+        "name": "assignment_id",
+        "required": false,
+        "description": "Canvas assignment id; the rubric attached to it is returned."
+      }
+    ]
+  },
+  {
+    "name": "get_rubric_assessment",
+    "group": "Rubrics",
+    "module": "rubrics",
+    "description": "Get a submission's rubric assessment: per-criterion points, rating, and comments.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "user_id",
+        "required": true,
+        "description": "Canvas user id of the student."
+      }
+    ]
+  },
+  {
+    "name": "get_student_analytics",
+    "group": "Assignments & grading",
+    "module": "assignments",
+    "description": "Get performance analytics for one student, or a course-wide summary if no student is given.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "student_id",
+        "required": false,
+        "description": "Canvas user id of the student. Omit for a course-wide summary."
+      }
+    ]
+  },
+  {
+    "name": "get_submission",
+    "group": "Student",
+    "module": "student",
+    "description": "Show your submission for one assignment: status, score, attempts, comments, rubric.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      }
+    ]
+  },
+  {
+    "name": "get_submission_status",
+    "group": "Student",
+    "module": "student",
+    "description": "Show submission status per assignment across your active courses.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": false,
+        "description": "Restrict to one course (id, code, name fragment, or\n\"sis_course_id:XXX\"). Omit to cover every active course."
+      }
+    ]
+  },
+  {
+    "name": "get_syllabus",
+    "group": "Courses",
+    "module": "identity",
+    "description": "Get the full syllabus text for a course, untruncated unless max_chars is given.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "max_chars",
+        "required": false,
+        "description": "Optional cap on returned characters; truncation is marked explicitly."
+      }
+    ]
+  },
+  {
+    "name": "get_todo",
+    "group": "Student",
+    "module": "student",
+    "description": "List your Canvas to-do items, including ungraded quizzes.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": []
+  },
+  {
+    "name": "get_unread_count",
+    "group": "Messaging",
+    "module": "messaging",
+    "description": "Get the number of unread conversations in your Canvas inbox.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": []
+  },
+  {
+    "name": "get_upcoming_assignments",
+    "group": "Student",
+    "module": "student",
+    "description": "List everything due across all your courses in the next N days.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "days",
+        "required": false,
+        "description": "Number of days ahead to look, starting today."
+      }
+    ]
+  },
+  {
+    "name": "grade_with_rubric",
+    "group": "Assignments & grading",
+    "module": "assignments",
+    "description": "Grade a single submission using its assignment's rubric.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "user_id",
+        "required": true,
+        "description": "Canvas user id of the student being graded."
+      },
+      {
+        "name": "rubric_assessment",
+        "required": true,
+        "description": "Maps criterion_id to {\"points\": n, \"comments\": \"...\"}, or a bare number."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually submit the grade."
+      }
+    ]
+  },
+  {
+    "name": "identify_problematic_peer_reviews",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "Flag peer reviews needing instructor attention: low quality, empty, duplicated, or comment-free.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      }
+    ]
+  },
+  {
+    "name": "list_announcements",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "List announcements from one course or all active courses.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": false,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\". Omit to search all active courses."
+      },
+      {
+        "name": "days",
+        "required": false,
+        "description": "How many days back to search."
+      }
+    ]
+  },
+  {
+    "name": "list_assignments",
+    "group": "Assignments & grading",
+    "module": "assignments",
+    "description": "List assignments in a course, with your submission status.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "bucket",
+        "required": false,
+        "description": "Optional Canvas bucket filter: past, overdue, undated, ungraded,\nunsubmitted, upcoming, or future."
+      }
+    ]
+  },
+  {
+    "name": "list_conversations",
+    "group": "Messaging",
+    "module": "messaging",
+    "description": "List your Canvas inbox conversations, newest first.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "scope",
+        "required": false,
+        "description": "Optional filter: unread, starred, or archived. Omit for all conversations."
+      },
+      {
+        "name": "course",
+        "required": false,
+        "description": "Optional course id, code, or name to restrict conversations to."
+      },
+      {
+        "name": "include_participants",
+        "required": false,
+        "description": "Include participant names in the table."
+      }
+    ]
+  },
+  {
+    "name": "list_courses",
+    "group": "Courses",
+    "module": "identity",
+    "description": "List your active courses with current score and grade.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": []
+  },
+  {
+    "name": "list_discussion_entries",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "List the top-level posts in a discussion topic.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "topic_id",
+        "required": true,
+        "description": "Discussion topic id."
+      }
+    ]
+  },
+  {
+    "name": "list_discussion_topics",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "List discussion topics in a course.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "include_announcements",
+        "required": false,
+        "description": "Also include the course's announcements."
+      }
+    ]
+  },
+  {
+    "name": "list_files",
+    "group": "Files",
+    "module": "files",
+    "description": "List files in a Canvas course.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "search_term",
+        "required": false,
+        "description": "Filter files whose name contains this text."
+      },
+      {
+        "name": "sort",
+        "required": false,
+        "description": "Sort field: name, size, created_at, updated_at, or content_type."
+      },
+      {
+        "name": "order",
+        "required": false,
+        "description": "Sort order: asc or desc."
+      }
+    ]
+  },
+  {
+    "name": "list_groups",
+    "group": "People & privacy",
+    "module": "people",
+    "description": "List a course's groups with their category, member count, and members.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      }
+    ]
+  },
+  {
+    "name": "list_module_items",
+    "group": "Modules",
+    "module": "modules",
+    "description": "List the items inside one module.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "module_id",
+        "required": true,
+        "description": "Canvas module id."
+      },
+      {
+        "name": "include_content_details",
+        "required": false,
+        "description": "Also fetch due date and points possible per item."
+      }
+    ]
+  },
+  {
+    "name": "list_modules",
+    "group": "Modules",
+    "module": "modules",
+    "description": "List a course's modules with state, publish status, and item counts.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "include_items",
+        "required": false,
+        "description": "Also list each module's items nested beneath it."
+      },
+      {
+        "name": "search_term",
+        "required": false,
+        "description": "Filter modules by name."
+      }
+    ]
+  },
+  {
+    "name": "list_pages",
+    "group": "Pages",
+    "module": "pages",
+    "description": "List a course's pages.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "sort",
+        "required": false,
+        "description": "Sort field: title, created_at, or updated_at."
+      },
+      {
+        "name": "order",
+        "required": false,
+        "description": "Sort order: asc or desc."
+      },
+      {
+        "name": "search_term",
+        "required": false,
+        "description": "Filter pages by title."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Restrict to published (true) or unpublished (false) pages."
+      }
+    ]
+  },
+  {
+    "name": "list_peer_reviews",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "List all peer review assignments for an assignment.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      }
+    ]
+  },
+  {
+    "name": "list_rubrics",
+    "group": "Rubrics",
+    "module": "rubrics",
+    "description": "List all rubrics in a course.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "include_criteria",
+        "required": false,
+        "description": "Also show each rubric's criteria as a nested list."
+      }
+    ]
+  },
+  {
+    "name": "list_submissions",
+    "group": "Assignments & grading",
+    "module": "assignments",
+    "description": "List student submissions for an assignment.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "status",
+        "required": false,
+        "description": "Optional filter: submitted, unsubmitted, graded, late, or missing."
+      }
+    ]
+  },
+  {
+    "name": "list_users",
+    "group": "People & privacy",
+    "module": "people",
+    "description": "List users enrolled in a course, with role, state, and section.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "role",
+        "required": false,
+        "description": "Restrict to one enrollment type: student, teacher, ta, observer, or designer."
+      }
+    ]
+  },
+  {
+    "name": "mark_conversations_read",
+    "group": "Messaging",
+    "module": "messaging",
+    "description": "Mark one or more conversations as read.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "conversation_ids",
+        "required": true,
+        "description": "Conversation ids to mark as read."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually mark them read."
+      }
+    ]
+  },
+  {
+    "name": "mark_module_item_done",
+    "group": "Student",
+    "module": "student",
+    "description": "Mark a module item as done for yourself.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "module_id",
+        "required": true,
+        "description": "Canvas module id."
+      },
+      {
+        "name": "item_id",
+        "required": true,
+        "description": "Canvas module item id."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to mark it done; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "message_peer_reviewers",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "Send Canvas inbox messages to students about incomplete peer reviews.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "recipient_ids",
+        "required": true,
+        "description": "Canvas user ids to message."
+      },
+      {
+        "name": "custom_message",
+        "required": false,
+        "description": "Custom message body. Defaults to a template naming their pending count."
+      },
+      {
+        "name": "include_assignment_link",
+        "required": false,
+        "description": "Append a direct link to the assignment."
+      },
+      {
+        "name": "subject_prefix",
+        "required": false,
+        "description": "Prefix for the message subject line."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually send."
+      }
+    ]
+  },
+  {
+    "name": "parse_ufixit_violations",
+    "group": "Accessibility",
+    "module": "accessibility",
+    "description": "Parse UFIXIT report JSON into a normalized violations table.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "report_json",
+        "required": true,
+        "description": "JSON text: either a list of violations, or an object with a \"violations\" list."
+      }
+    ]
+  },
+  {
+    "name": "post_discussion_entry",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Post a new top-level entry to a discussion topic.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "topic_id",
+        "required": true,
+        "description": "Discussion topic id."
+      },
+      {
+        "name": "message",
+        "required": true,
+        "description": "Entry message content."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Set true to actually post; without it, only a preview is returned."
+      }
+    ]
+  },
+  {
+    "name": "read_file",
+    "group": "Files",
+    "module": "files",
+    "description": "Read the text content of a small Canvas file directly.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "file_id",
+        "required": true,
+        "description": "Canvas file id."
+      },
+      {
+        "name": "max_size_mb",
+        "required": false,
+        "description": "Refuse to read files larger than this, in megabytes."
+      }
+    ]
+  },
+  {
+    "name": "reply_to_discussion_entry",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Reply to an existing discussion entry.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "topic_id",
+        "required": true,
+        "description": "Discussion topic id."
+      },
+      {
+        "name": "entry_id",
+        "required": true,
+        "description": "Discussion entry id to reply to."
+      },
+      {
+        "name": "message",
+        "required": true,
+        "description": "Reply message content."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Set true to actually post; without it, only a preview is returned."
+      }
+    ]
+  },
+  {
+    "name": "scan_course_content_accessibility",
+    "group": "Accessibility",
+    "module": "accessibility",
+    "description": "Scan a course's content for common HTML accessibility issues.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "content_types",
+        "required": false,
+        "description": "Comma-separated types to scan: pages, assignments, discussions, syllabus."
+      }
+    ]
+  },
+  {
+    "name": "search_tools",
+    "group": "Meta",
+    "module": "developer",
+    "description": "Search this server's own registered MCP tools by name and description keyword.",
+    "readOnly": true,
+    "destructive": false,
+    "confirm": false,
+    "params": [
+      {
+        "name": "query",
+        "required": false,
+        "description": "Case-insensitive search term matched against tool name and description\nwords. Omit to list every registered tool, grouped by area."
+      },
+      {
+        "name": "detail_level",
+        "required": false,
+        "description": "\"brief\" (name + one-sentence description) or \"full\" (also\nparameters and whether the tool requires confirm)."
+      }
+    ]
+  },
+  {
+    "name": "send_bulk_messages",
+    "group": "Messaging",
+    "module": "messaging",
+    "description": "Send individually templated Canvas inbox messages to many recipients.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "recipients",
+        "required": true,
+        "description": "List of dicts, each with \"user_id\" and template variables."
+      },
+      {
+        "name": "subject_template",
+        "required": true,
+        "description": "Subject template, e.g. \"Reminder for {name}\"."
+      },
+      {
+        "name": "body_template",
+        "required": true,
+        "description": "Body template, e.g. \"Hi {name}, you have {count} items due.\"."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually send."
+      }
+    ]
+  },
+  {
+    "name": "send_conversation",
+    "group": "Messaging",
+    "module": "messaging",
+    "description": "Send a new Canvas inbox conversation to one or more recipients.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "recipients",
+        "required": true,
+        "description": "List of recipient user ids or recipient aliases."
+      },
+      {
+        "name": "subject",
+        "required": true,
+        "description": "Message subject."
+      },
+      {
+        "name": "body",
+        "required": true,
+        "description": "Message content."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually send."
+      }
+    ]
+  },
+  {
+    "name": "send_peer_review_followups",
+    "group": "Peer reviews",
+    "module": "peer_reviews",
+    "description": "Build the follow-up list and send a tiered reminder message to every pending reviewer.",
+    "readOnly": false,
+    "destructive": true,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually send."
+      }
+    ]
+  },
+  {
+    "name": "submit_assignment",
+    "group": "Student",
+    "module": "student",
+    "description": "Submit your own assignment. Consumes a submission attempt.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id."
+      },
+      {
+        "name": "submission_type",
+        "required": true,
+        "description": "One of online_text_entry, online_url, online_upload."
+      },
+      {
+        "name": "body",
+        "required": false,
+        "description": "Text content, required for online_text_entry."
+      },
+      {
+        "name": "url",
+        "required": false,
+        "description": "URL to submit, required for online_url."
+      },
+      {
+        "name": "file_paths",
+        "required": false,
+        "description": "Local file paths to upload, required for online_upload."
+      },
+      {
+        "name": "comment",
+        "required": false,
+        "description": "Optional comment to attach to the submission."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually submit; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "update_assignment",
+    "group": "Assignments & grading",
+    "module": "assignments",
+    "description": "Update an existing assignment. Only fields you pass are changed.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "assignment_id",
+        "required": true,
+        "description": "Canvas assignment id to update."
+      },
+      {
+        "name": "name",
+        "required": false,
+        "description": "New assignment name/title."
+      },
+      {
+        "name": "description",
+        "required": false,
+        "description": "New HTML description."
+      },
+      {
+        "name": "submission_types",
+        "required": false,
+        "description": "Comma-separated list, e.g. \"online_text_entry,online_upload\"."
+      },
+      {
+        "name": "due_at",
+        "required": false,
+        "description": "New due date in ISO 8601 format."
+      },
+      {
+        "name": "points_possible",
+        "required": false,
+        "description": "New maximum points."
+      },
+      {
+        "name": "grading_type",
+        "required": false,
+        "description": "One of: points, percent, letter_grade, gpa_scale, pass_fail, not_graded."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Whether to publish the assignment."
+      },
+      {
+        "name": "peer_reviews",
+        "required": false,
+        "description": "Enable peer reviews."
+      },
+      {
+        "name": "automatic_peer_reviews",
+        "required": false,
+        "description": "Auto-assign peer reviews."
+      },
+      {
+        "name": "unlock_at",
+        "required": false,
+        "description": "New available date in ISO 8601 format."
+      },
+      {
+        "name": "lock_at",
+        "required": false,
+        "description": "New lock date in ISO 8601 format."
+      },
+      {
+        "name": "assignment_group_id",
+        "required": false,
+        "description": "Assignment group id to move to."
+      },
+      {
+        "name": "allowed_extensions",
+        "required": false,
+        "description": "Comma-separated file extensions, e.g. \"pdf,docx\"."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually apply the update."
+      }
+    ]
+  },
+  {
+    "name": "update_discussion_topic",
+    "group": "Discussions & announcements",
+    "module": "discussions",
+    "description": "Update fields on an existing discussion topic or announcement.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "topic_id",
+        "required": true,
+        "description": "Discussion topic id."
+      },
+      {
+        "name": "title",
+        "required": false,
+        "description": "New title."
+      },
+      {
+        "name": "message",
+        "required": false,
+        "description": "New body content (HTML supported)."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Publish or unpublish the topic."
+      },
+      {
+        "name": "pinned",
+        "required": false,
+        "description": "Pin or unpin the topic."
+      },
+      {
+        "name": "locked",
+        "required": false,
+        "description": "Lock or unlock the topic."
+      },
+      {
+        "name": "delayed_post_at",
+        "required": false,
+        "description": "ISO 8601 datetime to schedule posting."
+      },
+      {
+        "name": "lock_at",
+        "required": false,
+        "description": "ISO 8601 datetime to auto-lock the discussion."
+      },
+      {
+        "name": "require_initial_post",
+        "required": false,
+        "description": "Students must post before seeing other replies."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Set true to actually update; without it, only a preview is returned."
+      }
+    ]
+  },
+  {
+    "name": "update_module",
+    "group": "Modules",
+    "module": "modules",
+    "description": "Update an existing module's settings. Only given fields are changed.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "module_id",
+        "required": true,
+        "description": "Canvas module id."
+      },
+      {
+        "name": "name",
+        "required": false,
+        "description": "New module name."
+      },
+      {
+        "name": "position",
+        "required": false,
+        "description": "New position in the module list."
+      },
+      {
+        "name": "unlock_at",
+        "required": false,
+        "description": "New ISO 8601 unlock timestamp."
+      },
+      {
+        "name": "require_sequential_progress",
+        "required": false,
+        "description": "Require items to be completed in order."
+      },
+      {
+        "name": "prerequisite_module_ids",
+        "required": false,
+        "description": "Replace prerequisite module ids (pass [] to clear)."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Publish or unpublish the module."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to apply the update; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "update_module_item",
+    "group": "Modules",
+    "module": "modules",
+    "description": "Update an existing module item. Only given fields are changed.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "module_id",
+        "required": true,
+        "description": "Canvas module id containing the item."
+      },
+      {
+        "name": "item_id",
+        "required": true,
+        "description": "Canvas module item id."
+      },
+      {
+        "name": "title",
+        "required": false,
+        "description": "New item title."
+      },
+      {
+        "name": "position",
+        "required": false,
+        "description": "New position within the module."
+      },
+      {
+        "name": "indent",
+        "required": false,
+        "description": "New visual indent level."
+      },
+      {
+        "name": "external_url",
+        "required": false,
+        "description": "New target URL, for ExternalUrl/ExternalTool items."
+      },
+      {
+        "name": "new_tab",
+        "required": false,
+        "description": "Open in a new tab, for ExternalUrl/ExternalTool items."
+      },
+      {
+        "name": "completion_requirement_type",
+        "required": false,
+        "description": "One of must_view, must_submit, must_contribute, min_score, must_mark_done."
+      },
+      {
+        "name": "completion_requirement_min_score",
+        "required": false,
+        "description": "Minimum score, required when completion_requirement_type is min_score."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Publish or unpublish the item."
+      },
+      {
+        "name": "move_to_module_id",
+        "required": false,
+        "description": "Move the item to a different module id."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to apply the update; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "update_page_settings",
+    "group": "Pages",
+    "module": "pages",
+    "description": "Update a page's settings without changing its content.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "page",
+        "required": true,
+        "description": "The page's url slug or numeric page id."
+      },
+      {
+        "name": "published",
+        "required": false,
+        "description": "Publish or unpublish the page."
+      },
+      {
+        "name": "front_page",
+        "required": false,
+        "description": "Set or unset this page as the course front page."
+      },
+      {
+        "name": "editing_roles",
+        "required": false,
+        "description": "Who can edit the page, e.g. \"teachers\", \"students\", \"public\"."
+      },
+      {
+        "name": "notify_of_update",
+        "required": false,
+        "description": "Notify students that the page changed."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to apply the update; otherwise returns a preview."
+      }
+    ]
+  },
+  {
+    "name": "upload_file",
+    "group": "Files",
+    "module": "files",
+    "description": "Upload a local file to a Canvas course.",
+    "readOnly": false,
+    "destructive": false,
+    "confirm": true,
+    "params": [
+      {
+        "name": "course",
+        "required": true,
+        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
+      },
+      {
+        "name": "file_path",
+        "required": true,
+        "description": "Absolute path to the local file to upload."
+      },
+      {
+        "name": "folder_path",
+        "required": false,
+        "description": "Destination folder path within the course, e.g. \"unit1/handouts\".\nDefaults to the course files root."
+      },
+      {
+        "name": "display_name",
+        "required": false,
+        "description": "Name to give the file in Canvas. Defaults to the local filename."
+      },
+      {
+        "name": "on_duplicate",
+        "required": false,
+        "description": "\"rename\" (default) or \"overwrite\" if a file with the same name exists."
+      },
+      {
+        "name": "confirm",
+        "required": false,
+        "description": "Must be true to actually upload."
+      }
+    ]
+  }
+]

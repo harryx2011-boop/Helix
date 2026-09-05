@@ -1,9 +1,9 @@
 import { cn } from '@/lib/utils';
 import { AsciiFluid } from './ascii-fluid';
-import { AsciiFlow, AsciiNoise, AsciiOrbit } from './ascii-fields';
+import { AsciiFlow, AsciiNoise, AsciiOrbit, AsciiSegments } from './ascii-fields';
 import type { FieldTone } from './field-tone';
 
-export type HeroMotif = 'cloud' | 'wave' | 'flow' | 'orbit';
+export type HeroMotif = 'cloud' | 'wave' | 'flow' | 'orbit' | 'segments';
 
 export interface HeroFieldProps {
   motif: HeroMotif;
@@ -74,6 +74,19 @@ export function HeroField({ motif, seed = 3, tone = 'marketing', className }: He
           seed={seed}
           tone={tone}
           className={cn('absolute -top-4 right-0 hidden lg:block [mask-image:linear-gradient(to_right,transparent,black_30%,black_85%,transparent)]', className)}
+        />
+      );
+    case 'segments':
+      return (
+        <AsciiSegments
+          cols={120}
+          rows={19}
+          seed={seed}
+          tone={tone}
+          className={cn(
+            'absolute left-1/2 top-0 hidden -translate-x-1/2 opacity-70 md:block [mask-image:radial-gradient(ellipse_at_center,transparent_30%,black_58%,transparent_82%)]',
+            className,
+          )}
         />
       );
   }

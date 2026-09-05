@@ -224,3 +224,63 @@ export function AsciiOrbit({ cols = 34, rows = 17, seed = 3, fps = 8, quiet, cla
   const layers = React.useMemo(() => orbitLayers(cols, rows, tick / fps, seed), [cols, rows, tick, fps, seed]);
   return <Field layers={layers} className={className} fieldRef={ref} tone={tone} />;
 }
+
+/* ---------------------------------------------------------------------- */
+/* AsciiSegments: eight arc segments with gaps between them, turning as one */
+/* body while a highlight travels the ring. Echoes the Canvas mark's own    */
+/* geometry (eight arcs on 45° centres) so the field reads as that product  */
+/* rather than as generic ambience, and stays distinct from `orbit`, which  */
+/* is continuous concentric rings rather than a segmented band.             */
+/* ---------------------------------------------------------------------- */
+
+const SEG = ['·', '-', '=', '+'];
+/** Fraction of each 45° cell that is ink; the rest is the gap. Matches the mark's 34°/45°. */
+const SEG_DUTY = 34 / 45;
+
+function segmentLayers(cols: number, rows: number, time: number, seed: number): [string, string] {
+  const body = Array.from({ length: rows }, () => Array<string>(cols).fill(' '));
+  const hot = Array.from({ length: rows }, () => Array<string>(cols).fill(' '));
+  const cx = (cols - 1) / 2;
+  const cy = (rows - 1) / 2;
+  const bands = [3.0, 5.4, 7.8].filter((r) => r < rows / 2 + 0.5);
+  const sweep = ((time * 0.18 + seed * 0.11) % 1) * Math.PI * 2;
+
+  bands.forEach((r, band) => {
+    const steps = Math.max(8, Math.floor(Math.PI * 2 * r * ASPECT));
+    // Outer bands lag, so the ring reads as one body with depth rather than
+    // three independent spinners.
+    const spin = time * (0.22 - band * 0.05) + seed * 0.37;
+    for (let s = 0; s < steps; s++) {
+      const a = (s / steps) * Math.PI * 2 + spin;
+      // Position within this segment's 45° cell; outside the duty cycle is gap.
+      const cell = (((a % (Math.PI / 4)) + Math.PI / 4) % (Math.PI / 4)) / (Math.PI / 4);
+      if (cell > SEG_DUTY) continue;
+      const x = Math.round(cx + Math.cos(a) * r * ASPECT);
+      const y = Math.round(cy + Math.sin(a) * r);
+      if (x < 0 || x >= cols || y < 0 || y >= rows) continue;
+      let d = Math.abs(((a - sweep + Math.PI) % (Math.PI * 2)) - Math.PI);
+      d = Math.min(d, Math.PI * 2 - d);
+      if (d < 0.42) hot[y]![x] = d < 0.18 ? '#' : '*';
+      else body[y]![x] = SEG[band % SEG.length]!;
+    }
+  });
+
+  // The eight inner dots, on the same 45° centres as the segments.
+  const dotR = 1.5;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + time * 0.22 + seed * 0.37;
+    const x = Math.round(cx + Math.cos(a) * dotR * ASPECT);
+    const y = Math.round(cy + Math.sin(a) * dotR);
+    if (x >= 0 && x < cols && y >= 0 && y < rows) body[y]![x] = 'o';
+  }
+  return [join(body), join(hot)];
+}
+
+export function AsciiSegments({ cols = 44, rows = 17, seed = 3, fps = 8, quiet, className, tone }: FieldProps) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const inView = useInView(ref);
+  const tick = useTicker(inView && !reduced && !quiet, fps);
+  const layers = React.useMemo(() => segmentLayers(cols, rows, tick / fps, seed), [cols, rows, tick, fps, seed]);
+  return <Field layers={layers} className={className} fieldRef={ref} tone={tone} />;
+}

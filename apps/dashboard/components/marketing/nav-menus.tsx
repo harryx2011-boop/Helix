@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { LucideIcon } from 'lucide-react';
 import {
   ArrowUpRight,
   BookOpen,
@@ -23,6 +22,8 @@ import { GITHUB_URL } from '@/lib/github-stars';
 import { cn } from '@/lib/utils';
 import { IconTile } from './icon-tile';
 import { GithubMark } from './github-mark';
+import { CanvasMarkCompact } from './canvas-mark';
+import type { GlyphIcon } from './icon-type';
 
 export interface MenuChip {
   label: string;
@@ -33,7 +34,7 @@ export interface MenuRow {
   label: string;
   href: string;
   tagline: string;
-  icon: LucideIcon;
+  icon: GlyphIcon;
   pill?: string | undefined;
   chips?: MenuChip[] | undefined;
   external?: boolean;
@@ -136,6 +137,17 @@ export const TOOL_ROWS: readonly MenuRow[] = [
       { label: 'Convert', href: `${CONVERTER_URL}/convert` },
       { label: 'Compress', href: `${CONVERTER_URL}/compress` },
       { label: 'Record', href: `${CONVERTER_URL}/tools/record` },
+    ],
+  },
+  {
+    label: 'Canvas',
+    href: '/canvas',
+    tagline: 'Your Canvas LMS as ~100 MCP tools. Local, your own token, a preview before every write.',
+    icon: CanvasMarkCompact,
+    chips: [
+      { label: 'Tools', href: '/canvas/tools' },
+      { label: 'Skills', href: '/canvas/skills' },
+      { label: 'Install', href: '/canvas#install' },
     ],
   },
   { label: 'Playground', href: '/app/playground', tagline: 'Try every endpoint against a live URL.', icon: FlaskConical },

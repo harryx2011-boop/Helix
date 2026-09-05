@@ -1,19 +1,19 @@
 # Canvas Connect → Helix: merge scope
 
-> Status: **merged and shipped 2026-09-05.** Phases 0–4 complete; Phase 5 archived but the
-> repo deletion is deliberately **not** done. Sits alongside CONVERTER-CONTRACT.md and
-> PERSONA.md as the third sibling-product doc.
+> Status: **merged and shipped as Helix 1.17.0, 2026-09-05.** All five phases done bar the
+> final GitHub deletion, which is a deliberate hold. Sits alongside CONVERTER-CONTRACT.md
+> and PERSONA.md as the third sibling-product doc.
 >
-> **Two things are still open, both needing a human decision:**
+> **Both previously-open items are now closed:**
 >
-> 1. **An unmerged branch exists that Helix does not have** —
->    `claude/mcp-browser-connection-0ew1qj`, shared-secret HTTP auth so claude.ai can
->    connect, 506 insertions and a new `http_auth.py`. Preserved in `e:/archive/`. Deleting
->    the GitHub repo is blocked until it is cherry-picked or knowingly abandoned. See
->    Phase 5 step 23.
-> 2. **Canvas never got its own version bump.** The three commits were swept up in another
->    session's push of `Helix 1.16.2`, so no release line names Canvas. The plan called for
->    a MINOR of its own; it can take the next one instead.
+> 1. **The unmerged `http_auth` branch is cherry-picked in** as canvas-mcp **1.1.0**
+>    (`58c1561`). See below.
+> 2. **Shipped as Helix 1.17.0**, which names Canvas in its own release line.
+>
+> **One item remains, and it is a deliberate hold:** the GitHub repo
+> `harryx2011-boop/CanvasLMS-API` is archived at `e:/archive/` but not deleted. With the
+> auth branch now merged, nothing unique remains on it — deletion is safe whenever wanted,
+> but it is irreversible and stays a human call.
 
 ## What shipped
 
@@ -23,11 +23,14 @@
 | `70b4788` | The server: `tools/canvas-mcp/` by subtree merge, history preserved |
 | `0193d16` | Decommission: URLs repointed at Helix, old repo archived (not deleted) |
 | `3a73562` | The markdown twin, which also fixed the search index |
+| `58c1561` | `http_auth` cherry-picked from the archived branch — canvas-mcp 1.1.0 |
 
 Verified rather than assumed: both build gates pass on NTFS (self-host `output: export` and
-`HELIX_HOSTED=1`, 79/79 static pages each), 135 Python tests pass and ruff is clean from the
-new location, and `src/`, `tests/` and `skills/` are **byte-identical by tree hash** to
-`a8ecb12` — the utility is unchanged, which was the requirement.
+`HELIX_HOSTED=1`, 79/79 static pages each), 162 Python tests pass and ruff is clean from the
+new location. At the point of the move, `src/`, `tests/` and `skills/` were **byte-identical
+by tree hash** to `a8ecb12` — the utility crossed unchanged, which was the requirement. The
+only deliberate change since is the `http_auth` cherry-pick, which adds a capability rather
+than altering an existing one.
 
 ## The decision in one line
 
@@ -105,7 +108,7 @@ overrides for the slow tools. `pyproject.toml` and `__init__.py` are at **1.0.2*
 The working tree is clean and the subtree move is unblocked.
 
 1. ~~Commit the in-flight work.~~ Done as `a8ecb12`.
-2. **Still to do:** tag the Canvas repo `pre-helix-merge` at `a8ecb12`, so the standalone
+2. **DONE.** Tagged the Canvas repo `pre-helix-merge` at `a8ecb12`, so the standalone
    form stays recoverable the way Noted was tagged `pre-merge`. Only `v1.0.0` exists today
    — note there is no `v1.0.1` or `v1.0.2` tag, so if tags are meant to track releases,
    those are missing and should be added before the repo is deleted in Phase 5.

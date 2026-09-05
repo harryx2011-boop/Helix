@@ -293,3 +293,99 @@ Listing questions, viewing scheduling and qualification within fair-housing rule
 - `content/personas/real-estate/default.md` · **Listing Q&A Agent** (default) · Warm · chat/email · Answer listing, neighborhood and pricing-context questions factually, with fair-housing rules applied to every answer. · keys: COMPANY_NAME, LISTING_DB_URL, AGENT_CONTACT_METHOD, MARKET_REPORTS_URL, FAIR_HOUSING_POLICY_URL, BROKERAGE_NAME, MAX_TROUBLESHOOTING_STEPS, HANDOFF_QUEUE_NAME
 - `content/personas/real-estate/tenant-support.md` · **Tenant Support Agent** · Warm · chat/email · Handle rent, maintenance and rights questions for existing tenants with equal treatment on every request. · keys: COMPANY_NAME, PROPERTY_MANAGER, TENANT_PORTAL_URL, EMERGENCY_MAINTENANCE_PHONE, MAINTENANCE_REQUEST_URL, STATE_TENANT_RIGHTS_URL, FAIR_HOUSING_POLICY_URL, HANDOFF_QUEUE_NAME
 - `content/personas/real-estate/viewing-scheduler.md` · **Viewing Scheduler** · Technical · chat · Book, confirm and reschedule property viewings fast, with identical access rules for every visitor. · keys: COMPANY_NAME, PROPERTY_SHOWING_RULES_URL, CONFIRMATION_EMAIL_DOMAIN, CANCELLATION_WINDOW_HOURS, HANDOFF_QUEUE_NAME, FAIR_HOUSING_POLICY_URL, VIEWING_SYSTEM_URL
+
+## Sales Engineering (Sales) — `sales-engineering`
+
+Technical validation, proof-of-concept scoping and the technical half of an RFP.
+
+- `content/personas/sales-engineering/default.md` · **Sales Engineer** (default) · Technical · chat/email/docs · Technical discovery, demo environments, POC criteria and RFP answers grounded in real docs · keys: COMPANY_NAME, DOCS_URL, DEMO_ENV_URL, POC_MAX_DAYS, SECURITY_PACKET_URL, ESCALATION_EMAIL, CRM_NAME, UNSUPPORTED_THRESHOLD
+- `content/personas/sales-engineering/poc-scoper.md` · **Sales Engineer (POC Scoper)** · Formal · docs/email · Time-boxes proofs of concept to written exit criteria before a single environment gets built · keys: COMPANY_NAME, POC_MAX_DAYS, CRM_NAME, DOCS_URL, ESCALATION_EMAIL, MIN_SUCCESS_CRITERIA, POC_EXTENSION_APPROVER, DEMO_ENV_URL
+- `content/personas/sales-engineering/rfp-answerer.md` · **Sales Engineer (RFP Answers)** · Technical · docs · Answers questionnaire items only from the approved knowledge base and flags what it cannot · keys: COMPANY_NAME, APPROVED_ANSWER_LIBRARY_URL, DOCS_URL, SECURITY_PACKET_URL, RFP_DEADLINE_BUFFER_DAYS, ESCALATION_EMAIL, JURISDICTION
+
+## Revenue Operations (Sales) — `revenue-operations`
+
+Pipeline hygiene, forecast questions and CRM data quality for the sales team.
+
+- `content/personas/revenue-operations/default.md` · **RevOps Analyst** (default) · Consultative · chat/email · Pipeline hygiene, forecast questions and CRM data quality for the sales team · keys: COMPANY_NAME, CRM_NAME, STAGE_DEFINITIONS_URL, REQUIRED_FIELDS, STALE_DEAL_DAYS, LARGE_DEAL_THRESHOLD, OPS_QUEUE_NAME
+- `content/personas/revenue-operations/forecast-desk.md` · **RevOps Analyst (Forecast Desk)** · Consultative · chat · Walks a manager through commit and best-case with named assumptions, never invents a number · keys: COMPANY_NAME, FORECAST_PERIOD, CRM_NAME, FORECAST_CALL_TIME, COMMIT_SLIP_THRESHOLD, OPS_QUEUE_NAME, FORECAST_CATEGORIES, LARGE_DEAL_THRESHOLD
+- `content/personas/revenue-operations/pipeline-hygiene.md` · **RevOps Analyst (Pipeline Hygiene)** · Technical · chat · Audits CRM records against required fields and stage rules, then produces fix lists per owner · keys: COMPANY_NAME, CRM_NAME, REQUIRED_FIELDS, AUDIT_FREQUENCY_DAYS, STALE_DEAL_DAYS, LARGE_DEAL_THRESHOLD, DUPLICATE_MATCH_FIELDS, OPS_QUEUE_NAME
+
+## Partnerships (Sales) — `partnerships`
+
+Partner onboarding, co-selling requests and deal registration questions.
+
+- `content/personas/partnerships/co-sell.md` · **Partner Manager (Co-sell)** · Warm · email · Coordinates joint opportunities and keeps both account owners moving together · keys: COMPANY_NAME, CRM_NAME, PARTNER_PORTAL_URL, MAX_FOLLOWUP_DAYS, MARGIN_APPROVAL_THRESHOLD, PARTNER_OPS_QUEUE
+- `content/personas/partnerships/deal-registration.md` · **Partner Manager (Deal Registration)** · Formal · email · Formal deal registration adjudication with exact conflict windows and decision records · keys: COMPANY_NAME, PARTNER_OPS_QUEUE, MIN_DEAL_VALUE, PARTNER_PORTAL_URL, DEAL_REGISTRATION_WINDOW_DAYS, CONFLICT_RESOLUTION_HOURS
+- `content/personas/partnerships/default.md` · **Partner Manager** (default) · Consultative · chat/email · Onboards partners, answers program-tier and margin questions, and applies deal registration rules · keys: COMPANY_NAME, CONTRACT_CHANGE_CONTACT, PARTNER_PORTAL_URL, PROGRAM_TIERS, DEAL_REGISTRATION_WINDOW_DAYS, PARTNER_OPS_QUEUE, MARGIN_APPROVAL_THRESHOLD
+
+## Application Security (Security) — `appsec-review`
+
+Code and dependency review for security defects, with threat-model questions.
+
+- `content/personas/appsec-review/default.md` · **AppSec Reviewer** (default) · Technical · code/chat · Reviews diffs and dependency changes for security defects, with a fix for every finding · keys: COMPANY_NAME, VULNERABILITY_DB_TOOL_NAME, CVSS_ESCALATION_THRESHOLD, CRITICAL_BLOCK_SEVERITY, SECRET_ROTATION_SLA_HOURS, SECURITY_STANDARDS_URL, SECURITY_CONTACT
+- `content/personas/appsec-review/dependency-auditor.md` · **AppSec Reviewer (Dependency Auditor)** · Technical · code/chat · Triages vulnerable-dependency reports by reachability and drafts upgrade plans · keys: COMPANY_NAME, VULNERABILITY_DB_TOOL_NAME, REPOSITORY_URL, BREAKING_CHANGE_APPROVAL_REQUIRED, SECURITY_CONTACT, CVSS_ESCALATION_THRESHOLD, UPGRADE_SLA_DAYS
+- `content/personas/appsec-review/threat-modeler.md` · **AppSec Reviewer (Threat Modeler)** · Consultative · chat/docs · Runs a structured threat-model session on a design and produces mitigations · keys: COMPANY_NAME, THREAT_MODEL_FRAMEWORK, DESIGN_DOC_REPOSITORY_URL, HIGH_RISK_APPROVAL_REQUIRED, SECURITY_CONTACT, SECURITY_STANDARDS_URL
+
+## Vendor Security (Security) — `vendor-security`
+
+Third-party risk reviews and security questionnaires, inbound and outbound.
+
+- `content/personas/vendor-security/default.md` · **Vendor Security Analyst** (default) · Technical · docs/email · Reviews vendor evidence against a control list and produces a tiered risk memo · keys: COMPANY_NAME, CONTROL_LIST_URL, DATA_ACCESS_TIERS, EVIDENCE_MAX_AGE_DAYS, HIGH_RISK_FINDING_THRESHOLD, SECURITY_TEAM_QUEUE, LEGAL_CONTACT
+- `content/personas/vendor-security/questionnaire-responder.md` · **Vendor Security Analyst (Questionnaire Responder)** · Formal · docs/email · Answers customer security questionnaires only from the approved answer bank · keys: COMPANY_NAME, ANSWER_BANK_URL, SECURITY_TEAM_QUEUE, ANSWER_MAX_AGE_DAYS, CERTIFICATIONS_HELD, SALES_ENGINEERING_CONTACT
+- `content/personas/vendor-security/third-party-risk.md` · **Vendor Security Analyst (Third-party Risk)** · Technical · docs/email · Runs onboarding and annual vendor reviews with tiering rules and expiry tracking · keys: COMPANY_NAME, VENDOR_REGISTRY_URL, DATA_ACCESS_TIERS, ONBOARDING_SLA_DAYS, SECURITY_TEAM_QUEUE, ANNUAL_REVIEW_WINDOW_DAYS, CONTROL_LIST_URL
+
+## Detection Engineering (Security) — `detection-engineering`
+
+Alert tuning, detection logic and log queries that hold up on call.
+
+- `content/personas/detection-engineering/alert-tuner.md` · **Detection Engineer (Alert Tuner)** · Technical · code/chat · Reduces alert noise by analysing samples and proposing measured threshold changes. · keys: COMPANY_NAME, LOG_SOURCE, ALERT_SAMPLE_WINDOW, FALSE_POSITIVE_RATE_THRESHOLD, MIN_SAMPLE_SIZE, QUERY_LANGUAGE, RULE_TICKETING_SYSTEM, ONCALL_ESCALATION_GROUP, DETECTION_REPOSITORY_URL
+- `content/personas/detection-engineering/default.md` · **Detection Engineer** (default) · Technical · code/chat · Writes and tunes detection rules that hold up on call, documented and testable. · keys: COMPANY_NAME, LOG_SOURCE, QUERY_LANGUAGE, RULE_TICKETING_SYSTEM, SEVERITY_LEVELS, FALSE_POSITIVE_RATE_THRESHOLD, DETECTION_REPOSITORY_URL, ONCALL_ESCALATION_GROUP
+- `content/personas/detection-engineering/query-writer.md` · **Detection Engineer (Query Writer)** · Casual · code/chat · Turns an on-call question into a correct log query, explained clause by clause. · keys: COMPANY_NAME, LOG_SOURCE, QUERY_LANGUAGE, DEFAULT_TIME_WINDOW, MAX_TIME_WINDOW, HIGH_CARDINALITY_FIELDS, RULE_TICKETING_SYSTEM
+
+## Contract Review (Legal) — `contract-review`
+
+Redlines, clause risk and playbook positions on commercial agreements.
+
+- `content/personas/contract-review/commercial-first.md` · **Contract Reviewer (Commercial-first)** · Consultative · docs/llm · Plain-language business impact and trade-offs for the sales owner on the deal · keys: COMPANY_NAME, PLAYBOOK_NAME, LEGAL_QUEUE_NAME, APPROVAL_THRESHOLD, MAX_REDLINE_ROUNDS, LIABILITY_CAP_MULTIPLE, JURISDICTION
+- `content/personas/contract-review/default.md` · **Contract Reviewer** (default) · Consultative · docs/llm · Redlines, clause risk and playbook positions on commercial agreements · keys: COMPANY_NAME, PLAYBOOK_NAME, APPROVAL_THRESHOLD, LEGAL_QUEUE_NAME, MAX_REDLINE_ROUNDS, LIABILITY_CAP_MULTIPLE, JURISDICTION
+- `content/personas/contract-review/playbook-strict.md` · **Contract Reviewer (Playbook-strict)** · Formal · docs/llm · Formal playbook enforcement with zero deviation and a written record of every exception · keys: COMPANY_NAME, PLAYBOOK_NAME, APPROVAL_THRESHOLD, LEGAL_QUEUE_NAME, MAX_REDLINE_ROUNDS, LIABILITY_CAP_MULTIPLE, JURISDICTION
+
+## Privacy Operations (Legal) — `privacy-operations`
+
+Data subject requests, DPA execution and data-map questions within set deadlines.
+
+- `content/personas/privacy-operations/default.md` · **Privacy Operations Specialist** (default) · Formal · email/docs · Data subject requests, DPA execution and data-map questions within set deadlines · keys: COMPANY_NAME, JURISDICTION, RESPONSE_DEADLINE_DAYS, RECORD_OF_PROCESSING_URL, STANDARD_DPA_TEMPLATE_URL, PRIVACY_TEAM_EMAIL, IDENTITY_VERIFICATION_METHOD, DPO_EMAIL
+- `content/personas/privacy-operations/dpa-desk.md` · **Privacy Operations (DPA Desk)** · Technical · email/docs · Compares a counterparty DPA against standard terms clause by clause · keys: COMPANY_NAME, JURISDICTION, STANDARD_DPA_TEMPLATE_URL, PRIVACY_TEAM_EMAIL, RESPONSE_DEADLINE_DAYS, SUB_PROCESSOR_LIST_URL, LIABILITY_CAP_STANDARD
+- `content/personas/privacy-operations/dsar-desk.md` · **Privacy Operations (DSAR Desk)** · Formal · email · Runs the data subject request lifecycle end to end on a fixed template · keys: COMPANY_NAME, DSAR_MAILBOX, JURISDICTION, PRIVACY_TEAM_EMAIL, RESPONSE_DEADLINE_DAYS, IDENTITY_VERIFICATION_METHOD, EXTENSION_DAYS
+
+## IP and Licensing (Legal) — `ip-and-licensing`
+
+Trademark, content rights and open-source licence questions with clear limits.
+
+- `content/personas/ip-and-licensing/brand-use.md` · **IP Advisor (Brand Use)** · Warm · chat · Reviews requests to use company and third-party marks in content, warmly and by the book · keys: COMPANY_NAME, BRAND_GUIDELINES_URL, PARTNER_PROGRAM_NAME, LEGAL_EMAIL, HIGH_RISK_USE_THRESHOLD, JURISDICTION, COUNSEL_ESCALATION_SLA_DAYS
+- `content/personas/ip-and-licensing/default.md` · **IP and Licensing Advisor** (default) · Consultative · chat/docs · First-pass answers on trademark, content rights and licence compatibility with clear limits · keys: COMPANY_NAME, JURISDICTION, LEGAL_EMAIL, BRAND_GUIDELINES_URL, HIGH_RISK_USE_THRESHOLD, LICENSE_POLICY_URL, COUNSEL_ESCALATION_SLA_DAYS
+- `content/personas/ip-and-licensing/open-source-compliance.md` · **IP Advisor (Open-source Compliance)** · Technical · chat/code · Checks a dependency's licence against policy and produces a decision record · keys: COMPANY_NAME, DISTRIBUTION_MODEL, LICENSE_POLICY_URL, COPYLEFT_TOLERANCE, JURISDICTION, LEGAL_EMAIL, COUNSEL_ESCALATION_SLA_DAYS
+
+## Course Design (Education) — `course-design`
+
+Learning objectives, module plans and activities aligned to an outcome.
+
+- `content/personas/course-design/activity-builder.md` · **Instructional Designer (Activity Builder)** · Warm · docs · Produces concrete activities, worked examples and discussion prompts for one module at a time · keys: COMPANY_NAME, DELIVERY_FORMAT, SESSION_LENGTH_MINUTES, AUDIENCE_LEVEL, ACTIVITIES_PER_MODULE, MATERIALS_BUDGET, SME_CONTACT
+- `content/personas/course-design/default.md` · **Instructional Designer** (default) · Consultative · docs · Turns a stated outcome and audience into objectives, a module plan and checks for understanding · keys: COMPANY_NAME, DELIVERY_FORMAT, LMS_NAME, SME_CONTACT, AUDIENCE_LEVEL, MODULE_COUNT, SESSION_LENGTH_MINUTES, ASSESSMENT_STYLE
+- `content/personas/course-design/outcome-mapper.md` · **Instructional Designer (Outcome Mapper)** · Technical · docs · Builds an alignment matrix of objectives, activities and assessments and flags gaps · keys: COMPANY_NAME, DELIVERY_FORMAT, AUDIENCE_LEVEL, BLOOM_TARGET_LEVEL, SME_CONTACT, SESSION_LENGTH_MINUTES, MODULE_COUNT
+
+## Assessment and Feedback (Education) — `assessment-and-feedback`
+
+Rubrics, grading consistency and feedback learners can act on.
+
+- `content/personas/assessment-and-feedback/default.md` · **Assessment Assistant** (default) · Consultative · docs/chat · Applies a supplied rubric to submitted work and writes feedback learners can act on · keys: COMPANY_NAME, GRADE_SCALE, READING_LEVEL, CITATION_MIN_LENGTH, MAX_REVISION_ROUNDS, INTEGRITY_CONTACT
+- `content/personas/assessment-and-feedback/feedback-coach.md` · **Assessment Assistant (Feedback Coach)** · Warm · chat/docs · Writes learner-facing feedback with one priority improvement and one practice task · keys: COMPANY_NAME, READING_LEVEL, ENCOURAGEMENT_LIMIT, GRADE_SCALE, MAX_REVISION_ROUNDS, INTEGRITY_CONTACT
+- `content/personas/assessment-and-feedback/rubric-builder.md` · **Assessment Assistant (Rubric Builder)** · Technical · docs · Turns learning objectives into criterion-level rubrics with observable descriptors · keys: COMPANY_NAME, BAND_COUNT, GRADE_SCALE, READING_LEVEL, MAX_CRITERIA, INTEGRITY_CONTACT
+
+## Academic Advising (Education) — `academic-advising`
+
+Program requirements, study planning and referrals within advising limits.
+
+- `content/personas/academic-advising/default.md` · **Academic Advisor** (default) · Consultative · chat/email · Program requirements, prerequisite checks and term planning from the published catalogue · keys: COMPANY_NAME, CATALOGUE_URL, REGISTRAR_CONTACT, MAX_CREDITS_PER_TERM, WELLBEING_CONTACT, FINANCIAL_AID_CONTACT, ACCESSIBILITY_CONTACT, ADVISING_APPOINTMENT_URL
+- `content/personas/academic-advising/degree-planner.md` · **Academic Advisor (Degree Planner)** · Technical · chat · Audits completed credits against requirements and builds a load-limited remaining plan · keys: COMPANY_NAME, CATALOGUE_URL, MAX_CREDITS_PER_TERM, MIN_CREDITS_FULL_TIME, TRANSFER_CREDIT_POLICY_URL, REGISTRAR_CONTACT, WELLBEING_CONTACT
+- `content/personas/academic-advising/first-contact.md` · **Academic Advisor (First Contact)** · Warm · chat · Triages incoming student messages, answers the routine ones, books or refers the rest · keys: COMPANY_NAME, CATALOGUE_URL, ADVISING_APPOINTMENT_URL, RESPONSE_TIME_HOURS, WELLBEING_CONTACT, FINANCIAL_AID_CONTACT, ACCESSIBILITY_CONTACT

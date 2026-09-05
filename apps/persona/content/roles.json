@@ -322,5 +322,113 @@
     "icon": "Building2",
     "summary": "Listing questions, viewing scheduling and qualification within fair-housing rules.",
     "sortOrder": 360
+  },
+  {
+    "slug": "sales-engineering",
+    "name": "Sales Engineering",
+    "department": "Sales",
+    "color": "#D9762C",
+    "icon": "ServerCog",
+    "summary": "Technical validation, proof-of-concept scoping and the technical half of an RFP.",
+    "sortOrder": 370
+  },
+  {
+    "slug": "revenue-operations",
+    "name": "Revenue Operations",
+    "department": "Sales",
+    "color": "#D9762C",
+    "icon": "BarChart3",
+    "summary": "Pipeline hygiene, forecast questions and CRM data quality for the sales team.",
+    "sortOrder": 380
+  },
+  {
+    "slug": "partnerships",
+    "name": "Partnerships",
+    "department": "Sales",
+    "color": "#D9762C",
+    "icon": "HeartHandshake",
+    "summary": "Partner onboarding, co-selling requests and deal registration questions.",
+    "sortOrder": 390
+  },
+  {
+    "slug": "appsec-review",
+    "name": "Application Security",
+    "department": "Security",
+    "color": "#C6402E",
+    "icon": "Bug",
+    "summary": "Code and dependency review for security defects, with threat-model questions.",
+    "sortOrder": 400
+  },
+  {
+    "slug": "vendor-security",
+    "name": "Vendor Security",
+    "department": "Security",
+    "color": "#C6402E",
+    "icon": "ClipboardCheck",
+    "summary": "Third-party risk reviews and security questionnaires, inbound and outbound.",
+    "sortOrder": 410
+  },
+  {
+    "slug": "detection-engineering",
+    "name": "Detection Engineering",
+    "department": "Security",
+    "color": "#C6402E",
+    "icon": "Search",
+    "summary": "Alert tuning, detection logic and log queries that hold up on call.",
+    "sortOrder": 420
+  },
+  {
+    "slug": "contract-review",
+    "name": "Contract Review",
+    "department": "Legal",
+    "color": "#6D28D9",
+    "icon": "FileText",
+    "summary": "Redlines, clause risk and playbook positions on commercial agreements.",
+    "sortOrder": 430
+  },
+  {
+    "slug": "privacy-operations",
+    "name": "Privacy Operations",
+    "department": "Legal",
+    "color": "#6D28D9",
+    "icon": "Shield",
+    "summary": "Data subject requests, DPA execution and data-map questions within set deadlines.",
+    "sortOrder": 440
+  },
+  {
+    "slug": "ip-and-licensing",
+    "name": "IP and Licensing",
+    "department": "Legal",
+    "color": "#6D28D9",
+    "icon": "Lightbulb",
+    "summary": "Trademark, content rights and open-source licence questions with clear limits.",
+    "sortOrder": 450
+  },
+  {
+    "slug": "course-design",
+    "name": "Course Design",
+    "department": "Education",
+    "color": "#C2410C",
+    "icon": "PenLine",
+    "summary": "Learning objectives, module plans and activities aligned to an outcome.",
+    "sortOrder": 460
+  },
+  {
+    "slug": "assessment-and-feedback",
+    "name": "Assessment and Feedback",
+    "department": "Education",
+    "color": "#C2410C",
+    "icon": "ClipboardCheck",
+    "summary": "Rubrics, grading consistency and feedback learners can act on.",
+    "sortOrder": 470
+  },
+  {
+    "slug": "academic-advising",
+    "name": "Academic Advising",
+    "department": "Education",
+    "color": "#C2410C",
+    "icon": "GraduationCap",
+    "summary": "Program requirements, study planning and referrals within advising limits.",
+    "sortOrder": 480
   }
 ]

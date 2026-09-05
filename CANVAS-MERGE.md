@@ -276,10 +276,21 @@ real content rather than an empty shell:
     needs no flag.
 19. **DONE.** Footer's Tools column gained a `Canvas → /canvas` entry (it is a hardcoded
     list, as suspected).
-20. **Still to do.** `/llms.txt` is driven by `MARKDOWN_TWIN_PATHS` in
-    `lib/markdown-twins.ts` — an explicit list, not a directory scan — so the Canvas routes
-    do **not** appear automatically. Same for `/search-index.json`. Decide whether Canvas
-    pages get markdown twins (they are product pages, so probably yes) and add them.
+20. **DONE.** `/canvas` has a markdown twin. `lib/markdown-twins.ts` gains
+    `canvasMarkdown()` and `'canvas'` in `MARKDOWN_TWIN_PATHS`. It could not reuse
+    `capabilityPageMarkdown`, which is keyed by `Endpoint` — Canvas is a product but not an
+    endpoint, the same distinction that kept it out of `catalog.ts`. The twin is generated
+    from `lib/canvas.ts`, so its counts cannot drift from the page's.
+
+    **This fixed `/search-index.json` at the same time**: that route derives from
+    `MARKDOWN_TWIN_PATHS` rather than keeping its own list, so the command palette now finds
+    Canvas without a second change. Verified in the built output: `/md/canvas` renders with
+    the real counts, and the index contains `"path":"canvas"`. Static page count went 78 → 79
+    in both builds.
+
+    The three sub-routes (`/canvas/tools`, `/canvas/skills`, `/canvas/changelog`) have no
+    twins by design — `/tools` is a filterable UI over a JSON catalog and `/changelog` is
+    already markdown at source, so a twin would be a worse copy of each.
 21. **Still to do.** Sitemap entries for the four routes. Per-page `metadata` is already
     set in each `page.tsx`.
 

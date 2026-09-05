@@ -1,41 +1,41 @@
 # To Do
 
-Open work at 1.11.1. Ordered by what unblocks the most. Detail and reasoning live in `HANDOFF.md` and `context.md`.
+Open work at 1.11.3, with another session's 1.12.0 converter work uncommitted in the tree.
+Detail and reasoning live in `HANDOFF.md` and `context.md`.
 
-## Blocking
+Nothing here is blocking. The full stack runs locally and every endpoint has been
+exercised against it.
 
-- [ ] **Deploy the API** (`DEPLOY.md` §4–5). Nothing else on this list moves until it exists.
-      Use the Supabase **session pooler** for `DATABASE_URL` — 5432, not the transaction
-      pooler on 6543. The API applies its own migrations at boot.
-- [ ] **Set `HELIX_MULTI_TENANT=1` on the deployed API.** Until then 1.11.0's tenant
-      scoping is inert and `/v1/keys`, `/v1/jobs/*` and `/v1/usage/all` are cross-tenant
-      readable. Verify: `/v1/keys` and `/v1/usage/all` must return 404. A 200 means the
-      variable never reached the API.
-
-## Security
+## Next
 
 - [ ] **RLS keyed on `profile_id` from the Clerk claim.** 1.11.1 closed the browser
       surface; `/v1/*` is still guarded by application code alone. Read `context.md`
-      1.11.1 before starting — the obvious design was rejected for three concrete
-      reasons and repeating it would waste the effort.
+      1.11.1 first — the obvious design was rejected for three concrete reasons and
+      repeating it would waste the effort.
+- [ ] **Interaction testing.** Every UI check so far has been curl-level. No focus,
+      keyboard or hover behaviour has ever been exercised, and `/app/*` sits behind a
+      Clerk interstitial so those screens have only been source-reviewed.
+- [ ] Configure a search backend (`SEARXNG_URL`, `SERPER_API_KEY` or `SERPAPI_KEY`) if
+      `/v1/search` should work. It returns 503 until one is set — configuration, not a
+      fault.
 - [ ] Decide whether the repo goes public. The site claims Apache-2.0 in several places
       and every GitHub link 404s while it is private.
 
-## Runtimes
+## Hosting — only if the public site should work for other people
 
-- [ ] Run `fetch` (7401, Rust) and `extract` (7402, Python) so scrape and parse work
-      end to end. Health reports them unhealthy today, which is correct.
-- [ ] Add `playwright install-deps` to the Docker image for Firefox and WebKit.
-      Flagged in 1.7.0, unverified since nothing containerised has been built.
-- [ ] Deploy the Converter (`apps/converter` 4400, `apps/converter-api` 8400), then set
-      `NEXT_PUBLIC_CONVERTER_URL`. The footer and nav rows appear on their own once it
-      is set; they are filtered out while it is empty.
+The full stack runs locally and nothing local needs any of this.
+`helixapi-dev.vercel.app` has no API behind it, so it is a shell for anyone but you.
 
-## Quality
+- [ ] Host the API, then set `HELIX_MULTI_TENANT=1` on it. Verify `/v1/keys` and
+      `/v1/usage/all` return 404 — a 200 means the variable never reached the API.
+- [ ] Host the Converter (`apps/converter`, 4400, fully client-side — no backend to
+      deploy alongside it), then set `NEXT_PUBLIC_CONVERTER_URL`. The footer and nav rows
+      appear on their own once it is set.
+- [ ] `--build-arg HELIX_BROWSER_ENGINES="chromium firefox"` when building the API image,
+      if a container should offer Firefox or WebKit. Chromium alone is the default.
 
-- [ ] **Interaction testing.** Every UI check so far has been curl-level — no focus,
-      keyboard or hover behaviour has ever been exercised, and `/app/*` sits behind a
-      Clerk interstitial so those screens have only been source-reviewed.
+## Smaller
+
 - [ ] Give `crawl` a per-request `proxy` option; `/scrape` has one. A wire change, so it
       needs a version bump and an `openapi.yaml` update.
 - [ ] Delete `components/shell/top-nav.tsx` — zero importers, holds the last stray

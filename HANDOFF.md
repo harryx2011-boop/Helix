@@ -1,18 +1,14 @@
-# Handoff — 2026-09-04, end of session
+# Handoff — 2026-09-05
 
-Helix is at **1.11.1** (`b4bf8e0`, tag `v1.11.1`, on origin/main). Working tree clean apart from two Persona icon files another session added.
+Helix is at **1.11.3** (`393992e`, tag `v1.11.3`) on origin/main, with another session's 1.12.0 converter work sitting uncommitted in the tree. That day ran 1.7.0 → 1.11.3. `context.md` carries the full record per version; this file is only what the next session needs to pick up.
 
-Today ran 1.7.0 → 1.11.1. `context.md` carries the full record per version; this file is only what the next session needs to pick up.
+## State: the full stack runs locally
 
-## The one thing blocking everything else
+All three runtimes are up and every endpoint has been exercised against them. `/v1/health` reports `ok` — postgres ~46ms, fetch ~3ms, extract ~5ms, browser ok.
 
-**The API is not deployed.** `HELIX_HOSTED_API_URL` in Vercel points at `localhost:7400`, so the hosted dashboard has no API behind it. Three consequences, all of which resolve together:
+**Hosting is a choice, not a blocker.** The public dashboard at helixapi-dev.vercel.app has no API behind it (`HELIX_HOSTED_API_URL` points at localhost), so it is a shell for anyone but you. That only matters if you want other people using it. Nothing local depends on it.
 
-1. **The 1.11.0 tenant-scoping fix is inert in production.** It is gated on `HELIX_MULTI_TENANT`, which is an *API* env var — there is nowhere to set it. Until then the three cross-tenant holes below are open on any multi-tenant deployment.
-2. The usage panel has no data source in hosted mode.
-3. Nothing can be tested end to end.
-
-`DEPLOY.md` §4–5 covers it. Use the Supabase **session pooler** string (5432, not the transaction pooler on 6543) for `DATABASE_URL`; that is what runs locally now and it works.
+Related, and worth stating because an earlier version of this file got it wrong: **`HELIX_MULTI_TENANT` is not blocked on deployment.** It matters only when several people share one instance. Locally you are the single operator, which is exactly what the flag defaults to — the cross-tenant holes it closes are real for a public multi-tenant API and are not holes on this machine.
 
 ## Live
 
@@ -22,31 +18,41 @@ Today ran 1.7.0 → 1.11.1. `context.md` carries the full record per version; th
 | Persona | https://persona-helix.vercel.app | 200 |
 | Supabase | project `Helix`, ref `gytknetqttkdmkhmysbm` | 11 API + 8 hosted migrations applied |
 | API | — | **not deployed**; runs locally on 7400 |
-| Converter | — | **not deployed**; runs locally on 4400 (+ Fastify on 8400) |
+| Converter | — | **not deployed**; runs locally on 4400, fully client-side (ffmpeg.wasm) |
 
 ## Running it locally
 
-```bash
-# API — needs DATABASE_URL in apps/api/.env (session pooler). Applies its own
-# migrations at boot. `pnpm dev` reads .env via Node's --env-file-if-exists.
-cd /e/Helix && corepack pnpm --filter @helix/api dev        # :7400
+All four are running now; this is how to bring them back after a reboot.
 
-cd /e/Helix/apps/dashboard && npm run dev                    # :3400
-cd /e/Helix/apps/converter && npm run dev                    # :4400
+```bash
+# extract (Python) — the venv already exists; do NOT use a bare `python`
+cd /e/Helix/apps/extract && .venv/Scripts/python.exe -m uvicorn helix_extract.main:app --port 7402 --host 127.0.0.1
+
+# fetch (Rust) — first build is ~7m for BoringSSL, cached after that
+cd /e/Helix/apps/fetch && cargo run --release            # :7401
+
+# API — reads apps/api/.env, applies its own migrations at boot
+corepack pnpm --filter @helix/api dev     # :7400
+
+cd /e/Helix/apps/dashboard && npm run dev                # :3400
+cd /e/Helix/apps/converter && npm run dev                # :4400, fully client-side
 ```
 
-`fetch` (7401, Rust) and `extract` (7402, Python) are **not running**, so scrape and parse fail locally. Health correctly reports them unhealthy; Postgres sits around 39ms.
+Verified end to end with real requests, not health checks: scrape returns markdown, parse reads a live arXiv PDF into 43KB of markdown with page markers, map lists sitemap links, metadata pulls real PDF DocInfo, and a crawl completed 3/3 pages — the first real exercise of the job queue, persistent frontier and 1.7.0's lease fix against actual Postgres.
+
+`search` returns 503 until a backend is configured (`SEARXNG_URL`, `SERPER_API_KEY` or `SERPAPI_KEY`). That is configuration, not a fault.
+
+**The 1.11.0 tenant fix is empirically proven.** With a second key standing in for a second tenant: flag off, B reads A's job → 200; flag on → 404, while the owner still gets 200 and both `/v1/keys` and `/v1/usage/all` return 404. Everything before that was tests against fakes.
 
 ## Open, in priority order
 
-1. **Deploy the API**, then set `HELIX_MULTI_TENANT=1` on it. Without that env var the security fix does nothing. `DEPLOY.md`'s verification step expects `/v1/keys` and `/v1/usage/all` to 404 once it is on — a 200 means the variable never reached the API.
-2. **RLS keyed on `profile_id` from the Clerk claim.** 1.11.1 hardened the browser surface only. The attempt to make RLS bind `/v1/*` was abandoned deliberately and the reasoning is in `context.md` — briefly: keying on `request.apiKey.id` restates the application filter rather than adding a second credential, `crawl_state` has no tenant column and policying it breaks incremental crawl, and two fire-and-forget writers would fail silently. The honest design derives tenancy from the Clerk session. Real project.
-3. **Run `fetch` and `extract`** so scrape and parse work end to end.
-4. **Interaction testing.** Today's browser pass was curl-level — no focus, keyboard or hover behaviour was exercised, and `/app/*` sits behind a Clerk interstitial so those screens were source-reviewed only.
-5. **Docker likely needs `playwright install-deps`** for Firefox and WebKit. Flagged in 1.7.0, still unverified — nothing containerised has been built.
-6. **`crawl` has no per-request `proxy` option** though `/scrape` does. A real wire change, hence left.
-7. **`components/shell/top-nav.tsx` is dead code** — zero importers, holds the last stray `rounded-md`.
-8. **Make the repo public, or accept that every GitHub link 404s.** The site says Apache-2.0 in several places and the links now point at the real repo, which is private.
+1. **RLS keyed on `profile_id` from the Clerk claim.** 1.11.1 hardened the browser surface only; `/v1/*` is guarded by application code alone. The attempt to make RLS bind it was abandoned deliberately — the reasoning is in `context.md` 1.11.1, and repeating the obvious design would waste the effort.
+2. **Interaction testing.** Every UI check so far has been curl-level. No focus, keyboard or hover behaviour has ever been exercised, and `/app/*` sits behind a Clerk interstitial so those screens have only been source-reviewed.
+3. **Configure a search backend** if `/v1/search` should work.
+4. **Decide whether the repo goes public.** The site claims Apache-2.0 in several places and every GitHub link 404s while it is private.
+5. **`crawl` has no per-request `proxy` option** though `/scrape` does. A wire change, hence left.
+6. **`components/shell/top-nav.tsx` is dead code** — zero importers.
+7. **Host the API** only if the public dashboard should work for other people. Then set `HELIX_MULTI_TENANT=1` on it; `DEPLOY.md`'s verification expects `/v1/keys` and `/v1/usage/all` to 404 once it is on.
 
 ## Gotchas this session cost hours to learn
 
@@ -59,4 +65,4 @@ cd /e/Helix/apps/converter && npm run dev                    # :4400
 
 ## Verified state
 
-1145 API tests across 77 files, 35 SDK tests, `tsc` and `eslint` clean in every workspace. `pnpm test` at the repo root now fails if `supabase/schema.sql` drifts from the migrations directories.
+1219 API tests across 83 files (including another session's 1.12.0 converter work), 35 SDK tests, `tsc` and `eslint` clean in every workspace. `pnpm test` at the repo root now fails if `supabase/schema.sql` drifts from the migrations directories.

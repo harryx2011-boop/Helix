@@ -46,7 +46,6 @@ export function Hero() {
       <div className="mx-auto flex min-w-0 max-w-container flex-col items-center px-4 text-center">
         <h1
           data-reveal
-          style={{ transitionDelay: '60ms' }}
           className="max-w-[760px] text-[44px] font-normal leading-[1.03] tracking-tightest sm:text-[64px]"
         >
           The web-data API
@@ -72,12 +71,12 @@ export function Hero() {
             className="absolute left-full top-1/2 hidden -translate-y-1/2 translate-x-6 lg:block"
           />
 
-          <p data-reveal style={{ transitionDelay: '120ms' }} className="mt-5 max-w-[560px] text-[18px] leading-relaxed text-m-ink/72">
+          <p data-reveal className="mt-5 max-w-[560px] text-[18px] leading-relaxed text-m-ink/72">
             An API built for agents to scour the web.{' '}
             <span className="rounded-card bg-m-ink/[0.039] px-1.5 py-0.5">Completely open source, run it locally.</span>
           </p>
 
-          <div data-reveal style={{ transitionDelay: '180ms' }} className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div data-reveal className="mt-8 flex flex-col gap-3 sm:flex-row">
             <PillButton href="/sign-up" variant="primary">
               Get started
             </PillButton>
@@ -87,12 +86,12 @@ export function Hero() {
             </PillButton>
           </div>
 
-          <div data-reveal style={{ transitionDelay: '220ms' }} className="mt-4">
+          <div data-reveal className="mt-4">
             <SetupPrompt />
           </div>
         </div>
 
-        <div data-reveal style={{ transitionDelay: '240ms' }} className="relative mt-16 w-full min-w-0 max-w-full">
+        <div data-reveal className="relative mt-16 w-full min-w-0 max-w-full">
           <HeroPanel id="ladder" />
         </div>
       </div>

@@ -23,7 +23,7 @@ import type {
   SearchRequest,
   SearchResponse,
 } from '@/lib/api';
-import type { Endpoint } from '@/lib/endpoints';
+import type { RunnableEndpoint as Endpoint } from '@/lib/endpoints';
 import { HOSTED } from '@/lib/mode';
 
 /**

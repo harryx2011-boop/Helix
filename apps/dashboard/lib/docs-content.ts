@@ -47,6 +47,36 @@ export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
       "`{ success, data: { findings: [{ group, key, value, risk, category, removable }], riskSummary: { high, medium, low }, metadata: { filename, fileType, sizeBytes, contentHash, sourceUrl } }, warnings }` on scan. Scrub answers with the file bytes plus a `MetadataScrubReport` header carrying `removed`, `retained`, `riskSummary` and byte counts. A remote fetch problem, an unsupported type or a corrupt file is `{ success: false, failure: { reason, detail } }`; a file over the operator's upload ceiling is HTTP 413.",
     failureReasons: ['unsupported_type', 'http_error', 'dns', 'tls', 'timeout', 'empty', 'service_unavailable'],
   },
+  document: {
+    id: 'document',
+    purpose:
+      'One endpoint over every document operation: parse a file to markdown or schema-shaped JSON, convert it to page images or markdown, report what it discloses about its author and tooling, or assess its text layer before spending on OCR. Send the file as a multipart `file` part or point at a `url` and Helix fetches it first.',
+    whenToUse:
+      'Reach for Document whenever the input is a file rather than a page — PDF, DOCX, PPTX or XLSX. Pick the operation with `op`: `parse` for content, `convert` for page images or an Office file as markdown, `metadata` for disclosure (and `metadata/scrub` for a cleaned copy), `assess` for a text-layer verdict before committing to OCR. Use Scrape for HTML pages; Document refuses them with `unsupported_type`. `ocr: auto` runs OCR only when the text layer is missing or garbled. The same file sent twice is read once, keyed by content hash, whichever operation asks for it.',
+    responseShape:
+      "`{ success, data: { op, ...operation fields, metadata: { filename, pageCount, fileType, ocrUsed, needsOcr, parser, sizeBytes, contentHash, sourceUrl, fromCache } }, warnings }`. The operation's own fields vary: `parse` returns `markdown`/`json`, `convert` returns `image`/`markdown`, `metadata` returns `findings`/`riskSummary`, `assess` returns `needsOcr`/`textLayerQuality`. A remote fetch problem, an unsupported type or an unreachable parser is `{ success: false, failure: { reason, detail, statusCode } }`; a file over the operator's upload ceiling is HTTP 413.",
+    failureReasons: ['unsupported_type', 'http_error', 'dns', 'tls', 'timeout', 'empty', 'service_unavailable'],
+  },
+  extract: {
+    id: 'extract',
+    purpose:
+      'Turn one or more URLs into typed rows against a JSON Schema you supply or a plain-language description Helix designs a schema from. Every returned field carries the source span it was read from, and any field the source does not support is dropped rather than guessed.',
+    whenToUse:
+      "Reach for Extract when you want data, not documents — the same shape across a set of pages, as a table. Pass `schema` when you already have one, or `prompt` to have `/v1/agent/schema` design one you can keep and reuse. Use Scrape with `jsonOptions` for a single page you are already reading; use Extract when the same shape applies across a URL set. Fields that cannot be traced to a span in the source come back in `dropped` with a reason, so an incomplete answer is visible rather than silently invented.",
+    responseShape:
+      '`{ success, data: [ { ...schema fields, _source: { url, span: [start, end] } } ], dropped: [ { field, reason } ], warnings, usage }`. `data` is one row per successfully extracted object, `dropped` names every field discarded for want of grounding, and `usage` (model, tokens, blocks kept) appears when a model ran. A request whose schema is invalid is HTTP 400 (`invalid_schema`); a page that could not be read is reported per URL in `warnings` rather than failing the call.',
+    failureReasons: ['blocked', 'challenge', 'timeout', 'dns', 'tls', 'http_error', 'empty', 'robots_denied', 'service_unavailable'],
+  },
+  screenshot: {
+    id: 'screenshot',
+    purpose:
+      'Capture a URL as an image or PDF: the full page, just the viewport, or a single element. PNG, JPEG, WebP or PDF, at any viewport size and device pixel ratio, with ads and consent dialogs blocked out of the frame.',
+    whenToUse:
+      'Reach for Screenshot when you want the page as it renders rather than as it responds. `fullPage` captures below the fold; `selector` captures one element; omit both for the viewport. Set `viewport` for device size and `dpr` for retina output, `format` and `quality` for the encoding, and `pdf: true` to get a paginated PDF instead of an image. `blockAds` removes ad and consent-dialog chrome, `darkMode` emulates the dark colour scheme, and `omitBackground` yields transparency where the page allows it. `waitFor` holds for a delay or a selector so animations and lazy images settle before the shutter. Scrape with `formats: [screenshot]` returns the same image alongside other formats; this endpoint is the fast path when the image is all you want.',
+    responseShape:
+      "`{ success, data: { screenshot, width, height, format, bytes, metadata: { statusCode, tier, devicePixelRatio } }, warnings }` where `screenshot` is a URL to the stored capture. Otherwise `{ success: false, failure: { reason, detail, statusCode, tier, tiersAttempted } }` inside a 200; a 400 means the request itself was wrong. A `selector` that matches nothing is `empty`.",
+    failureReasons: ['blocked', 'challenge', 'timeout', 'dns', 'tls', 'http_error', 'empty', 'robots_denied', 'service_unavailable'],
+  },
   parse: {
     id: 'parse',
     purpose: 'Convert a document (PDF, DOCX, PPTX, XLSX) into markdown, and optionally into JSON against a schema or prompt, in the same envelope Scrape returns for web pages. Send the file as a multipart `file` part or point at a `url` and Helix fetches it first.',

@@ -7,6 +7,7 @@ import {
   Bot,
   Braces,
   FileText,
+  Activity,
   FlaskConical,
   Package,
   Plug,
@@ -16,7 +17,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Logo } from '@/components/shell/logo';
-import { endpointById, type EndpointDef } from '@/lib/catalog';
+import { PRODUCTS, TAB_GROUPS, endpointById, type EndpointDef, type TabGroup } from '@/lib/catalog';
 import { CONVERTER_URL, PERSONA_URL } from '@/lib/mode';
 import { GITHUB_URL } from '@/lib/github-stars';
 import { cn } from '@/lib/utils';
@@ -38,22 +39,13 @@ export interface MenuRow {
   external?: boolean;
 }
 
-export type MenuId = 'capabilities' | 'docs' | 'utilities';
+export type MenuId = 'apis' | 'docs' | 'tools';
 
 const def = (id: string): EndpointDef => {
   const e = endpointById(id);
   if (!e) throw new Error(`nav: unknown endpoint ${id}`);
   return e;
 };
-
-const scrape = def('scrape');
-const parse = def('parse');
-const metadata = def('metadata');
-const search = def('search');
-const map = def('map');
-const crawl = def('crawl');
-const interact = def('interact');
-const monitor = def('monitor');
 
 const fromCatalog = (e: EndpointDef, chips?: MenuChip[]): MenuRow => ({
   label: e.name,
@@ -64,36 +56,56 @@ const fromCatalog = (e: EndpointDef, chips?: MenuChip[]): MenuRow => ({
   chips,
 });
 
+/** Sub-operations shown as chips under their parent product's row. */
+const CHIPS: Partial<Record<string, MenuChip[]>> = {
+  document: [
+    { label: 'Parse', href: def('parse').route },
+    { label: 'Convert', href: def('convert').route },
+    { label: 'Metadata', href: def('metadata').route },
+    { label: 'Assess', href: '/document#assess' },
+  ],
+  crawl: [
+    { label: 'Crawl', href: def('crawl').route },
+    { label: 'Map', href: def('map').route },
+    { label: 'Robots', href: '/crawl#robots' },
+  ],
+};
+
+/** Human label per catalog group, in the order the nav lists them. */
+export const GROUP_LABEL: Record<TabGroup, string> = {
+  DISCOVER: 'Discover',
+  EXTRACT: 'Extract',
+  CRAWL: 'Crawl',
+  ACT: 'Act',
+  WATCH: 'Watch',
+};
+
+export interface MenuGroup {
+  group: TabGroup;
+  label: string;
+  rows: MenuRow[];
+}
+
+/**
+ * The API menu, derived from the catalog rather than hand-listed: a new
+ * `product: true` endpoint appears here without touching this file.
+ */
+export const API_GROUPS: readonly MenuGroup[] = TAB_GROUPS.map((group) => ({
+  group,
+  label: GROUP_LABEL[group],
+  rows: PRODUCTS.filter((e) => e.group === group).map((e) => fromCatalog(e, CHIPS[e.id])),
+})).filter((g) => g.rows.length > 0);
+
+/** Flat order, for the mobile drawer and anything that cannot render columns. */
 export const ENDPOINT_ROWS: readonly MenuRow[] = [
-  fromCatalog(scrape, [
-    { label: 'URLs', href: scrape.route },
-    { label: 'Documents', href: parse.route },
-    { label: 'Metadata', href: metadata.route },
-  ]),
-  fromCatalog(search),
-  fromCatalog(crawl, [
-    { label: 'Crawl', href: crawl.route },
-    { label: 'Map', href: map.route },
-  ]),
-  fromCatalog(interact),
-  fromCatalog(monitor),
+  ...API_GROUPS.flatMap((g) => g.rows),
   {
     label: 'Agent',
     href: '/app/agent',
     tagline: 'Give it a goal. It picks the endpoints, runs them, and reports back.',
     icon: Bot,
   },
-  {
-    label: 'Converter API',
-    href: CONVERTER_URL,
-    tagline: 'Convert audio, video, images and documents between formats.',
-    icon: FileCog,
-    external: true,
-  },
-  // A row whose URL is blank is dropped rather than rendered as a dead link:
-  // Converter has no public deployment, so a hosted build has nowhere to send
-  // anyone. Same rule the footer applies.
-].filter((row) => row.href);
+];
 
 export const SURFACE_ROWS: readonly MenuRow[] = [
   { label: 'MCP', href: '/docs/mcp', tagline: 'Every endpoint as a tool for Claude, Cursor and any MCP client.', icon: Plug },
@@ -113,10 +125,26 @@ export const DOCS_ROWS: readonly MenuRow[] = [
   { label: 'llms.txt', href: '/llms.txt', tagline: 'Every page on this site as markdown, indexed.', icon: FileText },
 ];
 
-export const UTILITY_ROWS: readonly MenuRow[] = [
-  { label: 'Persona', href: PERSONA_URL, tagline: 'System prompts for 36 roles, ready to paste.', icon: Users, external: true },
+export const TOOL_ROWS: readonly MenuRow[] = [
+  {
+    label: 'Converter',
+    href: CONVERTER_URL,
+    tagline: 'Convert, compress and optimise media in your browser. Nothing is uploaded.',
+    icon: FileCog,
+    external: true,
+    chips: [
+      { label: 'Convert', href: `${CONVERTER_URL}/convert` },
+      { label: 'Compress', href: `${CONVERTER_URL}/compress` },
+      { label: 'Record', href: `${CONVERTER_URL}/tools/record` },
+    ],
+  },
   { label: 'Playground', href: '/app/playground', tagline: 'Try every endpoint against a live URL.', icon: FlaskConical },
-];
+  { label: 'Persona', href: PERSONA_URL, tagline: 'System prompts for 36 roles, ready to paste.', icon: Users, external: true },
+  { label: 'Status', href: '/status', tagline: 'Uptime and latency per endpoint, by day.', icon: Activity },
+].filter((row) => row.href);
+
+/** @deprecated Kept while callers migrate to `TOOL_ROWS`. */
+export const UTILITY_ROWS = TOOL_ROWS;
 
 export interface MenuRowProps {
   row: MenuRow;
@@ -202,14 +230,21 @@ export function OpenSourcePanel({ onNavigate }: { onNavigate: () => void }) {
   );
 }
 
-export function CapabilitiesPanel({ onNavigate }: { onNavigate: () => void }) {
+export function ApisPanel({ onNavigate }: { onNavigate: () => void }) {
   return (
     <div className="grid grid-cols-[1fr_1fr_280px] divide-x divide-m-border-faint">
       <div>
         <ColumnHeader>Endpoints</ColumnHeader>
-        <div className="py-1">
-          {ENDPOINT_ROWS.map((row) => (
-            <MenuRowItem key={row.label} row={row} onNavigate={onNavigate} />
+        <div className="grid grid-cols-2 gap-x-2 py-1">
+          {API_GROUPS.map((group) => (
+            <div key={group.group} className="min-w-0">
+              <div className="px-4 pb-1 pt-2 font-mono text-[11px] uppercase tracking-wide text-m-ink/40">
+                {group.label}
+              </div>
+              {group.rows.map((row) => (
+                <MenuRowItem key={row.label} row={row} onNavigate={onNavigate} />
+              ))}
+            </div>
           ))}
         </div>
       </div>
@@ -239,12 +274,12 @@ export function DocsPanel({ onNavigate }: { onNavigate: () => void }) {
   );
 }
 
-export function UtilitiesPanel({ onNavigate }: { onNavigate: () => void }) {
+export function ToolsPanel({ onNavigate }: { onNavigate: () => void }) {
   return (
     <div>
-      <ColumnHeader>Utilities</ColumnHeader>
+      <ColumnHeader>Tools</ColumnHeader>
       <div className="grid grid-cols-2 gap-x-2 p-1 pb-2 pt-1.5">
-        {UTILITY_ROWS.map((row) => (
+        {TOOL_ROWS.map((row) => (
           <MenuRowItem key={row.label} row={row} onNavigate={onNavigate} />
         ))}
       </div>

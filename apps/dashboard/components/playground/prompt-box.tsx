@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { ArrowRight, Code2, Loader2, Play, Search, SlidersHorizontal } from 'lucide-react';
 import type { Format } from '@/lib/api';
-import { ENDPOINTS, TAB_GROUPS, endpointById, type EndpointDef } from '@/lib/catalog';
-import type { Endpoint } from '@/lib/endpoints';
+import { RUNNABLE, TAB_GROUPS, runnableById, type RunnableEndpointDef } from '@/lib/catalog';
+import type { RunnableEndpoint as Endpoint } from '@/lib/endpoints';
 import { usePrefersReducedMotion } from '@/lib/preferences';
 import { cn } from '@/lib/utils';
 import { Segmented, type SegmentedItem } from '@/components/marketing/segmented';
@@ -22,52 +22,30 @@ const PLACEHOLDERS: Record<Endpoint, string[]> = {
   monitor: ['stripe.com/pricing', 'status.openai.com'],
 };
 
-const TYPE_MS = 55;
-const HOLD_MS = 1900;
-const ERASE_MS = 28;
+const HOLD_MS = 4200;
 
 /**
- * Types each placeholder out a character at a time, holds, erases, moves on.
+ * Rotates through the example URLs, one at a time.
  *
- * It runs only while the field is empty and unfocused: a caret animating in a
- * box someone is typing into competes with their own text, and the reason to
- * show the sequence at all is to demonstrate what the field takes before they
- * have committed to using it.
+ * Deliberately not a typewriter: a caret redrawing the field every ~50ms reads
+ * as flicker in a box someone is trying to read, and it competes with the
+ * cursor once they click in. A slow swap makes the same point — here are the
+ * kinds of thing this field takes — without moving while anyone looks at it.
  */
-function useTypedPlaceholder(phrases: readonly string[], active: boolean): string {
-  const [text, setText] = React.useState('');
+function useRotatingPlaceholder(phrases: readonly string[], active: boolean): string {
   const [index, setIndex] = React.useState(0);
-  const [erasing, setErasing] = React.useState(false);
 
   React.useEffect(() => {
     setIndex(0);
-    setText('');
-    setErasing(false);
   }, [phrases]);
 
   React.useEffect(() => {
-    if (!active) return;
-    const phrase = phrases[index % phrases.length] ?? '';
-    let timer: number;
+    if (!active || phrases.length < 2) return;
+    const timer = window.setInterval(() => setIndex((i) => (i + 1) % phrases.length), HOLD_MS);
+    return () => window.clearInterval(timer);
+  }, [phrases, active]);
 
-    // One timer per render, forward or back, so focusing the field mid-erase
-    // cannot leave an interval running against an unmounted state setter.
-    if (text.length < phrase.length) {
-      timer = window.setTimeout(() => setText(phrase.slice(0, text.length + 1)), TYPE_MS);
-    } else if (!erasing) {
-      timer = window.setTimeout(() => setErasing(true), HOLD_MS);
-    } else if (text.length > 0) {
-      timer = window.setTimeout(() => setText(text.slice(0, -1)), ERASE_MS);
-    } else {
-      setErasing(false);
-      setIndex((i) => i + 1);
-      return;
-    }
-
-    return () => window.clearTimeout(timer);
-  }, [text, index, phrases, active, erasing]);
-
-  return text;
+  return phrases[index % phrases.length] ?? '';
 }
 
 export const RUN_LABEL: Record<Endpoint, string> = {
@@ -112,7 +90,7 @@ const APP_TRACK_VARS = {
 } as React.CSSProperties;
 
 function tabsFor(variant: PromptSurface): SegmentedItem<Endpoint>[] {
-  const visible: EndpointDef[] = TAB_GROUPS.flatMap((group) => ENDPOINTS.filter((e) => e.group === group));
+  const visible: RunnableEndpointDef[] = TAB_GROUPS.flatMap((group) => RUNNABLE.filter((e) => e.group === group));
   return visible
     .filter((e) => variant === 'app' || HERO_TABS.includes(e.id))
     .map((e) => ({ id: e.id, label: e.name, icon: e.icon, group: e.group }));
@@ -162,7 +140,7 @@ export function PromptBox({
   className,
 }: PromptBoxProps) {
   const s = SURFACE[variant];
-  const activeDef = endpointById(activeId) ?? ENDPOINTS[0]!;
+  const activeDef = runnableById(activeId) ?? RUNNABLE[0]!;
   const isSearch = activeDef.id === 'search';
   const placeholders = PLACEHOLDERS[activeDef.id];
   const [focused, setFocused] = React.useState(false);
@@ -171,9 +149,8 @@ export function PromptBox({
 
   // Reduced motion gets the first URL as a plain placeholder: the point is to
   // show a real example, and that survives without the animation.
-  const typing = value.length === 0 && !focused && !reduceMotion;
-  const typed = useTypedPlaceholder(placeholders, typing);
-  const placeholder = reduceMotion || !typing ? (placeholders[0] ?? '') : typed;
+  const rotating = value.length === 0 && !focused && !reduceMotion;
+  const placeholder = useRotatingPlaceholder(placeholders, rotating);
 
   const { scheme, rest } = isSearch ? { scheme: '', rest: value } : splitScheme(value);
 

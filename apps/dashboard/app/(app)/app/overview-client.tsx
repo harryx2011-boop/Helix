@@ -34,7 +34,7 @@ function ExploreCell({ endpoint }: { endpoint: EndpointSummary }) {
   return (
     <Link
       key={endpoint.id}
-      href={endpoint.status === 'live' ? `/app/playground?tab=${endpoint.id}` : '#'}
+      href={endpoint.status === 'live' && def?.runnable ? `/app/playground?tab=${endpoint.id}` : `/${endpoint.id}`}
       className="group flex flex-col gap-2 p-5 transition-colors duration-150 ease-out hover:bg-secondary/40"
     >
       <div className="flex items-center justify-between">

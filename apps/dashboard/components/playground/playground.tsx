@@ -29,8 +29,8 @@ import type {
 } from '@/lib/api';
 import { runEndpoint, type EndpointMode } from '@/lib/run-endpoint';
 import { useAppSession } from '@/components/app/session-provider';
-import { endpointById } from '@/lib/catalog';
-import type { Endpoint } from '@/lib/endpoints';
+import { runnableById } from '@/lib/catalog';
+import type { RunnableEndpoint as Endpoint } from '@/lib/endpoints';
 import { DEFAULT_FORMATS } from '@/lib/formats';
 import { recordRun, subjectOf } from '@/lib/recent-runs';
 import { cn } from '@/lib/utils';
@@ -59,7 +59,7 @@ export function Playground() {
   const requestedUrl = searchParams.get('url');
   const { preferences, hydrated: prefsHydrated } = usePreferences();
   const [activeId, setActiveId] = React.useState<string>(
-    requestedTab && endpointById(requestedTab) ? requestedTab : 'scrape',
+    requestedTab && runnableById(requestedTab) ? requestedTab : 'scrape',
   );
 
   // Preferences arrive after mount (localStorage), so the default endpoint is
@@ -69,7 +69,7 @@ export function Playground() {
   React.useEffect(() => {
     if (appliedDefault.current || !prefsHydrated || requestedTab) return;
     appliedDefault.current = true;
-    if (endpointById(preferences.defaultEndpoint)) setActiveId(preferences.defaultEndpoint);
+    if (runnableById(preferences.defaultEndpoint)) setActiveId(preferences.defaultEndpoint);
   }, [prefsHydrated, requestedTab, preferences.defaultEndpoint]);
   const [promptValue, setPromptValue] = React.useState(requestedUrl ?? '');
 
@@ -81,7 +81,7 @@ export function Playground() {
     if (key === lastDeepLink.current) return;
     lastDeepLink.current = key;
     if (!requestedUrl) return;
-    if (requestedTab && endpointById(requestedTab)) setActiveId(requestedTab);
+    if (requestedTab && runnableById(requestedTab)) setActiveId(requestedTab);
     setPromptValue(requestedUrl);
     setResult(undefined);
     setError(undefined);
@@ -104,7 +104,7 @@ export function Playground() {
     { endpoint: Endpoint; body: Record<string, unknown>; pathSuffix?: string } | undefined
   >(undefined);
 
-  const activeDef = endpointById(activeId) ?? endpointById('scrape')!;
+  const activeDef = runnableById(activeId) ?? runnableById('scrape')!;
 
   const selectTab = (id: string) => {
     setActiveId(id);

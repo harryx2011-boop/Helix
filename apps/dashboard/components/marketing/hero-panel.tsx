@@ -176,6 +176,38 @@ function noiseLine(line: string, randomize: boolean): React.ReactNode {
 
 /** Endpoint response preview shapes (lib/docs-content.ts response envelopes, trimmed for the hero). */
 const RESPONSE_PREVIEW: Record<Endpoint, string> = {
+  document: `{
+  "success": true,
+  "data": {
+    "op": "parse",
+    "markdown": "# Invoice 0142\n...",
+    "metadata": {
+      "filename": "invoice.pdf",
+      "pageCount": 2,
+      "ocrUsed": false
+    }
+  }
+}`,
+  extract: `{
+  "success": true,
+  "data": [
+    {
+      "plan": "Pro",
+      "monthlyPrice": 79,
+      "_source": { "url": "…/pricing", "span": [1204, 1261] }
+    }
+  ],
+  "dropped": []
+}`,
+  screenshot: `{
+  "success": true,
+  "data": {
+    "screenshot": "https://cdn.helix.sh/s/9f2c….png",
+    "width": 1440,
+    "height": 5120,
+    "format": "png"
+  }
+}`,
   scrape: `{
   "success": true,
   "data": {

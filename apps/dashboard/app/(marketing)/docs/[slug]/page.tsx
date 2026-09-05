@@ -128,7 +128,7 @@ function EndpointDoc({ def, docs }: { def: EndpointDef; docs: EndpointDocs }) {
           <PillButton href={`/${def.id}`} variant="secondary">
             View the {def.productName} page
           </PillButton>
-          {!isComing && (
+          {!isComing && def.runnable && (
             <PillButton href={`/app/playground?tab=${def.id}`} variant="primary">
               Open in playground
             </PillButton>

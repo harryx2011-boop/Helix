@@ -25,6 +25,25 @@ const CARDS: readonly EndpointCardItem[] = [
 
 /** Verbatim request/response pairs, one per tab — matched to each capability page's openapi-sourced examples. */
 const REQUEST: Record<Endpoint, string> = {
+  document: `POST /v1/document
+{
+  "op": "parse",
+  "url": "https://example.com/files/invoice.pdf",
+  "formats": ["markdown", "json"],
+  "ocr": "auto"
+}`,
+  extract: `POST /v1/extract
+{
+  "urls": ["https://example.com/pricing"],
+  "prompt": "every plan name and its monthly price"
+}`,
+  screenshot: `POST /v1/screenshot
+{
+  "url": "https://example.com",
+  "fullPage": true,
+  "format": "png",
+  "viewport": { "width": 1440, "height": 900 }
+}`,
   scrape: `POST /v1/scrape
 {
   "url": "https://example.com/pricing",
@@ -85,6 +104,35 @@ const REQUEST: Record<Endpoint, string> = {
 };
 
 const RESPONSE: Record<Endpoint, string> = {
+  document: `{
+  "success": true,
+  "data": {
+    "op": "parse",
+    "markdown": "# Invoice 0142\n...",
+    "json": { "invoiceTotal": 4820.00 },
+    "metadata": { "pageCount": 2, "ocrUsed": false }
+  }
+}`,
+  extract: `{
+  "success": true,
+  "data": [
+    {
+      "plan": "Pro",
+      "monthlyPrice": 79,
+      "_source": { "url": "…/pricing", "span": [1204, 1261] }
+    }
+  ],
+  "dropped": []
+}`,
+  screenshot: `{
+  "success": true,
+  "data": {
+    "screenshot": "https://cdn.helix.sh/s/9f2c….png",
+    "width": 1440,
+    "height": 5120,
+    "format": "png"
+  }
+}`,
   scrape: `{
   "success": true,
   "data": {
@@ -167,7 +215,7 @@ export function Capabilities() {
 
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="01" total="07" label="CAPABILITIES" sub="Eight endpoints" icon={Braces} />
+      <FrameBand step="01" total="07" label="CAPABILITIES" sub="Nine products" icon={Braces} />
 
       <div className="py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">

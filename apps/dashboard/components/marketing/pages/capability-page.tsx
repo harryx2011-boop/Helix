@@ -15,9 +15,12 @@ import type { Endpoint } from '@/lib/endpoints';
 /** Hero field per endpoint, chosen so neighbours in the nav never share one. */
 const HERO_MOTIF: Record<Endpoint, HeroMotif> = {
   scrape: 'cloud',
+  document: 'orbit',
   parse: 'wave',
   metadata: 'flow',
   convert: 'flow',
+  extract: 'wave',
+  screenshot: 'cloud',
   search: 'flow',
   map: 'orbit',
   crawl: 'orbit',
@@ -34,9 +37,12 @@ function seedFor(id: string): number {
 /** Per-endpoint mock animation: type = content composing, reveal = results listing. */
 const MOCK_MODE: Record<Endpoint, AnimatedCodeMode> = {
   scrape: 'type',
+  document: 'type',
   parse: 'type',
   metadata: 'reveal',
   convert: 'reveal',
+  extract: 'reveal',
+  screenshot: 'reveal',
   search: 'reveal',
   map: 'reveal',
   crawl: 'reveal',
@@ -109,14 +115,20 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
             <PillButton href="/sign-up" variant="primary">
               Notify me <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
-          ) : (
+          ) : def.runnable ? (
             <PillButton href={`/app/playground?tab=${def.id}`} variant="primary">
               Open in playground <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
+          ) : (
+            <PillButton href={`/docs/${def.id}`} variant="primary">
+              Read the docs <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </PillButton>
           )}
-          <PillButton href={`/docs/${def.id}`} variant="secondary">
-            Read the docs
-          </PillButton>
+          {def.runnable && (
+            <PillButton href={`/docs/${def.id}`} variant="secondary">
+              Read the docs
+            </PillButton>
+          )}
         </div>
       </section>
       </div>

@@ -4,20 +4,21 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, Menu, X } from 'lucide-react';
+import { useUser } from '@clerk/nextjs';
 import { Logo } from '@/components/shell/logo';
 import { GITHUB_URL } from '@/lib/github-stars';
 import { cn } from '@/lib/utils';
 import { PillButton } from './pill-button';
 import { GithubMark } from './github-mark';
 import {
-  CapabilitiesPanel,
+  ApisPanel,
   DocsPanel,
-  UtilitiesPanel,
+  ToolsPanel,
   MenuRowItem,
   ENDPOINT_ROWS,
   SURFACE_ROWS,
   DOCS_ROWS,
-  UTILITY_ROWS,
+  TOOL_ROWS,
   type MenuId,
   type MenuRow,
 } from './nav-menus';
@@ -25,9 +26,9 @@ import {
 const HOSTED = process.env.NEXT_PUBLIC_HELIX_HOSTED === '1';
 
 const MENUS: readonly { id: MenuId; label: string }[] = [
-  { id: 'capabilities', label: 'Capabilities' },
+  { id: 'apis', label: 'APIs' },
   { id: 'docs', label: 'Docs' },
-  { id: 'utilities', label: 'Utilities' },
+  { id: 'tools', label: 'Tools' },
 ];
 
 const topLinkClass =
@@ -48,6 +49,7 @@ export function Nav({ stars = null }: NavProps) {
   const rootRef = React.useRef<HTMLDivElement>(null);
   const triggerRefs = React.useRef<Partial<Record<MenuId, HTMLButtonElement | null>>>({});
   const pathname = usePathname();
+  const { user } = useUser();
 
   React.useEffect(() => {
     setOpen(null);
@@ -123,17 +125,12 @@ export function Nav({ stars = null }: NavProps) {
                     aria-labelledby={`nav-${menu.id}-trigger`}
                     className="absolute inset-x-0 top-full animate-fade-in-up overflow-hidden rounded-b-panel border border-t-0 border-m-border-muted bg-m-surface shadow-card"
                   >
-                    {menu.id === 'capabilities' && <CapabilitiesPanel onNavigate={close} />}
+                    {menu.id === 'apis' && <ApisPanel onNavigate={close} />}
                     {menu.id === 'docs' && <DocsPanel onNavigate={close} />}
-                    {menu.id === 'utilities' && <UtilitiesPanel onNavigate={close} />}
+                    {menu.id === 'tools' && <ToolsPanel onNavigate={close} />}
                   </div>
                 )}
               </div>
-              {i === 0 && (
-                <Link href="/status" onMouseEnter={close} className={topLinkClass}>
-                  Status
-                </Link>
-              )}
             </React.Fragment>
           ))}
         </nav>
@@ -149,15 +146,15 @@ export function Nav({ stars = null }: NavProps) {
             <GithubMark className="h-4 w-4" />
             {stars ? <span className="font-mono text-[13px] tabular-nums">{stars}</span> : 'GitHub'}
           </Link>
-          {HOSTED ? (
+          {!user && HOSTED ? (
             <PillButton href="/sign-in" variant="secondary">
               Sign in
             </PillButton>
-          ) : (
+          ) : !user && !HOSTED ? (
             <PillButton href="/app" variant="primary">
               Open app
             </PillButton>
-          )}
+          ) : null}
         </div>
 
         <button
@@ -178,16 +175,9 @@ export function Nav({ stars = null }: NavProps) {
           className="max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-m-border-faint bg-m-bg px-4 py-3 lg:hidden"
         >
           <div className="flex flex-col">
-            <MobileGroup label="Capabilities" rows={[...ENDPOINT_ROWS, ...SURFACE_ROWS]} onNavigate={() => setMobileOpen(false)} />
-            <Link
-              href="/status"
-              onClick={() => setMobileOpen(false)}
-              className="border-b border-m-border-faint px-1 py-3 text-[14px] font-medium text-m-ink"
-            >
-              Status
-            </Link>
+            <MobileGroup label="APIs" rows={[...ENDPOINT_ROWS, ...SURFACE_ROWS]} onNavigate={() => setMobileOpen(false)} />
             <MobileGroup label="Docs" rows={DOCS_ROWS} onNavigate={() => setMobileOpen(false)} />
-            <MobileGroup label="Utilities" rows={UTILITY_ROWS} onNavigate={() => setMobileOpen(false)} />
+            <MobileGroup label="Tools" rows={TOOL_ROWS} onNavigate={() => setMobileOpen(false)} />
             <Link
               href={GITHUB_URL}
               target="_blank"
@@ -197,17 +187,19 @@ export function Nav({ stars = null }: NavProps) {
               <GithubMark className="h-4 w-4" />
               {stars ? <span className="font-mono text-[13px] tabular-nums">{stars}</span> : 'GitHub'}
             </Link>
-            <div className="pt-3">
-              {HOSTED ? (
-                <PillButton href="/sign-in" variant="secondary" className="w-full">
-                  Sign in
-                </PillButton>
-              ) : (
-                <PillButton href="/app" variant="primary" className="w-full">
-                  Open app
-                </PillButton>
-              )}
-            </div>
+            {!user && (
+              <div className="pt-3">
+                {HOSTED ? (
+                  <PillButton href="/sign-in" variant="secondary" className="w-full">
+                    Sign in
+                  </PillButton>
+                ) : (
+                  <PillButton href="/app" variant="primary" className="w-full">
+                    Open app
+                  </PillButton>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -14,7 +14,13 @@
 
 export const CANVAS_NAME = 'Canvas Connect';
 export const CANVAS_PACKAGE = 'canvaslms-api';
-export const CANVAS_REPO = 'https://github.com/harryx2011-boop/CanvasLMS-API.git';
+/**
+ * The server lives in the Helix monorepo at `tools/canvas-mcp`. The standalone
+ * CanvasLMS-API repo was retired on merge, so a clone lands in Helix and the
+ * install steps cd into that subdirectory.
+ */
+export const CANVAS_REPO = 'https://github.com/harryx2011-boop/Helix.git';
+export const CANVAS_SUBDIR = 'Helix/tools/canvas-mcp';
 
 /** Tool counts, verified against tools.json on 2026-09-05. */
 export const TOOL_TOTAL = 100;
@@ -68,27 +74,27 @@ export const OS_LABEL: Record<CanvasOS, string> = {
 /** Install steps per OS, carried across verbatim from the server's own docs. */
 export const INSTALL_STEPS: Record<CanvasOS, readonly { title: string; code: string }[]> = {
   windows: [
-    { title: 'clone', code: `git clone ${CANVAS_REPO}\ncd CanvasLMS-API` },
+    { title: 'clone', code: `git clone ${CANVAS_REPO}\ncd ${CANVAS_SUBDIR}` },
     { title: 'install (uv)', code: 'uv venv .venv\nuv pip install --python .venv\\Scripts\\python.exe -e .' },
     { title: 'env file', code: 'copy .env.example .env' },
     { title: 'verify', code: '.venv\\Scripts\\canvaslms-api.exe --test' },
   ],
   macos: [
-    { title: 'clone', code: `git clone ${CANVAS_REPO}\ncd CanvasLMS-API` },
+    { title: 'clone', code: `git clone ${CANVAS_REPO}\ncd ${CANVAS_SUBDIR}` },
     { title: 'install (uv)', code: 'uv venv .venv\nuv pip install -e .' },
     { title: 'env file', code: 'cp .env.example .env' },
     { title: 'verify', code: '.venv/bin/canvaslms-api --test' },
   ],
   linux: [
-    { title: 'clone', code: `git clone ${CANVAS_REPO}\ncd CanvasLMS-API` },
+    { title: 'clone', code: `git clone ${CANVAS_REPO}\ncd ${CANVAS_SUBDIR}` },
     { title: 'install (uv)', code: 'uv venv .venv\nuv pip install -e .' },
     { title: 'env file', code: 'cp .env.example .env' },
     { title: 'verify', code: '.venv/bin/canvaslms-api --test' },
   ],
 };
 
-const WIN_BIN = 'C:\\path\\to\\CanvasLMS-API\\.venv\\Scripts\\canvaslms-api.exe';
-const NIX_BIN = '/path/to/CanvasLMS-API/.venv/bin/canvaslms-api';
+const WIN_BIN = 'C:\\path\\to\\Helix\\tools\\canvas-mcp\\.venv\\Scripts\\canvaslms-api.exe';
+const NIX_BIN = '/path/to/Helix/tools/canvas-mcp/.venv/bin/canvaslms-api';
 
 export interface CanvasClientDef {
   id: string;

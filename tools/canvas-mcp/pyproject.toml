@@ -29,7 +29,8 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/harryx2011-boop/CanvasLMS-API"
+Repository = "https://github.com/harryx2011-boop/Helix"
+Documentation = "https://helixapi-dev.vercel.app/canvas"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/canvaslms_api"]

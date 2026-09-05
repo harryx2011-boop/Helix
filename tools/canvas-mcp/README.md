@@ -8,8 +8,8 @@ CanvasLMS - API is a local MCP server that puts your Canvas LMS account in front
 2. Clone the repository and install it.
 
    ```bash
-   git clone https://github.com/harryx2011-boop/CanvasLMS-API.git
-   cd CanvasLMS-API
+   git clone https://github.com/harryx2011-boop/Helix.git
+   cd Helix/tools/canvas-mcp
    uv venv .venv
    uv pip install -e .
    ```

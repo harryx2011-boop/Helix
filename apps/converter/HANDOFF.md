@@ -1,5 +1,15 @@
 # Converter API — state of the build
 
+> **Superseded.** This document describes the original server-backed build
+> (Next frontend on 4400, Fastify API on 8400, ffmpeg + sharp running
+> server-side, Helix-account auth). The app was rearchitected to run fully
+> client-side — ffmpeg.wasm and jsquash/libheif-js/utif2 in Web Workers, no
+> backend, no account — and `apps/converter-api` was deleted. Everything
+> below is historical build log, kept for the bugs-found record; it does not
+> describe the app as it runs today. Current spec of record:
+> `CONVERTER-CONTRACT.md` at the repo root, rewritten for the new
+> architecture.
+
 ffmpeg-based file converter in the Helix monorepo. Next frontend on **4400**,
 Fastify API on **8400**. Spec of record: `CONVERTER-CONTRACT.md` at the repo
 root, derived from 40 scoping answers.

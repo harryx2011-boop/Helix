@@ -218,6 +218,53 @@ export async function cancelJob(
   return { code: 200, body: { id: job.id, jobId: job.id, status: job.status } };
 }
 
+interface JobRequestRow {
+  request: Record<string, unknown>;
+}
+
+/**
+ * A job's expected output shape, projected from the request that created it
+ * rather than stored separately — `jobs.request` already holds the whole
+ * original body, and a second copy would only be a chance for the two to
+ * disagree.
+ */
+export async function fetchJobSchema(id: string, options: JobOwner & { requestId: string }): Promise<RouteResult> {
+  if (!isJobId(id)) return notFound(options.requestId);
+
+  const owner = ownerClause(options, 2);
+
+  const { rows } = await getPool().query<JobRequestRow>(
+    `SELECT request FROM jobs WHERE id = $1${owner.sql}`,
+    [id, ...owner.values],
+  );
+
+  const job = rows[0];
+  if (!job) return notFound(options.requestId);
+
+  const request = job.request;
+  const scrapeOptions = (request['scrapeOptions'] as Record<string, unknown> | undefined) ?? {};
+  const formats =
+    (request['formats'] as unknown[] | undefined) ??
+    (scrapeOptions['formats'] as unknown[] | undefined) ??
+    ['markdown'];
+  const extraction =
+    (request['jsonOptions'] as Record<string, unknown> | undefined) ??
+    (request['extract'] as Record<string, unknown> | undefined) ??
+    (scrapeOptions['jsonOptions'] as Record<string, unknown> | undefined) ??
+    (scrapeOptions['extract'] as Record<string, unknown> | undefined);
+
+  return {
+    code: 200,
+    body: {
+      id,
+      jobId: id,
+      formats,
+      schema: extraction?.['schema'] ?? null,
+      prompt: extraction?.['prompt'] ?? null,
+    },
+  };
+}
+
 export interface JobRouteDeps {
   multiTenant?: boolean;
 }
@@ -302,5 +349,14 @@ export async function registerJobs(app: FastifyInstance, deps: JobRouteDeps = {}
       })),
       robotsBlocked: rows.filter((r) => r.reason === 'robots_denied').map((r) => r.url),
     });
+  });
+
+  app.get<{ Params: { id: string } }>('/jobs/:id/schema', async (request, reply) => {
+    const result = await fetchJobSchema(request.params.id, {
+      requestId: request.id,
+      apiKeyId: request.apiKey?.id ?? null,
+      multiTenant: deps.multiTenant === true,
+    });
+    return reply.code(result.code).send(result.body);
   });
 }

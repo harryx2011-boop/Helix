@@ -2,6 +2,8 @@
 
 import { HelixClient, HelixApiError } from '@/lib/api';
 import type {
+  ConvertRequest,
+  ConvertResponse,
   CrawlRequest,
   CrawlResponse,
   InteractRequest,
@@ -70,10 +72,14 @@ async function runViaProxy<T>(endpoint: Endpoint, body: Record<string, unknown> 
       : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
   });
 
-  // The metadata scrub response is a file with its report in a header, not
-  // JSON — everything else is a typed envelope the caller asserts a shape onto.
+  // The metadata scrub and convert responses are a file (scrub with its report
+  // in a header), not JSON — everything else is a typed envelope the caller
+  // asserts a shape onto.
   if (endpoint === 'metadata' && mode === 'scrub' && response.ok) {
     return { ok: true, status: response.status, body: (await scrubResultFromResponse(response)) as unknown as T };
+  }
+  if (endpoint === 'convert' && response.ok) {
+    return { ok: true, status: response.status, body: (await convertResultFromResponse(response)) as unknown as T };
   }
 
   const json = (await response.json().catch(() => null)) as (T & { message?: string; error?: string }) | null;
@@ -81,6 +87,27 @@ async function runViaProxy<T>(endpoint: Endpoint, body: Record<string, unknown> 
     throw new HelixApiError(json?.message ?? `Request failed with status ${response.status}`, response.status);
   }
   return { ok: true, status: response.status, body: json as T };
+}
+
+/** Rebuilds the same `ConvertSuccess` shape `HelixClient.convert` returns, from the proxied response. */
+async function convertResultFromResponse(response: Response): Promise<ConvertResponse> {
+  if (response.headers.get('content-type')?.includes('application/json')) {
+    return (await response.json()) as ConvertResponse;
+  }
+  const contentType = response.headers.get('content-type') ?? 'application/octet-stream';
+  const pages = Number(response.headers.get('x-helix-convert-pages') ?? '1');
+  const pageConvertedHeader = response.headers.get('x-helix-convert-page');
+  const star = /filename\*=(?:UTF-8|utf-8)''([^;]+)/.exec(response.headers.get('content-disposition') ?? '');
+  const plain = /filename="?([^";]+)"?/.exec(response.headers.get('content-disposition') ?? '');
+  const filename = star?.[1] ? decodeURIComponent(star[1]) : plain?.[1]?.trim() || 'converted';
+  return {
+    success: true,
+    blob: await response.blob(),
+    filename,
+    contentType,
+    pages: Number.isFinite(pages) ? pages : 1,
+    ...(pageConvertedHeader ? { pageConverted: Number(pageConvertedHeader) } : {}),
+  };
 }
 
 /** Rebuilds the same `MetadataScrubSuccess` shape `HelixClient.metadataScrub` returns, from the proxied response. */
@@ -115,6 +142,7 @@ async function callInstance(
   | ParseResponse
   | MetadataResponse
   | MetadataScrubResponse
+  | ConvertResponse
   | InteractResponse
   | MonitorResponse
 > {
@@ -133,6 +161,8 @@ async function callInstance(
       return mode === 'scrub'
         ? client.metadataScrub(body as MetadataRequest | FormData)
         : client.metadataScan(body as MetadataRequest | FormData);
+    case 'convert':
+      return client.convert(body as ConvertRequest | FormData);
     case 'interact':
       return client.interact(body as unknown as InteractRequest);
     case 'monitor':

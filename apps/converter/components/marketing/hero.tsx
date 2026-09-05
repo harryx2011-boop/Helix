@@ -69,7 +69,7 @@ export function Hero() {
         return;
       }
       if (file.size > MAX_FILE_BYTES) {
-        setState({ phase: 'rejected', reason: `${formatBytes(file.size)} is over the 5 GB limit.` });
+        setState({ phase: 'rejected', reason: `${formatBytes(file.size)} is over the 2 GB limit for a browser tab.` });
         return;
       }
       stashHeroFile(file);
@@ -117,12 +117,12 @@ export function Hero() {
             className="text-display font-semibold leading-[1.04] tracking-[-0.02em] text-p-ink sm:text-displaylg"
             style={{ textWrap: 'balance' }}
           >
-            Convert video, audio and images. Up to 5 GB a file.
+            Convert video, audio and images. Nothing leaves this tab.
           </h1>
           <p className="mx-auto mt-5 max-w-[56ch] text-lead leading-relaxed text-p-ink-2">
             Drop a file below and it opens in the converter with the right options already picked.
-            Sixty-three conversions and six compressors, run by ffmpeg and libvips on your own
-            machine. Every one of them is also an API call.
+            Sixty-three conversions and six compressors, run by ffmpeg and image codecs compiled to
+            WebAssembly, entirely in your browser tab.
           </p>
         </div>
 
@@ -172,7 +172,7 @@ export function Hero() {
                   {over ? 'Let go to convert it' : 'Drop a file here'}
                 </p>
                 <p id="hero-drop-hint" className="text-note text-p-ink-3">
-                  Video, audio, image or GIF. Up to 5 GB. Output is kept for one hour.
+                  Video, audio, image or GIF. Up to 2 GB. Runs in this tab; closing it loses the result.
                 </p>
                 <PillButton
                   variant="secondary"
@@ -238,14 +238,8 @@ export function Hero() {
               Open the converter
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
-            <Link
-              href="/api-docs"
-              className={pillButtonClass({ variant: 'secondary', size: 'md', className: 'px-6' })}
-            >
-              Read the API
-            </Link>
           </div>
-          <p className="mt-4 text-center text-note text-p-ink-3">Sign in with your Helix account to run a job.</p>
+          <p className="mt-4 text-center text-note text-p-ink-3">No account, no upload. It runs the moment you drop a file.</p>
         </div>
       </div>
 

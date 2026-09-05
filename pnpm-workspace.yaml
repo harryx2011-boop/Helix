@@ -3,7 +3,6 @@
   - 'apps/dashboard'
   - 'apps/persona'
   - 'apps/converter'
-  - 'apps/converter-api'
   - 'packages/schema'
   - 'packages/sdk-ts'
   - 'packages/cli'

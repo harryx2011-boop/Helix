@@ -45,6 +45,14 @@ export interface DocumentResult {
   parserUsed: string;
 }
 
+export interface PdfAssessment {
+  pages: number;
+  charsExtracted: number;
+  needsOcr: boolean;
+  suspectedGarbledText: boolean;
+  reason: string;
+}
+
 /** Every provider a caller can store, cloud or local. */
 export type ProviderName = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'ollama' | 'vllm' | 'openai-compatible';
 
@@ -138,6 +146,28 @@ export interface MetadataOptions {
   data: Buffer;
   contentType: string;
   timeoutMs?: number | undefined;
+}
+
+/** Target formats /convert can produce. Deliberately narrow: rasterizing a PDF page or re-encoding an image, nothing that authors a new document. */
+export type ConvertFormat = 'png' | 'jpeg';
+
+export interface ConvertOptions {
+  data: Buffer;
+  contentType: string;
+  to: ConvertFormat;
+  /** 1-based. PDF only; ignored for an image source. */
+  page?: number | undefined;
+  dpi?: number | undefined;
+  timeoutMs?: number | undefined;
+}
+
+export interface ConvertResult {
+  data: Buffer;
+  contentType: string;
+  /** Total pages in the source PDF; `1` for an image source. */
+  pages: number;
+  /** The page that was rasterized, or undefined for an image-to-image conversion. */
+  pageConverted?: number | undefined;
 }
 
 /** How much a disclosed value gives away. An ordinal band, not a probability. */
@@ -327,6 +357,36 @@ export class ExtractClient {
     };
   }
 
+  /** PDF only: page count and whether the text layer is trustworthy, without converting anything. */
+  async assessPdf(options: { data: Buffer; timeoutMs?: number | undefined }): Promise<PdfAssessment> {
+    const response = await fetch(`${this.#baseUrl}/assess`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/pdf' },
+      body: options.data as Uint8Array<ArrayBuffer>,
+      signal: AbortSignal.timeout(options.timeoutMs ?? 30_000),
+    });
+
+    if (!response.ok) {
+      throw new ExtractHttpError(response.status, await detailOf(response));
+    }
+
+    const body = (await response.json()) as {
+      pages: number;
+      chars_extracted: number;
+      needs_ocr: boolean;
+      suspected_garbled_text: boolean;
+      reason: string;
+    };
+
+    return {
+      pages: body.pages,
+      charsExtracted: body.chars_extracted,
+      needsOcr: body.needs_ocr,
+      suspectedGarbledText: body.suspected_garbled_text,
+      reason: body.reason,
+    };
+  }
+
 
   /** Read what a file discloses about the person and machine that made it. */
   async metadataScan(options: MetadataOptions): Promise<MetadataScanResult> {
@@ -405,6 +465,36 @@ export class ExtractClient {
       warnings: report.warnings ?? [],
       bytesBefore: report.bytes_before,
       bytesAfter: report.bytes_after,
+    };
+  }
+
+  /** Rasterize a PDF page, or re-encode an image between PNG and JPEG. */
+  async convert(options: ConvertOptions): Promise<ConvertResult> {
+    const query = new URLSearchParams({ to: options.to });
+    if (options.page !== undefined) query.set('page', String(options.page));
+    if (options.dpi !== undefined) query.set('dpi', String(options.dpi));
+
+    const response = await fetch(`${this.#baseUrl}/convert?${query.toString()}`, {
+      method: 'POST',
+      headers: { 'content-type': options.contentType },
+      body: options.data as Uint8Array<ArrayBuffer>,
+      signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
+    });
+
+    if (!response.ok) {
+      throw new ExtractHttpError(response.status, await detailOf(response));
+    }
+
+    const converted = Buffer.from(await response.arrayBuffer());
+    const contentType = response.headers.get('content-type') ?? '';
+    const pages = Number(response.headers.get('x-helix-convert-pages') ?? '1');
+    const pageHeader = response.headers.get('x-helix-convert-page');
+
+    return {
+      data: converted,
+      contentType,
+      pages: Number.isFinite(pages) ? pages : 1,
+      pageConverted: pageHeader ? Number(pageHeader) : undefined,
     };
   }
 

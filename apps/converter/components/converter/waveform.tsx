@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { PillButton } from '@/components/ui/pill-button';
 import { getAudioContext, primeAudio } from '@/lib/audio/chimes';
-import { API_BASE } from '@/lib/jobs/client';
 import { formatSeconds } from '@/lib/jobs/types';
 import { prefersReducedMotion } from '@/lib/theme';
 
@@ -133,7 +132,6 @@ export function AbPreview({ kind, sourceUrl, outputUrl, sourceLabel, outputLabel
   const lastLevelAt = useRef(0);
 
   const url = which === 'source' ? sourceUrl : outputUrl;
-  const crossOrigin = API_BASE ? ('anonymous' as const) : undefined;
 
   const ensureAnalyser = () => {
     const el = mediaRef.current;
@@ -225,7 +223,6 @@ export function AbPreview({ kind, sourceUrl, outputUrl, sourceLabel, outputLabel
     onPause: () => setPlaying(false),
     onEnded: () => setPlaying(false),
     onTimeUpdate: (e: React.SyntheticEvent<HTMLMediaElement>) => setTime(e.currentTarget.currentTime),
-    ...(crossOrigin ? { crossOrigin } : {}),
   };
 
   return (

@@ -21,6 +21,11 @@ dependencies = [
     # licence would contaminate a permissively-licensed project.
     "pypdfium2>=4.30.0",
 
+    # Image encode/decode for /convert (PDF page rasterization, PNG<->JPEG).
+    # Scoped to that one route; metadata.py deliberately avoids pulling this in
+    # for tag reading, which needs no pixel codec.
+    "pillow>=11.0.0",
+
     # Office formats.
     "python-docx>=1.1.2",
     "python-pptx>=1.0.2",

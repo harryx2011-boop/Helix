@@ -21,25 +21,6 @@ export const KIND_LABELS: Record<FormatKind, string> = {
 
 export const KIND_ORDER: FormatKind[] = ['video', 'audio', 'image', 'gif'];
 
-/**
- * The one base URL for the converter service. Everything that builds a request
- * or a code sample reads this; a second copy reading a different variable is
- * how downloads ended up pointed at the frontend.
- */
-export const API_BASE =
-  process.env.NEXT_PUBLIC_CONVERTER_API ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8400';
-
-export const ENDPOINTS: Record<FormatOp, string> = {
-  convert: '/v1/convert',
-  compress: '/v1/compress',
-  gif: '/v1/gif',
-  image: '/v1/image',
-};
-
-export function endpointFor(op: FormatOp): string {
-  return `${API_BASE}${ENDPOINTS[op]}`;
-}
-
 export const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'avi', 'mkv'] as const;
 export const AUDIO_EXTS = ['mp3', 'wav', 'ogg', 'm4a', 'flac'] as const;
 export const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'jfif', 'avif', 'tiff', 'tif'] as const;
@@ -48,15 +29,20 @@ export const GIF_EXTS = ['gif', 'apng'] as const;
 export const ACCEPTED_EXTS: string[] = [...VIDEO_EXTS, ...AUDIO_EXTS, ...IMAGE_EXTS, ...GIF_EXTS];
 
 /**
- * What the API will actually accept as a target, mirroring the enums in
- * apps/converter-api/src/ffmpeg/formats.ts. Inputs are broader than outputs —
- * `heif`, `jfif` and `tif` are read but written as their canonical spelling —
- * so offering anything outside this set produces a 400 the user cannot act on.
+ * What the engine will actually accept as a target, mirroring lib/engine/formats.ts.
+ * Inputs are broader than outputs. Two formats are read-only:
+ * - `heic`/`heif`: no open wasm build can encode real HEVC HEIC.
+ * - `webm`/VP9: ffmpeg.wasm's libvpx-vp9 encoder hangs indefinitely after the
+ *   first frame in this core build, confirmed in testing on every input
+ *   tried, with or without row-mt. Decoding a webm input is unaffected.
+ * Offering either as an output would fail validation, or worse, hang the tab
+ * silently, so both are excluded here rather than surfaced as an option that
+ * cannot work.
  */
 export const OUTPUT_TARGETS: Record<FormatKind, { likely: string[]; all: string[] }> = {
   video: {
-    likely: ['mp4', 'webm', 'mov', 'gif', 'mp3', 'mkv'],
-    all: ['mp4', 'webm', 'mov', 'mkv', 'avi', 'gif', 'mp3', 'm4a', 'wav', 'aac', 'flac', 'ogg'],
+    likely: ['mp4', 'mov', 'gif', 'mp3', 'mkv'],
+    all: ['mp4', 'mov', 'mkv', 'avi', 'gif', 'mp3', 'm4a', 'wav', 'aac', 'flac', 'ogg'],
   },
   audio: {
     likely: ['mp3', 'wav', 'm4a', 'flac', 'ogg'],
@@ -67,8 +53,8 @@ export const OUTPUT_TARGETS: Record<FormatKind, { likely: string[]; all: string[
     all: ['jpg', 'png', 'webp', 'avif', 'tiff', 'gif'],
   },
   gif: {
-    likely: ['gif', 'mp4', 'webm', 'apng'],
-    all: ['gif', 'apng', 'mp4', 'webm', 'mov', 'png', 'webp'],
+    likely: ['gif', 'mp4', 'apng'],
+    all: ['gif', 'apng', 'mp4', 'mov', 'png', 'webp'],
   },
 };
 
@@ -102,10 +88,13 @@ function pair(
   };
 }
 
+/** Not VIDEO_EXTS: webm reads fine but libvpx-vp9 hangs as an output (OUTPUT_TARGETS). */
+const VIDEO_OUTPUT_EXTS = ['mp4', 'mov', 'avi', 'mkv'] as const;
+
 function videoPairs(): FormatPair[] {
   const out: FormatPair[] = [];
   for (const from of VIDEO_EXTS) {
-    for (const to of VIDEO_EXTS) {
+    for (const to of VIDEO_OUTPUT_EXTS) {
       if (from === to) continue;
       out.push(
         pair(
@@ -186,7 +175,7 @@ function compressor(
 }
 
 const COMPRESSORS: FormatPair[] = [
-  compressor('compress-video', 'video', 'video', { preset: 'web' }, 'Compress video', 'Shrink MP4, MOV, WEBM, AVI or MKV to a target size or a preset: Email, Discord, Web or Archive.'),
+  compressor('compress-video', 'video', 'video', { preset: 'web' }, 'Compress video', 'Shrink MP4, MOV, AVI or MKV to a target size or a preset: Email, Discord, Web or Archive.'),
   compressor('compress-mp3', 'mp3', 'audio', { bitrate: '128k' }, 'Compress MP3', 'Re-encode an MP3 at a lower bitrate. 128k is the default; the estimate updates as you change it.'),
   compressor('compress-wav', 'wav', 'audio', { bitrate: '192k' }, 'Compress WAV', 'Turn a WAV into a much smaller file by picking a target size or bitrate.'),
   compressor('compress-image', 'image', 'image', { quality: 75 }, 'Compress image', 'Shrink JPG, PNG, WEBP, HEIC or AVIF files with a quality slider and an optional max width.'),
@@ -266,7 +255,7 @@ export function kindOfFile(name: string): FormatKind | null {
   return null;
 }
 
-export const MAX_FILE_BYTES = 5 * 1024 ** 3;
+export const MAX_FILE_BYTES = 2 * 1024 ** 3;
 
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

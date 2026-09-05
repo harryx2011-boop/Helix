@@ -3,13 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { PillButton } from '@/components/ui/pill-button';
-import { SignedOutPanel } from '@/components/site/key-gate';
-import { useApiKey } from '@/lib/auth';
+import { AskAi } from './ask-ai';
 import { Dropzone } from './dropzone';
 import { FileRow } from './file-row';
 import { SettingsPanel } from './settings-panel';
 import { chimeError, chimeSuccess, installAudioUnlock, primeAudio } from '@/lib/audio/chimes';
-import { MOCK, cancelJob, downloadUrl, submitJob, subscribe, type JobOptions, type SubmitRequest } from '@/lib/jobs/client';
+import { cancelJob, downloadUrl, submitJob, subscribe, type JobOptions, type SubmitRequest } from '@/lib/jobs/client';
 import { setSoundOn, upsertJob, useSoundOn } from '@/lib/jobs/store';
 import {
   defaultSettings,
@@ -122,13 +121,12 @@ type PanelProps = {
 };
 
 export function ConverterPanel({ preset }: PanelProps = {}) {
-  const apiKey = useApiKey();
-
   const [items, setItems] = useState<QueueItem[]>([]);
   const [shared, setShared] = useState<ConvertSettings | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [rejections, setRejections] = useState<string[]>([]);
+  const [aiNote, setAiNote] = useState<string | null>(null);
   const [announce, setAnnounce] = useState('');
   const soundOn = useSoundOn();
   const itemsRef = useRef(items);
@@ -279,13 +277,11 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
             patch(item.localId, { phase: 'running', pct: frame.pct, eta: frame.eta, fps: frame.fps ?? null });
             break;
           case 'done': {
-            // The frame's url is relative to the API, so it must be resolved
-            // against API_BASE (and carry the key) before anything fetches it.
             patch(item.localId, {
               phase: 'done',
               pct: 100,
               eta: 0,
-              url: downloadUrl(accepted.id),
+              url: frame.url,
               outSize: frame.size,
             });
             chimeSuccess();
@@ -294,8 +290,9 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
               from: item.ext,
               to: s.to,
               status: 'done',
-              // Stored relative: history re-resolves it, and a key can change.
-              url: frame.url,
+              // The blob: URL dies with this tab, so history never carries it —
+              // only that the job existed and how big the result was.
+              url: null,
               size: frame.size,
               expiresAt: Date.now() + 3600_000,
             });
@@ -386,6 +383,7 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
     for (const it of itemsRef.current) remove(it);
     setShared(null);
     setExpanded(null);
+    setAiNote(null);
   };
 
   const summary = useMemo(() => {
@@ -438,10 +436,6 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
   const first = items[0];
   const hasFiles = items.length > 0;
   const settingsLocked = summary.active > 0;
-
-  // Every hook above runs unconditionally; the gate is the last thing before
-  // render, so hook order is stable whether or not a key is present.
-  if (!MOCK && !apiKey) return <SignedOutPanel />;
 
   return (
     <section
@@ -499,6 +493,20 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
           <p className="mb-4 text-sm text-p-ink-2">
             {items.length > 1 ? 'Applies to every file. Open a row to change one file on its own.' : 'Open the row for trim, resize and rotation.'}
           </p>
+          <div className="mb-4">
+            <AskAi
+              ctx={{ fileKind: first.kind, fileExt: first.ext, fileSizeBytes: first.size, ...(first.meta.duration !== null ? { durationSec: first.meta.duration } : {}) }}
+              onResolved={(patch, explanation) => {
+                setShared((s) => (s ? { ...s, ...patch } : s));
+                setAiNote(explanation);
+              }}
+            />
+            {aiNote && (
+              <p role="status" className="mt-2 rounded-card border border-p-line bg-p-bg px-4 py-2.5 text-sm text-p-ink-2 animate-fade-in">
+                {aiNote}
+              </p>
+            )}
+          </div>
           <SettingsPanel
             scope="shared"
             kind={first.kind}

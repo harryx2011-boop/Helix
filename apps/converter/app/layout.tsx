@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: { default: 'Converter API', template: '%s · Converter API' },
   applicationName: 'Converter API',
   description:
-    'Convert, compress and edit video, audio and images up to 5 GB, in the browser or over a REST API. Runs on your own machine. Part of Helix.',
+    'Convert, compress and edit video, audio and images up to 2 GB, entirely in your browser. Nothing is ever uploaded. Part of Helix.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

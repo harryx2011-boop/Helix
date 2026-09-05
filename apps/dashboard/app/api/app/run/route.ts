@@ -7,7 +7,7 @@ import type { EndpointMode } from '@/lib/run-endpoint';
 
 export const dynamic = 'force-dynamic';
 
-const ENDPOINTS: Endpoint[] = ['scrape', 'parse', 'metadata', 'map', 'search', 'crawl', 'interact', 'monitor'];
+const ENDPOINTS: Endpoint[] = ['scrape', 'parse', 'metadata', 'convert', 'map', 'search', 'crawl', 'interact', 'monitor'];
 
 /** The agent panel's schema step isn't a playground tab, but it is the same "forward to the instance with the user's key" shape as the rest, so it rides the same route rather than earning its own. */
 type ProxyEndpoint = Endpoint | 'agent-schema';
@@ -73,11 +73,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // Scan/JSON endpoints answer with a typed envelope the browser already parses;
-  // scrub answers with file bytes and a header carrying the report, and gets
-  // forwarded byte-for-byte instead of round-tripped through JSON.
+  // scrub and convert answer with file bytes (scrub with a report header too),
+  // and get forwarded byte-for-byte instead of round-tripped through JSON.
   if (endpointParam === 'metadata' && mode === 'scrub' && upstream.ok) {
     const headers = new Headers();
     for (const name of ['content-type', 'content-disposition', 'x-helix-metadata-report', 'x-helix-metadata-removed', 'x-helix-metadata-retained']) {
+      const value = upstream.headers.get(name);
+      if (value) headers.set(name, value);
+    }
+    return new NextResponse(upstream.body, { status: upstream.status, headers });
+  }
+  if (endpointParam === 'convert' && upstream.ok && !upstream.headers.get('content-type')?.includes('application/json')) {
+    const headers = new Headers();
+    for (const name of ['content-type', 'content-disposition', 'x-helix-convert-pages', 'x-helix-convert-page']) {
       const value = upstream.headers.get(name);
       if (value) headers.set(name, value);
     }

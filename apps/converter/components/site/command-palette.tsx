@@ -13,7 +13,6 @@ const PAGES: PageEntry[] = [
   { kind: 'page', href: '/convert', title: 'Convert', hint: 'Open the converter' },
   { kind: 'page', href: '/compress', title: 'Compress', hint: 'Video, audio and image compressors' },
   { kind: 'page', href: '/tools', title: 'All tools', hint: 'Every conversion, grouped by kind' },
-  { kind: 'page', href: '/api-docs', title: 'API', hint: 'Endpoints, auth, job stream' },
   { kind: 'page', href: '/history', title: 'History', hint: 'Jobs from this browser' },
 ];
 

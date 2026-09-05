@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { ApiQuickstart } from '@/components/marketing/api-quickstart';
 import { KIND_LABELS, compressors } from '@/lib/formats';
 
 export const metadata: Metadata = {
@@ -27,7 +26,7 @@ export default function CompressPage() {
           <p className="mt-2 text-body leading-relaxed text-p-ink-2">
             Six compressors. Pick a preset or type a target size, and the estimate updates before
             you start. Video and audio go through ffmpeg; images go through libvips. Same file
-            limit as everything else: 5 GB.
+            limit as everything else: 2 GB, bounded by what a browser tab can hold in memory.
           </p>
         </div>
 
@@ -70,17 +69,6 @@ export default function CompressPage() {
           </dl>
         </section>
 
-        <section aria-labelledby="compress-api-heading" className="mt-16">
-          <h2 id="compress-api-heading" className="text-h3 font-semibold tracking-[-0.01em] text-p-ink">
-            Compress from code
-          </h2>
-          <p className="mt-2 max-w-[56ch] text-body text-p-ink-2">
-            One field picks the preset, or send <span className="font-mono">target</span> in bytes.
-          </p>
-          <div className="mt-6">
-            <ApiQuickstart op="compress" />
-          </div>
-        </section>
       </main>
     </>
   );

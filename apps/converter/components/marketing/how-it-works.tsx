@@ -8,7 +8,7 @@ function DropIllustration() {
         <Upload className="h-4 w-4" aria-hidden="true" />
       </span>
       <span className="text-note font-medium text-p-ink">Drop a file here</span>
-      <span className="text-micro text-p-ink-3">Up to 5 GB</span>
+      <span className="text-micro text-p-ink-3">Up to 2 GB</span>
     </div>
   );
 }

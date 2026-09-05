@@ -67,20 +67,20 @@ export interface ParseRouteDeps {
 const DEFAULT_MAX_IN_FLIGHT = 8;
 const MAX_REDIRECTS = 5;
 
-interface FileInput {
+export interface FileInput {
   bytes: Buffer;
   filename?: string | undefined;
   contentType?: string | undefined;
   sourceUrl?: string | undefined;
 }
 
-interface ParseFailure {
+export interface ParseFailure {
   reason: FailureReason;
   detail: string;
   statusCode?: number | undefined;
 }
 
-class RequestError extends Error {
+export class RequestError extends Error {
   readonly statusCode: number;
   readonly code: string;
   readonly field: string | undefined;
@@ -125,7 +125,7 @@ function parseFormats(values: FormDataEntryValue[]): string[] | undefined {
   return flat.length > 0 ? flat : undefined;
 }
 
-async function readMultipart(
+export async function readMultipart(
   raw: Buffer,
   contentType: string,
 ): Promise<{ file: FileInput; options: unknown }> {
@@ -227,7 +227,7 @@ function classifyRemoteError(error: unknown): ParseFailure {
   return { reason: 'http_error', detail: code ? `the remote fetch failed (${code})` : 'the remote fetch failed' };
 }
 
-async function fetchRemote(
+export async function fetchRemote(
   url: string,
   deps: { fetchImpl: typeof fetch; lookup: Lookup; userAgent: string; timeoutMs: number; maxBytes: number },
 ): Promise<{ ok: true; file: FileInput } | { ok: false; failure: ParseFailure } | { ok: false; tooLarge: true }> {

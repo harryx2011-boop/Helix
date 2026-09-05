@@ -18,6 +18,7 @@ import { registerHealth } from './routes/health.js';
 import { registerScrape } from './routes/scrape.js';
 import { registerParse } from './routes/parse.js';
 import { registerMetadata } from './routes/metadata.js';
+import { registerConvert } from './routes/convert.js';
 import { registerKeys } from './routes/keys.js';
 import { registerProviders } from './routes/providers.js';
 import { deriveEncryptionKey } from './providers/crypto.js';
@@ -32,6 +33,11 @@ import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
 import { registerAgent } from './routes/agent.js';
 import { registerEnrich } from './routes/enrich.js';
+import { registerDiff } from './routes/diff.js';
+import { registerProfiles } from './routes/profiles.js';
+import { registerScreenshot } from './routes/screenshot.js';
+import { registerPdfAssess } from './routes/pdf-assess.js';
+import { registerRobots } from './routes/robots.js';
 import { registerInternal } from './routes/internal.js';
 import { registerStatus } from './routes/status.js';
 import { StatusSampler } from './status/sampler.js';
@@ -315,6 +321,12 @@ await app.register(
       maxInFlight: config.parseMaxInflight,
       userAgent: config.userAgent,
     });
+    await registerConvert(instance, {
+      extractClient,
+      maxUploadBytes: config.parseMaxUploadMb * 1024 * 1024,
+      maxInFlight: config.parseMaxInflight,
+      userAgent: config.userAgent,
+    });
     await registerKeys(instance, { multiTenant: config.multiTenant });
     await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured });
     await registerMap(instance, { fetchClient, extractClient, userAgent: config.userAgent });
@@ -359,6 +371,26 @@ await app.register(
       encryptionKey: providerEncryptionKey,
       concurrency: config.searchScrapeConcurrency,
     });
+    await registerDiff(instance, {
+      fetchClient,
+      extractClient,
+      browserPool,
+      allowPrivateUrls: config.allowPrivateUrls,
+    });
+    await registerProfiles(instance);
+    await registerScreenshot(instance, {
+      fetchClient,
+      extractClient,
+      browserPool,
+      proxyUrl: config.proxyUrl,
+      allowPrivateUrls: config.allowPrivateUrls,
+    });
+    await registerPdfAssess(instance, {
+      extractClient,
+      maxUploadBytes: config.parseMaxUploadMb * 1024 * 1024,
+      userAgent: config.userAgent,
+    });
+    await registerRobots(instance, { userAgent: config.userAgent });
   },
   { prefix: '/v1' },
 );

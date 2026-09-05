@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type {
+  ConvertResponse,
   CrawlResponse,
   Document,
   Estimate,
@@ -71,6 +72,7 @@ export type PlaygroundResult =
   | { kind: 'parse'; response: ParseResponse }
   | { kind: 'metadata'; response: MetadataResponse }
   | { kind: 'metadata-scrub'; response: MetadataScrubResponse }
+  | { kind: 'convert'; response: ConvertResponse }
   | { kind: 'interact'; response: InteractResponse }
   | { kind: 'monitor'; response: MonitorResponse }
   | { kind: 'handoff'; jobId: string }
@@ -383,6 +385,46 @@ function documentDownloads(data: Document, base: string): DownloadDef[] {
   return out;
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function ConvertView({ result }: { result: Extract<ConvertResponse, { success: true }> }) {
+  const { blob, filename, pages, pageConverted } = result;
+
+  // Object URLs are per-blob and leak if the component remounts with a new one.
+  const href = React.useMemo(() => URL.createObjectURL(blob), [blob]);
+  React.useEffect(() => () => URL.revokeObjectURL(href), [href]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 border-b border-border pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="truncate font-mono text-foreground">{filename}</span>
+            <span className="font-mono text-xs">{formatBytes(blob.size)}</span>
+          </div>
+          <Button asChild size="sm" className="gap-1.5">
+            <a href={href} download={filename}>
+              <Download className="h-3.5 w-3.5" />
+              Download
+            </a>
+          </Button>
+        </div>
+        {pages > 1 && pageConverted !== undefined && (
+          <span className="font-mono text-xs text-muted-foreground">
+            Page {pageConverted} of {pages}
+          </span>
+        )}
+      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element -- object URL, not a static asset Next can optimise */}
+      <img src={href} alt={`Converted preview of ${filename}`} className="max-h-[480px] w-auto rounded-card border border-border object-contain" />
+    </div>
+  );
+}
+
 function EstimateCard({ estimate }: { estimate: Estimate }) {
   return (
     <div className="flex flex-col gap-3 rounded-card border border-border p-4">
@@ -680,6 +722,22 @@ export function Results({ result, loading, timingMs, error, pending, endpoint, i
       return (
         <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: true, label: 'Success' }} facts={timeFact} title="Scrubbed copy" debug={debug} input={input}>
           <MetadataScrubView result={response} />
+        </Chrome>
+      );
+    }
+
+    case 'convert': {
+      const response = result.response;
+      if (!response.success) {
+        return (
+          <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: false, label: response.failure.reason }} facts={timeFact} debug={debug} input={input}>
+            <FailurePanel failure={response.failure} />
+          </Chrome>
+        );
+      }
+      return (
+        <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: true, label: 'Success' }} facts={timeFact} title="Converted file" debug={debug} input={input}>
+          <ConvertView result={response} />
         </Chrome>
       );
     }

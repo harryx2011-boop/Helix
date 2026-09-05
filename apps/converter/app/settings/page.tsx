@@ -3,7 +3,7 @@ import { SettingsView } from '@/components/site/settings-view';
 
 export const metadata: Metadata = {
   title: 'Settings',
-  description: 'Your API key, sound, and what runs each conversion.',
+  description: 'Sound, and what runs each conversion.',
 };
 
 export default function SettingsPage() {
@@ -13,8 +13,7 @@ export default function SettingsPage() {
         Settings
       </h1>
       <p className="mt-2 max-w-[58ch] text-body text-p-ink-2">
-        Everything here is stored in this browser. Nothing is sent anywhere except your key, which
-        goes only to the converter.
+        Everything here is stored in this browser. Nothing is ever sent anywhere.
       </p>
       <SettingsView />
     </main>

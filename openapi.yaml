@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Helix
-  version: 1.11.3
+  version: 1.12.0
   summary: Self-hostable, BYOK web-data API.
   description: |
     Helix turns web pages and documents into clean, structured, LLM-ready data.
@@ -73,6 +73,8 @@ tags:
     description: Stateful browser sessions an agent can drive, with a live view.
   - name: Monitors
     description: Scheduled re-reads with change detection.
+  - name: Diff
+    description: One-shot comparison of two texts or pages, with nothing stored.
   - name: Jobs
     description: Status, results and cancellation for asynchronous work.
   - name: Providers
@@ -159,6 +161,49 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
+  /screenshot:
+    post:
+      tags: [Scrape]
+      summary: One screenshot, nothing else
+      description: |
+        The same fetch ladder `/scrape` uses with `formats: [screenshot]` and
+        nothing else in the response: no `markdown`, no `links`, no extraction
+        step. `screenshot` already forces the Chromium tier inside the
+        pipeline, so this buys a caller a smaller response and a smaller
+        request body, not a faster fetch.
+
+        Failures are reported the same way as `/scrape`: check `success`
+        before reading `data`.
+      operationId: screenshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ScreenshotRequest' }
+            examples:
+              basic:
+                summary: Desktop screenshot
+                value: { url: 'https://example.com' }
+              mobile:
+                summary: Phone viewport
+                value: { url: 'https://example.com', mobile: true }
+      responses:
+        '200':
+          description: |
+            The fetch resolved. Check `success` — a typed failure is reported
+            here rather than as an HTTP error, so you can see which tier and
+            profile were tried.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ScreenshotResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
   /parse:
     post:
       tags: [Parse]
@@ -240,6 +285,152 @@ paths:
         '429': { $ref: '#/components/responses/RateLimited' }
         '503':
           description: This instance is already holding `HELIX_PARSE_MAX_INFLIGHT` parses in memory. Retry after the `Retry-After` header.
+          headers:
+            Retry-After:
+              schema: { type: integer }
+              description: Seconds to wait before retrying.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /pdf-assess:
+    post:
+      tags: [Parse]
+      summary: Whether a PDF needs OCR, without parsing it
+      description: |
+        Runs the same classifier `/parse` runs before choosing a parser --
+        page count, extractable characters, and whether the text layer looks
+        like real prose or decoded to mojibake — without converting anything
+        to markdown. For deciding whether a full `/parse` (and its OCR cost)
+        is worth paying for, before paying for it.
+
+        PDF only. A DOCX, PPTX or XLSX — or anything else — comes back as a
+        typed `unsupported_type` failure rather than an HTTP error, the same
+        distinction `/parse` draws for its own unsupported types.
+
+        Accepts a JSON body with `url`, or a `multipart/form-data` body with a
+        `file` part, exactly like `/parse`.
+      operationId: pdfAssess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PdfAssessRequest' }
+            examples:
+              byUrl:
+                summary: A hosted PDF
+                value: { url: 'https://example.com/report.pdf' }
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: |
+            The file was read. Check `success` — an unreadable or non-PDF file
+            is reported here rather than as an HTTP error.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PdfAssessResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: The file exceeds this instance's upload limit (`HELIX_PARSE_MAX_UPLOAD_MB`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /convert:
+    post:
+      tags: [Parse]
+      summary: Rasterize a PDF page, or convert PNG to JPEG and back
+      description: |
+        Returns the converted file directly, the same wire shape
+        `/metadata/scrub` uses — no base64, no JSON wrapper, so the response
+        streams straight to disk or into a vision call.
+
+        Scoped to what helix-extract's pipeline can actually produce: a PDF
+        page rasterized to `png` or `jpeg` (`page` selects which one, 1-based;
+        `dpi` controls resolution, default 144), and `png`/`jpeg` re-encoded to
+        each other. There is no path to `pdf`, `docx`, `pptx` or `xlsx` as a
+        *target* — authoring those formats from other content needs a
+        document-layout engine this project does not carry, a separate and
+        much larger decision than rasterizing or re-encoding what already
+        exists.
+
+        Two ways to send the file, exactly like `/parse`: a JSON body with
+        `url`, or a `multipart/form-data` body with a `file` part and `to` as
+        a form field.
+      operationId: convert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConvertRequest' }
+            examples:
+              rasterizePage:
+                summary: Turn page 2 of a PDF into a PNG for a vision call
+                value:
+                  url: 'https://example.com/files/report.pdf'
+                  to: png
+                  page: 2
+              normalizeImage:
+                summary: Re-encode a PNG as JPEG
+                value:
+                  url: 'https://example.com/files/photo.png'
+                  to: jpeg
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/ConvertUpload' }
+            encoding:
+              file: { contentType: 'application/pdf, image/png, image/jpeg' }
+      responses:
+        '200':
+          description: |
+            The converted file. On a typed failure the body is
+            `application/json` carrying a `ConvertResponse` with
+            `success: false` instead — an unsupported source, an unreachable
+            target for that source, or a corrupt file too broken to rasterize
+            or re-encode are all reported here rather than as an HTTP error.
+          headers:
+            X-Helix-Convert-Pages:
+              schema: { type: integer }
+              description: Total pages in the source PDF; `1` for an image source.
+            X-Helix-Convert-Page:
+              schema: { type: string }
+              description: The 1-based page that was rasterized. Empty for an image-to-image conversion.
+            X-RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+            image/jpeg:
+              schema: { type: string, format: binary }
+            application/json:
+              schema: { $ref: '#/components/schemas/ConvertResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: The file (uploaded or fetched) exceeds this instance's upload ceiling.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '415':
+          description: The source cannot reach the requested `to` format, or the request body is neither JSON nor `multipart/form-data`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: The file could not be opened as the type it was declared to be — a corrupt or mislabelled upload.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: This instance is already converting `HELIX_PARSE_MAX_INFLIGHT` files. Retry after the `Retry-After` header.
           headers:
             Retry-After:
               schema: { type: integer }
@@ -452,6 +643,38 @@ paths:
               schema: { $ref: '#/components/schemas/MapResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /robots-check:
+    post:
+      tags: [Crawl]
+      summary: Whether a URL is allowed to be crawled, without fetching it
+      description: |
+        Reads and caches `robots.txt` the same way `/crawl` and `/map` do,
+        through the same `RobotsCache` — the answer here is what a crawl
+        would actually decide, not a second opinion from a separate parser.
+
+        `userAgent` defaults to this instance's own (`HELIX_USER_AGENT`);
+        override it to check what a different crawler would be allowed.
+        `crawlDelaySeconds` is `null` when the site's `robots.txt` sets none.
+      operationId: robotsCheck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RobotsCheckRequest' }
+            examples:
+              basic:
+                summary: Check with this instance's own user agent
+                value: { url: 'https://example.com/private/' }
+      responses:
+        '200':
+          description: The verdict.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RobotsCheckResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
 
   /crawl:
     post:
@@ -1314,6 +1537,67 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
+  /diff:
+    post:
+      tags: [Diff]
+      summary: Compare two texts or two pages, once
+      description: |
+        The same Myers diff `/monitor` runs on every check, without a monitor:
+        nothing is scheduled, nothing is stored, and there is no baseline to
+        keep. Each side of the comparison is either literal `text` you already
+        have, or a `url` Helix reads fresh through the normal fetch ladder —
+        the two can be mixed, so a live page can be compared against text you
+        captured yourself.
+
+        `mode: text` (the default) diffs at `granularity` (word, line or
+        character) and returns the same shape a monitor's webhook carries.
+        `mode: json` diffs two JSON values field by field instead of as text,
+        for comparing two structured-extraction results; `before`/`after` are
+        then JSON values directly, not `{ text }` or `{ url }`.
+
+        A `url` side that fails to read comes back as a 400 naming which side
+        and why, rather than a diff against half a comparison.
+      operationId: diff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DiffRequest' }
+            examples:
+              twoTexts:
+                summary: Two texts you already have
+                value:
+                  before: { text: 'Standard $29/month billed annually' }
+                  after: { text: 'Standard $34/month billed annually' }
+              twoUrls:
+                summary: Two live pages
+                value:
+                  before: { url: 'https://web.archive.org/web/2026/https://example.com/pricing' }
+                  after: { url: 'https://example.com/pricing' }
+                  granularity: line
+              json:
+                summary: Two structured-extraction results
+                value:
+                  mode: json
+                  before: { plan: 'Standard', price: 29 }
+                  after: { plan: 'Standard', price: 34 }
+      responses:
+        '200':
+          description: The diff. `success` is always true here; a side that could not be read is a 400, not a partial diff.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  diff:
+                    oneOf:
+                      - $ref: '#/components/schemas/MonitorDiff'
+                      - $ref: '#/components/schemas/MonitorJsonDiff'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
   /jobs/{id}:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -1382,6 +1666,45 @@ paths:
                   robotsBlocked:
                     type: array
                     items: { type: string, format: uri }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /jobs/{id}/schema:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Jobs]
+      summary: The output shape a job was started with
+      description: |
+        Projects `formats` and, when the job asked for structured extraction,
+        the `jsonOptions.schema` it will fill — read back from the request
+        that created the job, not stored separately. Answers before the job
+        finishes, so a caller building a consumer for the results does not
+        have to wait on the first page to learn the shape.
+
+        On a multi-tenant instance a job is visible only to the API key that
+        created it; another key gets the same 404 as a job that does not exist.
+        Jobs with no key recorded stay readable. A single-operator instance is
+        unscoped, so any of its keys can read any of its jobs.
+      operationId: getJobSchema
+      responses:
+        '200':
+          description: The expected shape.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  jobId: { type: string, format: uuid, description: Same as `id`. }
+                  formats:
+                    type: array
+                    items: { $ref: '#/components/schemas/Format' }
+                  schema:
+                    type: [object, 'null']
+                    description: The JSON Schema results will conform to, when the job requested structured extraction.
+                  prompt:
+                    type: [string, 'null']
+                    description: The extraction prompt, when one was given.
         '404': { $ref: '#/components/responses/NotFound' }
 
   /usage:
@@ -1650,6 +1973,39 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Health' }
+
+  /profiles/{id}/health:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string }, description: 'A browser fingerprint profile id, e.g. `chrome-149-macos`.' }
+    get:
+      tags: [System]
+      summary: Success/block rate for a fingerprint profile
+      description: |
+        Real usage, not a static description: every successful read and every
+        typed failure recorded against this profile id, across every request
+        on this instance regardless of which API key made it. There is no
+        per-tenant view of this — a profile's coherence against a given site
+        is a property of the identity, not of who asked for it.
+
+        404 when the profile has never been used, which is not the same as
+        the profile id being unknown; nothing here checks `packages/profiles`
+        for whether the id exists.
+      operationId: getProfileHealth
+      responses:
+        '200':
+          description: Attempts, successes and failures recorded against this profile.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile: { type: string }
+                  attempts: { type: integer }
+                  successes: { type: integer }
+                  failures: { type: integer }
+                  successRate: { type: number, description: 'successes / attempts. 0 to 1.' }
+                  lastUsedAt: { type: string, format: date-time, nullable: true }
+        '404': { $ref: '#/components/responses/NotFound' }
 
 components:
 
@@ -2216,6 +2572,89 @@ components:
           items: { type: string }
           description: 'Non-fatal notes: a missing text layer with OCR off, or a failed model step when the parse itself succeeded.'
 
+    PdfAssessRequest:
+      type: object
+      description: Send exactly one of `url` (JSON body) or a `file` part (`multipart/form-data`); this shape documents the JSON form.
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The PDF to fetch. An HTML page or any other type here is a typed `unsupported_type` failure.
+        timeout:
+          type: integer
+          default: 30000
+          minimum: 1000
+          maximum: 300000
+          description: Milliseconds for the remote fetch, when `url` is used.
+
+    PdfAssessResponse:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            pageCount: { type: integer }
+            charsExtracted: { type: integer, description: Characters read from a sample of pages, for judging the text layer. }
+            needsOcr: { type: boolean }
+            suspectedGarbledText: { type: boolean, description: 'The text layer decoded, but to characters that look like broken font encoding rather than prose.' }
+            reason: { type: string, description: Human-readable justification for the verdict. }
+            metadata:
+              type: object
+              properties:
+                filename: { type: [string, 'null'] }
+                sizeBytes: { type: integer }
+                sourceUrl: { type: string, format: uri, description: Present on the `url` path only. }
+        failure: { $ref: '#/components/schemas/FetchFailure' }
+
+    ConvertRequest:
+      type: object
+      required: [url, to]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The file to fetch and convert. An HTML page here is a typed `unsupported_type` failure.
+        to:
+          type: string
+          enum: [png, jpeg]
+          description: Target format. `pdf` sources can reach either; `png` and `jpeg` only reach each other.
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          description: 1-based. PDF sources only; ignored for an image source.
+        dpi:
+          type: integer
+          minimum: 36
+          maximum: 600
+          default: 144
+          description: Rasterization resolution. PDF sources only; ignored for an image source.
+        timeout:
+          type: integer
+          minimum: 1000
+          maximum: 300000
+          default: 30000
+          description: Remote fetch budget in milliseconds. Applies to the `url` path only.
+
+    ConvertUpload:
+      type: object
+      required: [file, to]
+      properties:
+        file: { type: string, format: binary }
+        to: { type: string, enum: [png, jpeg] }
+        page: { type: integer, minimum: 1 }
+        dpi: { type: integer, minimum: 36, maximum: 600 }
+
+    ConvertResponse:
+      type: object
+      required: [success]
+      description: Present only on a typed failure; a successful conversion answers with the file bytes instead.
+      properties:
+        success: { type: boolean }
+        failure: { $ref: '#/components/schemas/FetchFailure' }
+
     MetadataRequest:
       type: object
       required: [url]
@@ -2372,6 +2811,28 @@ components:
                 format: date-time
                 description: From the sitemap where present. Frequently stale or fabricated — treat as a hint.
         truncated: { type: boolean }
+
+    RobotsCheckRequest:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, format: uri }
+        userAgent:
+          type: string
+          description: Defaults to this instance's own (`HELIX_USER_AGENT`). Override to check what a different crawler would be allowed.
+
+    RobotsCheckResponse:
+      type: object
+      properties:
+        url: { type: string, format: uri }
+        userAgent: { type: string }
+        allowed: { type: boolean }
+        crawlDelaySeconds:
+          type: [number, 'null']
+          description: '`Crawl-delay` from the site''s `robots.txt`, honoured by `/crawl` despite being absent from RFC 9309. `null` when the site sets none.'
+        sitemaps:
+          type: array
+          items: { type: string, format: uri }
 
     BatchScrapeRequest:
       type: object
@@ -3033,6 +3494,23 @@ components:
         timingMs: { type: integer }
         failure: { $ref: '#/components/schemas/InteractFailure' }
 
+    DiffRequest:
+      type: object
+      required: [before, after]
+      description: |
+        Either `text` diffing (the default) or `json` diffing, chosen by
+        `mode`. In `text` mode, `before` and `after` are each `{ text }` or
+        `{ url }`; in `json` mode they are JSON values directly.
+      properties:
+        mode: { type: string, enum: [text, json], default: text }
+        before: {}
+        after: {}
+        granularity:
+          type: string
+          enum: [word, line, character]
+          default: word
+          description: Ignored in `json` mode.
+
     MonitorRequest:
       type: object
       required: [url, schedule]
@@ -3443,6 +3921,74 @@ components:
           items: { type: string }
           description: 'Always present. Each entry names the format it concerns, e.g. `json: No LLM credentials configured.`'
         usage: { $ref: '#/components/schemas/ExtractionUsage' }
+
+    ScreenshotRequest:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, format: uri }
+        mobile:
+          type: boolean
+          default: false
+          description: Render in a phone viewport (390x844, touch enabled). Forces the Chromium tier when `tier` is `auto`.
+        tier:
+          type: string
+          enum: [auto, chromium, camoufox]
+          default: auto
+          description: A screenshot always needs a real render; `plain`, `tls` and `lightpanda` have no layout engine, so they are not offered here.
+        engine: { $ref: '#/components/schemas/Engine' }
+        waitFor:
+          type: integer
+          minimum: 0
+          maximum: 30000
+          description: Milliseconds to wait after load, before capturing.
+        timeout:
+          type: integer
+          default: 30000
+          minimum: 1000
+          maximum: 300000
+        actions:
+          type: array
+          maxItems: 50
+          items: { $ref: '#/components/schemas/Action' }
+          description: Steps to run before capturing, e.g. dismissing a cookie banner.
+        profile:
+          type: string
+          description: Browser identity to present. Omit for an automatic choice.
+        proxy:
+          type: string
+          description: Your own proxy URL for this request. Omit to use the instance's configured proxy, when it has one.
+
+    ScreenshotResponse:
+      type: object
+      required: [success, warnings]
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            screenshot:
+              type: [string, 'null']
+              description: 'A `data:image/png;base64,...` URI. `null` with a warning when no image was captured.'
+            metadata:
+              type: object
+              properties:
+                sourceUrl: { type: string, format: uri }
+                finalUrl: { type: string, format: uri }
+                statusCode: { type: integer }
+                fetchedAt: { type: string, format: date-time }
+                tier: { $ref: '#/components/schemas/Tier' }
+                tiersAttempted:
+                  type: array
+                  items: { $ref: '#/components/schemas/Tier' }
+                profile: { type: string }
+                engine: { $ref: '#/components/schemas/Engine' }
+                mobile: { type: boolean, description: True only when a phone viewport was actually applied. }
+                timingMs: { type: integer }
+        failure: { $ref: '#/components/schemas/FetchFailure' }
+        warnings:
+          type: array
+          items: { type: string }
 
     ExtractionUsage:
       type: object

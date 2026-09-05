@@ -95,7 +95,7 @@ export type StoredPreset = {
   quality: number;
 };
 
-export const MAX_FILE_BYTES = 5 * 1024 ** 3;
+export const MAX_FILE_BYTES = 2 * 1024 ** 3;
 export const RETENTION_MS = 60 * 60 * 1000;
 
 export const BUILTIN_PRESETS: ReadonlyArray<{ id: CompressPreset; label: string; targetBytes: number | null }> = [
@@ -126,7 +126,10 @@ export function detectKind(file: File): FileKind | null {
 export function defaultTarget(kind: FileKind, ext: string): string {
   switch (kind) {
     case 'video':
-      return ext === 'mp4' ? 'webm' : 'mp4';
+      // Not webm: libvpx-vp9 hangs indefinitely in this wasm build (see
+      // lib/formats.ts OUTPUT_TARGETS). mov is the next-most-useful pivot
+      // for an mp4 source since it shares the same h264 codec path.
+      return ext === 'mp4' ? 'mov' : 'mp4';
     case 'audio':
       return ext === 'mp3' ? 'wav' : 'mp3';
     case 'image':

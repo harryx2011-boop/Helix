@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { ConverterPanel } from '@/components/converter/converter-panel';
+import { ConverterPanelLoader as ConverterPanel } from '@/components/converter/converter-panel-loader';
 
 export const metadata: Metadata = {
   title: 'Convert',
-  description: 'Convert video, audio, images and GIFs. Up to 5 GB per file, deleted an hour after conversion.',
+  description: 'Convert video, audio, images and GIFs. Up to 2 GB per file, entirely in your browser.',
 };
 
 export default function ConvertPage() {

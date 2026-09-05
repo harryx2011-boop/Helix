@@ -46,6 +46,12 @@ export interface PipelineOptions {
   allowPrivate?: boolean | undefined;
   /** Cancels the read between and during tier attempts; the reason becomes the failure detail. */
   signal?: AbortSignal | undefined;
+  /**
+   * Skips `extractClient.extract`. Only safe when no format needs extracted
+   * text (screenshot-only requests) — `detectBlock`/`shouldEscalate` still work
+   * without it, just without extracted-text as a corroborating signal.
+   */
+  skipExtraction?: boolean | undefined;
 }
 
 export interface PipelineSuccess {
@@ -284,7 +290,7 @@ export async function runPipeline(
     // Extract before deciding, so the classifier can use extracted length as a
     // corroborating signal and so a success needs no second fetch.
     let extracted: ExtractResult | undefined;
-    if (attempt.facts.body.length > 0) {
+    if (!options.skipExtraction && attempt.facts.body.length > 0) {
       try {
         extracted = await deps.extractClient.extract({
           html: attempt.facts.body,
@@ -302,7 +308,7 @@ export async function runPipeline(
 
     const verdict = detectBlock(attempt.facts);
 
-    if (!verdict.blocked && extracted) {
+    if (!verdict.blocked && (extracted || options.skipExtraction)) {
       const decision = shouldEscalate({
         currentTier: tier,
         response: attempt.facts,
@@ -314,6 +320,11 @@ export async function runPipeline(
         return {
           success: true,
           content: {
+            markdown: '',
+            text: '',
+            links: [],
+            extractorUsed: 'none',
+            contentHash: '',
             ...extracted,
             rawHtml:
               options.formats.includes('rawHtml') || options.formats.includes('html')

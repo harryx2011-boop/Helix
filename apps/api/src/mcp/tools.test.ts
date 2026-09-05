@@ -144,7 +144,7 @@ describe('the real openapi.yaml', () => {
     const spec = loadSpec();
     const tools = generateTools(spec);
     const names = tools.map((t) => t.name);
-    for (const expected of ['helix_scrape', 'helix_map', 'helix_crawl', 'helix_search', 'helix_get_job', 'helix_health']) {
+    for (const expected of ['helix_scrape', 'helix_map', 'helix_crawl', 'helix_search', 'helix_get_job', 'helix_health', 'helix_convert']) {
       expect(names).toContain(expected);
     }
     for (const tool of tools) {
@@ -155,6 +155,14 @@ describe('the real openapi.yaml', () => {
     const scrape = tools.find((t) => t.name === 'helix_scrape')!;
     expect(scrape.inputSchema['required']).toEqual(['url']);
     expect(scrape.inputSchema['properties']).toHaveProperty('formats');
+
+    // /convert's response is raw bytes, not the usual JSON envelope; the tool
+    // still needs a normal object schema built from its request body alone.
+    const convert = tools.find((t) => t.name === 'helix_convert')!;
+    expect(convert.method).toBe('POST');
+    expect(convert.inputSchema['required']).toEqual(['url', 'to']);
+    expect(convert.inputSchema['properties']).toHaveProperty('page');
+    expect(convert.inputSchema['properties']).toHaveProperty('dpi');
   });
 });
 

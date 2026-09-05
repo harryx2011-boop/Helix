@@ -85,6 +85,17 @@ Dockerfile: `apps/extract/Dockerfile` (python:3.12-slim). Any container host wor
 
 Health check: `GET /health` returns `llm_configured`.
 
+**`apps/extract` and `apps/api` deploy together, not independently.** A feature
+that adds a route to one and calls it from the other — `POST /v1/convert` is
+the first example — fails in a specific, misleading way if only `apps/api` is
+redeployed: the API answers `service_unavailable` with detail `"Not Found"`,
+which reads like extract is down rather than merely out of date. Locally this
+also bites through `uvicorn`'s dev server, which does not hot-reload new
+routes the way `apps/api`'s `tsx watch` does — a code change to
+`helix_extract/main.py` needs an actual restart, not just a saved file.
+Redeploy or restart both services together whenever either side of the
+`apps/api` ↔ `apps/extract` contract changes.
+
 ## 5. Deploy `apps/api`
 
 Dockerfile: `apps/api/Dockerfile`.

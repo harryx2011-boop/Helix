@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
-import { ConverterPanel } from '@/components/converter/converter-panel';
-import { ENDPOINTS, FORMAT_PAIRS, KIND_LABELS, findPair, label, relatedPairs } from '@/lib/formats';
+import { ConverterPanelLoader as ConverterPanel } from '@/components/converter/converter-panel-loader';
+import { FORMAT_PAIRS, KIND_LABELS, findPair, label, relatedPairs } from '@/lib/formats';
 
 type Params = { pair: string };
 
@@ -39,7 +39,7 @@ export default async function PairPage({ params }: { params: Promise<Params> }) 
           </h1>
           <p className="mx-auto mt-3 max-w-[56ch] text-body leading-relaxed text-p-ink-2">{entry.description}</p>
           <p className="mt-2 font-mono text-caption text-p-ink-3">
-            {KIND_LABELS[entry.kind]} · POST {ENDPOINTS[entry.op]}
+            {KIND_LABELS[entry.kind]} · runs in your browser
           </p>
         </div>
 

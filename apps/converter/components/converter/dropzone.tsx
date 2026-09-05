@@ -19,7 +19,7 @@ export function splitAccepted(list: FileList | File[]): { accepted: File[]; reje
   const rejected: string[] = [];
   for (const file of Array.from(list)) {
     if (file.size > MAX_FILE_BYTES) {
-      rejected.push(`${file.name} is ${formatBytes(file.size)}. The limit is 5 GB.`);
+      rejected.push(`${file.name} is ${formatBytes(file.size)}. The limit is 2 GB per file in this tab.`);
       continue;
     }
     if (detectKind(file) === null) {
@@ -128,15 +128,15 @@ export function Dropzone({ onFiles, onReject, onDragActive, compact = false, dis
             {active ? 'Release to add' : 'Drop files here, or click to browse'}
           </p>
           <p className="font-mono text-sm text-p-ink-2">video · audio · image · gif</p>
-          <p className="text-sm text-p-ink-2">up to 5 GB</p>
+          <p className="text-sm text-p-ink-2">up to 2 GB</p>
           <p id={hintId} className="mt-3 text-sm text-p-ink-3">
-            Files are deleted an hour after conversion.
+            Runs in this tab. Nothing is uploaded, and the result is lost on reload.
           </p>
         </>
       )}
       {compact && (
         <span id={hintId} className="sr-only">
-          Video, audio, image or GIF, up to 5 GB each.
+          Video, audio, image or GIF, up to 2 GB each.
         </span>
       )}
     </div>

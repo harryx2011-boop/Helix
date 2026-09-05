@@ -5,7 +5,6 @@ const LINKS = [
   { href: '/convert', label: 'Convert' },
   { href: '/compress', label: 'Compress' },
   { href: '/tools', label: 'Tools' },
-  { href: '/api-docs', label: 'API' },
   { href: '/history', label: 'History' },
   { href: '/settings', label: 'Settings' },
 ] as const;
@@ -20,7 +19,7 @@ export function SiteFooter() {
           <p className="text-body font-semibold text-p-ink">Converter API</p>
           <p className="mt-1 text-note leading-relaxed text-p-ink-3">
             {converterCount} converters and {compressors().length} compressors over ffmpeg and libvips. Files up
-            to 5 GB. Output is deleted one hour after the job finishes.
+            to 2 GB. Runs in this tab; nothing is uploaded, and the file is gone on reload.
           </p>
           <a
             href="https://helixapi-dev.vercel.app"

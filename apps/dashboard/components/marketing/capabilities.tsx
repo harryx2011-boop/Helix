@@ -76,6 +76,12 @@ const REQUEST: Record<Endpoint, string> = {
 {
   "url": "https://example.com/files/report.pdf"
 }`,
+  convert: `POST /v1/convert
+{
+  "url": "https://example.com/files/report.pdf",
+  "to": "png",
+  "page": 1
+}`,
 };
 
 const RESPONSE: Record<Endpoint, string> = {
@@ -147,6 +153,11 @@ const RESPONSE: Record<Endpoint, string> = {
     "riskSummary": { "high": 1, "medium": 2, "low": 4 }
   }
 }`,
+  convert: `200 OK
+Content-Type: image/png
+Content-Disposition: attachment; filename="report.png"
+
+<PNG bytes>`,
 };
 
 /** One tabbed request/response panel covering all six capabilities, each tab linking to its own page. */

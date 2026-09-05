@@ -253,4 +253,9 @@ const RESPONSE_PREVIEW: Record<Endpoint, string> = {
     "riskSummary": { "high": 2, "medium": 1, "low": 0 }
   }
 }`,
+  convert: `200 OK
+Content-Type: image/png
+Content-Disposition: attachment; filename="report.png"
+
+<PNG bytes>`,
 };

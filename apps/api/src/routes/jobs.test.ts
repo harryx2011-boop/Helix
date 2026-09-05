@@ -24,6 +24,7 @@ interface JobRow {
   started_at: Date | null;
   finished_at: Date | null;
   expires_at: Date;
+  request: Record<string, unknown>;
 }
 
 interface DocRow {
@@ -91,6 +92,12 @@ const db = vi.hoisted(() => {
       const [id, keyId] = values as [string, string | null];
       const rows = scoped(state.jobs.filter((j) => j.id === id), keyId);
       return { rows, rowCount: rows.length };
+    }
+
+    if (text.includes('SELECT request FROM jobs')) {
+      const [id, keyId] = values as [string, string | null];
+      const rows = scoped(state.jobs.filter((j) => j.id === id), keyId);
+      return { rows: rows.map((j) => ({ request: j.request })), rowCount: rows.length };
     }
 
     if (text.includes('FROM documents')) {
@@ -163,7 +170,7 @@ const db = vi.hoisted(() => {
 
 vi.mock('../db/pool.js', () => ({ getPool: () => ({ query: db.query }) }));
 
-import { cancelJob, fetchJobView, isJobId, registerJobs } from './jobs.js';
+import { cancelJob, fetchJobSchema, fetchJobView, isJobId, registerJobs } from './jobs.js';
 import type { ApiKey } from '../core/api-keys.js';
 
 const JOB = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
@@ -188,6 +195,7 @@ function job(over: Partial<JobRow> = {}): JobRow {
     started_at: new Date('2026-09-01T10:00:01Z'),
     finished_at: null,
     expires_at: new Date('2026-09-08T10:00:00Z'),
+    request: { url: 'https://example.com', formats: ['markdown'] },
     ...over,
   };
 }
@@ -793,5 +801,148 @@ describe('GET /v1/jobs/:id/errors', () => {
     const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/errors` });
 
     expect(response.statusCode).toBe(200);
+  });
+});
+
+describe('GET /v1/jobs/:id/schema', () => {
+  it('returns 404 for a job that does not exist', async () => {
+    app = await build();
+
+    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json().error).toBe('not_found');
+  });
+
+  it('answers 404 for a malformed id without querying the database', async () => {
+    app = await build();
+
+    const response = await app.inject({ method: 'GET', url: '/v1/jobs/not-a-uuid/schema' });
+
+    expect(response.statusCode).toBe(404);
+    expect(db.state.calls).toHaveLength(0);
+  });
+
+  it('projects formats from the top-level request', async () => {
+    app = await build();
+    db.state.jobs = [job({ request: { url: 'https://example.com', formats: ['markdown', 'links'] } })];
+
+    const body = (await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` })).json();
+
+    expect(body).toEqual({
+      id: JOB,
+      jobId: JOB,
+      formats: ['markdown', 'links'],
+      schema: null,
+      prompt: null,
+    });
+  });
+
+  it('falls back to scrapeOptions.formats when the crawl put formats there', async () => {
+    app = await build();
+    db.state.jobs = [
+      job({ request: { url: 'https://example.com', scrapeOptions: { formats: ['json'] } } }),
+    ];
+
+    const body = (await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` })).json();
+
+    expect(body.formats).toEqual(['json']);
+  });
+
+  it('defaults to markdown when the stored request named no formats at all', async () => {
+    app = await build();
+    db.state.jobs = [job({ request: { url: 'https://example.com' } })];
+
+    const body = (await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` })).json();
+
+    expect(body.formats).toEqual(['markdown']);
+  });
+
+  it('surfaces the extraction schema and prompt when the request carried jsonOptions', async () => {
+    app = await build();
+    db.state.jobs = [
+      job({
+        request: {
+          url: 'https://example.com',
+          formats: ['json'],
+          jsonOptions: { schema: { type: 'object', properties: { title: { type: 'string' } } }, prompt: 'get the title' },
+        },
+      }),
+    ];
+
+    const body = (await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` })).json();
+
+    expect(body.schema).toEqual({ type: 'object', properties: { title: { type: 'string' } } });
+    expect(body.prompt).toBe('get the title');
+  });
+
+  it('serves the schema of a job created by another key, under self-host', async () => {
+    app = await build();
+    db.state.jobs = [job({ api_key_id: KEY_B })];
+
+    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
+
+    expect(response.statusCode).toBe(200);
+    const select = db.state.calls.find((c) => c.text.includes('SELECT request FROM jobs'))!;
+    expect(select.values).toEqual([JOB]);
+    expect(select.text).not.toContain('api_key_id');
+  });
+
+  it('hides the schema of another tenant job behind the same 404 as a missing one', async () => {
+    app = await build({ multiTenant: true, caller: KEY_A });
+    db.state.jobs = [job({ api_key_id: KEY_B })];
+
+    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json().error).toBe('not_found');
+  });
+
+  it('narrows the statement itself with the owner predicate, not the rows it returns', async () => {
+    app = await build({ multiTenant: true, caller: KEY_A });
+    db.state.jobs = [job({ api_key_id: KEY_B })];
+
+    await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
+
+    const select = db.state.calls.find((c) => c.text.includes('SELECT request FROM jobs'))!;
+    expect(select.text).toContain('api_key_id = $2');
+    expect(select.values).toEqual([JOB, KEY_A]);
+  });
+
+  it('serves the caller their own job schema when multi-tenant', async () => {
+    app = await build({ multiTenant: true, caller: KEY_A });
+    db.state.jobs = [job({ api_key_id: KEY_A })];
+
+    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
+
+    expect(response.statusCode).toBe(200);
+  });
+
+  /** Jobs predating the column, and anything a worker writes unattributed, must survive the upgrade. */
+  it('still serves the schema of a job with no owner recorded when multi-tenant', async () => {
+    app = await build({ multiTenant: true, caller: KEY_A });
+    db.state.jobs = [job({ api_key_id: null })];
+
+    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
+
+    expect(response.statusCode).toBe(200);
+  });
+
+  it('does not hand an unauthenticated caller every attributed job schema', async () => {
+    app = await build({ multiTenant: true, caller: null });
+    db.state.jobs = [job({ api_key_id: KEY_B })];
+
+    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
+
+    expect(response.statusCode).toBe(404);
+  });
+
+  it('fetchJobSchema returns a plain result object outside the route, for direct calls', async () => {
+    db.state.jobs = [job({ request: { url: 'https://example.com', formats: ['text'] } })];
+
+    const result = await fetchJobSchema(JOB, { requestId: 'r1' });
+
+    expect(result.code).toBe(200);
+    expect(result.body['formats']).toEqual(['text']);
   });
 });

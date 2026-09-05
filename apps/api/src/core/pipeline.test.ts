@@ -261,6 +261,67 @@ describe('runPipeline', () => {
   });
 });
 
+describe('runPipeline with skipExtraction', () => {
+  it('never calls extractClient.extract', async () => {
+    const extractClient = extractClientReturning(ARTICLE_TEXT);
+    const browserPool = browserPoolReturning(ARTICLE);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['screenshot'], skipExtraction: true },
+      deps({ extractClient, browserPool }),
+    );
+
+    expect(result.success).toBe(true);
+    expect(extractClient.extract).not.toHaveBeenCalled();
+  });
+
+  it('still returns success for ordinary content with no extracted text at all', async () => {
+    const browserPool = browserPoolReturning(ARTICLE);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['screenshot'], skipExtraction: true },
+      deps({ browserPool }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.content.markdown).toBe('');
+  });
+
+  it('NEVER returns a Cloudflare challenge as success, even with extraction skipped', async () => {
+    // The invariant does not get weaker just because extracted text is absent —
+    // detectBlock still has status/headers/body fingerprints to work with.
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['screenshot'], skipExtraction: true },
+      deps({
+        fetchClient: fetchClientReturning([
+          { status: 200, body: CLOUDFLARE_CHALLENGE, headers: { 'cf-mitigated': 'challenge' } },
+        ]),
+        browserPool: browserPoolReturning(CLOUDFLARE_CHALLENGE),
+      }),
+    );
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.reason).toBe('challenge');
+    expect(result.detectedBy).toContain('cloudflare-challenge');
+  });
+
+  it('behaves like the extracted-empty-string case at the ceiling tier: succeeds with empty content, matching /scrape parity', async () => {
+    // With extraction, an empty page still returns `extracted = { text: '', ... }`
+    // (a defined, truthy object) once the ladder is exhausted — shouldEscalate
+    // reports escalate:false because there is no higher tier, and the pipeline
+    // returns success with empty content rather than a failure. skipExtraction
+    // must preserve that same shape rather than inventing a new failure mode.
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['screenshot'], skipExtraction: true, tier: 'chromium' },
+      deps({ browserPool: browserPoolReturning('') }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.content.markdown).toBe('');
+  });
+});
+
 describe('runPipeline with a proxy', () => {
   it('never routes a proxied request through lightpanda', async () => {
     const browserPool = browserPoolReturning(ARTICLE);

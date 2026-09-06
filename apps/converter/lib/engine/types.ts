@@ -1,13 +1,14 @@
-import type { CompressOptions, ConvertOptions, GifOptions, ImageOptions, ThumbsOptions } from './options';
+import type { CompressOptions, ConvertOptions, DocumentOptions, GifOptions, ImageOptions, ThumbsOptions } from './options';
 
-export type EngineOp = 'convert' | 'compress' | 'gif' | 'image' | 'thumbs';
+export type EngineOp = 'convert' | 'compress' | 'gif' | 'image' | 'thumbs' | 'document';
 
 export type EngineRequest =
   | { op: 'convert'; file: File; to: string; options: ConvertOptions }
   | { op: 'compress'; file: File; to?: string; target?: number; preset?: CompressOptions['quality']; options: ConvertOptions }
   | { op: 'gif'; file: File; fps: number; width: number; options: Partial<Omit<GifOptions, 'fps' | 'width'>> }
   | { op: 'image'; file: File; to: string; resize?: { width: number; height: number }; quality?: number; options: ImageOptions }
-  | { op: 'thumbs'; file: File; options: ThumbsOptions };
+  | { op: 'thumbs'; file: File; options: ThumbsOptions }
+  | { op: 'document'; file: File; to: string; options: DocumentOptions };
 
 export type ProgressFrame =
   | { status: 'running'; pct: number; fps: number; eta: number | null }
@@ -62,4 +63,19 @@ export type ImageWorkerRequest = {
   data: ArrayBuffer;
   sourceExt: string;
   options: ImageOptions & { resize?: { width: number; height: number } };
+};
+
+/**
+ * Documents arrive as a transferred ArrayBuffer like everything else, but the
+ * worker decides the pipeline from the source/target family pair rather than
+ * from a pre-built argv — there is no ffmpeg-style command line to construct.
+ */
+export type DocumentWorkerRequest = {
+  kind: 'document';
+  from: string;
+  to: string;
+  data: ArrayBuffer;
+  /** For the filename shown in a PDF header and in error messages. */
+  name: string;
+  options: DocumentOptions;
 };

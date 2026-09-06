@@ -195,3 +195,35 @@ export function bitrateForTarget(targetBytes: number, durationSec: number, audio
   const video = Math.floor((total - audioBitrate) * 0.94);
   return video > 10_000 ? video : null;
 }
+
+/**
+ * Document conversion. Every field is a presentation choice about how one
+ * shape is rendered as another — there is no quality dial, because none of
+ * these paths are lossy in the codec sense.
+ */
+export type DocumentOptions = {
+  /** Delimiter for csv in and out. Tab included for the .tsv-in-a-.csv case. */
+  delimiter?: ',' | ';' | '\t' | '|';
+  /** Treat the first row as headers when reading, and emit them when writing. */
+  header?: boolean;
+  /** Which sheet to read from a workbook. Index, or name. Default: the first. */
+  sheet?: number | string;
+  /** Indent for json output. 0 emits a single line. */
+  indent?: 0 | 2 | 4;
+  /** Page setup for pdf output. */
+  pageSize?: 'a4' | 'letter' | 'legal';
+  orientation?: 'portrait' | 'landscape';
+};
+
+const DELIMITERS = new Set([',', ';', '\t', '|']);
+const INDENTS = new Set([0, 2, 4]);
+const PAGE_SIZES = new Set(['a4', 'letter', 'legal']);
+const ORIENTATIONS = new Set(['portrait', 'landscape']);
+
+export function validateDocumentOptions(o: DocumentOptions): void {
+  if (o.delimiter !== undefined) assert(DELIMITERS.has(o.delimiter), 'delimiter must be one of , ; tab or |.');
+  if (o.indent !== undefined) assert(INDENTS.has(o.indent), 'indent must be 0, 2 or 4.');
+  if (o.pageSize !== undefined) assert(PAGE_SIZES.has(o.pageSize), 'pageSize must be a4, letter or legal.');
+  if (o.orientation !== undefined) assert(ORIENTATIONS.has(o.orientation), 'orientation must be portrait or landscape.');
+  if (typeof o.sheet === 'number') inRange(o.sheet, 0, 255, 'sheet');
+}

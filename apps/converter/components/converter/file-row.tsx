@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import { ChevronDown, Download, FileAudio, FileImage, FileVideo, Film, X } from 'lucide-react';
+import { ChevronDown, Download, FileAudio, FileImage, FileText, FileVideo, Film, X } from 'lucide-react';
 import { PillButton } from '@/components/ui/pill-button';
 import { ErrorLog } from './error-log';
 import { JobProgress } from './job-progress';
@@ -13,7 +13,7 @@ import { formatBytes, formatDelta, formatSeconds, type ConvertSettings, type Que
 const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(' ');
 const DONE_HOLD_MS = 600;
 
-const KIND_ICON = { video: FileVideo, audio: FileAudio, image: FileImage, gif: Film } as const;
+const KIND_ICON = { video: FileVideo, audio: FileAudio, image: FileImage, gif: Film, document: FileText } as const;
 
 type Props = {
   item: QueueItem;
@@ -65,6 +65,7 @@ export function FileRow({
   const progressPhase: 'uploading' | 'queued' | 'running' | 'done' =
     item.phase === 'uploading' || item.phase === 'queued' || item.phase === 'running' ? item.phase : 'done';
   const canExpand = item.phase === 'idle' || item.phase === 'error' || item.phase === 'cancelled' || item.phase === 'done';
+  const open = expanded && canExpand;
   const customised = item.override !== null && Object.keys(item.override).length > 0;
   const outLabel = item.outSize !== null ? `${formatBytes(item.outSize)} (${formatDelta(item.size, item.outSize)})` : '';
 
@@ -175,9 +176,18 @@ export function FileRow({
         </div>
       )}
 
+      {/*
+        A 0fr grid row clips the panel visually, but its contents stay in the
+        tab order and keep intercepting clicks over whatever is painted after
+        them — the Format buttons above were unclickable because a collapsed
+        row's own heading was hit-testing on top of them. `inert` takes the
+        whole subtree out of hit-testing and focus while it is closed.
+      */}
       <div
         id={bodyId}
-        className={cx('grid transition-[grid-template-rows] duration-200', expanded && canExpand ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}
+        inert={!open}
+        aria-hidden={open ? undefined : true}
+        className={cx('grid transition-[grid-template-rows] duration-200', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}
       >
         <div className="overflow-hidden">
           <div className="border-t border-p-line px-3 py-4">
@@ -197,6 +207,7 @@ export function FileRow({
               <SettingsPanel
                 scope="file"
                 kind={item.kind}
+                sourceExt={item.ext}
                 inSize={item.size}
                 meta={item.meta}
                 settings={effective}

@@ -3,7 +3,7 @@ import { Logo } from '@/components/shell/logo';
 import { GithubMark } from '@/components/marketing/github-mark';
 import { AsciiHelix, GridCells } from '@/components/marketing/ambient';
 import { AsciiNoise } from '@/components/marketing/ascii-fields';
-import { CONVERTER_URL, PERSONA_URL } from '@/lib/mode';
+import { PERSONA_URL } from '@/lib/mode';
 import { cn } from '@/lib/utils';
 import pkg from '@/package.json';
 import { GITHUB_REPO, GITHUB_URL } from '@/lib/github-stars';
@@ -29,7 +29,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: 'Agent Schemas', href: '/agent' },
       { label: 'Browser Interaction', href: '/interact' },
       { label: 'Web Monitoring', href: '/monitor' },
-      { label: 'Converter API', href: CONVERTER_URL },
+      { label: 'File Converter', href: '/convert' },
     ],
   },
   {

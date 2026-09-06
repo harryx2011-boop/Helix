@@ -5,6 +5,7 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { PillButton } from '@/components/ui/pill-button';
 import { AskAi } from './ask-ai';
 import { Dropzone } from './dropzone';
+import { KindTabs, tabForKind, type TabKind } from './kind-tabs';
 import { FileRow } from './file-row';
 import { SettingsPanel } from './settings-panel';
 import { chimeError, chimeSuccess, installAudioUnlock, primeAudio } from '@/lib/audio/chimes';
@@ -77,6 +78,11 @@ function probeMeta(file: File, kind: FileKind): Promise<MediaMeta> {
 }
 
 function buildRequest(item: QueueItem, s: ConvertSettings): SubmitRequest {
+  // Documents have their own worker and none of the media edit options.
+  if (item.kind === 'document') {
+    return { op: 'document', file: item.file, to: s.to, options: {} };
+  }
+
   const options: JobOptions = {};
   if (s.trim) options.trim = s.trim;
   if (s.resize) options.resize = s.resize;
@@ -125,6 +131,10 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
   const [shared, setShared] = useState<ConvertSettings | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  // Which kind the empty state is advertising. Purely presentational: it
+  // picks the accepted-format line under the dropzone, and follows the file
+  // once one is dropped rather than filtering what may be dropped.
+  const [tab, setTab] = useState<TabKind>('video');
   const [rejections, setRejections] = useState<string[]>([]);
   const [aiNote, setAiNote] = useState<string | null>(null);
   const [announce, setAnnounce] = useState('');
@@ -200,6 +210,7 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
     if (fresh.length === 0) return;
     const first = fresh[0];
     if (first) {
+      setTab(tabForKind(first.kind));
       setShared((s) => {
         if (s) return s;
         const base = defaultSettings(first.kind, first.ext);
@@ -450,9 +461,16 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
         {announce}
       </p>
 
+      {!hasFiles && (
+        <div className="mb-4 flex justify-center">
+          <KindTabs value={tab} onChange={setTab} />
+        </div>
+      )}
+
       <Dropzone
         compact={hasFiles}
         disabled={settingsLocked}
+        kind={tab}
         onFiles={addFiles}
         onReject={setRejections}
         onDragActive={setDragging}
@@ -510,6 +528,7 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
           <SettingsPanel
             scope="shared"
             kind={first.kind}
+            sourceExt={first.ext}
             inSize={items.reduce((a, i) => a + i.size, 0) / items.length}
             meta={first.meta}
             settings={shared}

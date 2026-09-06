@@ -11,15 +11,26 @@ import {
   validateGifOptions,
   validateImageOptions,
   validateThumbsOptions,
+  validateDocumentOptions,
   type CompressOptions,
   type ConvertOptions,
+  type DocumentOptions,
   type GifOptions,
   type ImageOptions,
   type ThumbsOptions,
 } from './options';
-import type { EngineRequest, FfmpegWorkerRequest, ImageWorkerRequest, JobHandle, ProgressFrame, WorkerMessage } from './types';
+import type {
+  DocumentWorkerRequest,
+  EngineRequest,
+  FfmpegWorkerRequest,
+  ImageWorkerRequest,
+  JobHandle,
+  ProgressFrame,
+  WorkerMessage,
+} from './types';
 import { probeDuration } from './probe';
 import { MIME_BY_FORMAT } from './mime';
+import { isDocFormat, normalizeDocExt } from './documents';
 
 // Loaded as a plain runtime URL, not a bundler import: the worker pulls in
 // libheif-js and jsquash's lazy wasm loaders, and both webpack 5's native
@@ -31,6 +42,7 @@ import { MIME_BY_FORMAT } from './mime';
 export type { EngineRequest, JobHandle, ProgressFrame } from './types';
 export { ValidationError } from './options';
 export { ALL_FORMATS, IMAGE_FORMATS, AUDIO_FORMATS, VIDEO_FORMATS, GIF_FORMATS, isFormat, kindOf } from './formats';
+export { DOC_FORMATS, DOC_TARGETS, docTargetsFor, isDocFormat, normalizeDocExt } from './documents';
 
 let jobSeq = 0;
 
@@ -270,12 +282,62 @@ function submitImageJob(req: Extract<EngineRequest, { op: 'image' }>): JobHandle
   };
 }
 
-/** One entry point; routes to the ffmpeg worker or the image worker by the output kind. */
+/**
+ * Documents never touch ffmpeg or the codec set: they go to their own worker,
+ * which picks a pipeline from the family pair rather than from an argv.
+ */
+function submitDocumentJob(req: Extract<EngineRequest, { op: 'document' }>): JobHandle {
+  const id = nextId();
+  const { emit, onProgress } = makeListenable();
+  const options: DocumentOptions = { ...req.options };
+  validateDocumentOptions(options);
+
+  let handle: RunningWorker | null = null;
+  let cancelled = false;
+
+  const promise = (async (): Promise<{ url: string; size: number }> => {
+    const buffer = await req.file.arrayBuffer();
+    if (cancelled) throw new DOMException('Cancelled', 'AbortError');
+
+    const workerReq: DocumentWorkerRequest = {
+      kind: 'document',
+      from: extOf(req.file.name),
+      to: req.to,
+      data: buffer,
+      name: req.file.name,
+      options,
+    };
+
+    emit({ status: 'running', pct: 5, fps: 0, eta: null });
+    handle = runWorker('/workers/document.worker.js', workerReq, emit);
+    return handle.promise;
+  })();
+
+  return {
+    id,
+    promise,
+    onProgress,
+    cancel() {
+      cancelled = true;
+      handle?.worker.terminate();
+      handle?.revoke();
+      emit({ status: 'cancelled' });
+    },
+  };
+}
+
+/** One entry point; routes to the ffmpeg, image or document worker by the output kind. */
 export function submitEngineJob(req: EngineRequest): JobHandle {
   if (req.op === 'thumbs') return submitThumbsJob(req);
+  if (req.op === 'document') return submitDocumentJob(req);
   if (req.op === 'image') return submitImageJob(req);
   if (req.op === 'gif') return submitFfmpegJob(req);
   const to = req.op === 'convert' ? req.to : (req.to ?? extOf(req.file.name));
+  // A document target reaches here when the UI submitted a plain 'convert';
+  // route it by the target rather than making every caller know the split.
+  if (isDocFormat(to) || normalizeDocExt(to)) {
+    return submitDocumentJob({ op: 'document', file: req.file, to, options: {} });
+  }
   if (isFormat(to) && engineFor(to) === 'image') {
     return submitImageJob({ op: 'image', file: req.file, to, options: req.options as ImageOptions });
   }

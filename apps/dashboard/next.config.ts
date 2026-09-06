@@ -23,6 +23,18 @@ const nextConfig: NextConfig = {
   // only the last extension and fails the build on the file it cannot find.
   pageExtensions: hosted ? ['hosted.tsx', 'tsx', 'ts'] : ['tsx'],
   images: { unoptimized: true },
+  // libheif-js require()s its wasm in a way Next's flight-manifest crawl
+  // chokes on. It only ever runs inside the converter's Web Worker, which
+  // esbuild bundles outside Next's graph entirely (scripts/build-workers.mjs),
+  // so marking it external keeps the server compiler from touching it.
+  //
+  // Deliberately NOT setting COOP/COEP here, though the standalone converter
+  // did: its ffmpeg core is the single-threaded build (core-mt deadlocked), so
+  // SharedArrayBuffer is never used and cross-origin isolation buys nothing.
+  // COEP `require-corp` would actively break two things — the core fetched
+  // from unpkg via toBlobURL, and Clerk's client scripts on hosted — and
+  // `output: 'export'` drops next.config headers() silently anyway.
+  serverExternalPackages: ['libheif-js'],
   outputFileTracingRoot: resolve(currentDir, '..', '..'),
   env: { NEXT_PUBLIC_HELIX_HOSTED: hosted ? '1' : '0' },
   // Clerk ships Server Actions, which `output: export` refuses. A runtime

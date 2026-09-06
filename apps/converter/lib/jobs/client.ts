@@ -3,6 +3,7 @@
 // events, and downloadUrl is a blob: URL minted from the worker's output.
 
 import { submitEngineJob, ValidationError, type EngineRequest, type JobHandle } from '@/lib/engine';
+import type { DocumentOptions } from '@/lib/engine/options';
 import type { CompressPreset, Job, JobOp, SseFrame } from './types';
 
 export type JobOptions = {
@@ -27,7 +28,8 @@ export type SubmitRequest =
       resize?: { width: number; height: number };
       quality?: number;
       options: JobOptions;
-    };
+    }
+  | { op: 'document'; file: File; to: string; options: DocumentOptions };
 
 export type Accepted = { id: string; status: 'queued' };
 
@@ -54,6 +56,12 @@ const jobs = new Map<string, JobHandle>();
 const doneUrls = new Map<string, string>();
 
 function toEngineRequest(req: SubmitRequest): EngineRequest {
+  // Narrowed before the media destructure below: DocumentOptions shares none
+  // of those fields, because a document has no frames to trim or rotate.
+  if (req.op === 'document') {
+    return { op: 'document', file: req.file, to: req.to, options: req.options };
+  }
+
   const { trim, resize, rotate, flip, crf, targetBytes } = req.options;
   const editOptions = {
     ...(trim ? { trim } : {}),

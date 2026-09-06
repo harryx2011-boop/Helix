@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/components/shell/logo';
 import { PRODUCTS, TAB_GROUPS, endpointById, type EndpointDef, type TabGroup } from '@/lib/catalog';
-import { CONVERTER_URL, PERSONA_URL } from '@/lib/mode';
+import { PERSONA_URL } from '@/lib/mode';
 import { GITHUB_URL } from '@/lib/github-stars';
 import { cn } from '@/lib/utils';
 import { IconTile } from './icon-tile';
@@ -129,14 +129,13 @@ export const DOCS_ROWS: readonly MenuRow[] = [
 export const TOOL_ROWS: readonly MenuRow[] = [
   {
     label: 'Converter',
-    href: CONVERTER_URL,
-    tagline: 'Convert, compress and optimise media in your browser. Nothing is uploaded.',
+    href: '/convert',
+    tagline: 'Convert, compress and optimise media and documents in your browser. Nothing is uploaded.',
     icon: FileCog,
-    external: true,
     chips: [
-      { label: 'Convert', href: `${CONVERTER_URL}/convert` },
-      { label: 'Compress', href: `${CONVERTER_URL}/compress` },
-      { label: 'Record', href: `${CONVERTER_URL}/tools/record` },
+      { label: 'Compress', href: '/convert/compress' },
+      { label: 'All tools', href: '/convert/tools' },
+      { label: 'Record', href: '/convert/record' },
     ],
   },
   {

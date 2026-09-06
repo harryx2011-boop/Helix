@@ -1,5 +1,7 @@
-export type FormatKind = 'video' | 'audio' | 'image' | 'gif';
-export type FormatOp = 'convert' | 'compress' | 'gif' | 'image';
+import { DOC_TARGETS, type DocFormat } from './engine/documents';
+
+export type FormatKind = 'video' | 'audio' | 'image' | 'gif' | 'document';
+export type FormatOp = 'convert' | 'compress' | 'gif' | 'image' | 'document';
 
 export type FormatPair = {
   slug: string;
@@ -17,16 +19,18 @@ export const KIND_LABELS: Record<FormatKind, string> = {
   audio: 'Audio',
   image: 'Image',
   gif: 'GIF',
+  document: 'Document',
 };
 
-export const KIND_ORDER: FormatKind[] = ['video', 'audio', 'image', 'gif'];
+export const KIND_ORDER: FormatKind[] = ['video', 'audio', 'image', 'gif', 'document'];
 
 export const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'avi', 'mkv'] as const;
 export const AUDIO_EXTS = ['mp3', 'wav', 'ogg', 'm4a', 'flac'] as const;
 export const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'jfif', 'avif', 'tiff', 'tif'] as const;
 export const GIF_EXTS = ['gif', 'apng'] as const;
+export const DOC_EXTS = ['pdf', 'csv', 'xlsx', 'xls', 'json', 'xml', 'txt', 'html', 'md'] as const;
 
-export const ACCEPTED_EXTS: string[] = [...VIDEO_EXTS, ...AUDIO_EXTS, ...IMAGE_EXTS, ...GIF_EXTS];
+export const ACCEPTED_EXTS: string[] = [...VIDEO_EXTS, ...AUDIO_EXTS, ...IMAGE_EXTS, ...GIF_EXTS, ...DOC_EXTS];
 
 /**
  * What the engine will actually accept as a target, mirroring lib/engine/formats.ts.
@@ -55,6 +59,14 @@ export const OUTPUT_TARGETS: Record<FormatKind, { likely: string[]; all: string[
   gif: {
     likely: ['gif', 'mp4', 'apng'],
     all: ['gif', 'apng', 'mp4', 'mov', 'png', 'webp'],
+  },
+  // Documents do not all interconvert (lib/engine/documents.ts DOC_TARGETS is
+  // the real matrix, keyed by source). This is the union for the picker's
+  // initial render; the panel narrows it to the source's own row once a file
+  // is in hand.
+  document: {
+    likely: ['pdf', 'csv', 'xlsx', 'json', 'md'],
+    all: ['pdf', 'csv', 'xlsx', 'json', 'xml', 'txt', 'html', 'md'],
   },
 };
 
@@ -183,12 +195,56 @@ const COMPRESSORS: FormatPair[] = [
   compressor('compress-png', 'png', 'image', { quality: 80 }, 'Compress PNG', 'Reduce PNG size with palette quantisation. Transparency is kept.'),
 ];
 
+
+/**
+ * Generated from the engine's own DOC_TARGETS, so a tool page can never offer
+ * a pair the worker would refuse. `xls` is skipped as a source here: it is
+ * readable, but nobody searches for an "XLS to CSV converter" by that name
+ * often enough to warrant nine more routes, and dropping one still works.
+ */
+const DOC_BLURB: Record<string, string> = {
+  'csv-to-xlsx': 'Turn a CSV into a real Excel workbook, with the header row bolded.',
+  'csv-to-json': 'Turn a CSV into a JSON array of objects, keyed by the header row.',
+  'xlsx-to-csv': 'Pull a sheet out of an Excel workbook as plain CSV. Formulas become their computed values.',
+  'xlsx-to-json': 'Turn an Excel sheet into a JSON array of objects.',
+  'json-to-csv': 'Flatten a JSON array of objects into a CSV, one column per key.',
+  'json-to-xlsx': 'Turn a JSON array of objects into an Excel workbook.',
+  'pdf-to-txt': 'Pull the selectable text out of a PDF. Scans have none, and say so rather than returning an empty file.',
+  'md-to-html': 'Render Markdown to a styled, standalone HTML page.',
+  'html-to-md': 'Turn an HTML page into clean Markdown, headings and code blocks intact.',
+  'md-to-pdf': 'Render Markdown to a paginated PDF.',
+  'html-to-pdf': 'Render an HTML page to a paginated PDF.',
+  'xml-to-json': 'Convert XML to JSON, attributes included.',
+};
+
+function documentPairs(): FormatPair[] {
+  const out: FormatPair[] = [];
+  const sources = (Object.keys(DOC_TARGETS) as DocFormat[]).filter((f) => f !== 'xls');
+  for (const from of sources) {
+    for (const to of DOC_TARGETS[from]) {
+      const slug = `${from}-to-${to}`;
+      out.push(
+        pair(
+          from,
+          to,
+          'document',
+          'document',
+          {},
+          DOC_BLURB[slug] ?? `Convert ${label(from)} to ${label(to)}, entirely in this tab.`,
+        ),
+      );
+    }
+  }
+  return out;
+}
+
 export const FORMAT_PAIRS: FormatPair[] = [
   ...videoPairs(),
   ...VIDEO_TO_AUDIO,
   ...audioPairs(),
   ...IMAGE_PAIRS,
   ...GIF_PAIRS,
+  ...documentPairs(),
   ...COMPRESSORS,
 ];
 

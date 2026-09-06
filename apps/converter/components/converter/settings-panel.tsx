@@ -13,6 +13,8 @@ const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean)
 type Props = {
   scope: 'shared' | 'file';
   kind: FileKind;
+  /** Source extension. Documents narrow their targets by it (DOC_TARGETS). */
+  sourceExt?: string;
   inSize: number;
   meta: MediaMeta;
   settings: ConvertSettings;
@@ -37,13 +39,17 @@ function Field({ label, id, children, hint }: { label: string; id: string; child
 
 const ROTATIONS: Rotation[] = [0, 90, 180, 270];
 
-export function SettingsPanel({ scope, kind, inSize, meta, settings, onChange, isOverridden = false, onReset }: Props) {
+export function SettingsPanel({ scope, kind, sourceExt, inSize, meta, settings, onChange, isOverridden = false, onReset }: Props) {
   const p = useId();
   const isGifTarget = settings.to === 'gif' || settings.to === 'apng';
-  const showSize = !isGifTarget;
-  const showTrim = scope === 'file' && (kind === 'video' || kind === 'audio') && meta.duration !== null && meta.duration > 0;
-  const showResize = scope === 'file' && kind !== 'audio' && meta.width !== null && meta.height !== null;
-  const showOrient = scope === 'file' && kind !== 'audio';
+  // A document has no quality dial, no frames to trim, and no pixels to
+  // resize or rotate: none of these paths are lossy in the codec sense.
+  // Format is the only choice it offers.
+  const isDoc = kind === 'document';
+  const showSize = !isGifTarget && !isDoc;
+  const showTrim = !isDoc && scope === 'file' && (kind === 'video' || kind === 'audio') && meta.duration !== null && meta.duration > 0;
+  const showResize = !isDoc && scope === 'file' && kind !== 'audio' && meta.width !== null && meta.height !== null;
+  const showOrient = !isDoc && scope === 'file' && kind !== 'audio';
   const duration = meta.duration ?? 0;
   const trim = settings.trim ?? { start: 0, end: duration };
   const ratio = meta.width && meta.height ? meta.width / meta.height : 1;
@@ -66,7 +72,13 @@ export function SettingsPanel({ scope, kind, inSize, meta, settings, onChange, i
       )}
 
       <Field label="Format" id={`${p}-format`}>
-        <FormatPicker kind={kind} value={settings.to} onChange={(to) => onChange({ to })} labelId={`${p}-format`} />
+        <FormatPicker
+          kind={kind}
+          {...(sourceExt ? { sourceExt } : {})}
+          value={settings.to}
+          onChange={(to) => onChange({ to })}
+          labelId={`${p}-format`}
+        />
       </Field>
 
       {isGifTarget ? (
@@ -92,7 +104,7 @@ export function SettingsPanel({ scope, kind, inSize, meta, settings, onChange, i
             />
           </div>
         </Field>
-      ) : (
+      ) : isDoc ? null : (
         <Field label={qualityLabel} id={`${p}-quality`}>
           <Slider
             aria-labelledby={`${p}-quality`}

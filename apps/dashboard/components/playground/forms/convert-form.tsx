@@ -1,13 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { ExternalLink } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import type { ConvertFormat, ConvertRequest } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FormFooter } from './form-footer';
 import { FileDropzone } from '../file-dropzone';
-import { CONVERTER_URL } from '@/lib/mode';
 import { cn } from '@/lib/utils';
 
 const ACCEPT = '.pdf,.png,.jpg,.jpeg';
@@ -187,22 +187,18 @@ export function ConvertForm({ url, onSubmit, onGetCode, loading }: ConvertFormPr
         </p>
       </div>
 
-      {CONVERTER_URL && (
-        <a
-          href={CONVERTER_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center justify-between gap-3 rounded-card border border-border p-3 text-left transition-colors duration-fast hover:bg-secondary"
-        >
-          <span className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium text-foreground">Need full media conversion?</span>
-            <span className="text-xs leading-relaxed text-muted-foreground">
-              Video, audio, GIF and more formats convert locally in your browser at Converter — nothing leaves your device.
-            </span>
+      <Link
+        href="/convert"
+        className="flex items-center justify-between gap-3 rounded-card border border-border p-3 text-left transition-colors duration-fast hover:bg-secondary"
+      >
+        <span className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-foreground">Need full media conversion?</span>
+          <span className="text-xs leading-relaxed text-muted-foreground">
+            Video, audio, images and documents convert locally in your browser at Converter — nothing leaves your device.
           </span>
-          <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-        </a>
-      )}
+        </span>
+        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      </Link>
 
       <FormFooter
         loading={loading}

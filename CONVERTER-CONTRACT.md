@@ -1,31 +1,62 @@
 # Converter — build contract
 
-`apps/converter` (Next, :4400). Fully client-side: there is no backend, no
-account, and no network round-trip for the file being converted. Everything
-in this document describes what runs inside the visited browser tab.
+> **Merged into the dashboard (2026-09-06).** The converter is now a route
+> group inside `apps/dashboard` at **`/convert`**, not a standalone app on
+> :4400. It ships with every dashboard deploy, which is what finally made it
+> reachable: `CONVERTER_URL` fell back to `''` under `HOSTED`, and the nav and
+> footer rows `.filter(row => row.href)`, so the Converter was invisible on
+> the deployed site and had no deployment of its own to link to.
+>
+> - Routes: `/convert` (the tool), `/convert/[pair]`, `/convert/tools`,
+>   `/convert/compress`, `/convert/history`, `/convert/record`,
+>   `/convert/settings`. Public — middleware only gates `/app(.*)`.
+> - Code: `apps/dashboard/lib/converter/**`, `apps/dashboard/components/converter/**`.
+> - Styling: `apps/dashboard/app/converter.css`, scoped to
+>   `[data-surface='convert']`. Scoped rather than merged because both apps
+>   define `--background`/`--primary`/`--border`/`--radius` and the
+>   `card`/`panel` radii with different values.
+> - `apps/converter` is kept as the upstream checkout for the engine and its
+>   unit tests; the deployed copy is the dashboard's.
+>
+> Everything below still describes the engine's behaviour, which is unchanged
+> apart from the Document kind added the same day (§5a).
+
+Fully client-side: there is no backend, no account, and no network round-trip
+for the file being converted. Everything in this document describes what runs
+inside the visited browser tab.
 
 ## 1. Identity
 
 - Product name: **Converter API** (name kept from the pre-rearchitecture
   product; "API" now refers to the browser APIs it runs on, not a server
   endpoint). Part of Helix.
-- Design system: **dark-default**, matching the Helix dashboard's app surface
-  (`apps/dashboard/components/app/app-grid.tsx`) rather than Persona's
-  light-default. Inter + JetBrains Mono, `--p-*` tokens carried over
-  unchanged, radii pill/card 10px/panel 14px, `cubic-bezier(0,0,0.2,1)`,
-  150–240ms — none of these are theme-specific, so they stay as they were.
-  `.dark` is the default class on `<html>`; the Settings toggle can still
-  switch to light.
-- Blue `#2f6fe4` (light) / `#6b9bf2` (dark) is for actions only.
+- Design system: `--p-*` tokens, radii pill/card 10px/panel 14px (as
+  `rounded-cv-card` / `rounded-cv-panel` in the dashboard's Tailwind config,
+  because `card`/`panel` are taken there at 6px/8px), `cubic-bezier(0,0,0.2,1)`,
+  150–240ms.
+- **Light only.** The standalone app was dark-default with a Settings toggle.
+  As a page inside the marketing surface — which is light-only by design, with
+  no `.dark` variant — the dark block was dropped: keeping it rendered the
+  converter dark inside a light page, because the dashboard's ThemeProvider
+  defaults to dark and puts `.dark` on `<html>`.
+- Blue `#2f6fe4` is for actions only.
 
 ## 2. Ports
 
-| Service | Port |
-|---|---|
-| Next frontend | 4400 |
+None of its own. It is served by the dashboard on **3400** along with every
+other page. The 4400 block that `apps/converter` used is free again.
 
 No backend, no database. `apps/converter-api` (Fastify, formerly :8400) is
 deleted.
+
+### Cross-origin isolation: deliberately not set
+
+The standalone app set COOP/COEP on `/:path*`. The dashboard does **not**, and
+must not: the ffmpeg core is the single-threaded build (`core-mt` deadlocked
+mid-encode, see the note in `ffmpeg.worker.ts`), so `SharedArrayBuffer` is
+never used and isolation buys nothing. COEP `require-corp` would actively
+break the core fetched from unpkg via `toBlobURL`, and Clerk's client scripts
+on hosted. `output: 'export'` drops `headers()` silently anyway.
 
 ## 3. Auth
 
@@ -95,6 +126,51 @@ not a server-issued id. There is no `Job` object to fetch by id and no
 `GET /v1/jobs/:id` equivalent: the `JobHandle` returned by `submitEngineJob`
 is the only handle you get, and `onProgress`/`cancel` are called on it
 directly rather than looked up later.
+
+## 5a. Documents (added 2026-09-06)
+
+A third engine alongside ffmpeg and the image codecs:
+`lib/engine/workers/document.worker.ts`, reached through the same
+`submitEngineJob()` with `op: 'document'`.
+
+**Why the matrix is explicit rather than derived.** Video, audio and images
+all meet in the middle as frames or samples, so any decodable input reaches
+any encodable output. Documents have no universal intermediate — a spreadsheet
+is rows, Markdown is a tree, a PDF is a page description — so
+`lib/engine/documents.ts` lists the real pairs per source in `DOC_TARGETS`,
+and both the picker and the generated `/convert/[pair]` routes read from it. A
+pair the worker cannot do is therefore never offered.
+
+| Family | Formats | Pipeline |
+|---|---|---|
+| table | `csv` `xlsx` `xls` `json` | rows (`Cell[][]`) |
+| text | `md` `html` `txt` `xml` | an HTML/Markdown string |
+| page | `pdf` | page description |
+
+Two deliberate one-way edges:
+
+- **`xls` is input-only.** ExcelJS has no BIFF8 writer, and a second
+  spreadsheet dependency to emit a 1997 binary format nobody asks for is not
+  worth it. An .xls file still converts to .xlsx or .csv.
+- **`pdf` never becomes a spreadsheet.** A PDF table is a visual arrangement
+  of glyphs; reconstructing cells from it is a heuristic that produces
+  confidently wrong numbers. PDF in gives `txt`/`md`/`html` only, and a PDF
+  with no text layer says it is probably a scan rather than returning an empty
+  file. A test asserts this edge stays absent.
+
+**Options.** `DocumentOptions` — `delimiter`, `header`, `sheet`, `indent`,
+`pageSize`, `orientation`. No quality, no trim, no resize, no rotation: none
+of these paths are lossy in the codec sense, so the settings panel hides those
+controls for a document rather than showing dials that do nothing.
+
+**PDF output** is laid out by hand on pdf-lib (it has no text flow): wrapping,
+hard-splitting an over-long word, pagination, and a WinAnsi fallback so one
+emoji or CJK run cannot fail the whole conversion.
+
+**Transferables.** Every payload passes `normalize()` before `postMessage`.
+ExcelJS resolves its own Buffer-alike rather than a plain `ArrayBuffer`, which
+is not transferable — caught in browser testing as *"Value at index 0 does not
+have a transferable type"*, not by the compiler.
 
 ## 6. Execution
 

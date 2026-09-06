@@ -5,6 +5,7 @@ import { ChevronDown, Search } from 'lucide-react';
 import { PillButton } from '@/components/ui/pill-button';
 import type { FileKind } from '@/lib/jobs/types';
 import { OUTPUT_TARGETS } from '@/lib/formats';
+import { docTargetsFor } from '@/lib/engine/documents';
 
 const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(' ');
 
@@ -14,6 +15,15 @@ const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean)
 export const TARGETS = OUTPUT_TARGETS;
 
 const LABEL: Record<string, string> = {
+  pdf: 'PDF',
+  csv: 'CSV',
+  xlsx: 'XLSX · Excel workbook',
+  xls: 'XLS · legacy Excel',
+  json: 'JSON',
+  xml: 'XML',
+  txt: 'TXT · plain text',
+  html: 'HTML',
+  md: 'MD · Markdown',
   mp4: 'MP4 · H.264 video',
   webm: 'WebM · VP9 video',
   mov: 'MOV · QuickTime',
@@ -45,13 +55,23 @@ const LABEL: Record<string, string> = {
 
 type Props = {
   kind: FileKind;
+  /** Documents narrow to the source's own row of DOC_TARGETS. */
+  sourceExt?: string;
   value: string;
   onChange: (to: string) => void;
   labelId: string;
 };
 
-export function FormatPicker({ kind, value, onChange, labelId }: Props) {
-  const targets = TARGETS[kind];
+export function FormatPicker({ kind, sourceExt, value, onChange, labelId }: Props) {
+  // Media kinds all interconvert, so the static table holds. Documents do
+  // not: a PDF cannot become a spreadsheet, and offering it would be a
+  // promise the worker has to break. Narrow to the source's real row.
+  const targets = useMemo(() => {
+    if (kind !== 'document' || !sourceExt) return TARGETS[kind];
+    const allowed = docTargetsFor(sourceExt);
+    if (allowed.length === 0) return TARGETS[kind];
+    return { likely: allowed.slice(0, 5) as string[], all: allowed as unknown as string[] };
+  }, [kind, sourceExt]);
   const row = targets.likely.includes(value) ? targets.likely : [...targets.likely, value];
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');

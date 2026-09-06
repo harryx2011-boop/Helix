@@ -1,8 +1,9 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { FolderUp } from 'lucide-react';
 import { MAX_FILE_BYTES, detectKind, formatBytes } from '@/lib/jobs/types';
+import { formatsFor, type TabKind } from './kind-tabs';
 
 const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(' ');
 
@@ -10,6 +11,8 @@ type Props = {
   onFiles: (files: File[]) => void;
   onReject: (messages: string[]) => void;
   onDragActive?: (active: boolean) => void;
+  /** Which kind's format list to advertise. Does not restrict what may drop. */
+  kind?: TabKind;
   compact?: boolean;
   disabled?: boolean;
 };
@@ -23,7 +26,7 @@ export function splitAccepted(list: FileList | File[]): { accepted: File[]; reje
       continue;
     }
     if (detectKind(file) === null) {
-      rejected.push(`${file.name} is not a video, audio, image or GIF file.`);
+      rejected.push(`${file.name} is not a video, audio, image or document file.`);
       continue;
     }
     accepted.push(file);
@@ -31,7 +34,7 @@ export function splitAccepted(list: FileList | File[]): { accepted: File[]; reje
   return { accepted, rejected };
 }
 
-export function Dropzone({ onFiles, onReject, onDragActive, compact = false, disabled = false }: Props) {
+export function Dropzone({ onFiles, onReject, onDragActive, kind = 'video', compact = false, disabled = false }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const depth = useRef(0);
   const [active, setActive] = useState(false);
@@ -101,7 +104,7 @@ export function Dropzone({ onFiles, onReject, onDragActive, compact = false, dis
         tabIndex={-1}
         aria-hidden="true"
         className="sr-only"
-        accept="video/*,audio/*,image/*,.mkv,.mov,.heic,.heif,.avif,.opus,.flac"
+        accept="video/*,audio/*,image/*,.mkv,.mov,.heic,.heif,.avif,.opus,.flac,.pdf,.csv,.xlsx,.xls,.json,.xml,.txt,.html,.htm,.md"
         onChange={(e) => {
           accept(e.target.files);
           e.target.value = '';
@@ -109,7 +112,7 @@ export function Dropzone({ onFiles, onReject, onDragActive, compact = false, dis
       />
       {compact ? (
         <p className="flex items-center gap-2 text-sm font-medium text-p-ink-2">
-          <Upload className="h-4 w-4" aria-hidden="true" />
+          <FolderUp className="h-4 w-4" aria-hidden="true" />
           Add more files
         </p>
       ) : (
@@ -117,26 +120,35 @@ export function Dropzone({ onFiles, onReject, onDragActive, compact = false, dis
           <span
             aria-hidden="true"
             className={cx(
-              'mb-3 flex h-11 w-11 items-center justify-center rounded-pill border border-p-line bg-p-surface text-p-ink-2',
+              'mb-3 flex h-12 w-12 items-center justify-center rounded-card border border-p-line bg-p-code text-p-ink-2',
               'transition-[transform,color] duration-[180ms]',
               active && '-translate-y-0.5 text-blue',
             )}
           >
-            <Upload className="h-5 w-5" />
+            <FolderUp className="h-5 w-5" />
           </span>
-          <p className="text-base font-medium text-p-ink">
-            {active ? 'Release to add' : 'Drop files here, or click to browse'}
+          <p className="text-base font-semibold text-p-ink">
+            {active ? 'Release to add' : (
+              <>
+                Drag &amp; drop files or <span className="text-blue">click to browse</span>
+              </>
+            )}
           </p>
-          <p className="font-mono text-sm text-p-ink-2">video · audio · image · gif</p>
-          <p className="text-sm text-p-ink-2">up to 2 GB</p>
-          <p id={hintId} className="mt-3 text-sm text-p-ink-3">
-            Runs in this tab. Nothing is uploaded, and the result is lost on reload.
+          <p className="mt-1 text-sm text-p-ink-2">
+            Up to 2 GB per file &mdash; all processing happens locally
+          </p>
+          <p className="mt-1 text-[13px] text-p-ink-3">
+            Supports: {formatsFor(kind).join(', ')}
+          </p>
+          <p id={hintId} className="sr-only">
+            Video, audio, image or document, up to 2 GB each. Runs in this tab; nothing is uploaded, and the
+            result is lost on reload.
           </p>
         </>
       )}
       {compact && (
         <span id={hintId} className="sr-only">
-          Video, audio, image or GIF, up to 2 GB each.
+          Video, audio, image or document, up to 2 GB each.
         </span>
       )}
     </div>

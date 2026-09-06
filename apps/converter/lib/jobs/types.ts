@@ -26,7 +26,7 @@ export type SseFrame =
   | { status: 'error'; message: string; stderr: string }
   | { status: 'cancelled' };
 
-export type FileKind = 'video' | 'audio' | 'image' | 'gif';
+export type FileKind = 'video' | 'audio' | 'image' | 'gif' | 'document';
 
 export type CompressPreset = 'email' | 'discord' | 'web' | 'archive';
 
@@ -108,6 +108,7 @@ export const BUILTIN_PRESETS: ReadonlyArray<{ id: CompressPreset; label: string;
 const VIDEO_EXT = new Set(['mp4', 'mov', 'webm', 'mkv', 'avi', 'm4v', 'mpg', 'mpeg', 'wmv', 'flv', 'ts', '3gp', 'hevc']);
 const AUDIO_EXT = new Set(['mp3', 'wav', 'm4a', 'flac', 'ogg', 'opus', 'aac', 'aiff', 'wma', 'aif']);
 const IMAGE_EXT = new Set(['jpg', 'jpeg', 'png', 'webp', 'avif', 'heic', 'heif', 'tiff', 'tif', 'bmp', 'svg']);
+const DOC_EXT = new Set(['pdf', 'csv', 'xlsx', 'xls', 'json', 'xml', 'txt', 'html', 'htm', 'md', 'markdown']);
 
 export function extOf(name: string): string {
   const i = name.lastIndexOf('.');
@@ -120,6 +121,7 @@ export function detectKind(file: File): FileKind | null {
   if (file.type.startsWith('video/') || VIDEO_EXT.has(ext)) return 'video';
   if (file.type.startsWith('audio/') || AUDIO_EXT.has(ext)) return 'audio';
   if (file.type.startsWith('image/') || IMAGE_EXT.has(ext)) return 'image';
+  if (DOC_EXT.has(ext)) return 'document';
   return null;
 }
 
@@ -136,6 +138,17 @@ export function defaultTarget(kind: FileKind, ext: string): string {
       return ext === 'webp' ? 'png' : 'webp';
     case 'gif':
       return 'mp4';
+    case 'document':
+      // Every document family has one obvious next stop: a spreadsheet wants
+      // to be a spreadsheet, prose wants to be a page, a PDF wants to be text.
+      if (ext === 'csv') return 'xlsx';
+      if (ext === 'xlsx' || ext === 'xls') return 'csv';
+      if (ext === 'json') return 'csv';
+      if (ext === 'pdf') return 'txt';
+      if (ext === 'md' || ext === 'markdown') return 'html';
+      if (ext === 'html' || ext === 'htm') return 'md';
+      if (ext === 'xml') return 'json';
+      return 'pdf';
   }
 }
 

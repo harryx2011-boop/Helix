@@ -50,7 +50,7 @@ const JOB_LOOKUPS = 5;
 const DATA_TIMEOUT_MS = 6000;
 
 type Loadable<T> = { status: 'loading' } | { status: 'ok'; value: T } | { status: 'error'; reason: string };
-type Note = { kind: 'loading' } | { kind: 'unavailable'; reason: string };
+type Note = { kind: 'loading' } | { kind: 'unavailable'; reason: string } | { kind: 'empty'; reason: string };
 
 function isEditable(target: EventTarget | null): target is HTMLElement {
   if (!(target instanceof HTMLElement)) return false;
@@ -286,6 +286,7 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
       if (data.status === 'loading') out[group] = { kind: 'loading' };
       else if (data.status === 'error') out[group] = { kind: 'unavailable', reason: data.reason };
       else if (section?.status === 'unavailable') out[group] = { kind: 'unavailable', reason: section.reason };
+      else if (section?.status === 'empty') out[group] = { kind: 'empty', reason: section.reason };
     };
     const value = data.status === 'ok' ? data.value : undefined;
     sectionNote(value?.keys, 'keys');
@@ -416,6 +417,9 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
                   <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden="true" />
                   <span className="min-w-0">Unavailable: {note.reason}</span>
                 </div>
+              )}
+              {note?.kind === 'empty' && (
+                <div className="px-2.5 py-2 text-xs leading-relaxed text-muted-foreground">{note.reason}</div>
               )}
             </div>
           );

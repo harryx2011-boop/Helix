@@ -11,8 +11,17 @@ import { KeysError, listInstanceKeys } from '@/lib/instance-keys';
  * list or a reason, never an empty list standing in for "could not ask":
  * an unreachable instance and an account with no monitors look identical
  * otherwise, and the palette has to say which one it is.
+ *
+ * `unavailable` is reserved for a real failure (network error, rejected key,
+ * 5xx) and renders with a warning icon. `empty` is an expected no-data state
+ * (no key saved yet, no jobs run yet) with the same reason text but no
+ * warning treatment — conflating the two made the palette show what looked
+ * like three simultaneous errors on a brand-new instance.
  */
-export type Section<T> = { status: 'ok'; items: T[] } | { status: 'unavailable'; reason: string };
+export type Section<T> =
+  | { status: 'ok'; items: T[] }
+  | { status: 'unavailable'; reason: string }
+  | { status: 'empty'; reason: string };
 
 export interface KeySummary {
   id: string;
@@ -91,7 +100,7 @@ async function proxyGet<T>(query: Record<string, string>, signal: AbortSignal): 
   return json as T;
 }
 
-async function loadKeys(signal: AbortSignal): Promise<Section<KeySummary>> {
+async function loadKeys(apiKey: string | null, signal: AbortSignal): Promise<Section<KeySummary>> {
   const toSummary = (k: { id: string; name: string; keyPrefix: string; lastUsedAt: string | null; revokedAt: string | null }): KeySummary => ({
     id: k.id,
     name: k.name,
@@ -108,6 +117,8 @@ async function loadKeys(signal: AbortSignal): Promise<Section<KeySummary>> {
     } catch (err) {
       if (!isHostedKeysNotConfigured(err)) return { status: 'unavailable', reason: reasonOf(err) };
     }
+  } else if (!apiKey) {
+    return { status: 'empty', reason: NO_KEY_REASON };
   }
   try {
     return { status: 'ok', items: (await abortable(listInstanceKeys(), signal)).map(toSummary) };
@@ -117,6 +128,7 @@ async function loadKeys(signal: AbortSignal): Promise<Section<KeySummary>> {
 }
 
 async function loadMonitors(apiKey: string | null, signal: AbortSignal): Promise<Section<MonitorSummary>> {
+  if (!HOSTED && !apiKey) return { status: 'empty', reason: NO_KEY_REASON };
   try {
     const response = HOSTED
       ? await proxyGet<MonitorListResponse>({ resource: 'monitors' }, signal)
@@ -137,7 +149,8 @@ async function loadMonitors(apiKey: string | null, signal: AbortSignal): Promise
 }
 
 async function loadJobs(apiKey: string | null, jobIds: readonly string[], signal: AbortSignal): Promise<Section<JobSummary>> {
-  if (jobIds.length === 0) return { status: 'unavailable', reason: NO_JOBS_REASON };
+  if (jobIds.length === 0) return { status: 'empty', reason: NO_JOBS_REASON };
+  if (!HOSTED && !apiKey) return { status: 'empty', reason: NO_KEY_REASON };
 
   const settled = await Promise.allSettled(
     jobIds.map(async (id) => (HOSTED ? proxyGet<Job>({ resource: 'job', id }, signal) : instanceClient(apiKey).job(id, signal))),
@@ -151,12 +164,14 @@ async function loadJobs(apiKey: string | null, jobIds: readonly string[], signal
   return { status: 'unavailable', reason: first ? reasonOf(first.reason) : 'No job answered.' };
 }
 
+const NO_KEY_REASON = 'No API key saved in this browser.';
+
 function instanceClient(apiKey: string | null): HelixClient {
-  if (!apiKey) throw new KeysError('No API key saved in this browser.', 401);
+  if (!apiKey) throw new KeysError(NO_KEY_REASON, 401);
   return new HelixClient({ apiKey });
 }
 
 export async function loadInstanceData(apiKey: string | null, jobIds: readonly string[], signal: AbortSignal): Promise<InstanceData> {
-  const [keys, monitors, jobs] = await Promise.all([loadKeys(signal), loadMonitors(apiKey, signal), loadJobs(apiKey, jobIds, signal)]);
+  const [keys, monitors, jobs] = await Promise.all([loadKeys(apiKey, signal), loadMonitors(apiKey, signal), loadJobs(apiKey, jobIds, signal)]);
   return { keys, monitors, jobs };
 }

@@ -44,10 +44,12 @@ export function CanvasSetupPrompt({ className }: { className?: string }) {
 
   React.useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const open = (target: AgentTarget) => {
-    void navigator.clipboard.writeText(canvasSetupPrompt());
-    window.open(target.id === 'cursor' ? CANVAS_REPO.replace(/\.git$/, '') : '/canvas', '_self');
-  };
+  // Unlike the main-page `SetupPrompt`, none of the three agents has anywhere
+  // to be sent — there is no docs page for Canvas Connect and no MCP deep-link
+  // scheme for a locally-run stdio server. Every row's job is just "get the
+  // prompt onto the clipboard," so it reuses the same copy feedback as the
+  // primary button rather than navigating anywhere.
+  const openInAgent = () => void copy();
 
   return (
     <div
@@ -107,12 +109,12 @@ export function CanvasSetupPrompt({ className }: { className?: string }) {
           {TARGETS.map((t) => (
             <DropdownMenuItem
               key={t.id}
-              onSelect={() => open(t)}
+              onSelect={openInAgent}
               className="gap-2.5 rounded-card px-2 py-2 text-[14px] focus:bg-m-ink/[0.039] focus:text-m-ink"
             >
               <Image src={t.mark} alt="" width={18} height={18} className="h-[18px] w-[18px] rounded-[4px]" />
               <span className="flex-1">{t.label}</span>
-              <ExternalLink className="h-3.5 w-3.5 text-m-ink/40" aria-hidden />
+              <Copy className="h-3.5 w-3.5 text-m-ink/40" aria-hidden />
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator className="my-1.5 bg-m-border-muted" />
@@ -120,6 +122,7 @@ export function CanvasSetupPrompt({ className }: { className?: string }) {
             <a href={CANVAS_REPO.replace(/\.git$/, '')} target="_blank" rel="noreferrer">
               <FileText className="h-[18px] w-[18px] text-m-ink/56" aria-hidden />
               <span className="flex-1">Source on GitHub</span>
+              <ExternalLink className="h-3.5 w-3.5 text-m-ink/40" aria-hidden />
             </a>
           </DropdownMenuItem>
         </DropdownMenuContent>

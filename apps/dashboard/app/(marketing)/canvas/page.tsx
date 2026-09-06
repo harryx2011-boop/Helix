@@ -8,6 +8,7 @@ import { ScrollStrip } from '@/components/marketing/scroll-strip';
 import { BentoCard } from '@/components/marketing/bento';
 import { CanvasMark } from '@/components/marketing/canvas-mark';
 import { CanvasInstall } from '@/components/marketing/canvas/install';
+import { CanvasSetupPrompt } from '@/components/marketing/canvas/setup-prompt';
 import {
   CANVAS_MODULES,
   CANVAS_NAME,
@@ -68,6 +69,9 @@ export default function CanvasPage() {
             <PillButton href="/canvas/tools" variant="secondary">
               Browse {TOOL_TOTAL} tools
             </PillButton>
+          </div>
+          <div className="mt-4 flex justify-center">
+            <CanvasSetupPrompt />
           </div>
         </section>
       </div>

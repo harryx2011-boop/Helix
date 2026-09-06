@@ -79,6 +79,16 @@ export function Playground() {
   }, [prefsHydrated, requestedTab, preferences.defaultEndpoint]);
   const [promptValue, setPromptValue] = React.useState(requestedUrl ?? '');
 
+  // A sidebar row carries `tab` alone (no `url`), so the tab must follow the
+  // URL on every navigation, not just the ones that also bring a url — else
+  // the pill row and the sidebar's active row can point at different tabs.
+  const lastTab = React.useRef(requestedTab ?? '');
+  React.useEffect(() => {
+    if (requestedTab === lastTab.current) return;
+    lastTab.current = requestedTab ?? '';
+    if (requestedTab && runnableById(requestedTab)) setActiveId(requestedTab);
+  }, [requestedTab]);
+
   // `selectTab` replaces the URL without `url`, so only a link that carries
   // one (the hero, the command palette) re-targets an already-mounted playground.
   const lastDeepLink = React.useRef(`${requestedTab ?? ''}|${requestedUrl ?? ''}`);

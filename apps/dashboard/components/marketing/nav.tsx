@@ -146,15 +146,19 @@ export function Nav({ stars = null }: NavProps) {
             <GithubMark className="h-4 w-4" />
             {stars ? <span className="font-mono text-[13px] tabular-nums">{stars}</span> : 'GitHub'}
           </Link>
-          {!user && HOSTED ? (
+          {user ? (
+            <PillButton href="/app" variant="primary">
+              Dashboard
+            </PillButton>
+          ) : HOSTED ? (
             <PillButton href="/sign-in" variant="secondary">
               Sign in
             </PillButton>
-          ) : !user && !HOSTED ? (
+          ) : (
             <PillButton href="/app" variant="primary">
               Open app
             </PillButton>
-          ) : null}
+          )}
         </div>
 
         <button
@@ -187,19 +191,21 @@ export function Nav({ stars = null }: NavProps) {
               <GithubMark className="h-4 w-4" />
               {stars ? <span className="font-mono text-[13px] tabular-nums">{stars}</span> : 'GitHub'}
             </Link>
-            {!user && (
-              <div className="pt-3">
-                {HOSTED ? (
-                  <PillButton href="/sign-in" variant="secondary" className="w-full">
-                    Sign in
-                  </PillButton>
-                ) : (
-                  <PillButton href="/app" variant="primary" className="w-full">
-                    Open app
-                  </PillButton>
-                )}
-              </div>
-            )}
+            <div className="pt-3">
+              {user ? (
+                <PillButton href="/app" variant="primary" className="w-full">
+                  Dashboard
+                </PillButton>
+              ) : HOSTED ? (
+                <PillButton href="/sign-in" variant="secondary" className="w-full">
+                  Sign in
+                </PillButton>
+              ) : (
+                <PillButton href="/app" variant="primary" className="w-full">
+                  Open app
+                </PillButton>
+              )}
+            </div>
           </div>
         </div>
       )}

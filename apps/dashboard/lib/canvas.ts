@@ -162,3 +162,42 @@ export const CANVAS_ENV: readonly { key: string; required: boolean; fallback: st
   { key: 'CANVAS_ANONYMIZE_STUDENTS', required: false, fallback: 'false', note: 'Replaces names with stable pseudonyms in every output.' },
   { key: 'CANVAS_DOWNLOAD_DIR', required: false, fallback: 'system temp', note: 'Where downloaded course files land.' },
 ];
+
+/**
+ * The prompt a person pastes into their coding agent to stand up Canvas
+ * Connect for themselves. Mirrors `lib/setup-prompt.ts`'s shape (install the
+ * skill, resolve a secret without printing it, smoke-test, report back), but
+ * for a locally-run stdio MCP server rather than a hosted API: there is no
+ * key to mint, only a Canvas personal access token the person already holds
+ * or creates on their own Canvas instance.
+ */
+export function canvasSetupPrompt(): string {
+  return `Set up ${CANVAS_NAME} on this machine so you can read and (with confirmation) act on my Canvas LMS account through ${TOOL_TOTAL} MCP tools.
+
+Goal:
+- Clone and install ${CANVAS_PACKAGE} from the Helix monorepo and get it running as a local MCP server.
+- Get it talking to my Canvas account WITHOUT printing, echoing or pasting my Canvas token into this chat.
+
+Source:
+- Repo: ${CANVAS_REPO}
+- Subdirectory: ${CANVAS_SUBDIR}
+- Skills (drop-in workflows): ${CANVAS_SUBDIR}/skills/*/SKILL.md — install the ones relevant to me into .claude/skills/ or .agents/skills/.
+
+What to do:
+1. Clone the repo and cd into ${CANVAS_SUBDIR}.
+2. Install with uv (fallback: a plain venv + pip install -e .):
+   uv venv .venv && uv pip install --python .venv/bin/python -e .
+3. Copy .env.example to .env inside that directory.
+4. Check whether CANVAS_URL and CANVAS_TOKEN are already available FROM YOUR OWN SHELL, never by asking me to echo them:
+   printf '%s\\n' "\${CANVAS_URL:+url-set}" "\${CANVAS_TOKEN:+token-set}"; [ -s .env ] && grep -lq CANVAS_TOKEN .env && printf 'env-file-set\\n'
+   Your shell is probably non-interactive and skips ~/.zshrc and ~/.bashrc, so a value set there can look present to me and empty to you. If nothing shows, tell me which file to put it in; do not open profile or shell config files.
+5. Only if no token resolves, ask me for my Canvas URL (e.g. https://schoolname.instructure.com) and a personal access token I mint from my own Canvas account under Settings → Approved Integrations → New Access Token, and to write both into .env in ${CANVAS_SUBDIR}. Wait for me to confirm before continuing.
+6. Verify the install without ever printing the token:
+   .venv/bin/canvaslms-api --test
+   (Windows: .venv\\Scripts\\canvaslms-api.exe --test)
+   Expect a success line naming my Canvas account. A connection error means the URL or token is wrong; read the failure reason before retrying.
+7. Wire the MCP server into this agent as ${CANVAS_PACKAGE}, pointed at the venv's canvaslms-api executable, stdio transport (see ${CANVAS_SUBDIR}/README.md for exact client config).
+8. Tell me how to restart or rescan this agent so it discovers the server.
+
+Hard rule throughout: the token is a secret and my Canvas account's permissions are exactly what my role grants — never widen them. Inspect the token only through a presence check, and Canvas responses only through their status/summary, never a raw dump of grades or personal data unless I ask for it. Every tool that changes Canvas takes a confirm argument — call it once without confirm to show me the preview, and never pass confirm=true without my explicit go-ahead in this chat. If the token is ever exposed, tell me to revoke it in Canvas and mint a new one.`;
+}

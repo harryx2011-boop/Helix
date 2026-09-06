@@ -182,8 +182,11 @@ export function PromptBox({
 
       `}</style>
 
-      <div className="max-w-full overflow-x-auto" style={variant === 'app' ? APP_TRACK_VARS : undefined}>
-        <Segmented items={tabs} value={activeDef.id} onChange={onSelectTab} aria-label="Endpoint" />
+      <div className="flex max-w-full flex-col items-center gap-2" style={variant === 'app' ? APP_TRACK_VARS : undefined}>
+        <div className="max-w-full overflow-x-auto">
+          <Segmented items={tabs} value={activeDef.id} onChange={onSelectTab} aria-label="Endpoint" />
+        </div>
+        <p className={cn('max-w-[560px] text-center text-[13px] leading-snug', s.faint)}>{activeDef.tagline}</p>
       </div>
 
       <div className={cn('w-full min-w-0 overflow-visible rounded-panel', s.box)}>

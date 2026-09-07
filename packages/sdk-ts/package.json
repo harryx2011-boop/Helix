@@ -1,7 +1,7 @@
 {
   "name": "@helix/sdk",
   "version": "1.6.0",
-  "description": "Typed client for the Helix web-data API.",
+  "description": "Typed client for Helix, a frontier utility hub.",
   "license": "Apache-2.0",
   "type": "module",
   "types": "./dist/index.d.ts",

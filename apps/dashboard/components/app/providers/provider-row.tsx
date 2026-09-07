@@ -70,24 +70,30 @@ function modelMeta(model: ProviderModel): string | undefined {
 }
 
 /**
- * Browses a local runtime's installed models, next to the free-text model
- * input it never replaces — a runtime may hold a model this list can't see
- * (still pulling, or on a host the caller trusts but this fetch can't reach).
+ * Browses the models this provider will actually serve, next to the free-text
+ * model input it never replaces — a provider may hold a model this list can't
+ * see (a local runtime still pulling, a cloud model newer than the catalogue).
  *
- * The API fetches against the base URL already saved for this provider, not
- * whatever sits unsaved in the text field — `savedBaseUrl` gates browsing so
- * a pending edit never gets silently checked against the old host.
+ * For a LOCAL runtime the API fetches against the base URL already saved, not
+ * whatever sits unsaved in the text field, so a pending edit never gets
+ * silently checked against the old host — hence the `savedBaseUrl` gate.
+ *
+ * A CLOUD provider needs no base URL, and its catalogue answers even with no
+ * key stored (the curated list), so browsing is offered from the start rather
+ * than only after a save.
  */
 function ModelPicker({
   providerId,
   providerName,
   apiKey,
+  local,
   savedBaseUrl,
   onPick,
 }: {
   providerId: ProviderId;
   providerName: string;
   apiKey: string | null;
+  local: boolean;
   savedBaseUrl: string | null | undefined;
   onPick: (name: string) => void;
 }) {
@@ -97,7 +103,7 @@ function ModelPicker({
   const [notice, setNotice] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
-    if (!savedBaseUrl) {
+    if (local && !savedBaseUrl) {
       setNotice('Save a base URL first, then browse its models.');
       return;
     }
@@ -111,14 +117,16 @@ function ModelPicker({
         return;
       }
       setModels(result.models);
-      if (result.models.length === 0) setNotice(`No models found on this ${providerName} host yet.`);
+      if (result.models.length === 0) {
+        setNotice(local ? `No models found on this ${providerName} host yet.` : `No ${providerName} models available.`);
+      }
     } catch (error) {
       setModels(null);
       setNotice(error instanceof HelixApiError ? error.message : `Could not reach ${providerName}.`);
     } finally {
       setLoading(false);
     }
-  }, [apiKey, savedBaseUrl, providerId, providerName]);
+  }, [apiKey, local, savedBaseUrl, providerId, providerName]);
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
@@ -228,7 +236,17 @@ export function ProviderRow({
         updatedAt: new Date().toISOString(),
       });
       if (!meta.local) setApiKeyInput('');
-      toast.success(`${meta.name} ${meta.local ? 'connection' : 'key'} saved.`);
+      /* The API refuses an outright rejected credential, so reaching here means
+         the provider either accepted it or could not be asked. Saying "saved"
+         for both would put back the green-dot lie: an unproven credential is
+         stored, and the caller is told exactly that. */
+      if (result.warning) {
+        toast.warning(`${meta.name} ${meta.local ? 'connection' : 'key'} saved, but unverified.`, {
+          description: result.warning,
+        });
+      } else {
+        toast.success(`${meta.name} ${meta.local ? 'connection' : 'key'} verified and saved.`);
+      }
     } catch (error) {
       toast.error(error instanceof HelixApiError ? error.message : `Could not save the ${meta.local ? 'connection' : 'key'}.`);
     } finally {
@@ -297,15 +315,14 @@ export function ProviderRow({
               onChange={(e) => setModel(e.target.value)}
               aria-label={`${meta.name} model`}
             />
-            {meta.local && (
-              <ModelPicker
-                providerId={meta.id}
-                providerName={meta.name}
-                apiKey={apiKey}
-                savedBaseUrl={status.baseUrl}
-                onPick={setModel}
-              />
-            )}
+            <ModelPicker
+              providerId={meta.id}
+              providerName={meta.name}
+              apiKey={apiKey}
+              local={Boolean(meta.local)}
+              savedBaseUrl={status.baseUrl}
+              onPick={setModel}
+            />
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Button onClick={handleSave} disabled={saving} className="shrink-0 rounded-pill">

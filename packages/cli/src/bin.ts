@@ -6,7 +6,7 @@ const VERSION = '0.1.0';
 
 const HELP = `helix ${VERSION}
 
-Connect an agent harness to the Helix web-data API.
+Connect an agent harness to Helix, a frontier utility hub.
 
 Usage
   helix init --all -k <key>          configure every detected harness

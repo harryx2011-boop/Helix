@@ -595,6 +595,10 @@ export interface SaveProviderResponse {
   last4?: string;
   model?: string | null;
   baseUrl?: string | null;
+  /** The provider accepted this credential when it was saved. */
+  verified?: boolean;
+  /** Present when the credential could not be checked — stored, but unproven. */
+  warning?: string;
 }
 
 export interface RemoveProviderResponse {

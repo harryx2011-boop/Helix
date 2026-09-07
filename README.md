@@ -1,6 +1,6 @@
 # Helix
 
-**Self-hostable, BYOK web-data API.** Turn web pages and documents into clean, structured, LLM-ready data — using your own models, your own proxies, your own storage.
+**A frontier utility hub.** Self-hostable and bring-your-own-key. Turn web pages and documents into clean, structured, LLM-ready data — using your own models, your own proxies, your own storage.
 
 > Status: pre-implementation. The design is settled ([ARCHITECTURE.md](ARCHITECTURE.md), [openapi.yaml](openapi.yaml)); the code is being built to it.
 

@@ -112,11 +112,22 @@ async function build(instanceConfigured: Partial<Record<Provider, boolean>> = {}
   return built;
 }
 
+/* Saving a credential now verifies it against the provider first, so every PUT
+   in this file would otherwise make a real network call and be refused. The
+   default stub answers 200 — "the provider accepted it" — leaving each test
+   free to assert the storage contract it is actually about. Tests that care
+   about a REJECTED credential override this with their own stub. */
+const realFetch = globalThis.fetch;
+
 beforeEach(() => {
   db.state.rows = [];
+  globalThis.fetch = vi.fn(async () =>
+    new Response(JSON.stringify({ data: [] }), { status: 200, headers: { 'content-type': 'application/json' } }),
+  ) as unknown as typeof fetch;
 });
 
 afterEach(async () => {
+  globalThis.fetch = realFetch;
   await app?.close();
 });
 
@@ -191,6 +202,7 @@ describe('PUT /v1/providers/:provider', () => {
       last4: '5678',
       model: 'gpt-4o-mini',
       baseUrl: null,
+      verified: true,
     });
   });
 
@@ -210,7 +222,63 @@ describe('PUT /v1/providers/:provider', () => {
       last4: null,
       model: null,
       baseUrl: 'http://localhost:11434/v1',
+      verified: true,
     });
+  });
+
+  /* The guarantee this endpoint gained: a credential the provider rejects is
+     never stored. Storing it would report `configured: true` and paint
+     "Connected" for a key that cannot work. */
+  it('refuses to store a key the provider rejects, and stores nothing', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('unauthorized', { status: 401 })) as unknown as typeof fetch;
+    app = await build();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/openai',
+      headers: { 'x-test-key': 'a' },
+      payload: { apiKey: 'sk-openai-wrong-key' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error).toBe('invalid_credential');
+    expect(db.state.rows).toHaveLength(0);
+  });
+
+  /* A provider outage must not refuse a good key. The credential is stored and
+     the caller is told it could not be checked. */
+  it('stores a key it could not check, and says so', async () => {
+    globalThis.fetch = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    }) as unknown as typeof fetch;
+    app = await build();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/openai',
+      headers: { 'x-test-key': 'a' },
+      payload: { apiKey: 'sk-openai-12345678' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.verified).toBe(false);
+    expect(body.warning).toBeTruthy();
+    expect(db.state.rows).toHaveLength(1);
+  });
+
+  /* The plaintext goes to the provider in a header and into the database
+     encrypted. It must never come back in the refusal message. */
+  it('never echoes the key in a rejection message', async () => {
+    const secret = 'sk-openai-do-not-leak';
+    globalThis.fetch = vi.fn(async () => new Response(secret, { status: 401 })) as unknown as typeof fetch;
+    app = await build();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/openai',
+      headers: { 'x-test-key': 'a' },
+      payload: { apiKey: secret },
+    });
+
+    expect(response.body).not.toContain(secret);
   });
 
   it('rejects an ollama PUT with no baseUrl', async () => {
@@ -459,7 +527,11 @@ describe('GET /v1/providers/:provider/models', () => {
     expect(response.json().field).toBe('baseUrl');
   });
 
-  it('rejects a non-local provider', async () => {
+  /* Cloud providers used to be refused here, which left the four of them with a
+     free-text model box and no discovery at all. They now answer from the live
+     catalogue, falling back to the curated list — so with no key stored and the
+     catalogue unreachable, the answer is still a usable list rather than a 400. */
+  it('answers a cloud provider from the curated list when no key is stored', async () => {
     app = await build();
     const response = await app.inject({
       method: 'GET',
@@ -467,8 +539,11 @@ describe('GET /v1/providers/:provider/models', () => {
       headers: { 'x-test-key': 'a' },
     });
 
-    expect(response.statusCode).toBe(400);
-    expect(response.json().field).toBe('provider');
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.success).toBe(true);
+    expect(body.provider).toBe('anthropic');
+    expect(body.models.length).toBeGreaterThan(0);
   });
 
   it('requires auth', async () => {

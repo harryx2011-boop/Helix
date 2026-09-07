@@ -90,7 +90,7 @@ export function Footer() {
           <div className="min-w-0 border-b border-m-border-faint p-8 lg:border-b-0 lg:border-r">
             <Logo className="h-10 w-auto text-m-ink/56" />
             <p className="mt-6 text-[20px] leading-tight tracking-tight text-m-ink/88">
-              The web-data API you run yourself.
+              A frontier utility hub you run yourself.
             </p>
             <p className="mt-3 font-mono text-[12px] text-m-ink/56">
               Apache-2.0 · self-hosted · bring your own keys

@@ -1,6 +1,6 @@
 # @helix/sdk
 
-Typed client for the [Helix](https://github.com) web-data API. No runtime dependencies — built on global `fetch`, works in Node 22+ and the browser.
+Typed client for [Helix](https://github.com), a frontier utility hub. No runtime dependencies — built on global `fetch`, works in Node 22+ and the browser.
 
 ```
 pnpm add @helix/sdk

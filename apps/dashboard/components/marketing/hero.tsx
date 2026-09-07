@@ -48,9 +48,9 @@ export function Hero() {
           data-reveal
           className="max-w-[760px] text-[44px] font-normal leading-[1.03] tracking-tightest sm:text-[64px]"
         >
-          The web-data API
+          A frontier
           <br />
-          <span className="text-violet">you run yourself</span>
+          <span className="text-violet">utility hub</span>
         </h1>
 
         <div className="relative flex flex-col items-center">
@@ -72,7 +72,7 @@ export function Hero() {
           />
 
           <p data-reveal className="mt-5 max-w-[560px] text-[18px] leading-relaxed text-m-ink/72">
-            An API built for agents to scour the web.{' '}
+            Scrape, parse, convert, search and crawl — on your own keys.{' '}
             <span className="rounded-card bg-m-ink/[0.039] px-1.5 py-0.5">Completely open source, run it locally.</span>
           </p>
 

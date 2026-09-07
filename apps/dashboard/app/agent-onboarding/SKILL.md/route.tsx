@@ -23,7 +23,7 @@ function buildSkillMd(): string {
   const preamble = [
     '# Helix — Agent Onboarding',
     '',
-    'Helix is a web-data API: scrape, parse, search, crawl, interact and monitor the web with your own keys. This document is everything an agent needs to start calling it.',
+    'Helix is a frontier utility hub: scrape, parse, search, crawl, interact and monitor the web with your own keys. This document is everything an agent needs to start calling it.',
     '',
     '## 1. Get a key',
     '',

@@ -10,7 +10,7 @@ export async function GET() {
   const lines = [
     '# Helix',
     '',
-    '> The web-data API you run yourself. Scrape, parse, search, crawl, interact and monitor with your own keys. Apache-2.0.',
+    '> A frontier utility hub you run yourself. Scrape, parse, search, crawl, interact and monitor with your own keys. Apache-2.0.',
     '',
     `- [Home](${base}/md)`,
     ...MARKDOWN_TWIN_PATHS.map((path) => `- [${path}](${base}/md/${path})`),

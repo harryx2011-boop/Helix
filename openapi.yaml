@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Helix
   version: 1.17.0
-  summary: Self-hostable, BYOK web-data API.
+  summary: A frontier utility hub. Self-hostable and BYOK.
   description: |
     Helix turns web pages and documents into clean, structured, LLM-ready data.
 

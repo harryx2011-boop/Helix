@@ -244,15 +244,18 @@ Copy, centred, max width 720px:
 > **Eyebrow pill:** `Apache-2.0 · self-hosted · bring your own keys` →
 >
 > **H1 (56px, 400, −0.52px, leading 1.05):**
-> The web-data API
-> **you run yourself** ← violet
+> A frontier
+> **utility hub** ← violet
 >
 > **Subhead (18px, ink 72%):**
-> An API built for agents to scour the web. Completely open source, and available for you to run locally.
+> Scrape, parse, convert, search and crawl — on your own keys. Completely open source, run it locally.
 >
 > **CTAs:** [ **Get an API key** ] primary · [ **See how the ladder works** ] secondary
 
-The subhead is Harry's line, punctuated. The primary CTA was "Run the interactive ladder demo" before the hosted pivot; with sign-up available it becomes the conversion event and the demo moves to the secondary button, which scrolls to and plays the ladder panel.
+The H1 was "The web-data API / you run yourself" until 2026-09-07. Helix had outgrown
+it: the converter, persona and canvas tools are peers of the web-data endpoints, not
+add-ons to them, and a name that says "web-data API" describes only one shelf of the
+hub. The subhead carries the concrete list the H1 no longer states. The primary CTA was "Run the interactive ladder demo" before the hosted pivot; with sign-up available it becomes the conversion event and the demo moves to the secondary button, which scrolls to and plays the ladder panel.
 
 **Hero panel** (white, `panel` radius, `--shadow-card`, `--ring-cutout` halo, overlapping the next section by 80px like the reference):
 

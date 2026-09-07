@@ -2,7 +2,7 @@
 
 **Status:** design, pre-implementation · **Date:** 23 August 2026
 
-An open-source, self-hostable web-data API. Bring your own LLM keys, your own proxies, your own storage. Helix is the machine; you buy the fuel.
+A frontier utility hub: open source, self-hostable, and bring-your-own-key. Your own LLM keys, your own proxies, your own storage. Helix is the machine; you buy the fuel.
 
 Companion documents: [RESEARCH.md](RESEARCH.md) for the evidence base, [openapi.yaml](openapi.yaml) for the wire contract.
 

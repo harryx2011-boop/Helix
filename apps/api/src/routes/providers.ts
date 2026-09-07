@@ -10,6 +10,9 @@ import {
   type Provider,
 } from '../providers/repository.js';
 import { listLocalProviderModels } from '../providers/models.js';
+import { verifyProvider } from '../providers/verify.js';
+import { isCloudProvider, listCloudModels } from '../providers/cloud-models.js';
+import { resolveProviderKeys } from '../providers/repository.js';
 
 /**
  * A caller's own LLM provider keys, stored against their Helix API key.
@@ -99,6 +102,23 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
       });
     }
 
+    /* Verified against the provider BEFORE it is stored. A rejected credential
+       is refused outright: storing it would report `configured: true` and paint
+       "Connected" for a key that cannot work, which is the failure this check
+       exists to remove. A credential that cannot be CHECKED (this instance's
+       egress is down, the provider is 5xx-ing, a local runtime is not running
+       yet) is stored anyway and reported as unverified — refusing there would
+       strand a caller whose key is perfectly good. */
+    const check = await verifyProvider(provider, { apiKey, baseUrl });
+    if (check.verdict === 'invalid') {
+      return reply.code(400).send({
+        error: 'invalid_credential',
+        message: check.message ?? `${provider} rejected this credential.`,
+        field: local ? 'baseUrl' : 'apiKey',
+        requestId: request.id,
+      });
+    }
+
     const result = await upsertProviderKey(apiKeyId, provider, deps.encryptionKey, { apiKey, model, baseUrl });
 
     return reply.send({
@@ -107,6 +127,8 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
       last4: result.last4,
       model: result.model,
       baseUrl: result.baseUrl,
+      verified: check.verdict === 'valid',
+      ...(check.verdict === 'unverifiable' ? { warning: check.message } : {}),
     });
   });
 
@@ -125,13 +147,16 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
         requestId: request.id,
       });
     }
-    if (!isLocalProvider(provider)) {
-      return reply.code(400).send({
-        error: 'invalid_request',
-        message: `${provider} has no installed-model listing; only local runtimes do.`,
-        field: 'provider',
-        requestId: request.id,
-      });
+    /* A cloud provider's catalogue is fetched with the caller's own stored key.
+       With no key stored the curated list still answers, so the picker is
+       useful before a key is saved rather than only after. */
+    if (isCloudProvider(provider)) {
+      const resolved = await resolveProviderKeys(apiKeyId, deps.encryptionKey);
+      const result = await listCloudModels(provider, resolved[provider]?.key ?? null);
+      if (!result.ok) {
+        return reply.send({ success: false, provider, failure: { reason: result.reason, message: result.message } });
+      }
+      return reply.send({ success: true, provider, models: result.models });
     }
 
     const rows = await listProviderKeys(apiKeyId);

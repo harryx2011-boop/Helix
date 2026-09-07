@@ -29,7 +29,7 @@ export default function TermsPage() {
 
         <Section title="What Helix is">
           <p>
-            Helix is a self-hostable, bring-your-own-key web-data API. The software is open source under the
+            Helix is a self-hostable, bring-your-own-key frontier utility hub. The software is open source under the
             Apache-2.0 licence. This hosted app at this site is one way to run it without operating your own
             infrastructure; running your own instance is equally supported and covered by the licence, not by these
             terms.

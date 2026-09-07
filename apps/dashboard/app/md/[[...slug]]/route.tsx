@@ -36,7 +36,7 @@ function homeMarkdown(): string {
   return [
     '# Helix',
     '',
-    'The web-data API you run yourself. Scrape, parse, search, crawl, interact and monitor with your own keys. Apache-2.0.',
+    'A frontier utility hub you run yourself. Scrape, parse, search, crawl, interact and monitor with your own keys. Apache-2.0.',
     '',
     'See /llms.txt for an index of every page on this site.',
   ].join('\n');

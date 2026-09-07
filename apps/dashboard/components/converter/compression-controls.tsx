@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import { X } from 'lucide-react';
+import { Archive, Globe, X } from 'lucide-react';
+import { DiscordMark, GmailMark } from '@/components/converter/brand-marks';
+import type { GlyphIcon } from '@/components/marketing/icon-type';
 import { PillButton } from '@/components/converter/pill-button';
 import { deletePreset, savePreset, usePresets } from '@/lib/converter/jobs/store';
 import { BUILTIN_PRESETS, formatBytes, type CompressPreset, type FileKind, type MediaMeta } from '@/lib/converter/jobs/types';
@@ -11,6 +13,19 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 const MB = 1024 ** 2;
 
 export type Estimate = { bytes: number; detail: string };
+
+/**
+ * Icon per built-in preset. Presets naming a real service carry that service's
+ * own mark; the generic targets take a Lucide glyph. Lives here rather than in
+ * `jobs/types` so the preset table stays free of React imports — it is read by
+ * the worker too.
+ */
+const PRESET_ICON: Record<CompressPreset, GlyphIcon> = {
+  email: GmailMark,
+  discord: DiscordMark,
+  web: Globe,
+  archive: Archive,
+};
 
 export function estimate(
   kind: FileKind,
@@ -133,19 +148,23 @@ export function CompressionControls({ kind, inSize, meta, preset, targetBytes, q
   return (
     <div className="flex flex-col gap-3">
       <div role="group" aria-labelledby={labelId} className="flex flex-wrap items-center gap-2">
-        {BUILTIN_PRESETS.map((p) => (
-          <PillButton
-            key={p.id}
-            type="button"
-            size="md"
-            variant={preset === p.id ? 'primary' : 'secondary'}
-            aria-pressed={preset === p.id}
-            onClick={() => pickBuiltin(p)}
-          >
-            {p.label}
-            <span className="font-mono text-caption opacity-70">{p.targetBytes === null ? 'best' : formatBytes(p.targetBytes)}</span>
-          </PillButton>
-        ))}
+        {BUILTIN_PRESETS.map((p) => {
+          const Icon = PRESET_ICON[p.id];
+          return (
+            <PillButton
+              key={p.id}
+              type="button"
+              size="md"
+              variant={preset === p.id ? 'primary' : 'secondary'}
+              aria-pressed={preset === p.id}
+              onClick={() => pickBuiltin(p)}
+            >
+              <Icon aria-hidden="true" />
+              {p.label}
+              <span className="font-mono text-caption opacity-70">{p.targetBytes === null ? 'best' : formatBytes(p.targetBytes)}</span>
+            </PillButton>
+          );
+        })}
         {userPresets.map((p) => (
           <span key={p.id} className="inline-flex items-center">
             <PillButton

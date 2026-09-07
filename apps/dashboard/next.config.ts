@@ -43,9 +43,21 @@ const nextConfig: NextConfig = {
   ...(hosted
     ? {}
     : {
-        webpack: (webpackConfig: { resolve: { alias: Record<string, string> } }) => {
+        webpack: (
+          webpackConfig: { resolve: { alias: Record<string, string> }; cache?: unknown },
+          { dev }: { dev: boolean },
+        ) => {
           webpackConfig.resolve.alias['@clerk/nextjs/server'] = resolve(currentDir, 'lib', 'clerk-stub', 'server.ts');
           webpackConfig.resolve.alias['@clerk/nextjs'] = resolve(currentDir, 'lib', 'clerk-stub', 'index.tsx');
+          // E:\ is a USB flash volume with confirmed exFAT filesystem corruption
+          // (chkdsk: bad volume bitmap). Webpack's persistent disk cache snapshots
+          // node_modules into .next/cache and intermittently fails to read it back
+          // ("Unable to snapshot resolve dependencies"), which then cascades into
+          // spurious "Can't resolve" errors for real files. Memory cache in dev
+          // avoids touching the unreliable disk cache entirely.
+          if (dev) {
+            webpackConfig.cache = false;
+          }
           return webpackConfig;
         },
       }),

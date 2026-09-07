@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { Archive, ArrowRight, Globe } from 'lucide-react';
+import { DiscordMark, GmailMark } from '@/components/converter/brand-marks';
 import { KIND_LABELS, compressors } from '@/lib/converter/formats';
 
 export const metadata: Metadata = {
@@ -10,10 +11,10 @@ export const metadata: Metadata = {
 };
 
 const PRESETS = [
-  { name: 'Email', target: '25 MB', note: 'Fits the common attachment cap.' },
-  { name: 'Discord', target: '10 MB', note: 'Under the free-tier upload limit.' },
-  { name: 'Web', target: 'CRF 28', note: 'Small enough to embed, still sharp at 1080p.' },
-  { name: 'Archive', target: 'CRF 20', note: 'Keeps detail; roughly halves most camera footage.' },
+  { name: 'Email', icon: GmailMark, target: '25 MB', note: 'Fits the common attachment cap.' },
+  { name: 'Discord', icon: DiscordMark, target: '10 MB', note: 'Under the free-tier upload limit.' },
+  { name: 'Web', icon: Globe, target: 'CRF 28', note: 'Small enough to embed, still sharp at 1080p.' },
+  { name: 'Archive', icon: Archive, target: 'CRF 20', note: 'Keeps detail; roughly halves most camera footage.' },
 ];
 
 export default function CompressPage() {
@@ -57,15 +58,21 @@ export default function CompressPage() {
             estimate. Presets you save yourself appear beside these.
           </p>
           <dl className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {PRESETS.map((p) => (
-              <div key={p.name} className="rounded-cv-card border border-p-line bg-p-surface px-4 py-3">
-                <dt className="flex items-baseline justify-between gap-2 text-sm font-medium text-p-ink">
-                  {p.name}
-                  <span className="font-mono text-caption text-p-ink-3">{p.target}</span>
-                </dt>
-                <dd className="mt-1 text-note text-p-ink-2">{p.note}</dd>
-              </div>
-            ))}
+            {PRESETS.map((p) => {
+              const Icon = p.icon;
+              return (
+                <div key={p.name} className="rounded-cv-card border border-p-line bg-p-surface px-4 py-3">
+                  <dt className="flex items-center justify-between gap-2 text-sm font-medium text-p-ink">
+                    <span className="flex items-center gap-2">
+                      <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+                      {p.name}
+                    </span>
+                    <span className="font-mono text-caption text-p-ink-3">{p.target}</span>
+                  </dt>
+                  <dd className="mt-1 text-note text-p-ink-2">{p.note}</dd>
+                </div>
+              );
+            })}
           </dl>
         </section>
 

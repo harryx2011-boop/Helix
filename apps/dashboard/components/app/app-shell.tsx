@@ -7,13 +7,22 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { AppGrid } from './app-grid';
 import { CommandPalette } from './command-palette/command-palette';
 
-export function AppShell({ selectedEndpoints, children }: { selectedEndpoints: readonly string[]; children: React.ReactNode }) {
+export function AppShell({
+  selectedEndpoints,
+  localTools,
+  children,
+}: {
+  selectedEndpoints: readonly string[];
+  /** The server is being reached on localhost, so operator-only tools (Vulcan) are shown. */
+  localTools: boolean;
+  children: React.ReactNode;
+}) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
-        <Sidebar selectedEndpoints={selectedEndpoints} mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
+        <Sidebar selectedEndpoints={selectedEndpoints} localTools={localTools} mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar onOpenMobileNav={() => setMobileOpen(true)} />
           {/*
@@ -35,7 +44,7 @@ export function AppShell({ selectedEndpoints, children }: { selectedEndpoints: r
           </main>
         </div>
       </div>
-      <CommandPalette selectedEndpoints={selectedEndpoints} />
+      <CommandPalette selectedEndpoints={selectedEndpoints} localTools={localTools} />
     </TooltipProvider>
   );
 }

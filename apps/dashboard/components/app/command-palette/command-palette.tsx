@@ -59,7 +59,7 @@ function isEditable(target: EventTarget | null): target is HTMLElement {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 }
 
-export function CommandPalette({ selectedEndpoints }: { selectedEndpoints: readonly string[] }) {
+export function CommandPalette({ selectedEndpoints, localTools }: { selectedEndpoints: readonly string[]; localTools: boolean }) {
   const open = usePaletteOpen();
 
   React.useEffect(() => {
@@ -90,14 +90,14 @@ export function CommandPalette({ selectedEndpoints }: { selectedEndpoints: reado
           <DialogPrimitive.Description className="sr-only">
             Type to search pages, docs, keys, monitors and jobs. Use the arrow keys to move and Enter to open.
           </DialogPrimitive.Description>
-          {open && <PaletteBody selectedEndpoints={selectedEndpoints} />}
+          {open && <PaletteBody selectedEndpoints={selectedEndpoints} localTools={localTools} />}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   );
 }
 
-function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string[] }) {
+function PaletteBody({ selectedEndpoints, localTools }: { selectedEndpoints: readonly string[]; localTools: boolean }) {
   const router = useRouter();
   const { apiKey } = useAppSession();
   const recentRuns = useRecentRuns();
@@ -166,7 +166,7 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
       out.push({ id: 'action:clear-recent', group: 'actions', title: 'Clear recent runs', keywords: ['history', 'forget'], icon: Trash2, run: clearRecentRuns });
     }
 
-    for (const group of buildNavGroups(selectedEndpoints)) {
+    for (const group of buildNavGroups(selectedEndpoints, localTools)) {
       for (const row of group.rows) {
         const tab = row.href.includes('?tab=') ? endpointById(row.href.split('?tab=')[1] ?? '') : undefined;
         out.push({
@@ -272,7 +272,7 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
     }
 
     return out;
-  }, [recentRuns, selectedEndpoints, docs, data, go]);
+  }, [recentRuns, selectedEndpoints, localTools, docs, data, go]);
 
   // Sections that cannot list anything still get a row saying why, but only
   // once there is a query: on an empty palette that would be noise.

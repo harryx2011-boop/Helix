@@ -36,9 +36,11 @@ None of its own. Served by the dashboard on **3400**, at
 **Local-only by design.** Vulcan reads Claude Code transcripts from the
 operator's own filesystem (`~/.claude/projects/**/*.jsonl` on the machine
 running the dashboard's dev server). There is no ingest into Supabase, no
-new migration, no hosted-deployment behavior. On `helixapi-dev.vercel.app`
-the route either 404s or shows an empty state — Vercel's filesystem has no
-`~/.claude` to read. This is deliberate: Vulcan tracks *your* local dev
+new migration, no hosted-deployment behavior. The page, the route and the
+nav row exist only when the request's `Host` is a loopback name
+(`lib/vulcan/gate.ts`); on `helixapi-dev.vercel.app` all three 404, and in
+self-host mode (a static export with no route handlers) the gate is false
+outright. This is deliberate: Vulcan tracks *your* local dev
 usage, not a hosted multi-tenant feature.
 
 ## 3. Auth

@@ -29,7 +29,7 @@ function isRecentlyLive(liveSince: string | undefined): boolean {
   return days >= 0 && days <= NEW_WINDOW_DAYS;
 }
 
-export function buildNavGroups(selectedEndpoints: readonly string[]): NavGroup[] {
+export function buildNavGroups(selectedEndpoints: readonly string[], localTools: boolean): NavGroup[] {
   const ordered = orderBySelection(selectedEndpoints);
 
   return [
@@ -54,7 +54,7 @@ export function buildNavGroups(selectedEndpoints: readonly string[]): NavGroup[]
       heading: 'Utilities',
       rows: [
         { href: '/app/agent', label: 'Agent', icon: Sparkles },
-        { href: '/app/vulcan', label: 'Vulcan', icon: VulcanFlame },
+        ...(localTools ? [{ href: '/app/vulcan', label: 'Vulcan', icon: VulcanFlame }] : []),
       ],
     },
     {
@@ -91,6 +91,7 @@ function isActive(pathname: string, href: string, activeTab: string | null, defa
 
 interface SidebarNavProps {
   selectedEndpoints: readonly string[];
+  localTools: boolean;
   collapsed: boolean;
 }
 
@@ -106,10 +107,10 @@ export function SidebarNav(props: SidebarNavProps) {
   );
 }
 
-function SidebarNavInner({ selectedEndpoints, collapsed }: SidebarNavProps) {
+function SidebarNavInner({ selectedEndpoints, localTools, collapsed }: SidebarNavProps) {
   const pathname = usePathname();
   const activeTab = useSearchParams().get('tab');
-  const groups = buildNavGroups(selectedEndpoints);
+  const groups = buildNavGroups(selectedEndpoints, localTools);
   const defaultTab = orderBySelection(selectedEndpoints)[0]?.id;
 
   return (

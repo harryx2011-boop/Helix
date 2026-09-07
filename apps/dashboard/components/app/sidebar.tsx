@@ -49,10 +49,12 @@ function CollapseToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle:
 function SidebarBody({
   collapsed,
   selectedEndpoints,
+  localTools,
   onToggle,
 }: {
   collapsed: boolean;
   selectedEndpoints: readonly string[];
+  localTools: boolean;
   onToggle?: () => void;
 }) {
   return (
@@ -62,7 +64,7 @@ function SidebarBody({
           {collapsed ? <Logo markOnly className="h-9 w-auto text-foreground" /> : <Logo className="h-12 w-auto text-foreground" />}
         </Link>
       </div>
-      <SidebarNav selectedEndpoints={selectedEndpoints} collapsed={collapsed} />
+      <SidebarNav selectedEndpoints={selectedEndpoints} localTools={localTools} collapsed={collapsed} />
       <div className={cn('mt-auto flex flex-col gap-1 border-t border-border px-2 py-2', collapsed && 'items-center px-0')}>
         <UserChip collapsed={collapsed} />
         {onToggle && <CollapseToggle collapsed={collapsed} onToggle={onToggle} />}
@@ -73,10 +75,12 @@ function SidebarBody({
 
 export function Sidebar({
   selectedEndpoints,
+  localTools,
   mobileOpen,
   onMobileOpenChange,
 }: {
   selectedEndpoints: readonly string[];
+  localTools: boolean;
   mobileOpen: boolean;
   onMobileOpenChange: (open: boolean) => void;
 }) {
@@ -112,7 +116,7 @@ export function Sidebar({
         className="relative hidden shrink-0 flex-col border-r border-border bg-background transition-[width] duration-200 ease-out lg:flex"
         style={{ width: hydrated ? width : EXPANDED_WIDTH }}
       >
-        <SidebarBody collapsed={hydrated && collapsed} selectedEndpoints={selectedEndpoints} onToggle={toggle} />
+        <SidebarBody collapsed={hydrated && collapsed} selectedEndpoints={selectedEndpoints} localTools={localTools} onToggle={toggle} />
       </aside>
 
       {/* Mobile: sheet-style drawer via Dialog */}
@@ -121,7 +125,7 @@ export function Sidebar({
           <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-fade-in lg:hidden" />
           <DialogPrimitive.Content className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-background data-[state=open]:animate-slide-up lg:hidden">
             <DialogPrimitive.Title className="sr-only">Navigation</DialogPrimitive.Title>
-            <SidebarBody collapsed={false} selectedEndpoints={selectedEndpoints} />
+            <SidebarBody collapsed={false} selectedEndpoints={selectedEndpoints} localTools={localTools} />
             <DialogPrimitive.Close
               aria-label="Close navigation"
               className="absolute right-3 top-3 rounded-card p-1 text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

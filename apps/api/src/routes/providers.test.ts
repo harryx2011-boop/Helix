@@ -294,6 +294,56 @@ describe('PUT /v1/providers/:provider', () => {
     expect(response.json().field).toBe('baseUrl');
   });
 
+  /* A caller-supplied base URL is an egress target: stored, forwarded to
+     extract, and fetched server-side with the caller's key attached. An API key
+     is handed to many users, so without this guard one of them could point the
+     instance at cloud metadata and read the host's credentials back out. */
+  it('refuses a private base URL on a cloud provider, and stores nothing', async () => {
+    app = await build();
+    for (const baseUrl of [
+      'http://169.254.169.254/latest/meta-data/',
+      'http://127.0.0.1:8080/v1',
+      'http://192.168.0.5/v1',
+      'http://10.0.0.7/v1',
+    ]) {
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/v1/providers/openai',
+        headers: { 'x-test-key': 'a' },
+        payload: { apiKey: 'sk-openai-12345678', baseUrl },
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.json().field).toBe('baseUrl');
+    }
+    expect(db.state.rows).toHaveLength(0);
+  });
+
+  /* The exemption is the private-address rule and only that rule: loopback and
+     LAN are exactly where Ollama and vLLM live. */
+  it('still allows a loopback base URL for a local runtime', async () => {
+    app = await build();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/ollama',
+      headers: { 'x-test-key': 'a' },
+      payload: { baseUrl: 'http://127.0.0.1:11434/v1' },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(db.state.rows).toHaveLength(1);
+  });
+
+  it('refuses a non-http scheme on a local runtime too', async () => {
+    app = await build();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/ollama',
+      headers: { 'x-test-key': 'a' },
+      payload: { baseUrl: 'file:///etc/passwd' },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('baseUrl');
+  });
+
   it('rejects an anthropic PUT with no apiKey', async () => {
     app = await build();
     const response = await app.inject({

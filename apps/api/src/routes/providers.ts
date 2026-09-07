@@ -12,6 +12,7 @@ import {
 import { listLocalProviderModels } from '../providers/models.js';
 import { verifyProvider } from '../providers/verify.js';
 import { isCloudProvider, listCloudModels } from '../providers/cloud-models.js';
+import { checkUrl } from '../core/url-guard.js';
 import { resolveProviderKeys } from '../providers/repository.js';
 
 /**
@@ -84,6 +85,29 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
 
     const { apiKey, model, baseUrl } = parsed.data;
     const local = isLocalProvider(provider);
+
+    /* A caller-supplied base URL is an egress target: it is stored, forwarded
+       to the extract service, and fetched server-side with the caller's key
+       attached. `z.string().url()` only proves it parses, so without this an
+       API key — a low-trust boundary, handed to many users — could point this
+       instance at `http://169.254.169.254/` and read the host's cloud
+       credentials back out, or reach an internal service.
+
+       A LOCAL runtime is exempt from the private-address rule and only from
+       that rule: loopback and LAN are exactly where Ollama and vLLM live, and
+       refusing them would break the one thing those providers are for. Scheme
+       and shape are still checked on both paths. */
+    if (baseUrl) {
+      const verdict = await checkUrl(baseUrl, { allowPrivate: local });
+      if (!verdict.ok) {
+        return reply.code(400).send({
+          error: 'invalid_request',
+          message: `baseUrl: ${verdict.reason}`,
+          field: 'baseUrl',
+          requestId: request.id,
+        });
+      }
+    }
 
     if (local && !baseUrl) {
       return reply.code(400).send({

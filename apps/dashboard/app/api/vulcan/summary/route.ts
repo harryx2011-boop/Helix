@@ -21,6 +21,6 @@ export async function GET(req: NextRequest) {
   const days = raw === 'all' ? null : Number(raw ?? 30);
   const windowDays = days === null ? null : WINDOWS.has(days) ? days : 30;
 
-  const { records, files } = await ingestAll();
-  return NextResponse.json(aggregate(records, files, windowDays));
+  const { records, ...source } = await ingestAll();
+  return NextResponse.json(aggregate(records, source, windowDays));
 }

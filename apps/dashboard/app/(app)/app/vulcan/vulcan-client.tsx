@@ -383,7 +383,7 @@ export function VulcanClient() {
     body = (
       <Message
         title="No transcripts on this machine"
-        body="Vulcan reads ~/.claude/projects from the computer running this server. Run it locally beside your Claude Code sessions; a hosted deployment has nothing to read."
+        body={`Looked in ${state.data.root} on ${state.data.host}. Vulcan reads the Claude Code transcripts of the computer running this server, so open the dashboard served from your own machine; a hosted deployment has nothing to read.`}
       />
     );
   } else {

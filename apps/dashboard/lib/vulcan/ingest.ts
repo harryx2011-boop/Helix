@@ -1,7 +1,7 @@
 import 'server-only';
 import { createReadStream } from 'node:fs';
 import { readdir, stat } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { homedir, hostname } from 'node:os';
 import { join, relative, sep } from 'node:path';
 import { createInterface } from 'node:readline';
 import type { Usage } from './pricing';
@@ -57,10 +57,10 @@ interface CacheEntry {
 /** Parsed output per file, invalidated by mtime+size, so a multi-GB corpus is not re-read per page view. */
 const fileCache = new Map<string, CacheEntry>();
 
-export async function ingestAll(): Promise<{ records: RequestRecord[]; files: number }> {
+export async function ingestAll(): Promise<{ records: RequestRecord[]; files: number; root: string; host: string }> {
   const files = await walk(TRANSCRIPT_ROOT);
   const perFile = await Promise.all(files.map((f) => ingestFile(f)));
-  return { records: perFile.flat(), files: files.length };
+  return { records: perFile.flat(), files: files.length, root: TRANSCRIPT_ROOT, host: hostname() };
 }
 
 async function walk(dir: string): Promise<string[]> {

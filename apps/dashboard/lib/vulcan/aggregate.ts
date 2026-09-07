@@ -36,6 +36,9 @@ export interface VulcanSummary {
   generatedAt: number;
   windowDays: number | null;
   files: number;
+  /** Where the transcripts were looked for, and on which machine, so an empty state can say so. */
+  root: string;
+  host: string;
   totals: {
     cost: number;
     requests: number;
@@ -84,7 +87,7 @@ function dedup(records: RequestRecord[]): RequestRecord[] {
   return out;
 }
 
-export function aggregate(all: RequestRecord[], files: number, windowDays: number | null): VulcanSummary {
+export function aggregate(all: RequestRecord[], source: { files: number; root: string; host: string }, windowDays: number | null): VulcanSummary {
   const now = Date.now();
   const cutoff = windowDays ? now - windowDays * 86_400_000 : 0;
   const records = dedup(all)
@@ -145,7 +148,9 @@ export function aggregate(all: RequestRecord[], files: number, windowDays: numbe
   return {
     generatedAt: now,
     windowDays,
-    files,
+    files: source.files,
+    root: source.root,
+    host: source.host,
     totals: {
       cost,
       requests: records.length,

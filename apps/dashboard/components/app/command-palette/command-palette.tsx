@@ -452,7 +452,7 @@ function Key({ children }: { children: React.ReactNode }) {
 }
 
 function OptionRow({ id, item, active, onHover, onSelect }: { id: string; item: PaletteItem; active: boolean; onHover: () => void; onSelect: () => void }) {
-  const Icon: LucideIcon = item.icon;
+  const Icon = item.icon;
   return (
     <div
       id={id}

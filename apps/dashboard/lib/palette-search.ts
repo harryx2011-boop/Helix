@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import type { GlyphIcon } from '@/components/marketing/icon-type';
 
 export type PaletteGroup = 'recent' | 'navigate' | 'actions' | 'docs' | 'keys' | 'monitors' | 'jobs';
 
@@ -23,7 +23,7 @@ export interface PaletteItem {
   keywords?: readonly string[];
   /** Lowercased prose; matched last and weakest, so a page that mentions "crawl" ranks under the Crawl route. */
   body?: string;
-  icon: LucideIcon;
+  icon: GlyphIcon;
   run: () => void | Promise<void>;
 }
 

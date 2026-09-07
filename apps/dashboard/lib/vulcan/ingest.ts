@@ -23,14 +23,21 @@ export interface RequestRecord {
   model: string;
   timestamp: number;
   usage: Usage;
+  /** Thinking tokens within `usage.output`, when the SDK reported them. */
+  thinking: number;
   /** Tool names invoked in this reply, one entry per tool_use block. */
   tools: string[];
+  /** Names of the tools whose result came back `is_error`, resolved through the tool_use id. */
+  toolErrors: string[];
+  /** Time from the user line that prompted this reply to its first streamed line; null when no user line precedes it closely enough. */
+  latencyMs: number | null;
   fromSubagent: boolean;
 }
 
 interface UsageBlock {
   input_tokens?: number;
   output_tokens?: number;
+  output_tokens_details?: { thinking_tokens?: number };
   cache_read_input_tokens?: number;
   cache_creation_input_tokens?: number;
   cache_creation?: { ephemeral_5m_input_tokens?: number; ephemeral_1h_input_tokens?: number };
@@ -45,6 +52,10 @@ interface TranscriptLine {
   isSidechain?: boolean;
   message?: { model?: string; usage?: UsageBlock; content?: unknown };
 }
+
+/** A reply more than this long after the last user line is not a response to it (a resumed session, say). */
+const MAX_LATENCY_MS = 15 * 60_000;
+const TIMESTAMP_RE = /"timestamp":"([^"]+)"/;
 
 export const TRANSCRIPT_ROOT = join(homedir(), '.claude', 'projects');
 
@@ -125,9 +136,18 @@ async function parseFile(path: string): Promise<RequestRecord[]> {
   const sessionFromPath = (fromSubagent ? rel[1] : rel[rel.length - 1]?.replace(/\.jsonl$/, '')) ?? '';
 
   const byRequest = new Map<string, RequestRecord>();
+  const byToolUse = new Map<string, { record: RequestRecord; name: string }>();
+  let lastUserAt: number | null = null;
   const rl = createInterface({ input: createReadStream(path, { encoding: 'utf8' }), crlfDelay: Infinity });
 
   for await (const raw of rl) {
+    // A tool result's content is JSON-escaped, so these top-level markers cannot match inside it.
+    if (raw.includes('"type":"user"')) {
+      const ts = TIMESTAMP_RE.exec(raw)?.[1];
+      if (ts) lastUserAt = Date.parse(ts);
+      if (raw.includes('"is_error":true')) markToolErrors(raw, byToolUse);
+      continue;
+    }
     if (!raw.includes('"type":"assistant"')) continue;
     let line: TranscriptLine;
     try {
@@ -141,36 +161,64 @@ async function parseFile(path: string): Promise<RequestRecord[]> {
 
     const key = line.requestId ?? line.uuid;
     const usage = usageOf(line.message.usage);
-    const tools = toolNames(line.message.content);
-    const existing = byRequest.get(key);
-    if (existing) {
-      existing.usage = maxMerge(existing.usage, usage);
-      existing.tools.push(...tools);
+    const thinking = line.message.usage.output_tokens_details?.thinking_tokens ?? 0;
+    const uses = toolUses(line.message.content);
+    let record = byRequest.get(key);
+    if (record) {
+      record.usage = maxMerge(record.usage, usage);
+      record.thinking = Math.max(record.thinking, thinking);
+      record.tools.push(...uses.map((u) => u.name));
     } else {
-      byRequest.set(key, {
+      const timestamp = line.timestamp ? Date.parse(line.timestamp) : 0;
+      const gap = lastUserAt === null ? null : timestamp - lastUserAt;
+      record = {
         uuid: line.uuid,
         requestId: key,
         sessionId: line.sessionId ?? sessionFromPath,
         project,
         model,
-        timestamp: line.timestamp ? Date.parse(line.timestamp) : 0,
+        timestamp,
         usage,
-        tools,
+        thinking,
+        tools: uses.map((u) => u.name),
+        toolErrors: [],
+        latencyMs: gap !== null && gap >= 0 && gap <= MAX_LATENCY_MS ? gap : null,
         fromSubagent: fromSubagent || line.isSidechain === true,
-      });
+      };
+      byRequest.set(key, record);
     }
+    for (const u of uses) byToolUse.set(u.id, { record, name: u.name });
   }
   return [...byRequest.values()];
 }
 
-function toolNames(content: unknown): string[] {
+function toolUses(content: unknown): { id: string; name: string }[] {
   if (!Array.isArray(content)) return [];
-  const out: string[] = [];
+  const out: { id: string; name: string }[] = [];
   for (const block of content) {
     if (block && typeof block === 'object' && (block as { type?: string }).type === 'tool_use') {
-      const name = (block as { name?: string }).name;
-      if (name) out.push(name);
+      const { id, name } = block as { id?: string; name?: string };
+      if (id && name) out.push({ id, name });
     }
   }
   return out;
+}
+
+/** Only lines carrying an error are parsed; every other user line is read by regex, since tool results make up most of the corpus by bytes. */
+function markToolErrors(raw: string, byToolUse: Map<string, { record: RequestRecord; name: string }>): void {
+  let line: TranscriptLine;
+  try {
+    line = JSON.parse(raw) as TranscriptLine;
+  } catch {
+    return;
+  }
+  const content = line.message?.content;
+  if (!Array.isArray(content)) return;
+  for (const block of content) {
+    if (!block || typeof block !== 'object') continue;
+    const b = block as { type?: string; is_error?: boolean; tool_use_id?: string };
+    if (b.type !== 'tool_result' || b.is_error !== true || !b.tool_use_id) continue;
+    const owner = byToolUse.get(b.tool_use_id);
+    if (owner) owner.record.toolErrors.push(owner.name);
+  }
 }

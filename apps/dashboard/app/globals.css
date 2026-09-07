@@ -202,6 +202,37 @@ kbd {
 }
 
 /*
+ * Vulcan surface: the app's dark shell re-tinted warm around one ember accent.
+ * It overrides the shadcn tokens the page frame already reads, so PageFrame,
+ * FrameRow and the buttons pick the palette up with no per-component classes,
+ * and adds a five-step ember ramp for its charts (--v-1 hottest, --v-5 coolest).
+ */
+[data-surface='vulcan'] {
+  --background: 14 18% 4%;
+  --foreground: 24 30% 96%;
+  --card: 14 16% 6%;
+  --card-foreground: 24 30% 96%;
+  --popover: 14 16% 8%;
+  --popover-foreground: 24 30% 96%;
+  --primary: 18 96% 54%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 16 14% 10%;
+  --secondary-foreground: 24 30% 96%;
+  --muted: 16 14% 10%;
+  --muted-foreground: 20 12% 62%;
+  --accent: 18 50% 14%;
+  --accent-foreground: 20 96% 70%;
+  --border: 16 18% 14%;
+  --input: 16 18% 14%;
+  --ring: 18 96% 54%;
+  --v-1: 38 100% 64%;
+  --v-2: 24 100% 58%;
+  --v-3: 14 96% 54%;
+  --v-4: 4 82% 50%;
+  --v-5: 6 60% 30%;
+}
+
+/*
  * Marketing surface (WEBSITE.md §3.2): Firecrawl's structure in Helix's palette.
  * Scoped by data-surface so app and marketing tokens never mix.
  */

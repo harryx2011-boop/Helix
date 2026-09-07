@@ -2,12 +2,11 @@
 
 import * as React from 'react';
 import { RotateCw } from 'lucide-react';
-import { CharChart } from '@/components/app/char-chart';
 import { PageFrame, FrameRow, FrameHeading, FrameCells, FrameTag } from '@/components/app/page-frame';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VulcanFlame } from '@/components/vulcan/vulcan-flame';
-import type { VulcanSummary } from '@/lib/vulcan/aggregate';
+import type { Bucket, VulcanSummary } from '@/lib/vulcan/aggregate';
 import { cn } from '@/lib/utils';
 
 type Window = '7' | '30' | '90' | 'all';
@@ -43,6 +42,11 @@ function useSummary(window: Window, nonce: number): State {
   return state;
 }
 
+/** The ember ramp from globals.css, hottest first. Ranked things (models, projects) take shades in this order. */
+const EMBER = [1, 2, 3, 4, 5].map((i) => `hsl(var(--v-${i}))`);
+const emberFor = (rank: number): string => EMBER[Math.min(rank, EMBER.length - 1)] ?? EMBER[0]!;
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 const compact = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 });
 const whole = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
@@ -58,12 +62,30 @@ function tokens(n: number): string {
 
 function pct(part: number, total: number): string {
   if (total === 0) return '0%';
-  return `${((part / total) * 100).toFixed(part / total < 0.1 ? 1 : 0)}%`;
+  const r = part / total;
+  return `${(r * 100).toFixed(r < 0.1 ? 1 : 0)}%`;
+}
+
+function seconds(ms: number): string {
+  if (ms >= 60_000) return `${(ms / 60_000).toFixed(1)} min`;
+  return `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)} s`;
 }
 
 function dayLabel(day: string): string {
   const [y = 0, m = 1, d = 1] = day.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function shortDate(ts: number): string {
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function projectName(dir: string): string {
+  return dir.replace(/^[A-Za-z]--/, '');
+}
+
+function modelName(model: string): string {
+  return model.replace(/^claude-/, '').replace(/-\d{8}$/, '');
 }
 
 /** Days with no requests are drawn as zero so the x-axis stays honest about gaps. */
@@ -76,16 +98,16 @@ function fillDays(burn: VulcanSummary['burn']): VulcanSummary['burn'] {
   const end = new Date(sorted[sorted.length - 1] ?? '');
   while (cursor <= end) {
     const key = cursor.toISOString().slice(0, 10);
-    out.push(byDay.get(key) ?? { day: key, cost: 0, requests: 0 });
+    out.push(byDay.get(key) ?? { day: key, cost: 0, requests: 0, byModel: {} });
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return out;
 }
 
-function Bar({ ratio, className }: { ratio: number; className?: string }) {
+function Bar({ ratio, color = EMBER[1]! }: { ratio: number; color?: string }) {
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-[1px] bg-foreground/10">
-      <div className={cn('h-full rounded-[1px] bg-foreground/80', className)} style={{ width: `${Math.max(0, Math.min(1, ratio)) * 100}%` }} />
+    <div className="h-1.5 w-full overflow-hidden rounded-[1px] bg-foreground/[0.08]">
+      <div className="h-full rounded-[1px]" style={{ width: `${Math.max(0, Math.min(1, ratio)) * 100}%`, background: color }} />
     </div>
   );
 }
@@ -121,6 +143,116 @@ function CellHeading({ title, tag }: { title: string; tag?: React.ReactNode }) {
   );
 }
 
+function Mono({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <span className={cn('font-mono text-[11px] text-muted-foreground', className)}>{children}</span>;
+}
+
+/** Days as columns, each a stack of the models that spent that day, hottest shade for the costliest model overall. */
+function DayStacks({ days, modelOrder }: { days: VulcanSummary['burn']; modelOrder: string[] }) {
+  const max = Math.max(...days.map((d) => d.cost), 0);
+  const labelEvery = Math.max(1, Math.ceil(days.length / 8));
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-end justify-between">
+        <Mono>{usd(max)} peak day</Mono>
+        <div className="flex flex-wrap justify-end gap-x-3 gap-y-1">
+          {modelOrder.slice(0, 5).map((m, i) => (
+            <span key={m} className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-[1px]" style={{ background: emberFor(i) }} aria-hidden />
+              <Mono className="text-foreground/80">{modelName(m)}</Mono>
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="flex h-44 items-end gap-px" role="img" aria-label="Spend per day, stacked by model">
+        {days.map((d) => (
+          <div
+            key={d.day}
+            className="group relative flex h-full min-w-0 flex-1 flex-col-reverse"
+            title={`${dayLabel(d.day)}: ${usd(d.cost)} across ${whole.format(d.requests)} requests`}
+          >
+            {modelOrder.map((m, i) => {
+              const v = d.byModel[m] ?? 0;
+              if (v === 0 || max === 0) return null;
+              return (
+                <div
+                  key={m}
+                  style={{ height: `${(v / max) * 100}%`, background: emberFor(i) }}
+                  className="w-full opacity-90 transition-opacity duration-150 ease-out group-hover:opacity-100"
+                />
+              );
+            })}
+            {d.cost === 0 && <div className="h-px w-full bg-foreground/10" />}
+          </div>
+        ))}
+      </div>
+      <div className="flex border-t border-border pt-1.5">
+        {days.map((d, i) => (
+          <div key={d.day} className="min-w-0 flex-1">
+            {(i % labelEvery === 0 || i === days.length - 1) && <Mono className="block whitespace-nowrap">{dayLabel(d.day)}</Mono>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Weekday rows by hour columns; cell alpha is the square root of the cell's share of the peak, so quiet hours stay visible. */
+function Heatmap({ cost, requests }: { cost: number[]; requests: number[] }) {
+  const max = Math.max(...cost, 0);
+  return (
+    <div className="grid grid-cols-[2.25rem_1fr] gap-x-2 gap-y-1">
+      {DOW.map((name, dow) => (
+        <React.Fragment key={name}>
+          <Mono className="self-center">{name}</Mono>
+          <div className="grid grid-cols-[repeat(24,minmax(0,1fr))] gap-px">
+            {Array.from({ length: 24 }, (_, hour) => {
+              const i = dow * 24 + hour;
+              const c = cost[i] ?? 0;
+              const alpha = max > 0 ? Math.sqrt(c / max) : 0;
+              return (
+                <div
+                  key={hour}
+                  className="aspect-square min-w-0 rounded-[1px] bg-foreground/[0.06]"
+                  style={c > 0 ? { background: `hsl(var(--v-2) / ${(0.12 + alpha * 0.88).toFixed(3)})` } : undefined}
+                  title={`${name} ${String(hour).padStart(2, '0')}:00: ${usd(c)}, ${whole.format(requests[i] ?? 0)} requests`}
+                />
+              );
+            })}
+          </div>
+        </React.Fragment>
+      ))}
+      <span />
+      <div className="grid grid-cols-[repeat(24,minmax(0,1fr))] gap-px">
+        {Array.from({ length: 24 }, (_, hour) => (
+          <div key={hour} className="min-w-0">
+            {hour % 6 === 0 && <Mono>{String(hour).padStart(2, '0')}</Mono>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Histogram({ buckets, color }: { buckets: Bucket[]; color: string }) {
+  const total = buckets.reduce((n, b) => n + b.count, 0);
+  const max = Math.max(...buckets.map((b) => b.count), 0);
+  return (
+    <ul className="flex flex-col gap-2">
+      {buckets.map((b) => (
+        <li key={b.label} className="grid grid-cols-[4.5rem_1fr_auto] items-center gap-3 text-[13px]">
+          <Mono className="text-foreground/80">{b.label}</Mono>
+          <Bar ratio={max ? b.count / max : 0} color={color} />
+          <span className="flex items-baseline gap-2 tabular-nums">
+            <Mono>{pct(b.count, total)}</Mono>
+            <span className="text-foreground">{whole.format(b.count)}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function WindowPicker({ value, onChange }: { value: Window; onChange: (w: Window) => void }) {
   return (
     <div role="radiogroup" aria-label="Time window" className="flex rounded-card border border-border p-0.5">
@@ -133,7 +265,7 @@ function WindowPicker({ value, onChange }: { value: Window; onChange: (w: Window
           onClick={() => onChange(w.value)}
           className={cn(
             'rounded-[4px] px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            value === w.value ? 'bg-primary/12 text-primary' : 'text-muted-foreground hover:text-foreground',
+            value === w.value ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground',
           )}
         >
           {w.label}
@@ -145,8 +277,13 @@ function WindowPicker({ value, onChange }: { value: Window; onChange: (w: Window
 
 function Header({ window, onWindow, onRefresh, busy }: { window: Window; onWindow: (w: Window) => void; onRefresh: () => void; busy: boolean }) {
   return (
-    <FrameRow>
-      <div className="flex items-start justify-between gap-4 px-6 py-5">
+    <FrameRow className="overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 w-[28rem]"
+        style={{ background: 'radial-gradient(ellipse 60% 120% at 6% 50%, hsl(var(--primary) / 0.16), transparent 70%)' }}
+      />
+      <div className="relative flex items-start justify-between gap-4 px-6 py-5">
         <div className="flex min-w-0 items-center gap-3">
           <VulcanFlame animated className="h-9 w-9" />
           <div className="min-w-0">
@@ -181,7 +318,7 @@ function LoadingRows() {
       <FrameRow flush>
         <div className="px-6 py-5">
           <Skeleton className="h-4 w-40" />
-          <Skeleton className="mt-4 h-40 w-full" />
+          <Skeleton className="mt-4 h-44 w-full" />
         </div>
       </FrameRow>
     </>
@@ -203,42 +340,40 @@ function Message({ title, body, action }: { title: string; body: string; action?
 }
 
 function Panels({ data }: { data: VulcanSummary }) {
-  const { totals, tokens: t } = data;
+  const { totals, tokens: t, latency } = data;
   const contextTotal = t.input + t.cacheRead + t.cacheCreate5m + t.cacheCreate1h;
   const cacheWrites = t.cacheCreate5m + t.cacheCreate1h;
+  const tokenTotal = contextTotal + t.output;
   const burn = React.useMemo(() => fillDays(data.burn), [data.burn]);
   const first = burn[0];
   const last = burn[burn.length - 1];
+  const modelOrder = data.models.map((m) => m.model);
   const topModel = data.models[0]?.cost ?? 0;
+  const topProject = data.projects[0]?.cost ?? 0;
   const topTool = data.tools[0]?.count ?? 0;
 
-  const tokenRows: { label: string; value: number; className: string }[] = [
-    { label: 'Cache read', value: t.cacheRead, className: 'bg-foreground/35' },
-    { label: 'Cache write', value: cacheWrites, className: 'bg-foreground/60' },
-    { label: 'Fresh input', value: t.input, className: 'bg-foreground/85' },
-    { label: 'Output', value: t.output, className: 'bg-primary' },
+  const tokenRows: { label: string; value: number; color: string }[] = [
+    { label: 'Cache read', value: t.cacheRead, color: EMBER[4]! },
+    { label: 'Cache write', value: cacheWrites, color: EMBER[3]! },
+    { label: 'Fresh input', value: t.input, color: EMBER[2]! },
+    { label: 'Output', value: t.output, color: EMBER[0]! },
   ];
-  const tokenTotal = contextTotal + t.output;
 
   return (
     <>
       <FrameRow>
         <FrameCells cols={4}>
           <Stat value={usd(totals.cost)} label="Spend" {...(totals.estimatedRequests > 0 ? { note: `${whole.format(totals.estimatedRequests)} requests estimated` } : {})} />
-          <Stat value={whole.format(totals.requests)} label="Requests" note={`${whole.format(data.files)} transcript files`} />
-          <Stat value={whole.format(totals.sessions)} label="Sessions" />
+          <Stat value={whole.format(totals.requests)} label="Requests" note={`${whole.format(totals.sessions)} sessions · ${whole.format(data.files)} files`} />
           <Stat value={pct(t.cacheRead, contextTotal)} label="Context served from cache" note={`${tokens(t.cacheRead)} of ${tokens(contextTotal)} tokens`} />
+          <Stat value={seconds(latency.p50)} label="Median reply" note={`p90 ${seconds(latency.p90)} · p99 ${seconds(latency.p99)}`} />
         </FrameCells>
       </FrameRow>
 
       <FrameRow>
-        <FrameHeading title="Spend per day" {...(first && last ? { description: `${dayLabel(first.day)} to ${dayLabel(last.day)}` } : {})} />
+        <FrameHeading title="Spend per day" {...(first && last ? { description: `${dayLabel(first.day)} to ${dayLabel(last.day)}, stacked by model` } : {})} />
         <div className="px-6 pb-6">
-          {burn.length ? (
-            <CharChart series={[{ label: 'Spend', values: burn.map((b) => b.cost) }]} labels={burn.map((b) => dayLabel(b.day))} formatKind="usd" height={10} />
-          ) : (
-            <p className="text-[13px] text-muted-foreground">No requests in this window.</p>
-          )}
+          {burn.length ? <DayStacks days={burn} modelOrder={modelOrder} /> : <p className="text-[13px] text-muted-foreground">No requests in this window.</p>}
         </div>
       </FrameRow>
 
@@ -247,7 +382,7 @@ function Panels({ data }: { data: VulcanSummary }) {
           <div className="flex flex-col gap-4 px-6 py-5">
             <CellHeading title="Cost by model" />
             <ul className="flex flex-col gap-3">
-              {data.models.map((m) => (
+              {data.models.map((m, i) => (
                 <li key={m.model} className="flex flex-col gap-1.5">
                   <div className="flex items-baseline justify-between gap-3 text-[13px]">
                     <span className="flex min-w-0 items-baseline gap-2 truncate">
@@ -256,10 +391,10 @@ function Panels({ data }: { data: VulcanSummary }) {
                     </span>
                     <span className="shrink-0 tabular-nums text-foreground">{usd(m.cost)}</span>
                   </div>
-                  <Bar ratio={topModel ? m.cost / topModel : 0} />
-                  <div className="flex justify-between font-mono text-[11px] text-muted-foreground">
-                    <span>{whole.format(m.requests)} requests</span>
-                    <span>{tokens(m.tokens)} tokens</span>
+                  <Bar ratio={topModel ? m.cost / topModel : 0} color={emberFor(i)} />
+                  <div className="flex justify-between">
+                    <Mono>{whole.format(m.requests)} requests</Mono>
+                    <Mono>{tokens(m.tokens)} tokens</Mono>
                   </div>
                 </li>
               ))}
@@ -267,23 +402,75 @@ function Panels({ data }: { data: VulcanSummary }) {
           </div>
 
           <div className="flex flex-col gap-4 px-6 py-5">
-            <CellHeading title="Tokens" tag={<span className="font-mono text-[11px] text-muted-foreground">{tokens(tokenTotal)} total</span>} />
-            <div className="flex h-2 w-full overflow-hidden rounded-[1px] bg-foreground/10">
+            <CellHeading title="Tokens" tag={<Mono>{tokens(tokenTotal)} total</Mono>} />
+            <div className="flex h-2 w-full overflow-hidden rounded-[1px] bg-foreground/[0.08]">
               {tokenRows.map((r) => (
-                <div key={r.label} className={r.className} style={{ width: `${tokenTotal ? (r.value / tokenTotal) * 100 : 0}%` }} />
+                <div key={r.label} style={{ width: `${tokenTotal ? (r.value / tokenTotal) * 100 : 0}%`, background: r.color }} />
               ))}
             </div>
             <ul className="flex flex-col gap-2">
               {tokenRows.map((r) => (
                 <li key={r.label} className="flex items-center justify-between gap-3 text-[13px]">
                   <span className="flex items-center gap-2 text-foreground">
-                    <span className={cn('h-2 w-2 rounded-[1px]', r.className)} aria-hidden />
+                    <span className="h-2 w-2 rounded-[1px]" style={{ background: r.color }} aria-hidden />
                     {r.label}
                   </span>
                   <span className="flex items-baseline gap-3 tabular-nums">
-                    <span className="font-mono text-[11px] text-muted-foreground">{pct(r.value, tokenTotal)}</span>
+                    <Mono>{pct(r.value, tokenTotal)}</Mono>
                     <span className="text-foreground">{tokens(r.value)}</span>
                   </span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[13px] leading-snug text-muted-foreground">
+              {t.output > 0 ? `${pct(totals.thinkingTokens, t.output)} of output tokens were thinking.` : 'No output tokens recorded.'}
+            </p>
+          </div>
+        </FrameCells>
+      </FrameRow>
+
+      <FrameRow>
+        <FrameHeading title="When the spend happens" description="Local weekday by hour of day. Brighter cells cost more." />
+        <div className="px-6 pb-6">
+          <Heatmap cost={data.heat.cost} requests={data.heat.requests} />
+        </div>
+      </FrameRow>
+
+      <FrameRow>
+        <FrameCells cols={2}>
+          <div className="flex flex-col gap-4 px-6 py-5">
+            <CellHeading title="Spend by project" />
+            <ul className="flex flex-col gap-2.5">
+              {data.projects.map((p, i) => (
+                <li key={p.project} className="grid grid-cols-[minmax(0,11rem)_1fr_auto] items-center gap-3 text-[13px]">
+                  <span className="truncate font-mono text-foreground" title={p.project}>
+                    {projectName(p.project)}
+                  </span>
+                  <Bar ratio={topProject ? p.cost / topProject : 0} color={emberFor(i)} />
+                  <span className="flex items-baseline gap-2 tabular-nums">
+                    <Mono>{whole.format(p.sessions)} sessions</Mono>
+                    <span className="text-foreground">{usd(p.cost)}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex flex-col gap-4 px-6 py-5">
+            <CellHeading title="Costliest sessions" />
+            <ul className="flex flex-col divide-y divide-border">
+              {data.topSessions.map((s) => (
+                <li key={s.sessionId} className="flex items-center justify-between gap-3 py-2 text-[13px]">
+                  <div className="min-w-0">
+                    <div className="truncate font-mono text-foreground">{projectName(s.project)}</div>
+                    <Mono>
+                      {shortDate(s.startedAt)} · {s.sessionId.slice(0, 8)} · {s.models.map(modelName).join(', ')}
+                    </Mono>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end tabular-nums">
+                    <span className="text-foreground">{usd(s.cost)}</span>
+                    <Mono>{whole.format(s.requests)} requests</Mono>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -294,21 +481,38 @@ function Panels({ data }: { data: VulcanSummary }) {
       <FrameRow>
         <FrameCells cols={2}>
           <div className="flex flex-col gap-4 px-6 py-5">
-            <CellHeading title="Cache writes by TTL" tag={<span className="font-mono text-[11px] text-muted-foreground">{tokens(cacheWrites)} written</span>} />
+            <CellHeading title="Reply latency" tag={<Mono>{whole.format(latency.sampled)} replies</Mono>} />
+            <Histogram buckets={latency.buckets} color={EMBER[1]!} />
+            <p className="text-[13px] leading-snug text-muted-foreground">
+              Time from your message or a tool result to the first streamed line of the reply. Subagent replies are excluded.
+            </p>
+          </div>
+          <div className="flex flex-col gap-4 px-6 py-5">
+            <CellHeading title="Reply size" tag={<Mono>output tokens</Mono>} />
+            <Histogram buckets={data.outputSizes} color={EMBER[2]!} />
+            <p className="text-[13px] leading-snug text-muted-foreground">Output tokens per request, thinking included.</p>
+          </div>
+        </FrameCells>
+      </FrameRow>
+
+      <FrameRow>
+        <FrameCells cols={2}>
+          <div className="flex flex-col gap-4 px-6 py-5">
+            <CellHeading title="Cache writes by TTL" tag={<Mono>{tokens(cacheWrites)} written</Mono>} />
             <ul className="flex flex-col gap-3">
               {[
-                { label: '5 minute', note: '1.25× input rate', value: t.cacheCreate5m, className: 'bg-foreground/60' },
-                { label: '1 hour', note: '2× input rate', value: t.cacheCreate1h, className: 'bg-primary' },
+                { label: '5 minute', note: '1.25× input rate', value: t.cacheCreate5m, color: EMBER[3]! },
+                { label: '1 hour', note: '2× input rate', value: t.cacheCreate1h, color: EMBER[0]! },
               ].map((r) => (
                 <li key={r.label} className="flex flex-col gap-1.5">
                   <div className="flex items-baseline justify-between gap-3 text-[13px]">
                     <span className="flex items-baseline gap-2">
                       <span className="text-foreground">{r.label}</span>
-                      <span className="font-mono text-[11px] text-muted-foreground">{r.note}</span>
+                      <Mono>{r.note}</Mono>
                     </span>
                     <span className="tabular-nums text-foreground">{tokens(r.value)}</span>
                   </div>
-                  <Bar ratio={cacheWrites ? r.value / cacheWrites : 0} className={r.className} />
+                  <Bar ratio={cacheWrites ? r.value / cacheWrites : 0} color={r.color} />
                 </li>
               ))}
             </ul>
@@ -318,13 +522,16 @@ function Panels({ data }: { data: VulcanSummary }) {
           </div>
 
           <div className="flex flex-col gap-4 px-6 py-5">
-            <CellHeading title="Tool calls" />
+            <CellHeading title="Tool calls" tag={<Mono>{pct(totals.toolErrors, totals.toolCalls)} errored</Mono>} />
             <ul className="flex flex-col gap-2.5">
               {data.tools.map((tool) => (
-                <li key={tool.name} className="grid grid-cols-[minmax(0,10rem)_1fr_auto] items-center gap-3 text-[13px]">
+                <li key={tool.name} className="grid grid-cols-[minmax(0,9rem)_1fr_auto] items-center gap-3 text-[13px]">
                   <span className="truncate font-mono text-foreground">{tool.name}</span>
-                  <Bar ratio={topTool ? tool.count / topTool : 0} />
-                  <span className="tabular-nums text-foreground">{whole.format(tool.count)}</span>
+                  <Bar ratio={topTool ? tool.count / topTool : 0} color={EMBER[2]!} />
+                  <span className="flex items-baseline gap-2 tabular-nums">
+                    {tool.errors > 0 && <Mono className="text-destructive/80">{whole.format(tool.errors)} err</Mono>}
+                    <span className="text-foreground">{whole.format(tool.count)}</span>
+                  </span>
                 </li>
               ))}
               {data.tools.length === 0 && <li className="text-[13px] text-muted-foreground">No tool calls in this window.</li>}
@@ -339,15 +546,17 @@ function Panels({ data }: { data: VulcanSummary }) {
           {data.sessions.map((s) => (
             <li key={s.sessionId} className="grid grid-cols-1 gap-3 px-6 py-3 md:grid-cols-[minmax(0,14rem)_1fr_auto] md:items-center">
               <div className="min-w-0">
-                <div className="truncate font-mono text-[13px] text-foreground">{s.project.replace(/^[A-Za-z]--/, '')}</div>
-                <div className="font-mono text-[11px] text-muted-foreground">
-                  {new Date(s.startedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · {s.sessionId.slice(0, 8)}
-                </div>
+                <div className="truncate font-mono text-[13px] text-foreground">{projectName(s.project)}</div>
+                <Mono>
+                  {shortDate(s.startedAt)} · {s.sessionId.slice(0, 8)}
+                </Mono>
               </div>
               <Sparkline values={s.context} />
               <div className="flex gap-4 font-mono text-[11px] text-muted-foreground md:flex-col md:items-end md:gap-0.5">
                 <span className="text-foreground">{tokens(s.context[s.context.length - 1] ?? 0)} last</span>
-                <span>{whole.format(s.requests)} requests · {usd(s.cost)}</span>
+                <span>
+                  {whole.format(s.requests)} requests · {usd(s.cost)}
+                </span>
               </div>
             </li>
           ))}
@@ -391,9 +600,11 @@ export function VulcanClient() {
   }
 
   return (
-    <PageFrame>
-      <Header window={window} onWindow={setWindow} onRefresh={refresh} busy={state.kind === 'loading'} />
-      {body}
-    </PageFrame>
+    <div data-surface="vulcan" className="min-h-full text-foreground">
+      <PageFrame>
+        <Header window={window} onWindow={setWindow} onRefresh={refresh} busy={state.kind === 'loading'} />
+        {body}
+      </PageFrame>
+    </div>
   );
 }

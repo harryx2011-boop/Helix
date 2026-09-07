@@ -20,11 +20,10 @@ away from the public API surface, `catalog.ts`, and self-host defaults.
   state-transition micro-interaction, so Emil's 150–300ms rule doesn't
   apply here). Honors `prefers-reduced-motion` by freezing to one static
   frame.
-- Design system: inherits the dashboard's own tokens (`--background`,
-  `--primary`, `--border`, `--radius`, `card`/`panel` at 6px/8px). No
-  scoped stylesheet needed — unlike Convert, Vulcan isn't a ported
-  standalone app with colliding tokens, so it just uses the dashboard's
-  system directly.
+- Design system: the dashboard's own token names (`--background`,
+  `--primary`, `--border`, `--radius`, `card`/`panel` at 6px/8px), with
+  their values re-tinted warm under a scoped `[data-surface='vulcan']`
+  block (see §5). Components stay colour-class-free.
 - Theme: follows the dashboard's ThemeProvider (dark-default with
   `.dark` on `<html>`), not a fixed light-only surface like Convert.
 
@@ -87,9 +86,14 @@ invents a price silently.
 5. Per-session context growth
 6. Tool usage counts (which tools fire, how often)
 
-**Cut from v1** (claudit has these; add later if useful): reply latency,
-tool error rate, weekday×hour activity heatmap, response-size
-distribution.
+**Added in 1.21.0** (were cut from v1): reply latency, tool error rate,
+weekday×hour cost heatmap, reply-size distribution, plus spend by project,
+costliest sessions, per-day stacking by model, and thinking share.
+
+Palette: a scoped `[data-surface='vulcan']` token block in `globals.css`
+(warm near-black ground, Firecrawl orange `18 96% 54%` as `--primary`, ember
+ramp `--v-1`..`--v-5` for charts). It overrides the shadcn variables the page
+frame already reads, so no Vulcan component carries a colour class.
 
 ## 6. Code layout
 

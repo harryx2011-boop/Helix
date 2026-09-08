@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { IconTile } from './icon-tile';
 import { GithubMark } from './github-mark';
 import { CanvasMarkCompact } from './canvas-mark';
+import { VulcanFlame } from '@/components/vulcan/vulcan-flame';
 import type { GlyphIcon } from './icon-type';
 
 export interface MenuRow {
@@ -107,6 +108,7 @@ export const TOOL_ROWS: readonly MenuRow[] = [
     icon: CanvasMarkCompact,
   },
   { label: 'Playground', href: '/app/playground', icon: FlaskConical },
+  { label: 'Vulcan', href: '/app/vulcan', icon: VulcanFlame },
   { label: 'Persona', href: PERSONA_URL, icon: Users, external: true },
   { label: 'Status', href: '/status', icon: Activity },
 ].filter((row) => row.href);

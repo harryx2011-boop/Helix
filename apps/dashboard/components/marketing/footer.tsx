@@ -38,6 +38,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: 'Playground', href: '/app/playground' },
       { label: 'Agent', href: '/app/agent' },
       { label: 'Canvas', href: '/canvas' },
+      { label: 'Vulcan', href: '/app/vulcan' },
       { label: 'Health', href: '/app/self-host/health' },
       { label: 'API keys', href: '/app/keys' },
       { label: 'Settings', href: '/app/settings' },

@@ -5,6 +5,7 @@ import { RotateCw } from 'lucide-react';
 import { PageFrame, FrameRow, FrameHeading, FrameCells, FrameTag } from '@/components/app/page-frame';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AsciiFire } from '@/components/vulcan/ascii-fire';
 import { VulcanFlame } from '@/components/vulcan/vulcan-flame';
 import type { Bucket, VulcanSummary } from '@/lib/vulcan/aggregate';
 import { cn } from '@/lib/utils';
@@ -278,11 +279,14 @@ function WindowPicker({ value, onChange }: { value: Window; onChange: (w: Window
 function Header({ window, onWindow, onRefresh, busy }: { window: Window; onWindow: (w: Window) => void; onRefresh: () => void; busy: boolean }) {
   return (
     <FrameRow className="overflow-hidden">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 left-0 w-[28rem]"
-        style={{ background: 'radial-gradient(ellipse 60% 120% at 6% 50%, hsl(var(--primary) / 0.16), transparent 70%)' }}
-      />
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="absolute inset-y-0 left-0 w-[30rem]"
+          style={{ background: 'radial-gradient(ellipse 60% 120% at 6% 50%, hsl(var(--primary) / 0.14), transparent 70%)' }}
+        />
+        <AsciiFire cols={38} rows={8} className="absolute bottom-0 left-[35rem] opacity-75" />
+        <AsciiFire cols={16} rows={6} seed={19} className="absolute bottom-0 right-[21rem] opacity-35" />
+      </div>
       <div className="relative flex items-start justify-between gap-4 px-6 py-5">
         <div className="flex min-w-0 items-center gap-3">
           <VulcanFlame animated className="h-9 w-9" />

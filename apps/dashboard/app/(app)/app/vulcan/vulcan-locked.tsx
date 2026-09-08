@@ -1,5 +1,6 @@
 import { Lock } from 'lucide-react';
 import { PageFrame, FrameRow } from '@/components/app/page-frame';
+import { AsciiFire } from '@/components/vulcan/ascii-fire';
 import { VulcanFlame } from '@/components/vulcan/vulcan-flame';
 
 /**
@@ -11,8 +12,16 @@ export function VulcanLocked() {
   return (
     <div data-surface="vulcan" className="min-h-full text-foreground">
       <PageFrame>
-        <FrameRow>
-          <div className="flex items-center gap-3 px-6 py-5">
+        <FrameRow className="overflow-hidden">
+          <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 w-[30rem]"
+              style={{ background: 'radial-gradient(ellipse 60% 120% at 6% 50%, hsl(var(--primary) / 0.14), transparent 70%)' }}
+            />
+            <AsciiFire cols={38} rows={8} className="absolute bottom-0 left-[35rem] opacity-75" />
+            <AsciiFire cols={16} rows={6} seed={19} className="absolute bottom-0 right-[21rem] opacity-35" />
+          </div>
+          <div className="relative flex items-center gap-3 px-6 py-5">
             <VulcanFlame className="h-9 w-9" />
             <div className="min-w-0">
               <h2 className="text-[17px] font-medium leading-tight tracking-tight text-foreground">Vulcan</h2>

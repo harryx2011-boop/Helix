@@ -12,14 +12,16 @@ away from the public API surface, `catalog.ts`, and self-host defaults.
 
 - Product name: **Vulcan**. Not listed in `lib/catalog.ts` — it is not a
   public API product and has no OpenAPI/MCP surface.
-- Mark: a single bold flame glyph, flat fill, thick rounded lobes, no
-  outline — same silhouette weight as Firecrawl's favicon, chosen as the
-  legibility reference (reads clean at 16px). Orange→red gradient fill.
-  Static SVG at icon sizes (sidebar, favicon); animated only at header/hero
-  size (subtle path-morph + glow pulse, continuous ambient loop — not a
-  state-transition micro-interaction, so Emil's 150–300ms rule doesn't
-  apply here). Honors `prefers-reduced-motion` by freezing to one static
-  frame.
+- Mark (1.22.0): a forge flame with three tongues and an amber core, two
+  gradient fills (red→orange body, amber→pale core), no outline; reads
+  clean at 16px. Firecrawl's favicon was the legibility reference, not the
+  silhouette. Static SVG at icon sizes (sidebar, nav tile); at header size
+  the outer and core paths morph on different periods plus a glow pulse, a
+  continuous ambient loop rather than a state transition, so Emil's
+  150–300ms rule doesn't apply. `components/vulcan/ascii-fire.tsx` adds
+  Firecrawl-style ASCII-character flames on canvas behind the header (heat
+  grid, ember-ramp colours, 18 fps while in view). Both honour
+  `prefers-reduced-motion` by freezing to one frame.
 - Design system: the dashboard's own token names (`--background`,
   `--primary`, `--border`, `--radius`, `card`/`panel` at 6px/8px), with
   their values re-tinted warm under a scoped `[data-surface='vulcan']`

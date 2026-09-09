@@ -34,9 +34,21 @@ export function Composer({
 }: ComposerProps) {
   const [urlsOpen, setUrlsOpen] = React.useState(urls.length > 0);
   const disabled = value.trim().length === 0 || loading;
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
+  const resize = React.useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }, []);
+
+  React.useLayoutEffect(() => {
+    resize();
+  }, [value, resize]);
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       if (!disabled) onSubmit();
     }
@@ -44,14 +56,16 @@ export function Composer({
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
-      <div className="flex h-14 max-w-[720px] items-center gap-2 rounded-pill border border-border bg-card pl-4 pr-2">
-        <Sparkles aria-hidden className="h-[18px] w-[18px] shrink-0 text-primary" />
-        <input
+      <div className="flex max-w-[720px] items-end gap-2 rounded-[26px] border border-border bg-card py-2 pl-4 pr-2">
+        <Sparkles aria-hidden className="mb-[9px] h-[18px] w-[18px] shrink-0 text-primary" />
+        <textarea
+          ref={textareaRef}
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
+          rows={1}
+          className="my-1.5 min-h-[24px] max-h-[200px] min-w-0 flex-1 resize-none bg-transparent text-[15px] leading-6 text-foreground outline-none placeholder:text-muted-foreground"
         />
         <Tooltip>
           <TooltipTrigger asChild>

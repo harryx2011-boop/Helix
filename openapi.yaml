@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Helix
-  version: 1.17.0
+  version: 1.22.0
   summary: A frontier utility hub. Self-hostable and BYOK.
   description: |
     Helix turns web pages and documents into clean, structured, LLM-ready data.
@@ -79,6 +79,10 @@ tags:
     description: Status, results and cancellation for asynchronous work.
   - name: Providers
     description: Your own LLM provider keys, used instead of the instance's environment credentials.
+  - name: Keys
+    description: >-
+      Minting, listing and revoking this instance API keys. Listing and
+      revoking are self-host only.
   - name: Usage
     description: Request counts for your own API key.
   - name: System
@@ -933,9 +937,9 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
-  /crawl/{jobId}:
+  /crawl/{id}:
     parameters:
-      - { name: jobId, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       - name: cursor
         in: query
         schema: { type: string }
@@ -992,7 +996,7 @@ paths:
         a page yields are not followed, and no sitemap is read. The list may span
         hosts.
 
-        Asynchronous. Poll `GET /batch/scrape/{jobId}`, or set `webhook` to have
+        Asynchronous. Poll `GET /batch/scrape/{id}`, or set `webhook` to have
         `started`, `page`, `completed` and `failed` events POSTed to you.
 
         A batch does not fail because one URL did: each item carries its own
@@ -1030,9 +1034,9 @@ paths:
               schema: { $ref: '#/components/schemas/BatchAccepted' }
         '400': { $ref: '#/components/responses/BadRequest' }
 
-  /batch/scrape/{jobId}:
+  /batch/scrape/{id}:
     parameters:
-      - { name: jobId, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       - name: cursor
         in: query
         schema: { type: string }
@@ -1387,9 +1391,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
-  /interact/session/{sessionId}:
+  /interact/session/{id}:
     parameters:
-      - { name: sessionId, in: path, required: true, schema: { type: string }, example: sess_9f2c1a7b3e4d5c60 }
+      - { name: id, in: path, required: true, schema: { type: string }, example: sess_9f2c1a7b3e4d5c60 }
     get:
       tags: [Interact]
       summary: Session status
@@ -1417,9 +1421,9 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /interact/live/{sessionId}:
+  /interact/live/{id}:
     parameters:
-      - { name: sessionId, in: path, required: true, schema: { type: string } }
+      - { name: id, in: path, required: true, schema: { type: string } }
       - name: token
         in: query
         required: true
@@ -1430,7 +1434,7 @@ paths:
       summary: Live view
       description: |
         A read-only page showing the session as it runs, fed by Chrome's
-        screencast over `GET /interact/live/{sessionId}/stream` (server-sent
+        screencast over `GET /interact/live/{id}/stream` (server-sent
         events; `frame` events carry base64 JPEG, `closed` announces the end).
         Nothing is loaded from outside the instance. A viewer that falls
         behind receives the newest frame once it catches up rather than every
@@ -1438,7 +1442,7 @@ paths:
         (`too_many_viewers`, 429).
 
         The same stream is available over a WebSocket at
-        `/interact/live/{sessionId}/ws`, carrying JSON messages
+        `/interact/live/{id}/ws`, carrying JSON messages
         `{type: session|frame|ping|closed, data}` with the same token, the same
         viewer cap (close code 4429) and the same drop-oldest policy; a rejected
         token closes with 4401. The stream is one-way — anything a viewer sends
@@ -1455,6 +1459,34 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+
+  /interact/live/{id}/stream:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+      - name: token
+        in: query
+        required: true
+        schema: { type: string }
+        description: The session's view token. Authenticates this link on its own — no API key is sent.
+    get:
+      tags: [Interact]
+      summary: Screencast frames for a live session (SSE)
+      description: |
+        The transport behind the viewer page at `/interact/live/{id}`. Streams CDP
+        screencast frames as server-sent events for as long as the session lives.
+        Token-authenticated, like the page itself. A parallel WebSocket carrying the
+        same frames is available at `/interact/live/{id}/ws`; OpenAPI cannot describe
+        a WebSocket operation, so it is documented in prose only.
+      operationId: streamInteractLive
+      security: []
+      responses:
+        '200':
+          description: An event stream of screencast frames.
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '401': { description: No open session matches this link. }
+        '429': { description: Too many concurrent viewers on this session. }
 
   /monitor:
     get:
@@ -2065,6 +2097,19 @@ paths:
                   last4: { type: [string, 'null'] }
                   model: { type: [string, 'null'] }
                   baseUrl: { type: [string, 'null'] }
+                  verified:
+                    type: boolean
+                    description: >-
+                      The provider was asked and accepted this credential. False
+                      means it could not be checked — this instance's egress, a
+                      provider 5xx, or a local runtime that is not running yet —
+                      not that the credential is wrong. A credential the provider
+                      actively rejects is never stored (400 `invalid_credential`).
+                  warning:
+                    type: string
+                    description: >-
+                      Present only when `verified` is false: why the check could
+                      not be completed.
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
     delete:
@@ -2152,6 +2197,158 @@ paths:
                     failure: { reason: unreachable, message: 'Could not reach ollama at http://localhost:11434/v1.' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /status/history:
+    get:
+      tags: [System]
+      summary: Daily uptime and latency, per service
+      description: |
+        Unauthenticated, like `/health` — this is the data behind a public status
+        page. Each service gets one bucket per day: the share of successful probes
+        and the median latency over that day's samples.
+      operationId: getStatusHistory
+      security: []
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 90, default: 90 }
+          description: How many days back to report. Clamped to 90.
+      responses:
+        '200':
+          description: One entry per service.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  services:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        service: { type: string }
+                        days:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              day: { type: string, format: date }
+                              okPct: { type: [number, 'null'], description: Share of probes that succeeded, 0-100. Null when no samples were recorded. }
+                              p50Ms: { type: [integer, 'null'], description: Median probe latency in milliseconds. Null when no samples were recorded. }
+                              samples: { type: integer }
+
+  /keys:
+    post:
+      tags: [Keys]
+      summary: Mint an API key
+      description: |
+        The plaintext key is returned exactly once and cannot be recovered later —
+        only its hash is stored. On the hosted multi-tenant deployment the key store
+        has no owner column to filter by, so listing and revoking are withheld
+        there; minting is not.
+      operationId: createKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 100 }
+                rateLimit: { type: integer, minimum: 1, maximum: 1000000, default: 1000, description: Requests per minute. }
+      responses:
+        '201':
+          description: Created. The plaintext key appears here and nowhere else, ever.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  name: { type: string }
+                  key: { type: string, description: 'The plaintext key. Store it now; it cannot be retrieved again.' }
+                  keyPrefix: { type: string }
+                  rateLimit: { type: integer }
+                  createdAt: { type: string, format: date-time }
+                  warning: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    get:
+      tags: [Keys]
+      summary: List this instance's API keys (self-host only)
+      description: |
+        Instance-wide with no owner predicate, so it is **withheld on the hosted
+        multi-tenant deployment** — there, one tenant could otherwise read another
+        tenant's credentials. Never returns plaintext keys, only their prefixes.
+      operationId: listKeys
+      responses:
+        '200':
+          description: Every key on this instance.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, format: uuid }
+                        name: { type: string }
+                        keyPrefix: { type: string }
+                        rateLimit: { type: integer }
+                        createdAt: { type: string, format: date-time }
+                        lastUsedAt: { type: [string, 'null'], format: date-time }
+                        revokedAt: { type: [string, 'null'], format: date-time }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Not available on this deployment (hosted multi-tenant). }
+
+  /keys/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    delete:
+      tags: [Keys]
+      summary: Revoke an API key (self-host only)
+      description: |
+        Withheld on the hosted multi-tenant deployment for the same reason as the
+        list route. Revoking an already-revoked or unknown key answers 404.
+      operationId: revokeKey
+      responses:
+        '200':
+          description: Revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /usage/all:
+    get:
+      tags: [Usage]
+      summary: Usage across every key on this instance (self-host only)
+      description: |
+        Sums usage over all keys, so it crosses the tenant boundary and is
+        **withheld on the hosted multi-tenant deployment**. There, the dashboard
+        aggregates per profile by calling `/usage` with each of that profile's keys.
+      operationId: getUsageAll
+      parameters:
+        - name: hours
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 2160, default: 168 }
+          description: Window in hours. Bounded so a caller cannot scan the whole table.
+      responses:
+        '200':
+          description: Instance-wide usage for the window.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Not available on this deployment (hosted multi-tenant). }
 
   /health:
     get:
@@ -3372,6 +3569,13 @@ components:
           minLength: 1
           maxLength: 2000
           description: What you want extracted, in plain language.
+        provider:
+          type: string
+          enum: [anthropic, openai, openrouter, google, gemini, ollama, vllm, openai-compatible]
+          description: Override the instance default provider for this call. Its key must already be stored.
+        model:
+          type: string
+          description: Override the model used for this call. Defaults to the provider's configured model.
         urls:
           type: array
           maxItems: 10
@@ -4545,7 +4749,7 @@ components:
         finishedAt: { type: string, format: date-time }
         expiresAt: { type: string, format: date-time }
         error: { type: [string, 'null'] }
-        next: { type: string, format: uri, description: Cursor for the next page of results. }
+        next: { type: [string, 'null'], description: "Path of the next page, relative to this API's base (e.g. `/v1/jobs/<id>?cursor=100`), or null on the last page." }
         data:
           type: array
           items:

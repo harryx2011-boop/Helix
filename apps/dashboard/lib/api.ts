@@ -564,6 +564,120 @@ export interface AgentSchemaResponseFailure {
 
 export type AgentSchemaResponse = AgentSchemaResponseSuccess | AgentSchemaResponseFailure;
 
+// --- Robots check (POST /v1/robots-check) ---
+
+export interface RobotsCheckRequest {
+  url: string;
+  userAgent?: string;
+}
+
+/**
+ * Answered by the same `RobotsCache` `/crawl` and `/map` consult, so this is
+ * the decision a crawl would make rather than a second opinion from a
+ * separate parser.
+ */
+export interface RobotsCheckResponse {
+  url: string;
+  userAgent: string;
+  allowed: boolean;
+  crawlDelaySeconds: number | null;
+  sitemaps: string[];
+}
+
+// --- Diff (POST /v1/diff) ---
+
+export type DiffGranularity = 'word' | 'line' | 'character';
+
+/** Either side of a text diff is literal text or a URL the server reads through the scrape pipeline. */
+export type DiffSide = { text: string } | { url: string };
+
+export interface DiffTextRequest {
+  mode: 'text';
+  before: DiffSide;
+  after: DiffSide;
+  granularity?: DiffGranularity;
+}
+
+export interface DiffJsonRequest {
+  mode: 'json';
+  before: unknown;
+  after: unknown;
+}
+
+export type DiffRequest = DiffTextRequest | DiffJsonRequest;
+
+export interface DiffOp {
+  op: 'equal' | 'insert' | 'delete';
+  text: string;
+}
+
+export interface TextDiff {
+  granularity: DiffGranularity;
+  added: number;
+  removed: number;
+  /** Changed tokens over the larger side's token count; 0 when identical. */
+  changeRatio: number;
+  ops: DiffOp[];
+  /** Line-oriented rendering with `+` / `-` / ` ` prefixes. */
+  text: string;
+  /** The edit script was too long to trace token by token; counts are an upper bound. */
+  coarse?: true;
+  /** `ops` and `text` were dropped to stay under the size bound. */
+  truncated?: true;
+}
+
+export interface JsonFieldChange {
+  path: string;
+  before?: unknown;
+  after?: unknown;
+}
+
+export interface JsonDiff {
+  granularity: 'json';
+  fields: JsonFieldChange[];
+  changeRatio: number;
+}
+
+export interface DiffResponseSuccess {
+  success: true;
+  diff: TextDiff | JsonDiff;
+}
+
+export interface DiffResponseFailure {
+  success: false;
+  failure: { reason: FailureReason | string; message?: string; detail?: string };
+}
+
+export type DiffResponse = DiffResponseSuccess | DiffResponseFailure;
+
+// --- PDF assess (POST /v1/pdf-assess) ---
+
+export interface PdfAssessRequest {
+  url: string;
+  timeout?: number;
+}
+
+export interface PdfAssessData {
+  pageCount: number;
+  charsExtracted: number;
+  needsOcr: boolean;
+  suspectedGarbledText: boolean;
+  reason: string;
+  metadata: { filename?: string; sizeBytes?: number; sourceUrl?: string };
+}
+
+export interface PdfAssessResponseSuccess {
+  success: true;
+  data: PdfAssessData;
+}
+
+export interface PdfAssessResponseFailure {
+  success: false;
+  failure: FetchFailure;
+}
+
+export type PdfAssessResponse = PdfAssessResponseSuccess | PdfAssessResponseFailure;
+
 // --- Providers (GET/PUT/DELETE /v1/providers) ---
 
 export type ProviderName = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'ollama' | 'vllm' | 'openai-compatible';
@@ -1081,6 +1195,19 @@ export class HelixClient {
 
   async agentSchema(request: AgentSchemaRequest, signal?: AbortSignal): Promise<AgentSchemaResponse> {
     return this.post<AgentSchemaResponse>('/agent/schema', request, signal);
+  }
+
+  async robotsCheck(request: RobotsCheckRequest, signal?: AbortSignal): Promise<RobotsCheckResponse> {
+    return this.post<RobotsCheckResponse>('/robots-check', request, signal);
+  }
+
+  async diff(request: DiffRequest, signal?: AbortSignal): Promise<DiffResponse> {
+    return this.post<DiffResponse>('/diff', request, signal);
+  }
+
+  /** A URL body is JSON; an upload is `FormData` with a `file` part, which the route parses itself. */
+  async pdfAssess(request: PdfAssessRequest | FormData, signal?: AbortSignal): Promise<PdfAssessResponse> {
+    return this.post<PdfAssessResponse>('/pdf-assess', request, signal);
   }
 
   async listProviders(signal?: AbortSignal): Promise<ListProvidersResponse> {

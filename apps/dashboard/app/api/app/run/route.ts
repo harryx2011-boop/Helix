@@ -22,14 +22,23 @@ const ENDPOINTS: Endpoint[] = [
   'monitor',
 ];
 
-/** The agent panel's schema step isn't a playground tab, but it is the same "forward to the instance with the user's key" shape as the rest, so it rides the same route rather than earning its own. */
-type ProxyEndpoint = Endpoint | 'agent-schema';
+/**
+ * Endpoints that ride this route without being playground tabs: the agent
+ * panel's schema step, and the Checks tools. Each is the same "forward to the
+ * instance with the user's key" shape as the rest, so they share this route
+ * rather than earning their own — but none belongs in `Endpoint`, which is the
+ * playground's own tab list.
+ */
+const EXTRA_ENDPOINTS = ['agent-schema', 'robots-check', 'diff', 'pdf-assess'] as const;
+
+type ExtraEndpoint = (typeof EXTRA_ENDPOINTS)[number];
+type ProxyEndpoint = Endpoint | ExtraEndpoint;
 
 function isProxyEndpoint(value: string | null): value is ProxyEndpoint {
-  return value !== null && ((ENDPOINTS as string[]).includes(value) || value === 'agent-schema');
+  return value !== null && ((ENDPOINTS as string[]).includes(value) || (EXTRA_ENDPOINTS as readonly string[]).includes(value));
 }
 
-/** Where each playground tab lands on the instance; `metadata` forks on `mode` rather than getting its own entry. */
+/** Where each tab lands on the instance; `metadata` forks on `mode` rather than getting its own entry. */
 function upstreamPath(endpoint: ProxyEndpoint, mode: EndpointMode): string {
   if (endpoint === 'agent-schema') return '/agent/schema';
   if (endpoint === 'metadata') return mode === 'scrub' ? '/metadata/scrub' : '/metadata';

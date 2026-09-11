@@ -4,7 +4,7 @@ import { CapabilityPage } from '@/components/marketing/pages/capability-page';
 
 export const metadata: Metadata = {
   title: 'Web Crawling API',
-  description: 'BFS discovery, robots honoured, adaptive per-host concurrency, and an estimate before a single page is fetched.',
+  description: 'Follows links outward from the page you give it, honours robots.txt, adapts per-host concurrency, and estimates before a single page is fetched.',
 };
 
 const REQUEST = `POST /v1/crawl
@@ -45,7 +45,7 @@ export default function CrawlPage() {
     <CapabilityPage
       endpoint="crawl"
       h1={['Whole sites,', 'politely.']}
-      subhead="BFS discovery, robots honoured, adaptive per-host concurrency, and an estimate before a single page is fetched."
+      subhead="Follows links outward from the page you give it, honours robots.txt, adapts per-host concurrency, and estimates before a single page is fetched."
       mock={{
         chrome: 'browser',
         label: 'frontier → page list',
@@ -59,14 +59,14 @@ export default function CrawlPage() {
 42 / 100 pages · status: running`,
       }}
       features={[
-        { icon: Gauge, eyebrow: 'Adaptive politeness', lead: 'Per-host concurrency ramps and backs off.', body: 'Pin a fixed delay when you would rather not adapt.', evidence: 'per-host concurrency · live', meterJitter: 6, meters: [
+        { icon: Gauge, lead: 'Per-host concurrency ramps and backs off.', body: 'Pin a fixed delay when you would rather not adapt.', evidence: 'per-host concurrency · sample instance', meters: [
           { label: 'example.com', value: 75, accent: true },
           { label: 'docs.example', value: 38 },
           { label: 'cdn.example', value: 12 },
         ] },
-        { icon: GitBranch, eyebrow: 'Predictable depth', lead: 'BFS discovery.', body: 'maxDepth: 3 means three links from the seed; sitemaps seed the frontier too.', evidence: '"maxDepth": 3, "limit": 100' },
-        { icon: ShieldHalf, eyebrow: 'Robots-aware', lead: 'robots.txt is honoured by default.', body: 'Disallowed URLs are reported as robots_denied, not silently dropped.', evidence: '"status": "robots_denied"' },
-        { icon: Calculator, eyebrow: 'Estimate before you run', lead: 'Nothing is fetched.', body: 'estimate: true returns projected pages, time and tokens.', evidence: '"estimate": true · projection', meterSize: 'thin', meterJitter: 0, meters: [
+        { icon: GitBranch, lead: 'Link by link, outward from the seed.', body: 'maxDepth: 3 means three links from the seed; sitemaps seed the frontier too.', evidence: '"maxDepth": 3, "limit": 100' },
+        { icon: ShieldHalf, lead: 'robots.txt is honoured by default.', body: 'Disallowed URLs are reported as robots_denied, not silently dropped.', evidence: '"status": "robots_denied"' },
+        { icon: Calculator, lead: 'Nothing is fetched.', body: 'estimate: true returns projected pages, time and tokens.', evidence: '"estimate": true · projection', meterSize: 'thin', meters: [
           { label: 'pages', value: 100, accent: true, display: '100' },
           { label: 'time', value: 62, display: '~42 s' },
           { label: 'tokens', value: 81, display: '118 k' },

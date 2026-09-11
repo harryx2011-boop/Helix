@@ -11,7 +11,7 @@ import { GITHUB_URL } from '@/lib/github-stars';
 export function ClosingCta() {
   return (
     <section className="relative min-h-[480px] overflow-hidden px-6 py-16 sm:px-10">
-      <FrameBand step="07" total="07" label="GET STARTED" sub="Run it now" icon={Terminal} />
+      <FrameBand step="07" icon={Terminal} />
 
       <GridCells
         cell={100}

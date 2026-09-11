@@ -62,14 +62,14 @@ export default function MapPage() {
 }`,
       }}
       features={[
-        { icon: MapIcon, eyebrow: 'Sitemap first', lead: 'Read the sitemap, then the seed page.', body: 'robots.txt names the sitemaps; the seed page’s own links fill the gaps a sitemap leaves. Set sitemap to only or skip to take one side.', evidence: 'discovered URLs by source · sample site', meters: [
+        { icon: MapIcon, lead: 'Read the sitemap, then the seed page.', body: 'robots.txt names the sitemaps; the seed page’s own links fill the gaps a sitemap leaves. Set sitemap to only or skip to take one side.', evidence: 'discovered URLs by source · sample site', meters: [
           { label: 'sitemap', value: 61, accent: true },
           { label: 'links', value: 27 },
           { label: 'both', value: 12 },
         ] },
-        { icon: Filter, eyebrow: 'Narrow up front', lead: 'A search term filters the list.', body: 'search keeps only URLs that contain the term. Nothing is fetched to decide.', evidence: '"search": "pricing"' },
-        { icon: Link2, eyebrow: 'One URL, once', lead: 'Query strings collapse by default.', body: 'ignoreQueryParameters folds ?utm and ?page variants into one entry. A URL found in both the sitemap and the page says so.', evidence: '"source": "both"' },
-        { icon: Gauge, eyebrow: 'Before you crawl', lead: 'Count pages before paying for them.', body: 'Map is what /crawl’s estimate runs on. Learn the size, then decide the limit.', evidence: 'discovered against limit · sample site', meterSize: 'thin', meters: [
+        { icon: Filter, lead: 'A search term filters the list.', body: 'search keeps only URLs that contain the term. Nothing is fetched to decide.', evidence: '"search": "pricing"' },
+        { icon: Link2, lead: 'Query strings collapse by default.', body: 'ignoreQueryParameters folds ?utm and ?page variants into one entry. A URL found in both the sitemap and the page says so.', evidence: '"source": "both"' },
+        { icon: Gauge, lead: 'Count pages before paying for them.', body: 'Map is what /crawl’s estimate runs on. Learn the size, then decide the limit.', evidence: 'discovered against limit · sample site', meterSize: 'thin', meters: [
           { label: 'discovered', value: 48, accent: true, display: '2,410' },
           { label: 'limit', value: 100, display: '5,000' },
           { label: 'truncated', value: 0, display: 'false' },

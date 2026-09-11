@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { ArrowRight, Lock, ShieldCheck, Server, Terminal, Users } from 'lucide-react';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { PillButton } from '@/components/marketing/pill-button';
 import { CodePanel, CodeBlock } from '@/components/marketing/code-panel';
 import { HeroField } from '@/components/marketing/hero-field';
@@ -13,8 +12,6 @@ import {
   CANVAS_MODULES,
   CANVAS_NAME,
   CANVAS_REPO,
-  TOOL_CONFIRMED,
-  TOOL_READONLY,
   TOOL_TOTAL,
 } from '@/lib/canvas';
 
@@ -56,7 +53,6 @@ export default function CanvasPage() {
             Your Canvas account,
             <span className="block text-violet">{TOOL_TOTAL} tools an agent can use.</span>
           </h1>
-          <SectionEyebrow step="CANVAS" label={CANVAS_NAME} sub="local, your own token" className="mt-4" />
           <p className="mx-auto mt-5 max-w-[600px] text-[16px] leading-relaxed text-m-ink/72">
             An MCP server that hands Claude, Cursor or any MCP client your Canvas LMS — courses, assignments,
             grades, discussions, rubrics, peer reviews. It runs on your machine, authenticates with a token you
@@ -77,8 +73,7 @@ export default function CanvasPage() {
       </div>
 
       <section className="mx-auto mt-16 max-w-[880px] animate-fade-up [animation-delay:60ms]">
-        <SectionEyebrow step="01" label="IN PRACTICE" sub="one question, several tools" />
-        <div className="relative mt-4">
+        <div className="relative">
           <div className="pointer-events-none absolute inset-0 rounded-panel shadow-cutout" aria-hidden />
           <CodePanel chrome="terminal" label="claude code" copyText={DEMO}>
             <CodeBlock dark>{DEMO}</CodeBlock>
@@ -96,7 +91,6 @@ export default function CanvasPage() {
         <h2 className="text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
           It shows you the change before it makes it.
         </h2>
-        <SectionEyebrow step="02" label="THE CONFIRM GATE" sub={`${TOOL_CONFIRMED} tools`} className="mt-3" />
         <p className="mt-3 max-w-[640px] text-[16px] leading-relaxed text-m-ink/72">
           Every tool that changes Canvas takes a <code className="font-mono text-[14px] text-m-ink">confirm</code>{' '}
           argument. Without it you get a preview of exactly what would change and no request is made. This is what
@@ -113,7 +107,6 @@ export default function CanvasPage() {
         <h2 className="text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
           Nothing leaves your machine.
         </h2>
-        <SectionEyebrow step="03" label="WHERE IT RUNS" sub="no service in the middle" className="mt-3" />
         <div
           data-reveal-group
           className="mt-6 grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-faint sm:grid-cols-6"
@@ -121,21 +114,18 @@ export default function CanvasPage() {
           <BentoCard
             icon={Server}
             span="third"
-            eyebrow="Local"
             lead="It runs as a process you start."
             body="Over stdio by default, so your client spawns it directly. There is no hosted Canvas Connect, no account, and no server of ours between you and your institution."
           />
           <BentoCard
             icon={Lock}
             span="third"
-            eyebrow="Your token"
             lead="A Canvas personal access token, in your own .env."
             body="Client config files never carry it — the server reads .env from its own folder. Permissions are exactly what your Canvas role grants: a student token cannot grade."
           />
           <BentoCard
             icon={ShieldCheck}
             span="third"
-            eyebrow="Anonymisation"
             lead="Student names can be replaced everywhere."
             body="CANVAS_ANONYMIZE_STUDENTS swaps every name for a stable pseudonym across every tool's output, so a class-wide analysis need not put real names in front of a model."
           />
@@ -148,7 +138,6 @@ export default function CanvasPage() {
         <h2 className="text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
           Fourteen groups, {TOOL_TOTAL} tools.
         </h2>
-        <SectionEyebrow step="04" label="WHAT IT COVERS" sub={`${TOOL_READONLY} read-only`} className="mt-3" />
         <p className="mt-3 max-w-[640px] text-[16px] leading-relaxed text-m-ink/72">
           Most of the surface is read-only. The rest changes Canvas, and all of it is gated.
         </p>
@@ -172,7 +161,6 @@ export default function CanvasPage() {
 
       <section id="install" className="mx-auto mt-16 max-w-[880px] scroll-mt-24 animate-fade-up">
         <h2 className="text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">Install it.</h2>
-        <SectionEyebrow step="05" label="SETUP" sub="python 3.11+" className="mt-3" />
         <p className="mt-3 max-w-[640px] text-[16px] leading-relaxed text-m-ink/72">
           Clone the repo, install it into a virtualenv, put your Canvas URL and token in{' '}
           <code className="font-mono text-[14px] text-m-ink">.env</code>, then point your client at the executable.
@@ -185,7 +173,6 @@ export default function CanvasPage() {
           <h2 className="text-[24px] font-normal leading-tight tracking-tight lg:text-[28px]">
             Eight skills ship with it.
           </h2>
-          <SectionEyebrow step="06" label="SKILLS" sub="student and educator" className="mt-3" />
           <p className="mx-auto mt-3 max-w-[560px] text-[15px] leading-relaxed text-m-ink/72">
             Drop-in files that teach an agent a whole workflow — a daily check, a week plan, bulk grading, an
             accessibility audit — rather than one tool at a time.

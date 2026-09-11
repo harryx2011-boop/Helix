@@ -2,11 +2,11 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { mulberry32, useInView, useReducedMotion } from './ambient';
+import { useInView, useReducedMotion } from './ambient';
 
 export interface MeterRow {
   label: string;
-  /** 0–100. The bar settles here and then drifts around it by `jitter`. */
+  /** 0–100. */
   value: number;
   accent?: boolean;
   /** Thin variant only: replaces the percent readout (e.g. "14.2 kb"). */
@@ -16,26 +16,16 @@ export interface MeterRow {
 export interface MeterPanelProps {
   rows: MeterRow[];
   label?: string;
-  /** Max drift either side of `value`, in points. 0 pins the bar. */
-  jitter?: number;
   size?: 'pill' | 'thin';
-  seed?: number;
   className?: string;
 }
 
-const TICK_MS = 1100;
-
-function clamp(n: number): number {
-  return Math.min(100, Math.max(0, n));
-}
-
 /**
- * Instrument-style ratio bars. Grow from zero on scroll-in, then drift a few
- * points around their value on a slow tick so the panel reads as a live
- * reading rather than a static chart. Reduced motion pins every bar at its
- * value with no transition.
+ * Illustrative ratio bars. Grow from zero on scroll-in and hold; the values
+ * are an example distribution, never this instance's telemetry, and the
+ * panel says so. Reduced motion pins every bar at its value with no transition.
  */
-export function MeterPanel({ rows, label, jitter = 2.5, size = 'pill', seed = 7, className }: MeterPanelProps) {
+export function MeterPanel({ rows, label, size = 'pill', className }: MeterPanelProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const inView = useInView(ref);
@@ -43,28 +33,18 @@ export function MeterPanel({ rows, label, jitter = 2.5, size = 'pill', seed = 7,
   rowsRef.current = rows;
   const valuesKey = rows.map((r) => r.value).join(',');
   const [shown, setShown] = React.useState<number[]>(() => rows.map(() => 0));
-  const [live, setLive] = React.useState(false);
 
   React.useEffect(() => {
     if (reduced) {
       setShown(rowsRef.current.map((r) => r.value));
-      setLive(false);
       return;
     }
     if (!inView) return;
-    const rng = mulberry32(seed);
     const grow = setTimeout(() => {
       setShown(rowsRef.current.map((r) => r.value));
-      setLive(jitter > 0);
     }, 80);
-    const tick = setInterval(() => {
-      setShown(rowsRef.current.map((r) => clamp(r.value + (rng() * 2 - 1) * jitter)));
-    }, TICK_MS);
-    return () => {
-      clearTimeout(grow);
-      clearInterval(tick);
-    };
-  }, [inView, reduced, jitter, seed, valuesKey]);
+    return () => clearTimeout(grow);
+  }, [inView, reduced, valuesKey]);
 
   const isPill = size === 'pill';
 
@@ -74,17 +54,11 @@ export function MeterPanel({ rows, label, jitter = 2.5, size = 'pill', seed = 7,
       aria-hidden="true"
       className={cn('select-none overflow-hidden rounded-panel border border-m-border-muted bg-m-bg', className)}
     >
-      {label && (
-        <div className="flex items-center gap-2 border-b border-m-border-faint px-3 py-2">
-          <span
-            className={cn(
-              'h-1.5 w-1.5 shrink-0 rounded-full',
-              live ? 'bg-violet animate-pulse' : 'bg-m-ink/24',
-            )}
-          />
-          <span className="truncate font-mono text-[11px] text-m-ink/48">{label}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-2 border-b border-m-border-faint px-3 py-2 font-mono text-[11px] text-m-ink/48">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-m-ink/24" />
+        {label && <span className="truncate">{label}</span>}
+        <span className="ml-auto shrink-0">example, not live data</span>
+      </div>
 
       <div className={cn('flex flex-col', isPill ? 'divide-y divide-m-border-faint' : 'gap-2.5 px-3 py-3')}>
         {rows.map((row, i) => {

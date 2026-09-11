@@ -4,7 +4,6 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { HeroField } from '@/components/marketing/hero-field';
 import { GITHUB_URL } from '@/lib/github-stars';
 
@@ -54,7 +53,6 @@ export default async function ArchitecturePage() {
           <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
             Three runtimes, <span className="text-violet">one HTTP surface.</span>
           </h1>
-          <SectionEyebrow step="ENGINEERING" label="ARCHITECTURE" sub="how Helix is built" className="mt-4" />
         </div>
       </div>
 

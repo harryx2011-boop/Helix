@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { CanvasToolsLoader } from '@/components/marketing/canvas/tools-loader';
 import { CANVAS_NAME, TOOL_CONFIRMED, TOOL_READONLY, TOOL_TOTAL } from '@/lib/canvas';
 
@@ -15,7 +14,6 @@ export default function CanvasToolsPage() {
         <h1 className="text-[32px] font-normal leading-[1.08] tracking-tighter lg:text-[40px]">
           {TOOL_TOTAL} tools.
         </h1>
-        <SectionEyebrow step="CANVAS" label="TOOL REFERENCE" sub={`${TOOL_READONLY} read-only`} className="mt-3" />
         <p className="mt-4 max-w-[640px] text-[16px] leading-relaxed text-m-ink/72">
           Every tool the server registers, with its parameters. {TOOL_READONLY} only read. The {TOOL_CONFIRMED} that
           change Canvas return a preview first and do nothing until called again with{' '}

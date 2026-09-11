@@ -67,14 +67,12 @@ Enterprise         null    dropped ─ no span
       features={[
         {
           icon: Crosshair,
-          eyebrow: 'Traceable',
           lead: 'Every field cites a span.',
           body: 'Each value carries the byte range it was read from, so a wrong answer is checkable rather than plausible.',
           evidence: '"_source": { "span": [1204, 1261] }',
         },
         {
           icon: ShieldCheck,
-          eyebrow: 'Grounded only',
           lead: 'Ungrounded fields are dropped.',
           body: 'A field the source does not support is returned in `dropped` with a reason, never invented to fill the schema.',
           evidence: 'fields by outcome · sample instance',
@@ -85,14 +83,12 @@ Enterprise         null    dropped ─ no span
         },
         {
           icon: Braces,
-          eyebrow: 'Schema or prompt',
           lead: 'Bring either one.',
           body: 'Hand it a JSON Schema, or describe the data in a sentence and let /v1/agent/schema design one you can keep.',
           evidence: 'POST /v1/agent/schema',
         },
         {
           icon: Layers,
-          eyebrow: 'Many pages, one table',
           lead: 'Rows across a URL set.',
           body: 'Pass a list of URLs and the same schema applies to all of them, returning one table instead of many documents.',
           evidence: 'urls[] · 1 schema · n rows',

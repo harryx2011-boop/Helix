@@ -72,7 +72,6 @@ export default function DocumentPage() {
       features={[
         {
           icon: FileStack,
-          eyebrow: 'One surface',
           lead: 'Four operations, one shape.',
           body: 'Parse, convert, metadata and assess take the same file input and return the same envelope.',
           evidence: 'operations by share · sample instance',
@@ -85,21 +84,18 @@ export default function DocumentPage() {
         },
         {
           icon: ScanEye,
-          eyebrow: 'Knows when to look',
           lead: 'OCR only when needed.',
           body: 'Assess reads the text layer first, so scanned pages route to OCR and the rest skip it.',
           evidence: '"ocr": "auto"  ·  "ocrUsed": false',
         },
         {
           icon: Table2,
-          eyebrow: 'Structure kept',
           lead: 'Tables survive the trip.',
           body: 'Spreadsheet rows, slides and PDF tables land as markdown tables, not flattened prose.',
           evidence: '| Item | Qty | Price |',
         },
         {
           icon: Fingerprint,
-          eyebrow: 'Read once',
           lead: 'Cached by content hash.',
           body: 'The same file from two mirrors is read once, whichever operation asks for it.',
           evidence: '"fromCache": true · hit rate',

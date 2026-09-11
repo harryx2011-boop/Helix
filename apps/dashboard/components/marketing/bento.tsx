@@ -7,7 +7,6 @@ export type BentoSpan = 'wide' | 'narrow' | 'hero' | 'third';
 
 export interface BentoCardProps {
   icon: LucideIcon;
-  eyebrow: string;
   lead: string;
   body: string;
   /**
@@ -36,7 +35,7 @@ const SPAN_CLASS: Record<BentoSpan, string> = {
  * bottom; borders come from the cell itself so the grid needs no gap.
  * The parent grid must carry `data-reveal-group` or the cells stay hidden.
  */
-export function BentoCard({ icon, eyebrow, lead, body, span, href, linkLabel, children, className }: BentoCardProps) {
+export function BentoCard({ icon, lead, body, span, href, linkLabel, children, className }: BentoCardProps) {
   const hero = span === 'hero';
   return (
     <div
@@ -48,10 +47,7 @@ export function BentoCard({ icon, eyebrow, lead, body, span, href, linkLabel, ch
       )}
     >
       <div className={cn('min-w-0', hero && 'sm:flex-1')}>
-        <div className="flex items-center gap-2 font-mono text-[12px] text-m-ink/56">
-          <IconTile icon={icon} size="sm" />
-          {eyebrow}
-        </div>
+        <IconTile icon={icon} size="sm" />
         <p className="mt-3 max-w-[520px] text-[18px] leading-snug tracking-tight sm:text-[20px]">
           <span className="font-medium text-m-ink">{lead}</span> <span className="text-m-ink/64">{body}</span>
         </p>

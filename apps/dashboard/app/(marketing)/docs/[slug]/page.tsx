@@ -2,7 +2,6 @@ import * as React from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { CodePanel, CodeBlock } from '@/components/marketing/code-panel';
 import { PillButton } from '@/components/marketing/pill-button';
 import { HeroField } from '@/components/marketing/hero-field';
@@ -85,7 +84,6 @@ function EndpointDoc({ def, docs }: { def: EndpointDef; docs: EndpointDocs }) {
               <span className="rounded-pill bg-violet-12 px-2.5 py-1 font-mono text-[12px] tracking-wide text-violet">coming</span>
             )}
           </div>
-          <SectionEyebrow step="DOCS" label={def.productName.toUpperCase()} sub={def.method + ' ' + def.path} className="mt-4" />
           <p className="mt-4 text-[16px] leading-relaxed text-m-ink/72">{docs.purpose}</p>
         </div>
       </div>
@@ -190,7 +188,6 @@ function StaticShell({ h1, children }: { h1: string; children: React.ReactNode }
         <HeroField motif="orbit" seed={seedFor(h1)} className="translate-x-16" />
         <div className="relative mx-auto max-w-[720px] animate-fade-up">
           <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">{h1}</h1>
-          <SectionEyebrow step="DOCS" label={h1.toUpperCase()} sub="reference" className="mt-4" />
         </div>
       </div>
       <div className="mx-auto mt-14 max-w-[720px] animate-fade-up [animation-delay:60ms] space-y-12">{children}</div>

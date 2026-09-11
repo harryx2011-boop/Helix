@@ -215,7 +215,7 @@ export function Capabilities() {
 
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="01" total="07" label="CAPABILITIES" sub="Nine products" icon={Braces} />
+      <FrameBand step="01" icon={Braces} />
 
       <div className="py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">

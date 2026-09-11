@@ -121,8 +121,6 @@ export default function HomePage() {
           <section className="py-16 sm:py-24">
             <ScrollReveal>
               <SectionHeader
-                index="01 / 04"
-                label="the library"
                 title="Start from a role you recognise."
                 body="Support, sales, security, legal and the rest of the org chart. Each role ships with competing personas and the setup steps for where it runs."
               />
@@ -152,9 +150,6 @@ export default function HomePage() {
                   Answers are saved, so one company name and help centre URL carry through to every persona
                   that needs them.
                 </p>
-                <p className="mt-6 font-mono text-[12px] uppercase tracking-wide text-p-ink-3">
-                  [ <span className="text-blue">02 / 04</span> ] · the wizard
-                </p>
               </ScrollReveal>
               <ScrollReveal delay={0.06}>
                 <WizardCard />
@@ -167,8 +162,6 @@ export default function HomePage() {
           <section className="py-16 sm:py-24">
             <ScrollReveal>
               <SectionHeader
-                index="03 / 04"
-                label="the app"
                 title="Search, fork, edit, export."
                 body="Filter by department, platform and tone. Fork any persona into an editor, share a snapshot by link, and export it where your agent runs."
               />
@@ -182,7 +175,7 @@ export default function HomePage() {
 
           <section className="py-16 sm:py-24">
             <ScrollReveal>
-              <SectionHeader index="04 / 04" label="what you get" title="Four things, no account." />
+              <SectionHeader title="Four things, no account." />
             </ScrollReveal>
             <ScrollReveal delay={0.06}>
               <div className="mt-10 grid gap-8 px-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0 lg:divide-x lg:divide-p-line">

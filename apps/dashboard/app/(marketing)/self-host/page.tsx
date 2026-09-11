@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Terminal } from 'lucide-react';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { PillButton } from '@/components/marketing/pill-button';
 import { CodePanel, CodeBlock } from '@/components/marketing/code-panel';
 import { HeroField } from '@/components/marketing/hero-field';
 import { ScrollStrip } from '@/components/marketing/scroll-strip';
 import { AsciiFluid } from '@/components/marketing/ascii-fluid';
+import { GITHUB_URL } from '@/lib/github-stars';
 
 export const metadata: Metadata = {
   title: 'Self-host',
@@ -77,13 +77,12 @@ export default function SelfHostPage() {
           <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
             Run it yourself. <span className="block text-violet">All of it.</span>
           </h1>
-          <SectionEyebrow step="SELF-HOST" label="THE WHOLE PRODUCT" sub="nothing withheld" className="mt-4" />
           <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-relaxed text-m-ink/72">
             The self-host build is the product. There is no cloud-only tier, no held-back stealth layer, no licence
             that stops you embedding it.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <PillButton href="https://github.com" variant="primary">
+            <PillButton href={GITHUB_URL} variant="primary">
               View on GitHub <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
             <PillButton href="/architecture" variant="secondary">
@@ -94,8 +93,7 @@ export default function SelfHostPage() {
       </div>
 
       <section className="mx-auto mt-16 max-w-[880px] animate-fade-up [animation-delay:60ms]">
-        <SectionEyebrow step="01" label="FIRST BOOT" sub="health-gated startup" />
-        <div className="relative mt-4">
+        <div className="relative">
           <div className="pointer-events-none absolute inset-0 rounded-panel shadow-cutout" aria-hidden />
           <CodePanel chrome="terminal" label="terminal" copyText={COMPOSE_UP}>
             <CodeBlock dark>{COMPOSE_UP}</CodeBlock>
@@ -118,7 +116,6 @@ export default function SelfHostPage() {
         <h2 id="security" className="text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
           Your keys, your bill, your providers.
         </h2>
-        <SectionEyebrow step="02" label="CONFIGURATION" sub="bring your own keys" className="mt-3" />
         <p className="mt-3 max-w-[640px] text-[16px] leading-relaxed text-m-ink/72">
           Helix calls your models with your keys. Your provider bills you directly, and nothing here is ever sent
           to a Helix-operated service.
@@ -145,7 +142,6 @@ export default function SelfHostPage() {
         <h2 className="text-[28px] font-normal leading-tight tracking-tight lg:text-[36px]">
           No cloud-only tier.
         </h2>
-        <SectionEyebrow step="03" label="NOTHING WITHHELD" sub="one column against the category norm" className="mt-3" />
         <div className="mt-6 overflow-x-auto rounded-card border border-m-border-muted bg-m-surface shadow-card-sm">
           <table className="w-full min-w-[520px] border-collapse text-[14px]">
             <thead>
@@ -186,7 +182,7 @@ export default function SelfHostPage() {
             <PillButton href="/sign-up" variant="primary">
               Get an API key <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
-            <PillButton href="https://github.com" variant="secondary">
+            <PillButton href={GITHUB_URL} variant="secondary">
               <Terminal className="h-3.5 w-3.5" aria-hidden /> View on GitHub
             </PillButton>
           </div>

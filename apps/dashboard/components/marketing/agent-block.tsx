@@ -15,7 +15,7 @@ export function AgentBlock() {
         >
           <AsciiFlow cols={96} rows={5} seed={23} className="absolute right-0 top-0 opacity-70" />
         </div>
-        <FrameBand label="AGENTS" sub="Read this first" />
+        <FrameBand />
       </div>
       <div className="py-10">
         <div className="rounded-panel border border-m-border-muted bg-m-surface p-6 font-mono text-[13px] leading-relaxed text-m-ink/72">

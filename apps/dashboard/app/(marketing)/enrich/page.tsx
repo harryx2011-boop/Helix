@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { ArrowRight, Quote, CircleSlash, ShieldCheck, Layers } from 'lucide-react';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { PillButton } from '@/components/marketing/pill-button';
 import { CodePanel } from '@/components/marketing/code-panel';
 import { AnimatedCode } from '@/components/marketing/animated-code';
@@ -96,14 +95,14 @@ const MOCK = `$ curl -X POST localhost:7400/v1/enrich \\
 }`;
 
 const FEATURES = [
-  { icon: Quote, eyebrow: 'Grounded or null', lead: 'Every value cites the passage that states it.', body: 'The model must quote its source; the quote is checked against the fetched page and the value against the quote. A claim that fails either check is null, not a guess.', evidence: 'fields by outcome · sample run', meters: [
+  { icon: Quote, lead: 'Every value cites the passage that states it.', body: 'The model must quote its source; the quote is checked against the fetched page and the value against the quote. A claim that fails either check is null, not a guess.', evidence: 'fields by outcome · sample run', meters: [
     { label: 'grounded', value: 71, accent: true },
     { label: 'not_stated', value: 22 },
     { label: 'rejected', value: 7 },
   ] },
-  { icon: CircleSlash, eyebrow: 'Null with a reason', lead: 'A closed set you can branch on.', body: 'not_stated, no_citation, value_not_in_citation, model_unavailable and five more. No field is ever invented to fill a column.', evidence: '"value": null · "reason": "not_stated"' },
-  { icon: Layers, eyebrow: 'Cheapest phase first', lead: 'Meta tags and JSON-LD before a model.', body: 'A value a page states in its metadata is read directly and costs no tokens. Only what structure cannot answer goes to the model.', evidence: '"phase": "metadata" · "confidence": "high"' },
-  { icon: ShieldCheck, eyebrow: 'Sources screened', lead: 'Parked domains and placeholder pages are rejected.', body: 'Every candidate passes guardrails before it can be evidence. Each rejection is listed in sources.rejected with the rule that discarded it.', evidence: 'candidate pages · sample run', meterSize: 'thin' as const, meters: [
+  { icon: CircleSlash, lead: 'A closed set you can branch on.', body: 'not_stated, no_citation, value_not_in_citation, model_unavailable and five more. No field is ever invented to fill a column.', evidence: '"value": null · "reason": "not_stated"' },
+  { icon: Layers, lead: 'Meta tags and JSON-LD before a model.', body: 'A value a page states in its metadata is read directly and costs no tokens. Only what structure cannot answer goes to the model.', evidence: '"phase": "metadata" · "confidence": "high"' },
+  { icon: ShieldCheck, lead: 'Parked domains and placeholder pages are rejected.', body: 'Every candidate passes guardrails before it can be evidence. Each rejection is listed in sources.rejected with the rule that discarded it.', evidence: 'candidate pages · sample run', meterSize: 'thin' as const, meters: [
     { label: 'used', value: 60, accent: true },
     { label: 'blocklisted', value: 20 },
     { label: 'below floor', value: 13 },
@@ -148,9 +147,9 @@ export default function EnrichPage() {
       <section className="mx-auto mt-20 max-w-[960px]">
         <div data-reveal-group className="grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm sm:grid-cols-6">
           {FEATURES.map((feature, i) => (
-            <BentoCard key={feature.eyebrow} icon={feature.icon} eyebrow={feature.eyebrow} lead={feature.lead} body={feature.body} span={SPAN[i % SPAN.length]!}>
+            <BentoCard key={i} icon={feature.icon} lead={feature.lead} body={feature.body} span={SPAN[i % SPAN.length]!}>
               {feature.meters ? (
-                <MeterPanel rows={feature.meters} seed={i * 13 + 5} label={feature.evidence} {...(feature.meterSize ? { size: feature.meterSize } : {})} />
+                <MeterPanel rows={feature.meters} label={feature.evidence} {...(feature.meterSize ? { size: feature.meterSize } : {})} />
               ) : (
                 <EvidenceChip>{feature.evidence}</EvidenceChip>
               )}
@@ -169,7 +168,6 @@ export default function EnrichPage() {
             seed={SEED + 7}
             className="absolute -top-7 right-0 hidden opacity-70 lg:block [mask-image:linear-gradient(to_right,transparent,black_30%,black_85%,transparent)]"
           />
-          <SectionEyebrow step="REQUEST" label="WIRE FORMAT" sub="from openapi.yaml" />
         </div>
         <div className="relative mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
           <CodePanel chrome="terminal" label="POST /v1/enrich" copyText={REQUEST}>

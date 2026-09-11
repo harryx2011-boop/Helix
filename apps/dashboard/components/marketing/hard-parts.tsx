@@ -386,7 +386,7 @@ function ActionGrid({ quiet }: { quiet: boolean }) {
 export function HardParts() {
   return (
     <section className="px-6 py-16 sm:px-10">
-      <FrameBand step="02" total="07" label="HARD PARTS" sub="Handled for you" icon={FileStack} />
+      <FrameBand step="02" icon={FileStack} />
 
       <div className="py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">

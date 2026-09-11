@@ -135,7 +135,7 @@ export function SetupGuides() {
 
   return (
     <section className="bg-m-bg-lighter px-6 py-16 sm:px-10">
-      <FrameBand step="04" total="07" label="SETUP" sub="Connect it your way" icon={Plug} />
+      <FrameBand step="04" icon={Plug} />
 
       <div className="py-16">
         <div data-reveal className="relative">

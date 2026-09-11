@@ -9,7 +9,6 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { IconTile } from '@/components/marketing/icon-tile';
 import { PillButton } from '@/components/marketing/pill-button';
 import type { GlyphIcon } from '@/components/marketing/icon-type';
@@ -44,7 +43,6 @@ export default function CanvasSkillsPage() {
         <h1 className="text-[32px] font-normal leading-[1.08] tracking-tighter lg:text-[40px]">
           Eight skills, ready to drop in.
         </h1>
-        <SectionEyebrow step="CANVAS" label="AGENT SKILLS" sub="workflows, not single calls" className="mt-3" />
         <p className="mt-4 max-w-[640px] text-[16px] leading-relaxed text-m-ink/72">
           A skill teaches an agent a whole workflow — which tools to reach for, in what order, and what to do with
           the results. These ship in the repo under{' '}

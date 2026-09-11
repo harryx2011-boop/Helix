@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { HeroField } from '@/components/marketing/hero-field';
 
 export const metadata: Metadata = {
@@ -16,7 +15,6 @@ export default function PrivacyPage() {
           <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
             Privacy.
           </h1>
-          <SectionEyebrow step="LEGAL" label="PRIVACY" sub="what the hosted app stores" className="mt-4" />
         </div>
       </div>
 

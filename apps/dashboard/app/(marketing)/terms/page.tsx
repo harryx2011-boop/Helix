@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { HeroField } from '@/components/marketing/hero-field';
 import { GITHUB_URL } from '@/lib/github-stars';
 
@@ -17,7 +16,6 @@ export default function TermsPage() {
           <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
             Terms of use.
           </h1>
-          <SectionEyebrow step="LEGAL" label="TERMS" sub="hosted app and licence" className="mt-4" />
         </div>
       </div>
 

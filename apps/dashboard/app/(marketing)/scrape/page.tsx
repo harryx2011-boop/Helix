@@ -86,15 +86,15 @@ $29/month, billed annually.
 $79/month. Includes priority support.`,
       }}
       features={[
-        { icon: Globe2, eyebrow: 'Cheapest path first', lead: 'Escalates on evidence.', body: 'Plain fetch, then TLS identity, then a light browser, then Chromium.', evidence: 'resolved at tier · sample instance', meters: [
+        { icon: Globe2, lead: 'Escalates on evidence.', body: 'A plain fetch first, then one that presents a real browser’s fingerprint, then a light browser, then Chromium.', evidence: 'resolved at tier · sample instance', meters: [
           { label: 'plain', value: 71, accent: true },
           { label: 'tls', value: 18 },
           { label: 'lightpanda', value: 8 },
           { label: 'chromium', value: 3 },
         ] },
-        { icon: FileText, eyebrow: 'One call, many shapes', lead: 'Eight formats, one call.', body: 'Markdown, HTML, links, a screenshot and schema JSON, each under its own key.', evidence: '"formats": ["markdown", "json", "screenshot"]' },
-        { icon: Code2, eyebrow: 'Act, then read', lead: 'Actions run before extraction.', body: 'Click, type, scroll and wait, then the page is scraped.', evidence: '{ "type": "click", "selector": "#accept" }' },
-        { icon: ShieldCheck, eyebrow: 'Honest about blocks', lead: 'A block is a typed failure.', body: 'A challenge page returning 200 never comes back as markdown.', evidence: '"error": "FetchFailure" · signals seen', meterSize: 'thin', meters: [
+        { icon: FileText, lead: 'Eight formats, one call.', body: 'Markdown, HTML, links, a screenshot and schema JSON, each under its own key.', evidence: '"formats": ["markdown", "json", "screenshot"]' },
+        { icon: Code2, lead: 'Actions run before extraction.', body: 'Click, type, scroll and wait, then the page is scraped.', evidence: '{ "type": "click", "selector": "#accept" }' },
+        { icon: ShieldCheck, lead: 'A block is a typed failure.', body: 'A challenge page returning 200 never comes back as markdown.', evidence: '"error": "FetchFailure" · signals seen', meterSize: 'thin', meters: [
           { label: 'cf-mitigated', value: 54, accent: true },
           { label: 'challenge', value: 31 },
           { label: 'captcha', value: 15 },

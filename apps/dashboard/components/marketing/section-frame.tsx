@@ -17,16 +17,14 @@ export function FrameColumn({ children }: { children: React.ReactNode }) {
 }
 
 export interface FrameBandProps {
+  /** Seeds the ambient fields so neighbouring bands never share a pattern. */
   step?: string;
-  total?: string;
-  label: string;
-  sub: string;
   icon?: LucideIcon;
   className?: string;
 }
 
-/** `[ 01 / 05 ] · LABEL // sub //` band between sections, split at ~45% by a hairline. */
-export function FrameBand({ step, total, label, sub, icon: Icon, className }: FrameBandProps) {
+/** Band between sections, split at ~45% by a hairline; the section H2 beneath it carries the label. */
+export function FrameBand({ step, icon: Icon, className }: FrameBandProps) {
   return (
     <div className={cn('relative flex h-16 items-stretch border-y border-m-border-faint', className)}>
       <span aria-hidden className="absolute -left-[100vw] -right-[100vw] top-0 h-px bg-m-border-faint" />
@@ -35,14 +33,6 @@ export function FrameBand({ step, total, label, sub, icon: Icon, className }: Fr
 
       <div className="flex w-full min-w-0 items-center gap-2.5 pl-6 pr-4 lg:w-[45%] lg:border-r lg:border-m-border-faint">
         {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-violet" strokeWidth={1.75} aria-hidden />}
-        <p className="truncate font-mono text-[12px] uppercase tracking-wide text-m-ink/48">
-          {step && total ? (
-            <>
-              [ <span className="text-violet">{step}</span> / {total} ] ·{' '}
-            </>
-          ) : null}
-          {label} <span className="text-m-ink/48">{'// '}{sub}{' //'}</span>
-        </p>
       </div>
 
       <div className="relative hidden flex-1 items-center overflow-hidden px-6 lg:flex lg:px-8">

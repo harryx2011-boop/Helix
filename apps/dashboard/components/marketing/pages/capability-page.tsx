@@ -1,6 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
 import { ArrowRight } from 'lucide-react';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { PillButton } from '@/components/marketing/pill-button';
 import { CodePanel } from '@/components/marketing/code-panel';
 import { AnimatedCode, type AnimatedCodeMode } from '@/components/marketing/animated-code';
@@ -52,14 +51,12 @@ const MOCK_MODE: Record<Endpoint, AnimatedCodeMode> = {
 
 export interface FeatureCardCopy {
   icon: LucideIcon;
-  eyebrow: string;
   lead: string;
   body: string;
   evidence?: string;
-  /** When set, the cell renders a live meter panel labelled by `evidence` instead of the evidence chip. */
+  /** When set, the cell renders an illustrative meter panel labelled by `evidence` instead of the evidence chip. */
   meters?: MeterRow[];
   meterSize?: 'pill' | 'thin';
-  meterJitter?: number;
 }
 
 export interface CapabilityPageCopy {
@@ -150,7 +147,7 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
       <section className="mx-auto mt-20 max-w-[960px]">
         <div data-reveal-group className="grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm sm:grid-cols-6">
           {features.map((feature, i) => (
-            <FeatureCell key={feature.eyebrow} {...feature} index={i} />
+            <FeatureCell key={i} {...feature} index={i} />
           ))}
         </div>
       </section>
@@ -165,7 +162,6 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
             seed={seed + 7}
             className="absolute -top-7 right-0 hidden opacity-70 lg:block [mask-image:linear-gradient(to_right,transparent,black_30%,black_85%,transparent)]"
           />
-          <SectionEyebrow step="REQUEST" label="WIRE FORMAT" sub={isComing ? 'planned shape' : 'from openapi.yaml'} />
         </div>
         <div className="relative mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
           <CodePanel chrome="terminal" label={`${def.method} ${def.path}`} copyText={request}>
@@ -183,11 +179,10 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
 /** Bento rhythm: wide / narrow, then narrow / wide. */
 const SPAN: ('wide' | 'narrow')[] = ['wide', 'narrow', 'narrow', 'wide'];
 
-function FeatureCell({ icon, eyebrow, lead, body, evidence, meters, meterSize, meterJitter, index }: FeatureCardCopy & { index: number }) {
+function FeatureCell({ icon, lead, body, evidence, meters, meterSize, index }: FeatureCardCopy & { index: number }) {
   return (
     <BentoCard
       icon={icon}
-      eyebrow={eyebrow}
       lead={lead}
       body={body}
       span={SPAN[index % SPAN.length]!}
@@ -195,10 +190,8 @@ function FeatureCell({ icon, eyebrow, lead, body, evidence, meters, meterSize, m
       {meters ? (
         <MeterPanel
           rows={meters}
-          seed={index * 13 + 5}
           {...(evidence ? { label: evidence } : {})}
           {...(meterSize ? { size: meterSize } : {})}
-          {...(meterJitter !== undefined ? { jitter: meterJitter } : {})}
         />
       ) : evidence ? (
         <EvidenceChip>{evidence}</EvidenceChip>

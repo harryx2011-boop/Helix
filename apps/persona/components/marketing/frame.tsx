@@ -5,8 +5,8 @@ import { PixelSquares, TokenRain } from './ambient';
 /**
  * The framed column from the Helix landing in Persona's tokens: two hairlines
  * run the full page height, `FrameBand` divides sections with an ambient
- * strip, and `SectionHeader` carries the heading with its mono index beside
- * it (never above it). Palette stays Persona's: ink hairlines, blue accent.
+ * strip, and `SectionHeader` carries the heading and its body. Palette stays
+ * Persona's: ink hairlines, blue accent.
  */
 export function FrameColumn({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={cn('relative mx-auto max-w-6xl border-x-0 sm:border-x sm:border-p-line', className)}>{children}</div>;
@@ -24,29 +24,20 @@ export function FrameBand({ seed = 5, className }: { seed?: number; className?: 
 }
 
 export function SectionHeader({
-  index,
-  label,
   title,
   body,
   className,
 }: {
-  index: string;
-  label: string;
   title: React.ReactNode;
   body?: React.ReactNode;
   className?: string;
 }) {
   return (
-    <div className={cn('flex flex-col gap-4 px-6 lg:flex-row lg:items-end lg:justify-between lg:gap-10', className)}>
-      <div className="max-w-2xl">
-        <h2 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.015em] text-p-ink sm:text-[36px]" style={{ textWrap: 'balance' }}>
-          {title}
-        </h2>
-        {body ? <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed text-p-ink-2 sm:text-[16px]">{body}</p> : null}
-      </div>
-      <p className="shrink-0 font-mono text-[12px] uppercase tracking-wide text-p-ink-3">
-        [ <span className="text-blue">{index}</span> ] · {label}
-      </p>
+    <div className={cn('max-w-2xl px-6', className)}>
+      <h2 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.015em] text-p-ink sm:text-[36px]" style={{ textWrap: 'balance' }}>
+        {title}
+      </h2>
+      {body ? <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed text-p-ink-2 sm:text-[16px]">{body}</p> : null}
     </div>
   );
 }

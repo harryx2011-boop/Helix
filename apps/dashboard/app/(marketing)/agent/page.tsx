@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { ArrowRight, Braces, RefreshCw, Link, KeyRound } from 'lucide-react';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { PillButton } from '@/components/marketing/pill-button';
 import { CodePanel } from '@/components/marketing/code-panel';
 import { AnimatedCode } from '@/components/marketing/animated-code';
@@ -79,14 +78,14 @@ const MOCK = `> Every pricing plan on the page, with its name,
 → paste into jsonOptions.schema on /scrape`;
 
 const FEATURES = [
-  { icon: Braces, eyebrow: 'Describe, not draft', lead: 'A sentence in, a JSON Schema out.', body: 'The result drops straight into jsonOptions.schema on /scrape or /parse, or scrapeOptions.schema on /search.', evidence: 'outcomes · sample instance', meters: [
+  { icon: Braces, lead: 'A sentence in, a JSON Schema out.', body: 'The result drops straight into jsonOptions.schema on /scrape or /parse, or scrapeOptions.schema on /search.', evidence: 'outcomes · sample instance', meters: [
     { label: 'schema returned', value: 92, accent: true },
     { label: 'service_unavailable', value: 6 },
     { label: 'timeout', value: 2 },
   ] },
-  { icon: RefreshCw, eyebrow: 'Refine, not restart', lead: 'Send the last schema back with a change.', body: 'hint carries the previous schema; instruction says what to add or drop. The rest stays as it was.', evidence: '"hint": { … } · "instruction": "Also capture …"' },
-  { icon: Link, eyebrow: 'Pages inform, never fetched', lead: 'Example URLs shape the fields.', body: 'Up to ten urls tell the model what the schema will run against. None of them is fetched by this call.', evidence: '"urls": [ … ] · not fetched' },
-  { icon: KeyRound, eyebrow: 'Your model', lead: 'Runs on the provider key you stored.', body: 'Anthropic, OpenAI, OpenRouter, Google, Ollama, vLLM or an OpenAI-compatible endpoint. Naming one is how a local runtime is reached.', evidence: 'tokens per design · sample instance', meterSize: 'thin' as const, meters: [
+  { icon: RefreshCw, lead: 'Send the last schema back with a change.', body: 'hint carries the previous schema; instruction says what to add or drop. The rest stays as it was.', evidence: '"hint": { … } · "instruction": "Also capture …"' },
+  { icon: Link, lead: 'Example URLs shape the fields.', body: 'Up to ten urls tell the model what the schema will run against. None of them is fetched by this call.', evidence: '"urls": [ … ] · not fetched' },
+  { icon: KeyRound, lead: 'Runs on the provider key you stored.', body: 'Anthropic, OpenAI, OpenRouter, Google, Ollama, vLLM or an OpenAI-compatible endpoint. Naming one is how a local runtime is reached.', evidence: 'tokens per design · sample instance', meterSize: 'thin' as const, meters: [
     { label: 'input', value: 81, accent: true, display: '412' },
     { label: 'output', value: 19, display: '96' },
   ] },
@@ -129,9 +128,9 @@ export default function AgentPage() {
       <section className="mx-auto mt-20 max-w-[960px]">
         <div data-reveal-group className="grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm sm:grid-cols-6">
           {FEATURES.map((feature, i) => (
-            <BentoCard key={feature.eyebrow} icon={feature.icon} eyebrow={feature.eyebrow} lead={feature.lead} body={feature.body} span={SPAN[i % SPAN.length]!}>
+            <BentoCard key={i} icon={feature.icon} lead={feature.lead} body={feature.body} span={SPAN[i % SPAN.length]!}>
               {feature.meters ? (
-                <MeterPanel rows={feature.meters} seed={i * 13 + 5} label={feature.evidence} {...(feature.meterSize ? { size: feature.meterSize } : {})} />
+                <MeterPanel rows={feature.meters} label={feature.evidence} {...(feature.meterSize ? { size: feature.meterSize } : {})} />
               ) : (
                 <EvidenceChip>{feature.evidence}</EvidenceChip>
               )}
@@ -150,7 +149,6 @@ export default function AgentPage() {
             seed={SEED + 7}
             className="absolute -top-7 right-0 hidden opacity-70 lg:block [mask-image:linear-gradient(to_right,transparent,black_30%,black_85%,transparent)]"
           />
-          <SectionEyebrow step="REQUEST" label="WIRE FORMAT" sub="from openapi.yaml" />
         </div>
         <div className="relative mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
           <CodePanel chrome="terminal" label="POST /v1/agent/schema" copyText={REQUEST}>

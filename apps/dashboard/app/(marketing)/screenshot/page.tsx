@@ -65,7 +65,6 @@ export default function ScreenshotPage() {
       features={[
         {
           icon: Monitor,
-          eyebrow: 'Any frame',
           lead: 'Full page, viewport or element.',
           body: 'Capture everything below the fold, just what fits, or the one component you actually needed.',
           evidence: 'captures by scope · sample instance',
@@ -77,21 +76,18 @@ export default function ScreenshotPage() {
         },
         {
           icon: Crop,
-          eyebrow: 'Four outputs',
           lead: 'PNG, JPEG, WebP or PDF.',
           body: 'Pick the format and quality at request time; a full-page capture becomes a paginated PDF with one flag.',
           evidence: '"format": "webp" · "quality": 82',
         },
         {
           icon: MoonStar,
-          eyebrow: 'Clean frame',
           lead: 'Banners and ads removed.',
           body: 'Ad and consent-dialog blocking, dark-mode emulation, and a transparent background when you want one.',
           evidence: '"blockAds": true · "darkMode": true',
         },
         {
           icon: Timer,
-          eyebrow: 'Settled first',
           lead: 'Waits for the page to stop moving.',
           body: 'Hold for a delay, a selector or network idle, so animations and lazy images are done before the shutter.',
           evidence: '"waitFor": 500 · time to settle',

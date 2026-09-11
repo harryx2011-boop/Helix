@@ -69,7 +69,7 @@ function TraceTable() {
 export function Performance() {
   return (
     <section className="relative overflow-hidden px-6 py-16 sm:px-10">
-      <FrameBand step="03" total="07" label="PERFORMANCE" sub="Cheapest path, honest failures" icon={Cpu} />
+      <FrameBand step="03" icon={Cpu} />
 
       <div className="relative py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
@@ -97,31 +97,28 @@ export function Performance() {
         >
           <BentoCard
             icon={Layers}
-            eyebrow="Cheapest tier wins"
             lead="Escalates on evidence."
             body="A plain fetch answers most pages. TLS identity, a light browser and Chromium only run once a block is proven."
             span="hero"
             href="/architecture"
             linkLabel="How the ladder decides"
           >
-            <MeterPanel label="resolved at tier · sample instance" rows={TIER_ROWS} seed={11} />
+            <MeterPanel label="resolved at tier · sample instance" rows={TIER_ROWS} />
           </BentoCard>
 
           <BentoCard
             icon={Coins}
-            eyebrow="Token-efficient"
             lead="Only the content that matters."
             body="Nav, footer and ads are dropped before your model sees the page."
             span="third"
             href="/scrape"
             linkLabel="What Scrape returns"
           >
-            <MeterPanel label="extraction ratio" rows={TOKEN_ROWS} size="thin" jitter={1} seed={19} />
+            <MeterPanel label="extraction ratio" rows={TOKEN_ROWS} size="thin" />
           </BentoCard>
 
           <BentoCard
             icon={OctagonX}
-            eyebrow="Honest about blocks"
             lead="A block is a typed failure."
             body="A challenge page returning 200 never comes back as markdown."
             span="third"
@@ -133,14 +130,13 @@ export function Performance() {
 
           <BentoCard
             icon={Activity}
-            eyebrow="Adaptive politeness"
             lead="Per-host concurrency ramps and backs off."
             body="A 429 lowers the ceiling for that host alone. The rest of the crawl keeps its pace."
             span="third"
             href="/crawl"
             linkLabel="How Crawl paces itself"
           >
-            <MeterPanel label="per-host concurrency · live" rows={HOST_ROWS} jitter={6} seed={29} />
+            <MeterPanel label="per-host concurrency · sample instance" rows={HOST_ROWS} />
           </BentoCard>
         </div>
       </div>

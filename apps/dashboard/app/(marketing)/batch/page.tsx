@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { ArrowRight, Layers, ListChecks, Webhook, Gauge } from 'lucide-react';
-import { SectionEyebrow } from '@/components/marketing/section-eyebrow';
 import { PillButton } from '@/components/marketing/pill-button';
 import { CodePanel } from '@/components/marketing/code-panel';
 import { AnimatedCode } from '@/components/marketing/animated-code';
@@ -75,13 +74,13 @@ $ curl localhost:7400/v1/batch/scrape/0d9f7c1e-…
 { "status": "completed", "total": 3, "completed": 3, "failed": 0, "data": [ … ] }`;
 
 const FEATURES = [
-  { icon: Layers, eyebrow: 'Supplied, not discovered', lead: 'A crawl whose frontier you wrote.', body: 'Nothing is followed and no sitemap is read. The list may span hosts; duplicates are dropped before the job exists.', evidence: 'maxDepth: 0 · allowExternal: true' },
-  { icon: ListChecks, eyebrow: 'Per-URL outcome', lead: 'One bad URL does not fail the batch.', body: 'Each item carries its own result; the job reports completed and failed counts alongside them.', evidence: 'outcomes · sample batch', meters: [
+  { icon: Layers, lead: 'A crawl whose frontier you wrote.', body: 'Nothing is followed and no sitemap is read. The list may span hosts; duplicates are dropped before the job exists.', evidence: 'maxDepth: 0 · allowExternal: true' },
+  { icon: ListChecks, lead: 'One bad URL does not fail the batch.', body: 'Each item carries its own result; the job reports completed and failed counts alongside them.', evidence: 'outcomes · sample batch', meters: [
     { label: 'completed', value: 96, accent: true },
     { label: 'failed', value: 4 },
   ] },
-  { icon: Webhook, eyebrow: 'Poll or push', lead: 'A job id in the 202, events if you want them.', body: 'Set webhook to receive started, page, completed and failed instead of polling. DELETE cancels and keeps finished results.', evidence: '"url": "/v1/batch/scrape/{jobId}"' },
-  { icon: Gauge, eyebrow: 'Same manners as /crawl', lead: 'Per-host politeness and robots.txt apply.', body: 'maxConcurrency caps each host, delay spaces requests, and adaptive politeness backs off on 429s. Same worker, same rules.', evidence: 'per-host concurrency · sample batch', meterSize: 'thin' as const, meters: [
+  { icon: Webhook, lead: 'A job id in the 202, events if you want them.', body: 'Set webhook to receive started, page, completed and failed instead of polling. DELETE cancels and keeps finished results.', evidence: '"url": "/v1/batch/scrape/{jobId}"' },
+  { icon: Gauge, lead: 'Per-host politeness and robots.txt apply.', body: 'maxConcurrency caps each host, delay spaces requests, and adaptive politeness backs off on 429s. Same worker, same rules.', evidence: 'per-host concurrency · sample batch', meterSize: 'thin' as const, meters: [
     { label: 'example.com', value: 75, display: '3 / 4' },
     { label: 'other.example', value: 25, display: '1 / 4' },
     { label: 'backed off', value: 0, display: '0' },
@@ -125,9 +124,9 @@ export default function BatchPage() {
       <section className="mx-auto mt-20 max-w-[960px]">
         <div data-reveal-group className="grid grid-cols-1 overflow-hidden rounded-panel border border-m-border-muted bg-m-surface shadow-card-sm sm:grid-cols-6">
           {FEATURES.map((feature, i) => (
-            <BentoCard key={feature.eyebrow} icon={feature.icon} eyebrow={feature.eyebrow} lead={feature.lead} body={feature.body} span={SPAN[i % SPAN.length]!}>
+            <BentoCard key={i} icon={feature.icon} lead={feature.lead} body={feature.body} span={SPAN[i % SPAN.length]!}>
               {feature.meters ? (
-                <MeterPanel rows={feature.meters} seed={i * 13 + 5} label={feature.evidence} {...(feature.meterSize ? { size: feature.meterSize } : {})} />
+                <MeterPanel rows={feature.meters} label={feature.evidence} {...(feature.meterSize ? { size: feature.meterSize } : {})} />
               ) : (
                 <EvidenceChip>{feature.evidence}</EvidenceChip>
               )}
@@ -146,7 +145,6 @@ export default function BatchPage() {
             seed={SEED + 7}
             className="absolute -top-7 right-0 hidden opacity-70 lg:block [mask-image:linear-gradient(to_right,transparent,black_30%,black_85%,transparent)]"
           />
-          <SectionEyebrow step="REQUEST" label="WIRE FORMAT" sub="from openapi.yaml" />
         </div>
         <div className="relative mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
           <CodePanel chrome="terminal" label="POST /v1/batch/scrape" copyText={REQUEST}>

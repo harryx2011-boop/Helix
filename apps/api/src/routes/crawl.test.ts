@@ -623,13 +623,41 @@ describe('crawl expansion', () => {
   });
 
   it('refuses to resume a job that is still running', async () => {
-    db.state.resumable = { api_key_id: null, status: 'running', request: {}, expires_at: future() };
+    // An unexpired lease is the evidence a worker is alive and holding it.
+    db.state.resumable = {
+      api_key_id: null,
+      status: 'running',
+      request: {},
+      expires_at: future(),
+      lease_expires_at: new Date(Date.now() + 60_000),
+    };
     const app = await buildApp();
 
     const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { resume: JOB } });
 
     expect(response.statusCode).toBe(409);
     expect(response.json().error).toBe('already_running');
+  });
+
+  /* A worker killed with -9 leaves the job at 'running' with a lease nobody
+   * renews. Refusing that as already_running is what made the strand
+   * permanent: the worker will not re-claim a 'running' row either, so the
+   * job had no way back. See 012_job_leases.sql. */
+  it('resumes a running job whose lease has lapsed', async () => {
+    db.state.resumable = {
+      api_key_id: null,
+      status: 'running',
+      request: {},
+      expires_at: future(),
+      lease_expires_at: new Date(Date.now() - 60_000),
+    };
+    db.state.requeued = 12;
+    const app = await buildApp();
+
+    const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { resume: JOB } });
+
+    expect(response.statusCode).toBe(202);
+    expect(response.json()).toMatchObject({ id: JOB, status: 'queued', resumed: true, requeued: 12 });
   });
 
   it('rejects url and resume together rather than guessing which seed wins', async () => {

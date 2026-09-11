@@ -124,6 +124,15 @@ function isAbort(error: unknown): boolean {
  */
 const CANCEL_POLL_MS = 2_000;
 
+/**
+ * How long a worker's hold on a job row survives without renewal.
+ *
+ * Matches the task lease in `persistent-frontier.ts`: the two expire on the
+ * same clock, so a dead worker's job and its tasks become reclaimable together
+ * rather than leaving a window where one is free and the other is not.
+ */
+const JOB_LEASE_SECONDS = 300;
+
 /** Path prefix a `maxPagesPerPath` budget is counted against. */
 function pathPrefixOf(url: string): string {
   try {
@@ -185,17 +194,37 @@ export class CrawlWorker {
       api_key_id: string | null;
     }>(
       `UPDATE jobs
-          SET status = 'running', started_at = now()
+          SET status = 'running',
+              started_at = COALESCE(started_at, now()),
+              lease_expires_at = now() + ($1 || ' seconds')::interval
         WHERE id = (
           SELECT id FROM jobs
-           WHERE status = 'queued' AND type IN ('crawl', 'batch_scrape')
+           WHERE type IN ('crawl', 'batch_scrape')
+             AND (
+               status = 'queued'
+               -- A job whose worker died holds a lease nobody is renewing.
+               -- Without this it is unreachable: no worker claims a 'running'
+               -- row, and resume refuses one. See 012_job_leases.sql.
+               OR (status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at < now())
+             )
            ORDER BY created_at
            FOR UPDATE SKIP LOCKED
            LIMIT 1
         )
         RETURNING id, request, api_key_id`,
+      [JOB_LEASE_SECONDS],
     );
     return rows[0];
+  }
+
+  /** Extend this worker's hold on the job it is crawling. */
+  async #renewJobLease(jobId: string): Promise<void> {
+    await getPool().query(
+      `UPDATE jobs
+          SET lease_expires_at = now() + ($2 || ' seconds')::interval
+        WHERE id = $1 AND status = 'running'`,
+      [jobId, JOB_LEASE_SECONDS],
+    );
   }
 
   async #isCancelled(jobId: string): Promise<boolean> {
@@ -387,6 +416,10 @@ export class CrawlWorker {
         // or a crawl of slow pages reclaims its own live work out from under
         // itself. The frontier decides whether a renewal is actually due.
         await frontier.renewLeases();
+        // On the same clock as the task leases: a job renewed less often than
+        // its tasks would be stolen out from under a worker that is plainly
+        // still working.
+        await this.#renewJobLease(jobId);
 
         if (await this.#isCancelled(jobId)) {
           this.#logger?.info({ jobId }, 'crawl cancelled');

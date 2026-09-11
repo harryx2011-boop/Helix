@@ -379,7 +379,12 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
         status: string;
         request: CrawlJobRequest;
         expires_at: Date;
-      }>(`SELECT api_key_id, status, request, expires_at FROM jobs WHERE id = $1 AND type = 'crawl'`, [jobId]);
+        lease_expires_at: Date | null;
+      }>(
+        `SELECT api_key_id, status, request, expires_at, lease_expires_at
+           FROM jobs WHERE id = $1 AND type = 'crawl'`,
+        [jobId],
+      );
 
       const existing = rows[0];
       // A job belonging to another key is reported as absent, not as forbidden:
@@ -400,7 +405,17 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
         });
       }
 
-      if (existing.status === 'running' || existing.status === 'queued') {
+      // A 'running' job whose lease has lapsed has no worker behind it: the
+      // process that claimed it died without releasing it. Refusing that as
+      // "already running" is what made the strand permanent, since the worker
+      // will not re-claim it either. An unexpired lease still means a live
+      // worker and is still refused.
+      // Absent as well as null: a row read before 012 applied carries no lease
+      // column at all, and treating that as "held" would restore the strand.
+      const leaseHeld = existing.lease_expires_at
+        ? existing.lease_expires_at.getTime() > Date.now()
+        : false;
+      if (existing.status === 'queued' || (existing.status === 'running' && leaseHeld)) {
         return reply.code(409).send({
           error: 'already_running',
           message: `Crawl job ${jobId} is ${existing.status} and does not need resuming.`,

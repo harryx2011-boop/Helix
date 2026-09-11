@@ -6,7 +6,7 @@
 -- find so it does not re-apply its own files at boot.
 --
 -- Regenerate after any migration lands:  node supabase/build-schema.mjs
--- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql | 0001_hosted_identity.sql, 0002_persona.sql, 0003_onboarding.sql, 0004_persona_sync.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql, 0008_browser_role_hardening.sql, 0009_persona_share_origin.sql
+-- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql, 012_job_leases.sql | 0001_hosted_identity.sql, 0002_persona.sql, 0003_onboarding.sql, 0004_persona_sync.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql, 0008_browser_role_hardening.sql, 0009_persona_share_origin.sql
 
 -- ============================================================================
 -- API migrations
@@ -540,6 +540,48 @@ CREATE INDEX IF NOT EXISTS request_usage_key_time
 CREATE INDEX IF NOT EXISTS request_usage_expiry
   ON request_usage (bucket_start);
 
+-- ---- apps/api/migrations/012_job_leases.sql
+-- Crawl job leases.
+--
+-- 010 gave `job_tasks` a visibility timeout, and it works: a worker that is
+-- SIGKILLed leaves its tasks reclaimable, and `reclaimExpired` returns them to
+-- the queue on the next sweep. The parent `jobs` row never got the same
+-- treatment. It is flipped to 'running' when claimed and reset only on the
+-- graceful shutdown path, so a hard kill leaves the job at 'running' with no
+-- process behind it.
+--
+-- That is worse than the task-level bug 010 fixed, because both escapes are
+-- closed at once: `#claimJob` selects `status = 'queued'`, so no worker will
+-- ever pick the job up again, and `POST /crawl {resume}` refuses it with
+-- `already_running` precisely because it is 'running'. The documented recovery
+-- path is shut against the exact failure it exists for. The tasks are
+-- reclaimable and nothing is left to claim them; the crawl polls as 'running'
+-- with `started_at` set, forever, and no failure row explains it.
+--
+-- Same remedy as 010, one level up: a claim becomes a lease. `lease_expires_at`
+-- is set when a job is claimed and extended while the worker still holds it.
+-- A job whose lease is in the past is claimable by any worker, whether or not
+-- the process that took it still exists — a timeout clears itself, a flag needs
+-- someone alive to clear it.
+--
+-- No `max_attempts` counterpart here. A poison URL kills a task and 010 already
+-- bounds that; a job is only ever reclaimed because its worker died, and
+-- capping job reclaims would strand long crawls on an unlucky restart.
+--
+-- Rollback:
+--   DROP INDEX IF EXISTS jobs_reclaimable;
+--   ALTER TABLE jobs DROP COLUMN IF EXISTS lease_expires_at;
+-- The claim predicate falls back to 'queued'-only, which loses interrupted
+-- jobs exactly as it did before.
+
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS lease_expires_at timestamptz;
+
+-- Mirrors job_tasks_reclaimable: running jobs are a small fraction of the
+-- table, and a full scan per claim would cost more than the work it recovers.
+CREATE INDEX IF NOT EXISTS jobs_reclaimable
+  ON jobs (lease_expires_at)
+  WHERE status = 'running';
+
 -- ============================================================================
 -- schema_migrations seed (what apps/api/src/db/migrate.ts would have recorded)
 -- ============================================================================
@@ -560,7 +602,8 @@ INSERT INTO schema_migrations (filename, checksum) VALUES
   ('008_monitor_json_options.sql', '28d1ca216258b985f27252b413d7511acbb18ccbb8d151c21f3b1b8a5323447a'),
   ('009_uptime_samples.sql', '44f4a473d4d6fe3bbe89df261c29a5fa9af0c476ba9a7b33fd7442fae1245860'),
   ('010_task_leases.sql', 'be4ed9bdb767e68aab42f10d304f8df030bc0abee3e4ff6c7b08c3e36f73fb0f'),
-  ('011_request_usage.sql', 'da301b5ca5498b03c69266b85b533a01d229020d9e0d0c9a8b6155547191684c')
+  ('011_request_usage.sql', 'da301b5ca5498b03c69266b85b533a01d229020d9e0d0c9a8b6155547191684c'),
+  ('012_job_leases.sql', 'fac3e17a266584ea8d12718fe560e893bb5e642b86a1728918626e592123ebd2')
 ON CONFLICT (filename) DO NOTHING;
 
 -- ============================================================================

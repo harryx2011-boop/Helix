@@ -321,6 +321,9 @@ export class BrowserPool {
   readonly #options: BrowserPoolOptions;
   readonly #logger: Log | undefined;
   #browsers: PooledBrowser[] = [];
+  /** Callers parked in `#acquire` because the fleet is at `size` and every
+   * browser is full. Woken in arrival order as contexts close. */
+  #waiters: (() => void)[] = [];
   #started = false;
   #closing = false;
 
@@ -402,22 +405,41 @@ export class BrowserPool {
   }
 
   /**
-   * Least-loaded non-retiring browser of the requested engine, launching one if
-   * all are saturated.
+   * Least-loaded non-retiring browser of the requested engine, launching one
+   * only while this engine is under `size`.
    *
    * Pools are keyed by engine rather than shared: a context inherits the process
    * it is opened in, so a Firefox request cannot borrow a Chromium browser's
    * spare capacity however idle it is.
+   *
+   * `size` bounds the fleet, not just the boot sequence. It used to be spent by
+   * `start()` and never consulted again, so a saturated pool launched a browser
+   * per overflowing request — at the defaults, the 81st concurrent render
+   * started a fifth Chrome and nothing stopped the sixth. Past the ceiling a
+   * caller waits for a context to close instead, which is backpressure rather
+   * than a queue of processes.
    */
   async #acquire(engine: RenderEngine): Promise<PooledBrowser> {
-    const available = this.#browsers
-      .filter((b) => b.engine === engine && !b.retiring && b.activeContexts < this.#options.maxContexts)
-      .sort((a, b) => a.activeContexts - b.activeContexts);
+    for (;;) {
+      const available = this.#browsers
+        .filter((b) => b.engine === engine && !b.retiring && b.activeContexts < this.#options.maxContexts)
+        .sort((a, b) => a.activeContexts - b.activeContexts);
 
-    const chosen = available[0];
-    if (chosen) return chosen;
+      const chosen = available[0];
+      if (chosen) return chosen;
 
-    return this.#launch(engine);
+      // Retiring browsers still hold their slot until they finish draining, so
+      // they count: replacing one early is what the ceiling exists to prevent.
+      const ofEngine = this.#browsers.filter((b) => b.engine === engine).length;
+      if (ofEngine < this.#options.size) return this.#launch(engine);
+
+      await new Promise<void>((resolve) => this.#waiters.push(resolve));
+    }
+  }
+
+  /** Wakes one caller parked in `#acquire`, after a context frees a slot. */
+  #releaseWaiter(): void {
+    this.#waiters.shift()?.();
   }
 
   /**
@@ -476,11 +498,13 @@ export class BrowserPool {
           await context.close().catch(() => undefined);
           pooled.pagesServed++;
           pooled.activeContexts--;
+          this.#releaseWaiter();
           void this.#maybeRecycle(pooled);
         },
       };
     } catch (error) {
       pooled.activeContexts--;
+      this.#releaseWaiter();
       throw error;
     }
   }
@@ -631,6 +655,7 @@ export class BrowserPool {
       await page?.close().catch(() => undefined);
       await context?.close().catch(() => undefined);
       pooled.activeContexts--;
+      this.#releaseWaiter();
       void this.#maybeRecycle(pooled);
     }
   }
@@ -886,6 +911,9 @@ export class BrowserPool {
 
   async close(): Promise<void> {
     this.#closing = true;
+    // Parked callers are woken before the browsers go: one still waiting on a
+    // slot that will never free would hold shutdown open indefinitely.
+    for (const wake of this.#waiters.splice(0)) wake();
     await Promise.all(this.#browsers.map((b) => b.browser.close().catch(() => undefined)));
     this.#browsers = [];
     this.#started = false;

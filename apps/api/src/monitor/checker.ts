@@ -230,6 +230,14 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
   }
 
   const textDiff = diffText(before, after, monitor.diff.granularity);
+
+  // A whitespace-only edit differs verbatim but tokenizes to no added or
+  // removed tokens, since whitespace tokens are not counted as changes. Left
+  // alone that reaches the trigger with an empty diff and fires on nothing.
+  if (textDiff.added === 0 && textDiff.removed === 0) {
+    return finish({ reason: 'filtered', changed: false, diff: null, snapshot: null });
+  }
+
   const verdict = evaluateTrigger(monitor.trigger, { before, after, diff: textDiff });
 
   // The baseline moves whenever the content really differs, so the next

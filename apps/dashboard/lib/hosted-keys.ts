@@ -66,10 +66,14 @@ export async function listHostedKeys(): Promise<HostedKey[]> {
   return body.keys;
 }
 
+export function hostedKeyBody(name: string, rateLimit: number | undefined): { name: string; rateLimit?: number } {
+  return rateLimit !== undefined ? { name, rateLimit } : { name };
+}
+
 export async function createHostedKey(name: string, rateLimit?: number): Promise<CreatedHostedKey> {
   return (await call('', {
     method: 'POST',
-    body: JSON.stringify(rateLimit ? { name, rateLimit } : { name }),
+    body: JSON.stringify(hostedKeyBody(name, rateLimit)),
   })) as CreatedHostedKey;
 }
 

@@ -331,7 +331,11 @@ export class CrawlWorker {
 
     // Seed from the sitemap too: link-following alone misses pages nothing
     // links to, which on a documentation site is most of the deep content.
-    if (freshStart && request.sitemap !== 'skip') {
+    //
+    // Entries arrive at depth 1, so a crawl capped at the seed page rejects
+    // every one of them. Discovering a sitemap it cannot use costs the fetch
+    // and the whole walk of a sitemap index for nothing.
+    if (freshStart && request.sitemap !== 'skip' && request.maxDepth !== 0) {
       try {
         const origin = new URL(request.url).origin;
         const rules = await robots.forUrl(request.url);
@@ -342,6 +346,12 @@ export class CrawlWorker {
         this.#logger?.debug({ error, jobId }, 'sitemap seeding failed');
       }
     }
+
+    // The lease taken at claim time has been running through resume, sitemap
+    // discovery and the incremental state load, and the crawl loop only renews
+    // it on its first poll. A slow preamble is long enough for another worker
+    // to reclaim a job that is plainly still being worked on.
+    await this.#renewJobLease(jobId);
 
     await frontier.flush();
     await getPool().query('UPDATE jobs SET total = $2 WHERE id = $1', [jobId, frontier.enqueued]);
@@ -592,9 +602,15 @@ export class CrawlWorker {
             else pathCapped++;
           }
 
+          // Claimed before anything is stored. A lease that expired mid-fetch
+          // has been reclaimed, and the worker holding it now will store this
+          // page itself — writing it here too is a duplicate `documents` row
+          // and a page counted twice.
+          const held = await frontier.markCompleted(item.url);
+
           // An unchanged page still contributes its links — the page did not
           // move, but the pages it points at may have.
-          if (!contentUnchanged && !dropped) {
+          if (held && !contentUnchanged && !dropped) {
             // Structured extraction, applied to every kept page. A model
             // failure costs the page its `json` field, never the crawl: the
             // page was read, and dropping 4,000 markdown documents because one
@@ -668,13 +684,11 @@ export class CrawlWorker {
                 favicon: result.content.favicon,
               },
             });
-          } else if (contentUnchanged) {
+          } else if (held && contentUnchanged) {
             // Counted only for the unchanged case: a page dropped by a filter
             // or a path budget was read and is not evidence the site is static.
             unchanged++;
           }
-
-          await frontier.markCompleted(item.url);
 
           // Expand the frontier from what this page linked to.
           for (const link of result.content.links) {

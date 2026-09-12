@@ -118,8 +118,10 @@ export async function registerSettings(app: FastifyInstance, deps: SettingsRoute
 
     const cleared = await clearOverride(key);
     // Reverting a live setting must take the environment's value now, not at
-    // the next restart, or the screen and the running instance disagree.
-    const applied = cleared ? applyLive(key, deps.envValues[key], deps.live) : false;
+    // the next restart, or the screen and the running instance disagree. With
+    // no environment value to revert to, there is nothing to apply: calling
+    // the setter would hand it `undefined` where it expects a real value.
+    const applied = cleared && deps.envValues[key] !== undefined ? applyLive(key, deps.envValues[key], deps.live) : false;
 
     return reply.send({ success: true, key, cleared, applied, restartRequired: cleared && !applied });
   });

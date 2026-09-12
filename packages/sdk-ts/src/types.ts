@@ -522,7 +522,7 @@ export interface Job {
   finishedAt?: string;
   expiresAt?: string;
   error?: string | null;
-  next?: string;
+  next?: string | null;
   data?: JobDocument[];
   usage?: JobUsage;
 }

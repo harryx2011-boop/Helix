@@ -98,7 +98,10 @@ const db = vi.hoisted(() => {
     }
 
     if (t.includes("SET status = 'completed'")) {
-      const row = state.rows.find((r) => r.url === values[1]);
+      const worker = values[2] as string | undefined;
+      const row = state.rows.find(
+        (r) => r.url === values[1] && (!t.includes('claimed_by = $3') || r.claimedBy === worker),
+      );
       if (row) {
         row.status = 'completed';
         row.claimedBy = null;
@@ -108,7 +111,10 @@ const db = vi.hoisted(() => {
     }
 
     if (t.includes("SET status = 'failed'")) {
-      const row = state.rows.find((r) => r.url === values[1]);
+      const worker = values[2] as string | undefined;
+      const row = state.rows.find(
+        (r) => r.url === values[1] && (!t.includes('claimed_by = $3') || r.claimedBy === worker),
+      );
       if (row) {
         row.status = 'failed';
         row.attempts += 1;
@@ -366,5 +372,56 @@ describe('PersistentFrontier — in-flight work', () => {
     // The worker loop ends on pending === 0. Forgetting handed-out work here
     // would end the crawl while a page was still being fetched.
     expect(frontier.pending).toBe(1);
+  });
+});
+
+describe('PersistentFrontier — a reclaimed task is not marked by its old holder', () => {
+  it('does not complete a task another worker now holds', async () => {
+    const a = new PersistentFrontier(JOB_ID, options, 'worker-a');
+    a.add('https://example.com/a', 0);
+    await a.flush();
+    await a.next(() => true);
+
+    // A's lease expires and B reclaims and re-claims the task.
+    db.state.now += 6 * 60 * 1000;
+    const b = new PersistentFrontier(JOB_ID, options, 'worker-b');
+    await b.resume();
+    await b.next(() => true);
+    expect(db.state.rows[0]?.claimedBy).toBe('worker-b');
+
+    // A finally finishes the page it started and reports it.
+    const marked = await a.markCompleted('https://example.com/a');
+
+    expect(marked, 'a stale holder must not flip a row it no longer owns').toBe(false);
+    expect(db.state.rows[0]?.status).toBe('running');
+    expect(db.state.rows[0]?.claimedBy).toBe('worker-b');
+  });
+
+  it('does not fail a task another worker now holds', async () => {
+    const a = new PersistentFrontier(JOB_ID, options, 'worker-a');
+    a.add('https://example.com/a', 0);
+    await a.flush();
+    await a.next(() => true);
+
+    db.state.now += 6 * 60 * 1000;
+    const b = new PersistentFrontier(JOB_ID, options, 'worker-b');
+    await b.resume();
+    await b.next(() => true);
+
+    const marked = await a.markFailed('https://example.com/a');
+
+    expect(marked).toBe(false);
+    expect(db.state.rows[0]?.status).toBe('running');
+    expect(db.state.rows[0]?.claimedBy).toBe('worker-b');
+  });
+
+  it('reports the mark as applied when the claim is still this worker own', async () => {
+    const frontier = new PersistentFrontier(JOB_ID, options, 'worker-a');
+    frontier.add('https://example.com/a', 0);
+    await frontier.flush();
+    await frontier.next(() => true);
+
+    expect(await frontier.markCompleted('https://example.com/a')).toBe(true);
+    expect(db.state.rows[0]?.status).toBe('completed');
   });
 });

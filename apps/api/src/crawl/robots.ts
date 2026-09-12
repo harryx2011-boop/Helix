@@ -1,5 +1,6 @@
 import robotsParser from 'robots-parser';
 import type { Log } from '../core/logger.js';
+import { isPrivateHost } from '../core/url-guard.js';
 
 /**
  * robots.txt, per RFC 9309.
@@ -16,6 +17,7 @@ import type { Log } from '../core/logger.js';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // RFC 9309 suggests at most 24h
 const MAX_ROBOTS_BYTES = 512 * 1024; // RFC 9309 requires parsing at least 500 KiB
 const FETCH_TIMEOUT_MS = 10_000;
+const MAX_REDIRECTS = 5;
 
 export interface RobotsRules {
   isAllowed(url: string): boolean;
@@ -39,10 +41,12 @@ export class RobotsCache {
   readonly #cache = new Map<string, CacheEntry>();
   readonly #userAgent: string;
   readonly #logger: Log | undefined;
+  readonly #fetchImpl: typeof fetch;
 
-  constructor(userAgent: string, logger?: Log) {
+  constructor(userAgent: string, logger?: Log, fetchImpl: typeof fetch = fetch) {
     this.#userAgent = userAgent;
     this.#logger = logger;
+    this.#fetchImpl = fetchImpl;
   }
 
   async forUrl(url: string): Promise<RobotsRules> {
@@ -65,11 +69,31 @@ export class RobotsCache {
     const robotsUrl = `${origin}/robots.txt`;
 
     try {
-      const response = await fetch(robotsUrl, {
-        headers: { 'user-agent': this.#userAgent },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-        redirect: 'follow',
-      });
+      // Redirects are followed by hand so every hop is checked: a public host
+      // answering 302 to an internal address is the usual way around a check
+      // made only on the first URL.
+      let current = new URL(robotsUrl);
+      let response: Response;
+
+      for (let hop = 0; ; hop += 1) {
+        if (isPrivateHost(current)) {
+          this.#logger?.debug({ robotsUrl, blocked: current.href }, 'robots.txt redirected to a private address');
+          return PERMISSIVE;
+        }
+
+        response = await this.#fetchImpl(current.toString(), {
+          headers: { 'user-agent': this.#userAgent },
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+          redirect: 'manual',
+        });
+
+        const location = response.headers.get('location');
+        if (response.status < 300 || response.status >= 400 || !location) break;
+
+        await response.body?.cancel().catch(() => undefined);
+        if (hop >= MAX_REDIRECTS) return PERMISSIVE;
+        current = new URL(location, current);
+      }
 
       // 404 means no rules exist, which is permission. A 5xx means we could not
       // find out — and guessing "allowed" there would be presumptuous, but

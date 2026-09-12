@@ -83,15 +83,21 @@ export async function upsertProviderKey(
     keyLast4 = last4(opts.apiKey);
   }
 
+  /* COALESCE against the existing row on every conflicting column: a PUT that
+     only touches baseUrl (the local-provider case, e.g. re-pointing a running
+     vLLM instance after a key was already stored for it) carries no apiKey,
+     and EXCLUDED.key_ciphertext alone would be NULL — overwriting a key that
+     is still good. There is no partial-clear path into this route; removing a
+     provider entirely goes through deleteProviderKey instead. */
   const { rows } = await getPool().query<{ model: string | null; base_url: string | null }>(
     `INSERT INTO provider_keys (api_key_id, provider, key_ciphertext, key_iv, key_last4, model, base_url)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      ON CONFLICT (api_key_id, provider) DO UPDATE
-       SET key_ciphertext = EXCLUDED.key_ciphertext,
-           key_iv = EXCLUDED.key_iv,
-           key_last4 = EXCLUDED.key_last4,
-           model = EXCLUDED.model,
-           base_url = EXCLUDED.base_url,
+       SET key_ciphertext = COALESCE(EXCLUDED.key_ciphertext, provider_keys.key_ciphertext),
+           key_iv = COALESCE(EXCLUDED.key_iv, provider_keys.key_iv),
+           key_last4 = COALESCE(EXCLUDED.key_last4, provider_keys.key_last4),
+           model = COALESCE(EXCLUDED.model, provider_keys.model),
+           base_url = COALESCE(EXCLUDED.base_url, provider_keys.base_url),
            updated_at = now()
      RETURNING model, base_url`,
     [apiKeyId, provider, ciphertext, iv, keyLast4, opts.model ?? null, opts.baseUrl ?? null],

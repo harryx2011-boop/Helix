@@ -154,6 +154,18 @@ describe('runCheck', () => {
     expect(called).toBe(false);
   });
 
+  it('filters a whitespace-only edit at any sensitivity instead of firing on a zero-content diff', async () => {
+    const { store, monitor } = await setup({ sensitivity: 'any' });
+    const fetchPage = pages('a b', 'a  b');
+    await check(store, monitor.id, fetchPage);
+    const outcome = await check(store, monitor.id, fetchPage);
+
+    expect(outcome.check.reason).toBe('filtered');
+    expect(outcome.check.changed).toBe(false);
+    expect(store.snapshots).toHaveLength(1);
+    expect(store.deliveries).toHaveLength(0);
+  });
+
   it('filters timestamp noise at significant sensitivity', async () => {
     const { store, monitor } = await setup({ sensitivity: 'significant' });
     const fetchPage = pages('Updated 2 minutes ago. $29', 'Updated 9 minutes ago. $29');

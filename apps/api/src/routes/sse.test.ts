@@ -105,7 +105,7 @@ describe('socketSink', () => {
     socket.bufferedAmount = 0;
     sink.frame('current');
     const frames = parsed().filter((m) => m.type === 'frame');
-    expect(frames.map((m) => m.data)).toEqual(['newest', 'current']);
+    expect(frames.map((m) => m.data)).toEqual(['current']);
   });
 
   it('writes nothing to a socket that is not open', () => {
@@ -126,5 +126,17 @@ describe('socketSink', () => {
     sink.event('closed', 'idle_timeout');
 
     expect(parsed().map((m) => m.type)).toEqual(['session', 'ping', 'closed']);
+  });
+
+  it('sends only one frame per call once backpressure clears', () => {
+    const { socket, parsed } = fakeSocket(1024 * 1024);
+    const sink = socketSink(socket);
+    sink.frame('A');
+    sink.frame('B');
+    socket.bufferedAmount = 0;
+    sink.frame('C');
+
+    const frames = parsed().filter((m) => m.type === 'frame');
+    expect(frames.map((m) => m.data)).toEqual(['C']);
   });
 });

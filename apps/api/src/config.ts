@@ -14,12 +14,23 @@ const bool = (d: boolean) =>
     .optional()
     .transform((v) => (v === undefined ? d : v === 'true' || v === '1'));
 
+const INTEGER_PATTERN = /^-?\d+$/;
+
 const int = (d: number) =>
   z
     .string()
     .optional()
-    .transform((v) => (v === undefined ? d : Number.parseInt(v, 10)))
+    .transform((v, ctx) => {
+      if (v === undefined || v === '') return d;
+      if (!INTEGER_PATTERN.test(v)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Expected an integer, received "${v}"` });
+        return z.NEVER;
+      }
+      return Number(v);
+    })
     .pipe(z.number().int());
+
+const positiveInt = (d: number) => int(d).pipe(z.number().min(1));
 
 const ConfigSchema = z.object({
   port: int(7400),
@@ -51,8 +62,8 @@ const ConfigSchema = z.object({
   webhookSecret: z.string().optional(),
   webhookMaxAttempts: int(20),
 
-  browserPoolSize: int(4),
-  browserMaxContexts: int(20),
+  browserPoolSize: positiveInt(4),
+  browserMaxContexts: positiveInt(20),
   /** Recycle a browser process after this many pages, to bound memory growth. */
   browserRecycleAfter: int(250),
   lightpandaEnabled: bool(false),

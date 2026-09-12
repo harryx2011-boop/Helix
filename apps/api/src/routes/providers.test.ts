@@ -332,6 +332,47 @@ describe('PUT /v1/providers/:provider', () => {
     expect(db.state.rows).toHaveLength(1);
   });
 
+  it('still allows a LAN base URL for a local runtime', async () => {
+    app = await build();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/ollama',
+      headers: { 'x-test-key': 'a' },
+      payload: { baseUrl: 'http://192.168.1.5:11434' },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(db.state.rows).toHaveLength(1);
+  });
+
+  /* Loopback and LAN are where a local runtime lives; link-local and CGNAT are
+     not. 169.254.169.254 is the cloud metadata endpoint, and naming a provider
+     "ollama" must not be enough to reach it. */
+  it('refuses link-local and CGNAT on a local runtime, and stores nothing', async () => {
+    app = await build();
+    for (const baseUrl of ['http://169.254.169.254/', 'http://169.254.1.1:11434', 'http://100.64.0.1:11434']) {
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/v1/providers/ollama',
+        headers: { 'x-test-key': 'a' },
+        payload: { baseUrl },
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.json().field).toBe('baseUrl');
+    }
+    expect(db.state.rows).toHaveLength(0);
+  });
+
+  it('names the refused range so the operator can tell it from an ordinary rejection', async () => {
+    app = await build();
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/ollama',
+      headers: { 'x-test-key': 'a' },
+      payload: { baseUrl: 'http://169.254.169.254/' },
+    });
+    expect(response.json().message).toContain('169.254.0.0/16');
+  });
+
   it('refuses a non-http scheme on a local runtime too', async () => {
     app = await build();
     const response = await app.inject({

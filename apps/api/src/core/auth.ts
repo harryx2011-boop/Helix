@@ -67,8 +67,26 @@ export interface AuthDeps {
 export function registerAuth(app: FastifyInstance, deps: AuthDeps): void {
   const open = deps.open ?? ['/v1/health'];
 
+  /**
+   * The open list is a prefix match, so anything that makes a protected path
+   * start with an open one is a bypass: `/v1/health/../keys` reads as open,
+   * and a normalising proxy in front turns that into a real request for
+   * `/v1/keys`. Fastify's matched route is the authority where it exists; the
+   * raw path is otherwise stripped of its query and refused outright when it
+   * carries a traversal segment in any spelling.
+   */
+  const isOpen = (request: { url: string; routeOptions?: { url?: string | undefined } }): boolean => {
+    const matched = request.routeOptions?.url;
+    if (typeof matched === 'string') return open.some((prefix) => matched.startsWith(prefix));
+
+    const path = request.url.split(/[?#]/)[0] ?? '';
+    if (/%2e/i.test(path)) return false;
+    if (path.split('/').includes('..') || path.split('/').includes('.')) return false;
+    return open.some((prefix) => path.startsWith(prefix));
+  };
+
   app.addHook('onRequest', async (request, reply) => {
-    if (open.some((prefix) => request.url.startsWith(prefix))) return;
+    if (isOpen(request)) return;
 
     const ticket = request.headers[INTERNAL_TICKET_HEADER];
     if (typeof ticket === 'string') {

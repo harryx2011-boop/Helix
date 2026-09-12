@@ -46,7 +46,7 @@ Converter is a route group at `/convert` inside the dashboard, not a standalone 
 
 ## Versioning
 
-SemVer; currently **1.22.0** in the root `package.json` — the one source of truth. Mirror the product version into `apps/api`, `apps/dashboard` and `openapi.yaml` **in the same commit** — `openapi.yaml` was missed for five releases and sat at 1.17.0. `packages/sdk-ts`, `packages/cli`, `apps/extract` (pyproject + `__init__.py`) and `apps/fetch` (Cargo.toml) carry their **own** lines, bumped only when that package changes. Grep the old string before calling a bump done; tag `v<version>`, never moved.
+SemVer; currently **1.23.1** in the root `package.json` — the one source of truth. Mirror the product version into `apps/api`, `apps/dashboard` and `openapi.yaml` **in the same commit** — `openapi.yaml` was missed for five releases and sat at 1.17.0. `packages/sdk-ts`, `packages/cli`, `apps/extract` (pyproject + `__init__.py`) and `apps/fetch` (Cargo.toml) carry their **own** lines, bumped only when that package changes. Grep the old string before calling a bump done; tag `v<version>`, never moved.
 
 ## Working rules
 

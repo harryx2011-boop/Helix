@@ -85,7 +85,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ({ key, row } = await createApiKey({
       profileId: profile.id,
       name,
-      ...(body?.rateLimit ? { rateLimit: body.rateLimit } : {}),
+      ...(typeof body?.rateLimit === 'number' ? { rateLimit: body.rateLimit } : {}),
     }));
   } catch (err) {
     return failed('create', err);

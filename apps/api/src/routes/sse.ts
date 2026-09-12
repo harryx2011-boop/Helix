@@ -88,13 +88,6 @@ export function socketSink(target: SocketTarget): SseSink {
     target.send(payload);
   };
 
-  const flush = () => {
-    if (pending === undefined || target.bufferedAmount > MAX_BUFFERED_BYTES) return;
-    const next = pending;
-    pending = undefined;
-    put(JSON.stringify({ type: 'frame', data: next }));
-  };
-
   return {
     event: (name, data) => put(JSON.stringify({ type: name, data })),
     // A WebSocket needs no heartbeat comment to stay open, but the caller sends
@@ -106,7 +99,9 @@ export function socketSink(target: SocketTarget): SseSink {
         pending = data;
         return;
       }
-      flush();
+      // A pending frame is now stale: the current one replaces it rather than
+      // being sent first, which would be two frames for one call.
+      pending = undefined;
       put(JSON.stringify({ type: 'frame', data }));
     },
     get dropped() {

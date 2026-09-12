@@ -161,7 +161,7 @@ export async function fetchJobView(id: string, options: JobViewOptions): Promise
       finishedAt: job.finished_at,
       expiresAt: job.expires_at,
       error: job.error,
-      next: hasMore ? `${options.basePath}/${job.id}?cursor=${nextOffset}` : undefined,
+      next: hasMore ? `${options.basePath}/${job.id}?cursor=${nextOffset}` : null,
       data: documents.map((doc) => ({
         url: doc.url,
         ...doc.content,

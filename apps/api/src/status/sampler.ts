@@ -26,6 +26,7 @@ export class StatusSampler {
   readonly #logger: Log | undefined;
   #timer: NodeJS.Timeout | undefined;
   #loggedFailure = false;
+  #ticking = false;
 
   constructor(options: SamplerOptions) {
     this.#deps = options;
@@ -48,6 +49,8 @@ export class StatusSampler {
   }
 
   async tick(): Promise<void> {
+    if (this.#ticking) return;
+    this.#ticking = true;
     try {
       const services = await runServiceChecks(this.#deps);
       const client = await this.#pool.connect();
@@ -76,6 +79,8 @@ export class StatusSampler {
         this.#logger?.error({ error }, 'status sampler could not write this tick — retrying next tick');
         this.#loggedFailure = true;
       }
+    } finally {
+      this.#ticking = false;
     }
   }
 }

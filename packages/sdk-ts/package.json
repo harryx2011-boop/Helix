@@ -1,6 +1,6 @@
 {
   "name": "@helix/sdk",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Typed client for Helix, a frontier utility hub.",
   "license": "Apache-2.0",
   "type": "module",

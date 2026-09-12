@@ -147,6 +147,18 @@ describe('boundedDiff', () => {
     const bounded = boundedDiff(diff, 10);
     expect(bounded).toMatchObject({ added: 1, removed: 1, ops: [], text: '', truncated: true });
   });
+
+  it('keeps a diff exactly at maxBytes and drops one byte past it', () => {
+    const diff = diffText('a b c', 'a x c', 'word');
+    const exact = Buffer.byteLength(JSON.stringify(diff), 'utf8');
+
+    expect(boundedDiff(diff, exact)).toBe(diff);
+
+    const bounded = boundedDiff(diff, exact - 1);
+    expect(bounded.truncated).toBe(true);
+    expect(bounded.ops).toEqual([]);
+    expect(bounded.text).toBe('');
+  });
 });
 
 describe('diffJson', () => {
@@ -193,6 +205,11 @@ describe('diffJson', () => {
     const before = { b: 2, a: 1 };
     const after = { a: 1, b: 2 };
     expect(diffJson(before, after).fields).toEqual([]);
+  });
+
+  it('names the root path when the whole document is a changed scalar', () => {
+    const diff = diffJson(1, 2);
+    expect(diff.fields).toEqual([{ path: '$', before: 1, after: 2 }]);
   });
 });
 

@@ -1,3 +1,4 @@
+import { Cron } from 'croner';
 import { describe, expect, it } from 'vitest';
 import {
   assertMinimumInterval,
@@ -16,7 +17,6 @@ describe('everyToCron', () => {
     expect(everyToCron('6h')).toBe('0 */6 * * *');
     expect(everyToCron('1h')).toBe('0 * * * *');
     expect(everyToCron('1d')).toBe('0 0 * * *');
-    expect(everyToCron('2d')).toBe('0 0 */2 * *');
     expect(everyToCron('120m')).toBe('0 */2 * * *');
   });
 
@@ -25,6 +25,58 @@ describe('everyToCron', () => {
     expect(() => everyToCron('36h')).toThrow(ScheduleError);
     expect(() => everyToCron('soon')).toThrow(ScheduleError);
     expect(() => everyToCron('0h')).toThrow(ScheduleError);
+  });
+
+  // A 45-minute cron fires at :00 and :45, a 15-minute gap, not 45. Any
+  // minute amount that does not divide 60 has the same problem, and the
+  // equivalent is true for hours over a day and any multi-day interval: a
+  // day-of-month step restarts the count at 1 every month, so a 10-day
+  // schedule fires on day 21, day 31 (or the 1st), day 11 -- never a steady
+  // 10 days apart.
+  it('rejects minute amounts that do not divide 60', () => {
+    expect(() => everyToCron('45m')).toThrow(ScheduleError);
+    expect(() => everyToCron('45m')).toThrow(/cron expression/);
+  });
+
+  it('rejects hour amounts that do not divide 24', () => {
+    expect(() => everyToCron('5h')).toThrow(ScheduleError);
+  });
+
+  it('rejects any day amount greater than 1', () => {
+    expect(() => everyToCron('7d')).toThrow(ScheduleError);
+    expect(() => everyToCron('10d')).toThrow(ScheduleError);
+    expect(() => everyToCron('16d')).toThrow(ScheduleError);
+  });
+
+  it('accepts amounts that divide evenly and produces an equally spaced schedule', () => {
+    expect(everyToCron('15m')).toBe('*/15 * * * *');
+    expect(everyToCron('30m')).toBe('*/30 * * * *');
+    expect(everyToCron('1h')).toBe('0 * * * *');
+    expect(everyToCron('6h')).toBe('0 */6 * * *');
+    expect(everyToCron('1d')).toBe('0 0 * * *');
+  });
+
+  it('produces a cron expression whose first several runs are equally spaced', () => {
+    for (const every of ['15m', '30m', '1h', '6h', '1d']) {
+      const cron = everyToCron(every);
+      const job = new Cron(cron, { timezone: 'UTC', paused: true });
+      const runs: Date[] = [];
+      let cursor: Date | undefined = new Date('2026-01-01T00:00:00Z');
+      for (let i = 0; i < 6; i += 1) {
+        const next = job.nextRun(cursor);
+        if (!next) break;
+        runs.push(next);
+        cursor = next;
+      }
+      job.stop();
+
+      expect(runs.length).toBe(6);
+      const gaps = new Set<number>();
+      for (let i = 1; i < runs.length; i += 1) {
+        gaps.add(runs[i]!.getTime() - runs[i - 1]!.getTime());
+      }
+      expect(gaps.size, `${every} -> ${cron} produced uneven gaps`).toBe(1);
+    }
   });
 });
 

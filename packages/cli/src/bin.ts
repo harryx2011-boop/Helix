@@ -34,7 +34,7 @@ Writes
 
 const VALUED = new Set(['key', 'client', 'mcp-url', 'site-url']);
 
-async function main(argv: string[]): Promise<number> {
+export async function main(argv: string[]): Promise<number> {
   let parsed;
   try {
     parsed = parseArgs(argv, VALUED);
@@ -51,7 +51,7 @@ async function main(argv: string[]): Promise<number> {
   const command = parsed.positional[0];
   if (!command || flagSet(parsed, 'help')) {
     console.log(HELP);
-    return command ? 0 : 1;
+    return command || flagSet(parsed, 'help') ? 0 : 1;
   }
 
   if (command !== 'init') {
@@ -83,4 +83,6 @@ async function main(argv: string[]): Promise<number> {
   }
 }
 
-process.exitCode = await main(process.argv.slice(2));
+if (import.meta.url === `file://${process.argv[1]}`) {
+  process.exitCode = await main(process.argv.slice(2));
+}

@@ -273,27 +273,38 @@ export class PersistentFrontier {
     return [...this.#claimed.map((item) => item.url), ...this.#inFlight.keys()];
   }
 
-  async markCompleted(url: string): Promise<void> {
+  /**
+   * Record a finished page, but only while this worker still holds the claim.
+   *
+   * `claimed_by` is the same guard `release()` carries, and for the same reason:
+   * a worker whose lease expired mid-fetch is no longer the owner of that row,
+   * and flipping it to a terminal status would take the page away from the
+   * worker now fetching it and store the document twice. The caller is told
+   * whether the row moved so it can drop a result the queue has moved past.
+   */
+  async markCompleted(url: string): Promise<boolean> {
     this.#inFlight.delete(url);
     // The lease is cleared with the status. A terminal row keeping a stale
     // expiry is what a reclaim sweep would read as abandoned work.
-    await getPool().query(
+    const { rowCount } = await getPool().query(
       `UPDATE job_tasks
           SET status = 'completed', claimed_at = NULL, claimed_by = NULL, lease_expires_at = NULL
-        WHERE job_id = $1 AND url = $2`,
-      [this.#jobId, url],
+        WHERE job_id = $1 AND url = $2 AND claimed_by = $3`,
+      [this.#jobId, url, this.#workerId],
     );
+    return (rowCount ?? 0) > 0;
   }
 
-  async markFailed(url: string): Promise<void> {
+  async markFailed(url: string): Promise<boolean> {
     this.#inFlight.delete(url);
-    await getPool().query(
+    const { rowCount } = await getPool().query(
       `UPDATE job_tasks
           SET status = 'failed', attempts = attempts + 1,
               claimed_at = NULL, claimed_by = NULL, lease_expires_at = NULL
-        WHERE job_id = $1 AND url = $2`,
-      [this.#jobId, url],
+        WHERE job_id = $1 AND url = $2 AND claimed_by = $3`,
+      [this.#jobId, url, this.#workerId],
     );
+    return (rowCount ?? 0) > 0;
   }
 
   /** Return unfetched claims to the queue, so a shutdown loses nothing. */

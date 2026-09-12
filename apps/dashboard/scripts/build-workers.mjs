@@ -12,11 +12,77 @@ import { fileURLToPath } from 'node:url';
 import { basename, dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const workersDir = join(here, '..', 'lib', 'converter', 'engine', 'workers');
+const engineDir = join(here, '..', 'lib', 'converter', 'engine');
+const workersDir = join(engineDir, 'workers');
 const outDir = join(here, '..', 'public', 'workers');
 const nodeModules = join(here, '..', '..', '..', 'node_modules');
+const ffmpegWorkerSrc = join(nodeModules, '@ffmpeg', 'ffmpeg', 'dist', 'esm', 'worker.js');
 
 const entries = readdirSync(workersDir).filter((f) => f.endsWith('.worker.ts'));
+
+function findWasmFiles(dir, out = []) {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    const info = statSync(full);
+    if (info.isDirectory()) {
+      if (entry === '.bin') continue;
+      findWasmFiles(full, out);
+    } else if (entry.endsWith('.wasm')) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+const wasmSources = ['@jsquash', 'libheif-js'].flatMap((pkg) => {
+  const pkgDir = join(nodeModules, pkg);
+  try {
+    statSync(pkgDir);
+  } catch {
+    return [];
+  }
+  return findWasmFiles(pkgDir);
+});
+
+// Every output this script produces is either an esbuild bundle or a copy of
+// a wasm source. A copy keeps the source's own mtime (Windows copyFileSync
+// does not stamp "now"), so an output is stale only when it is strictly
+// older than the input that produces it — never when the two are equal.
+function isStale(outputPath, inputMtime) {
+  try {
+    return statSync(outputPath).mtimeMs < inputMtime;
+  } catch {
+    return true;
+  }
+}
+
+if (!process.env.FORCE_WORKERS && !process.argv.includes('--force')) {
+  const scriptMtime = statSync(fileURLToPath(import.meta.url)).mtimeMs;
+  const sharedInputMtime = Math.max(
+    scriptMtime,
+    ...readdirSync(engineDir)
+      .filter((f) => f.endsWith('.ts'))
+      .map((f) => statSync(join(engineDir, f)).mtimeMs),
+  );
+
+  const stale =
+    entries.some((f) =>
+      isStale(
+        join(outDir, f.replace(/\.ts$/, '.js')),
+        Math.max(sharedInputMtime, statSync(join(workersDir, f)).mtimeMs),
+      ),
+    ) ||
+    isStale(join(outDir, 'worker.js'), Math.max(scriptMtime, statSync(ffmpegWorkerSrc).mtimeMs)) ||
+    // The wasm copy itself never advances past its source's own mtime, so an
+    // edit to this script cannot make a copy "stale" the way it does a
+    // bundle — only a newer wasm source can.
+    wasmSources.some((p) => isStale(join(outDir, basename(p)), statSync(p).mtimeMs));
+
+  if (!stale) {
+    console.log('workers up to date');
+    process.exit(0);
+  }
+}
 
 await build({
   entryPoints: entries.map((f) => join(workersDir, f)),
@@ -38,7 +104,7 @@ await build({
 // relative paths instead of flattening — or load() hangs forever waiting on
 // a worker that never started.
 await build({
-  entryPoints: [join(nodeModules, '@ffmpeg', 'ffmpeg', 'dist', 'esm', 'worker.js')],
+  entryPoints: [ffmpegWorkerSrc],
   outfile: join(outDir, 'worker.js'),
   bundle: true,
   format: 'esm',
@@ -53,34 +119,12 @@ await build({
 // runtime relative to the worker script's own URL (`locateFile`), so esbuild
 // never sees the reference — the files have to be copied alongside the
 // bundled JS by hand, flattened to the bare names those modules expect.
-function findWasmFiles(dir, out = []) {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    const info = statSync(full);
-    if (info.isDirectory()) {
-      if (entry === '.bin') continue;
-      findWasmFiles(full, out);
-    } else if (entry.endsWith('.wasm')) {
-      out.push(full);
-    }
-  }
-  return out;
-}
-
 mkdirSync(outDir, { recursive: true });
 let copied = 0;
-for (const pkg of ['@jsquash', 'libheif-js']) {
-  const pkgDir = join(nodeModules, pkg);
-  try {
-    statSync(pkgDir);
-  } catch {
-    continue;
-  }
-  for (const wasmPath of findWasmFiles(pkgDir)) {
-    const dest = join(outDir, basename(wasmPath));
-    copyFileSync(wasmPath, dest);
-    copied++;
-  }
+for (const wasmPath of wasmSources) {
+  const dest = join(outDir, basename(wasmPath));
+  copyFileSync(wasmPath, dest);
+  copied++;
 }
 
 console.log(`Built ${entries.length} worker(s) into ${outDir}, copied ${copied} wasm binaries`);

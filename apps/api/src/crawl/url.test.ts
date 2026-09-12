@@ -52,12 +52,31 @@ describe('normaliseUrl', () => {
     expect(normaliseUrl('javascript:alert(1)')).toBeUndefined();
     expect(normaliseUrl('not a url')).toBeUndefined();
   });
+
+  it('does not strip www when it is a full label of a bare two-label host', () => {
+    expect(normaliseUrl('https://www.com/a')).toBe('https://www.com/a');
+    expect(normaliseUrl('https://www.rs/a')).toBe('https://www.rs/a');
+  });
+
+  it('still strips www from a real subdomain', () => {
+    expect(normaliseUrl('https://www.site.com/a')).toBe('https://site.com/a');
+    expect(normaliseUrl('https://WWW.Site.com/a')).toBe('https://site.com/a');
+  });
 });
 
 describe('siteOf', () => {
   it('reduces a host to its registrable domain', () => {
     expect(siteOf('https://blog.example.com/post')).toBe('example.com');
     expect(siteOf('https://www.example.com')).toBe('example.com');
+  });
+
+  it('does not strip www when it is a full label of a bare two-label host', () => {
+    expect(siteOf('https://www.com/a')).toBe('www.com');
+    expect(siteOf('https://www.rs/a')).toBe('www.rs');
+  });
+
+  it('still strips www from a real subdomain of a site', () => {
+    expect(siteOf('https://www.site.com')).toBe('site.com');
   });
 
   it('handles two-level public suffixes', () => {

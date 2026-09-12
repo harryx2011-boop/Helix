@@ -22,7 +22,11 @@ const nextConfig: NextConfig = {
   // Vercel's builder derives the client-reference-manifest name by stripping
   // only the last extension and fails the build on the file it cannot find.
   pageExtensions: hosted ? ['hosted.tsx', 'tsx', 'ts'] : ['tsx'],
-  images: { unoptimized: true },
+  // Self-host serves the static export with no image-optimization server, so
+  // next/image must fall back to plain <img>. Hosted has a server and gets
+  // real optimization; the two next/image call sites (setup-prompt agent
+  // marks) are .png, not SVG, so hosted needs no per-image unoptimized prop.
+  images: hosted ? {} : { unoptimized: true },
   // libheif-js require()s its wasm in a way Next's flight-manifest crawl
   // chokes on. It only ever runs inside the converter's Web Worker, which
   // esbuild bundles outside Next's graph entirely (scripts/build-workers.mjs),

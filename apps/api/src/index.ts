@@ -340,11 +340,17 @@ await app.register(
     });
     await registerKeys(instance, { multiTenant: config.multiTenant });
     await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured });
-    await registerMap(instance, { fetchClient, extractClient, userAgent: config.userAgent });
+    await registerMap(instance, {
+      fetchClient,
+      extractClient,
+      userAgent: config.userAgent,
+      allowPrivateUrls: config.allowPrivateUrls,
+    });
     await registerCrawl(instance, {
       fetchClient,
       extractClient,
       userAgent: config.userAgent,
+      allowPrivateUrls: config.allowPrivateUrls,
       defaultModel: process.env['HELIX_LLM_MODEL'] ?? 'unset',
       multiTenant: config.multiTenant,
       limits: {
@@ -401,7 +407,7 @@ await app.register(
       maxUploadBytes: config.parseMaxUploadMb * 1024 * 1024,
       userAgent: config.userAgent,
     });
-    await registerRobots(instance, { userAgent: config.userAgent });
+    await registerRobots(instance, { userAgent: config.userAgent, allowPrivateUrls: config.allowPrivateUrls });
     // Last: it forwards to the four routes above, which must already exist.
     await registerDocument(instance);
   },

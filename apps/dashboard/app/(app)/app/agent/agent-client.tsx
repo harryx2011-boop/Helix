@@ -14,6 +14,7 @@ import { requestAgentSchema, scrapeUrlsForSchema, scrapeForSchema, searchForSche
 import type { AgentPageResult } from '@/lib/agent';
 import { HelixApiError } from '@/lib/api';
 import { listProviders } from '@/lib/providers';
+import { createLatest } from '@/lib/latest-request';
 import { AsciiFluid } from '@/components/marketing/ascii-fluid';
 import { AsciiOrbit } from '@/components/marketing/ascii-fields';
 
@@ -40,6 +41,8 @@ export function AgentClient() {
   const [run, setRun] = React.useState<RunState | null>(null);
   const [noProvider, setNoProvider] = React.useState(false);
   const transcriptEndRef = React.useRef<HTMLDivElement>(null);
+  const schemaRequest = React.useRef(createLatest());
+  const runRequest = React.useRef(createLatest());
 
   React.useEffect(() => {
     let cancelled = false;
@@ -59,6 +62,7 @@ export function AgentClient() {
 
   const generateSchema = React.useCallback(
     async (input: { prompt: string; urls: string[]; hint?: Record<string, unknown>; instruction?: string }) => {
+      const requestId = schemaRequest.current.next();
       setStage('schema-loading');
       setSchemaError(null);
       try {
@@ -71,6 +75,7 @@ export function AgentClient() {
           },
           apiKey,
         );
+        if (!schemaRequest.current.isCurrent(requestId)) return;
         if (!response.success) {
           setSchemaError(response.failure.message ?? response.failure.detail ?? response.failure.reason);
           setStage('schema-loading');
@@ -79,6 +84,7 @@ export function AgentClient() {
         setSchema(response.schema);
         setStage('schema-ready');
       } catch (error) {
+        if (!schemaRequest.current.isCurrent(requestId)) return;
         setSchemaError(error instanceof HelixApiError ? error.message : 'Request failed.');
         setStage('schema-loading');
       }
@@ -100,12 +106,14 @@ export function AgentClient() {
 
   const handleRefine = React.useCallback(async () => {
     if (!schema || refineValue.trim().length === 0) return;
+    const requestId = schemaRequest.current.next();
     setRefining(true);
     try {
       const response = await requestAgentSchema(
         { prompt, hint: schema, instruction: refineValue.trim() },
         apiKey,
       );
+      if (!schemaRequest.current.isCurrent(requestId)) return;
       if (response.success) {
         setSchema(response.schema);
         setRefineValue('');
@@ -113,14 +121,16 @@ export function AgentClient() {
         setSchemaError(response.failure.message ?? response.failure.detail ?? response.failure.reason);
       }
     } catch (error) {
+      if (!schemaRequest.current.isCurrent(requestId)) return;
       setSchemaError(error instanceof HelixApiError ? error.message : 'Request failed.');
     } finally {
-      setRefining(false);
+      if (schemaRequest.current.isCurrent(requestId)) setRefining(false);
     }
   }, [schema, refineValue, prompt, apiKey]);
 
   const runAgent = React.useCallback(async () => {
     if (!schema) return;
+    const requestId = runRequest.current.next();
     const cleanUrls = urls.map((u) => u.trim()).filter(Boolean);
     setStage('running');
     setRun({ results: [], completed: 0, total: cleanUrls.length, stage: 'searching', error: null });
@@ -129,15 +139,19 @@ export function AgentClient() {
       if (cleanUrls.length > 0) {
         setRun({ results: [], completed: 0, total: cleanUrls.length, stage: 'reading', error: null });
         const results = await scrapeUrlsForSchema(cleanUrls, schema, apiKey, (_result, completed, total) => {
+          if (!runRequest.current.isCurrent(requestId)) return;
           setRun((prev) => (prev ? { ...prev, completed, total } : prev));
         });
+        if (!runRequest.current.isCurrent(requestId)) return;
         setRun({ results, completed: results.length, total: results.length, stage: 'done', error: null });
       } else {
         const results = await searchForSchema(prompt, schema, apiKey);
+        if (!runRequest.current.isCurrent(requestId)) return;
         setRun({ results, completed: results.length, total: results.length, stage: 'done', error: null });
       }
       setStage('done');
     } catch (error) {
+      if (!runRequest.current.isCurrent(requestId)) return;
       setRun({
         results: [],
         completed: 0,

@@ -56,8 +56,7 @@ const { registerScrape } = await import('./../routes/scrape.js');
 const { registerParse } = await import('./../routes/parse.js');
 const { registerAgent } = await import('./../routes/agent.js');
 const { ParseCache } = await import('./../parse/cache.js');
-type ExtractClient = import('./../extract/client.js').ExtractClient;
-type DocumentResult = import('./../extract/client.js').DocumentResult;
+import type { ExtractClient, DocumentResult } from './../extract/client.js';
 
 const KEY = { id: API_KEY_ID, name: 'test', keyPrefix: 'helix-test', rateLimit: 1000, createdAt: new Date(), lastUsedAt: null, revokedAt: null };
 

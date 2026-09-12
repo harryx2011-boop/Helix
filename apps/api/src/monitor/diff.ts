@@ -366,7 +366,7 @@ export function diffJson(before: unknown, after: unknown): JsonDiff {
     }
 
     total += 1;
-    const change: JsonFieldChange = { path };
+    const change: JsonFieldChange = { path: path || '$' };
     if (a !== undefined) change.before = a;
     if (b !== undefined) change.after = b;
     fields.push(change);

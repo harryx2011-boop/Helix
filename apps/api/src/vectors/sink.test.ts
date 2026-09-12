@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { deterministicId } from './sink.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { deterministicId, QdrantSink, type ChunkToStore } from './sink.js';
 
 describe('deterministicId', () => {
   it('returns the same id for the same chunk every time', () => {
@@ -48,5 +48,51 @@ describe('deterministicId', () => {
       ids.add(deterministicId('https://example.com/page', `#section-${i}:hash${i}`));
     }
     expect(ids.size).toBe(5_000);
+  });
+});
+
+describe('QdrantSink.store', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  function chunk(embedding: number[], anchor = '#a'): ChunkToStore {
+    return { text: 'x', anchor, tokens: 1, embedding };
+  }
+
+  /* ensureCollection sizes the Qdrant collection from chunk 0's embedding
+     alone. If a later chunk in the same batch carries a different length —
+     a provider swap mid-crawl, or a bug upstream — Qdrant either rejects the
+     whole batch with an opaque error or silently truncates/pads, neither of
+     which says which chunk was wrong. */
+  it('throws naming the offending index when embeddings disagree in length', async () => {
+    const fetchMock = vi.fn(async () => new Response('should not be called', { status: 500 }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const sink = new QdrantSink('http://localhost:6333');
+    const chunks = [chunk([1, 2, 3]), chunk([1, 2, 3, 4], '#b'), chunk([1, 2], '#c')];
+
+    await expect(
+      sink.store({ url: 'https://example.com', collection: 'docs', chunks }),
+    ).rejects.toThrow(/index 1.*index 2|1.*2/s);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('stores normally when every embedding matches chunk 0', async () => {
+    const fetchMock = vi.fn(async (url: unknown) => {
+      const target = String(url);
+      if (target.endsWith('/collections/docs')) return new Response('', { status: 200 });
+      if (target.includes('/points')) return new Response('', { status: 200 });
+      return new Response('unexpected', { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const sink = new QdrantSink('http://localhost:6333');
+    const chunks = [chunk([1, 2, 3]), chunk([4, 5, 6], '#b')];
+
+    const result = await sink.store({ url: 'https://example.com', collection: 'docs', chunks });
+    expect(result.stored).toBe(2);
   });
 });

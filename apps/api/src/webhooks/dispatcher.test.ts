@@ -158,6 +158,20 @@ describe('WebhookDispatcher', () => {
     expect(outcome).toMatchObject({ status: 'dead', statusCode: 302 });
   });
 
+  it('names the redirect target in the dead-letter error so the receiver knows what to fix', async () => {
+    const db = fakeDb([row()]);
+    const fetchFn = vi.fn(async () => new Response('', { status: 302, headers: { location: 'https://h.example/hook/new' } })) as unknown as typeof fetch;
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, resolve });
+
+    const [outcome] = await dispatcher.runOnce();
+
+    expect(outcome).toMatchObject({
+      status: 'dead',
+      statusCode: 302,
+      error: 'HTTP 302 redirect to https://h.example/hook/new not followed; update the webhook URL',
+    });
+  });
+
   it('refuses a target that resolves to a private address without sending', async () => {
     const db = fakeDb([row()]);
     const fetchFn = fakeFetch(200);
@@ -194,6 +208,18 @@ describe('WebhookDispatcher', () => {
     expect(db.reads[0]).toEqual(['job-1', 'https://s.com/a']);
     const body = JSON.parse(String(fetchFn.calls[0]!.init.body)) as { data: Record<string, unknown> };
     expect(body.data).toEqual({ url: 'https://s.com/a', markdown: '# A from documents', metadata: { title: 'A' } });
+  });
+
+  it('lets the hydrated markdown win over a stale null already on the page', async () => {
+    const queued = row({ payload: { ...row().payload, data: { url: 'https://s.com/a', markdown: null } } });
+    const db = fakeDb([queued], { 'https://s.com/a': '# A from documents' });
+    const fetchFn = fakeFetch(200);
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, resolve });
+
+    await dispatcher.runOnce();
+
+    const body = JSON.parse(String(fetchFn.calls[0]!.init.body)) as { data: Record<string, unknown> };
+    expect(body.data['markdown']).toBe('# A from documents');
   });
 
   it('sends null markdown for a page that is no longer stored', async () => {

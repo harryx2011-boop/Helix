@@ -120,6 +120,110 @@ class TestOpenAI:
         schema = compile_openai(nested)["json_schema"]["schema"]
         assert schema["properties"]["author"]["additionalProperties"] is False
 
+    def test_makes_an_enum_only_optional_field_nullable(self) -> None:
+        # `status` has no `type`, only `enum`. Without a null branch it stays
+        # required and non-nullable under strict mode, which forces the model
+        # to fabricate a value it never found.
+        schema = compile_openai(
+            {
+                "type": "object",
+                "properties": {
+                    "status": {"enum": ["active", "inactive"]},
+                    "name": {"type": "string"},
+                },
+                "required": ["name"],
+            }
+        )["json_schema"]["schema"]
+
+        status = schema["properties"]["status"]
+        assert "anyOf" in status
+        assert {"type": "null"} in status["anyOf"]
+        assert {"enum": ["active", "inactive"]} in status["anyOf"]
+
+    def test_makes_a_ref_only_optional_field_nullable(self) -> None:
+        schema = compile_openai(
+            {
+                "type": "object",
+                "properties": {
+                    "author": {"$ref": "#/$defs/Author"},
+                    "name": {"type": "string"},
+                },
+                "required": ["name"],
+            }
+        )["json_schema"]["schema"]
+
+        author = schema["properties"]["author"]
+        assert "anyOf" in author
+        assert {"type": "null"} in author["anyOf"]
+        assert {"$ref": "#/$defs/Author"} in author["anyOf"]
+
+    def test_extends_an_existing_anyof_with_a_null_branch(self) -> None:
+        schema = compile_openai(
+            {
+                "type": "object",
+                "properties": {
+                    "value": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+                    "name": {"type": "string"},
+                },
+                "required": ["name"],
+            }
+        )["json_schema"]["schema"]
+
+        value = schema["properties"]["value"]
+        assert value["anyOf"] == [
+            {"type": "string"},
+            {"type": "integer"},
+            {"type": "null"},
+        ]
+
+    def test_does_not_double_wrap_an_already_nullable_anyof(self) -> None:
+        schema = compile_openai(
+            {
+                "type": "object",
+                "properties": {
+                    "value": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                    "name": {"type": "string"},
+                },
+                "required": ["name"],
+            }
+        )["json_schema"]["schema"]
+
+        value = schema["properties"]["value"]
+        assert value["anyOf"] == [{"type": "string"}, {"type": "null"}]
+
+    def test_leaves_a_required_enum_field_as_is(self) -> None:
+        schema = compile_openai(
+            {
+                "type": "object",
+                "properties": {"status": {"enum": ["active", "inactive"]}},
+                "required": ["status"],
+            }
+        )["json_schema"]["schema"]
+
+        assert schema["properties"]["status"] == {"enum": ["active", "inactive"]}
+
+    def test_makes_a_nested_enum_only_optional_field_nullable(self) -> None:
+        schema = compile_openai(
+            {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "object",
+                        "properties": {
+                            "role": {"enum": ["admin", "member"]},
+                            "name": {"type": "string"},
+                        },
+                        "required": ["name"],
+                    }
+                },
+                "required": ["author"],
+            }
+        )["json_schema"]["schema"]
+
+        role = schema["properties"]["author"]["properties"]["role"]
+        assert "anyOf" in role
+        assert {"type": "null"} in role["anyOf"]
+
 
 class TestAnthropic:
     def test_uses_auto_choice_with_a_strict_tool(self) -> None:

@@ -166,7 +166,10 @@ def chunk_markdown(
     - ``semantic`` — sections split on sentence boundaries when oversized.
     """
     max_chars = max_tokens * CHARS_PER_TOKEN
-    overlap_chars = overlap * CHARS_PER_TOKEN
+    # An overlap at or beyond the budget re-carries a whole chunk forward on
+    # every split, so chunks only grow and never make progress through the
+    # document. Clamping keeps a direct caller from producing that.
+    overlap_chars = min(overlap, max_tokens - 1) * CHARS_PER_TOKEN if overlap > 0 else 0
 
     if not markdown.strip():
         return []

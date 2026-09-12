@@ -205,6 +205,31 @@ export function isPublicAddress(address: string): boolean {
   return !isPrivateAddress(address);
 }
 
+/**
+ * The ranges no caller reaches, even where private addresses are allowed.
+ *
+ * An operator who allows private addresses means loopback and their own LAN —
+ * where a local model runtime lives. Link-local carries the cloud metadata
+ * endpoint, and CGNAT is the provider's shared space, not the operator's
+ * network. Neither is ever the intended target of that opt-in.
+ */
+const ALWAYS_BLOCKED: readonly [string, number, string][] = [
+  ['169.254.0.0', 16, '169.254.0.0/16'],
+  ['100.64.0.0', 10, '100.64.0.0/10'],
+];
+
+/** Names the reserved range when the URL's host sits in one, for a message that says which. */
+export function blockedRange(raw: string): string | undefined {
+  let host: string;
+  try {
+    host = bareHostname(new URL(raw).hostname);
+  } catch {
+    return undefined;
+  }
+  if (isIP(host) !== 4) return undefined;
+  return ALWAYS_BLOCKED.find(([base, bits]) => inV4Block(host, base, bits))?.[2];
+}
+
 /** Throws unless the URL is http(s) to a publicly routable address, name resolution included. */
 export async function assertPublicUrl(raw: string, lookupFn: Lookup = systemLookup): Promise<void> {
   let url: URL;

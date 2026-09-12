@@ -86,6 +86,12 @@ export function everyToCron(every: string): string {
       }
       return everyToCron(`${amount / 60}h`);
     }
+    if (60 % amount !== 0) {
+      throw new ScheduleError(
+        'A minute interval must divide evenly into 60, or it will not fire at a steady gap; use a cron expression instead.',
+        'schedule.every',
+      );
+    }
     return amount === 1 ? '* * * * *' : `*/${amount} * * * *`;
   }
 
@@ -96,10 +102,22 @@ export function everyToCron(every: string): string {
       }
       return everyToCron(`${amount / 24}d`);
     }
+    if (24 % amount !== 0) {
+      throw new ScheduleError(
+        'An hour interval must divide evenly into 24, or it will not fire at a steady gap; use a cron expression instead.',
+        'schedule.every',
+      );
+    }
     return amount === 1 ? '0 * * * *' : `0 */${amount} * * *`;
   }
 
-  return amount === 1 ? '0 0 * * *' : `0 0 */${amount} * *`;
+  if (amount > 1) {
+    throw new ScheduleError(
+      'A day interval greater than 1 does not repeat at a steady gap across month boundaries; use a cron expression instead.',
+      'schedule.every',
+    );
+  }
+  return '0 0 * * *';
 }
 
 function validTimezone(timezone: string): boolean {

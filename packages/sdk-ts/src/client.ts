@@ -379,6 +379,20 @@ export class HelixClient {
     return response.json() as Promise<T>;
   }
 
+  /**
+   * A caller-supplied AbortSignal firing is a deliberate cancellation, not a
+   * network failure, and must reach the caller as itself: wrapping it as a
+   * HelixApiError would make "I cancelled this" indistinguishable from "the
+   * network is down". Anything else gets wrapped, with the original failure
+   * attached as `cause` so it is not lost.
+   */
+  private static wrapFetchError(error: unknown): never {
+    if (error instanceof Error && error.name === 'AbortError') throw error;
+    const wrapped = new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+    wrapped.cause = error;
+    throw wrapped;
+  }
+
   private async get<T>(path: string, query: Record<string, string> | undefined, signal: AbortSignal | undefined, auth = true): Promise<T> {
     let response: Response;
     try {
@@ -387,7 +401,7 @@ export class HelixClient {
         ...(signal ? { signal } : {}),
       });
     } catch (error) {
-      throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+      HelixClient.wrapFetchError(error);
     }
     return this.handle<T>(response, true);
   }
@@ -402,7 +416,7 @@ export class HelixClient {
         ...(signal ? { signal } : {}),
       });
     } catch (error) {
-      throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+      HelixClient.wrapFetchError(error);
     }
     return this.handle<T>(response, true);
   }
@@ -417,7 +431,7 @@ export class HelixClient {
         ...(signal ? { signal } : {}),
       });
     } catch (error) {
-      throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+      HelixClient.wrapFetchError(error);
     }
     return this.handle<T>(response, true);
   }
@@ -431,7 +445,7 @@ export class HelixClient {
         ...(signal ? { signal } : {}),
       });
     } catch (error) {
-      throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+      HelixClient.wrapFetchError(error);
     }
     return this.handle<T>(response, !expectNoBody);
   }
@@ -447,7 +461,7 @@ export class HelixClient {
         ...(signal ? { signal } : {}),
       });
     } catch (error) {
-      throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
+      HelixClient.wrapFetchError(error);
     }
     return this.handle<T>(response, true);
   }

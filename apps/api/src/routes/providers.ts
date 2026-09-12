@@ -12,7 +12,7 @@ import {
 import { listLocalProviderModels } from '../providers/models.js';
 import { verifyProvider } from '../providers/verify.js';
 import { isCloudProvider, listCloudModels } from '../providers/cloud-models.js';
-import { checkUrl } from '../core/url-guard.js';
+import { blockedRange, checkUrl } from '../core/url-guard.js';
 import { resolveProviderKeys } from '../providers/repository.js';
 
 /**
@@ -96,8 +96,20 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
        A LOCAL runtime is exempt from the private-address rule and only from
        that rule: loopback and LAN are exactly where Ollama and vLLM live, and
        refusing them would break the one thing those providers are for. Scheme
-       and shape are still checked on both paths. */
+       and shape are still checked on both paths, and the exemption stops short
+       of link-local and CGNAT — the metadata endpoint and the carrier's shared
+       space are not anybody's local runtime. */
     if (baseUrl) {
+      const reserved = blockedRange(baseUrl);
+      if (reserved) {
+        return reply.code(400).send({
+          error: 'invalid_request',
+          message: `baseUrl: ${reserved} is a reserved range, which this instance does not fetch.`,
+          field: 'baseUrl',
+          requestId: request.id,
+        });
+      }
+
       const verdict = await checkUrl(baseUrl, { allowPrivate: local });
       if (!verdict.ok) {
         return reply.code(400).send({

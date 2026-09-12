@@ -27,6 +27,8 @@ const CreateKeySchema = z.object({
 });
 
 export async function registerKeys(app: FastifyInstance, deps: KeyRouteDeps = {}): Promise<void> {
+  if (deps.multiTenant === true) return;
+
   app.post('/keys', async (request, reply) => {
     const parsed = CreateKeySchema.safeParse(request.body);
     if (!parsed.success) {
@@ -51,8 +53,6 @@ export async function registerKeys(app: FastifyInstance, deps: KeyRouteDeps = {}
       warning: 'Store this key now. It cannot be retrieved again.',
     });
   });
-
-  if (deps.multiTenant === true) return;
 
   app.get('/keys', async (_request, reply) => {
     const keys = await listApiKeys();

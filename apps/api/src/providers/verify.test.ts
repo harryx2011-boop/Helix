@@ -111,16 +111,55 @@ describe('verifyProviderKey', () => {
 });
 
 describe('verifyProvider', () => {
-  it('verifies a local runtime by its base URL rather than a key', async () => {
+  /* Ollama's native API lives at /api/tags on the origin, never at /models
+     (that path is served by vLLM and OpenAI-compatible runtimes). A mock that
+     answers 200 to anything would let this test pass on the wrong URL, so it
+     answers 404 unless the path is exactly /api/tags. */
+  it('probes a bare Ollama origin at /api/tags, not /models', async () => {
     let seen = '';
     globalThis.fetch = vi.fn(async (url: unknown) => {
       seen = String(url);
-      return new Response(JSON.stringify({ data: [] }), { status: 200 });
+      if (seen === 'http://127.0.0.1:11434/api/tags') {
+        return new Response(JSON.stringify({ models: [] }), { status: 200 });
+      }
+      return new Response('not found', { status: 404 });
+    }) as unknown as typeof fetch;
+
+    const result = await verifyProvider('ollama', { baseUrl: 'http://127.0.0.1:11434' });
+    expect(seen).toBe('http://127.0.0.1:11434/api/tags');
+    expect(result.verdict).toBe('valid');
+  });
+
+  it('strips a /v1 suffix before probing Ollama, same as listLocalProviderModels', async () => {
+    let seen = '';
+    globalThis.fetch = vi.fn(async (url: unknown) => {
+      seen = String(url);
+      if (seen === 'http://127.0.0.1:11434/api/tags') {
+        return new Response(JSON.stringify({ models: [] }), { status: 200 });
+      }
+      return new Response('not found', { status: 404 });
     }) as unknown as typeof fetch;
 
     const result = await verifyProvider('ollama', { baseUrl: 'http://127.0.0.1:11434/v1' });
+    expect(seen).toBe('http://127.0.0.1:11434/api/tags');
     expect(result.verdict).toBe('valid');
-    expect(seen).toBe('http://127.0.0.1:11434/v1/models');
+  });
+
+  it('still probes /models for vllm and openai-compatible runtimes', async () => {
+    let seen = '';
+    globalThis.fetch = vi.fn(async (url: unknown) => {
+      seen = String(url);
+      if (seen.endsWith('/models')) return new Response(JSON.stringify({ data: [] }), { status: 200 });
+      return new Response('not found', { status: 404 });
+    }) as unknown as typeof fetch;
+
+    const vllm = await verifyProvider('vllm', { baseUrl: 'http://127.0.0.1:8000/v1' });
+    expect(seen).toBe('http://127.0.0.1:8000/v1/models');
+    expect(vllm.verdict).toBe('valid');
+
+    const compat = await verifyProvider('openai-compatible', { baseUrl: 'http://127.0.0.1:1234' });
+    expect(seen).toBe('http://127.0.0.1:1234/models');
+    expect(compat.verdict).toBe('valid');
   });
 
   /* A runtime that is merely switched off is unverifiable, not invalid: the URL

@@ -463,10 +463,16 @@ export class BrowserPool {
       }
       await pooled.browser.close().catch(() => undefined);
       this.#browsers = this.#browsers.filter((b) => b !== pooled);
+      // The splice returns a slot under `size`, which is the other condition a
+      // parked caller is waiting on.
+      this.#releaseWaiter();
     };
 
     void drain();
     await replacement;
+    // The slot a close freed belongs to a browser that is now retiring, so the
+    // waiter that close woke re-parked. Only the replacement can serve it.
+    this.#releaseWaiter();
   }
 
   async lease(options: LeaseOptions = {}): Promise<PageLease> {

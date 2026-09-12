@@ -246,6 +246,24 @@ describe('DELETE /settings/:key', () => {
     expect(response.statusCode).toBe(200);
     expect((live.browserPool as unknown as { setLimits: ReturnType<typeof vi.fn> }).setLimits).toHaveBeenCalledWith({ maxContexts: 20 });
   });
+
+  it('reports applied false and calls no setter when the env has no value for a live key', async () => {
+    const app = Fastify();
+    const live = targets();
+    await registerSettings(app, {
+      adminToken: TOKEN,
+      envValues: { allowPrivateUrls: false, crawlMaxDepth: 50 },
+      live,
+      encryptionKey: Buffer.alloc(32, 7),
+    });
+    await app.ready();
+
+    const response = await app.inject({ method: 'DELETE', url: '/settings/browserMaxContexts', headers: auth });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ applied: false });
+    expect((live.browserPool as unknown as { setLimits: ReturnType<typeof vi.fn> }).setLimits).not.toHaveBeenCalled();
+  });
 });
 
 describe('encryption key rotation', () => {

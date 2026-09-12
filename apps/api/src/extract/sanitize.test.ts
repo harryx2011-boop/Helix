@@ -33,6 +33,23 @@ describe('sanitizeHtml', () => {
   it('leaves attribute names that merely start with "on" alone', () => {
     expect(sanitizeHtml('<div one="1" data-onx="2">x</div>')).toBe('<div one="1" data-onx="2">x</div>');
   });
+
+  it('empties a javascript: URL split by embedded whitespace or control characters', () => {
+    expect(sanitizeHtml('<a href="java\nscript:alert(1)">a</a>')).toBe('<a href="">a</a>');
+    expect(sanitizeHtml('<a href="java\tscript:alert(1)">a</a>')).toBe('<a href="">a</a>');
+  });
+
+  it('empties a javascript: URL hidden behind an HTML entity', () => {
+    expect(sanitizeHtml('<a href="&#106;avascript:alert(1)">a</a>')).toBe('<a href="">a</a>');
+  });
+
+  it('empties a javascript: URL inside a style attribute url(...)', () => {
+    expect(sanitizeHtml('<div style="background:url(javascript:alert(1))">x</div>')).toBe('<div style="background:url()">x</div>');
+  });
+
+  it('leaves an ordinary link that merely starts with the word javascript alone', () => {
+    expect(sanitizeHtml('<a href="/javascript-guide">a</a>')).toBe('<a href="/javascript-guide">a</a>');
+  });
 });
 
 describe('sanitizeHtml on hostile input', () => {

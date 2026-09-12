@@ -131,6 +131,10 @@ function CreateKeyDialog({
 
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!ephemeral && rateLimit.trim() !== '' && Number(rateLimit) < 1) {
+      toast.error('Rate limit must be at least 1 request per minute.');
+      return;
+    }
     setCreating(true);
     try {
       if (ephemeral) {

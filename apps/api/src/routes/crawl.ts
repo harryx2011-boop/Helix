@@ -6,6 +6,7 @@ import type { CrawlJobRequest } from '../crawl/worker.js';
 import { WEBHOOK_EVENTS } from '../webhooks/deliveries.js';
 import { MAX_WEBHOOK_BYTES, webhookHeadersProblem, webhookTargetProblem } from '../webhooks/target.js';
 import { discoverUrls, type MapRouteDeps } from './map.js';
+import { checkUrl } from '../core/url-guard.js';
 import { cancelJob, fetchJobView } from './jobs.js';
 
 /**
@@ -449,6 +450,22 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
     }
 
     const body = normaliseCrawlRequest(parsed.data);
+
+    // The seed is the caller's choice of what this instance connects to, and it
+    // is written to the frontier for a worker to fetch later. Checked here, or
+    // the job is accepted and the fetch happens out of band.
+    const urlVerdict = await checkUrl(body.url, {
+      allowPrivate: deps.allowPrivateUrls,
+      resolve: deps.resolveHost,
+    });
+    if (!urlVerdict.ok) {
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: `url: ${urlVerdict.reason}`,
+        field: 'url',
+        requestId: request.id,
+      });
+    }
 
     if (parsed.data.estimate) {
       return reply.send(await estimateCrawl(body, deps));

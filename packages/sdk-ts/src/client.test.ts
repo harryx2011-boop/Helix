@@ -340,6 +340,36 @@ describe('HTTP error mapping', () => {
     });
   });
 
+  it('sets cause on the wrapped HelixApiError so the original network failure is not lost', async () => {
+    const original = new TypeError('fetch failed');
+    const fetchImpl = vi.fn<typeof fetch>(async () => {
+      throw original;
+    });
+    const c = client(fetchImpl);
+    await expect(c.scrape({ url: 'https://example.com' })).rejects.toMatchObject({
+      status: 0,
+      cause: original,
+    });
+  });
+
+  /* An AbortError from the caller's own signal is a deliberate cancellation,
+     not a network failure, and must not be indistinguishable from one: a
+     caller that retries on "network error" but not on "I cancelled this"
+     needs the real error identity to tell the two apart. */
+  it('rethrows an AbortError from the caller signal unchanged, not wrapped as HelixApiError', async () => {
+    const controller = new AbortController();
+    const fetchImpl = vi.fn<typeof fetch>(async () => {
+      const abortError = new DOMException('This operation was aborted', 'AbortError');
+      throw abortError;
+    });
+    const c = client(fetchImpl);
+    controller.abort();
+
+    const rejection = c.scrape({ url: 'https://example.com' }, controller.signal);
+    await expect(rejection).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(rejection).rejects.not.toBeInstanceOf(HelixApiError);
+  });
+
   it('propagates a 400 on usage() for an out-of-range window', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () =>
       jsonResponse(

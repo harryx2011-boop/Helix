@@ -31,6 +31,7 @@ import type {
   SearchResponse,
 } from '@/lib/api';
 import { runEndpoint, type EndpointMode } from '@/lib/run-endpoint';
+import { createLatest } from '@/lib/latest-request';
 import { useAppSession } from '@/components/app/session-provider';
 import { runnableById } from '@/lib/catalog';
 import type { RunnableEndpoint as Endpoint } from '@/lib/endpoints';
@@ -119,6 +120,7 @@ export function Playground() {
   const [codeDialog, setCodeDialog] = React.useState<
     { endpoint: Endpoint; body: Record<string, unknown>; pathSuffix?: string } | undefined
   >(undefined);
+  const runRequest = React.useRef(createLatest());
 
   const activeDef = runnableById(activeId) ?? runnableById('scrape')!;
 
@@ -154,6 +156,7 @@ export function Playground() {
       async_: boolean,
       mode: EndpointMode = 'scan',
     ) => {
+      const requestId = runRequest.current.next();
       setLoading(true);
       setError(undefined);
       setResult(undefined);
@@ -164,6 +167,7 @@ export function Playground() {
       const started = performance.now();
       try {
         const { body: responseBody } = await runEndpoint<unknown>(endpoint, body, apiKey, mode);
+        if (!runRequest.current.isCurrent(requestId)) return;
         setTimingMs(Math.round(performance.now() - started));
 
         if (async_ && isJobAcceptedShape(responseBody)) {
@@ -178,11 +182,14 @@ export function Playground() {
           recordRun({ endpoint, url: subject, ...(async_ && isJobAcceptedShape(responseBody) ? { id: responseBody.id } : {}) });
         }
       } catch (err) {
+        if (!runRequest.current.isCurrent(requestId)) return;
         setResult(undefined);
         setError(err instanceof HelixApiError ? err.message : 'Unexpected error contacting the API.');
       } finally {
-        setLoading(false);
-        setPending(undefined);
+        if (runRequest.current.isCurrent(requestId)) {
+          setLoading(false);
+          setPending(undefined);
+        }
       }
     },
     [apiKey],

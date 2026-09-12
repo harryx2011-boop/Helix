@@ -57,7 +57,7 @@ export function normaliseForMatch(text: string): string {
     .replace(/[“”„‟″]/g, '"')
     .replace(/[‐-―−]/g, '-')
     .replace(/[•‣◦⁃]/g, '*')
-    .replace(/[  -​  　]/g, ' ')
+    .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
     .replace(/[*_`#>|]/g, ' ')
     .toLowerCase()
     .replace(/\s+/g, ' ')

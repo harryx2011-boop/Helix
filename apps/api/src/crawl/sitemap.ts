@@ -1,5 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
 import type { Log } from '../core/logger.js';
+import { isPrivateHost } from '../core/url-guard.js';
 
 /**
  * Sitemap discovery.
@@ -18,6 +19,7 @@ const MAX_URLS = 100_000;
 const MAX_DEPTH = 3;
 const FETCH_TIMEOUT_MS = 20_000;
 const MAX_SITEMAP_BYTES = 50 * 1024 * 1024; // the 50MiB limit from the spec
+const MAX_REDIRECTS = 5;
 
 export interface SitemapEntry {
   url: string;
@@ -40,14 +42,16 @@ const asArray = <T>(value: T | T[] | undefined): T[] =>
 export class SitemapFetcher {
   readonly #userAgent: string;
   readonly #logger: Log | undefined;
+  readonly #fetchImpl: typeof fetch;
   readonly #parser = new XMLParser({
     ignoreAttributes: true,
     trimValues: true,
   });
 
-  constructor(userAgent: string, logger?: Log) {
+  constructor(userAgent: string, logger?: Log, fetchImpl: typeof fetch = fetch) {
     this.#userAgent = userAgent;
     this.#logger = logger;
+    this.#fetchImpl = fetchImpl;
   }
 
   /**
@@ -67,11 +71,31 @@ export class SitemapFetcher {
 
     let xml: string;
     try {
-      const response = await fetch(sitemapUrl, {
-        headers: { 'user-agent': this.#userAgent },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-        redirect: 'follow',
-      });
+      // A sitemap URL is quoted from a remote robots.txt, so the host is the
+      // caller's choice twice over: once in the file and again in whatever it
+      // redirects to. Every hop is checked rather than the first alone.
+      let current = new URL(sitemapUrl);
+      let response: Response;
+
+      for (let hop = 0; ; hop += 1) {
+        if (isPrivateHost(current)) {
+          this.#logger?.debug({ sitemapUrl, blocked: current.href }, 'sitemap points at a private address');
+          return [];
+        }
+
+        response = await this.#fetchImpl(current.toString(), {
+          headers: { 'user-agent': this.#userAgent },
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+          redirect: 'manual',
+        });
+
+        const location = response.headers.get('location');
+        if (response.status < 300 || response.status >= 400 || !location) break;
+
+        await response.body?.cancel().catch(() => undefined);
+        if (hop >= MAX_REDIRECTS) return [];
+        current = new URL(location, current);
+      }
 
       if (!response.ok) return [];
 

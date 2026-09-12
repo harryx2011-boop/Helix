@@ -54,7 +54,7 @@ export function normaliseUrl(input: string, options: NormaliseOptions = {}): str
   url.hash = '';
 
   url.hostname = url.hostname.toLowerCase();
-  if (options.ignoreWww !== false && url.hostname.startsWith('www.')) {
+  if (options.ignoreWww !== false && url.hostname.startsWith('www.') && url.hostname.split('.').length > 2) {
     url.hostname = url.hostname.slice(4);
   }
 
@@ -92,7 +92,8 @@ export function normaliseUrl(input: string, options: NormaliseOptions = {}): str
 export function siteOf(input: string): string | undefined {
   try {
     const { hostname } = new URL(input);
-    const host = hostname.toLowerCase().replace(/^www\./, '');
+    const lower = hostname.toLowerCase();
+    const host = lower.startsWith('www.') && lower.split('.').length > 2 ? lower.slice(4) : lower;
 
     // A full public-suffix list is overkill here: politeness only needs a
     // stable grouping key, and grouping by the last two labels is stable even

@@ -103,6 +103,22 @@ afterEach(() => {
 });
 
 describe('POST /v1/crawl', () => {
+  /* The seed is the caller's choice of what this instance connects to, and it
+     is written to the frontier for a worker to fetch later. Without the guard
+     the job is accepted and the SSRF happens out of band, in the worker. */
+  it('refuses a private or link-local seed, and queues nothing', async () => {
+    const app = await buildApp();
+
+    for (const url of ['http://127.0.0.1/', 'http://[::1]/', 'http://169.254.169.254/']) {
+      const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { url } });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().field).toBe('url');
+    }
+    expect(db.state.calls.filter((call) => call.text.includes('INSERT INTO job_tasks'))).toHaveLength(0);
+    expect(db.state.calls.filter((call) => call.text.includes('INSERT INTO jobs'))).toHaveLength(0);
+  });
+
   it('takes respectRobots from the instance configuration when the request omits it', async () => {
     const app = await buildApp({ respectRobots: false });
     const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { url: 'https://example.com' } });
@@ -480,7 +496,7 @@ describe('GET /v1/crawl/{jobId}', () => {
         },
       ],
     });
-    expect(response.json().next).toBeUndefined();
+    expect(response.json().next).toBeNull();
   });
 
   it('points the next cursor back at /v1/crawl', async () => {

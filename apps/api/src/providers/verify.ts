@@ -1,5 +1,6 @@
 import { checkUrl } from '../core/url-guard.js';
-import { isLocalProvider, type Provider } from './repository.js';
+import { ollamaTagsUrl, openAiModelsUrl } from './models.js';
+import { isLocalProvider, type LocalProvider, type Provider } from './repository.js';
 
 /**
  * Does the provider accept this credential?
@@ -142,16 +143,16 @@ export async function verifyProviderKey(provider: Provider, key: string): Promis
  * The URL may be perfectly correct and the caller may simply not have started
  * Ollama yet, and refusing to save it would strand them.
  */
-export async function verifyLocalProvider(baseUrl: string): Promise<KeyCheck> {
+export async function verifyLocalProvider(provider: LocalProvider, baseUrl: string): Promise<KeyCheck> {
   const verdict = await checkUrl(baseUrl, { allowPrivate: true });
   if (!verdict.ok) {
     return { verdict: 'invalid', message: verdict.reason };
   }
 
-  const trimmed = baseUrl.replace(/\/+$/, '');
+  const url = provider === 'ollama' ? ollamaTagsUrl(baseUrl) : openAiModelsUrl(baseUrl);
   let response: Response;
   try {
-    response = await fetch(`${trimmed}/models`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
   } catch {
     return { verdict: 'unverifiable', message: `Could not reach the runtime at ${baseUrl}.` };
   }
@@ -175,7 +176,7 @@ export async function verifyProvider(
 ): Promise<KeyCheck> {
   if (isLocalProvider(provider)) {
     return opts.baseUrl
-      ? verifyLocalProvider(opts.baseUrl)
+      ? verifyLocalProvider(provider, opts.baseUrl)
       : { verdict: 'unverifiable', message: 'No base URL to check.' };
   }
   return opts.apiKey

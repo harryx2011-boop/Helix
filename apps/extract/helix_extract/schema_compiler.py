@@ -109,6 +109,18 @@ def _strictify(schema: dict[str, Any]) -> dict[str, Any]:
                     child = {**child, "type": [child_type, "null"]}
                 elif isinstance(child_type, list) and "null" not in child_type:
                     child = {**child, "type": [*child_type, "null"]}
+                elif child_type is None:
+                    # No `type` at all — an `enum`, `$ref`, `const`, or a bare
+                    # `anyOf`/`oneOf`. There is no type list to extend, so wrap
+                    # the whole thing in an anyOf with a null branch instead.
+                    if "anyOf" in child and isinstance(child["anyOf"], list):
+                        if not any(branch == {"type": "null"} for branch in child["anyOf"]):
+                            child = {**child, "anyOf": [*child["anyOf"], {"type": "null"}]}
+                    elif "oneOf" in child and isinstance(child["oneOf"], list):
+                        if not any(branch == {"type": "null"} for branch in child["oneOf"]):
+                            child = {**child, "oneOf": [*child["oneOf"], {"type": "null"}]}
+                    else:
+                        child = {"anyOf": [child, {"type": "null"}]}
 
             compiled[key] = child
 

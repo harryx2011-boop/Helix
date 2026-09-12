@@ -26,6 +26,9 @@ export interface ServiceStatus {
   latencyMs: number;
 }
 
+/** Overall bound on one round of checks, so a hung dependency cannot hang `/health` itself. */
+const CHECKS_TIMEOUT_MS = 5_000;
+
 /**
  * The checks `/health` and the uptime sampler both run — timed individually
  * so a slow dependency shows up as a latency spike, not just an eventual
@@ -33,6 +36,19 @@ export interface ServiceStatus {
  */
 export async function runServiceChecks(deps: ServiceCheckDeps): Promise<Record<string, ServiceStatus>> {
   const services: Record<string, ServiceStatus> = {};
+
+  const withTimeout = (check: Promise<ServiceStatus>): Promise<ServiceStatus> => {
+    const started = Date.now();
+    return Promise.race([
+      check,
+      new Promise<ServiceStatus>((resolve) => {
+        setTimeout(
+          () => resolve({ status: 'unhealthy', detail: 'timeout', latencyMs: Date.now() - started }),
+          CHECKS_TIMEOUT_MS,
+        ).unref?.();
+      }),
+    ]);
+  };
 
   const timed = async (fn: () => Promise<{ ok: boolean; detail?: string }>): Promise<ServiceStatus> => {
     const started = Date.now();
@@ -45,16 +61,18 @@ export async function runServiceChecks(deps: ServiceCheckDeps): Promise<Record<s
   };
 
   const [postgres, fetchStatus, extractStatus] = await Promise.all([
-    (async () => {
-      const result = await checkPostgres();
-      return {
-        status: result.status,
-        ...(result.detail ? { detail: result.detail } : {}),
-        latencyMs: result.latencyMs ?? 0,
-      } satisfies ServiceStatus;
-    })(),
-    timed(async () => ({ ok: await deps.fetchClient.health() })),
-    timed(async () => ({ ok: await deps.extractClient.health() })),
+    withTimeout(
+      (async () => {
+        const result = await checkPostgres();
+        return {
+          status: result.status,
+          ...(result.detail ? { detail: result.detail } : {}),
+          latencyMs: result.latencyMs ?? 0,
+        } satisfies ServiceStatus;
+      })(),
+    ),
+    withTimeout(timed(async () => ({ ok: await deps.fetchClient.health() }))),
+    withTimeout(timed(async () => ({ ok: await deps.extractClient.health() }))),
   ]);
 
   services['postgres'] = postgres;

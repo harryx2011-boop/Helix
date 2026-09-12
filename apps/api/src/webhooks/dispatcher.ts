@@ -144,7 +144,7 @@ export class WebhookDispatcher {
       return data;
     }
     const page = data as Record<string, unknown>;
-    if (typeof page['url'] !== 'string' || 'markdown' in page) return page;
+    if (typeof page['url'] !== 'string' || page['markdown'] != null) return page;
 
     const { rows } = await this.#db.query<{ markdown: string | null }>(
       `SELECT content->>'markdown' AS markdown
@@ -154,7 +154,7 @@ export class WebhookDispatcher {
         LIMIT 1`,
       [row.job_id, page['url']],
     );
-    return { url: page['url'], markdown: rows[0]?.markdown ?? null, ...page };
+    return { ...page, url: page['url'], markdown: rows[0]?.markdown ?? null };
   }
 
   async deliver(row: DeliveryRow): Promise<DeliveryOutcome> {
@@ -200,7 +200,11 @@ export class WebhookDispatcher {
       });
       statusCode = response.status;
       if (!response.ok) {
-        error = `HTTP ${response.status}`;
+        const location = response.headers.get('location');
+        error =
+          response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)
+            ? `HTTP ${response.status} redirect to ${location ?? '(no Location header)'} not followed; update the webhook URL`
+            : `HTTP ${response.status}`;
         permanent = !isRetryableStatus(response.status);
       }
     } catch (caught) {

@@ -102,6 +102,37 @@ describe('POST /robots-check', () => {
     expect(RobotsCache).toHaveBeenCalledWith('GPTBot', expect.anything());
   });
 
+  /* The URL is the caller's choice of what this instance connects to. Without
+     the guard, `/robots-check` fetches `http://127.0.0.1:<port>/robots.txt` and
+     reports on internal content. */
+  it('refuses a private or link-local address', async () => {
+    const forUrl = vi.fn(async () => mockRules());
+    vi.mocked(RobotsCache).mockImplementation(() => ({ forUrl }) as unknown as RobotsCache);
+    const instance = await build();
+
+    for (const url of ['http://127.0.0.1/', 'http://[::1]/', 'http://169.254.169.254/']) {
+      const response = await instance.inject({ method: 'POST', url: '/robots-check', payload: { url } });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().field).toBe('url');
+    }
+    expect(forUrl).not.toHaveBeenCalled();
+  });
+
+  it('fetches a private address when the operator allowed it', async () => {
+    const forUrl = vi.fn(async () => mockRules());
+    vi.mocked(RobotsCache).mockImplementation(() => ({ forUrl }) as unknown as RobotsCache);
+    const instance = await build({ userAgent: 'HelixBot/0.1', allowPrivateUrls: true });
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: '/robots-check',
+      payload: { url: 'http://127.0.0.1/' },
+    });
+
+    expect(response.statusCode).toBe(200);
+  });
+
   it('reports the crawl delay and sitemaps when the site sets them', async () => {
     const forUrl = vi.fn(async () => mockRules({ crawlDelaySeconds: 5, sitemaps: ['https://example.com/sitemap.xml'] }));
     vi.mocked(RobotsCache).mockImplementation(() => ({ forUrl }) as unknown as RobotsCache);

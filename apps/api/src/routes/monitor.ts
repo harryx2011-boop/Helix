@@ -72,6 +72,11 @@ const DiffSchema = z.object({
   inline: z.boolean().default(true),
 });
 
+const DiffPatchSchema = z.object({
+  granularity: z.enum(['word', 'line', 'character']).optional(),
+  inline: z.boolean().optional(),
+});
+
 const JsonOptionsSchema = z.object({
   schema: z.record(z.unknown()),
   prompt: z.string().max(4_000).optional(),
@@ -112,7 +117,7 @@ const PatchSchema = z
   .object({
     schedule: ScheduleSchema.optional(),
     scrapeOptions: ScrapeOptionsSchema.optional(),
-    diff: DiffSchema.optional(),
+    diff: DiffPatchSchema.optional(),
     jsonOptions: JsonOptionsSchema.nullable().optional(),
     trigger: TriggerSchema.optional(),
     sensitivity: z.enum(['any', 'significant']).optional(),
@@ -392,7 +397,12 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
       if (body.trigger !== undefined) patch.trigger = body.trigger;
     }
 
-    if (body.diff !== undefined) patch.diff = body.diff;
+    if (body.diff !== undefined) {
+      patch.diff = {
+        granularity: body.diff.granularity ?? existing.diff.granularity,
+        inline: body.diff.inline ?? existing.diff.inline,
+      };
+    }
     if (body.jsonOptions !== undefined) {
       if (body.jsonOptions === null) {
         patch.jsonOptions = null;
@@ -448,7 +458,16 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
       const monitor = await load(request);
       if (!monitor) return notFound(reply, request);
 
-      const limit = Math.min(HISTORY_PAGE, Math.max(1, Number.parseInt(request.query.limit ?? '', 10) || HISTORY_PAGE));
+      let limit = HISTORY_PAGE;
+      if (request.query.limit !== undefined) {
+        if (!/^\d+$/.test(request.query.limit)) {
+          return invalid(reply, request, 'limit: must be an integer between 1 and 50', 'limit');
+        }
+        limit = Number.parseInt(request.query.limit, 10);
+        if (limit < 1 || limit > HISTORY_PAGE) {
+          return invalid(reply, request, 'limit: must be an integer between 1 and 50', 'limit');
+        }
+      }
       const before = Number.parseInt(request.query.cursor ?? '', 10);
       const entries = await deps.store.history(monitor.id, {
         limit,

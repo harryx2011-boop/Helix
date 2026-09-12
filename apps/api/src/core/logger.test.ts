@@ -46,4 +46,43 @@ describe('redactSecrets', () => {
     expect(redactSecrets('helix-extract is unreachable')).toBe('helix-extract is unreachable');
     expect(redactSecrets('schema.properties.title: expected string')).toBe('schema.properties.title: expected string');
   });
+
+  it('scrubs a Hugging Face key', () => {
+    expect(redactSecrets('hf_AbCdEfGhIjKlMnOpQrStUvWxYz1234 rejected')).toBe('[redacted] rejected');
+  });
+
+  it('scrubs a Groq key', () => {
+    expect(redactSecrets('gsk_AbCdEfGhIjKlMnOpQrStUvWxYz1234 rejected')).toBe('[redacted] rejected');
+  });
+
+  it("scrubs this instance's own key format", () => {
+    expect(redactSecrets('helix-a1b2c3d4e5f6g7h8 was revoked')).toBe('[redacted] was revoked');
+  });
+
+  it('leaves a hyphenated service name alone, which shares the helix- prefix', () => {
+    expect(redactSecrets('helix-fetch returned 502')).toBe('helix-fetch returned 502');
+    expect(redactSecrets('helix-extract-worker restarted')).toBe('helix-extract-worker restarted');
+  });
+
+  /**
+   * A bare 32-hex string is as likely to be a request id as a key, and a bare
+   * 64-hex string is almost always a sha256 of content. Masking either on shape
+   * alone destroys the identifiers an operator traces a request by, so a long
+   * hex run is masked only where the surrounding words claim it is a secret.
+   */
+  it('scrubs a hex token that names itself a secret', () => {
+    expect(redactSecrets('secret=0123456789abcdef0123456789abcdef')).toBe('secret=[redacted]');
+    expect(redactSecrets('authorization: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef')).toBe(
+      'authorization: [redacted]',
+    );
+    expect(redactSecrets('token 0123456789abcdef0123456789abcdef')).toBe('token [redacted]');
+  });
+
+  it('leaves an unlabelled hex digest alone, because a sha256 in a log line is not a secret', () => {
+    const digest = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    expect(redactSecrets(`content hash ${digest} unchanged`)).toBe(`content hash ${digest} unchanged`);
+    expect(redactSecrets('job 0123456789abcdef0123456789abcdef finished')).toBe(
+      'job 0123456789abcdef0123456789abcdef finished',
+    );
+  });
 });

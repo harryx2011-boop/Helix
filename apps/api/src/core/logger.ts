@@ -40,6 +40,15 @@ export function redactSecrets(text: string): string {
     .replace(/\b(?:sk|pk|rk)-[A-Za-z0-9_-]{8,}/g, '[redacted]')
     // Google and Gemini keys.
     .replace(/\bAIza[A-Za-z0-9_-]{10,}/g, '[redacted]')
+    // Hugging Face and Groq, which prefix with an underscore rather than a dash.
+    .replace(/\b(?:hf|gsk)_[A-Za-z0-9]{16,}/g, '[redacted]')
+    // This instance's own keys. The alphanumeric run is what separates a key
+    // from a service name: `helix-extract` and `helix-fetch` are not secrets.
+    .replace(/\bhelix-[A-Za-z0-9]{16,}\b/g, '[redacted]')
     // Anything naming itself a key or token, followed by its value.
-    .replace(/\b(api[_-]?key|token|bearer)\b(\s*[:=]\s*|\s+)[A-Za-z0-9._*-]{8,}/gi, '$1$2[redacted]');
+    .replace(/\b(api[_-]?key|token|bearer)\b(\s*[:=]\s*|\s+)[A-Za-z0-9._*-]{8,}/gi, '$1$2[redacted]')
+    // A long hex run is masked only where the surrounding words claim it is a
+    // secret. On shape alone it is as likely to be a request id or a content
+    // digest, and masking those costs an operator the trail they trace by.
+    .replace(/\b(key|token|secret|authorization|auth)\b(\s*[:=]\s*|\s+)[A-Fa-f0-9]{32}(?:[A-Fa-f0-9]{32})?\b/gi, '$1$2[redacted]');
 }

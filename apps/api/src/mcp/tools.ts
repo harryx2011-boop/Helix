@@ -231,8 +231,17 @@ export function planRequest(tool: ToolDef, args: Record<string, unknown>, prefix
     const value = body[param.name];
     delete body[param.name];
     if (value === undefined || value === null) continue;
-    if (param.in === 'path') path = path.replace(`{${param.name}}`, encodeURIComponent(String(value)));
-    else query.set(param.name, String(value));
+    if (param.in === 'path') {
+      path = path.replace(`{${param.name}}`, encodeURIComponent(String(value)));
+      continue;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) query.append(param.name, String(item));
+    } else if (typeof value === 'object') {
+      throw new Error(`${param.name}: query parameters cannot be an object`);
+    } else {
+      query.set(param.name, String(value));
+    }
   }
 
   const qs = query.toString();

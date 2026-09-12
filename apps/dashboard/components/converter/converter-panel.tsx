@@ -390,6 +390,35 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
     a.remove();
   };
 
+  // FileRow is memoized, so these must stay referentially stable across a
+  // progress tick (only the affected item's own patch call breaks that).
+  // remove/cancel/download/start close over per-render state (expanded,
+  // effectiveFor), so the wrappers below read them through a ref that is
+  // kept current every render rather than depending on them directly,
+  // which would recreate the wrapper — and break memoization — every render.
+  const latestActions = useRef({ remove, cancel, download, start });
+  latestActions.current = { remove, cancel, download, start };
+
+  const onRowToggle = useCallback((id: string) => setExpanded((e) => (e === id ? null : id)), []);
+  const onRowOverride = useCallback(
+    (id: string, p: Partial<ConvertSettings>) => patch(id, (prev) => ({ override: { ...(prev.override ?? {}), ...p } })),
+    [patch],
+  );
+  const onRowResetOverride = useCallback((id: string) => patch(id, { override: null }), [patch]);
+  const onRowRemove = useCallback((id: string) => {
+    const item = itemsRef.current.find((it) => it.localId === id);
+    if (item) latestActions.current.remove(item);
+  }, []);
+  const onRowCancel = useCallback((id: string) => {
+    const item = itemsRef.current.find((it) => it.localId === id);
+    if (item) void latestActions.current.cancel(item);
+  }, []);
+  const onRowRetry = useCallback((id: string) => void latestActions.current.start([id]), []);
+  const onRowDownload = useCallback((id: string) => {
+    const item = itemsRef.current.find((it) => it.localId === id);
+    if (item) latestActions.current.download(item);
+  }, []);
+
   const clear = () => {
     for (const it of itemsRef.current) remove(it);
     setShared(null);
@@ -490,16 +519,17 @@ export function ConverterPanel({ preset }: PanelProps = {}) {
             <FileRow
               key={item.localId}
               item={item}
-              effective={effectiveFor(item)}
+              shared={shared}
+              primaryKind={primaryKind}
               expanded={expanded === item.localId}
               sourceUrl={item.phase === 'done' ? sourceUrlFor(item) : null}
-              onToggle={() => setExpanded((e) => (e === item.localId ? null : item.localId))}
-              onOverride={(p) => patch(item.localId, (prev) => ({ override: { ...(prev.override ?? {}), ...p } }))}
-              onResetOverride={() => patch(item.localId, { override: null })}
-              onRemove={() => remove(item)}
-              onCancel={() => void cancel(item)}
-              onRetry={() => void start([item.localId])}
-              onDownload={() => download(item)}
+              onToggle={onRowToggle}
+              onOverride={onRowOverride}
+              onResetOverride={onRowResetOverride}
+              onRemove={onRowRemove}
+              onCancel={onRowCancel}
+              onRetry={onRowRetry}
+              onDownload={onRowDownload}
             />
           ))}
         </ul>

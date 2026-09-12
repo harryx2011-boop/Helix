@@ -12,6 +12,8 @@ const db = vi.hoisted(() => {
   const state = {
     calls: [] as Call[],
     request: undefined as CrawlJobRequest | undefined,
+    /** Whether this worker still holds the task claim when it marks a page. */
+    claimHeld: true,
   };
   const query = vi.fn(async (text: string, values: unknown[] = []) => {
     state.calls.push({ text, values });
@@ -19,6 +21,11 @@ const db = vi.hoisted(() => {
       const request = state.request;
       state.request = undefined;
       return request ? { rows: [{ id: JOB_ID, request }], rowCount: 1 } : { rows: [], rowCount: 0 };
+    }
+    // The guarded mark: no row matches once another worker has reclaimed the
+    // lease, which is what tells the worker its result is stale.
+    if (text.includes('UPDATE job_tasks') && text.includes('claimed_by = $3')) {
+      return { rows: [], rowCount: state.claimHeld ? 1 : 0 };
     }
     if (text.includes('FROM job_tasks WHERE job_id')) return { rows: [], rowCount: 0 };
     return { rows: [], rowCount: 0 };
@@ -48,6 +55,13 @@ const sink = vi.hoisted(() => ({
 }));
 const createSink = vi.hoisted(() => vi.fn((): typeof sink | undefined => sink));
 vi.mock('../vectors/sink.js', () => ({ createSink }));
+
+const discover = vi.hoisted(() => vi.fn(async () => [] as { url: string }[]));
+vi.mock('./sitemap.js', () => ({
+  SitemapFetcher: class {
+    discover = discover;
+  },
+}));
 
 import { CrawlWorker } from './worker.js';
 
@@ -131,6 +145,9 @@ function buildWorkerWithStructured(structuredImpl: (opts: { signal?: AbortSignal
 beforeEach(() => {
   db.state.calls = [];
   db.state.request = undefined;
+  db.state.claimHeld = true;
+  discover.mockClear();
+  discover.mockResolvedValue([]);
   runPipeline.mockReset();
   enqueueDelivery.mockClear();
   createSink.mockClear();
@@ -472,4 +489,78 @@ describe('a cancelled job stops the work it is paying for', () => {
 
     expect(aborted).toBe(true);
   }, 15_000);
+});
+
+describe('CrawlWorker task claims', () => {
+  it('does not store a page whose claim another worker has taken', async () => {
+    // The lease expired mid-fetch and a second worker reclaimed the task. This
+    // worker's result is stale: storing it writes the page twice.
+    db.state.claimHeld = false;
+    db.state.request = baseRequest();
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    const worker = buildWorker();
+    await worker.runOnce();
+
+    const documentInsert = db.state.calls.find((call) => call.text.includes('INSERT INTO documents'));
+    expect(documentInsert, 'a stale result must not be written').toBeUndefined();
+
+    const completion = db.state.calls.find(
+      (call) => call.text.includes('UPDATE jobs') && call.text.includes("status = 'completed'"),
+    );
+    expect(completion?.values[1], 'a page this worker lost is not a page it completed').toBe(0);
+  });
+
+  it('stores the page while the claim is still held', async () => {
+    db.state.request = baseRequest();
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    const worker = buildWorker();
+    await worker.runOnce();
+
+    expect(db.state.calls.find((call) => call.text.includes('INSERT INTO documents'))).toBeDefined();
+  });
+});
+
+describe('CrawlWorker sitemap seeding', () => {
+  it('does not fetch the sitemap when the crawl cannot go past the seed', async () => {
+    // Every sitemap entry is offered at depth 1, so at maxDepth 0 the whole
+    // fetch is spent to have every entry rejected as too deep.
+    db.state.request = baseRequest({ sitemap: 'include', maxDepth: 0 });
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    const worker = buildWorker();
+    await worker.runOnce();
+
+    expect(discover).not.toHaveBeenCalled();
+  });
+
+  it('still fetches the sitemap when the crawl can follow links', async () => {
+    db.state.request = baseRequest({ sitemap: 'include', maxDepth: 2 });
+    runPipeline.mockResolvedValue(pipelineSuccess());
+
+    const worker = buildWorker();
+    await worker.runOnce();
+
+    expect(discover).toHaveBeenCalled();
+  });
+
+  it('renews the job lease once the sitemap phase is done', async () => {
+    // Discovery, resume and the incremental state load all run before the loop
+    // renews anything, and a slow preamble is exactly when another worker
+    // reclaims the job out from under this one.
+    db.state.request = baseRequest({ sitemap: 'include', maxDepth: 2 });
+    runPipeline.mockResolvedValue(pipelineSuccess());
+
+    const worker = buildWorker();
+    await worker.runOnce();
+
+    const renewIndex = db.state.calls.findIndex(
+      (call) => call.text.includes('UPDATE jobs') && call.text.includes('SET lease_expires_at'),
+    );
+    const totalIndex = db.state.calls.findIndex((call) => call.text.includes('SET total = $2'));
+
+    expect(renewIndex, 'the job lease must be renewed after the preamble').toBeGreaterThan(-1);
+    expect(renewIndex).toBeLessThan(totalIndex);
+  });
 });

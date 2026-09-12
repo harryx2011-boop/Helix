@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { discoverUrls, type MapRouteDeps } from './map.js';
+import { afterEach, describe, expect, it } from 'vitest';
+import Fastify, { type FastifyInstance } from 'fastify';
+import { discoverUrls, registerMap, type MapRouteDeps } from './map.js';
 
 /**
  * Link discovery had no host filter at all: every off-site link on the seed
@@ -97,5 +98,60 @@ describe('host scoping', () => {
     );
 
     expect(links).toHaveLength(1);
+  });
+});
+
+/**
+ * The seed URL is the caller's choice of what this instance connects to.
+ * Without the guard, `/map` fetches `http://127.0.0.1:<port>/` and returns the
+ * links it found on an internal page.
+ */
+describe('POST /map egress guard', () => {
+  let app: FastifyInstance | undefined;
+
+  async function build(over: Partial<MapRouteDeps> = {}): Promise<FastifyInstance> {
+    app = Fastify();
+    await registerMap(app, { ...deps([]), ...over });
+    return app;
+  }
+
+  afterEach(async () => {
+    await app?.close();
+    app = undefined;
+  });
+
+  it('refuses a private or link-local seed', async () => {
+    const instance = await build();
+
+    for (const url of ['http://127.0.0.1/', 'http://[::1]/', 'http://169.254.169.254/']) {
+      const response = await instance.inject({ method: 'POST', url: '/map', payload: { url } });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().field).toBe('url');
+    }
+  });
+
+  it('maps a public seed as before', async () => {
+    const instance = await build();
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: '/map',
+      payload: { url: 'https://example.com/', sitemap: 'skip' },
+    });
+
+    expect(response.statusCode).toBe(200);
+  });
+
+  it('maps a private seed when the operator allowed it', async () => {
+    const instance = await build({ allowPrivateUrls: true });
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: '/map',
+      payload: { url: 'http://127.0.0.1/', sitemap: 'skip' },
+    });
+
+    expect(response.statusCode).toBe(200);
   });
 });

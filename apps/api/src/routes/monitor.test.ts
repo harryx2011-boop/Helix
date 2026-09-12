@@ -279,6 +279,16 @@ describe('PATCH /v1/monitor/:id', () => {
     expect(bad.statusCode).toBe(400);
   });
 
+  it('keeps the stored diff granularity when only inline is patched', async () => {
+    const { id } = (
+      await create({ url: 'https://example.com', schedule: '0 * * * *', diff: { granularity: 'line', inline: false } })
+    ).json();
+
+    const patched = await app.inject({ method: 'PATCH', url: `/v1/monitor/${id}`, payload: { diff: { inline: true } } });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().diff).toEqual({ granularity: 'line', inline: true });
+  });
+
   it('does not re-arm a monitor whose check is running when the schedule changes', async () => {
     const { id } = (await create({ url: 'https://example.com', schedule: '0 * * * *' })).json();
     await store.claim(id, new Date());
@@ -403,6 +413,22 @@ describe('history, snapshots, check and deliveries', () => {
     const deliveries = await app.inject({ method: 'GET', url: `/v1/monitor/${id}/deliveries` });
     expect(deliveries.json().deliveries).toHaveLength(1);
     expect(deliveries.json().deliveries[0]).toMatchObject({ event: 'changed', status: 'pending', attempts: 0 });
+  });
+
+  it('validates the history limit instead of silently coercing a bad value', async () => {
+    const { id } = (await create({ url: 'https://example.com', schedule: '0 * * * *' })).json();
+
+    for (const limit of ['0', 'abc', '1.9', '-5']) {
+      const response = await app.inject({ method: 'GET', url: `/v1/monitor/${id}/history?limit=${limit}` });
+      expect(response.statusCode, `limit=${limit}`).toBe(400);
+      expect(response.json().field).toBe('limit');
+    }
+
+    const ten = await app.inject({ method: 'GET', url: `/v1/monitor/${id}/history?limit=10` });
+    expect(ten.statusCode).toBe(200);
+
+    const absent = await app.inject({ method: 'GET', url: `/v1/monitor/${id}/history` });
+    expect(absent.statusCode).toBe(200);
   });
 
   it('refuses to check a paused monitor or one already mid-check', async () => {

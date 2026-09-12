@@ -327,7 +327,7 @@ describe('GET /v1/jobs/:id', () => {
 
     const body = (await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}` })).json();
 
-    expect(body.next).toBeUndefined();
+    expect(body.next).toBeNull();
   });
 
   it('offers a next cursor when the page is exactly full, so a caller knows there may be more', async () => {

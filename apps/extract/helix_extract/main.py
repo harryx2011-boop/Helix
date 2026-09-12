@@ -14,7 +14,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from . import (
     chunking,
@@ -565,9 +565,17 @@ class ChunkRequest(BaseModel):
     text: str
     url: str
     strategy: str = Field(default="semantic", pattern="^(semantic|heading|fixed)$")
-    max_tokens: int = 512
-    overlap: int = 64
+    max_tokens: int = Field(default=512, ge=1)
+    overlap: int = Field(default=64, ge=0)
     embed: bool = False
+
+    @model_validator(mode="after")
+    def _overlap_within_budget(self) -> "ChunkRequest":
+        # An overlap at or beyond the chunk budget re-carries a whole chunk
+        # forward on every split, so chunking never makes progress.
+        if self.overlap >= self.max_tokens:
+            raise ValueError("overlap must be smaller than max_tokens")
+        return self
 
 
 class Chunk(BaseModel):

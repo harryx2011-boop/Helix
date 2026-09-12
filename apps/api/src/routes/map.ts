@@ -5,6 +5,7 @@ import { SitemapFetcher } from '../crawl/sitemap.js';
 import { normaliseUrl } from '../crawl/url.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient } from '../extract/client.js';
+import { checkUrl, type HostResolver } from '../core/url-guard.js';
 
 /**
  * URL discovery, without reading the pages.
@@ -27,6 +28,10 @@ export interface MapRouteDeps {
   fetchClient: FetchClient;
   extractClient: ExtractClient;
   userAgent: string;
+  /** `HELIX_ALLOW_PRIVATE_URLS`: let callers fetch loopback, link-local and private-range addresses. */
+  allowPrivateUrls?: boolean | undefined;
+  /** DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver. */
+  resolveHost?: HostResolver | undefined;
 }
 
 export interface DiscoveredLink {
@@ -149,6 +154,22 @@ export async function registerMap(app: FastifyInstance, deps: MapRouteDeps): Pro
     }
 
     const body = parsed.data;
+
+    // The seed is the caller's choice of what this instance connects to. Without
+    // this, an API key reaches cloud metadata, Postgres and the internal
+    // services through the seed fetch and its sitemap.
+    const urlVerdict = await checkUrl(body.url, {
+      allowPrivate: deps.allowPrivateUrls,
+      resolve: deps.resolveHost,
+    });
+    if (!urlVerdict.ok) {
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: `url: ${urlVerdict.reason}`,
+        field: 'url',
+        requestId: request.id,
+      });
+    }
 
     const { links, truncated } = await discoverUrls(
       body.url,

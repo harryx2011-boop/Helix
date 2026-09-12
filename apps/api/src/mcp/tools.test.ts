@@ -139,6 +139,45 @@ describe('generateTools', () => {
   });
 });
 
+describe('planRequest query parameter values', () => {
+  const SPEC = parseSpec(`
+openapi: 3.1.0
+info: { title: Query, version: 0.0.1 }
+paths:
+  /search:
+    get:
+      summary: Search
+      operationId: search
+      parameters:
+        - { name: tags, in: query, schema: { type: array, items: { type: string } } }
+        - { name: limit, in: query, schema: { type: integer } }
+        - { name: fresh, in: query, schema: { type: boolean } }
+        - { name: filter, in: query, schema: { type: object } }
+      responses:
+        '200': { description: Results. }
+`);
+  const tool = () => generateTools(SPEC).find((t) => t.name === 'helix_search')!;
+
+  it('appends each array element as its own query entry', () => {
+    const planned = planRequest(tool(), { tags: ['a', 'b', 'c'] });
+    expect(planned.url).toBe('/v1/search?tags=a&tags=b&tags=c');
+  });
+
+  it('stringifies a boolean scalar', () => {
+    const planned = planRequest(tool(), { fresh: true });
+    expect(planned.url).toBe('/v1/search?fresh=true');
+  });
+
+  it('stringifies a number scalar', () => {
+    const planned = planRequest(tool(), { limit: 5 });
+    expect(planned.url).toBe('/v1/search?limit=5');
+  });
+
+  it('rejects a plain object with an error naming the parameter', () => {
+    expect(() => planRequest(tool(), { filter: { status: 'open' } })).toThrow(/filter/);
+  });
+});
+
 describe('the real openapi.yaml', () => {
   it('yields a tool for every operationId, each with a description and an object schema', () => {
     const spec = loadSpec();

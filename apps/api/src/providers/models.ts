@@ -32,14 +32,14 @@ function stripTrailingSlash(url: string): string {
 }
 
 /** Ollama's native API lives at the origin; the stored `baseUrl` may carry an OpenAI-compatible `/v1` suffix or not. */
-function ollamaTagsUrl(baseUrl: string): string {
+export function ollamaTagsUrl(baseUrl: string): string {
   const trimmed = stripTrailingSlash(baseUrl);
   const root = trimmed.endsWith('/v1') ? trimmed.slice(0, -'/v1'.length) : trimmed;
   return `${root}/api/tags`;
 }
 
 /** vLLM and generic OpenAI-compatible servers expose the OpenAI `GET /v1/models` shape at whatever base URL was stored. */
-function openAiModelsUrl(baseUrl: string): string {
+export function openAiModelsUrl(baseUrl: string): string {
   return `${stripTrailingSlash(baseUrl)}/models`;
 }
 

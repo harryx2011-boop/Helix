@@ -34,8 +34,6 @@ services:
     environment:
       HELIX_FETCH_PORT: 7401
       RUST_LOG: ${RUST_LOG:-info}
-    ports:
-      - "${HELIX_FETCH_PORT:-7401}:7401"
     healthcheck:
       test: ["CMD", "/usr/local/bin/helix-fetch", "--healthcheck"]
       interval: 2s
@@ -63,8 +61,6 @@ services:
       OPENAI_COMPATIBLE_BASE_URL: ${OPENAI_COMPATIBLE_BASE_URL:-}
       VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
       COHERE_API_KEY: ${COHERE_API_KEY:-}
-    ports:
-      - "${HELIX_EXTRACT_PORT:-7402}:7402"
     volumes:
       # Cache the local embedding model so a rebuild does not re-download it.
       - helix-models:/root/.cache/huggingface

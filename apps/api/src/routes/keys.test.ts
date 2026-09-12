@@ -370,7 +370,7 @@ describe('multi-tenant registration', () => {
     expect(db.state.rows.find((r) => r.id === victim.id)!.revoked_at).toBeNull();
   });
 
-  it('still mints a key, which is scoped to its creator by construction', async () => {
+  it('does not register minting either', async () => {
     app = await build({ multiTenant: true });
     const { key } = await seedKey();
 
@@ -381,7 +381,9 @@ describe('multi-tenant registration', () => {
       headers: auth(key),
     });
 
-    expect(response.statusCode).toBe(201);
+    expect(response.statusCode).toBe(404);
+    // The gate must stop the write, not merely colour the response.
+    expect(db.state.rows).toHaveLength(1);
   });
 
   it('serves both routes under self-host, where every key is the same operator', async () => {

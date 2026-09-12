@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { memo, useEffect, useId, useMemo, useState } from 'react';
 import { ChevronDown, Download, FileAudio, FileImage, FileText, FileVideo, Film, X } from 'lucide-react';
 import { PillButton } from '@/components/converter/pill-button';
 import { ErrorLog } from './error-log';
@@ -8,7 +8,16 @@ import { JobProgress } from './job-progress';
 import { SettingsPanel } from './settings-panel';
 import { AbPreview, Waveform } from './waveform';
 import { useReducedMotion } from '@/lib/converter/theme';
-import { formatBytes, formatDelta, formatSeconds, type ConvertSettings, type QueueItem } from '@/lib/converter/jobs/types';
+import {
+  defaultSettings,
+  defaultTarget,
+  formatBytes,
+  formatDelta,
+  formatSeconds,
+  type ConvertSettings,
+  type FileKind,
+  type QueueItem,
+} from '@/lib/converter/jobs/types';
 
 const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(' ');
 const DONE_HOLD_MS = 600;
@@ -17,21 +26,23 @@ const KIND_ICON = { video: FileVideo, audio: FileAudio, image: FileImage, gif: F
 
 type Props = {
   item: QueueItem;
-  effective: ConvertSettings;
+  shared: ConvertSettings | null;
+  primaryKind: FileKind | null;
   expanded: boolean;
   sourceUrl: string | null;
-  onToggle: () => void;
-  onOverride: (patch: Partial<ConvertSettings>) => void;
-  onResetOverride: () => void;
-  onRemove: () => void;
-  onCancel: () => void;
-  onRetry: () => void;
-  onDownload: () => void;
+  onToggle: (id: string) => void;
+  onOverride: (id: string, patch: Partial<ConvertSettings>) => void;
+  onResetOverride: (id: string) => void;
+  onRemove: (id: string) => void;
+  onCancel: (id: string) => void;
+  onRetry: (id: string) => void;
+  onDownload: (id: string) => void;
 };
 
-export function FileRow({
+function FileRowImpl({
   item,
-  effective,
+  shared,
+  primaryKind,
   expanded,
   sourceUrl,
   onToggle,
@@ -47,6 +58,12 @@ export function FileRow({
   const [settled, setSettled] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const reduced = useReducedMotion();
+
+  const effective = useMemo((): ConvertSettings => {
+    const base = shared ?? defaultSettings(item.kind, item.ext);
+    const kindFix = primaryKind && item.kind !== primaryKind ? { to: defaultTarget(item.kind, item.ext) } : {};
+    return { ...base, ...kindFix, ...(item.override ?? {}) };
+  }, [shared, primaryKind, item.kind, item.ext, item.override]);
 
   useEffect(() => {
     if (item.phase !== 'done') {
@@ -106,13 +123,13 @@ export function FileRow({
             </span>
           )}
           {item.phase === 'done' && settled && (
-            <PillButton type="button" size="md" variant="secondary" onClick={onDownload} aria-label={`Download ${item.name}, ${outLabel}`} className="animate-fade-in">
+            <PillButton type="button" size="md" variant="secondary" onClick={() => onDownload(item.localId)} aria-label={`Download ${item.name}, ${outLabel}`} className="animate-fade-in">
               <Download aria-hidden="true" className="h-4 w-4" />
               <span className="font-mono tabular-nums">{outLabel}</span>
             </PillButton>
           )}
           {(item.phase === 'idle' || item.phase === 'done') && (
-            <PillButton type="button" size="md" variant="ghost" aria-label={`Remove ${item.name}`} onClick={onRemove}>
+            <PillButton type="button" size="md" variant="ghost" aria-label={`Remove ${item.name}`} onClick={() => onRemove(item.localId)}>
               <X aria-hidden="true" className="h-4 w-4" />
             </PillButton>
           )}
@@ -124,7 +141,7 @@ export function FileRow({
               aria-expanded={expanded}
               aria-controls={bodyId}
               aria-label={expanded ? `Hide settings for ${item.name}` : `Settings for ${item.name}`}
-              onClick={onToggle}
+              onClick={() => onToggle(item.localId)}
             >
               <ChevronDown aria-hidden="true" className={cx('h-4 w-4 transition-transform duration-150', expanded && 'rotate-180')} />
             </PillButton>
@@ -153,7 +170,7 @@ export function FileRow({
             cancelling={cancelling}
             onCancel={() => {
               setCancelling(true);
-              onCancel();
+              onCancel(item.localId);
             }}
           />
         </div>
@@ -165,10 +182,10 @@ export function FileRow({
             {item.phase === 'cancelled' ? 'Cancelled before it finished.' : (item.error?.message ?? 'This file could not be converted.')}
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <PillButton type="button" size="md" variant="secondary" onClick={onRetry}>
+            <PillButton type="button" size="md" variant="secondary" onClick={() => onRetry(item.localId)}>
               Retry
             </PillButton>
-            <PillButton type="button" size="md" variant="ghost" onClick={onRemove}>
+            <PillButton type="button" size="md" variant="ghost" onClick={() => onRemove(item.localId)}>
               Remove
             </PillButton>
           </div>
@@ -211,9 +228,9 @@ export function FileRow({
                 inSize={item.size}
                 meta={item.meta}
                 settings={effective}
-                onChange={onOverride}
+                onChange={(p) => onOverride(item.localId, p)}
                 isOverridden={customised}
-                onReset={onResetOverride}
+                onReset={() => onResetOverride(item.localId)}
               />
             )}
           </div>
@@ -222,3 +239,5 @@ export function FileRow({
     </li>
   );
 }
+
+export const FileRow = memo(FileRowImpl);

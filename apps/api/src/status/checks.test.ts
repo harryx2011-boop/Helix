@@ -80,6 +80,18 @@ describe('service checks', () => {
     expect(JSON.stringify(services)).not.toMatch(/token|:\/\//);
   });
 
+  it('marks a check that never resolves as an error after the overall time bound, instead of hanging', async () => {
+    vi.useFakeTimers();
+    const hangingExtract = { health: vi.fn(() => new Promise<boolean>(() => undefined)) } as unknown as ExtractClient;
+
+    const promise = runServiceChecks({ fetchClient, extractClient: hangingExtract });
+    await vi.advanceTimersByTimeAsync(5_000);
+    const services = await promise;
+
+    expect(services['extract']).toMatchObject({ status: 'unhealthy', detail: 'timeout' });
+    vi.useRealTimers();
+  });
+
   it('keeps every entry in the shape the status page reads', async () => {
     const services = await runServiceChecks({
       fetchClient,

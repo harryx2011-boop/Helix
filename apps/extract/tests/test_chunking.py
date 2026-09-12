@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from fastapi.testclient import TestClient
+
 from helix_extract.chunking import chunk_markdown, make_anchor
+from helix_extract.main import app
+
+client = TestClient(app)
 
 DOC = """# Getting Started
 
@@ -136,3 +141,66 @@ class TestChunkMarkdown:
     def test_numbers_chunks_in_document_order(self) -> None:
         chunks = chunk_markdown(DOC, "https://e.com/docs", strategy="heading")
         assert [c.index for c in chunks] == list(range(len(chunks)))
+
+    def test_overlap_larger_than_max_tokens_stays_within_budget(self) -> None:
+        # An overlap at or beyond the chunk budget re-carries the whole chunk
+        # forward every time, so each new chunk only grows: nothing is ever
+        # dropped and the token budget stops meaning anything. Clamped, every
+        # chunk stays near the same small size instead of climbing linearly.
+        text = "Sentence one here. " * 100
+        chunks = chunk_markdown(text, "https://e.com/d", max_tokens=5, overlap=1000)
+
+        lens = [len(c.text) for c in chunks]
+        assert max(lens) - min(lens) < 20
+
+    def test_overlap_zero_still_works(self) -> None:
+        text = "# S\n\n" + " ".join(f"Sentence number {i} of the section." for i in range(200))
+        chunks = chunk_markdown(text, "https://e.com/d", max_tokens=100, overlap=0)
+
+        assert len(chunks) > 1
+        texts = [c.text for c in chunks]
+        assert len(texts) == len(set(texts))
+
+
+class TestChunkEndpointValidation:
+    def test_rejects_overlap_equal_to_max_tokens(self) -> None:
+        response = client.post(
+            "/chunk",
+            json={"text": "hello world", "url": "https://e.com/d", "max_tokens": 10, "overlap": 10},
+        )
+        assert response.status_code == 422
+
+    def test_rejects_overlap_greater_than_max_tokens(self) -> None:
+        response = client.post(
+            "/chunk",
+            json={"text": "hello world", "url": "https://e.com/d", "max_tokens": 5, "overlap": 1000},
+        )
+        assert response.status_code == 422
+
+    def test_rejects_a_non_positive_max_tokens(self) -> None:
+        response = client.post(
+            "/chunk",
+            json={"text": "hello world", "url": "https://e.com/d", "max_tokens": 0, "overlap": 0},
+        )
+        assert response.status_code == 422
+
+    def test_rejects_a_negative_overlap(self) -> None:
+        response = client.post(
+            "/chunk",
+            json={"text": "hello world", "url": "https://e.com/d", "max_tokens": 10, "overlap": -1},
+        )
+        assert response.status_code == 422
+
+    def test_accepts_overlap_one_less_than_max_tokens(self) -> None:
+        response = client.post(
+            "/chunk",
+            json={"text": "hello world", "url": "https://e.com/d", "max_tokens": 10, "overlap": 9},
+        )
+        assert response.status_code == 200
+
+    def test_accepts_zero_overlap(self) -> None:
+        response = client.post(
+            "/chunk",
+            json={"text": "hello world", "url": "https://e.com/d", "max_tokens": 10, "overlap": 0},
+        )
+        assert response.status_code == 200

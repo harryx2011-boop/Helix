@@ -76,3 +76,37 @@ describe('the fleet respects `size` under saturation', () => {
     await pool.close();
   });
 });
+
+describe('a recycle that replaces a browser wakes the queue', () => {
+  it('grants a parked caller the replacement browser', async () => {
+    const pool = new BrowserPool({ size: 1, maxContexts: 1, recycleAfter: 1 });
+    await pool.start();
+
+    const held = await pool.lease();
+    const queued = pool.lease();
+
+    // The close frees the only slot and trips the recycle threshold at once.
+    // The freed slot belongs to a browser that is now retiring, so the parked
+    // caller is served by the replacement or by nothing at all.
+    await held.close();
+
+    const granted = await Promise.race([
+      queued,
+      new Promise((resolve) => setTimeout(() => resolve('STARVED'), 1000)),
+    ]);
+
+    expect(granted, 'the replacement must wake the parked caller').not.toBe('STARVED');
+    await (granted as Awaited<typeof queued>).close();
+    await pool.close();
+  });
+
+  it('recycles without a parked caller to wake', async () => {
+    const pool = new BrowserPool({ size: 1, maxContexts: 1, recycleAfter: 1 });
+    await pool.start();
+
+    const held = await pool.lease();
+    await expect(held.close()).resolves.toBeUndefined();
+
+    await pool.close();
+  });
+});

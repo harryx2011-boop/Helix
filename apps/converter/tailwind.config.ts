@@ -1,6 +1,6 @@
 import type { Config } from 'tailwindcss';
 
-// Persona's system (PERSONA.md §2): light, Inter + JetBrains Mono, black
+// Persona's system: light, Inter + JetBrains Mono, black
 // primary, blue reserved for actions, eleven role tints for content. The
 // shadcn-style hsl tokens exist only so the copied ui/ primitives work; they
 // resolve to the same palette.

@@ -12,10 +12,10 @@ the playground, Agent and Providers work locally and nowhere else.
 This is the sequence that changes that. Steps marked **you** need credentials or
 an account only you have; the rest is in the repo.
 
-**One database.** The hosted API, the dashboard and Persona all use the same
-Supabase Postgres. The API runs `apps/api/migrations` there at boot; the
-dashboard's key routes write to the API's own `api_keys` table; Persona's
-tables sit beside them. There is no second Postgres and no key sync.
+**One database.** The hosted API and the dashboard use the same Supabase
+Postgres. The API runs `apps/api/migrations` there at boot and the dashboard's
+key routes write to the API's own `api_keys` table. There is no second
+Postgres and no key sync.
 
 ---
 
@@ -70,9 +70,6 @@ they always have; rerun the generator afterwards so `schema.sql` includes them.
    events `user.created`, `user.updated`, `user.deleted`; copy the signing
    secret → `CLERK_WEBHOOK_SIGNING_SECRET`. This is what creates the
    `profiles` row a key hangs off.
-3. Persona (`persona-helix.vercel.app`) uses the **same** Clerk application; it
-   gets its own publishable/secret keys from that application and needs no
-   second webhook.
 
 ## 4. Deploy `apps/extract`
 
@@ -108,7 +105,7 @@ Dockerfile: `apps/api/Dockerfile`.
 | `HELIX_INTERNAL_ADMIN_TOKEN` | gates `/settings` and `/internal/*`. Unset means neither router is registered |
 | `HELIX_EXTRACT_URL` | the step-4 deployment |
 | `HELIX_FETCH_URL` | optional; the Rust tier. Unset degrades to the other tiers |
-| `HELIX_CORS_ORIGINS` | must include `https://helixapi-dev.vercel.app` and `https://persona-helix.vercel.app` |
+| `HELIX_CORS_ORIGINS` | must include `https://helixapi-dev.vercel.app` |
 | `HELIX_PUBLIC_URL` | the API's own public URL; live-view links are built from it |
 | `HELIX_MULTI_TENANT` | **set to `1` for the hosted deployment.** Scopes jobs to the API key that created them and withholds the instance-wide key and usage routes. Unset means the single-operator model, where every key on the instance can read and revoke every other — correct for self-host, a cross-tenant hole when several people share one instance |
 
@@ -166,8 +163,7 @@ curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer helix-…" http
 ## Known-unfinished before this is production
 
 - **Clerk is on dev keys.** Production keys and a configured domain are needed,
-  or sign-in breaks on the real hostname. Cross-site SSO with Persona needs
-  satellite domains on a production instance.
+  or sign-in breaks on the real hostname.
 - **`HELIX_ENCRYPTION_KEY` rotation** re-encrypts stored provider keys through
   `POST /settings/encryption-key/rotate`, but the process keeps the old key in
   memory until restarted. Rotate, set the new value, then restart.

@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 function titleFor(slug: string): string | undefined {
   const endpoint = docsEndpointOrThrow(slug);
   if (endpoint) return endpoint.def.productName;
-  if (slug === 'getting-started') return 'Getting started';
+  if (slug === 'getting-started') return 'Getting Started';
   if (isAgentSurfaceSlug(slug)) return agentSurfaceDocs({ mcpUrl: MCP_URL, siteUrl: SITE_URL })[slug].title;
   if (isReferenceSlug(slug)) return REFERENCE_DOCS[slug]().title;
   return undefined;
@@ -258,7 +258,7 @@ function ReferenceDocPage({ doc }: { doc: ReferenceDoc }) {
 
 function GettingStartedDoc() {
   return (
-    <StaticShell h1="Getting started">
+    <StaticShell h1="Getting Started">
       <DocSection title="1. Sign up">
         <p className="text-[15px] leading-relaxed text-m-ink/72">
           Create an account at <Link href="/sign-up" className="text-violet underline decoration-violet-40 underline-offset-4">/sign-up</Link>. A default API key is minted for you automatically.

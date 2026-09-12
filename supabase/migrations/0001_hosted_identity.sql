@@ -23,9 +23,9 @@ create extension if not exists pgcrypto;
 
 -- ---------------------------------------------------------------- profiles
 --
--- Identity lives in Clerk. This row exists so that keys and Persona data can
--- reference a stable uuid rather than a Clerk id string, and so a user
--- deleted in Clerk cascades everything they owned.
+-- Identity lives in Clerk. This row exists so that keys can reference a stable
+-- uuid rather than a Clerk id string, and so a user deleted in Clerk cascades
+-- everything they owned.
 
 create table if not exists profiles (
   id             uuid primary key default gen_random_uuid(),

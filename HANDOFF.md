@@ -1,3 +1,47 @@
+# Handoff — 2026-09-12: Persona split out, nav Title Cased
+
+**Persona is no longer part of this repo.** It is a standalone project at `D:\Persona` with its
+own git history (initial commit `eb1e260`). This session did the split and the nav casing pass.
+Everything below the next two sections is the older 2026-09-05 handoff, kept for the local-run
+recipes; note it still says `/e/Helix`, and the repo is on **D:** now.
+
+## What changed here
+
+- **Nav is Title Case.** `Getting Started`, `API Reference`, `Self-Host Guide`,
+  `Agent Onboarding`, `API Keys`, `Open Source`. Page titles for the same destinations were
+  aligned too (`docs/page.tsx`, `docs/[slug]/page.tsx`, `lib/docs-content.ts`) so a nav row and
+  the page it opens no longer disagree. Running prose was left alone.
+- **Persona removed.** The nav row, the footer row, and `PERSONA_URL` in `lib/mode.ts` are gone
+  — `PERSONA_URL` had no other consumer. `apps/persona/` and `research/persona/` are deleted;
+  `PERSONA.md` and `PERSONA-REVAMP.md` moved to the new repo. Dropped from `pnpm-workspace.yaml`
+  (231 packages left the lockfile).
+- **Persona's tables left the schema.** Hosted migrations `0002_persona`, `0004_persona_sync`
+  and `0009_persona_share_origin` are deleted and both schema files regenerated (18 migrations,
+  zero `persona` matches). Safe because `migrate.ts` iterates files on disk, so a
+  `schema_migrations` row with no file is ignored — it cannot break boot.
+- **DEPLOY.md** no longer claims Persona shares this database or this Clerk application.
+
+Verified: dashboard `tsc` and `eslint` clean, `next build` green (191 pages), `check-schema.mjs`
+reports both schema files current, and the served HTML has 3 hits each for the Title Case labels
+and 0 for the old casing and for `Persona`.
+
+## Two things deliberately left open
+
+1. **The `persona_*` tables still exist in the live Supabase project.** Dropping them is
+   destructive and needs your approval; the migrations that created them are gone from the repo,
+   so the code and the live database disagree until you drop them.
+2. **`apps/dashboard/lib/supabase/database.types.ts` still declares those tables**, because it is
+   generated from the live database by the Supabase CLI. Regenerate it after the drop. No
+   dashboard code reads them — checked — so this is cosmetic until then.
+
+## Next session: the Persona landing revamp
+
+Harry is sending a reference website. The brief so far: **keep the alternating role pill**
+(HR / Dev / …) in the hero. Work happens in `D:\Persona`, not here. That repo's README documents
+the localStorage model and the new share-link codec.
+
+---
+
 # Handoff — 2026-09-05
 
 Helix is at **1.11.3** (`393992e`, tag `v1.11.3`) on origin/main, with another session's 1.12.0 converter work sitting uncommitted in the tree. That day ran 1.7.0 → 1.11.3. `context.md` carries the full record per version; this file is only what the next session needs to pick up.
@@ -15,7 +59,6 @@ Related, and worth stating because an earlier version of this file got it wrong:
 | Surface | URL | State |
 |---|---|---|
 | Dashboard | https://helixapi-dev.vercel.app | 200, serving 1.11.0's UI fixes. Vercel deploys on push. |
-| Persona | https://persona-helix.vercel.app | 200 |
 | Supabase | project `Helix`, ref `gytknetqttkdmkhmysbm` | 11 API + 8 hosted migrations applied |
 | API | — | **not deployed**; runs locally on 7400 |
 | Converter | — | **not deployed**; runs locally on 4400, fully client-side (ffmpeg.wasm) |

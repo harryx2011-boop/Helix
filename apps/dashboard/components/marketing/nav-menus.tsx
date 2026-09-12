@@ -14,11 +14,9 @@ import {
   Puzzle,
   Server,
   Terminal,
-  Users,
 } from 'lucide-react';
 import { Logo } from '@/components/shell/logo';
 import { PRODUCTS, TAB_GROUPS, type EndpointDef, type TabGroup } from '@/lib/catalog';
-import { PERSONA_URL } from '@/lib/mode';
 import { GITHUB_URL } from '@/lib/github-stars';
 import { cn } from '@/lib/utils';
 import { IconTile } from './icon-tile';
@@ -88,12 +86,12 @@ export const SURFACE_ROWS: readonly MenuRow[] = [
 ];
 
 export const DOCS_ROWS: readonly MenuRow[] = [
-  { label: 'Getting started', href: '/docs/getting-started', icon: BookOpen },
-  { label: 'API reference', href: '/docs/api-reference', icon: Braces },
-  { label: 'Self-host guide', href: '/self-host', icon: Server },
+  { label: 'Getting Started', href: '/docs/getting-started', icon: BookOpen },
+  { label: 'API Reference', href: '/docs/api-reference', icon: Braces },
+  { label: 'Self-Host Guide', href: '/self-host', icon: Server },
   { label: 'CLI', href: '/docs/cli', icon: Terminal },
   { label: 'MCP', href: '/docs/mcp', icon: Plug },
-  { label: 'Agent onboarding', href: '/agent-onboarding/SKILL.md', icon: Bot },
+  { label: 'Agent Onboarding', href: '/agent-onboarding/SKILL.md', icon: Bot },
   { label: 'llms.txt', href: '/llms.txt', icon: FileText },
 ];
 
@@ -111,7 +109,6 @@ export const TOOL_ROWS: readonly MenuRow[] = [
   { label: 'Checks', href: '/checks', icon: ListChecks },
   { label: 'Playground', href: '/app/playground', icon: FlaskConical },
   { label: 'Vulcan', href: '/app/vulcan', icon: VulcanFlame },
-  { label: 'Persona', href: PERSONA_URL, icon: Users, external: true },
   { label: 'Status', href: '/status', icon: Activity },
 ].filter((row) => row.href);
 
@@ -161,7 +158,7 @@ function ColumnHeader({ children }: { children: React.ReactNode }) {
 export function OpenSourcePanel({ onNavigate }: { onNavigate: () => void }) {
   return (
     <div className="flex flex-col bg-m-bg">
-      <ColumnHeader>Open source</ColumnHeader>
+      <ColumnHeader>Open Source</ColumnHeader>
       <div className="flex flex-1 flex-col gap-4 px-4 py-4">
         <span
           aria-hidden="true"

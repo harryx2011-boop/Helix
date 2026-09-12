@@ -245,9 +245,27 @@ Interact (`apps/api/src/routes/interact.ts`, `browser/sessions.ts`, `browser/int
 
 Two bugs that would have shipped, both found only by running against a real model rather than a mock. `/v1/agent/schema` accepted no `provider`, and helix-extract's auto-pick walks cloud vendors only by design, so an instance whose sole provider was a local runtime could not use it at all. With that fixed it answered, and always returned `properties: {}` — `_strictify` in `schema_compiler.py` stamped `additionalProperties: false` onto objects declaring no properties, which forbids every key, so the meta-schema's own `properties` field was structurally unfillable and schema design could never emit a field.
 
-## Persona, the sub-site (2026-09-02)
+## Persona — split out of this repo (2026-09-12)
 
-`apps/persona` is its own Next.js app in the workspace (Inter + JetBrains Mono, black primary, blue only for actions, eleven role tints; tokens in `app/globals.css` as `--p-*` plus shadcn hsl aliases so the copied `components/ui/*` work). The catalog is files: `content/roles.json`, `content/personas/<role>/<slug>.md` (frontmatter + body with `{{TOKENS}}`), `content/guides/*.md` (config-keys block + steps), loaded by the server-only `lib/catalog.ts` and gated by `pnpm check:content` (`node --conditions=react-server` because `server-only` throws outside Next). `lib/placeholders.ts` is the deterministic engine (scan, alias the wizard-era `Q1.1_*` names onto the guides' keys, fill, segment); `lib/store.ts` is local-first state (forks, favourites, template values, settings) in localStorage with a cross-component change event; Phase 4 merges it into the `persona_*` tables. GOTCHA: gray-matter parses `date: 2026-09-02` as a Date, which React refuses to render; the loader normalises history dates to ISO days. Vercel project `persona-ai` on **persona-helix.vercel.app** — `persona-ai.vercel.app` belongs to another account's "AI Interviewer" site and returns 409 on attach — (root `apps/persona`, deployed from the repo root with `VERCEL_PROJECT_ID` set, since `.vercel/` at the root belongs to helixapi-dev).
+**Persona no longer lives here.** It is a standalone repo at `D:\Persona`, with its own git
+history starting at the split. Helix keeps no link to it: the nav row, the footer row and
+`PERSONA_URL` in `lib/mode.ts` are gone, and so are the three hosted migrations that carried
+its tables (`0002_persona`, `0004_persona_sync`, `0009_persona_share_origin`) — `schema.sql`
+and `schema-idempotent.sql` are regenerated without them.
+
+The split also removed Persona's last server dependency. It had no accounts already; the only
+database-backed feature was share links, so those became self-contained URLs — the snapshot is
+deflated into the `/s/<token>` path itself, no upload and no backend. Forks, favourites, values
+and settings were already localStorage and are unchanged.
+
+Two things are deliberately **not** done: the `persona_*` tables still exist in the live
+Supabase project (dropping them is a destructive action needing owner approval), and
+`apps/dashboard/lib/supabase/database.types.ts` still declares them because it is generated
+from that live database. Both resolve together when the tables are dropped.
+
+The rest of this section is the historical record from when Persona lived in `apps/persona`.
+
+`apps/persona` was its own Next.js app in the workspace (Inter + JetBrains Mono, black primary, blue only for actions, eleven role tints; tokens in `app/globals.css` as `--p-*` plus shadcn hsl aliases so the copied `components/ui/*` work). The catalog is files: `content/roles.json`, `content/personas/<role>/<slug>.md` (frontmatter + body with `{{TOKENS}}`), `content/guides/*.md` (config-keys block + steps), loaded by the server-only `lib/catalog.ts` and gated by `pnpm check:content` (`node --conditions=react-server` because `server-only` throws outside Next). `lib/placeholders.ts` is the deterministic engine (scan, alias the wizard-era `Q1.1_*` names onto the guides' keys, fill, segment); `lib/store.ts` is local-first state (forks, favourites, template values, settings) in localStorage with a cross-component change event; Phase 4 merges it into the `persona_*` tables. GOTCHA: gray-matter parses `date: 2026-09-02` as a Date, which React refuses to render; the loader normalises history dates to ISO days. Vercel project `persona-ai` on **persona-helix.vercel.app** — `persona-ai.vercel.app` belongs to another account's "AI Interviewer" site and returns 409 on attach — (root `apps/persona`, deployed from the repo root with `VERCEL_PROJECT_ID` set, since `.vercel/` at the root belongs to helixapi-dev).
 
 **Persona 1.6.0 (2026-09-05): the library rebalance, the last item of `PERSONA-REVAMP.md`.** The four thin departments each gain three roles rather than more variants of the roles they had: Sales adds Sales Engineering, Revenue Operations and Partnerships; Security adds Application Security, Vendor Security and Detection Engineering; Legal adds Contract Review, Privacy Operations and IP and Licensing; Education adds Course Design, Assessment and Feedback and Academic Advising. Twelve roles, thirty-six personas (a default and two competing stances each), a platform guide and an LLM guide per role, written by a twelve-agent sonnet fleet against one brief that restates the Support Agent bar (six sections in order, 900 to 1,300 words, exact output templates, placeholder-driven thresholds, both refusal lines, checkable escalation triggers, every `{{KEY}}` declared and used). The library is now 48 roles, 148 personas, 302 guides, 995 placeholders; `check:content` is green and `INDEX.md`, `/api/personas` and `/skill.md` all carry the new roles by construction. Adjacencies the writers checked and kept distinct: Privacy Operations executes requests where the existing Legal variant reviews policies; Application Security reviews for defects where Code Review's security variant reviews a PR; Academic Advising handles requirements where Education and Tutoring teaches. Not touched: the twelve pre-existing guide files that carry a UTF-8 BOM and CRLF from an earlier session.
 
@@ -273,7 +291,7 @@ RLS is on for all 24 public tables (the API connects as owner, unaffected). Poli
 
 **pgvector bug, fixed.** `001_init.sql`'s chunks block put `$sql$` inside a `--` comment within a dollar-quoted string, terminating it early; the block was syntactically broken but unreachable everywhere so far (no pgvector). Supabase ships pgvector, so the first hosted boot would have died in migration 001. Fixed in place; `migrate.ts` carries `PRIOR_CHECKSUMS` so databases that recorded the old hash are not refused (`migrate.test.ts`, 4 tests; 810 API tests pass). Still not executed against a real pgvector server — parsed only.
 
-DEPLOY.md is rewritten for this model (direct-connection `DATABASE_URL`, `schema.sql` in the SQL editor, Clerk third-party auth + webhook, `migration repair` for later pushes). PERSONA.md carries the Persona plan; `research/persona/` holds the PRD's content files, the role-pill component and the avatar.
+DEPLOY.md is rewritten for this model (direct-connection `DATABASE_URL`, `schema.sql` in the SQL editor, Clerk third-party auth + webhook, `migration repair` for later pushes). PERSONA.md carried the Persona plan and `research/persona/` its PRD, content files, role-pill component and avatar; both moved to `D:\Persona` in the 2026-09-12 split.
 
 ## Supabase removed; the app is local (2026-08-29)
 
@@ -294,7 +312,7 @@ Full rebuild of `/` per `landing-revamp-plan.md`'s Helix section, then two furth
 
 Capability pages (`pages/capability-page.tsx`): the feature grid is one bordered 2×2 panel of `{ icon, eyebrow, lead, body, evidence? }` cells, four per page.
 
-Added `gsap` + `lenis` (`components/marketing/scroll-motion.tsx`, mounted in the marketing layout): Lenis smooth scroll on the GSAP ticker plus the `[data-reveal]` / `[data-reveal-group] > [data-reveal-item]` convention (`power3.out`, 500ms, 60ms stagger, `once: true`); `html.has-motion` gates the CSS visibility hook; reduced motion skips Lenis. Screenshots: `research/firecrawl-capture/shoot-landing.mjs` (marketing routes) and `shoot-app.mjs` (Clerk e2e user; run with `MSYS_NO_PATHCONV=1` from Git Bash or `/app` becomes a Windows path). Ad-hoc scripts outside that folder import Playwright from `file:///E:/Helix/research/firecrawl-capture/node_modules/playwright/index.mjs`.
+Added `gsap` + `lenis` (`components/marketing/scroll-motion.tsx`, mounted in the marketing layout): Lenis smooth scroll on the GSAP ticker plus the `[data-reveal]` / `[data-reveal-group] > [data-reveal-item]` convention (`power3.out`, 500ms, 60ms stagger, `once: true`); `html.has-motion` gates the CSS visibility hook; reduced motion skips Lenis. Screenshots: `research/firecrawl-capture/shoot-landing.mjs` (marketing routes) and `shoot-app.mjs` (Clerk e2e user; run with `MSYS_NO_PATHCONV=1` from Git Bash or `/app` becomes a Windows path). Ad-hoc scripts outside that folder import Playwright from `file:///D:/Helix/research/firecrawl-capture/node_modules/playwright/index.mjs`.
 
 ## /app restyle and Agent research preview (2026-08-25)
 

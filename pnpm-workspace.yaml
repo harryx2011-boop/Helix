@@ -1,7 +1,6 @@
 ﻿packages:
   - 'apps/api'
   - 'apps/dashboard'
-  - 'apps/persona'
   - 'apps/converter'
   - 'packages/schema'
   - 'packages/sdk-ts'

@@ -3,7 +3,6 @@ import { Logo } from '@/components/shell/logo';
 import { GithubMark } from '@/components/marketing/github-mark';
 import { AsciiHelix, GridCells } from '@/components/marketing/ambient';
 import { AsciiNoise } from '@/components/marketing/ascii-fields';
-import { PERSONA_URL } from '@/lib/mode';
 import { cn } from '@/lib/utils';
 import pkg from '@/package.json';
 import { GITHUB_REPO, GITHUB_URL } from '@/lib/github-stars';
@@ -41,17 +40,16 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: 'Canvas', href: '/canvas' },
       { label: 'Vulcan', href: '/app/vulcan' },
       { label: 'Health', href: '/app/self-host/health' },
-      { label: 'API keys', href: '/app/keys' },
+      { label: 'API Keys', href: '/app/keys' },
       { label: 'Settings', href: '/app/settings' },
-      { label: 'Persona', href: PERSONA_URL },
     ],
   },
   {
     title: 'Documentation',
     links: [
-      { label: 'Getting started', href: '/docs' },
-      { label: 'API reference', href: '/docs/api-reference' },
-      { label: 'Self-host guide', href: '/self-host' },
+      { label: 'Getting Started', href: '/docs' },
+      { label: 'API Reference', href: '/docs/api-reference' },
+      { label: 'Self-Host Guide', href: '/self-host' },
       { label: 'SDKs', href: '/docs/sdks' },
       { label: 'MCP · CLI · Skills', href: '/docs/agents' },
     ],

@@ -285,7 +285,7 @@ export function apiReferenceDoc(): ReferenceDoc {
   const endpoints = docsEndpointList();
   return {
     slug: 'api-reference',
-    title: 'API reference',
+    title: 'API Reference',
     summary: 'Every live endpoint, its method, path and auth header, in one page.',
     sections: [
       {

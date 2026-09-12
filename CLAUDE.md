@@ -30,7 +30,6 @@ Standing facts (deployment, verified runtime recipes, known gotchas, dead decisi
 - `apps/api` — Fastify, Playwright pool, jobs. **Port 7400.** Routes mount under a `/v1` prefix; `/settings*` and `/internal/keys` mount outside it, on the admin-token boundary.
 - `apps/fetch` — Rust, TLS identity. **Port 7401.**
 - `apps/extract` — Python, parsing/LLM/embeddings. **Port 7402.**
-- `apps/persona` — the sub-site. **Port 4200.** Phase 4 (accounts) is dead by decision — never build it.
 - Postgres **7432**. `packages/` — profiles, schema, sdk-ts, cli (`@helix/cli`).
 
 Converter is a route group at `/convert` inside the dashboard, not a standalone app. Vulcan and Checks are dashboard-only surfaces with no `apps/api` route — correctly absent from `openapi.yaml`. `/app/vulcan` is local-only.

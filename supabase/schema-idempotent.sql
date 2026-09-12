@@ -17,7 +17,7 @@
 -- find so it does not re-apply its own files at boot.
 --
 -- Regenerate after any migration lands:  node supabase/build-schema.mjs
--- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql | 0001_hosted_identity.sql, 0002_persona.sql, 0003_onboarding.sql, 0004_persona_sync.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql, 0008_browser_role_hardening.sql, 0009_persona_share_origin.sql
+-- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql, 012_job_leases.sql | 0001_hosted_identity.sql, 0003_onboarding.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql, 0008_browser_role_hardening.sql
 
 -- ============================================================================
 -- API migrations
@@ -559,6 +559,48 @@ CREATE INDEX IF NOT EXISTS request_usage_key_time
 CREATE INDEX IF NOT EXISTS request_usage_expiry
   ON request_usage (bucket_start);
 
+-- ---- apps/api/migrations/012_job_leases.sql
+-- Crawl job leases.
+--
+-- 010 gave `job_tasks` a visibility timeout, and it works: a worker that is
+-- SIGKILLed leaves its tasks reclaimable, and `reclaimExpired` returns them to
+-- the queue on the next sweep. The parent `jobs` row never got the same
+-- treatment. It is flipped to 'running' when claimed and reset only on the
+-- graceful shutdown path, so a hard kill leaves the job at 'running' with no
+-- process behind it.
+--
+-- That is worse than the task-level bug 010 fixed, because both escapes are
+-- closed at once: `#claimJob` selects `status = 'queued'`, so no worker will
+-- ever pick the job up again, and `POST /crawl {resume}` refuses it with
+-- `already_running` precisely because it is 'running'. The documented recovery
+-- path is shut against the exact failure it exists for. The tasks are
+-- reclaimable and nothing is left to claim them; the crawl polls as 'running'
+-- with `started_at` set, forever, and no failure row explains it.
+--
+-- Same remedy as 010, one level up: a claim becomes a lease. `lease_expires_at`
+-- is set when a job is claimed and extended while the worker still holds it.
+-- A job whose lease is in the past is claimable by any worker, whether or not
+-- the process that took it still exists — a timeout clears itself, a flag needs
+-- someone alive to clear it.
+--
+-- No `max_attempts` counterpart here. A poison URL kills a task and 010 already
+-- bounds that; a job is only ever reclaimed because its worker died, and
+-- capping job reclaims would strand long crawls on an unlucky restart.
+--
+-- Rollback:
+--   DROP INDEX IF EXISTS jobs_reclaimable;
+--   ALTER TABLE jobs DROP COLUMN IF EXISTS lease_expires_at;
+-- The claim predicate falls back to 'queued'-only, which loses interrupted
+-- jobs exactly as it did before.
+
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS lease_expires_at timestamptz;
+
+-- Mirrors job_tasks_reclaimable: running jobs are a small fraction of the
+-- table, and a full scan per claim would cost more than the work it recovers.
+CREATE INDEX IF NOT EXISTS jobs_reclaimable
+  ON jobs (lease_expires_at)
+  WHERE status = 'running';
+
 -- ============================================================================
 -- schema_migrations seed (what apps/api/src/db/migrate.ts would have recorded)
 -- ============================================================================
@@ -569,17 +611,18 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   applied_at  timestamptz NOT NULL DEFAULT now()
 );
 INSERT INTO schema_migrations (filename, checksum) VALUES
-  ('001_init.sql', 'dfe14d92cd2baa35bad17afff8f014cad4e7e0ff88ded9b8f972733679f092ad'),
+  ('001_init.sql', 'f4746eb0723599256e32b5cc19f302542e1b0dc7d9c282c95988c8a752b417d5'),
   ('002_frontier.sql', '3856261e300d15130ef368a33eb1ac2f68384221871eb7906202794058a7d7f8'),
-  ('003_monitor.sql', 'dd9d33955482d21751bdd3429d3b02e5ab6bf77e28ca9f404e99f14234701a9f'),
-  ('004_monitor_claims.sql', '11c49b20e7565bd05d55845def2039aecb6f2a1d78df3f047972bfb1f0d54aa2'),
+  ('003_monitor.sql', 'b5facfa8334900ad8b0f08885ffa6bd8670978f735b72cd8254540d4c5f8545b'),
+  ('004_monitor_claims.sql', '9978e32bc5d32025e527c8ee916ab780a9007e6832b4336136000a6fdfe1380b'),
   ('005_provider_keys.sql', '181c528ba517261e00d2af068a6972efebfe6d589a47ae24eab097b493f68eaa'),
   ('006_instance_settings.sql', '69f594bbcac665266bb9bf6b4901e9d8b9097073269485882f796f9c760cc475'),
   ('007_local_providers.sql', 'fbd014e71586b7626e6208b4881cdbe17d9325efca6c15b2ed3f050c425fdcd9'),
   ('008_monitor_json_options.sql', '28d1ca216258b985f27252b413d7511acbb18ccbb8d151c21f3b1b8a5323447a'),
   ('009_uptime_samples.sql', '44f4a473d4d6fe3bbe89df261c29a5fa9af0c476ba9a7b33fd7442fae1245860'),
   ('010_task_leases.sql', 'be4ed9bdb767e68aab42f10d304f8df030bc0abee3e4ff6c7b08c3e36f73fb0f'),
-  ('011_request_usage.sql', 'da301b5ca5498b03c69266b85b533a01d229020d9e0d0c9a8b6155547191684c')
+  ('011_request_usage.sql', 'da301b5ca5498b03c69266b85b533a01d229020d9e0d0c9a8b6155547191684c'),
+  ('012_job_leases.sql', 'fac3e17a266584ea8d12718fe560e893bb5e642b86a1728918626e592123ebd2')
 ON CONFLICT (filename) DO NOTHING;
 
 -- ============================================================================
@@ -612,9 +655,9 @@ create extension if not exists pgcrypto;
 
 -- ---------------------------------------------------------------- profiles
 --
--- Identity lives in Clerk. This row exists so that keys and Persona data can
--- reference a stable uuid rather than a Clerk id string, and so a user
--- deleted in Clerk cascades everything they owned.
+-- Identity lives in Clerk. This row exists so that keys can reference a stable
+-- uuid rather than a Clerk id string, and so a user deleted in Clerk cascades
+-- everything they owned.
 
 create table if not exists profiles (
   id             uuid primary key default gen_random_uuid(),
@@ -732,215 +775,6 @@ revoke all on api_keys from anon, authenticated;
 grant select (id, name, key_prefix, rate_limit, profile_id, created_at, last_used_at, revoked_at)
   on api_keys to authenticated;
 
--- ---- supabase/migrations/0002_persona.sql
--- Persona: the role-specific system-prompt library at persona-ai.vercel.app.
---
--- Two halves. The CATALOG (roles, personas, versions, setup guides) is public,
--- read by everyone, written only by the seed script with the service role —
--- there is no authoring UI in v1. The USER half (forks, favourites, template
--- values, shares) belongs to a profile, which is the same `profiles` row the
--- Helix dashboard uses, because both sites sit behind the same Clerk
--- application. A signed-out visitor keeps everything in localStorage; signing
--- in is what moves it here.
-
--- ---------------------------------------------------------------- catalog
-
-create table if not exists persona_roles (
-  slug        text primary key,                 -- 'support-chat'
-  name        text not null,                    -- 'Support (Chat)'
-  department  text not null,                    -- filter group: Support, Sales, ...
-  color       text not null check (color ~ '^#[0-9A-Fa-f]{6}$'),
-  icon        text not null,                    -- lucide-react icon name
-  summary     text not null,
-  sort_order  integer not null default 0
-);
-
-create table if not exists personas (
-  id          uuid primary key default gen_random_uuid(),
-  role_slug   text not null references persona_roles(slug) on delete cascade,
-  slug        text not null,                    -- 'support-chat-v2'; unique within a role
-  name        text not null,
-  tagline     text not null,
-  tone        text not null,                    -- filter chip: Warm, Technical, Formal, Casual
-  platforms   text[] not null default '{}',     -- filter chip: email, chat, code, voice
-  is_default  boolean not null default false,   -- the one the role page opens on
-  search      tsvector generated always as (
-                to_tsvector('english', coalesce(name, '') || ' ' || coalesce(tagline, ''))
-              ) stored,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
-  unique (role_slug, slug)
-);
-create index if not exists personas_search_idx on personas using gin (search);
-create unique index if not exists personas_one_default_per_role
-  on personas (role_slug) where is_default;
-
-drop trigger if exists personas_touch on personas;
-create trigger personas_touch before update on personas
-  for each row execute function touch_updated_at();
-
--- Every edit to a prompt is a new version; the role page shows the changelog.
--- `placeholders` is derived from the body at seed time: every {{TOKEN}} with
--- its label, hint and default, in the order the wizard asks for them.
-create table if not exists persona_versions (
-  id            uuid primary key default gen_random_uuid(),
-  persona_id    uuid not null references personas(id) on delete cascade,
-  version       integer not null,
-  body_md       text not null,
-  placeholders  jsonb not null default '[]',
-  changelog     text not null,
-  published_at  timestamptz not null default now(),
-  unique (persona_id, version)
-);
-create index if not exists persona_versions_persona_idx on persona_versions (persona_id, version desc);
-
--- Setup-guide tabs vary per persona (Support: Email / Chat; Data: SQL / Python).
--- `config_keys` holds the KEY = "value" block the guide opens with.
-create table if not exists persona_setup_guides (
-  id           uuid primary key default gen_random_uuid(),
-  persona_id   uuid not null references personas(id) on delete cascade,
-  tab          text not null,                   -- 'email' | 'chat' | 'sql' | 'python' | ...
-  label        text not null,
-  icon         text not null,                   -- lucide-react icon name
-  body_md      text not null,
-  config_keys  jsonb not null default '{}',
-  sort_order   integer not null default 0,
-  unique (persona_id, tab)
-);
-
--- ---------------------------------------------------------------- user data
-
-create table if not exists persona_forks (
-  id                 uuid primary key default gen_random_uuid(),
-  profile_id         uuid not null references profiles(id) on delete cascade,
-  persona_id         uuid references personas(id) on delete set null,
-  source_version_id  uuid references persona_versions(id) on delete set null,
-  title              text not null,
-  body_md            text not null,
-  values             jsonb not null default '{}', -- placeholder -> filled value
-  created_at         timestamptz not null default now(),
-  updated_at         timestamptz not null default now()
-);
-create index if not exists persona_forks_profile_idx on persona_forks (profile_id, updated_at desc);
-
-drop trigger if exists persona_forks_touch on persona_forks;
-create trigger persona_forks_touch before update on persona_forks
-  for each row execute function touch_updated_at();
-
-create table if not exists persona_favorites (
-  profile_id  uuid not null references profiles(id) on delete cascade,
-  persona_id  uuid not null references personas(id) on delete cascade,
-  created_at  timestamptz not null default now(),
-  primary key (profile_id, persona_id)
-);
-
--- The templating engine's saved answers (company name, help-centre URL, ...),
--- keyed the way the prompts name them, so one fill serves every persona.
-create table if not exists persona_template_values (
-  profile_id  uuid not null references profiles(id) on delete cascade,
-  key         text not null,
-  value       text not null,
-  updated_at  timestamptz not null default now(),
-  primary key (profile_id, key)
-);
-
--- A share is a frozen copy: the body and values at the moment of sharing, so
--- a later edit to the fork does not change what the recipient sees. Resolved
--- only by the server route with the service role — a browser cannot list
--- shares, which is what keeps a token from being enumerated.
-create table if not exists persona_shares (
-  id          uuid primary key default gen_random_uuid(),
-  token       text unique not null check (length(token) between 16 and 64),
-  profile_id  uuid references profiles(id) on delete cascade,   -- null: shared anonymously
-  persona_id  uuid references personas(id) on delete set null,
-  title       text not null,
-  body_md     text not null,
-  values      jsonb not null default '{}',
-  view_count  integer not null default 0,
-  created_at  timestamptz not null default now(),
-  expires_at  timestamptz
-);
-create index if not exists persona_shares_profile_idx on persona_shares (profile_id, created_at desc);
-
--- ---------------------------------------------------------------- RLS
-
-alter table persona_roles enable row level security;
-alter table personas enable row level security;
-alter table persona_versions enable row level security;
-alter table persona_setup_guides enable row level security;
-alter table persona_forks enable row level security;
-alter table persona_favorites enable row level security;
-alter table persona_template_values enable row level security;
-alter table persona_shares enable row level security;
-
--- Catalog: public read, no client writes.
-drop policy if exists persona_roles_read on persona_roles;
-create policy persona_roles_read
-  on persona_roles for select to anon, authenticated using (true);
-drop policy if exists personas_read on personas;
-create policy personas_read
-  on personas for select to anon, authenticated using (true);
-drop policy if exists persona_versions_read on persona_versions;
-create policy persona_versions_read
-  on persona_versions for select to anon, authenticated using (true);
-drop policy if exists persona_setup_guides_read on persona_setup_guides;
-create policy persona_setup_guides_read
-  on persona_setup_guides for select to anon, authenticated using (true);
-
--- User data: owner only, and an update cannot hand a row to someone else.
-drop policy if exists persona_forks_own on persona_forks;
-create policy persona_forks_own
-  on persona_forks for all
-  to authenticated
-  using (profile_id = current_profile_id())
-  with check (profile_id = current_profile_id());
-
-drop policy if exists persona_favorites_own on persona_favorites;
-create policy persona_favorites_own
-  on persona_favorites for all
-  to authenticated
-  using (profile_id = current_profile_id())
-  with check (profile_id = current_profile_id());
-
-drop policy if exists persona_template_values_own on persona_template_values;
-create policy persona_template_values_own
-  on persona_template_values for all
-  to authenticated
-  using (profile_id = current_profile_id())
-  with check (profile_id = current_profile_id());
-
--- Shares: the owner can see and delete their own; creation and resolution by
--- token happen in the server route.
-drop policy if exists persona_shares_own_select on persona_shares;
-create policy persona_shares_own_select
-  on persona_shares for select
-  to authenticated using (profile_id = current_profile_id());
-drop policy if exists persona_shares_own_delete on persona_shares;
-create policy persona_shares_own_delete
-  on persona_shares for delete
-  to authenticated using (profile_id = current_profile_id());
-
--- ---------------------------------------------------------------- seed: roles
---
--- The eleven roles from the launch set. Personas, versions and guides are
--- loaded from the content files by the seed script, not here.
-
-insert into persona_roles (slug, name, department, color, icon, summary, sort_order) values
-  ('support-chat',        'Support (Chat)',      'Support',     '#2F6FE4', 'MessageCircle',   'Web and in-app chat support: troubleshoot, route bugs, hand off to humans.', 10),
-  ('support-email',       'Support (Email)',     'Support',     '#2F6FE4', 'Mail',            'Asynchronous ticket resolution with complete multi-step replies.', 20),
-  ('customer-success',    'Customer Success',    'Support',     '#1E8E5A', 'HeartHandshake',  'Onboarding, adoption and renewal conversations for existing accounts.', 30),
-  ('sales',               'Sales',               'Sales',       '#D9762C', 'BadgeDollarSign', 'Qualify inbound leads, handle pricing questions, book demos.', 40),
-  ('marketing',           'Marketing',           'Marketing',   '#C2410C', 'Megaphone',       'Campaign copy, positioning and content that stays on brand.', 50),
-  ('product',             'Product',             'Product',     '#7C3AED', 'Boxes',           'Feedback triage, spec drafting and roadmap questions.', 60),
-  ('developer-relations', 'Developer Relations', 'Engineering', '#0EA5A5', 'Code2',           'Answer developer questions, write samples, route API feedback.', 70),
-  ('data-analytics',      'Data Analytics',      'Engineering', '#0369A1', 'BarChart3',       'Turn questions into SQL or Python and explain the result.', 80),
-  ('security',            'Security',            'Security',    '#C6402E', 'Shield',          'Triage reports, answer policy questions, never leak internals.', 90),
-  ('finops',              'FinOps',              'Finance',     '#1E8E5A', 'Calculator',      'Cloud spend questions, budget alerts, cost-allocation rules.', 100),
-  ('hr',                  'HR',                  'People',      '#8B5CF6', 'Users',           'Policy answers, leave and benefits questions, escalation to people partners.', 110)
-on conflict (slug) do update set
-  name = excluded.name, department = excluded.department, color = excluded.color,
-  icon = excluded.icon, summary = excluded.summary, sort_order = excluded.sort_order;
-
 -- ---- supabase/migrations/0003_onboarding.sql
 -- Onboarding answers on the profile (WEBSITE.md §6.2).
 --
@@ -1001,85 +835,6 @@ end $$;
 -- row, and these columns are inside it. The wizard nonetheless writes through
 -- a server action with the service role, because completing onboarding also
 -- mints the first API key, which RLS deliberately cannot do.
-
--- ---- supabase/migrations/0004_persona_sync.sql
--- Make the Persona tables reachable from the browser's local-first state
--- (PERSONA.md §7, Phase 4). 0002 modelled forks and favourites as if the
--- client already knew catalog UUIDs. It does not: everything Persona stores
--- offline is keyed by SLUG, because the catalog it reads is a directory of
--- markdown files, not the database. Signing in therefore had to translate
--- every local row into a uuid before it could be inserted, and any row whose
--- persona had been renamed or removed was silently unmergeable.
---
--- This migration makes the slug a first-class key so a merge can be a plain
--- upsert, and so a fork survives its source persona being deleted.
-
--- ------------------------------------------------------------------ forks
---
--- `role_slug` / `persona_slug` are what the editor actually needs to render a
--- fork (its badge, its "back to role" link) and are what localStorage holds.
--- They are kept alongside `persona_id` rather than replacing it: the uuid is
--- the referential link while the catalog still has the row, the slugs are the
--- durable record of where the fork came from once it does not.
-alter table persona_forks add column if not exists role_slug    text;
-alter table persona_forks add column if not exists persona_slug text;
-
--- Local forks record the version as an integer (`sourceVersion: 3`), which is
--- what the markdown frontmatter carries. Resolving it to persona_versions.id
--- needs a catalog round trip the browser cannot do offline, so the integer is
--- stored directly and the uuid stays an optional refinement.
-alter table persona_forks add column if not exists source_version int;
-
-create index if not exists persona_forks_slug_idx
-  on persona_forks (profile_id, role_slug, persona_slug);
-
--- --------------------------------------------------------------- favourites
---
--- Local favourites are the string "<role>/<persona>". Keying the table on the
--- persona uuid meant a favourite could not be written without a lookup, and
--- cascaded away if the catalog row was reseeded with a new id. The slug pair
--- becomes the identity; persona_id stays as a nullable convenience join.
---
--- Rebuilt rather than altered: the primary key changes, and the table is
--- empty in every environment (Phase 4 is what first writes it).
-drop table if exists persona_favorites;
-
-CREATE TABLE IF NOT EXISTS persona_favorites (
-  profile_id    uuid not null references profiles(id) on delete cascade,
-  role_slug     text not null,
-  persona_slug  text not null,
-  persona_id    uuid references personas(id) on delete set null,
-  created_at    timestamptz not null default now(),
-  primary key (profile_id, role_slug, persona_slug)
-);
-
-alter table persona_favorites enable row level security;
-
-drop policy if exists persona_favorites_own on persona_favorites;
-create policy persona_favorites_own
-  on persona_favorites for all
-  to authenticated
-  using (profile_id = current_profile_id())
-  with check (profile_id = current_profile_id());
-
-grant select, insert, delete on persona_favorites to authenticated;
-
--- ----------------------------------------------------------- template values
---
--- 0002 gave this table no touch trigger, so `updated_at` only ever held its
--- insert default and last-write-wins across two devices compared two equal
--- timestamps. The merge resolves conflicts on this column, so it has to move.
-drop trigger if exists persona_template_values_touch on persona_template_values;
-create trigger persona_template_values_touch before update on persona_template_values
-  for each row execute function touch_updated_at();
-
--- ------------------------------------------------------------------ settings
---
--- Theme, sidebar width and collapse state stay in localStorage: they are
--- per-device UI preferences, and syncing them would make a wide sidebar on a
--- desktop narrow every phone. The wizard's model API key is deliberately NOT
--- stored here either — it is a provider secret, and Persona has no server-side
--- encryption path for it the way apps/api does for provider_keys.
 
 -- ---- supabase/migrations/0005_onboarding_attribution.sql
 -- Where the user heard about Helix, asked during onboarding.
@@ -1240,16 +995,3 @@ revoke all on uptime_samples from anon, authenticated;
 -- the moment that role changes.
 alter table request_usage  force row level security;
 alter table uptime_samples force row level security;
-
--- ---- supabase/migrations/0009_persona_share_origin.sql
--- Persona shares record their origin by slug, the way forks do since 0004.
---
--- Persona's catalog is markdown on disk, so a share created from the editor
--- has no catalog uuid to point `persona_id` at. The recipient's "Fork this"
--- needs the role and persona slugs plus the source version to build a fork
--- the sidebar and the version chip can render. All three are nullable so
--- rows written before this migration still resolve.
-
-alter table persona_shares add column if not exists role_slug      text;
-alter table persona_shares add column if not exists persona_slug   text;
-alter table persona_shares add column if not exists source_version integer;

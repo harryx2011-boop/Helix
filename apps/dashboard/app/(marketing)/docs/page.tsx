@@ -31,7 +31,7 @@ export default function DocsIndexPage() {
       <section className="mx-auto mt-16 max-w-[880px] animate-fade-up [animation-delay:60ms]">
         <h2 className="text-[13px] font-medium uppercase tracking-wide text-m-ink/48">Start here</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <DocLink href="/docs/getting-started" icon={BookOpen} title="Getting started" body="Sign up, get a key, make your first request." />
+          <DocLink href="/docs/getting-started" icon={BookOpen} title="Getting Started" body="Sign up, get a key, make your first request." />
           <DocLink href="/self-host" icon={Server} title="Self-host" body="docker compose up, health-gated, nothing withheld." />
         </div>
       </section>

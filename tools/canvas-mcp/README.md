@@ -120,6 +120,9 @@ the server refuses to listen beyond localhost until you set a shared secret.
    https://mild-owl-quiet.trycloudflare.com/s/<CANVAS_MCP_AUTH_TOKEN>/mcp
    ```
 
+   Host headers are always checked: until the tunnel's hostname is in
+   `CANVAS_MCP_ALLOWED_HOSTS`, it gets `421`, even if you bound to localhost.
+
    The connector dialog takes a URL and nothing else, which is why the secret
    goes in the path. Clients that can send headers should use
    `Authorization: Bearer <CANVAS_MCP_AUTH_TOKEN>` against `/mcp` instead.
@@ -183,8 +186,10 @@ Everything a tool returns goes to your AI provider. With privacy on (the default
 - **Labels, not names.** A student is `P3-07`: period 3, student 07. The period comes from the Canvas section name ("Period 3", "P3 Bio", "Pd. 05"). If a section has no recognisable period, its students are `S-07`. Guardians are `Guardian-xxxxxx`. Anyone the server can't place on a course roster is `Person-xxxxxxxx`. Teachers and TAs keep their names.
 - **Stable and meaningless.** Each number is drawn at random the first time a student is seen, then kept. It isn't alphabetical, doesn't shift when someone adds or drops, and is never reused.
 - **Names in text too.** Discussion posts, messages, comments and errors are scrubbed with each course's roster: full names, first and last names, emails, login ids and SIS ids become the label. A first name two students share becomes `[student]`. In strict mode, any other email address or phone number is redacted too.
-- **Labels work as input.** Ask for "P3-07's submission" and the label becomes the Canvas id locally. Write "Nice work, P3-07" in a message and Canvas receives the student's real name. The assistant only ever sees the label, and the tool result says when a swap happened.
-- **You look people up, the assistant doesn't.** `canvaslms-api privacy roster <course>` prints who each label is, in your terminal. Over MCP, the name map is refused.
+- **Labels work as input.** Ask for "P3-07's submission" and the label becomes the Canvas id locally. Text for Canvas uses a marker: "Nice work, {{P3-07}}" reaches Canvas with the student's real name, while a bare `P3-07` (or "room S-61") stays exactly as written. The assistant only ever sees the label, and the tool result says when a swap happened.
+- **You look people up, the assistant doesn't.** `canvaslms-api privacy roster <course>` prints who each label is, only to an interactive terminal. Over MCP, the name map is refused.
+- **Fails closed.** In strict mode, a course whose roster can't be loaded is refused rather than shown unscrubbed. Errors, validation messages and the server's own log are scrubbed too.
+- **Know the boundary.** These checks keep names away from the assistant's tools. An assistant that can also run shell commands on your machine (Claude Code with Bash, for example) could read `~/.canvaslms-api` or drive a terminal itself. If that matters, run the server for a client without shell access, or don't allow shell commands in the sessions that use it.
 
 This is pseudonymization, not de-identification. A label plus grades is still an education record under FERPA. Dictionary scrubbing also misses nicknames, misspellings and indirect details ("the student whose mom coaches soccer"). Whether you can send student data to an AI provider at all depends on your school's agreements with that provider, so check with your district before relying on this.
 
@@ -213,7 +218,7 @@ canvaslms-api tools --search grade                          # find a tool
 canvaslms-api call list_users course=BIO101                 # run one; values parse as JSON when they can
 canvaslms-api call grade_with_rubric course=BIO101 assignment_id=12 user_id=P3-07 \
   rubric_assessment='{"crit_1": 4}'                         # preview
-canvaslms-api call ... --confirm                            # apply (asks first if it can't be undone)
+canvaslms-api call ... --confirm                            # apply (asks first if it can't be undone; --yes without a terminal)
 canvaslms-api serve --transport http                        # same as the bare command
 ```
 
@@ -229,6 +234,8 @@ canvaslms-api privacy scan notes.txt               # any student names in here? 
 canvaslms-api privacy scan notes.txt --redact      # print a copy with labels instead
 canvaslms-api privacy purge --crosswalk            # end of term: drop old downloads and every label
 ```
+
+Values are passed as text unless the tool's parameter can only be a number, or the value is JSON (`{...}`, `[...]`, `true`, `false`, `null`). Commands that can't be undone need a terminal prompt or `--yes`.
 
 Exit codes: 0 ok, 1 Canvas error, 2 usage or config error, 3 refused for privacy or scan found names.
 

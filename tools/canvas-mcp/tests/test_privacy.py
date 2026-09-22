@@ -280,22 +280,24 @@ async def test_restore_args(papp: App, mock: respx.MockRouter) -> None:
             "user_id": maya,
             "recipients": [maya, "course_10_students"],
             "recipient_ids": [leo, 77],
-            "grades": {maya: {"grade": "A", "comment": f"Well done {maya}"}, "502": "B"},
-            "body": f"Thanks {maya} and {leo}; P9-99 is not a student.",
+            "grades": {maya: {"grade": "A", "comment": f"Well done {{{{{maya}}}}}"}, "502": "B"},
+            "body": f"Thanks {{{{{maya}}}}} and {{{{ {leo} }}}}; room S-61 and {maya} bare stay as written.",
         }
     )
     assert args["user_id"] == 501
     assert args["recipients"] == ["501", "course_10_students"]
     assert args["recipient_ids"] == [502, 77]
     assert args["grades"] == {"501": {"grade": "A", "comment": "Well done Maya Chen"}, "502": "B"}
-    assert args["body"] == "Thanks Maya Chen and Leo Park; P9-99 is not a student."
+    assert args["body"] == f"Thanks Maya Chen and Leo Park; room S-61 and {maya} bare stay as written."
     assert named == {maya, leo}
 
-    bulk, _ = p.restore_args({"recipients": [{"user_id": maya, "name": maya}]})
+    bulk, _ = p.restore_args({"recipients": [{"user_id": f"{{{{{maya}}}}}", "name": f"{{{{{maya}}}}}"}]})
     assert bulk["recipients"] == [{"user_id": 501, "name": "Maya Chen"}]
 
     with pytest.raises(PrivacyError):
         p.restore_args({"user_id": "P9-99"})
+    with pytest.raises(PrivacyError):
+        p.restore_args({"body": "Hi {{P9-99}}"})
 
 
 # -- through the server --------------------------------------------------------
@@ -330,14 +332,14 @@ async def test_end_to_end_labels_in_and_out(papp: App, mock: respx.MockRouter) -
 
         preview = await client.call_tool(
             "send_conversation",
-            {"course": 10, "recipients": [maya], "subject": "Hi", "body": f"Great job {maya}!"},
+            {"course": 10, "recipients": [maya], "subject": "Hi", "body": f"Great job {{{{{maya}}}}}!"},
         )
         assert "Maya" not in _text(preview) and maya in _text(preview)
         assert not sent.called
 
         await client.call_tool(
             "send_conversation",
-            {"course": 10, "recipients": [maya], "subject": "Hi", "body": f"Great job {maya}!", "confirm": True},
+            {"course": 10, "recipients": [maya], "subject": "Hi", "body": f"Great job {{{{{maya}}}}}!", "confirm": True},
         )
         payload = json.loads(sent.calls[0].request.content)
         assert payload["recipients[]"] == ["501"]
@@ -377,7 +379,21 @@ async def test_unknown_label_is_refused(papp: App, mock: respx.MockRouter) -> No
     assert result.is_error and "Unknown student label" in _text(result)
 
 
-async def test_roster_failure_is_announced(papp: App, mock: respx.MockRouter) -> None:
+async def test_strict_refuses_a_course_whose_roster_failed(papp: App, mock: respx.MockRouter) -> None:
+    mock.get(f"{BASE}/users/self").respond(json={"id": 1})
+    mock.get(f"{BASE}/courses/10").respond(json={"id": 10, "name": "Biology"})
+    mock.get(f"{BASE}/courses/10/users").respond(403, json={"errors": [{"message": "unauthorized"}]})
+    entries = mock.get(f"{BASE}/courses/10/discussion_topics/5/entries").respond(json=[])
+    async with Client(build_server(app=papp)) as client:
+        result = await client.call_tool(
+            "list_discussion_entries", {"course": 10, "topic_id": 5}, raise_on_error=False
+        )
+    assert result.is_error and "Refused" in _text(result)
+    assert not entries.called
+
+
+async def test_roster_failure_is_announced(tmp_path: Path, mock: respx.MockRouter) -> None:
+    papp = build_app(make_settings(tmp_path, "pseudonymize"))
     mock.get(f"{BASE}/users/self").respond(json={"id": 1})
     mock.get(f"{BASE}/courses/10").respond(json={"id": 10, "name": "Biology"})
     mock.get(f"{BASE}/courses/10/users").respond(403, json={"errors": [{"message": "unauthorized"}]})
@@ -387,6 +403,7 @@ async def test_roster_failure_is_announced(papp: App, mock: respx.MockRouter) ->
     server = build_server(app=papp)
     async with Client(server) as client:
         result = await client.call_tool("list_discussion_entries", {"course": 10, "topic_id": 5})
+    await papp.aclose()
     text = _text(result)
     assert "could not be read" in text
     assert "Leo Park" not in text and "Person-" in text
@@ -543,3 +560,137 @@ def test_crosswalk_survives_a_concurrent_writer(tmp_path: Path) -> None:
     assert label not in others and len(others) == 30
     first.close()
     second.close()
+
+
+# -- audit regressions (2026-09-22) ----------------------------------------------
+
+JOSE = {
+    "id": 505,
+    "name": "José Núñez",
+    "sis_user_id": "204518",
+    "enrollments": [{"type": "StudentEnrollment", "course_id": 10, "course_section_id": 7}],
+}
+AL = {"id": 506, "name": "Al Brandt", "short_name": "Al", "enrollments": [{"type": "StudentEnrollment", "course_id": 10, "course_section_id": 7}]}
+CHRIS_STUDENT = {"id": 507, "name": "Chris Lee", "enrollments": [{"type": "StudentEnrollment", "course_id": 10, "course_section_id": 7}]}
+CHRIS_TA = {"id": 2, "name": "Chris Lee", "enrollments": [{"type": "TaEnrollment", "course_id": 10}]}
+
+
+async def _prepared_with(app: App, mock: respx.MockRouter, *extra: dict) -> App:
+    mock.get(f"{BASE}/users/self").respond(json={"id": 1, "name": "Dana Okafor"})
+    mock.get(f"{BASE}/courses").respond(json=[{"id": 10, "name": "Biology"}])
+    mock.get(f"{BASE}/courses/10").respond(json={"id": 10, "name": "Biology"})
+    mock.get(f"{BASE}/courses/10/users").respond(json=[*ROSTER, *extra])
+    mock.get(f"{BASE}/courses/10/sections").respond(json=SECTIONS)
+    await app.course_id(10)
+    return app
+
+
+async def test_scrub_catches_slugs_filenames_and_folded_accents(papp: App, mock: respx.MockRouter) -> None:
+    await _prepared_with(papp, mock, JOSE)
+    p = papp.privacy
+    leo, jose = p.label_for(502), p.label_for(505)
+    out = p.scrub(
+        "Leo_Park_Essay.docx LeoPark.pdf /pages/spotlight-leo-park Maya%20Chen "
+        "Jose Nunez and José Núñez; Núñez_final.pdf"
+    )
+    assert out.count(leo) == 3, out
+    assert out.count(jose) == 3, out
+    for secret in ["Leo", "Park", "Maya", "Chen", "Jose", "José", "Nunez", "Núñez"]:
+        assert secret not in out, (secret, out)
+
+
+async def test_one_word_names_and_numeric_ids_do_not_eat_ordinary_text(papp: App, mock: respx.MockRouter) -> None:
+    await _prepared_with(papp, mock, JOSE, AL)
+    out = papp.privacy.scrub("The quiz will be due. Smith et al. Assignment 204518 is out. Al passed.")
+    assert "quiz will be" in out and "et al." in out and "Assignment 204518" in out
+    assert "Al passed" not in out
+
+
+async def test_student_sharing_a_staff_full_name_is_not_resolvable(papp: App, mock: respx.MockRouter) -> None:
+    await _prepared_with(papp, mock, CHRIS_STUDENT, CHRIS_TA)
+    out = papp.privacy.scrub("Comment by Chris Lee (TA)")
+    assert "Chris Lee" not in out and papp.privacy.label_for(507) not in out
+
+
+async def test_validation_errors_do_not_echo_resolved_names(papp: App, mock: respx.MockRouter) -> None:
+    await prepared(papp, mock)
+    maya = papp.privacy.label_for(501)
+    async with Client(build_server(app=papp)) as client:
+        result = await client.call_tool(
+            "get_page", {"course": 10, "page": "x", "max_chars": f"{{{{{maya}}}}} x"}, raise_on_error=False
+        )
+    assert result.is_error and "Maya" not in _text(result)
+    assert '"outcome": "error"' in (papp.settings.privacy_path / "audit.jsonl").read_text()
+
+
+async def test_bulk_template_user_id_renders_as_label(papp: App, mock: respx.MockRouter) -> None:
+    await prepared(papp, mock)
+    maya = papp.privacy.label_for(501)
+    async with Client(build_server(app=papp)) as client:
+        result = await client.call_tool(
+            "send_bulk_messages",
+            {"course": 10, "recipients": [{"user_id": maya}], "subject_template": "Hi", "body_template": "id {user_id}"},
+        )
+    text = _text(result)
+    assert f"id {maya}" in text and "501" not in text
+
+
+def test_email_regex_is_linear_on_long_runs() -> None:
+    from canvaslms_api.privacy import EMAIL_RE
+
+    start = time.perf_counter()
+    EMAIL_RE.sub("[email]", "a" * 200_000)
+    assert time.perf_counter() - start < 1.0
+
+
+def test_labels_grow_to_four_digits(tmp_path: Path) -> None:
+    cw = Crosswalk(tmp_path / "cw.db")
+    labels = [cw.assign("h", f"k{i}", None, commit=False) for i in range(1200)]
+    cw.commit()
+    cw.close()
+    assert len(set(labels)) == 1200
+    assert all(LABEL_RE.fullmatch(label) for label in labels)
+
+
+async def test_capped_roster_is_reported_not_trusted(papp: App, mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("canvaslms_api.privacy.ROSTER_LIMIT", 2)
+    mock.get(f"{BASE}/users/self").respond(json={"id": 1})
+    mock.get(f"{BASE}/courses/10").respond(json={"id": 10, "name": "Biology"})
+    mock.get(f"{BASE}/courses/10/sections").respond(json=SECTIONS)
+    mock.get(f"{BASE}/courses/10/users").respond(
+        json=ROSTER, headers={"Link": f'<{BASE}/courses/10/users?page=2>; rel="next"'}
+    )
+    await papp.course_id(10)
+    assert not papp.privacy.roster_ok(10)
+    assert papp.privacy.roster_notices([10])
+
+
+async def test_scrub_scales_with_a_large_roster(tmp_path: Path, mock: respx.MockRouter) -> None:
+    app = build_app(make_settings(tmp_path))
+    first = ["Ava", "Liam", "Noah", "Emma", "Mia", "Zoe", "Ethan", "Ivy", "Owen", "Ruby"]
+    users = [
+        {
+            "id": 1000 + i,
+            "name": f"{first[i % 10]}{i} Surname{i}",
+            "enrollments": [{"type": "StudentEnrollment", "course_id": 10, "course_section_id": 7}],
+        }
+        for i in range(2000)
+    ]
+    mock.get(f"{BASE}/users/self").respond(json={"id": 1})
+    mock.get(f"{BASE}/courses/10").respond(json={"id": 10, "name": "Big"})
+    mock.get(f"{BASE}/courses/10/users").respond(json=users)
+    mock.get(f"{BASE}/courses/10/sections").respond(json=SECTIONS)
+    try:
+        start = time.perf_counter()
+        await app.course_id(10)
+        app.privacy._compile()
+        setup = time.perf_counter() - start
+        text = ("Surname1500 wrote a long post about cells. " * 5000)[:200_000]
+        start = time.perf_counter()
+        out = app.privacy.scrub(text)
+        elapsed = time.perf_counter() - start
+    finally:
+        await app.aclose()
+    assert "Surname1500" not in out
+    assert elapsed < 0.5, elapsed  # measured ~25 ms
+    assert setup < 6.0, setup  # one-off per roster change; measured ~1.5 s

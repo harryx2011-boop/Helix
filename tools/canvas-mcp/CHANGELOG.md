@@ -29,6 +29,26 @@ Student privacy is now on by default. This changes what every tool returns, henc
 - `extract_peer_review_dataset` uses labels when privacy is on, so its rows join with every other tool's output.
 - `get_privacy_status` reports the mode, label scheme, crosswalk, key source, audit log and retention. It never returns the map.
 
+### Security
+
+Fixed before release, found by a security, performance and bug audit of this version:
+
+- `--transport http` now always validates the Host header. Before, a tunnel pointed at a loopback bind with no `CANVAS_MCP_ALLOWED_HOSTS` accepted any Host and needed no auth token, and DNS rebinding was open too.
+- Text sent to Canvas only swaps a label for a name when it is marked `{{P3-07}}`. A bare label-shaped string ("room S-61") used to become a student's name.
+- Every error is scrubbed, argument-validation errors included (they quoted the resolved name), and FastMCP's own log lines are scrubbed with tracebacks dropped.
+- Scrubbing matches slug, filename and URL forms of names (`leo-park`, `Leo_Park_Essay.docx`, `LeoPark`, `Maya%20Chen`), accent-folded spellings, and treats `_` and digits as word breaks. One-word names match only with their own capitals, all-digit SIS ids no longer match assignment numbers, and a full name shared with a staff member becomes `[name]`.
+- Strict mode refuses a course whose roster couldn't be loaded, and a failed load is retried after 30 s rather than cached for the TTL. Rosters over the fetch limit are reported, not trusted. Inbox tools load concluded courses' rosters too.
+- `{user_id}` in a bulk-message template, and ids in error messages, render as labels.
+- No terminal means no confirmation: destructive `call`s and `privacy purge --crosswalk` need `--yes`. `privacy roster` and the name-map export only run in an interactive terminal. `upload_file` refuses files from the privacy folder.
+- The key is never read empty (a race with another process creating it).
+
+### Performance
+
+- The email pattern was quadratic on long runs without an `@` (36 s on 200 KB); it is linear now.
+- Name patterns are built as a shared-prefix trie: 200 KB against 2,000 students scrubs in about 25 ms, not 3 s. Each result is scrubbed once, not twice. The pattern is rebuilt only when a roster actually changes, and its ambiguity pass is linear.
+- Label assignment for a new roster runs in one transaction with an in-memory set of used numbers: 2,000 new students take about 0.15 s, not about 2 s. Labels grow to four digits past 999.
+- A roster's users and sections are fetched together. Tools that never show people skip roster loading.
+
 ### Removed
 
 Five tools were folded into near-duplicates (100 -> 95):

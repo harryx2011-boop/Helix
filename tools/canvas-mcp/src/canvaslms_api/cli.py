@@ -6,6 +6,7 @@ import csv
 import difflib
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -101,9 +102,11 @@ def _run_http(server: FastMCP, settings: Settings, args: argparse.Namespace) -> 
         port=args.port,
         show_banner=False,
         middleware=middleware,
-        # Naming hosts is inert unless protection is switched on: FastMCP
-        # leaves Host/Origin validation off by default.
-        host_origin_protection=True if allowed_hosts else None,
+        # Always on. With it off, a tunnel pointed at a loopback bind (the
+        # README recipe, minus the allowed-hosts step) accepts any Host header
+        # and skips both refusals above. On, only loopback names and the
+        # hosts named here get through; anything else is a 421.
+        host_origin_protection=True,
         allowed_hosts=allowed_hosts or None,
     )
     return 0
@@ -131,10 +134,47 @@ def _add_serve_args(parser: argparse.ArgumentParser, suppress: bool = False) -> 
 
 
 def _parse_value(raw: str) -> Any:
-    try:
-        return json.loads(raw)
-    except ValueError:
-        return raw
+    """JSON objects, arrays, true/false/null parse; everything else stays a string.
+
+    Numbers are left as strings here and converted per the tool's schema, so
+    page=123 and title=2024 stay text where the parameter takes text.
+    """
+    stripped = raw.strip()
+    if stripped[:1] in "[{" or stripped in {"true", "false", "null"}:
+        try:
+            return json.loads(stripped)
+        except ValueError:
+            return raw
+    return raw
+
+
+def _schema_types(prop: dict[str, Any]) -> set[str]:
+    types = set()
+    for option in [prop, *prop.get("anyOf", [])]:
+        kind = option.get("type")
+        if isinstance(kind, list):
+            types.update(kind)
+        elif kind:
+            types.add(kind)
+    return types
+
+
+def _coerce_numbers(args: dict[str, Any], schema: dict[str, Any]) -> dict[str, Any]:
+    """Turn "12" into 12 only where the parameter can't take a string."""
+    props = schema.get("properties", {})
+    out = dict(args)
+    for key, value in args.items():
+        types = _schema_types(props.get(key, {}))
+        if not isinstance(value, str) or "string" in types:
+            continue
+        try:
+            if "integer" in types and re.fullmatch(r"-?\d+", value.strip()):
+                out[key] = int(value)
+            elif "number" in types:
+                out[key] = float(value)
+        except ValueError:
+            pass
+    return out
 
 
 def _parse_pairs(pairs: list[str], args_json: str | None) -> dict[str, Any]:
@@ -149,9 +189,15 @@ def _parse_pairs(pairs: list[str], args_json: str | None) -> dict[str, Any]:
     return args
 
 
+def _interactive() -> bool:
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
 def _confirm_prompt(message: str) -> bool:
+    # No terminal means no human to ask: an agent driving the CLI through a
+    # pipe must pass --yes explicitly rather than be waved through.
     if not sys.stdin.isatty():
-        return True
+        return False
     try:
         return input(f"{message} [y/N] ").strip().lower() in {"y", "yes"}
     except EOFError:
@@ -175,7 +221,7 @@ async def _with_cli_app(settings: Settings, fn) -> int:  # noqa: ANN001
         await app.aclose()
 
 
-async def _call(settings: Settings, tool: str, args: dict[str, Any], as_json: bool) -> int:
+async def _call(settings: Settings, tool: str, args: dict[str, Any], as_json: bool, yes: bool = False) -> int:
     from fastmcp import Client
 
     from .server import build_server
@@ -188,13 +234,19 @@ async def _call(settings: Settings, tool: str, args: dict[str, Any], as_json: bo
             hint = f" Did you mean: {', '.join(close)}?" if close else ""
             print(f"Unknown tool {tool!r}.{hint} Run `canvaslms-api tools` to list them.", file=sys.stderr)
             return 2
+        if tool == "export_anonymization_map" and settings.privacy_mode != "off" and not _interactive():
+            print("Refused: the name map is only written from an interactive terminal.", file=sys.stderr)
+            return 3
+        call_args = _coerce_numbers(args, tools[tool].parameters or {})
         annotations = tools[tool].annotations
         destructive = bool(annotations and getattr(annotations, "destructiveHint", False))
-        if args.get("confirm") and destructive and not _confirm_prompt(f"{tool} changes Canvas and cannot be undone. Continue?"):
-            print("Cancelled.", file=sys.stderr)
+        if call_args.get("confirm") and destructive and not yes and not _confirm_prompt(
+            f"{tool} changes Canvas and cannot be undone. Continue?"
+        ):
+            print("Cancelled. Pass --yes to confirm without a terminal prompt.", file=sys.stderr)
             return 1
         async with Client(server) as client:
-            result = await client.call_tool(tool, args, raise_on_error=False)
+            result = await client.call_tool(tool, call_args, raise_on_error=False)
         text = "\n".join(getattr(c, "text", "") for c in result.content)
         if as_json:
             print(json.dumps({"is_error": result.is_error, "text": text, "structured": result.structured_content}, default=str, indent=2))
@@ -237,6 +289,10 @@ def _require_privacy(settings: Settings) -> bool:
 async def _roster(settings: Settings, course: str, out: str | None) -> int:
     if not _require_privacy(settings):
         return 2
+    # Real names go to a person at a terminal, not into a pipe an assistant reads.
+    if not (sys.stdin.isatty() and (out or sys.stdout.isatty())):
+        print("Refused: privacy roster only runs in an interactive terminal.", file=sys.stderr)
+        return 3
 
     async def run(app: App) -> int:
         cid = await app.course_id(course)
@@ -275,7 +331,13 @@ async def _periods(settings: Settings, course: str, sets: list[str]) -> int:
                 print(f"expected SECTION_ID=PERIOD, got {item!r}", file=sys.stderr)
                 return 2
             value = period.strip().lower()
-            mapping[section.strip()] = int(value) if value.isdigit() and int(value) > 0 else None
+            if value in {"none", "0"}:
+                mapping[section.strip()] = None
+            elif value.isdigit() and 1 <= int(value) <= 99:
+                mapping[section.strip()] = int(value)
+            else:
+                print(f"period must be 1-99 or none, got {period!r}", file=sys.stderr)
+                return 2
         write_periods_file(path, mapping)
         print(f"Saved {path}. Existing labels keep their period; new students use the new mapping.")
 
@@ -375,6 +437,7 @@ def _build_parser() -> argparse.ArgumentParser:
     call.add_argument("pairs", nargs="*", metavar="key=value")
     call.add_argument("--args-json", help="all arguments as one JSON object")
     call.add_argument("--confirm", action="store_true", help="pass confirm=true (writes happen)")
+    call.add_argument("--yes", action="store_true", help="skip the prompt for tools that can't be undone")
     call.add_argument("--json", action="store_true", help="print the raw result as JSON")
 
     privacy = sub.add_parser("privacy", help="student-privacy tools that never go through the assistant")
@@ -424,7 +487,7 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         if args.confirm:
             call_args["confirm"] = True
-        return asyncio.run(_call(settings, args.tool, call_args, args.json))
+        return asyncio.run(_call(settings, args.tool, call_args, args.json, args.yes))
     if command == "privacy":
         action = args.privacy_command
         if action == "status":

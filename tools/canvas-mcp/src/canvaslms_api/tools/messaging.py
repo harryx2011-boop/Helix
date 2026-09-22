@@ -263,14 +263,16 @@ def register(mcp: FastMCP, app: App) -> None:
             user_id = entry.get("user_id")
             if user_id is None:
                 raise ToolError(f"Recipient {entry!r} is missing user_id.")
+            # {user_id} in a template renders as the label, never the resolved raw id.
+            variables = {**entry, "user_id": app.user_ref(user_id)}
             try:
-                subject = subject_template.format(**entry)
+                subject = subject_template.format(**variables)
             except KeyError as exc:
-                raise ToolError(f"Recipient {user_id}: subject_template needs {{{exc.args[0]}}}, not provided.") from exc
+                raise ToolError(f"Recipient {app.user_ref(user_id)}: subject_template needs {{{exc.args[0]}}}, not provided.") from exc
             try:
-                body = body_template.format(**entry)
+                body = body_template.format(**variables)
             except KeyError as exc:
-                raise ToolError(f"Recipient {user_id}: body_template needs {{{exc.args[0]}}}, not provided.") from exc
+                raise ToolError(f"Recipient {app.user_ref(user_id)}: body_template needs {{{exc.args[0]}}}, not provided.") from exc
             rendered.append((user_id, subject, body))
 
         if not confirm:

@@ -158,7 +158,9 @@ def test_http_on_loopback_without_auth_token_still_runs_open(
     assert exit_code == 0
     assert recorded["middleware"] is None
     assert recorded["allowed_hosts"] is None
-    assert recorded["host_origin_protection"] is None
+    # Host validation is always on, so a tunnel can't reach a loopback bind
+    # without being named (which then requires the auth token).
+    assert recorded["host_origin_protection"] is True
 
 
 # -- subcommands and student privacy --------------------------------------
@@ -235,11 +237,32 @@ def test_call_bad_pair_returns_2(monkeypatch: pytest.MonkeyPatch, capsys: pytest
     assert main(["call", "list_users", "course"]) == 2
 
 
+class _Tty:
+    def isatty(self) -> bool:
+        return True
+
+    def read(self) -> str:
+        return ""
+
+
+async def test_privacy_roster_refuses_without_a_terminal(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], mock: respx.MockRouter
+) -> None:
+    _set_env(monkeypatch)
+    _mock_course(mock)
+    exit_code = await asyncio.to_thread(main, ["privacy", "roster", "10"])
+    captured = capsys.readouterr()
+    assert exit_code == 3
+    assert "Maya" not in captured.out
+
+
 async def test_privacy_roster_shows_names_in_terminal_only(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], mock: respx.MockRouter
 ) -> None:
     _set_env(monkeypatch)
     _mock_course(mock)
+    monkeypatch.setattr("sys.stdin", _Tty())
+    monkeypatch.setattr("sys.stdout.isatty", lambda: True, raising=False)
     exit_code = await asyncio.to_thread(main, ["privacy", "roster", "10"])
     out = capsys.readouterr().out
     assert exit_code == 0
@@ -271,3 +294,29 @@ def test_privacy_roster_needs_privacy_on(monkeypatch: pytest.MonkeyPatch) -> Non
     _set_env(monkeypatch)
     monkeypatch.setenv("CANVAS_PRIVACY_MODE", "off")
     assert main(["privacy", "roster", "10"]) == 2
+
+
+def test_purge_crosswalk_without_terminal_needs_yes(monkeypatch: pytest.MonkeyPatch) -> None:
+    _set_env(monkeypatch)
+    assert main(["privacy", "purge", "--crosswalk"]) == 1
+
+
+def test_periods_set_rejects_bad_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    _set_env(monkeypatch)
+    assert main(["privacy", "periods", "10", "--set", "55=P3"]) == 2
+    assert main(["privacy", "periods", "10", "--set", "55=100"]) == 2
+
+
+def test_parse_pairs_keeps_numbers_as_text_until_schema_says_otherwise() -> None:
+    from canvaslms_api.cli import _coerce_numbers, _parse_pairs
+
+    args = _parse_pairs(["page=123", "max_chars=50", "flag=true", "ids=[1,2]", "x=NaN"], None)
+    assert args == {"page": "123", "max_chars": "50", "flag": True, "ids": [1, 2], "x": "NaN"}
+    schema = {
+        "properties": {
+            "page": {"type": "string"},
+            "max_chars": {"anyOf": [{"type": "integer"}, {"type": "null"}]},
+        }
+    }
+    assert _coerce_numbers(args, schema)["page"] == "123"
+    assert _coerce_numbers(args, schema)["max_chars"] == 50

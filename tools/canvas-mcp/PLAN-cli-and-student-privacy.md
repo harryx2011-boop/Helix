@@ -208,4 +208,6 @@ Differences from the plan:
 - **Accommodation / IEP suppression** (§B3) was not built. Canvas has no single field for it, so it needs the district's conventions first.
 - **Terms**: `purge --crosswalk` wipes everything; there's no per-term column yet.
 
+**Audited 2026-09-22** (security, performance and bugs, three independent passes before merging to main). Every confirmed finding is fixed, with a regression test in `tests/test_privacy.py` / `tests/test_cli.py`; the list is in the 2.0.0 CHANGELOG under Security and Performance. Left as documented limits: a shell-capable assistant can get around the terminal-only checks; lowercase lone first names ("leo") aren't matched; the roster refresh isn't staggered across courses.
+
 Known limits (also in the README): dictionary scrubbing misses nicknames and indirect identifiers. Over-redaction is the failure mode for common-word names ("Will" at the start of a sentence). A roster the token can't read (a student token, usually) leaves free text unscrubbed for that course, and the result says so.

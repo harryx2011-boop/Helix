@@ -296,7 +296,7 @@ def register(mcp: FastMCP, app: App) -> None:
         data = await _load(app, cid, assignment_id)
         reviewee_submission = data.reviewees_by_user.get(int(reviewee_id))
         if reviewee_submission is None or reviewee_submission.get("id") is None:
-            raise ToolError(f"Reviewee {reviewee_id} has no submission for this assignment.")
+            raise ToolError(f"Reviewee {app.user_ref(reviewee_id)} has no submission for this assignment.")
 
         reviewer_enrollments = await app.client.get_all(
             f"/courses/{cid}/enrollments", {"user_id": reviewer_id, "include[]": ["user"]}
@@ -810,7 +810,7 @@ def register(mcp: FastMCP, app: App) -> None:
                 writer.writerows(rows)
                 dest.write_text(buffer.getvalue(), encoding="utf-8")
             else:
-                dest.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+                dest.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
             return md.done(
                 "extract_peer_review_dataset",
                 md.join(
@@ -829,7 +829,7 @@ def register(mcp: FastMCP, app: App) -> None:
             writer.writeheader()
             writer.writerows(capped_rows)
             return f"```csv\n{buffer.getvalue()}```{note}"
-        return f"```json\n{json.dumps(capped_rows, indent=2)}\n```{note}"
+        return f"```json\n{json.dumps(capped_rows, indent=2, ensure_ascii=False)}\n```{note}"
 
     @mcp.tool(annotations=DESTRUCTIVE)
     async def message_peer_reviewers(

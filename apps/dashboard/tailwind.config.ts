@@ -117,7 +117,7 @@ const config: Config = {
         cutout: 'var(--ring-cutout)',
         panel: 'var(--shadow-panel)',
       },
-      transitionTimingFunction: { DEFAULT: 'cubic-bezier(0, 0, 0.2, 1)' },
+      transitionTimingFunction: { DEFAULT: 'cubic-bezier(0, 0, 0.2, 1)', 'out-strong': 'cubic-bezier(0.23, 1, 0.32, 1)' },
       transitionDuration: { DEFAULT: '200ms', fast: '150ms', reveal: '300ms', slow: '400ms' },
       keyframes: {
         'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
@@ -126,6 +126,7 @@ const config: Config = {
         blink: { '0%, 100%': { opacity: '0' }, '50%': { opacity: '1' } },
         'slide-up': { from: { opacity: '0', transform: 'translateY(4px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
         'fade-up': { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'none' } },
+        'progress-slide': { from: { transform: 'translateX(-100%)' }, to: { transform: 'translateX(300%)' } },
         'cursor-blink': { '0%, 100%': { opacity: '0' }, '50%': { opacity: '1' } },
         'fade-in-up': { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
         'text-swap-out': {
@@ -185,6 +186,7 @@ const config: Config = {
         blink: 'blink 1s step-end infinite',
         'slide-up': 'slide-up 200ms cubic-bezier(0, 0, 0.2, 1)',
         'fade-up': 'fade-up 300ms cubic-bezier(0, 0, 0.2, 1) both',
+        'progress-slide': 'progress-slide 1.2s linear infinite',
         'cursor-blink': 'cursor-blink 1s step-end infinite',
         'fade-in-up': 'fade-in-up 300ms cubic-bezier(0, 0, 0.2, 1) both',
         'text-swap-out': 'text-swap-out 150ms ease-in-out both',

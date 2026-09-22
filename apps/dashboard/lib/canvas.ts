@@ -148,7 +148,7 @@ export const CANVAS_CLIENTS: readonly CanvasClientDef[] = [
     id: 'http',
     label: 'HTTP',
     steps: [{ title: 'run over HTTP instead of stdio', code: 'canvaslms-api --transport http --host 127.0.0.1 --port 7100' }],
-    note: 'Stdio is the default and needs no port. HTTP is for clients that cannot spawn a process.',
+    note: 'Stdio is the default and needs no port. HTTP is for clients that cannot spawn a process. Binding past 127.0.0.1 requires CANVAS_MCP_AUTH_TOKEN -- the server refuses to start without it.',
   },
 ];
 
@@ -161,6 +161,7 @@ export const CANVAS_ENV: readonly { key: string; required: boolean; fallback: st
   { key: 'CANVAS_MAX_CONCURRENCY', required: false, fallback: '5', note: 'Parallel requests against Canvas.' },
   { key: 'CANVAS_ANONYMIZE_STUDENTS', required: false, fallback: 'false', note: 'Replaces names with stable pseudonyms in every output.' },
   { key: 'CANVAS_DOWNLOAD_DIR', required: false, fallback: 'system temp', note: 'Where downloaded course files land.' },
+  { key: 'CANVAS_MCP_AUTH_TOKEN', required: false, fallback: '—', note: 'Shared secret for the HTTP transport. Required to bind beyond localhost; irrelevant to stdio.' },
 ];
 
 /**

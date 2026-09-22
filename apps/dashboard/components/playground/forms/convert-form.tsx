@@ -4,13 +4,12 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { ConvertFormat, ConvertRequest } from '@/lib/api';
+import { UPLOAD_ACCEPT } from '@/lib/uploads';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FormFooter } from './form-footer';
 import { FileDropzone } from '../file-dropzone';
 import { cn } from '@/lib/utils';
-
-const ACCEPT = '.pdf,.png,.jpg,.jpeg';
 
 type SourceKind = 'pdf' | 'png' | 'jpg' | 'unknown';
 
@@ -39,13 +38,15 @@ const TARGETS_FOR: Record<SourceKind, readonly ConvertFormat[]> = {
 
 interface ConvertFormProps {
   url: string;
+  /** Owned by the playground so the prompt box's paperclip and this form share one file. */
+  file: File | null;
+  onFileChange: (file: File | null) => void;
   onSubmit: (request: ConvertRequest | FormData) => void;
   onGetCode: (body: Record<string, unknown>) => void;
   loading: boolean;
 }
 
-export function ConvertForm({ url, onSubmit, onGetCode, loading }: ConvertFormProps) {
-  const [file, setFile] = React.useState<File | null>(null);
+export function ConvertForm({ url, file, onFileChange, onSubmit, onGetCode, loading }: ConvertFormProps) {
   const [to, setTo] = React.useState<ConvertFormat>('png');
   const [page, setPage] = React.useState('1');
   const [timeoutSeconds, setTimeoutSeconds] = React.useState('30');
@@ -105,9 +106,9 @@ export function ConvertForm({ url, onSubmit, onGetCode, loading }: ConvertFormPr
 
       <FileDropzone
         id="convert-file"
-        accept={ACCEPT}
+        accept={UPLOAD_ACCEPT.convert}
         file={file}
-        onFileChange={setFile}
+        onFileChange={onFileChange}
         idleHint="PDF, PNG or JPEG — or leave it empty to use the URL above."
       />
 

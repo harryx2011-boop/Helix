@@ -3,11 +3,10 @@
 import * as React from 'react';
 import type { MetadataRequest } from '@/lib/api';
 import type { EndpointMode } from '@/lib/run-endpoint';
+import { UPLOAD_ACCEPT } from '@/lib/uploads';
 import { FormFooter } from './form-footer';
 import { FileDropzone } from '../file-dropzone';
 import { cn } from '@/lib/utils';
-
-const ACCEPT = '.pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg';
 
 const MODES: { value: EndpointMode; label: string; hint: string }[] = [
   { value: 'scan', label: 'Scan', hint: 'Report what the file discloses. Nothing is changed.' },
@@ -16,13 +15,15 @@ const MODES: { value: EndpointMode; label: string; hint: string }[] = [
 
 interface MetadataFormProps {
   url: string;
+  /** Owned by the playground so the prompt box's paperclip and this form share one file. */
+  file: File | null;
+  onFileChange: (file: File | null) => void;
   onSubmit: (request: MetadataRequest | FormData, mode: EndpointMode) => void;
   onGetCode: (body: Record<string, unknown>, mode: EndpointMode) => void;
   loading: boolean;
 }
 
-export function MetadataForm({ url, onSubmit, onGetCode, loading }: MetadataFormProps) {
-  const [file, setFile] = React.useState<File | null>(null);
+export function MetadataForm({ url, file, onFileChange, onSubmit, onGetCode, loading }: MetadataFormProps) {
   const [mode, setMode] = React.useState<EndpointMode>('scan');
 
   const canSubmit = url.trim().length > 0 || file !== null;
@@ -69,9 +70,9 @@ export function MetadataForm({ url, onSubmit, onGetCode, loading }: MetadataForm
 
       <FileDropzone
         id="metadata-file"
-        accept={ACCEPT}
+        accept={UPLOAD_ACCEPT.metadata}
         file={file}
-        onFileChange={setFile}
+        onFileChange={onFileChange}
         idleHint="PDF, DOCX, PPTX, XLSX, PNG, JPEG — or leave it empty to use the URL above. Nothing is stored."
       />
 

@@ -36,6 +36,12 @@ export function FileDropzone({ id, accept, file, onFileChange, idleHint }: FileD
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // The prompt box can clear the file too; without this the native input
+  // still holds it and picking the same file again fires no change event.
+  React.useEffect(() => {
+    if (file === null && fileInputRef.current) fileInputRef.current.value = '';
+  }, [file]);
+
   return (
     <div className="flex flex-col gap-1.5">
       <input
@@ -44,7 +50,10 @@ export function FileDropzone({ id, accept, file, onFileChange, idleHint }: FileD
         type="file"
         accept={accept}
         className="sr-only"
-        onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+        onChange={(event) => {
+          onFileChange(event.target.files?.[0] ?? null);
+          event.target.value = '';
+        }}
       />
 
       {/*

@@ -12,9 +12,9 @@
 > 3. **The GitHub repo is deleted** (by another session, on Harry's authorisation), after
 >    `git ls-remote` was compared against the archive ref by ref. Verified independently
 >    here: `git ls-remote` and `gh repo view` both report it gone, and `git fsck` on
->    `e:/archive/CanvasLMS-API.git` is clean with all six refs present.
+>    `D:/archive/CanvasLMS-API.git` is clean with all six refs present.
 >
-> The leftover checkout at `e:/CanvasLMS - MCP` had its dead `origin` repointed at the
+> The leftover checkout at `D:/CanvasLMS - MCP` had its dead `origin` repointed at the
 > archive and carries a `MOVED.md`. It was clean — nothing uncommitted, nothing unpushed —
 > so nothing was stranded there.
 
@@ -69,7 +69,7 @@ importing a second design system.
 ## Target layout
 
 ```
-e:/Helix
+D:/Helix
   tools/canvas-mcp/                    ← moved wholesale, git history preserved
     src/canvaslms_api/                 100 tools, unchanged
     tests/                             pytest + respx, unchanged
@@ -257,7 +257,7 @@ drive dies with `EISDIR ... readlink <somefile>`, and the file it names changes 
 runs because it is whichever file webpack happened to stat first. Verified directly:
 
 ```
-E:/Helix/apps/dashboard/app/icon.svg   EISDIR      (exFAT)
+D:/Helix/apps/dashboard/app/icon.svg   EISDIR      (exFAT)
 C:/Windows/System32/drivers/etc/hosts  EINVAL      (NTFS)
 ```
 
@@ -348,7 +348,7 @@ Findings that changed this phase:
   only locally; GitHub had `v1.0.0` alone. The archive was built from the remote and then
   had the local tags fetched into it, so it is a superset of both.
 
-**Archive at `e:/archive/`**: `CanvasLMS-API.git` (full `--mirror`, all branches and tags),
+**Archive at `D:/archive/`**: `CanvasLMS-API.git` (full `--mirror`, all branches and tags),
 `canvas-repo-metadata.json`, `canvas-releases.json`, `canvas-issues.json`, and
 `CanvasLMS-API-README.md` explaining what is there. Verified by cloning back out of the
 mirror and confirming HEAD, all four tags and the extra branch.
@@ -361,7 +361,7 @@ mirror and confirming HEAD, all four tags and the extra branch.
     PyPI publish source; `harryx2011-boop/CanvasLMS-API` is **deleted from GitHub after a
     full local mirror is taken**. Order matters and none of it is reversible, so:
 
-    1. `git clone --mirror` the repo to `e:/archive/CanvasLMS-API.git`, plus
+    1. `git clone --mirror` the repo to `D:/archive/CanvasLMS-API.git`, plus
        `gh issue list --state all --json ...` and the same for PRs and releases — a mirror
        clone carries commits, branches and tags but **not** issues, PRs, releases or stars.
     2. Verify the mirror: clone *from* it into a temp dir and confirm `main` matches
@@ -396,10 +396,15 @@ mirror and confirming HEAD, all four tags and the extra branch.
     alone — which is what the plan originally said — would have missed it, and deleting the
     repo would have destroyed it permanently.
 
-    **Before anyone deletes the repo, decide what happens to that branch.** Either
-    cherry-pick it into `tools/canvas-mcp/` (it is self-contained: a new module, CLI/config
-    extensions, three test files) or consciously abandon it. It is preserved in the archive
-    either way, but an archive nobody reads is not the same as the feature existing.
+    **Resolved: already cherry-picked, not abandoned.** Confirmed 2026-09-22 that this
+    had in fact landed as `58c1561` (see STATUS above and the commit table) despite this
+    paragraph's unresolved framing surviving the edit that added that status line. Re-verified
+    directly: `58c1561` is an ancestor of `main`, `http_auth.py` and all three test files
+    exist, 162/162 tests pass (`test_http_auth.py` included), ruff is clean, and
+    `pyproject.toml`/`__init__.py` both read 1.1.0. The one real gap found on re-check:
+    `apps/dashboard/lib/canvas.ts` documented the HTTP transport tab without mentioning
+    `CANVAS_MCP_AUTH_TOKEN` — closed with a one-line note on that tab and a row in the env
+    table.
 24. Verify: `pnpm typecheck`, `pnpm lint`, `pnpm build` for both `HELIX_HOSTED=1` and
     self-host; `pytest` + `ruff` in `tools/canvas-mcp`; the four routes render in both
     themes; the Canvas mark reads correctly at 14px and at 40px.

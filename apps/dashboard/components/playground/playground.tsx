@@ -79,6 +79,9 @@ export function Playground() {
     if (runnableById(preferences.defaultEndpoint)) setActiveId(preferences.defaultEndpoint);
   }, [prefsHydrated, requestedTab, preferences.defaultEndpoint]);
   const [promptValue, setPromptValue] = React.useState(requestedUrl ?? '');
+  // One file for the box's paperclip and the upload-taking forms alike, so a
+  // paste into the box is what the form submits, not a second copy.
+  const [attachment, setAttachment] = React.useState<File | null>(null);
 
   // A sidebar row carries `tab` alone (no `url`), so the tab must follow the
   // URL on every navigation, not just the ones that also bring a url — else
@@ -87,7 +90,10 @@ export function Playground() {
   React.useEffect(() => {
     if (requestedTab === lastTab.current) return;
     lastTab.current = requestedTab ?? '';
-    if (requestedTab && runnableById(requestedTab)) setActiveId(requestedTab);
+    if (requestedTab && runnableById(requestedTab)) {
+      setActiveId(requestedTab);
+      setAttachment(null);
+    }
   }, [requestedTab]);
 
   // `selectTab` replaces the URL without `url`, so only a link that carries
@@ -100,6 +106,7 @@ export function Playground() {
     if (!requestedUrl) return;
     if (requestedTab && runnableById(requestedTab)) setActiveId(requestedTab);
     setPromptValue(requestedUrl);
+    setAttachment(null);
     setResult(undefined);
     setError(undefined);
     setTimingMs(undefined);
@@ -127,6 +134,7 @@ export function Playground() {
   const selectTab = (id: string) => {
     setActiveId(id);
     setPromptValue('');
+    setAttachment(null);
     setResult(undefined);
     setError(undefined);
     setTimingMs(undefined);
@@ -211,7 +219,8 @@ export function Playground() {
     formsContainerRef.current?.querySelector<HTMLButtonElement>('[data-playground-get-code]')?.click();
   };
 
-  const promptDisabled = promptValue.trim().length === 0;
+  const promptEmpty = promptValue.trim().length === 0;
+  const promptDisabled = promptEmpty && attachment === null;
 
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-6">
@@ -227,9 +236,11 @@ export function Playground() {
         optionsOpen={optionsOpen}
         onToggleOptions={() => setOptionsOpen((open) => !open)}
         onGetCode={submitGetCode}
-        getCodeDisabled={promptDisabled}
+        getCodeDisabled={promptEmpty}
         formats={formats}
         onFormatsChange={setFormats}
+        attachment={attachment}
+        onAttachmentChange={setAttachment}
       />
 
       <div className={cn('rounded-card border border-border bg-card', !optionsOpen && 'sr-only')} aria-hidden={!optionsOpen}>
@@ -272,6 +283,8 @@ export function Playground() {
           {activeDef.id === 'parse' && (
             <ParseForm
               url={promptValue}
+              file={attachment}
+              onFileChange={setAttachment}
               loading={loading}
               onSubmit={(request: ParseRequest | FormData) => run('parse', 'parse', request instanceof FormData ? request : (request as unknown as Record<string, unknown>), false)}
               onGetCode={(body) => openCode('parse', body)}
@@ -280,6 +293,8 @@ export function Playground() {
           {activeDef.id === 'metadata' && (
             <MetadataForm
               url={promptValue}
+              file={attachment}
+              onFileChange={setAttachment}
               loading={loading}
               onSubmit={(request: MetadataRequest | FormData, mode: EndpointMode) =>
                 run(
@@ -296,6 +311,8 @@ export function Playground() {
           {activeDef.id === 'convert' && (
             <ConvertForm
               url={promptValue}
+              file={attachment}
+              onFileChange={setAttachment}
               loading={loading}
               onSubmit={(request: ConvertRequest | FormData) => run('convert', 'convert', request instanceof FormData ? request : (request as unknown as Record<string, unknown>), false)}
               onGetCode={(body) => openCode('convert', body)}

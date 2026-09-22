@@ -5,6 +5,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { Check, ChevronDown, FileText, X } from 'lucide-react';
 import type { Format } from '@/lib/api';
 import { FORMAT_CARDS, summarizeFormats, toggleFormat, type FormatCard, type FormatIllustration } from '@/lib/formats';
+import { usePrefersReducedMotion } from '@/lib/preferences';
 import { cn } from '@/lib/utils';
 
 export type PromptSurface = 'hero' | 'app';
@@ -19,11 +20,22 @@ export const SURFACE: Record<
   PromptSurface,
   {
     box: string;
+    /** The box while its textarea has focus: a ring on the hero, a border tint on the app. */
+    boxFocus: string;
+    /** The box while a run is in flight. */
+    boxBusy: string;
+    /** The in-flight progress bar's fill. */
+    bar: string;
     hairline: string;
     ink: string;
     muted: string;
     faint: string;
     chip: string;
+    /** An icon-only button inside a chip: no border, tonal hover. */
+    ghost: string;
+    kbd: string;
+    option: string;
+    optionActive: string;
     outlined: string;
     tile: string;
     tileStroke: string;
@@ -39,11 +51,18 @@ export const SURFACE: Record<
 > = {
   hero: {
     box: 'bg-m-surface shadow-card',
+    boxFocus: 'focus-within:ring-1 focus-within:ring-violet/24',
+    boxBusy: 'ring-1 ring-violet/16',
+    bar: 'bg-violet',
     hairline: 'border-m-border-faint',
     ink: 'text-m-ink',
     muted: 'text-m-ink/56',
     faint: 'text-m-ink/40',
     chip: 'border border-m-border-faint bg-m-bg text-m-ink/56',
+    ghost: 'text-m-ink/56 hover:bg-m-ink/[0.059] hover:text-m-ink',
+    kbd: 'border-m-border-muted bg-m-bg text-m-ink/56',
+    option: 'text-m-ink/72',
+    optionActive: 'bg-m-bg text-m-ink',
     outlined: 'border border-m-border-muted bg-m-surface text-m-ink hover:bg-m-bg',
     tile: 'bg-m-bg',
     tileStroke: 'bg-m-illus-muted',
@@ -58,11 +77,18 @@ export const SURFACE: Record<
   },
   app: {
     box: 'border border-border bg-card',
+    boxFocus: 'focus-within:border-primary/50',
+    boxBusy: 'border-primary/40',
+    bar: 'bg-primary',
     hairline: 'border-border',
     ink: 'text-foreground',
     muted: 'text-muted-foreground',
     faint: 'text-muted-foreground',
     chip: 'bg-secondary text-muted-foreground',
+    ghost: 'text-muted-foreground hover:bg-border hover:text-foreground',
+    kbd: 'border-border bg-secondary text-muted-foreground',
+    option: 'text-foreground/80',
+    optionActive: 'bg-secondary text-foreground',
     outlined: 'border border-border bg-card text-foreground hover:bg-secondary',
     tile: 'bg-secondary',
     tileStroke: 'bg-border',
@@ -91,6 +117,7 @@ interface FormatPickerProps {
 export function FormatPicker({ surface, formats, onChange }: FormatPickerProps) {
   const s = SURFACE[surface];
   const [open, setOpen] = React.useState(false);
+  const reduceMotion = usePrefersReducedMotion();
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -98,8 +125,9 @@ export function FormatPicker({ surface, formats, onChange }: FormatPickerProps) 
         <button
           type="button"
           className={cn(
-            'flex h-9 items-center gap-1.5 rounded-card px-3 text-[13px] font-medium transition-colors duration-150 ease-out',
+            'flex h-9 items-center gap-1.5 rounded-card px-3 text-[13px] font-medium transition-[background-color,transform] duration-150 ease-out',
             s.outlined,
+            !reduceMotion && 'active:scale-[0.97]',
           )}
         >
           <FileText className="h-4 w-4" aria-hidden />

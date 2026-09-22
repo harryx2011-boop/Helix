@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Upload } from 'lucide-react';
 import type { ParseJsonOptions, ParseRequest } from '@/lib/api';
+import { UPLOAD_ACCEPT } from '@/lib/uploads';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,10 +22,11 @@ const TABLE_OPTIONS: { value: NonNullable<ParseRequest['tables']>; label: string
   { value: 'high-fidelity', label: 'High fidelity (table-specialised parser)' },
 ];
 
-const ACCEPT = '.pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg';
-
 interface ParseFormProps {
   url: string;
+  /** Owned by the playground so the prompt box's paperclip and this form share one file. */
+  file: File | null;
+  onFileChange: (file: File | null) => void;
   onSubmit: (request: ParseRequest | FormData) => void;
   onGetCode: (body: Record<string, unknown>) => void;
   loading: boolean;
@@ -47,14 +49,19 @@ function jsonOptionsFrom(instruction: string): ParseJsonOptions | undefined {
   return { prompt: trimmed };
 }
 
-export function ParseForm({ url, onSubmit, onGetCode, loading }: ParseFormProps) {
-  const [file, setFile] = React.useState<File | null>(null);
+export function ParseForm({ url, file, onFileChange, onSubmit, onGetCode, loading }: ParseFormProps) {
   const [ocr, setOcr] = React.useState<NonNullable<ParseRequest['ocr']>>('auto');
   const [tables, setTables] = React.useState<NonNullable<ParseRequest['tables']>>('auto');
   const [maxPages, setMaxPages] = React.useState('');
   const [includeJson, setIncludeJson] = React.useState(false);
   const [instruction, setInstruction] = React.useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // The prompt box can clear the file too; without this the native input
+  // still holds it and picking the same file again fires no change event.
+  React.useEffect(() => {
+    if (file === null && fileInputRef.current) fileInputRef.current.value = '';
+  }, [file]);
 
   const jsonOptions = includeJson ? jsonOptionsFrom(instruction) : undefined;
   const jsonReady = !includeJson || jsonOptions !== undefined;
@@ -104,11 +111,12 @@ export function ParseForm({ url, onSubmit, onGetCode, loading }: ParseFormProps)
           ref={fileInputRef}
           id="parse-file"
           type="file"
-          accept={ACCEPT}
+          accept={UPLOAD_ACCEPT.parse}
           className="hidden"
           onChange={(event) => {
             const selected = event.target.files?.[0] ?? null;
-            setFile(selected);
+            onFileChange(selected);
+            event.target.value = '';
           }}
         />
         <div className="flex items-center gap-2">
@@ -122,7 +130,7 @@ export function ParseForm({ url, onSubmit, onGetCode, loading }: ParseFormProps)
               variant="ghost"
               size="sm"
               onClick={() => {
-                setFile(null);
+                onFileChange(null);
                 if (fileInputRef.current) fileInputRef.current.value = '';
               }}
             >

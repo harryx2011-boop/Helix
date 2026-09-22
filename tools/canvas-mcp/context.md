@@ -1,6 +1,6 @@
 # CanvasLMS - API: context
 
-> v2.0.0 (2026-09-22): student privacy on by default (`CANVAS_PRIVACY_MODE=strict`): class-period labels (`P3-07`) from a local HMAC crosswalk, roster-driven free-text scrubbing, label -> id/name resolution on input, terminal-only re-identification, audit log, private purged downloads, strict-mode tunnel gate; CLI subcommands (`tools`, `call`, `serve`, `privacy ...`). Plan and remaining work: `PLAN-cli-and-student-privacy.md`
+> v2.0.0 (2026-09-22): student privacy on by default (`CANVAS_PRIVACY_MODE=strict`): class-period labels (`P3-07`) from a local HMAC crosswalk, roster-driven free-text scrubbing, label -> id/name resolution on input, terminal-only re-identification, audit log, private purged downloads, strict-mode tunnel gate; CLI subcommands (`tools`, `call`, `serve`, `privacy ...`). Plan and remaining work: `PLAN-cli-and-student-privacy.md`; legal review for Broward/Florida/U.S.: `LEGAL-AUDIT-broward-fl-us.md`
 >
 > v1.1.0 (2026-09-05): HTTP shared-secret auth (`CANVAS_MCP_AUTH_TOKEN`) so claude.ai custom connectors can reach the server; `--transport http` refuses to bind past localhost without it
 >

@@ -22,18 +22,18 @@ export const CANVAS_PACKAGE = 'canvaslms-api';
 export const CANVAS_REPO = 'https://github.com/harryx2011-boop/Helix.git';
 export const CANVAS_SUBDIR = 'Helix/tools/canvas-mcp';
 
-/** Tool counts, verified against tools.json on 2026-09-05. */
-export const TOOL_TOTAL = 100;
-export const TOOL_READONLY = 60;
-export const TOOL_MUTATING = 40;
+/** Tool counts, verified against tools.json on 2026-09-22. */
+export const TOOL_TOTAL = 95;
+export const TOOL_READONLY = 57;
+export const TOOL_MUTATING = 38;
 /**
  * Tools that change Canvas and therefore sit behind the confirm gate. This is
- * 39, not 40: `clear_cache` mutates only the local course-code cache and makes
+ * 37, not 38: `clear_cache` mutates only the local course-code cache and makes
  * no Canvas request, so the honest claim is "every tool that changes Canvas",
  * never "every mutating tool".
  */
-export const TOOL_CONFIRMED = 39;
-export const TOOL_DESTRUCTIVE = 14;
+export const TOOL_CONFIRMED = 37;
+export const TOOL_DESTRUCTIVE = 12;
 
 export interface CanvasModule {
   /** Server module name, matching the `module` field in tools.json. */
@@ -47,13 +47,13 @@ export interface CanvasModule {
 
 /** The fourteen tool modules, largest first. */
 export const CANVAS_MODULES: readonly CanvasModule[] = [
-  { module: 'discussions', label: 'Discussions & announcements', count: 14, readOnly: 6, blurb: 'Read threads and replies, post entries, and manage announcements.' },
-  { module: 'peer_reviews', label: 'Peer reviews', count: 13, readOnly: 10, blurb: 'Assign, chase and analyse peer review workflows across a cohort.' },
+  { module: 'discussions', label: 'Discussions & announcements', count: 12, readOnly: 6, blurb: 'Read threads and replies, post entries, and manage announcements.' },
+  { module: 'peer_reviews', label: 'Peer reviews', count: 12, readOnly: 9, blurb: 'Assign, chase and analyse peer review workflows across a cohort.' },
   { module: 'assignments', label: 'Assignments & grading', count: 9, readOnly: 5, blurb: 'List and update assignments, grade submissions, leave comments.' },
-  { module: 'pages', label: 'Pages', count: 9, readOnly: 4, blurb: 'Read and edit course pages, including bulk edits and the front page.' },
   { module: 'identity', label: 'Courses', count: 9, readOnly: 8, blurb: 'Resolve courses by id, code or name; read structure, syllabus and enrolments.' },
   { module: 'student', label: 'Student', count: 9, readOnly: 6, blurb: "A student's own view: what's due, grades, submissions and to-dos." },
   { module: 'modules', label: 'Modules', count: 8, readOnly: 2, blurb: 'Build and reorder modules and the items inside them.' },
+  { module: 'pages', label: 'Pages', count: 7, readOnly: 2, blurb: 'Read and edit course pages, including bulk edits and the front page.' },
   { module: 'rubrics', label: 'Rubrics', count: 6, readOnly: 3, blurb: 'Create rubrics, associate them, and grade against their criteria.' },
   { module: 'messaging', label: 'Messaging', count: 6, readOnly: 3, blurb: 'Canvas Inbox: read conversations and send individual or bulk messages.' },
   { module: 'people', label: 'People & privacy', count: 5, readOnly: 4, blurb: 'List users, check enrolments, and control student anonymisation.' },

@@ -1,6 +1,6 @@
 # CanvasLMS - API
 
-CanvasLMS - API is a local MCP server that puts your Canvas LMS account in front of an AI assistant. It runs on your machine, talks to Canvas with your own personal access token, and exposes about 100 tools covering courses, assignments, grading, discussions, modules, pages, files, messaging, peer reviews, and accessibility. Every tool returns Markdown. Every tool that changes Canvas previews its change first and only applies it once you confirm.
+CanvasLMS - API is a local MCP server that puts your Canvas LMS account in front of an AI assistant. It runs on your machine, talks to Canvas with your own personal access token, and exposes about 95 tools covering courses, assignments, grading, discussions, modules, pages, files, messaging, peer reviews, and accessibility. Every tool returns Markdown. Every tool that changes Canvas previews its change first and only applies it once you confirm.
 
 ## Quick start
 
@@ -304,9 +304,7 @@ Write tools (marked **confirm**) return a preview until called again with `confi
 | update_discussion_topic | Update a discussion topic | confirm |
 | list_announcements | List a course's announcements | |
 | create_announcement | Create an announcement | confirm |
-| delete_announcement | Delete one announcement | confirm |
-| delete_announcements | Delete multiple announcements by id | confirm |
-| delete_announcements_matching | Delete announcements matching a filter | confirm |
+| delete_announcements | Delete announcements by id, or by title/date filter | confirm |
 
 ### Modules
 
@@ -326,9 +324,7 @@ Write tools (marked **confirm**) return a preview until called again with `confi
 | Tool | Purpose | confirm |
 |---|---|---|
 | list_pages | List a course's pages | |
-| get_page | Fetch one page's metadata | |
-| get_page_content | Fetch one page's body | |
-| get_front_page | Fetch a course's front page | |
+| get_page | Fetch one page's metadata and body (`front_page` for the front page) | |
 | create_page | Create a page | confirm |
 | edit_page_content | Replace a page's body | confirm |
 | update_page_settings | Update a page's settings (title, publish state, editing rights) | confirm |
@@ -359,9 +355,8 @@ Write tools (marked **confirm**) return a preview until called again with `confi
 
 | Tool | Purpose | confirm |
 |---|---|---|
-| list_peer_reviews | List peer review assignments for an assignment | |
 | assign_peer_review | Assign a peer review | confirm |
-| get_peer_review_assignments | List who is reviewing whom | |
+| get_peer_review_assignments | List every peer review: who reviews whom, state, comments | |
 | get_peer_review_completion_analytics | Summarize peer review completion rates | |
 | get_peer_review_followup_list | List students who still owe a peer review | |
 | get_peer_review_comments | Fetch comments left in a peer review | |

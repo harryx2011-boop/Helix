@@ -273,32 +273,6 @@ def _followup_rows(data: _PeerReviewData, days_threshold: int) -> list[dict[str,
 
 
 def register(mcp: FastMCP, app: App) -> None:
-    @mcp.tool(annotations=READ)
-    async def list_peer_reviews(course: str | int, assignment_id: str | int) -> str:
-        """List all peer review assignments for an assignment.
-
-        Args:
-            course: Course id, course code, part of the course name, or "sis_course_id:XXX".
-            assignment_id: Canvas assignment id.
-        """
-        cid = await app.course_id(course)
-        data = await _load(app, cid, assignment_id)
-        rows = [
-            (
-                r.get("id"),
-                app.person(r.get("assessor")),
-                app.person(_reviewee_user(r, data)),
-                r.get("workflow_state"),
-                len(_review_comments(r)),
-                md.fmt_date(_last_comment_date(r)),
-            )
-            for r in data.reviews
-        ]
-        table = md.table(
-            ["review id", "reviewer", "reviewee", "state", "comments", "last comment"], rows
-        )
-        return md.join(table, data.notice())
-
     @mcp.tool(annotations=WRITE)
     async def assign_peer_review(
         course: str | int,
@@ -364,7 +338,7 @@ def register(mcp: FastMCP, app: App) -> None:
         include_names: bool = True,
         include_submission_details: bool = False,
     ) -> str:
-        """Show who reviews whom for an assignment, with completion state.
+        """List every peer review on an assignment: who reviews whom, state, and comment activity.
 
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
@@ -374,7 +348,7 @@ def register(mcp: FastMCP, app: App) -> None:
         """
         cid = await app.course_id(course)
         data = await _load(app, cid, assignment_id)
-        headers = ["reviewer", "reviewee", "state"]
+        headers = ["review id", "reviewer", "reviewee", "state", "comments", "last comment"]
         if include_submission_details:
             headers += ["submitted at", "late"]
         rows = []
@@ -382,7 +356,14 @@ def register(mcp: FastMCP, app: App) -> None:
             reviewee_user = _reviewee_user(r, data)
             reviewer = app.person(r.get("assessor")) if include_names else app.user_ref(r.get("assessor_id"))
             reviewee = app.person(reviewee_user) if include_names else app.user_ref(r.get("user_id"))
-            row = [reviewer, reviewee, r.get("workflow_state")]
+            row = [
+                r.get("id"),
+                reviewer,
+                reviewee,
+                r.get("workflow_state"),
+                len(_review_comments(r)),
+                md.fmt_date(_last_comment_date(r)),
+            ]
             if include_submission_details:
                 submission = data.submissions_by_id.get(r.get("asset_id")) or {}
                 row.append(md.fmt_date(submission.get("submitted_at")))

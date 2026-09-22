@@ -29,6 +29,14 @@ Student privacy is now on by default. This changes what every tool returns, henc
 - `extract_peer_review_dataset` uses labels when privacy is on, so its rows join with every other tool's output.
 - `get_privacy_status` reports the mode, label scheme, crosswalk, key source, audit log and retention. It never returns the map.
 
+### Removed
+
+Five tools were folded into near-duplicates (100 -> 95):
+
+- `delete_announcement` and `delete_announcements_matching` -> `delete_announcements`, which takes `announcement_ids` or the title/date filters. `require_title_match` still works with exactly one id.
+- `get_page_content` and `get_front_page` -> `get_page`, which now returns metadata plus the full body (`max_chars` caps it). Pass `page="front_page"` for the front page.
+- `list_peer_reviews` -> `get_peer_review_assignments`, which gains its review id, comment count and last-comment columns.
+
 ## [1.1.0] - 2026-09-05
 
 ### Added

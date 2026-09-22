@@ -721,41 +721,10 @@
     ]
   },
   {
-    "name": "delete_announcement",
-    "group": "Discussions & announcements",
-    "module": "discussions",
-    "description": "Delete a single announcement.",
-    "readOnly": false,
-    "destructive": true,
-    "confirm": true,
-    "params": [
-      {
-        "name": "course",
-        "required": true,
-        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
-      },
-      {
-        "name": "announcement_id",
-        "required": true,
-        "description": "Announcement (discussion topic) id to delete."
-      },
-      {
-        "name": "require_title_match",
-        "required": false,
-        "description": "Only delete if the announcement's title equals this string exactly."
-      },
-      {
-        "name": "confirm",
-        "required": false,
-        "description": "Set true to actually delete; without it, only a preview is returned."
-      }
-    ]
-  },
-  {
     "name": "delete_announcements",
     "group": "Discussions & announcements",
     "module": "discussions",
-    "description": "Delete multiple announcements by id.",
+    "description": "Delete announcements, either by id or by title/date filter.",
     "readOnly": false,
     "destructive": true,
     "confirm": true,
@@ -767,54 +736,38 @@
       },
       {
         "name": "announcement_ids",
-        "required": true,
-        "description": "Announcement ids to delete, up to 50."
+        "required": false,
+        "description": "Announcement (discussion topic) ids to delete, up to 50."
+      },
+      {
+        "name": "title_contains",
+        "required": false,
+        "description": "Match announcements whose title contains this text (case-insensitive)."
+      },
+      {
+        "name": "posted_before",
+        "required": false,
+        "description": "ISO 8601 datetime; match announcements posted before this."
+      },
+      {
+        "name": "posted_after",
+        "required": false,
+        "description": "ISO 8601 datetime; match announcements posted after this."
+      },
+      {
+        "name": "limit",
+        "required": false,
+        "description": "Maximum number of filter matches to delete in one call."
+      },
+      {
+        "name": "require_title_match",
+        "required": false,
+        "description": "With exactly one id: only delete if its title equals this string exactly."
       },
       {
         "name": "stop_on_error",
         "required": false,
         "description": "Stop at the first failure instead of continuing with the rest."
-      },
-      {
-        "name": "confirm",
-        "required": false,
-        "description": "Set true to actually delete; without it, only a preview is returned."
-      }
-    ]
-  },
-  {
-    "name": "delete_announcements_matching",
-    "group": "Discussions & announcements",
-    "module": "discussions",
-    "description": "Delete announcements matching title and/or date criteria.",
-    "readOnly": false,
-    "destructive": true,
-    "confirm": true,
-    "params": [
-      {
-        "name": "course",
-        "required": true,
-        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
-      },
-      {
-        "name": "title_contains",
-        "required": false,
-        "description": "Only match announcements whose title contains this text (case-insensitive)."
-      },
-      {
-        "name": "posted_before",
-        "required": false,
-        "description": "ISO 8601 datetime; only match announcements posted before this."
-      },
-      {
-        "name": "posted_after",
-        "required": false,
-        "description": "ISO 8601 datetime; only match announcements posted after this."
-      },
-      {
-        "name": "limit",
-        "required": false,
-        "description": "Maximum number of matches to delete in one call."
       },
       {
         "name": "confirm",
@@ -1432,22 +1385,6 @@
     ]
   },
   {
-    "name": "get_front_page",
-    "group": "Pages",
-    "module": "pages",
-    "description": "Get the course's front page: title and full body text.",
-    "readOnly": true,
-    "destructive": false,
-    "confirm": false,
-    "params": [
-      {
-        "name": "course",
-        "required": true,
-        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
-      }
-    ]
-  },
-  {
     "name": "get_grades",
     "group": "Student",
     "module": "student",
@@ -1467,7 +1404,7 @@
     "name": "get_page",
     "group": "Pages",
     "module": "pages",
-    "description": "Get one page's metadata and a short body preview.",
+    "description": "Get one page: its metadata and full body as text.",
     "readOnly": true,
     "destructive": false,
     "confirm": false,
@@ -1480,33 +1417,12 @@
       {
         "name": "page",
         "required": true,
-        "description": "The page's url slug or numeric page id."
-      }
-    ]
-  },
-  {
-    "name": "get_page_content",
-    "group": "Pages",
-    "module": "pages",
-    "description": "Get a page's full body as text, untruncated unless max_chars is given.",
-    "readOnly": true,
-    "destructive": false,
-    "confirm": false,
-    "params": [
-      {
-        "name": "course",
-        "required": true,
-        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
-      },
-      {
-        "name": "page",
-        "required": true,
-        "description": "The page's url slug or numeric page id."
+        "description": "The page's url slug or numeric page id, or \"front_page\" for the course front page."
       },
       {
         "name": "max_chars",
         "required": false,
-        "description": "Optional cap on returned characters; truncation is marked explicitly."
+        "description": "Optional cap on returned body characters; truncation is marked explicitly."
       }
     ]
   },
@@ -1514,7 +1430,7 @@
     "name": "get_peer_review_assignments",
     "group": "Peer reviews",
     "module": "peer_reviews",
-    "description": "Show who reviews whom for an assignment, with completion state.",
+    "description": "List every peer review on an assignment: who reviews whom, state, and comment activity.",
     "readOnly": true,
     "destructive": false,
     "confirm": false,
@@ -2146,27 +2062,6 @@
         "name": "published",
         "required": false,
         "description": "Restrict to published (true) or unpublished (false) pages."
-      }
-    ]
-  },
-  {
-    "name": "list_peer_reviews",
-    "group": "Peer reviews",
-    "module": "peer_reviews",
-    "description": "List all peer review assignments for an assignment.",
-    "readOnly": true,
-    "destructive": false,
-    "confirm": false,
-    "params": [
-      {
-        "name": "course",
-        "required": true,
-        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
-      },
-      {
-        "name": "assignment_id",
-        "required": true,
-        "description": "Canvas assignment id."
       }
     ]
   },

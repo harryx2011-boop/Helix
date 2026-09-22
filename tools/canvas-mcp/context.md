@@ -14,7 +14,7 @@
 
 ## Purpose
 
-CanvasLMS - API is a local MCP server that exposes a Canvas LMS account to MCP clients (Claude Code, Claude Desktop, Cursor, and others) as roughly 100 tools. It authenticates with the user's own Canvas personal access token, runs entirely on the user's machine, and returns Markdown from every tool. Tools that change Canvas require an explicit `confirm=true` after returning a preview.
+CanvasLMS - API is a local MCP server that exposes a Canvas LMS account to MCP clients (Claude Code, Claude Desktop, Cursor, and others) as roughly 95 tools. It authenticates with the user's own Canvas personal access token, runs entirely on the user's machine, and returns Markdown from every tool. Tools that change Canvas require an explicit `confirm=true` after returning a preview.
 
 ## Stack
 
@@ -45,17 +45,17 @@ src/canvaslms_api/
     student.py        9 tools: student-facing tools
     assignments.py    9 tools: assignments & grading
     rubrics.py         6 tools: rubrics
-    discussions.py    14 tools: discussions & announcements
+    discussions.py    12 tools: discussions & announcements
     modules.py         8 tools: modules
-    pages.py           9 tools: pages
+    pages.py           7 tools: pages
     files.py           4 tools: files
     messaging.py       6 tools: Canvas Inbox
-    peer_reviews.py   13 tools: peer review workflow and analytics
+    peer_reviews.py   12 tools: peer review workflow and analytics
     people.py          5 tools: people & privacy
     accessibility.py   5 tools: accessibility scanning and fixes
     migrations.py      2 tools: course content migration/copy
     developer.py       1 tool : search_tools (meta)
-  = 100 tools total
+  = 95 tools total
 ```
 
 ## Key conventions
@@ -134,7 +134,7 @@ Helix's own primitives and tokens rather than ported:
 | Route | What it is |
 |---|---|
 | `/canvas` | Hero, worked example, the confirm gate, safety, the 14 groups, install |
-| `/canvas/tools` | Searchable explorer over all 100 tools, URL-synced, `#tool_name` deep links |
+| `/canvas/tools` | Searchable explorer over every tool, URL-synced, `#tool_name` deep links |
 | `/canvas/skills` | The eight skills in `skills/`, split student and educator |
 | `/canvas/changelog` | Renders a mirror of this package's `CHANGELOG.md` |
 
@@ -152,7 +152,7 @@ releases change**, or the site quietly describes a server that no longer exists:
   computed at build time, so they need updating in the same pass.
 - `apps/dashboard/public/canvas/CHANGELOG.md` — a copy of this file's sibling.
 
-`TOOL_CONFIRMED` is 39 while 40 tools are non-read-only: `clear_cache` mutates only
+`TOOL_CONFIRMED` is 37 while 38 tools are non-read-only: `clear_cache` mutates only
 the in-memory course cache and makes no Canvas request. The site therefore claims
 "every tool that changes Canvas", never "every mutating tool".
 

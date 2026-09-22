@@ -60,16 +60,18 @@ def register(mcp: FastMCP, app: App) -> None:
         return table
 
     @mcp.tool(annotations=READ)
-    async def get_page(course: str | int, page: str) -> str:
-        """Get one page's metadata and a short body preview.
+    async def get_page(course: str | int, page: str, max_chars: int | None = None) -> str:
+        """Get one page: its metadata and full body as text.
 
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
-            page: The page's url slug or numeric page id.
+            page: The page's url slug or numeric page id, or "front_page" for the course front page.
+            max_chars: Optional cap on returned body characters; truncation is marked explicitly.
         """
         cid = await app.course_id(course)
-        data = await app.client.get(f"/courses/{cid}/pages/{page}")
-        body = md.kv(
+        path = f"/courses/{cid}/front_page" if page == "front_page" else f"/courses/{cid}/pages/{page}"
+        data = await app.client.get(path)
+        meta = md.kv(
             [
                 ("title", data.get("title")),
                 ("url", data.get("url")),
@@ -83,35 +85,9 @@ def register(mcp: FastMCP, app: App) -> None:
                 ("locked for you", data.get("locked_for_user")),
             ]
         )
-        preview = md.html_to_text(data.get("body"), 300)
-        return md.join(body, md.section("Body preview", preview or "_empty_"))
-
-    @mcp.tool(annotations=READ)
-    async def get_page_content(course: str | int, page: str, max_chars: int | None = None) -> str:
-        """Get a page's full body as text, untruncated unless max_chars is given.
-
-        Args:
-            course: Course id, course code, part of the course name, or "sis_course_id:XXX".
-            page: The page's url slug or numeric page id.
-            max_chars: Optional cap on returned characters; truncation is marked explicitly.
-        """
-        cid = await app.course_id(course)
-        data = await app.client.get(f"/courses/{cid}/pages/{page}")
         full_text = md.html_to_text(data.get("body"))
         text = md.truncate(full_text, max_chars) if max_chars else full_text
-        return f"{text}\n\n[{len(full_text)} characters]"
-
-    @mcp.tool(annotations=READ)
-    async def get_front_page(course: str | int) -> str:
-        """Get the course's front page: title and full body text.
-
-        Args:
-            course: Course id, course code, part of the course name, or "sis_course_id:XXX".
-        """
-        cid = await app.course_id(course)
-        data = await app.client.get(f"/courses/{cid}/front_page")
-        text = md.html_to_text(data.get("body"), 6000)
-        return md.join(md.heading(data.get("title") or "Front page"), text or "_empty_")
+        return md.join(meta, md.section("Body", f"{text}\n\n[{len(full_text)} characters]" if full_text else "_empty_"))
 
     @mcp.tool(annotations=WRITE)
     async def create_page(

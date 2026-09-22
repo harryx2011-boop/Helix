@@ -1,6 +1,6 @@
 # Plan: Canvas CLI + student-privacy (FERPA) hardening
 
-> **Status:** plan only, nothing built yet. Written 2026-09-22 against canvas-mcp **v1.1.0**.
+> **Status:** built in canvas-mcp **v2.0.0** (2026-09-22), using the ★ defaults in §0. See "Build status" at the end for what shipped, what changed from this plan, and what's left. Originally written against v1.1.0.
 > **Scope:** `tools/canvas-mcp/` (Python package `canvaslms_api`, console script `canvaslms-api`).
 > **Audience:** any future session picking this up. Read `tools/canvas-mcp/context.md` first; this file assumes it.
 > **Not legal advice.** Part B lists the engineering controls and the questions for a lawyer or district privacy officer. Nothing here makes the tool "FERPA compliant" by itself: compliance comes from how a school or teacher deploys it, under what agreements.
@@ -182,3 +182,30 @@ Versioning: canvas-mcp carries its own version (`pyproject.toml` / `__init__.py`
 - No MCP tool can return a real name in `pseudonymize`/`strict`.
 - The crosswalk can't be read without the key; labels are stable across roster changes; numbers are never reused within a term.
 - §0 questions answered and §B3 items marked confirmed by the district or counsel before anyone calls it production-ready.
+
+---
+
+## Build status (v2.0.0, 2026-09-22)
+
+Built with the ★ answers to §0: one teacher running it locally, K-12, labels `P3-07`, one privacy layer behind both front-ends. **§0 is still open**: an answer that differs means revisiting the matching part.
+
+| Step | State | Notes |
+|---|---|---|
+| 1 Tests pinning behaviour | done | `tests/test_privacy.py` (31 tests), CLI and config tests updated |
+| 2 HMAC fix (G1) | done | `Privacy.user_key` / `pseudonym`, key in `privacy.key` or `CANVAS_PRIVACY_KEY` |
+| 3 Crosswalk + `P<period>-<nn>` | done | Stores HMAC -> label only (stronger than planned: no Canvas ids on disk). Period from the section name, or `periods.toml` |
+| 4 Output scrubbing | done | At one boundary (`PrivacyGuard`), not per tool. Raw-id sites use `app.user_ref()` |
+| 5 Input label resolution | done | Ids for `ID_ARGS`; labels in prose become real names just before Canvas; the result says so |
+| 6 Modes, fail closed | done | Default strict; legacy `ANONYMIZE=false` is ignored on purpose (see CHANGELOG) |
+| 7 CLI | done | `tools`, `call`, `serve`, `privacy status/roster/periods/scan/purge`. `export_anonymization_map` kept as a tool (the site's tool count is unchanged) but refuses over MCP |
+| 8 Retention + audit | done | Private `downloads/` purged at server start; `audit.jsonl` without names |
+| 9 Docs + site | partly | README, context.md, CHANGELOG, `.env.example`, `tools.json` and the CHANGELOG mirror are done. **Not done:** the `/canvas` marketing copy (`app/(marketing)/canvas/page.tsx:130`, the `CANVAS_ANONYMIZE_STUDENTS` entry in `lib/canvas.ts:162`) still describes opt-in anonymisation. It needs a UI turn with the landing-page review order from `.claude/rules/always-on-skills.md` and a claims-guard pass (no "FERPA compliant") |
+
+Differences from the plan:
+- **Per-tool CLI flags** (`canvaslms-api list_users --course X`) were not built; `call <tool> key=value` covers it.
+- **`roster --out` isn't encrypted.** It's a mode-0600 file, and the command tells you to delete it.
+- **Key storage** uses a 0600 key file or an env var, not the OS keychain. That avoids a new dependency; `keyring` is an easy follow-up.
+- **Accommodation / IEP suppression** (§B3) was not built. Canvas has no single field for it, so it needs the district's conventions first.
+- **Terms**: `purge --crosswalk` wipes everything; there's no per-term column yet.
+
+Known limits (also in the README): dictionary scrubbing misses nicknames and indirect identifiers. Over-redaction is the failure mode for common-word names ("Will" at the start of a sentence). A roster the token can't read (a student token, usually) leaves free text unscrubbed for that course, and the result says so.

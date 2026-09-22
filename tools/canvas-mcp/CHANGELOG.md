@@ -4,6 +4,31 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.0] - 2026-09-22
+
+Student privacy is now on by default. This changes what every tool returns, hence the major version.
+
+### Added
+
+- Class-period student labels. Students appear as `P3-07` (period 3, student 07), or `S-07` when their section has no period. The period is read from the Canvas section name, and `periods.toml` can override it. Numbers are drawn at random once per student and never reused, so they reveal nothing about name order and don't shift when someone adds or drops. Guardians appear as `Guardian-xxxxxx`, and anyone not on a loaded roster as `Person-xxxxxxxx`.
+- A local crosswalk (`~/.canvaslms-api/crosswalk.db`, mode 0600) that stores a keyed HMAC of each Canvas user id with its label. It holds no ids and no names.
+- Free-text scrubbing on every tool result, error messages included. Roster names (full, sortable, short, and each name part), emails, login ids and SIS ids are replaced with the matching label, or with `[student]` when a name is shared. In strict mode, any other email or phone number is also redacted.
+- Label resolution on the way in. A label is accepted anywhere a tool takes a student's user id (`user_id`, `student_id`, `reviewer_id`, `reviewee_id`, `recipients`, `recipient_ids`, `grades` keys). A label in text bound for Canvas becomes the student's real name on this machine, just before the request, and the tool result says so.
+- `CANVAS_PRIVACY_MODE` (`off` | `pseudonymize` | `strict`, default `strict`), `CANVAS_PRIVACY_DIR`, `CANVAS_PRIVACY_KEY`, `CANVAS_RETENTION_DAYS`, `CANVAS_PRIVACY_ACK_TUNNEL`.
+- A local audit log (`audit.jsonl`): tool, course, confirm, outcome and the labels involved. It never records names or free text.
+- CLI subcommands: `tools [--search]`, `call <tool> key=value ... [--confirm] [--json]`, `serve`, and `privacy status | roster | periods | scan | purge`. `call` goes through the same server and privacy layer as an MCP client. `privacy roster` is the only place a label is shown next to a real name. `privacy scan --redact` cleans text before it is pasted anywhere.
+
+### Changed
+
+- **Pseudonyms are keyed.** They used to be `sha256(host:user_id)`. Canvas user ids are small, enumerable integers, so anyone could hash every id and reverse the mapping. They now use HMAC-SHA256 under a per-install key (generated into the privacy dir, or taken from `CANVAS_PRIVACY_KEY`).
+- **Privacy is on by default (`strict`).** `CANVAS_ANONYMIZE_STUDENTS=true` still works and means `pseudonymize`. Setting it to `false` no longer turns privacy off, because `.env.example` shipped with that line and it is in most `.env` files without anyone having chosen it. Only `CANVAS_PRIVACY_MODE=off` turns privacy off, and the server then warns on every start.
+- In strict mode, raw student user ids in tables and fallbacks are shown as labels.
+- `export_anonymization_map` refuses over MCP whenever privacy is on, because the map is what undoes the labels. It still runs from the terminal (`canvaslms-api call` or `privacy roster --out`). It writes `label` instead of `anonymous_id`, with file mode 0600.
+- With privacy on and no `CANVAS_DOWNLOAD_DIR`, downloads go to `~/.canvaslms-api/downloads` (mode 0700) instead of the shared temp dir. Files older than `CANVAS_RETENTION_DAYS` (default 30) are purged when the server starts. A `CANVAS_DOWNLOAD_DIR` you set yourself is never purged.
+- In strict mode, `--transport http` refuses to serve through a tunnel or off-loopback unless `CANVAS_PRIVACY_ACK_TUNNEL=1`, because the tunnel provider sees tool results in the clear.
+- `extract_peer_review_dataset` uses labels when privacy is on, so its rows join with every other tool's output.
+- `get_privacy_status` reports the mode, label scheme, crosswalk, key source, audit log and retention. It never returns the map.
+
 ## [1.1.0] - 2026-09-05
 
 ### Added

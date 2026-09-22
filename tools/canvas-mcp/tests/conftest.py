@@ -18,6 +18,11 @@ _CANVAS_ENV_VARS = (
     "CANVAS_DOWNLOAD_DIR",
     "CANVAS_MCP_AUTH_TOKEN",
     "CANVAS_MCP_ALLOWED_HOSTS",
+    "CANVAS_PRIVACY_MODE",
+    "CANVAS_PRIVACY_DIR",
+    "CANVAS_PRIVACY_KEY",
+    "CANVAS_RETENTION_DAYS",
+    "CANVAS_PRIVACY_ACK_TUNNEL",
 )
 
 
@@ -36,14 +41,25 @@ def _isolated_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("canvaslms_api.config.load_env", lambda: None)
 
 
+@pytest.fixture(autouse=True)
+def _isolated_privacy_dir(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> None:
+    """Never let a test touch the real ~/.canvaslms-api (key, crosswalk, audit log)."""
+    monkeypatch.setattr(
+        "canvaslms_api.config.DEFAULT_PRIVACY_DIR", tmp_path_factory.mktemp("privacy-default")
+    )
+
+
 @pytest.fixture
 def settings() -> Settings:
+    # Tool tests assert on names, so they run with privacy off; the privacy
+    # layer has its own tests with it on (tests/test_privacy.py).
     return Settings(
         base_url="https://canvas.test",
         token="t0ken",
         timeout=1.0,
         cache_ttl=60,
         max_concurrency=2,
+        privacy_mode="off",
     )
 
 

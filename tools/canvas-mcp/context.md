@@ -1,5 +1,7 @@
 # CanvasLMS - API: context
 
+> v2.0.0 (2026-09-22): student privacy on by default (`CANVAS_PRIVACY_MODE=strict`): class-period labels (`P3-07`) from a local HMAC crosswalk, roster-driven free-text scrubbing, label -> id/name resolution on input, terminal-only re-identification, audit log, private purged downloads, strict-mode tunnel gate; CLI subcommands (`tools`, `call`, `serve`, `privacy ...`). Plan and remaining work: `PLAN-cli-and-student-privacy.md`
+>
 > v1.1.0 (2026-09-05): HTTP shared-secret auth (`CANVAS_MCP_AUTH_TOKEN`) so claude.ai custom connectors can reach the server; `--transport http` refuses to bind past localhost without it
 >
 > v1.0.2 (2026-09-05): GET-only retry with jittered backoff and capped `Retry-After`, write-triggered course-cache invalidation, per-call timeout override
@@ -28,9 +30,11 @@ CanvasLMS - API is a local MCP server that exposes a Canvas LMS account to MCP c
 
 ```
 src/canvaslms_api/
-  cli.py        argparse entrypoint: --test, --config, --list-tools, --transport, --version
-  server.py     build_server(): FastMCP instance, INSTRUCTIONS text, registers all tool modules
-  app.py        App dataclass (settings, client, courses), READ/WRITE/DESTRUCTIVE hint dicts, person()/anonymous_id()
+  cli.py        argparse entrypoint: --test, --config, --list-tools, --transport, --version,
+                and subcommands tools | call | serve | privacy {status,roster,periods,scan,purge}
+  server.py     build_server(): FastMCP instance, INSTRUCTIONS text, CanvasErrors + PrivacyGuard middleware
+  app.py        App dataclass (settings, client, courses, surface, privacy), READ/WRITE/DESTRUCTIVE hint dicts, person()/user_ref()/anonymous_id()
+  privacy.py    Privacy (rosters, labels, scrub, restore_args, audit), Crosswalk (sqlite), period guessing, retention
   client.py     CanvasClient (httpx-based), CanvasError
   courses.py    CourseResolver: resolves course id/code/name/sis_course_id: to a numeric id, with caching
   md.py         Markdown-formatting helpers shared by tool modules
@@ -65,7 +69,9 @@ src/canvaslms_api/
 - **HTTP auth.** `SharedSecretGuard` (`http_auth.py`) wraps the HTTP app when `CANVAS_MCP_AUTH_TOKEN` is set. It accepts either `Authorization: Bearer <token>` or an `/s/<token>` path prefix, and 401s everything else. The path form is there for claude.ai custom connectors, whose dialog accepts a URL and nothing else. The prefix is moved into the ASGI `root_path` rather than stripped from `path`, because Starlette subtracts `root_path` from `path` when routing and builds redirect URLs from the full `path` -- rewriting `path` would emit redirects that drop the secret and 401.
 - **Host validation.** FastMCP defaults `http_host_origin_protection` to `False`, so naming allowed hosts alone does nothing. `_run_http` (`cli.py`) passes `host_origin_protection=True` whenever hosts are named via `CANVAS_MCP_ALLOWED_HOSTS` or `--allowed-host`; a Host outside the list then gets 421. Loopback names are always allowed on top of the configured list.
 - **Off-loopback guard.** `--transport http` exits 2 rather than bind past localhost (or accept proxy hostnames) without `CANVAS_MCP_AUTH_TOKEN`: an open port here is equivalent to handing out the Canvas token. Plain loopback serving stays unauthenticated for backwards compatibility.
-- **Anonymization.** When `CANVAS_ANONYMIZE_STUDENTS=true`, `App.person()` returns a stable SHA-256-derived pseudonym (`Student_xxxxxxxx`) instead of the real name; `App.anonymous_id()` computes it, `export_anonymization_map` (in `people.py`) can export the mapping, `get_privacy_status` reports whether anonymization is active.
+- **Student privacy (`privacy.py`).** Mode `strict` by default from the environment (`Settings()` also defaults to strict; the test fixture pins `off`). `App.course_id()` loads the course roster into `Privacy` (cached for `CANVAS_CACHE_TTL`), so labels exist before anything renders. The `PrivacyGuard` middleware (`server.py`) wraps every tool call on every surface: it loads rosters (the course argument, or all active courses), resolves labels in arguments via `restore_args` (`ID_ARGS` become Canvas ids; labels in any other string become real names, so text written to Canvas is personal while the model only sees labels), then scrubs the result, errors and `structured_content` included, and appends an audit line. Code that prints a person uses `app.person(user)`; code that prints a raw user id uses `app.user_ref(uid)`, which returns the label in privacy modes (strict also hides unknown ids behind `Person-<hmac>`). New tools must follow both rules; `tests/test_privacy.py::test_sweep_read_tools_leak_nothing` runs every read tool against a fake Canvas full of student names and fails on any leak.
+- **Labels.** `P<period>-<nn>` (or `S-<nn>` without a period). Assigned at random once per (host, HMAC(user id)) in `crosswalk.db`, never reused; period from the student's section name (`guess_period`) or `periods.toml`. Guardians `Guardian-<hmac6>`, off-roster people `Person-<hmac8>`. The HMAC key is `CANVAS_PRIVACY_KEY` or `<privacy dir>/privacy.key`. Never derive an identifier from a bare hash of a Canvas id: ids are enumerable.
+- **Re-identification is terminal-only.** `App.surface` is `"cli"` only when `canvaslms-api` subcommands build the app; `export_anonymization_map` refuses on `"mcp"` while privacy is on, and `privacy roster` is the terminal view.
 
 ## Configuration
 
@@ -78,8 +84,13 @@ Loaded from `.env` in the repository root via `Settings.from_env()` (`config.py`
 | `CANVAS_TIMEOUT` | no | 30 |
 | `CANVAS_CACHE_TTL` | no | 300 |
 | `CANVAS_MAX_CONCURRENCY` | no | 5 |
-| `CANVAS_ANONYMIZE_STUDENTS` | no | false |
-| `CANVAS_DOWNLOAD_DIR` | no | system temp dir |
+| `CANVAS_PRIVACY_MODE` | no | strict |
+| `CANVAS_ANONYMIZE_STUDENTS` | no | legacy: true = pseudonymize, false ignored |
+| `CANVAS_PRIVACY_DIR` | no | ~/.canvaslms-api |
+| `CANVAS_PRIVACY_KEY` | no | key file in privacy dir |
+| `CANVAS_RETENTION_DAYS` | no | 30 |
+| `CANVAS_PRIVACY_ACK_TUNNEL` | no |: |
+| `CANVAS_DOWNLOAD_DIR` | no | privacy dir/downloads (purged), or system temp with privacy off |
 | `CANVAS_MCP_AUTH_TOKEN` | no |: |
 | `CANVAS_MCP_ALLOWED_HOSTS` | no |: |
 
@@ -94,7 +105,9 @@ canvaslms-api --config        # print resolved settings, token masked
 canvaslms-api --list-tools    # print all registered tool names
 canvaslms-api                 # run over stdio (default)
 canvaslms-api --transport http --host 127.0.0.1 --port 7100
-canvaslms-api --transport http --allowed-host <tunnel host>   # needs CANVAS_MCP_AUTH_TOKEN
+canvaslms-api --transport http --allowed-host <tunnel host>   # needs CANVAS_MCP_AUTH_TOKEN (+ CANVAS_PRIVACY_ACK_TUNNEL=1 in strict)
+canvaslms-api call <tool> key=value ...   # any tool from the terminal, through PrivacyGuard
+canvaslms-api privacy roster <course>     # label -> real name, terminal only
 pytest
 ruff check .
 ```

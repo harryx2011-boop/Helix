@@ -199,7 +199,7 @@ def _compose_followup_body(tier: str, assignment_name: str, pending_count: int, 
 
 async def _send_conversations(
     app: App, cid: int, recipient_ids: list[int], subject: str, bodies: dict[int, str]
-) -> list[tuple[int, str]]:
+) -> list[tuple[str, str]]:
     async def send_one(user_id: int) -> Any:
         return await app.client.post(
             "/conversations",
@@ -213,13 +213,13 @@ async def _send_conversations(
         )
 
     results = await app.client.gather(send_one(uid) for uid in recipient_ids)
-    out: list[tuple[int, str]] = []
+    out: list[tuple[str, str]] = []
     for uid, result in zip(recipient_ids, results, strict=True):
         if isinstance(result, Exception):
             message = result.message if isinstance(result, CanvasError) else str(result)
-            out.append((uid, f"failed: {message}"))
+            out.append((app.user_ref(uid), f"failed: {message}"))
         else:
-            out.append((uid, "sent"))
+            out.append((app.user_ref(uid), "sent"))
     return out
 
 
@@ -312,8 +312,8 @@ def register(mcp: FastMCP, app: App) -> None:
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
             assignment_id: Canvas assignment id.
-            reviewer_id: Canvas user id of the student who will review.
-            reviewee_id: Canvas user id of the student whose submission is reviewed.
+            reviewer_id: Canvas user id (or label, e.g. P3-07) of the student who will review.
+            reviewee_id: Canvas user id (or label) of the student whose submission is reviewed.
             confirm: Must be true to actually create the assignment.
         """
         if str(reviewer_id) == str(reviewee_id):
@@ -335,8 +335,8 @@ def register(mcp: FastMCP, app: App) -> None:
         details = md.kv(
             [
                 ("assignment", data.assignment.get("name")),
-                ("reviewer", app.person(reviewer_user, fallback=f"user {reviewer_id}")),
-                ("reviewee", app.person(reviewee_submission.get("user"), fallback=f"user {reviewee_id}")),
+                ("reviewer", app.person(reviewer_user, fallback=f"user {app.user_ref(reviewer_id)}")),
+                ("reviewee", app.person(reviewee_submission.get("user"), fallback=f"user {app.user_ref(reviewee_id)}")),
                 ("reviewee submission id", submission_id),
             ]
         )
@@ -380,8 +380,8 @@ def register(mcp: FastMCP, app: App) -> None:
         rows = []
         for r in data.reviews:
             reviewee_user = _reviewee_user(r, data)
-            reviewer = app.person(r.get("assessor")) if include_names else r.get("assessor_id")
-            reviewee = app.person(reviewee_user) if include_names else r.get("user_id")
+            reviewer = app.person(r.get("assessor")) if include_names else app.user_ref(r.get("assessor_id"))
+            reviewee = app.person(reviewee_user) if include_names else app.user_ref(r.get("user_id"))
             row = [reviewer, reviewee, r.get("workflow_state")]
             if include_submission_details:
                 submission = data.submissions_by_id.get(r.get("asset_id")) or {}
@@ -431,7 +431,7 @@ def register(mcp: FastMCP, app: App) -> None:
             submission = data.reviewees_by_user.get(user_id)
             user = submission.get("user") if submission else None
             rows.append(
-                (app.person(user, fallback=f"user {user_id}"), c["assigned"], c["completed"], c["assigned"] - c["completed"])
+                (app.person(user, fallback=f"user {app.user_ref(user_id)}"), c["assigned"], c["completed"], c["assigned"] - c["completed"])
             )
         table = md.table(["student", "assigned", "completed", "pending"], rows)
         return md.join(summary, md.section("Per-student", table), data.notice())
@@ -462,7 +462,7 @@ def register(mcp: FastMCP, app: App) -> None:
             rows_data = [r for r in rows_data if r["priority"] == priority_filter]
         rows = [
             (
-                app.person(r["user"], fallback=f"user {r['user_id']}"),
+                app.person(r["user"], fallback=f"user {app.user_ref(r['user_id'])}"),
                 r["pending"],
                 r["days_past_due"],
                 r["priority"],
@@ -641,7 +641,7 @@ def register(mcp: FastMCP, app: App) -> None:
             for user_id, c in counts.items():
                 submission = data.reviewees_by_user.get(user_id)
                 user = submission.get("user") if submission else None
-                rows.append((app.person(user, fallback=f"user {user_id}"), c["assigned"], c["completed"], c["assigned"] - c["completed"]))
+                rows.append((app.person(user, fallback=f"user {app.user_ref(user_id)}"), c["assigned"], c["completed"], c["assigned"] - c["completed"]))
             completion_block = md.join(completion_block, md.table(["student", "assigned", "completed", "pending"], rows))
 
         scores = []
@@ -654,7 +654,7 @@ def register(mcp: FastMCP, app: App) -> None:
 
         followups = _followup_rows(data, days_threshold=3)
         followup_rows = [
-            (app.person(r["user"], fallback=f"user {r['user_id']}"), r["pending"], r["priority"])
+            (app.person(r["user"], fallback=f"user {app.user_ref(r['user_id'])}"), r["pending"], r["priority"])
             for r in followups
         ]
         followup_block = md.table(["student", "pending", "priority"], followup_rows)
@@ -727,7 +727,7 @@ def register(mcp: FastMCP, app: App) -> None:
             for user_id, texts in per_reviewee.items():
                 submission = data.reviewees_by_user.get(user_id)
                 user = submission.get("user") if submission else None
-                name = app.person(user, fallback=f"user {user_id}") if include_student_names else user_id
+                name = app.person(user, fallback=f"user {app.user_ref(user_id)}") if include_student_names else app.user_ref(user_id)
                 total_words = sum(len(t.split()) for t in texts)
                 rows.append((name, len(texts), total_words))
             table = md.table(["reviewee", "feedback items", "total words"], rows)
@@ -736,9 +736,9 @@ def register(mcp: FastMCP, app: App) -> None:
         if report_type == "detailed":
             rows = []
             for r in data.reviews:
-                reviewer = app.person(r.get("assessor")) if include_student_names else r.get("assessor_id")
+                reviewer = app.person(r.get("assessor")) if include_student_names else app.user_ref(r.get("assessor_id"))
                 reviewee = (
-                    app.person(_reviewee_user(r, data)) if include_student_names else r.get("user_id")
+                    app.person(_reviewee_user(r, data)) if include_student_names else app.user_ref(r.get("user_id"))
                 )
                 for c in _review_comments(r):
                     rows.append((reviewer, reviewee, md.fmt_date(c.get("created_at")), c.get("comment")))
@@ -752,10 +752,10 @@ def register(mcp: FastMCP, app: App) -> None:
         for user_id, reviews in per_reviewee_reviews.items():
             submission = data.reviewees_by_user.get(user_id)
             user = submission.get("user") if submission else None
-            name = app.person(user, fallback=f"user {user_id}") if include_student_names else f"user {user_id}"
+            name = app.person(user, fallback=f"user {app.user_ref(user_id)}") if include_student_names else f"user {app.user_ref(user_id)}"
             lines = []
             for r in reviews:
-                reviewer = app.person(r.get("assessor")) if include_student_names else r.get("assessor_id")
+                reviewer = app.person(r.get("assessor")) if include_student_names else app.user_ref(r.get("assessor_id"))
                 for c in _review_comments(r):
                     lines.append(f"- **{reviewer}** ({md.fmt_date(c.get('created_at'))}): {c.get('comment')}")
             body = (
@@ -793,9 +793,12 @@ def register(mcp: FastMCP, app: App) -> None:
         data = await _load(app, cid, assignment_id)
 
         def name_for(user: dict[str, Any] | None, user_id: Any) -> str:
+            if app.privacy.enabled:
+                # Labels already hide names, and stay joinable with every other tool's output.
+                return app.person(user) if user else app.user_ref(user_id)
             if anonymize:
                 return app.anonymous_id(user_id)
-            return app.person(user, fallback=f"user {user_id}")
+            return app.person(user, fallback=f"user {app.user_ref(user_id)}")
 
         rows: list[dict[str, Any]] = []
         for r in data.reviews:
@@ -851,7 +854,7 @@ def register(mcp: FastMCP, app: App) -> None:
     async def message_peer_reviewers(
         course: str | int,
         assignment_id: str | int,
-        recipient_ids: list[int],
+        recipient_ids: list[int | str],
         custom_message: str | None = None,
         include_assignment_link: bool = True,
         subject_prefix: str = "Peer review reminder",
@@ -864,7 +867,7 @@ def register(mcp: FastMCP, app: App) -> None:
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
             assignment_id: Canvas assignment id.
-            recipient_ids: Canvas user ids to message.
+            recipient_ids: Canvas user ids to message, or student labels (e.g. P3-07).
             custom_message: Custom message body. Defaults to a template naming their pending count.
             include_assignment_link: Append a direct link to the assignment.
             subject_prefix: Prefix for the message subject line.
@@ -872,6 +875,10 @@ def register(mcp: FastMCP, app: App) -> None:
         """
         if not recipient_ids:
             raise ToolError("recipient_ids must not be empty.")
+        try:
+            recipient_ids = [int(r) for r in recipient_ids]
+        except (TypeError, ValueError) as exc:
+            raise ToolError(f"recipient_ids must be Canvas user ids or student labels: {exc}") from exc
         cid = await app.course_id(course)
         await _require_manage_grades(app, cid)
         data = await _load(app, cid, assignment_id)
@@ -890,7 +897,7 @@ def register(mcp: FastMCP, app: App) -> None:
             if include_assignment_link and data.assignment.get("html_url"):
                 body = f"{body}\n\n{data.assignment['html_url']}"
             bodies[uid] = body
-            preview_rows.append((app.person(user, fallback=f"user {uid}"), pending))
+            preview_rows.append((app.person(user, fallback=f"user {app.user_ref(uid)}"), pending))
 
         details = md.join(
             md.kv([("subject", subject)]),
@@ -937,7 +944,7 @@ def register(mcp: FastMCP, app: App) -> None:
                     body = f"{body}\n\n{data.assignment['html_url']}"
                 bodies[r["user_id"]] = body
                 recipient_ids.append(r["user_id"])
-                batch_rows.append((app.person(r["user"], fallback=f"user {r['user_id']}"), r["pending"]))
+                batch_rows.append((app.person(r["user"], fallback=f"user {app.user_ref(r['user_id'])}"), r["pending"]))
             batch_blocks.append(
                 md.section(
                     f"{tier} priority ({len(rows)})",

@@ -40,9 +40,9 @@ async def _resolve_recipient_label(app: App, cid: int, course_name: str, recipie
     if recipient.isdigit():
         try:
             user = await app.client.get(f"/courses/{cid}/users/{recipient}")
-            return app.person(user, fallback=f"user {recipient}")
+            return app.person(user, fallback=f"user {app.user_ref(recipient)}")
         except CanvasError:
-            return f"user {recipient}"
+            return f"user {app.user_ref(recipient)}"
     alias = _alias_description(recipient, course_name)
     return alias or recipient
 
@@ -193,7 +193,7 @@ def register(mcp: FastMCP, app: App) -> None:
 
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
-            recipients: List of recipient user ids or recipient aliases.
+            recipients: List of recipient user ids, student labels (e.g. P3-07), or recipient aliases.
             subject: Message subject.
             body: Message content.
             confirm: Must be true to actually send.
@@ -247,7 +247,7 @@ def register(mcp: FastMCP, app: App) -> None:
 
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
-            recipients: List of dicts, each with "user_id" and template variables.
+            recipients: List of dicts, each with "user_id" (id or label) and template variables.
             subject_template: Subject template, e.g. "Reminder for {name}".
             body_template: Body template, e.g. "Hi {name}, you have {count} items due.".
             confirm: Must be true to actually send.
@@ -276,13 +276,13 @@ def register(mcp: FastMCP, app: App) -> None:
         if not confirm:
             blocks = []
             for user_id, subject, body in rendered[:3]:
-                blocks.append(md.section(f"To user {user_id}", md.join(f"**Subject:** {subject}", body), level=3))
+                blocks.append(md.section(f"To user {app.user_ref(user_id)}", md.join(f"**Subject:** {subject}", body), level=3))
             remaining = rendered[3:]
             if remaining:
                 blocks.append(
                     md.section(
                         "Remaining recipients",
-                        md.table(["user id", "subject"], [(u, s) for u, s, _ in remaining]),
+                        md.table(["user id", "subject"], [(app.user_ref(u), s) for u, s, _ in remaining]),
                         level=3,
                     )
                 )
@@ -305,8 +305,8 @@ def register(mcp: FastMCP, app: App) -> None:
         rows = []
         for (user_id, subject, _), result in zip(rendered, results, strict=True):
             if isinstance(result, Exception):
-                rows.append((user_id, subject, f"failed: {result}"))
+                rows.append((app.user_ref(user_id), subject, f"failed: {result}"))
             else:
                 convo_id = result[0].get("id") if isinstance(result, list) and result else None
-                rows.append((user_id, subject, f"sent (conversation {convo_id})" if convo_id else "sent"))
+                rows.append((app.user_ref(user_id), subject, f"sent (conversation {convo_id})" if convo_id else "sent"))
         return md.done("send_bulk_messages", md.table(["user id", "subject", "result"], rows))

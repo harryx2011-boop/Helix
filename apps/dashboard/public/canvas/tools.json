@@ -123,12 +123,12 @@
       {
         "name": "reviewer_id",
         "required": true,
-        "description": "Canvas user id of the student who will review."
+        "description": "Canvas user id (or label, e.g. P3-07) of the student who will review."
       },
       {
         "name": "reviewee_id",
         "required": true,
-        "description": "Canvas user id of the student whose submission is reviewed."
+        "description": "Canvas user id (or label) of the student whose submission is reviewed."
       },
       {
         "name": "confirm",
@@ -200,7 +200,7 @@
       {
         "name": "grades",
         "required": true,
-        "description": "Maps user_id (as string) to either a grade value (e.g. \"85\" or \"A\"),\nor a dict {\"grade\": ..., \"comment\": \"...\"}."
+        "description": "Maps user_id (as string, or a student label like P3-07) to either a grade value (e.g. \"85\" or \"A\"),\nor a dict {\"grade\": ..., \"comment\": \"...\"}."
       },
       {
         "name": "confirm",
@@ -977,7 +977,7 @@
     "name": "export_anonymization_map",
     "group": "People & privacy",
     "module": "people",
-    "description": "Write a local CSV mapping each enrolled student's real name and id to their anonymous id.",
+    "description": "Write a local CSV mapping each enrolled student's real name and id to their label.",
     "readOnly": false,
     "destructive": false,
     "confirm": true,
@@ -1654,7 +1654,7 @@
     "name": "get_privacy_status",
     "group": "People & privacy",
     "module": "people",
-    "description": "Report the current student-anonymization configuration.",
+    "description": "Report the student-privacy mode and how labels are made. Never returns the label map.",
     "readOnly": true,
     "destructive": false,
     "confirm": false,
@@ -1718,7 +1718,7 @@
       {
         "name": "user_id",
         "required": true,
-        "description": "Canvas user id of the student."
+        "description": "Canvas user id of the student, or their label (e.g. P3-07)."
       }
     ]
   },
@@ -1739,7 +1739,7 @@
       {
         "name": "student_id",
         "required": false,
-        "description": "Canvas user id of the student. Omit for a course-wide summary."
+        "description": "Canvas user id of the student, or their label (e.g. P3-07). Omit for a course-wide summary."
       }
     ]
   },
@@ -1859,7 +1859,7 @@
       {
         "name": "user_id",
         "required": true,
-        "description": "Canvas user id of the student being graded."
+        "description": "Canvas user id of the student being graded, or their label (e.g. P3-07)."
       },
       {
         "name": "rubric_assessment",
@@ -2312,7 +2312,7 @@
       {
         "name": "recipient_ids",
         "required": true,
-        "description": "Canvas user ids to message."
+        "description": "Canvas user ids to message, or student labels (e.g. P3-07)."
       },
       {
         "name": "custom_message",
@@ -2504,7 +2504,7 @@
       {
         "name": "recipients",
         "required": true,
-        "description": "List of dicts, each with \"user_id\" and template variables."
+        "description": "List of dicts, each with \"user_id\" (id or label) and template variables."
       },
       {
         "name": "subject_template",
@@ -2540,7 +2540,7 @@
       {
         "name": "recipients",
         "required": true,
-        "description": "List of recipient user ids or recipient aliases."
+        "description": "List of recipient user ids, student labels (e.g. P3-07), or recipient aliases."
       },
       {
         "name": "subject",

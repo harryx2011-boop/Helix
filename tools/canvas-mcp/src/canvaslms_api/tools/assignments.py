@@ -320,7 +320,7 @@ def register(mcp: FastMCP, app: App) -> None:
 
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
-            student_id: Canvas user id of the student. Omit for a course-wide summary.
+            student_id: Canvas user id of the student, or their label (e.g. P3-07). Omit for a course-wide summary.
         """
         cid = await app.course_id(course)
         assignments = await app.client.get_all(
@@ -554,7 +554,7 @@ def register(mcp: FastMCP, app: App) -> None:
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
             assignment_id: Canvas assignment id.
-            grades: Maps user_id (as string) to either a grade value (e.g. "85" or "A"),
+            grades: Maps user_id (as string, or a student label like P3-07) to either a grade value (e.g. "85" or "A"),
                 or a dict {"grade": ..., "comment": "..."}.
             confirm: Must be true to actually submit the grades.
         """
@@ -572,9 +572,9 @@ def register(mcp: FastMCP, app: App) -> None:
             grade_value = spec.get("grade") if isinstance(spec, dict) else spec
             comment = spec.get("comment") if isinstance(spec, dict) else None
             existing = by_user.get(str(user_id))
-            student_name = app.person(existing.get("user")) if existing else f"user {user_id}"
+            student_name = app.person(existing.get("user")) if existing else f"user {app.user_ref(user_id)}"
             current_score = existing.get("score") if existing else None
-            rows.append((student_name, user_id, current_score, grade_value))
+            rows.append((student_name, app.user_ref(user_id), current_score, grade_value))
             body: dict[str, Any] = {"submission": {"posted_grade": grade_value}}
             if comment:
                 body["comment"] = {"text_comment": comment}
@@ -604,9 +604,9 @@ def register(mcp: FastMCP, app: App) -> None:
         failures = []
         for user_id, result in zip(payloads.keys(), results, strict=True):
             if isinstance(result, Exception):
-                failures.append((user_id, str(result)))
+                failures.append((app.user_ref(user_id), str(result)))
             else:
-                successes.append((user_id, result.get("score"), result.get("grade")))
+                successes.append((app.user_ref(user_id), result.get("score"), result.get("grade")))
         details = md.join(
             md.section("Succeeded", md.table(["user id", "score", "grade"], successes) if successes else "_none_"),
             md.section("Failed", md.table(["user id", "error"], failures) if failures else "_none_"),
@@ -626,7 +626,7 @@ def register(mcp: FastMCP, app: App) -> None:
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
             assignment_id: Canvas assignment id.
-            user_id: Canvas user id of the student being graded.
+            user_id: Canvas user id of the student being graded, or their label (e.g. P3-07).
             rubric_assessment: Maps criterion_id to {"points": n, "comments": "..."}, or a bare number.
             confirm: Must be true to actually submit the grade.
         """
@@ -663,7 +663,7 @@ def register(mcp: FastMCP, app: App) -> None:
         )
         details = md.kv(
             [
-                ("student", app.person(updated.get("user"), fallback=f"user {user_id}")),
+                ("student", app.person(updated.get("user"), fallback=f"user {app.user_ref(user_id)}")),
                 ("score", updated.get("score")),
                 ("grade", updated.get("grade")),
             ]

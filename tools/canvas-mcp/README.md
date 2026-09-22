@@ -1,6 +1,6 @@
 # CanvasLMS - API
 
-CanvasLMS - API is a local MCP server that puts your Canvas LMS account in front of an AI assistant. It runs on your machine, talks to Canvas with your own personal access token, and exposes about 100 tools covering courses, assignments, grading, discussions, modules, pages, files, messaging, peer reviews, and accessibility. Every tool returns Markdown. Every tool that changes Canvas previews its change first and only applies it once you confirm.
+CanvasLMS - API is a local MCP server that puts your Canvas LMS account in front of an AI assistant. It runs on your machine, talks to Canvas with your own personal access token, and exposes about 95 tools covering courses, assignments, grading, discussions, modules, pages, files, messaging, peer reviews, and accessibility. Every tool returns Markdown. Every tool that changes Canvas previews its change first and only applies it once you confirm.
 
 ## Quick start
 
@@ -120,6 +120,9 @@ the server refuses to listen beyond localhost until you set a shared secret.
    https://mild-owl-quiet.trycloudflare.com/s/<CANVAS_MCP_AUTH_TOKEN>/mcp
    ```
 
+   Host headers are always checked: until the tunnel's hostname is in
+   `CANVAS_MCP_ALLOWED_HOSTS`, it gets `421`, even if you bound to localhost.
+
    The connector dialog takes a URL and nothing else, which is why the secret
    goes in the path. Clients that can send headers should use
    `Authorization: Bearer <CANVAS_MCP_AUTH_TOKEN>` against `/mcp` instead.
@@ -135,6 +138,12 @@ curl -sS -X POST https://mild-owl-quiet.trycloudflare.com/s/<CANVAS_MCP_AUTH_TOK
 
 A JSON-RPC result means the connector will work. `401` means the secret in the
 URL is wrong; `421` means the hostname is missing from `CANVAS_MCP_ALLOWED_HOSTS`.
+
+In the default strict privacy mode the server also needs
+`CANVAS_PRIVACY_ACK_TUNNEL=1` before it will serve through a tunnel. A tunnel
+provider terminates TLS on its own servers, so tool results, student data
+included, pass through it in the clear. Set it only if your school has
+approved that.
 
 What to know before relying on this:
 
@@ -168,7 +177,67 @@ mandatory before it will bind anywhere else.
 - **The confirm gate.** Every tool that changes Canvas takes a `confirm: bool = false` argument. Called without it, the tool returns a preview of what would change and makes no request that alters Canvas. Call it again with `confirm=true` after reviewing the preview.
 - **Permissions.** Every tool runs as the token owner. A student token cannot see other students' private data or use educator tools such as grading or bulk messaging; those calls return the Canvas 403 with a hint about what permission is missing.
 - **Output.** Every tool returns Markdown, formatted for direct display in a chat transcript.
-- **Anonymization.** When `CANVAS_ANONYMIZE_STUDENTS=true`, student names in tool output are replaced with a stable per-course pseudonym instead of their real name.
+- **Student privacy.** On by default. Students appear as class-period labels like `P3-07`, never by name. See [Student privacy](#student-privacy).
+
+## Student privacy
+
+Everything a tool returns goes to your AI provider. With privacy on (the default), student identities stay on your machine:
+
+- **Labels, not names.** A student is `P3-07`: period 3, student 07. The period comes from the Canvas section name ("Period 3", "P3 Bio", "Pd. 05"). If a section has no recognisable period, its students are `S-07`. Guardians are `Guardian-xxxxxx`. Anyone the server can't place on a course roster is `Person-xxxxxxxx`. Teachers and TAs keep their names.
+- **Stable and meaningless.** Each number is drawn at random the first time a student is seen, then kept. It isn't alphabetical, doesn't shift when someone adds or drops, and is never reused.
+- **Names in text too.** Discussion posts, messages, comments and errors are scrubbed with each course's roster: full names, first and last names, emails, login ids and SIS ids become the label. A first name two students share becomes `[student]`. In strict mode, any other email address or phone number is redacted too.
+- **Labels work as input.** Ask for "P3-07's submission" and the label becomes the Canvas id locally. Text for Canvas uses a marker: "Nice work, {{P3-07}}" reaches Canvas with the student's real name, while a bare `P3-07` (or "room S-61") stays exactly as written. The assistant only ever sees the label, and the tool result says when a swap happened.
+- **You look people up, the assistant doesn't.** `canvaslms-api privacy roster <course>` prints who each label is, only to an interactive terminal. Over MCP, the name map is refused.
+- **Fails closed.** In strict mode, a course whose roster can't be loaded is refused rather than shown unscrubbed. Errors, validation messages and the server's own log are scrubbed too.
+- **Know the boundary.** These checks keep names away from the assistant's tools. An assistant that can also run shell commands on your machine (Claude Code with Bash, for example) could read `~/.canvaslms-api` or drive a terminal itself. If that matters, run the server for a client without shell access, or don't allow shell commands in the sessions that use it.
+
+This is pseudonymization, not de-identification. A label plus grades is still an education record under FERPA. Dictionary scrubbing also misses nicknames, misspellings and indirect details ("the student whose mom coaches soccer"). Whether you can send student data to an AI provider at all depends on your school's agreements with that provider, so check with your district before relying on this.
+
+| Mode (`CANVAS_PRIVACY_MODE`) | What the assistant sees |
+|---|---|
+| `strict` (default) | Labels for students, names scrubbed from text, other emails and phones redacted, raw student ids replaced with labels. Refuses to serve through a tunnel unless `CANVAS_PRIVACY_ACK_TUNNEL=1`. |
+| `pseudonymize` | Labels and scrubbed names; raw Canvas ids and other emails left as they are. `CANVAS_ANONYMIZE_STUDENTS=true` means this. |
+| `off` | Real names and ids. The server warns on every start. |
+
+Files, all under `~/.canvaslms-api/` (or `CANVAS_PRIVACY_DIR`) and readable only by you:
+
+| File | Holds |
+|---|---|
+| `privacy.key` | The key labels are derived from. Back it up with the crosswalk; without it, every student gets a new label. Set `CANVAS_PRIVACY_KEY` to keep it elsewhere. |
+| `crosswalk.db` | Label assignments: a keyed hash of each Canvas user id and its label. No ids, no names. |
+| `periods.toml` | Your overrides for sections whose period was guessed wrong. |
+| `audit.jsonl` | One line per tool call: tool, course, confirm, outcome and labels. No names, no text. |
+| `downloads/` | Files `download_file` saves, purged after `CANVAS_RETENTION_DAYS` (default 30). |
+
+## Command line
+
+Every tool also runs from the terminal, through the same server and privacy layer:
+
+```bash
+canvaslms-api tools --search grade                          # find a tool
+canvaslms-api call list_users course=BIO101                 # run one; values parse as JSON when they can
+canvaslms-api call grade_with_rubric course=BIO101 assignment_id=12 user_id=P3-07 \
+  rubric_assessment='{"crit_1": 4}'                         # preview
+canvaslms-api call ... --confirm                            # apply (asks first if it can't be undone; --yes without a terminal)
+canvaslms-api serve --transport http                        # same as the bare command
+```
+
+Privacy commands that never go through the assistant:
+
+```bash
+canvaslms-api privacy status                       # mode, files, retention
+canvaslms-api privacy roster BIO101                # who each label is: terminal only
+canvaslms-api privacy roster BIO101 --out map.csv  # same, as a file only you can read
+canvaslms-api privacy periods BIO101               # how sections map to periods
+canvaslms-api privacy periods BIO101 --set 4812=3  # fix a wrong guess
+canvaslms-api privacy scan notes.txt               # any student names in here? (exit 3 if so)
+canvaslms-api privacy scan notes.txt --redact      # print a copy with labels instead
+canvaslms-api privacy purge --crosswalk            # end of term: drop old downloads and every label
+```
+
+Values are passed as text unless the tool's parameter can only be a number, or the value is JSON (`{...}`, `[...]`, `true`, `false`, `null`). Commands that can't be undone need a terminal prompt or `--yes`.
+
+Exit codes: 0 ok, 1 Canvas error, 2 usage or config error, 3 refused for privacy or scan found names.
 
 ## Tool reference
 
@@ -242,9 +311,7 @@ Write tools (marked **confirm**) return a preview until called again with `confi
 | update_discussion_topic | Update a discussion topic | confirm |
 | list_announcements | List a course's announcements | |
 | create_announcement | Create an announcement | confirm |
-| delete_announcement | Delete one announcement | confirm |
-| delete_announcements | Delete multiple announcements by id | confirm |
-| delete_announcements_matching | Delete announcements matching a filter | confirm |
+| delete_announcements | Delete announcements by id, or by title/date filter | confirm |
 
 ### Modules
 
@@ -264,9 +331,7 @@ Write tools (marked **confirm**) return a preview until called again with `confi
 | Tool | Purpose | confirm |
 |---|---|---|
 | list_pages | List a course's pages | |
-| get_page | Fetch one page's metadata | |
-| get_page_content | Fetch one page's body | |
-| get_front_page | Fetch a course's front page | |
+| get_page | Fetch one page's metadata and body (`front_page` for the front page) | |
 | create_page | Create a page | confirm |
 | edit_page_content | Replace a page's body | confirm |
 | update_page_settings | Update a page's settings (title, publish state, editing rights) | confirm |
@@ -297,9 +362,8 @@ Write tools (marked **confirm**) return a preview until called again with `confi
 
 | Tool | Purpose | confirm |
 |---|---|---|
-| list_peer_reviews | List peer review assignments for an assignment | |
 | assign_peer_review | Assign a peer review | confirm |
-| get_peer_review_assignments | List who is reviewing whom | |
+| get_peer_review_assignments | List every peer review: who reviews whom, state, comments | |
 | get_peer_review_completion_analytics | Summarize peer review completion rates | |
 | get_peer_review_followup_list | List students who still owe a peer review | |
 | get_peer_review_comments | Fetch comments left in a peer review | |
@@ -318,8 +382,8 @@ Write tools (marked **confirm**) return a preview until called again with `confi
 | list_users | List a course's enrolled users | |
 | list_groups | List a course's groups | |
 | check_enrollment | Check one user's enrollment in a course | |
-| export_anonymization_map | Export the pseudonym-to-real-name mapping | confirm |
-| get_privacy_status | Show whether anonymization is active | |
+| export_anonymization_map | Export the label-to-real-name mapping (terminal only while privacy is on) | confirm |
+| get_privacy_status | Show the privacy mode and how labels are made | |
 
 ### Accessibility
 
@@ -355,8 +419,13 @@ All configuration comes from environment variables, loaded from a `.env` file in
 | `CANVAS_TIMEOUT` | no | `30` | HTTP request timeout, in seconds. |
 | `CANVAS_CACHE_TTL` | no | `300` | How long course-resolution results are cached, in seconds. |
 | `CANVAS_MAX_CONCURRENCY` | no | `5` | Maximum concurrent requests to Canvas. |
-| `CANVAS_ANONYMIZE_STUDENTS` | no | `false` | Replace student names with stable pseudonyms in tool output. |
-| `CANVAS_DOWNLOAD_DIR` | no | system temp directory | Where `download_file` writes downloaded files. |
+| `CANVAS_PRIVACY_MODE` | no | `strict` | `strict`, `pseudonymize` or `off`. See [Student privacy](#student-privacy). |
+| `CANVAS_ANONYMIZE_STUDENTS` | no | | Legacy. `true` means `pseudonymize`; `false` no longer turns privacy off. |
+| `CANVAS_PRIVACY_DIR` | no | `~/.canvaslms-api` | Where the key, crosswalk, audit log and private downloads live. |
+| `CANVAS_PRIVACY_KEY` | no | key file in the privacy dir | Label key, 16+ characters, if you'd rather not keep it on disk next to the crosswalk. |
+| `CANVAS_RETENTION_DAYS` | no | `30` | Age at which files in the private download folder are deleted. |
+| `CANVAS_PRIVACY_ACK_TUNNEL` | no | | Set to `1` to let strict mode serve through a tunnel your school has approved. |
+| `CANVAS_DOWNLOAD_DIR` | no | `<privacy dir>/downloads`, or system temp with privacy off | Where `download_file` writes downloaded files. A folder you set here is never purged. |
 | `CANVAS_MCP_AUTH_TOKEN` | no | | Shared secret required by the HTTP transport, as a bearer token or an `/s/<token>` URL prefix. Required to serve beyond localhost. Minimum 16 characters. |
 | `CANVAS_MCP_ALLOWED_HOSTS` | no | | Comma-separated hostnames allowed in the `Host` header over HTTP. Setting it turns on Host/Origin validation. |
 
@@ -394,6 +463,7 @@ Useful CLI flags during development: `canvaslms-api --list-tools` prints every r
 - `download_file` will not overwrite an existing file at the destination path.
 - The HTTP transport will not bind past localhost without `CANVAS_MCP_AUTH_TOKEN`; unauthenticated requests get a `401`.
 - Exposing the server publicly makes the connector URL equivalent to your Canvas token. Prefer stdio unless you need Claude on the web.
+- Student privacy is on by default: labels instead of names, keyed so they can't be reversed from public ids, with the name map available only in your terminal. See [Student privacy](#student-privacy) for what it does and doesn't cover.
 
 ## License
 

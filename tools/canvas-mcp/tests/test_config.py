@@ -18,6 +18,10 @@ def _clear_canvas_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "CANVAS_ANONYMIZE_STUDENTS",
         "CANVAS_DOWNLOAD_DIR",
         "CANVAS_MCP_AUTH_TOKEN",
+        "CANVAS_PRIVACY_MODE",
+        "CANVAS_PRIVACY_DIR",
+        "CANVAS_PRIVACY_KEY",
+        "CANVAS_RETENTION_DAYS",
         "CANVAS_MCP_ALLOWED_HOSTS",
     ):
         monkeypatch.delenv(name, raising=False)
@@ -64,36 +68,83 @@ def test_from_env_rejects_http(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.parametrize(
     "raw,expected",
     [
-        ("1", True),
-        ("true", True),
-        ("True", True),
-        ("TRUE", True),
-        ("yes", True),
-        ("YES", True),
-        ("on", True),
-        ("On", True),
-        ("0", False),
-        ("false", False),
-        ("no", False),
-        ("off", False),
-        ("garbage", False),
+        ("1", "pseudonymize"),
+        ("true", "pseudonymize"),
+        ("True", "pseudonymize"),
+        ("TRUE", "pseudonymize"),
+        ("yes", "pseudonymize"),
+        ("YES", "pseudonymize"),
+        ("on", "pseudonymize"),
+        ("On", "pseudonymize"),
+        # The legacy flag can only turn privacy up. .env.example shipped with
+        # CANVAS_ANONYMIZE_STUDENTS=false, so "false" is not a real choice.
+        ("0", "strict"),
+        ("false", "strict"),
+        ("no", "strict"),
+        ("off", "strict"),
+        ("garbage", "strict"),
     ],
 )
-def test_from_env_bool_parsing(monkeypatch: pytest.MonkeyPatch, raw: str, expected: bool) -> None:
+def test_legacy_anonymize_flag_maps_to_privacy_mode(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: str
+) -> None:
     _clear_canvas_env(monkeypatch)
     monkeypatch.setenv("CANVAS_URL", "https://school.instructure.com")
     monkeypatch.setenv("CANVAS_TOKEN", "abc123")
     monkeypatch.setenv("CANVAS_ANONYMIZE_STUDENTS", raw)
     settings = Settings.from_env()
-    assert settings.anonymize_students is expected
+    assert settings.privacy_mode == expected
+    assert settings.anonymize_students is True
 
 
-def test_from_env_bool_default_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_privacy_defaults_to_strict_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_canvas_env(monkeypatch)
     monkeypatch.setenv("CANVAS_URL", "https://school.instructure.com")
     monkeypatch.setenv("CANVAS_TOKEN", "abc123")
     settings = Settings.from_env()
-    assert settings.anonymize_students is False
+    assert settings.privacy_mode == "strict"
+    assert settings.download_dir_managed is True
+    assert settings.download_dir == settings.privacy_path / "downloads"
+
+
+@pytest.mark.parametrize("mode", ["off", "pseudonymize", "strict", "STRICT"])
+def test_privacy_mode_explicit(monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
+    _clear_canvas_env(monkeypatch)
+    monkeypatch.setenv("CANVAS_URL", "https://school.instructure.com")
+    monkeypatch.setenv("CANVAS_TOKEN", "abc123")
+    monkeypatch.setenv("CANVAS_PRIVACY_MODE", mode)
+    monkeypatch.setenv("CANVAS_ANONYMIZE_STUDENTS", "true")
+    settings = Settings.from_env()
+    assert settings.privacy_mode == mode.lower()
+    assert settings.download_dir_managed is (mode.lower() != "off")
+
+
+def test_privacy_mode_invalid(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_canvas_env(monkeypatch)
+    monkeypatch.setenv("CANVAS_URL", "https://school.instructure.com")
+    monkeypatch.setenv("CANVAS_TOKEN", "abc123")
+    monkeypatch.setenv("CANVAS_PRIVACY_MODE", "maybe")
+    with pytest.raises(ConfigError):
+        Settings.from_env()
+
+
+def test_explicit_download_dir_is_never_managed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _clear_canvas_env(monkeypatch)
+    monkeypatch.setenv("CANVAS_URL", "https://school.instructure.com")
+    monkeypatch.setenv("CANVAS_TOKEN", "abc123")
+    monkeypatch.setenv("CANVAS_DOWNLOAD_DIR", str(tmp_path))
+    settings = Settings.from_env()
+    assert settings.download_dir == tmp_path
+    assert settings.download_dir_managed is False
+
+
+def test_short_privacy_key_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_canvas_env(monkeypatch)
+    monkeypatch.setenv("CANVAS_URL", "https://school.instructure.com")
+    monkeypatch.setenv("CANVAS_TOKEN", "abc123")
+    monkeypatch.setenv("CANVAS_PRIVACY_KEY", "short")
+    with pytest.raises(ConfigError):
+        Settings.from_env()
 
 
 def test_from_env_numbers(monkeypatch: pytest.MonkeyPatch) -> None:

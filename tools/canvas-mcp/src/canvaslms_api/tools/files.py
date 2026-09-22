@@ -215,6 +215,12 @@ def register(mcp: FastMCP, app: App) -> None:
         source = Path(file_path).expanduser()
         if not source.is_file():
             raise ToolError(f"No file at {source}.")
+        privacy_dir = app.settings.privacy_path.resolve()
+        resolved = source.resolve()
+        if resolved == privacy_dir or privacy_dir in resolved.parents:
+            if not (app.settings.download_dir_managed and app.settings.download_dir
+                    and app.settings.download_dir.resolve() in resolved.parents):
+                raise ToolError("Refusing to upload from the privacy folder: it holds the label key and crosswalk.")
         size = source.stat().st_size
         if size > MAX_UPLOAD_BYTES:
             raise ToolError(f"{source.name} is {_human_size(size)}, over the 100 MB upload limit.")

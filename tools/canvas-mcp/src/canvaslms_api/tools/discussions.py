@@ -543,131 +543,90 @@ def register(mcp: FastMCP, app: App) -> None:
         )
 
     @mcp.tool(annotations=DESTRUCTIVE)
-    async def delete_announcement(
-        course: str | int,
-        announcement_id: str | int,
-        require_title_match: str | None = None,
-        confirm: bool = False,
-    ) -> str:
-        """Delete a single announcement.
-
-        Args:
-            course: Course id, course code, part of the course name, or "sis_course_id:XXX".
-            announcement_id: Announcement (discussion topic) id to delete.
-            require_title_match: Only delete if the announcement's title equals this string exactly.
-            confirm: Set true to actually delete; without it, only a preview is returned.
-        """
-        cid = await app.course_id(course)
-        topic = await app.client.get(f"/courses/{cid}/discussion_topics/{announcement_id}")
-        title = topic.get("title") or ""
-        if require_title_match is not None and require_title_match != title:
-            raise ToolError(f"require_title_match {require_title_match!r} does not equal the announcement's title {title!r}; refusing to delete.")
-        details = md.kv([("title", title), ("posted", md.fmt_date(topic.get("posted_at")))])
-        if not confirm:
-            return md.preview("delete_announcement", details)
-        await app.client.delete(f"/courses/{cid}/discussion_topics/{announcement_id}")
-        return md.done("delete_announcement", md.kv([("id", announcement_id), ("title", title)]))
-
-    @mcp.tool(annotations=DESTRUCTIVE)
     async def delete_announcements(
         course: str | int,
-        announcement_ids: list[int],
-        stop_on_error: bool = False,
-        confirm: bool = False,
-    ) -> str:
-        """Delete multiple announcements by id.
-
-        Args:
-            course: Course id, course code, part of the course name, or "sis_course_id:XXX".
-            announcement_ids: Announcement ids to delete, up to 50.
-            stop_on_error: Stop at the first failure instead of continuing with the rest.
-            confirm: Set true to actually delete; without it, only a preview is returned.
-        """
-        if not announcement_ids:
-            raise ToolError("announcement_ids cannot be empty.")
-        if len(announcement_ids) > 50:
-            raise ToolError(f"announcement_ids has {len(announcement_ids)} entries; cap is 50 per call.")
-        cid = await app.course_id(course)
-
-        titles: dict[int, str] = {}
-        for aid in announcement_ids:
-            try:
-                topic = await app.client.get(f"/courses/{cid}/discussion_topics/{aid}")
-                titles[aid] = topic.get("title") or "(untitled)"
-            except CanvasError as exc:
-                titles[aid] = f"[lookup failed: {exc.message}]"
-
-        if not confirm:
-            rows = [(aid, titles[aid]) for aid in announcement_ids]
-            return md.preview("delete_announcements", md.table(["id", "title"], rows))
-
-        results = []
-        for aid in announcement_ids:
-            try:
-                await app.client.delete(f"/courses/{cid}/discussion_topics/{aid}")
-                results.append((aid, titles.get(aid, ""), "deleted"))
-            except CanvasError as exc:
-                results.append((aid, titles.get(aid, ""), f"failed: {exc.message}"))
-                if stop_on_error:
-                    break
-        return md.done("delete_announcements", md.table(["id", "title", "result"], results))
-
-    @mcp.tool(annotations=DESTRUCTIVE)
-    async def delete_announcements_matching(
-        course: str | int,
+        announcement_ids: list[int] | None = None,
         title_contains: str | None = None,
         posted_before: str | None = None,
         posted_after: str | None = None,
         limit: int = 20,
+        require_title_match: str | None = None,
+        stop_on_error: bool = False,
         confirm: bool = False,
     ) -> str:
-        """Delete announcements matching title and/or date criteria.
+        """Delete announcements, either by id or by title/date filter.
+
+        Give announcement_ids, or at least one of title_contains, posted_before,
+        posted_after. Not both.
 
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
-            title_contains: Only match announcements whose title contains this text (case-insensitive).
-            posted_before: ISO 8601 datetime; only match announcements posted before this.
-            posted_after: ISO 8601 datetime; only match announcements posted after this.
-            limit: Maximum number of matches to delete in one call.
+            announcement_ids: Announcement (discussion topic) ids to delete, up to 50.
+            title_contains: Match announcements whose title contains this text (case-insensitive).
+            posted_before: ISO 8601 datetime; match announcements posted before this.
+            posted_after: ISO 8601 datetime; match announcements posted after this.
+            limit: Maximum number of filter matches to delete in one call.
+            require_title_match: With exactly one id: only delete if its title equals this string exactly.
+            stop_on_error: Stop at the first failure instead of continuing with the rest.
             confirm: Set true to actually delete; without it, only a preview is returned.
         """
-        if not any([title_contains, posted_before, posted_after]):
-            raise ToolError("Provide at least one of title_contains, posted_before, posted_after.")
+        by_filter = any([title_contains, posted_before, posted_after])
+        if announcement_ids and by_filter:
+            raise ToolError("Give announcement_ids or filters (title_contains, posted_before, posted_after), not both.")
+        if not announcement_ids and not by_filter:
+            raise ToolError("Give announcement_ids, or at least one of title_contains, posted_before, posted_after.")
+        if announcement_ids and len(announcement_ids) > 50:
+            raise ToolError(f"announcement_ids has {len(announcement_ids)} entries; cap is 50 per call.")
+        if require_title_match is not None and (not announcement_ids or len(announcement_ids) != 1):
+            raise ToolError("require_title_match works with exactly one announcement id.")
         cid = await app.course_id(course)
-        announcements = await app.client.get_all(
-            f"/courses/{cid}/discussion_topics", {"only_announcements": True}
-        )
 
-        needle = title_contains.casefold() if title_contains else None
+        cap_notice = ""
+        targets: list[tuple[Any, str, Any]] = []
+        if announcement_ids:
+            for aid in announcement_ids:
+                try:
+                    topic = await app.client.get(f"/courses/{cid}/discussion_topics/{aid}")
+                    targets.append((aid, topic.get("title") or "(untitled)", topic.get("posted_at")))
+                except CanvasError as exc:
+                    targets.append((aid, f"[lookup failed: {exc.message}]", None))
+            if require_title_match is not None and require_title_match != targets[0][1]:
+                raise ToolError(
+                    f"require_title_match {require_title_match!r} does not equal the announcement's "
+                    f"title {targets[0][1]!r}; refusing to delete."
+                )
+        else:
+            announcements = await app.client.get_all(
+                f"/courses/{cid}/discussion_topics", {"only_announcements": True}
+            )
+            needle = title_contains.casefold() if title_contains else None
 
-        def matches(a: dict[str, Any]) -> bool:
-            if needle is not None and needle not in (a.get("title") or "").casefold():
-                return False
-            posted = a.get("posted_at") or ""
-            if posted_before is not None and not (posted and posted < posted_before):
-                return False
-            if posted_after is not None and not (posted and posted > posted_after):
-                return False
-            return True
+            def matches(a: dict[str, Any]) -> bool:
+                if needle is not None and needle not in (a.get("title") or "").casefold():
+                    return False
+                posted = a.get("posted_at") or ""
+                if posted_before is not None and not (posted and posted < posted_before):
+                    return False
+                if posted_after is not None and not (posted and posted > posted_after):
+                    return False
+                return True
 
-        matched = [a for a in announcements if matches(a)][:limit]
-        cap_notice = md.capped_notice(len(announcements)) if announcements.capped else ""
-        if not matched:
-            return md.join("_no announcements matched the given criteria_", cap_notice)
+            targets = [(a.get("id"), a.get("title"), a.get("posted_at")) for a in announcements if matches(a)][:limit]
+            cap_notice = md.capped_notice(len(announcements)) if announcements.capped else ""
+            if not targets:
+                return md.join("_no announcements matched the given criteria_", cap_notice)
 
         if not confirm:
-            rows = [(a.get("id"), a.get("title"), md.fmt_date(a.get("posted_at"))) for a in matched]
-            return md.join(
-                md.preview("delete_announcements_matching", md.table(["id", "title", "posted"], rows)),
-                cap_notice,
-            )
+            rows = [(aid, title, md.fmt_date(posted)) for aid, title, posted in targets]
+            return md.join(md.preview("delete_announcements", md.table(["id", "title", "posted"], rows)), cap_notice)
 
         results = []
-        for a in matched:
-            aid = a.get("id")
+        for aid, title, _ in targets:
             try:
                 await app.client.delete(f"/courses/{cid}/discussion_topics/{aid}")
-                results.append((aid, a.get("title"), "deleted"))
+                results.append((aid, title, "deleted"))
             except CanvasError as exc:
-                results.append((aid, a.get("title"), f"failed: {exc.message}"))
-        return md.done("delete_announcements_matching", md.table(["id", "title", "result"], results))
+                results.append((aid, title, f"failed: {exc.message}"))
+                if stop_on_error:
+                    break
+        return md.done("delete_announcements", md.table(["id", "title", "result"], results))

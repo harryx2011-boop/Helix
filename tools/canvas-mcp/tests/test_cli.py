@@ -20,6 +20,8 @@ def _clear_canvas_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "CANVAS_DOWNLOAD_DIR",
         "CANVAS_MCP_AUTH_TOKEN",
         "CANVAS_MCP_ALLOWED_HOSTS",
+        "CANVAS_PRIVACY_MODE",
+        "CANVAS_PRIVACY_ACK_TUNNEL",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -121,6 +123,8 @@ def test_http_with_auth_token_installs_guard_and_allowed_hosts(
     _set_env(monkeypatch)
     monkeypatch.setenv("CANVAS_MCP_AUTH_TOKEN", "a-long-enough-shared-secret")
     monkeypatch.setenv("CANVAS_MCP_ALLOWED_HOSTS", "demo.trycloudflare.com")
+    # Strict privacy (the default) also needs the tunnel acknowledged.
+    monkeypatch.setenv("CANVAS_PRIVACY_ACK_TUNNEL", "1")
     recorded: dict[str, object] = {}
 
     def fake_run(self, **kwargs):  # noqa: ANN001, ANN202
@@ -154,4 +158,165 @@ def test_http_on_loopback_without_auth_token_still_runs_open(
     assert exit_code == 0
     assert recorded["middleware"] is None
     assert recorded["allowed_hosts"] is None
-    assert recorded["host_origin_protection"] is None
+    # Host validation is always on, so a tunnel can't reach a loopback bind
+    # without being named (which then requires the auth token).
+    assert recorded["host_origin_protection"] is True
+
+
+# -- subcommands and student privacy --------------------------------------
+
+_BASE = "https://canvas.test/api/v1"
+_ROSTER = [
+    {"id": 1, "name": "Dana Okafor", "enrollments": [{"type": "TeacherEnrollment", "course_id": 10}]},
+    {
+        "id": 501,
+        "name": "Maya Chen",
+        "email": "maya.chen@kids.example",
+        "enrollments": [{"type": "StudentEnrollment", "course_id": 10, "course_section_id": 7}],
+    },
+]
+
+
+def _mock_course(mock: respx.MockRouter) -> None:
+    mock.get(f"{_BASE}/users/self").respond(json={"id": 1, "name": "Dana Okafor"})
+    mock.get(f"{_BASE}/courses").respond(json=[{"id": 10, "name": "Biology", "course_code": "BIO"}])
+    mock.get(f"{_BASE}/courses/10").respond(json={"id": 10, "name": "Biology", "course_code": "BIO"})
+    mock.get(f"{_BASE}/courses/10/users").respond(json=_ROSTER)
+    mock.get(f"{_BASE}/courses/10/sections").respond(json=[{"id": 7, "name": "Period 3"}])
+
+
+def test_strict_http_through_tunnel_refuses_without_ack(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _set_env(monkeypatch)
+    monkeypatch.setenv("CANVAS_MCP_AUTH_TOKEN", "a-long-enough-shared-secret")
+    exit_code = main(["--transport", "http", "--allowed-host", "demo.trycloudflare.com"])
+    assert exit_code == 2
+    assert "CANVAS_PRIVACY_ACK_TUNNEL" in capsys.readouterr().err
+
+
+def test_serve_subcommand_accepts_transport_flags(monkeypatch: pytest.MonkeyPatch) -> None:
+    _set_env(monkeypatch)
+    recorded: dict[str, object] = {}
+    monkeypatch.setattr("fastmcp.FastMCP.run", lambda self, **kw: recorded.update(kw))
+    assert main(["serve", "--transport", "http", "--port", "7222"]) == 0
+    assert recorded["port"] == 7222
+
+
+def test_tools_subcommand_lists_and_filters(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _set_env(monkeypatch)
+    assert main(["tools", "--search", "rubric"]) == 0
+    out = capsys.readouterr().out
+    assert "get_rubric" in out and "list_courses" not in out
+
+
+async def test_call_runs_a_tool_through_the_privacy_layer(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], mock: respx.MockRouter
+) -> None:
+    _set_env(monkeypatch)
+    _mock_course(mock)
+    exit_code = await asyncio.to_thread(main, ["call", "list_users", "course=10"])
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "Maya" not in out and "P3-" in out and "Dana Okafor" in out
+
+
+async def test_call_unknown_tool_suggests(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _set_env(monkeypatch)
+    exit_code = await asyncio.to_thread(main, ["call", "list_user"])
+    assert exit_code == 2
+    assert "list_users" in capsys.readouterr().err
+
+
+def test_call_bad_pair_returns_2(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    _set_env(monkeypatch)
+    assert main(["call", "list_users", "course"]) == 2
+
+
+class _Tty:
+    def isatty(self) -> bool:
+        return True
+
+    def read(self) -> str:
+        return ""
+
+
+async def test_privacy_roster_refuses_without_a_terminal(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], mock: respx.MockRouter
+) -> None:
+    _set_env(monkeypatch)
+    _mock_course(mock)
+    exit_code = await asyncio.to_thread(main, ["privacy", "roster", "10"])
+    captured = capsys.readouterr()
+    assert exit_code == 3
+    assert "Maya" not in captured.out
+
+
+async def test_privacy_roster_shows_names_in_terminal_only(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], mock: respx.MockRouter
+) -> None:
+    _set_env(monkeypatch)
+    _mock_course(mock)
+    monkeypatch.setattr("sys.stdin", _Tty())
+    monkeypatch.setattr("sys.stdout.isatty", lambda: True, raising=False)
+    exit_code = await asyncio.to_thread(main, ["privacy", "roster", "10"])
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "Maya Chen" in out and "P3-" in out
+    assert "Dana Okafor" not in out  # staff are not labelled
+
+
+async def test_privacy_scan_finds_and_redacts(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], mock: respx.MockRouter, tmp_path
+) -> None:
+    _set_env(monkeypatch)
+    _mock_course(mock)
+    notes = tmp_path / "notes.txt"
+    notes.write_text("Maya Chen needs help. Email maya.chen@kids.example.\n")
+    assert await asyncio.to_thread(main, ["privacy", "scan", str(notes)]) == 3
+    assert "Maya Chen" in capsys.readouterr().out
+    assert await asyncio.to_thread(main, ["privacy", "scan", str(notes), "--redact"]) == 0
+    redacted = capsys.readouterr().out
+    assert "Maya" not in redacted and "P3-" in redacted
+
+
+def test_privacy_purge_crosswalk(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    _set_env(monkeypatch)
+    assert main(["privacy", "purge", "--crosswalk", "--yes"]) == 0
+    assert "Deleted the crosswalk" in capsys.readouterr().out
+
+
+def test_privacy_roster_needs_privacy_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    _set_env(monkeypatch)
+    monkeypatch.setenv("CANVAS_PRIVACY_MODE", "off")
+    assert main(["privacy", "roster", "10"]) == 2
+
+
+def test_purge_crosswalk_without_terminal_needs_yes(monkeypatch: pytest.MonkeyPatch) -> None:
+    _set_env(monkeypatch)
+    assert main(["privacy", "purge", "--crosswalk"]) == 1
+
+
+def test_periods_set_rejects_bad_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    _set_env(monkeypatch)
+    assert main(["privacy", "periods", "10", "--set", "55=P3"]) == 2
+    assert main(["privacy", "periods", "10", "--set", "55=100"]) == 2
+
+
+def test_parse_pairs_keeps_numbers_as_text_until_schema_says_otherwise() -> None:
+    from canvaslms_api.cli import _coerce_numbers, _parse_pairs
+
+    args = _parse_pairs(["page=123", "max_chars=50", "flag=true", "ids=[1,2]", "x=NaN"], None)
+    assert args == {"page": "123", "max_chars": "50", "flag": True, "ids": [1, 2], "x": "NaN"}
+    schema = {
+        "properties": {
+            "page": {"type": "string"},
+            "max_chars": {"anyOf": [{"type": "integer"}, {"type": "null"}]},
+        }
+    }
+    assert _coerce_numbers(args, schema)["page"] == "123"
+    assert _coerce_numbers(args, schema)["max_chars"] == 50

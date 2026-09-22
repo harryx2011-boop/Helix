@@ -4,6 +4,59 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.0] - 2026-09-22
+
+Student privacy is now on by default. This changes what every tool returns, hence the major version.
+
+### Added
+
+- Class-period student labels. Students appear as `P3-07` (period 3, student 07), or `S-07` when their section has no period. The period is read from the Canvas section name, and `periods.toml` can override it. Numbers are drawn at random once per student and never reused, so they reveal nothing about name order and don't shift when someone adds or drops. Guardians appear as `Guardian-xxxxxx`, and anyone not on a loaded roster as `Person-xxxxxxxx`.
+- A local crosswalk (`~/.canvaslms-api/crosswalk.db`, mode 0600) that stores a keyed HMAC of each Canvas user id with its label. It holds no ids and no names.
+- Free-text scrubbing on every tool result, error messages included. Roster names (full, sortable, short, and each name part), emails, login ids and SIS ids are replaced with the matching label, or with `[student]` when a name is shared. In strict mode, any other email or phone number is also redacted.
+- Label resolution on the way in. A label is accepted anywhere a tool takes a student's user id (`user_id`, `student_id`, `reviewer_id`, `reviewee_id`, `recipients`, `recipient_ids`, `grades` keys). A label in text bound for Canvas becomes the student's real name on this machine, just before the request, and the tool result says so.
+- `CANVAS_PRIVACY_MODE` (`off` | `pseudonymize` | `strict`, default `strict`), `CANVAS_PRIVACY_DIR`, `CANVAS_PRIVACY_KEY`, `CANVAS_RETENTION_DAYS`, `CANVAS_PRIVACY_ACK_TUNNEL`.
+- A local audit log (`audit.jsonl`): tool, course, confirm, outcome and the labels involved. It never records names or free text.
+- CLI subcommands: `tools [--search]`, `call <tool> key=value ... [--confirm] [--json]`, `serve`, and `privacy status | roster | periods | scan | purge`. `call` goes through the same server and privacy layer as an MCP client. `privacy roster` is the only place a label is shown next to a real name. `privacy scan --redact` cleans text before it is pasted anywhere.
+
+### Changed
+
+- **Pseudonyms are keyed.** They used to be `sha256(host:user_id)`. Canvas user ids are small, enumerable integers, so anyone could hash every id and reverse the mapping. They now use HMAC-SHA256 under a per-install key (generated into the privacy dir, or taken from `CANVAS_PRIVACY_KEY`).
+- **Privacy is on by default (`strict`).** `CANVAS_ANONYMIZE_STUDENTS=true` still works and means `pseudonymize`. Setting it to `false` no longer turns privacy off, because `.env.example` shipped with that line and it is in most `.env` files without anyone having chosen it. Only `CANVAS_PRIVACY_MODE=off` turns privacy off, and the server then warns on every start.
+- In strict mode, raw student user ids in tables and fallbacks are shown as labels.
+- `export_anonymization_map` refuses over MCP whenever privacy is on, because the map is what undoes the labels. It still runs from the terminal (`canvaslms-api call` or `privacy roster --out`). It writes `label` instead of `anonymous_id`, with file mode 0600.
+- With privacy on and no `CANVAS_DOWNLOAD_DIR`, downloads go to `~/.canvaslms-api/downloads` (mode 0700) instead of the shared temp dir. Files older than `CANVAS_RETENTION_DAYS` (default 30) are purged when the server starts. A `CANVAS_DOWNLOAD_DIR` you set yourself is never purged.
+- In strict mode, `--transport http` refuses to serve through a tunnel or off-loopback unless `CANVAS_PRIVACY_ACK_TUNNEL=1`, because the tunnel provider sees tool results in the clear.
+- `extract_peer_review_dataset` uses labels when privacy is on, so its rows join with every other tool's output.
+- `get_privacy_status` reports the mode, label scheme, crosswalk, key source, audit log and retention. It never returns the map.
+
+### Security
+
+Fixed before release, found by a security, performance and bug audit of this version:
+
+- `--transport http` now always validates the Host header. Before, a tunnel pointed at a loopback bind with no `CANVAS_MCP_ALLOWED_HOSTS` accepted any Host and needed no auth token, and DNS rebinding was open too.
+- Text sent to Canvas only swaps a label for a name when it is marked `{{P3-07}}`. A bare label-shaped string ("room S-61") used to become a student's name.
+- Every error is scrubbed, argument-validation errors included (they quoted the resolved name), and FastMCP's own log lines are scrubbed with tracebacks dropped.
+- Scrubbing matches slug, filename and URL forms of names (`leo-park`, `Leo_Park_Essay.docx`, `LeoPark`, `Maya%20Chen`), accent-folded spellings, and treats `_` and digits as word breaks. One-word names match only with their own capitals, all-digit SIS ids no longer match assignment numbers, and a full name shared with a staff member becomes `[name]`.
+- Strict mode refuses a course whose roster couldn't be loaded, and a failed load is retried after 30 s rather than cached for the TTL. Rosters over the fetch limit are reported, not trusted. Inbox tools load concluded courses' rosters too.
+- `{user_id}` in a bulk-message template, and ids in error messages, render as labels.
+- No terminal means no confirmation: destructive `call`s and `privacy purge --crosswalk` need `--yes`. `privacy roster` and the name-map export only run in an interactive terminal. `upload_file` refuses files from the privacy folder.
+- The key is never read empty (a race with another process creating it).
+
+### Performance
+
+- The email pattern was quadratic on long runs without an `@` (36 s on 200 KB); it is linear now.
+- Name patterns are built as a shared-prefix trie: 200 KB against 2,000 students scrubs in about 25 ms, not 3 s. Each result is scrubbed once, not twice. The pattern is rebuilt only when a roster actually changes, and its ambiguity pass is linear.
+- Label assignment for a new roster runs in one transaction with an in-memory set of used numbers: 2,000 new students take about 0.15 s, not about 2 s. Labels grow to four digits past 999.
+- A roster's users and sections are fetched together. Tools that never show people skip roster loading.
+
+### Removed
+
+Five tools were folded into near-duplicates (100 -> 95):
+
+- `delete_announcement` and `delete_announcements_matching` -> `delete_announcements`, which takes `announcement_ids` or the title/date filters. `require_title_match` still works with exactly one id.
+- `get_page_content` and `get_front_page` -> `get_page`, which now returns metadata plus the full body (`max_chars` caps it). Pass `page="front_page"` for the front page.
+- `list_peer_reviews` -> `get_peer_review_assignments`, which gains its review id, comment count and last-comment columns.
+
 ## [1.1.0] - 2026-09-05
 
 ### Added

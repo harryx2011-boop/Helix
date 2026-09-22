@@ -123,12 +123,12 @@
       {
         "name": "reviewer_id",
         "required": true,
-        "description": "Canvas user id of the student who will review."
+        "description": "Canvas user id (or label, e.g. P3-07) of the student who will review."
       },
       {
         "name": "reviewee_id",
         "required": true,
-        "description": "Canvas user id of the student whose submission is reviewed."
+        "description": "Canvas user id (or label) of the student whose submission is reviewed."
       },
       {
         "name": "confirm",
@@ -200,7 +200,7 @@
       {
         "name": "grades",
         "required": true,
-        "description": "Maps user_id (as string) to either a grade value (e.g. \"85\" or \"A\"),\nor a dict {\"grade\": ..., \"comment\": \"...\"}."
+        "description": "Maps user_id (as string, or a student label like P3-07) to either a grade value (e.g. \"85\" or \"A\"),\nor a dict {\"grade\": ..., \"comment\": \"...\"}."
       },
       {
         "name": "confirm",
@@ -721,41 +721,10 @@
     ]
   },
   {
-    "name": "delete_announcement",
-    "group": "Discussions & announcements",
-    "module": "discussions",
-    "description": "Delete a single announcement.",
-    "readOnly": false,
-    "destructive": true,
-    "confirm": true,
-    "params": [
-      {
-        "name": "course",
-        "required": true,
-        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
-      },
-      {
-        "name": "announcement_id",
-        "required": true,
-        "description": "Announcement (discussion topic) id to delete."
-      },
-      {
-        "name": "require_title_match",
-        "required": false,
-        "description": "Only delete if the announcement's title equals this string exactly."
-      },
-      {
-        "name": "confirm",
-        "required": false,
-        "description": "Set true to actually delete; without it, only a preview is returned."
-      }
-    ]
-  },
-  {
     "name": "delete_announcements",
     "group": "Discussions & announcements",
     "module": "discussions",
-    "description": "Delete multiple announcements by id.",
+    "description": "Delete announcements, either by id or by title/date filter.",
     "readOnly": false,
     "destructive": true,
     "confirm": true,
@@ -767,54 +736,38 @@
       },
       {
         "name": "announcement_ids",
-        "required": true,
-        "description": "Announcement ids to delete, up to 50."
+        "required": false,
+        "description": "Announcement (discussion topic) ids to delete, up to 50."
+      },
+      {
+        "name": "title_contains",
+        "required": false,
+        "description": "Match announcements whose title contains this text (case-insensitive)."
+      },
+      {
+        "name": "posted_before",
+        "required": false,
+        "description": "ISO 8601 datetime; match announcements posted before this."
+      },
+      {
+        "name": "posted_after",
+        "required": false,
+        "description": "ISO 8601 datetime; match announcements posted after this."
+      },
+      {
+        "name": "limit",
+        "required": false,
+        "description": "Maximum number of filter matches to delete in one call."
+      },
+      {
+        "name": "require_title_match",
+        "required": false,
+        "description": "With exactly one id: only delete if its title equals this string exactly."
       },
       {
         "name": "stop_on_error",
         "required": false,
         "description": "Stop at the first failure instead of continuing with the rest."
-      },
-      {
-        "name": "confirm",
-        "required": false,
-        "description": "Set true to actually delete; without it, only a preview is returned."
-      }
-    ]
-  },
-  {
-    "name": "delete_announcements_matching",
-    "group": "Discussions & announcements",
-    "module": "discussions",
-    "description": "Delete announcements matching title and/or date criteria.",
-    "readOnly": false,
-    "destructive": true,
-    "confirm": true,
-    "params": [
-      {
-        "name": "course",
-        "required": true,
-        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
-      },
-      {
-        "name": "title_contains",
-        "required": false,
-        "description": "Only match announcements whose title contains this text (case-insensitive)."
-      },
-      {
-        "name": "posted_before",
-        "required": false,
-        "description": "ISO 8601 datetime; only match announcements posted before this."
-      },
-      {
-        "name": "posted_after",
-        "required": false,
-        "description": "ISO 8601 datetime; only match announcements posted after this."
-      },
-      {
-        "name": "limit",
-        "required": false,
-        "description": "Maximum number of matches to delete in one call."
       },
       {
         "name": "confirm",
@@ -977,7 +930,7 @@
     "name": "export_anonymization_map",
     "group": "People & privacy",
     "module": "people",
-    "description": "Write a local CSV mapping each enrolled student's real name and id to their anonymous id.",
+    "description": "Write a local CSV mapping each enrolled student's real name and id to their label.",
     "readOnly": false,
     "destructive": false,
     "confirm": true,
@@ -1432,22 +1385,6 @@
     ]
   },
   {
-    "name": "get_front_page",
-    "group": "Pages",
-    "module": "pages",
-    "description": "Get the course's front page: title and full body text.",
-    "readOnly": true,
-    "destructive": false,
-    "confirm": false,
-    "params": [
-      {
-        "name": "course",
-        "required": true,
-        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
-      }
-    ]
-  },
-  {
     "name": "get_grades",
     "group": "Student",
     "module": "student",
@@ -1467,7 +1404,7 @@
     "name": "get_page",
     "group": "Pages",
     "module": "pages",
-    "description": "Get one page's metadata and a short body preview.",
+    "description": "Get one page: its metadata and full body as text.",
     "readOnly": true,
     "destructive": false,
     "confirm": false,
@@ -1480,33 +1417,12 @@
       {
         "name": "page",
         "required": true,
-        "description": "The page's url slug or numeric page id."
-      }
-    ]
-  },
-  {
-    "name": "get_page_content",
-    "group": "Pages",
-    "module": "pages",
-    "description": "Get a page's full body as text, untruncated unless max_chars is given.",
-    "readOnly": true,
-    "destructive": false,
-    "confirm": false,
-    "params": [
-      {
-        "name": "course",
-        "required": true,
-        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
-      },
-      {
-        "name": "page",
-        "required": true,
-        "description": "The page's url slug or numeric page id."
+        "description": "The page's url slug or numeric page id, or \"front_page\" for the course front page."
       },
       {
         "name": "max_chars",
         "required": false,
-        "description": "Optional cap on returned characters; truncation is marked explicitly."
+        "description": "Optional cap on returned body characters; truncation is marked explicitly."
       }
     ]
   },
@@ -1514,7 +1430,7 @@
     "name": "get_peer_review_assignments",
     "group": "Peer reviews",
     "module": "peer_reviews",
-    "description": "Show who reviews whom for an assignment, with completion state.",
+    "description": "List every peer review on an assignment: who reviews whom, state, and comment activity.",
     "readOnly": true,
     "destructive": false,
     "confirm": false,
@@ -1654,7 +1570,7 @@
     "name": "get_privacy_status",
     "group": "People & privacy",
     "module": "people",
-    "description": "Report the current student-anonymization configuration.",
+    "description": "Report the student-privacy mode and how labels are made. Never returns the label map.",
     "readOnly": true,
     "destructive": false,
     "confirm": false,
@@ -1718,7 +1634,7 @@
       {
         "name": "user_id",
         "required": true,
-        "description": "Canvas user id of the student."
+        "description": "Canvas user id of the student, or their label (e.g. P3-07)."
       }
     ]
   },
@@ -1739,7 +1655,7 @@
       {
         "name": "student_id",
         "required": false,
-        "description": "Canvas user id of the student. Omit for a course-wide summary."
+        "description": "Canvas user id of the student, or their label (e.g. P3-07). Omit for a course-wide summary."
       }
     ]
   },
@@ -1859,7 +1775,7 @@
       {
         "name": "user_id",
         "required": true,
-        "description": "Canvas user id of the student being graded."
+        "description": "Canvas user id of the student being graded, or their label (e.g. P3-07)."
       },
       {
         "name": "rubric_assessment",
@@ -2150,27 +2066,6 @@
     ]
   },
   {
-    "name": "list_peer_reviews",
-    "group": "Peer reviews",
-    "module": "peer_reviews",
-    "description": "List all peer review assignments for an assignment.",
-    "readOnly": true,
-    "destructive": false,
-    "confirm": false,
-    "params": [
-      {
-        "name": "course",
-        "required": true,
-        "description": "Course id, course code, part of the course name, or \"sis_course_id:XXX\"."
-      },
-      {
-        "name": "assignment_id",
-        "required": true,
-        "description": "Canvas assignment id."
-      }
-    ]
-  },
-  {
     "name": "list_rubrics",
     "group": "Rubrics",
     "module": "rubrics",
@@ -2312,7 +2207,7 @@
       {
         "name": "recipient_ids",
         "required": true,
-        "description": "Canvas user ids to message."
+        "description": "Canvas user ids to message, or student labels (e.g. P3-07)."
       },
       {
         "name": "custom_message",
@@ -2504,7 +2399,7 @@
       {
         "name": "recipients",
         "required": true,
-        "description": "List of dicts, each with \"user_id\" and template variables."
+        "description": "List of dicts, each with \"user_id\" (id or label) and template variables."
       },
       {
         "name": "subject_template",
@@ -2540,7 +2435,7 @@
       {
         "name": "recipients",
         "required": true,
-        "description": "List of recipient user ids or recipient aliases."
+        "description": "List of recipient user ids, student labels (e.g. P3-07), or recipient aliases."
       },
       {
         "name": "subject",

@@ -137,7 +137,7 @@ def register(mcp: FastMCP, app: App) -> None:
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
             assignment_id: Canvas assignment id.
-            user_id: Canvas user id of the student.
+            user_id: Canvas user id of the student, or their label (e.g. P3-07).
         """
         cid = await app.course_id(course)
         submission = await app.client.get(

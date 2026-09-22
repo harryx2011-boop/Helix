@@ -46,7 +46,7 @@ def register(mcp: FastMCP, app: App) -> None:
         rows = []
         for user in users:
             roles, states, sections = _enrollment_summary(user.get("enrollments") or [])
-            rows.append((user.get("id"), app.person(user), roles, states, sections))
+            rows.append((app.user_ref(user.get("id")), app.person(user), roles, states, sections))
         table = md.table(["id", "name", "role(s)", "state(s)", "section(s)"], rows)
         if users.capped:
             table += f"\n\n{md.capped_notice(len(users))}"
@@ -145,7 +145,11 @@ def register(mcp: FastMCP, app: App) -> None:
     async def export_anonymization_map(
         course: str | int, save_directory: str | None = None, confirm: bool = False
     ) -> str:
-        """Write a local CSV mapping each enrolled student's real name and id to their anonymous id.
+        """Write a local CSV mapping each enrolled student's real name and id to their label.
+
+        With student privacy on, this only runs from the terminal
+        (`canvaslms-api privacy roster`), never over MCP: the map is the one
+        thing that undoes the labels.
 
         Args:
             course: Course id, course code, part of the course name, or "sis_course_id:XXX".
@@ -153,6 +157,12 @@ def register(mcp: FastMCP, app: App) -> None:
                 download directory, or the system temp directory.
             confirm: Must be true to write the file; otherwise returns a preview.
         """
+        if app.privacy.enabled and app.surface != "cli":
+            raise ToolError(
+                "Refused: student privacy is on, and this map would put real names in front of "
+                "the assistant. The teacher can run `canvaslms-api privacy roster <course>` in a "
+                "terminal to see who each label is."
+            )
         cid = await app.course_id(course)
         students = await app.client.get_all(
             f"/courses/{cid}/users", {"enrollment_type[]": ["student"]}
@@ -187,7 +197,7 @@ def register(mcp: FastMCP, app: App) -> None:
 
         with dest.open("w", newline="", encoding="utf-8") as fh:
             writer = csv.writer(fh)
-            writer.writerow(["real_name", "canvas_user_id", "anonymous_id"])
+            writer.writerow(["real_name", "canvas_user_id", "label"])
             for student in students:
                 name = (
                     student.get("name")
@@ -195,25 +205,40 @@ def register(mcp: FastMCP, app: App) -> None:
                     or student.get("short_name")
                     or "unknown"
                 )
-                writer.writerow([name, student.get("id"), app.anonymous_id(student.get("id"))])
+                label = app.privacy.label_for(student.get("id")) if app.privacy.enabled else None
+                writer.writerow([name, student.get("id"), label or app.anonymous_id(student.get("id"))])
+        try:
+            dest.chmod(0o600)
+        except OSError:
+            pass
 
         return md.done("export_anonymization_map", details)
 
     @mcp.tool(annotations=READ)
     async def get_privacy_status() -> str:
-        """Report the current student-anonymization configuration."""
-        return md.kv(
-            [
-                ("anonymization", "on" if app.settings.anonymize_students else "off"),
-                ("setting", "CANVAS_ANONYMIZE_STUDENTS"),
-                (
-                    "id derivation",
-                    "sha256(host:canvas_user_id), first 8 hex chars, formatted Student_<hex>",
-                ),
-                (
-                    "honored by",
-                    "any tool that renders a person's name via app.person(), "
-                    "e.g. list_users, list_groups, list_submissions, get_student_analytics",
-                ),
+        """Report the student-privacy mode and how labels are made. Never returns the label map."""
+        privacy = app.privacy
+        settings = app.settings
+        rows = [
+            ("mode", privacy.mode),
+            ("setting", "CANVAS_PRIVACY_MODE (off | pseudonymize | strict)"),
+        ]
+        if privacy.enabled:
+            rows += [
+                ("student label", "P<period>-<nn>, e.g. P3-07; S-<nn> when a section has no period"),
+                ("label numbers", "drawn at random once per student and never reused"),
+                ("period source", "Canvas section name, or overrides in periods.toml"),
+                ("others", "guardians Guardian-xxxxxx; anyone not on a loaded roster Person-xxxxxxxx"),
+                ("free text", "roster names, emails, login and SIS ids replaced with labels"
+                 + ("; any other email or phone number redacted" if privacy.strict else "")),
+                ("raw student ids", "replaced with labels" if privacy.strict else "shown"),
+                ("crosswalk", f"{privacy.crosswalk.path} ({privacy.crosswalk.count(settings.host)} labels; stores a keyed hash, never ids or names)"),
+                ("key", "CANVAS_PRIVACY_KEY" if settings.privacy_key else f"{privacy.dir / 'privacy.key'}"),
+                ("re-identification", "terminal only: canvaslms-api privacy roster <course>"),
+                ("audit log", str(privacy.dir / "audit.jsonl")),
+                ("downloads", f"{settings.download_dir or '(system temp)'}"
+                 + (f", purged after {settings.retention_days:g} days" if settings.download_dir_managed else ", not purged (CANVAS_DOWNLOAD_DIR is yours)")),
             ]
-        )
+        else:
+            rows.append(("warning", "student names and ids are shown to the assistant as-is"))
+        return md.kv(rows)

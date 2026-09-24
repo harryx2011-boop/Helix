@@ -1,5 +1,5 @@
-import { createHmac } from 'node:crypto';
 import type { Log } from '../core/logger.js';
+import { signPayload } from '../webhooks/signature.js';
 import { assertPublicTarget, BlockedTargetError } from '../core/webhook-target.js';
 import type { DeliveryRecord, MonitorStore } from './store.js';
 
@@ -29,11 +29,10 @@ export function backoffSeconds(attempts: number): number | null {
   return BACKOFF_SECONDS[attempts - 1] ?? null;
 }
 
-/** `Helix-Signature: t=<unix>,v1=<hex>` — HMAC-SHA256 over `{timestamp}.{body}`. */
-export function signPayload(secret: string, timestamp: number, body: string): string {
-  const digest = createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex');
-  return `t=${timestamp},v1=${digest}`;
-}
+/* One signing scheme for every Helix webhook: the monitor dispatcher and
+   webhooks/dispatcher.ts both sign through webhooks/signature.ts, so a change
+   to the scheme cannot reach one sender and miss the other. */
+export { signPayload };
 
 export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal }) => Promise<{ status: number }>;
 

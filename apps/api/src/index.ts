@@ -459,7 +459,7 @@ await registerSettings(app, {
 // Tools are generated from openapi.yaml for the routes registered above; the
 // bearer key on the MCP request is the same key the HTTP API takes, verified
 // and rate limited once on the way in; the replayed tool call rides a ticket.
-await registerMcp(app, { prefix: '/v1', tickets });
+await registerMcp(app, { prefix: '/v1', tickets, only: config.mcpTools });
 
 const start = async (): Promise<void> => {
   try {

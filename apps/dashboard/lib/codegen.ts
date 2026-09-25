@@ -1,5 +1,6 @@
 import type { Endpoint } from './endpoints';
 import { endpointById } from './catalog';
+import { mcpToolName } from './mcp-tool-names';
 
 export type Lang = 'curl' | 'python' | 'node' | 'mcp';
 export const LANGS: readonly { id: Lang; label: string }[] = [
@@ -25,9 +26,7 @@ interface Opts {
 export function generateCode(lang: Lang, opts: Opts): string {
   const def = endpointById(opts.endpoint);
   const path = `${def?.path ?? `/v1/${opts.endpoint}`}${opts.pathSuffix ?? ''}`;
-  // The MCP tool name is generated from the spec path, so a sub-operation is
-  // `helix_metadata_scrub`, not `helix_metadata`.
-  const tool = `helix_${opts.endpoint}${(opts.pathSuffix ?? '').replace(/\//g, '_')}`;
+  const tool = mcpToolName(opts.endpoint, opts.pathSuffix);
   const base = (opts.baseUrl ?? 'https://api.helix.dev').replace(/\/$/, '');
   const key = opts.apiKey ?? KEY_PLACEHOLDER;
   const json = JSON.stringify(opts.body, null, 2);

@@ -1,6 +1,6 @@
 # Helix
 
-A self-hostable, BYOK frontier utility hub — scrape · parse · convert · search · crawl · interact · monitor — with a hosted app. Three runtimes behind one HTTP surface.
+A self-hostable, BYOK frontier utility hub — scrape · parse · search · crawl · interact · monitor — with a hosted app. Three runtimes behind one HTTP surface.
 
 **`context.md` is canonical.** Read it at session start; update it after features, schema changes, version bumps, and layout refactors. This file is the entry point only — it holds what is true across every turn, not rolling status. Per-version history lives in git log.
 
@@ -15,24 +15,26 @@ A self-hostable, BYOK frontier utility hub — scrape · parse · convert · sea
 | Build state by milestone | `MILESTONES.md` |
 | Wire contract | `openapi.yaml` |
 | In-flight work | `TODO.md`, `HANDOFF.md` |
-| Sub-surface contracts | `CHECKS-CONTRACT.md`, `CONVERTER-CONTRACT.md`, `VULCAN-CONTRACT.md` |
+| Sub-surface contracts | `CHECKS-CONTRACT.md` |
 
 Standing facts (deployment, verified runtime recipes, known gotchas, dead decisions) are printed at session start from
 `C:/Users/harry/.claude/projects/e--Helix/memory/STANDING.md`. Trust it, but verify any claim about a file or flag still holding before acting on it.
 
 ## Search
 
+**Helix is also the tool you use.** The API's own MCP surface (`mcp__helix__helix_*`, user-scope server `helix` at `http://127.0.0.1:7400/mcp`) is how this and every other session reads the live web; `~/.claude/hooks/helix-ensure.js` starts the local stack. A change to `openapi.yaml` or `apps/api/src/mcp/` changes those tools, so run `apps/api/src/mcp/tools.test.ts` and `apps/dashboard/lib/mcp-tool-names.test.ts` after either. `HELIX_MCP_TOOLS` names the tools exposed; the hook sets the 27-tool core.
+
 **Graphify first.** `graphify-out/` is the primary search path — locate the node, then read the narrow range it points at. Read/Grep/Glob are fallbacks, and falling back requires saying why. Regenerate the graph after structural changes (files added/renamed/moved, a refactor touching 3+ files); `--update`'s prune leaves ghost nodes, so check counts after.
 
 ## Layout and ports
 
-- `apps/dashboard` — one Next.js app: marketing (light), Clerk auth, onboarding, `/app` (dark). **Port 3400.** `HELIX_HOSTED=1` selects hosted mode; default is the self-host static export.
+- `apps/dashboard` — one Next.js app: marketing and docs (light), `/app` (dark), `/checks` in `app/(tools)` (light, desktop-only), Clerk auth and onboarding (hosted only, leaving in `DESKTOP-PLAN.md` Phase 2b). The website keeps marketing; `/app` ships only in the Electron download. **Port 3400.** `HELIX_HOSTED=1` selects hosted mode; default is the self-host static export.
 - `apps/api` — Fastify, Playwright pool, jobs. **Port 7400.** Routes mount under a `/v1` prefix; `/settings*` and `/internal/keys` mount outside it, on the admin-token boundary.
 - `apps/fetch` — Rust, TLS identity. **Port 7401.**
 - `apps/extract` — Python, parsing/LLM/embeddings. **Port 7402.**
 - Postgres **7432**. `packages/` — profiles, schema, sdk-ts, cli (`@helix/cli`).
 
-Converter is a route group at `/convert` inside the dashboard, not a standalone app. Vulcan and Checks are dashboard-only surfaces with no `apps/api` route — correctly absent from `openapi.yaml`. `/app/vulcan` is local-only.
+The Converter left Helix on 2026-09-25: file conversion is Sparky's (`D:\sparky\sparky`), and `/convert`, `POST /v1/convert` and `helix_convert` are gone. Checks is a dashboard-only surface with no `apps/api` route — correctly absent from `openapi.yaml`. Vulcan left Helix on 2026-09-25 and lives at `D:\vulcan-scratchpad`.
 
 ## Hard constraints
 
@@ -46,14 +48,14 @@ Converter is a route group at `/convert` inside the dashboard, not a standalone 
 
 ## Versioning
 
-SemVer; currently **1.23.1** in the root `package.json` — the one source of truth. Mirror the product version into `apps/api`, `apps/dashboard` and `openapi.yaml` **in the same commit** — `openapi.yaml` was missed for five releases and sat at 1.17.0. `packages/sdk-ts`, `packages/cli`, `apps/extract` (pyproject + `__init__.py`) and `apps/fetch` (Cargo.toml) carry their **own** lines, bumped only when that package changes. Grep the old string before calling a bump done; tag `v<version>`, never moved.
+SemVer; currently **1.24.0** in the root `package.json` — the one source of truth. Mirror the product version into `apps/api`, `apps/dashboard` and `openapi.yaml` **in the same commit** — `openapi.yaml` was missed for five releases and sat at 1.17.0. `packages/sdk-ts`, `packages/cli`, `apps/extract` (pyproject + `__init__.py`) and `apps/fetch` (Cargo.toml) carry their **own** lines, bumped only when that package changes. Grep the old string before calling a bump done; tag `v<version>`, never moved.
 
 ## Working rules
 
 - **Parallelize by default.** Independent reads, greps, edits, and subagent dispatches go out in one message. Serialize only on real data dependencies.
 - **Surgical edits.** Fix the broken section; never regenerate untouched code. Every changed line traces to the request.
 - **Stage by name** (`git add path/to/file`, not `-A`), commit to `main`, **no AI co-author trailer**.
-- Tokens: marketing = Firecrawl-structured light theme in violet; app = `DESIGN.md` dark. Fonts Geist + Geist Mono; radii pill/6px/8px; weights 400/450/500 only.
+- Tokens: marketing and `/checks` = the Firecrawl-structured light violet `--m-*` theme under `data-surface="marketing"`; app = `DESIGN.md` dark. Fonts Geist + Geist Mono; radii pill/6px/8px; weights 400/450/500 only.
 
 ## Design skills
 

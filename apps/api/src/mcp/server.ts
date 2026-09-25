@@ -29,6 +29,12 @@ export interface McpDeps {
   version?: string;
   /** Issues the replay's ticket; without it the bearer header is forwarded and charged again. */
   tickets?: InternalTickets;
+  /**
+   * Tool names to expose; undefined exposes every live operation. An MCP client
+   * loads every listed schema into the model's context on connect (the full
+   * list is ~120 KB), so an operator can trim it to the tools an agent needs.
+   */
+  only?: readonly string[] | undefined;
 }
 
 const SPEC_TO_FASTIFY = (path: string): string => path.replace(/\{([^}]+)\}/g, ':$1');
@@ -43,9 +49,12 @@ function contentFromResponse(statusCode: number, payload: string): {
   content: { type: 'text'; text: string }[];
   isError?: boolean;
 } {
+  // Compact, not pretty-printed: the reader is a model, and indentation
+  // carries nothing. Small on a scrape (one markdown string), larger on crawl
+  // and search pages that nest one object per result.
   let text = payload;
   try {
-    text = JSON.stringify(JSON.parse(payload), null, 2);
+    text = JSON.stringify(JSON.parse(payload));
   } catch {
     // Not JSON (204, or a body the route streamed); return it verbatim.
   }
@@ -65,6 +74,10 @@ export async function registerMcp(app: FastifyInstance, deps: McpDeps = {}): Pro
     if (!tools) {
       spec ??= loadSpec();
       tools = liveTools(app, spec, prefix);
+      if (deps.only) {
+        const keep = new Set(deps.only);
+        tools = tools.filter((t) => keep.has(t.name));
+      }
     }
     return tools;
   };

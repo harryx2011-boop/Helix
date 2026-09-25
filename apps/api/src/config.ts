@@ -141,6 +141,11 @@ const ConfigSchema = z.object({
         ? ['http://localhost:3400', 'http://127.0.0.1:3400']
         : v.split(',').map((o) => o.trim()).filter(Boolean),
     ),
+  // MCP tool names to expose (comma list); unset exposes every live operation.
+  mcpTools: z
+    .string()
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v.split(',').map((o) => o.trim()).filter(Boolean))),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -198,6 +203,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     monitorMaxContentBytes: env.HELIX_MONITOR_MAX_CONTENT_BYTES,
     multiTenant: env.HELIX_MULTI_TENANT,
     corsOrigins: env.HELIX_CORS_ORIGINS,
+    mcpTools: env.HELIX_MCP_TOOLS,
   });
 
   if (!parsed.success) {

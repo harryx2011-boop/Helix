@@ -74,7 +74,7 @@ export const CONFIRM_REQUIRED: ReadonlyArray<{ method: HttpMethod; path: string;
   },
   {
     method: 'DELETE',
-    path: '/batch/scrape/{jobId}',
+    path: '/batch/scrape/{id}',
     warning: 'Cancels the batch job. Results not yet delivered are lost.',
   },
 ];

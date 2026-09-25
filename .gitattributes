@@ -1,0 +1,12 @@
+# The migration runner hashes each .sql file's raw bytes and refuses to re-run a
+# file whose checksum changed (apps/api/src/db/migrate.ts). With core.autocrlf
+# on, a checkout rewrites line endings, the hash moves, and the API dies at boot
+# claiming an applied migration was edited. Pin the endings instead.
+*.sql text eol=lf
+
+# Same reasoning for anything else whose bytes are hashed, signed or executed
+# in a container built from this tree.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf

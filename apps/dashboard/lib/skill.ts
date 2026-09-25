@@ -159,7 +159,7 @@ function usageNotes(endpoint: EndpointDef): string {
 - \`schedule\` is a cron string or \`{ "every": "6h", "timezone": "Europe/London" }\`.
 - \`sensitivity: "significant"\` ignores relative timestamps, clock times, dates and tracking parameters. \`trigger.keywordAppears\` / \`trigger.keywordDisappears\` fire only on that phrase.
 - Read the timeline with \`GET ${endpoint.path}/{id}/history\` (entries carry \`changed\`, \`reason\`, \`diff\`, \`snapshotUrl\`). \`POST ${endpoint.path}/{id}/check\` runs one check now. \`PATCH\` with \`{ "status": "paused" }\` pauses; \`DELETE\` removes.
-- With a \`webhook\`, each change is posted as \`{ event, monitorId, url, checkedAt, changed, diff, snapshot, previousSnapshot }\`, signed in \`Helix-Signature\` when a secret is set, retried with backoff and dead-lettered after ten attempts (\`GET ${endpoint.path}/{id}/deliveries\`).
+- With a \`webhook\`, each change is posted as \`{ event, monitorId, url, checkedAt, changed, diff, snapshot, previousSnapshot }\`, signed in \`Helix-Signature\` when a secret is set, retried on the shared webhook schedule and dead-lettered after \`HELIX_WEBHOOK_MAX_ATTEMPTS\` attempts, 20 by default (\`GET ${endpoint.path}/{id}/deliveries\`).
 
 `;
     default:

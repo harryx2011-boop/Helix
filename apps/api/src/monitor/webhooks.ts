@@ -1,4 +1,5 @@
 import type { Log } from '../core/logger.js';
+import { retryDelayMs, WEBHOOK_MAX_ATTEMPTS } from '../webhooks/deliveries.js';
 import { signPayload } from '../webhooks/signature.js';
 import { assertPublicTarget, BlockedTargetError } from '../core/webhook-target.js';
 import type { DeliveryRecord, MonitorStore } from './store.js';
@@ -16,18 +17,6 @@ import type { DeliveryRecord, MonitorStore } from './store.js';
  * only probe the network again. Failure text is a category (`timeout`,
  * `unreachable`, `HTTP 503`), never the resolver's or socket's own words.
  */
-
-/** Seconds to wait before attempt N+1, after N failures. Sums to ~3 days. */
-export const BACKOFF_SECONDS: readonly number[] = [
-  60, 300, 1_800, 7_200, 21_600, 43_200, 86_400, 86_400, 86_400,
-];
-
-export const MAX_ATTEMPTS = BACKOFF_SECONDS.length + 1;
-
-export function backoffSeconds(attempts: number): number | null {
-  if (attempts >= MAX_ATTEMPTS) return null;
-  return BACKOFF_SECONDS[attempts - 1] ?? null;
-}
 
 /* One signing scheme for every Helix webhook: the monitor dispatcher and
    webhooks/dispatcher.ts both sign through webhooks/signature.ts, so a change
@@ -60,6 +49,7 @@ export interface DispatcherOptions {
   fetch?: FetchLike | undefined;
   /** Instance-wide signing secret; a webhook's own `secret` wins when set. */
   defaultSecret?: string | undefined;
+  maxAttempts?: number | undefined;
   tickMs?: number | undefined;
   batch?: number | undefined;
   requestTimeoutMs?: number | undefined;
@@ -77,6 +67,7 @@ export class WebhookDispatcher {
   readonly #store: MonitorStore;
   readonly #fetch: FetchLike;
   readonly #defaultSecret: string | undefined;
+  readonly #maxAttempts: number;
   readonly #tickMs: number;
   readonly #batch: number;
   readonly #timeoutMs: number;
@@ -89,6 +80,7 @@ export class WebhookDispatcher {
     this.#store = options.store;
     this.#fetch = options.fetch ?? postWebhook;
     this.#defaultSecret = options.defaultSecret;
+    this.#maxAttempts = options.maxAttempts ?? WEBHOOK_MAX_ATTEMPTS;
     this.#tickMs = options.tickMs ?? 5_000;
     this.#batch = options.batch ?? 20;
     this.#timeoutMs = options.requestTimeoutMs ?? 15_000;
@@ -175,15 +167,14 @@ export class WebhookDispatcher {
     }
 
     const attempts = delivery.attempts + 1;
-    const wait = blocked ? null : backoffSeconds(attempts);
 
-    if (wait === null) {
+    if (blocked || attempts >= this.#maxAttempts) {
       await this.#store.markDead(delivery.id, attempts, error, status);
       this.#logger?.warn({ deliveryId: delivery.id, url: delivery.url, error }, 'webhook dead-lettered');
       return { id: delivery.id, outcome: 'dead', status };
     }
 
-    const nextRetryAt = new Date(this.#now().getTime() + wait * 1000);
+    const nextRetryAt = new Date(this.#now().getTime() + retryDelayMs(attempts));
     await this.#store.markRetry(delivery.id, attempts, nextRetryAt, error, status);
     return { id: delivery.id, outcome: 'retry', status };
   }

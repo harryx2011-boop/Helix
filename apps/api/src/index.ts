@@ -242,6 +242,7 @@ const monitorScheduler = new MonitorScheduler({
 const monitorWebhookDispatcher = new MonitorWebhookDispatcher({
   store: monitorStore,
   defaultSecret: config.webhookSecret,
+  maxAttempts: config.webhookMaxAttempts,
   logger: app.log,
 });
 

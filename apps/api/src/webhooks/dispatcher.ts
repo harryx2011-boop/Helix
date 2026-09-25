@@ -2,6 +2,7 @@ import type { Log } from '../core/logger.js';
 import {
   purgeSettledDeliveries,
   retryDelayMs,
+  WEBHOOK_MAX_ATTEMPTS,
   type Queryable,
   type WebhookEvent,
   type WebhookPayload,
@@ -98,7 +99,7 @@ export class WebhookDispatcher {
     this.#db = deps.db;
     this.#fetch = deps.fetch ?? fetch;
     this.#secret = deps.secret;
-    this.#maxAttempts = deps.maxAttempts ?? 20;
+    this.#maxAttempts = deps.maxAttempts ?? WEBHOOK_MAX_ATTEMPTS;
     this.#batchSize = deps.batchSize ?? 20;
     this.#requestTimeoutMs = deps.requestTimeoutMs ?? 10_000;
     this.#leaseSeconds = deps.leaseSeconds ?? 60;

@@ -40,6 +40,12 @@ const BASE_DELAY_MS = 60_000;
 const MAX_DELAY_MS = 6 * 60 * 60 * 1000;
 
 /**
+ * The one retry policy for every Helix webhook: crawl and job deliveries
+ * (webhooks/dispatcher.ts) and monitor deliveries (monitor/webhooks.ts).
+ */
+export const WEBHOOK_MAX_ATTEMPTS = 20;
+
+/**
  * Exponential backoff: one minute, doubling, capped at six hours. Twenty
  * attempts span roughly three days, which is the window a receiver that is
  * down for a weekend needs. Not three retries over twenty minutes.

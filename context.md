@@ -429,3 +429,47 @@ A naming trap worth keeping in mind: `resolve()` echoes back whatever name it is
 - Tokens: WEBSITE.md §3. Marketing = Firecrawl-structured light theme in violet; app = DESIGN.md dark.
 - Claims guard (WEBSITE.md §11) applies to every user-facing string.
 - Stage by name, commit to main, no AI co-author trailer.
+
+## Modularity (2026-09-14)
+
+Audited against the `## Code` rule in `~/.claude/CLAUDE.md` (full playbook:
+`~/.claude/reference/modular-code.md`). Every number below was verified by command.
+Scope note: `apps/persona` left this repo in `1978166` and was excluded.
+
+- **MEDIUM — two parallel webhook implementations.** `apps/api/src/monitor/webhooks.ts` (191
+  lines) and `apps/api/src/webhooks/dispatcher.ts` (296) + `signature.ts` (48) are independent
+  implementations of one capability: HMAC-sign, deliver, exponential backoff, dead-letter,
+  private-target refusal. `monitor/webhooks.ts:33` reimplements `signPayload` **byte-for-byte**
+  from `signature.ts:12` —
+  `createHmac('sha256', secret).update(\`${timestamp}.${body}\`).digest('hex')` — and imports
+  `createHmac` directly at line 1 rather than importing the seam. It carries its own
+  `BACKOFF_SECONDS` table too. At 535 lines this is well past the "few duplicated lines is
+  fine" exemption. Fix: a shared `webhooks/core.ts` both construct against, leaving the two
+  callers differing only in row-source query and event-type union.
+  **Resolved in two steps.** `6ec5fc1` (2026-09-23): one `signPayload`, imported from
+  `webhooks/signature.ts`. 2026-09-24: one retry policy. `BACKOFF_SECONDS` is gone; both
+  dispatchers use `retryDelayMs` and `WEBHOOK_MAX_ATTEMPTS` (20) from `webhooks/deliveries.ts`,
+  and `HELIX_WEBHOOK_MAX_ATTEMPTS` now governs monitor deliveries too. Deliberate behaviour
+  change: monitor webhooks went from 10 attempts over ~4 days to 20 over ~3 days. The two
+  dispatchers still differ in row source and retryability rules (monitor retries a 4xx; crawl
+  dead-letters it); merging those was not asked for.
+- **MEDIUM — `packages/sdk-ts/src/client.ts`.** 482 lines, **43** hand-written methods, one per
+  API operation. Commit `fee9da1` ("the SDK finally reaches every endpoint") is direct evidence
+  the tax was paid in arrears. The neighbouring `apps/api/src/mcp/` derives every MCP tool from
+  `openapi.yaml` with zero hand-written registration — the same spec could populate the SDK.
+  Mitigating: `HelixClient` is itself a stable narrow seam; the defect is how it is populated.
+- **LOW — `apps/extract/helix_extract/schema_gen.py:22`** imports `_anthropic_supports_output_format`,
+  `_openai_wire_credentials`, `_resolve` from `llm.py`'s private namespace. Co-churn is real.
+  Fix: promote to a public `provider_resolution.py`.
+- **Not a finding —** `apps/api/src/providers/{cloud-models,verify}.ts` `switch (provider)`
+  blocks are compiler-exhaustive TypeScript union switches with genuinely distinct per-arm
+  logic and 1-2 commits of churn. Abstracting now would be speculative.
+
+**Already right — copy these.** `apps/dashboard/lib/catalog.ts:41` is the model:
+`ENDPOINTS: readonly EndpointDef[]` is the single registry, and marketing pages, sidebar,
+playground tabs, docs CTAs and SKILL.md generation are all `.filter()`/`.map()` derivations of
+it. `apps/api/src/mcp/` generates tools from the OpenAPI spec. `routes/document.ts:23`
+dispatches through an `OPERATIONS` dict plus Fastify `inject()` rather than re-implementing
+each operation. `search/providers.ts:415` is a clean `SearchProvider` seam with a
+three-way factory. `apps/api/src/index.ts:16` — one `registerX(app)` per route module, pure
+composition with no conditional logic.

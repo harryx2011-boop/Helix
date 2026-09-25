@@ -2,7 +2,8 @@ import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { MemoryMonitorStore, type MonitorRecord } from './store.js';
 import { BlockedTargetError } from '../core/webhook-target.js';
-import { BACKOFF_SECONDS, MAX_ATTEMPTS, WebhookDispatcher, backoffSeconds, describeFailure, signPayload } from './webhooks.js';
+import { retryDelayMs, WEBHOOK_MAX_ATTEMPTS } from '../webhooks/deliveries.js';
+import { WebhookDispatcher, describeFailure, signPayload } from './webhooks.js';
 
 async function monitorWith(store: MemoryMonitorStore, webhook: MonitorRecord['webhook']): Promise<MonitorRecord> {
   return store.create({
@@ -17,18 +18,6 @@ async function monitorWith(store: MemoryMonitorStore, webhook: MonitorRecord['we
     nextCheckAt: null,
   });
 }
-
-describe('backoffSeconds', () => {
-  it('grows over roughly three days and then gives up', () => {
-    expect(backoffSeconds(1)).toBe(60);
-    expect(backoffSeconds(2)).toBe(300);
-    expect(backoffSeconds(MAX_ATTEMPTS - 1)).toBe(86_400);
-    expect(backoffSeconds(MAX_ATTEMPTS)).toBeNull();
-    const total = BACKOFF_SECONDS.reduce((a, b) => a + b, 0);
-    expect(total).toBeGreaterThan(3 * 86_400);
-    expect(total).toBeLessThan(4 * 86_400);
-  });
-});
 
 describe('signPayload', () => {
   it('produces the documented header shape over `{timestamp}.{body}`', () => {
@@ -73,7 +62,8 @@ describe('WebhookDispatcher', () => {
     expect(row?.responseStatus).toBe(200);
   });
 
-  it('retries a failure with backoff and dead-letters after the last attempt', async () => {
+  it('retries on the shared webhook schedule and dead-letters after attempt 20', async () => {
+    expect(WEBHOOK_MAX_ATTEMPTS).toBe(20);
     const store = new MemoryMonitorStore();
     const monitor = await monitorWith(store, { url: 'https://hooks.test/x', events: ['changed'] });
     await store.enqueueDelivery({
@@ -103,16 +93,33 @@ describe('WebhookDispatcher', () => {
     expect(await dispatcher.tick()).toEqual([]);
 
     // Walk the whole schedule.
-    for (let attempt = 2; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    for (let attempt = 2; attempt <= WEBHOOK_MAX_ATTEMPTS; attempt += 1) {
       [row] = await store.listDeliveries(monitor.id, 10);
       clock = row!.nextRetryAt.getTime();
       const result = await dispatcher.tick();
-      expect(result[0]?.outcome).toBe(attempt === MAX_ATTEMPTS ? 'dead' : 'retry');
+      expect(result[0]?.outcome).toBe(attempt === WEBHOOK_MAX_ATTEMPTS ? 'dead' : 'retry');
+      if (attempt < WEBHOOK_MAX_ATTEMPTS) {
+        [row] = await store.listDeliveries(monitor.id, 10);
+        expect(row!.nextRetryAt.getTime() - clock).toBe(retryDelayMs(attempt));
+      }
     }
 
     [row] = await store.listDeliveries(monitor.id, 10);
     expect(row?.status).toBe('dead');
-    expect(row?.attempts).toBe(MAX_ATTEMPTS);
+    expect(row?.attempts).toBe(WEBHOOK_MAX_ATTEMPTS);
+  });
+
+  it('honours a configured attempt ceiling', async () => {
+    const store = new MemoryMonitorStore();
+    const monitor = await monitorWith(store, { url: 'https://hooks.test/x', events: ['changed'] });
+    await store.enqueueDelivery({ monitorId: monitor.id, url: 'https://hooks.test/x', eventType: 'changed', payload: {}, dedupeKey: 'k6' });
+
+    let clock = Date.now() + 1_000;
+    const dispatcher = new WebhookDispatcher({ store, maxAttempts: 2, fetch: async () => ({ status: 503 }), now: () => new Date(clock) });
+    expect((await dispatcher.tick())[0]?.outcome).toBe('retry');
+    const [row] = await store.listDeliveries(monitor.id, 10);
+    clock = row!.nextRetryAt.getTime();
+    expect((await dispatcher.tick())[0]?.outcome).toBe('dead');
   });
 
   it('replays a dead letter from scratch', async () => {
@@ -125,7 +132,7 @@ describe('WebhookDispatcher', () => {
       payload: {},
       dedupeKey: 'k3',
     });
-    await store.markDead(queued!.id, MAX_ATTEMPTS, 'HTTP 500', 500);
+    await store.markDead(queued!.id, WEBHOOK_MAX_ATTEMPTS, 'HTTP 500', 500);
 
     expect(await store.replayDelivery(monitor.id, queued!.id)).toMatchObject({ status: 'pending', attempts: 0 });
     // A second replay of a now-pending row is refused.

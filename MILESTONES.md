@@ -163,7 +163,7 @@ what `assess_pdf` returns.
 - ☑ Diffs at word, line and character granularity, delivered inline (Myers over tokens)
 - ☑ `sensitivity: significant` noise filters (relative times, clock times, dates, tracking params)
 - ☑ Keyword triggers (`keywordAppears`, `keywordDisappears`, `minChangeRatio`, `selector`) with no model call
-- ☑ Webhooks: HMAC signing (`Helix-Signature`), backoff over ten attempts, dead letter with replay
+- ☑ Webhooks: HMAC signing (`Helix-Signature`), backoff over `HELIX_WEBHOOK_MAX_ATTEMPTS` (20) attempts, shared with crawl webhooks since 2026-09-24, dead letter with replay
 - ☑ Snapshot retention by count and age (`HELIX_MONITOR_RETAIN_SNAPSHOTS`, `HELIX_MONITOR_RETAIN_DAYS`)
 - ☑ Business-hours windows as a first-class field. The window restricts the cron
       and never widens it; a combination that can never fire is rejected at write time

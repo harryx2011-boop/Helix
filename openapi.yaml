@@ -4121,8 +4121,9 @@ components:
         `Helix-Signature: t=<unix>,v1=<hex>`. `Helix-Event`, `Helix-Delivery-Id`
         and `Helix-Monitor-Id` headers accompany every delivery.
 
-        Delivery retries with backoff (1m, 5m, 30m, 2h, 6h, 12h, then daily)
-        for ten attempts over roughly four days, then lands in a dead letter you
+        Delivery retries on the same schedule as crawl webhooks (one minute,
+        doubling, capped at six hours) for `HELIX_WEBHOOK_MAX_ATTEMPTS` attempts,
+        about three days at the default of 20, then lands in a dead letter you
         can replay. Ordering is not guaranteed; make the handler idempotent.
       properties:
         url: { type: string, format: uri }

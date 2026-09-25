@@ -115,6 +115,45 @@ With no app on the web, hosted mode (Clerk, Supabase, onboarding, `app/api/**`, 
 
 **Also in this phase:** a results sweeper. Nothing deletes `jobs` or `documents` today, despite `expires_at`.
 
+### Status 2026-09-25: spike mostly passed, implementation not started
+
+The session stopped early because of a machine shutdown. Nothing is committed.
+
+**Baseline before any change:** API suite 93 files / 1360 tests passing; `tsc --noEmit` exit 0.
+
+**Spike results.** Script: `spike.mjs` in that session's scratchpad. Rerun it by opening PGlite on a `mkdtemp` dir with `extensions: { uuid_ossp, vector }`, then applying each migration with `db.exec('BEGIN;' + sql + ';COMMIT;')`.
+
+| Check | Result |
+|---|---|
+| (a) all 12 migrations, unchanged | **Pass.** 001–012 all applied with no SQL edits. |
+| (b) queue claim (`UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED) RETURNING`) | **Pass.** 1000 of 1000 tasks claimed in batches of 10. |
+| (c) pgvector, so `chunks` is created | **Pass.** `to_regclass('chunks')` = `chunks`. The `pg_available_extensions` guard in 001 sees `vector` once the extension is passed in. |
+| (d) `transaction()` beside concurrent `query()` behind a mutex | **Not run yet.** |
+| (e) speed | Opening a fresh data dir (initdb) took 5.8 s. 1000 single-row parameterised inserts took 1.24 s (~1.2 ms each). The full claim loop over 1000 tasks took 0.36 s. `percentile_cont` works. |
+
+**Findings the driver must handle:**
+
+- **pgvector is a separate package in 0.5.x:** `@electric-sql/pglite-pgvector` (0.0.9, peer `pglite` 0.5.8). `uuid_ossp` is at `@electric-sql/pglite/contrib/uuid_ossp`.
+- **Multi-statement SQL.** PGlite `query()` uses the extended protocol, so it takes one statement. `migrate.ts` calls `client.query(sql)` with a whole file. The adapter must send a parameterless call to `exec()` and return its last result, so `migrate.ts` stays unchanged.
+- **Type parity with `pg`.** `pg` returns `int8` and `numeric` as strings and `bytea` as `Buffer`. PGlite returns `int8` as a number (or a BigInt past 2^53, which breaks `JSON.stringify`) and `bytea` as `Uint8Array`. Pass `parsers` for INT8 and NUMERIC (string), and map BYTEA to `Buffer`. PGlite also returns `affectedRows` where `pg` returns `rowCount`, so the adapter maps it.
+
+**In the working tree, uncommitted:**
+
+- `apps/api/package.json` and `pnpm-lock.yaml` add `@electric-sql/pglite` ^0.5.8 and `@electric-sql/pglite-pgvector` 0.0.9.
+- This section.
+
+Nothing else has been edited. The install printed `-152`: pnpm pruned orphaned hoisted packages that are not in the lockfile. The lockfile diff contains only the two additions.
+
+**Next steps, in order:**
+
+1. Run spike (d): two concurrent `transaction()` calls plus plain `query()` calls through a mutex adapter, showing that no statement lands inside another transaction.
+2. Build the driver registry: `db/pool.ts` plus `db/drivers/{pg,pglite}.ts`, selected by `HELIX_DB`.
+3. Make `DATABASE_URL` optional and add `HELIX_DATA_DIR`.
+4. Remove `HELIX_MULTI_TENANT`. It touches `config.ts:131/204`, `index.ts:335–359`, and `routes/{batch,crawl,jobs,keys,usage}.ts` plus their tests.
+5. Add the sweeper module and the real-engine tests.
+6. Do the live proof on 7410.
+7. Bump versions to 1.25.0 and update the docs.
+
 ## Phase 4: the API serves the UI and builds to JS
 
 **Resolved 2026-09-25: the self-host build compiles.** The cause was `pageExtensions: ['tsx']` on the self-host build. The same tree fails with it and exits 0 with `['tsx', 'ts']`, and the static export writes every `/app` page. Both builds now use the pair. Original finding:

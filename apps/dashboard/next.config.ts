@@ -4,6 +4,10 @@ import type { NextConfig } from 'next';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const hosted = process.env.HELIX_HOSTED === '1';
+// The public website carries marketing and docs only; the app ships in the
+// desktop download (DESKTOP-PLAN.md Phase 2). Vercel sets VERCEL=1 at build.
+const website = hosted && (process.env.VERCEL === '1' || process.env.HELIX_TARGET === 'web');
+const APP_ROUTES = ['/app/:path*', '/sign-in/:path*', '/sign-up/:path*', '/onboarding/:path*', '/checks/:path*'];
 
 // Self-host: static export served by the Fastify API at `/` (FRONTEND.md §3).
 // Hosted: server output, because Clerk middleware and the route handlers need it (WEBSITE.md §1).
@@ -28,7 +32,10 @@ const nextConfig: NextConfig = {
   // marks) are .png, not SVG, so hosted needs no per-image unoptimized prop.
   images: hosted ? {} : { unoptimized: true },
   outputFileTracingRoot: resolve(currentDir, '..', '..'),
-  env: { NEXT_PUBLIC_HELIX_HOSTED: hosted ? '1' : '0' },
+  env: { NEXT_PUBLIC_HELIX_HOSTED: hosted ? '1' : '0', NEXT_PUBLIC_HELIX_WEBSITE: website ? '1' : '0' },
+  ...(website
+    ? { redirects: async () => APP_ROUTES.map((source) => ({ source, destination: '/download', permanent: false })) }
+    : {}),
   // Clerk ships Server Actions, which `output: export` refuses. A runtime
   // HOSTED branch is not enough — the static import alone pulls them in — so
   // the self-host build aliases the package to a stub instead.

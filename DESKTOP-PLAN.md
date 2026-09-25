@@ -1,6 +1,6 @@
 # Helix desktop plan
 
-**Date:** 2026-09-25 · **Status:** Phases 0–1 done; Phase 2 marketing restored, build split next; Phases 2b–7 planned. Decisions D1–D4 made.
+**Date:** 2026-09-25 · **Status:** Phases 0–1 done; Phase 2 done; Phases 2b–7 planned. Decisions D1–D4 made.
 
 Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, extract and fetch services. The public website keeps its landing page, docs and marketing, and gates the app behind the desktop download. The desktop app needs no external database and opens no console windows.
 
@@ -8,7 +8,7 @@ Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, e
 |---|---|---|
 | 0 | No visible console windows | Done 2026-09-25 |
 | 1 | Vulcan moves out to `D:\vulcan-scratchpad` | Done 2026-09-25 |
-| 2 | Website keeps marketing; the app ships only in the desktop download | Marketing restored 2026-09-25; build-target split next |
+| 2 | Website keeps marketing; the app ships only in the desktop download | Done 2026-09-25: restore, `/download`, redirect gate |
 | 2b | Hosted mode removed (Clerk, Supabase, onboarding) | Planned (D2) |
 | 3 | No external database | Planned (D1) |
 | 4 | API serves the UI and builds to plain JS | Planned |
@@ -72,7 +72,13 @@ A separate `apps/web` was declined on 2026-08-24, so this stays one app with a b
 
 **Checks is desktop-only** (Harry, 2026-09-25). It calls the API, and the website has no API to call. It stays in `app/(tools)` and in the app sidebar, and its website nav and footer links are removed.
 
-**Next:** the build-target switch. It excludes `(app)`, `(tools)`, `(auth)` and onboarding from the website build, and the marketing group from the desktop build. It also turns the site's Sign in, Get started and `/app` links into Download.
+**Done 2026-09-25: the website gate.**
+
+- **The `/download` page.** It shows `lib/latest-release.ts`, which reads the latest `helix-releases` installer every ten minutes and reports "coming soon" until one exists. It also plays the animated install sequence, `InstallSequence` over `lib/install-frames.ts`: 125 ms frames, one change per frame, a terminal frame, and reduced motion shows the final frame.
+- **One label, "Get the app", everywhere.** On a local or self-host build the nav shows "Open app" → `/app` instead (`NEXT_PUBLIC_HELIX_WEBSITE`). The pre-commit review (interface-review, review-animations, tastemaker, ui-anti-vibe) failed the first draft on ten findings; all ten were fixed before commit.
+- **Every site link into the app now points to `/download`:** nav, hero, closing CTA, capability and docs "try it" buttons, the hero request box, footer, and Getting Started.
+- **The redirect.** `next.config.ts` redirects `/app`, sign-in, sign-up, onboarding and `/checks` to `/download` (307) on the website build only. That is `VERCEL=1` or `HELIX_TARGET=web`, and hosted mode only, so local dev keeps `/app`.
+- **Still to do:** the app code is still compiled into the website. Leaving it out of that build waits for Phase 2b and a working self-host build (Phase 4).
 
 ## Phase 2b: hosted mode out (D2)
 
@@ -158,6 +164,6 @@ Decided by Harry 2026-09-25.
 | D1 | Database approach | **PGlite**, spike first |
 | D2 | Hosted mode (Clerk, Supabase, multi-tenant, Vercel deploy) | **Delete.** The desktop app is single-user. Postgres stays only as long as the PGlite spike needs a comparison. |
 | D3 | Local embeddings in the installer | **Fetched on demand.** The installer ships without torch; the app downloads the embeddings runtime when first needed. |
-| D4 | Release channel | **A `helix-releases` repo with autoupdate** (check `gh release list` before choosing the first version) |
+| D4 | Release channel | **A `helix-releases` repo with autoupdate** (created 2026-09-25: github.com/harryx2011-boop/helix-releases) (check `gh release list` before choosing the first version) |
 
 **Later:** whether the desktop app replaces the hook-launched stack as Claude Code's web layer (the `helix` MCP entry on 7400).

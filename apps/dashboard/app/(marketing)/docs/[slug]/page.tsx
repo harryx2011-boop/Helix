@@ -127,8 +127,8 @@ function EndpointDoc({ def, docs }: { def: EndpointDef; docs: EndpointDocs }) {
             View the {def.productName} page
           </PillButton>
           {!isComing && def.runnable && (
-            <PillButton href={`/app/playground?tab=${def.id}`} variant="primary">
-              Open in playground
+            <PillButton href="/download" variant="primary">
+              Get the app
             </PillButton>
           )}
         </div>
@@ -259,14 +259,14 @@ function ReferenceDocPage({ doc }: { doc: ReferenceDoc }) {
 function GettingStartedDoc() {
   return (
     <StaticShell h1="Getting Started">
-      <DocSection title="1. Sign up">
+      <DocSection title="1. Run Helix">
         <p className="text-[15px] leading-relaxed text-m-ink/72">
-          Create an account at <Link href="/sign-up" className="text-violet underline decoration-violet-40 underline-offset-4">/sign-up</Link>. A default API key is minted for you automatically.
+          A Windows app that runs every service for you is <Link href="/download" className="text-violet underline decoration-violet-40 underline-offset-4">coming</Link>. Today, run it from source with the <Link href="/self-host" className="text-violet underline decoration-violet-40 underline-offset-4">self-host guide</Link>.
         </p>
       </DocSection>
       <DocSection title="2. Get your key">
         <p className="text-[15px] leading-relaxed text-m-ink/72">
-          Find it under <Link href="/app/keys" className="text-violet underline decoration-violet-40 underline-offset-4">/app/keys</Link>. Keys look like <code className="font-mono text-[13px]">helix-a7K2mQ9xP4wR8sT1</code>.
+          A new instance accepts the <code className="font-mono text-[13px]">HELIX_BOOTSTRAP_KEY</code> from its <code className="font-mono text-[13px]">.env</code>; mint more under API Keys in the app. Keys look like <code className="font-mono text-[13px]">helix-a7K2mQ9xP4wR8sT1</code>.
         </p>
       </DocSection>
       <DocSection title="3. Make a request">

@@ -77,8 +77,8 @@ export function Hero() {
           </p>
 
           <div data-reveal className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <PillButton href="/sign-up" variant="primary">
-              Get started
+            <PillButton href="/download" variant="primary">
+              Get the app
             </PillButton>
             <PillButton href={GITHUB_URL} variant="secondary">
               <GithubMark className="h-4 w-4" />

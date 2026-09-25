@@ -6,7 +6,7 @@ import {
   Braces,
   FileText,
   Activity,
-  FlaskConical,
+  Download,
   Package,
   Plug,
   Puzzle,
@@ -69,7 +69,7 @@ export const ENDPOINT_ROWS: readonly MenuRow[] = [
   ...API_GROUPS.flatMap((g) => g.rows),
   {
     label: 'Agent',
-    href: '/app/agent',
+    href: '/agent',
     icon: Bot,
   },
 ];
@@ -98,7 +98,7 @@ export const TOOL_ROWS: readonly MenuRow[] = [
     href: '/canvas',
     icon: CanvasMarkCompact,
   },
-  { label: 'Playground', href: '/app/playground', icon: FlaskConical },
+  { label: 'Get the app', href: '/download', icon: Download },
   { label: 'Status', href: '/status', icon: Activity },
 ].filter((row) => row.href);
 

@@ -50,9 +50,7 @@ export function HeroPanel({ id }: { id?: string }) {
   };
 
   function handleSubmit() {
-    const params = new URLSearchParams({ tab: endpoint });
-    if (url.trim()) params.set('url', url.trim());
-    router.push(`/app/playground?${params.toString()}`);
+    router.push('/download');
   }
 
   function selectEndpoint(id: string) {
@@ -87,6 +85,7 @@ export function HeroPanel({ id }: { id?: string }) {
           disabled={false}
           formats={formats}
           onFormatsChange={selectFormats}
+          submitLabel="Get the app"
         />
       </div>
 

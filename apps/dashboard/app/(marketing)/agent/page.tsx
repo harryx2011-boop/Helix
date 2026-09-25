@@ -108,8 +108,8 @@ export default function AgentPage() {
             One sentence becomes a JSON Schema for /scrape, /parse or /search. Refine it by sending it back with an instruction. Designed on the model you configured.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <PillButton href="/app/agent" variant="primary">
-              Open the Agent <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            <PillButton href="/download" variant="primary">
+              Get the app <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
             <PillButton href="/docs/api-reference" variant="secondary">
               Read the docs

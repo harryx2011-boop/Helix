@@ -127,8 +127,8 @@ export default function EnrichPage() {
             Name the subject and the fields. Each comes back with the passage that states it, or null with the reason it could not be tied to a page Helix read.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <PillButton href="/sign-up" variant="primary">
-              Get an API key <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            <PillButton href="/download" variant="primary">
+              Get the app <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
             <PillButton href="/docs/api-reference" variant="secondary">
               Read the docs

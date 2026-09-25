@@ -153,6 +153,8 @@ interface PromptBoxProps {
    */
   attachment?: File | null;
   onAttachmentChange?: (file: File | null) => void;
+  /** Replaces the per-endpoint run label, for a surface whose submit does not run the request. */
+  submitLabel?: string;
   className?: string;
 }
 
@@ -181,6 +183,7 @@ export function PromptBox({
   onFormatsChange,
   attachment = null,
   onAttachmentChange,
+  submitLabel,
   className,
 }: PromptBoxProps) {
   const s = SURFACE[variant];
@@ -515,7 +518,7 @@ export function PromptBox({
                 )}
               </span>
               <span key={activeDef.id} className={cn(!reduceMotion && 'animate-fade-in')}>
-                {RUN_LABEL[activeDef.id]}
+                {submitLabel ?? RUN_LABEL[activeDef.id]}
               </span>
             </button>
           </div>

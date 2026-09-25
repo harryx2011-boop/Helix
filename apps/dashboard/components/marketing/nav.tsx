@@ -4,7 +4,6 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, Menu, X } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
 import { Logo } from '@/components/shell/logo';
 import { GITHUB_URL } from '@/lib/github-stars';
 import { cn } from '@/lib/utils';
@@ -23,7 +22,11 @@ import {
   type MenuRow,
 } from './nav-menus';
 
-const HOSTED = process.env.NEXT_PUBLIC_HELIX_HOSTED === '1';
+// The public website links to the download; a local or self-host build already has the app.
+const APP_CTA =
+  process.env.NEXT_PUBLIC_HELIX_WEBSITE === '1'
+    ? { href: '/download', label: 'Get the app' }
+    : { href: '/app', label: 'Open app' };
 
 const MENUS: readonly { id: MenuId; label: string }[] = [
   { id: 'apis', label: 'APIs' },
@@ -49,7 +52,6 @@ export function Nav({ stars = null }: NavProps) {
   const rootRef = React.useRef<HTMLDivElement>(null);
   const triggerRefs = React.useRef<Partial<Record<MenuId, HTMLButtonElement | null>>>({});
   const pathname = usePathname();
-  const { user } = useUser();
 
   React.useEffect(() => {
     setOpen(null);
@@ -146,19 +148,9 @@ export function Nav({ stars = null }: NavProps) {
             <GithubMark className="h-4 w-4" />
             {stars ? <span className="font-mono text-[13px] tabular-nums">{stars}</span> : 'GitHub'}
           </Link>
-          {user ? (
-            <PillButton href="/app" variant="primary">
-              Dashboard
-            </PillButton>
-          ) : HOSTED ? (
-            <PillButton href="/sign-in" variant="secondary">
-              Sign in
-            </PillButton>
-          ) : (
-            <PillButton href="/app" variant="primary">
-              Open app
-            </PillButton>
-          )}
+          <PillButton href={APP_CTA.href} variant="primary">
+            {APP_CTA.label}
+          </PillButton>
         </div>
 
         <button
@@ -192,19 +184,9 @@ export function Nav({ stars = null }: NavProps) {
               {stars ? <span className="font-mono text-[13px] tabular-nums">{stars}</span> : 'GitHub'}
             </Link>
             <div className="pt-3">
-              {user ? (
-                <PillButton href="/app" variant="primary" className="w-full">
-                  Dashboard
-                </PillButton>
-              ) : HOSTED ? (
-                <PillButton href="/sign-in" variant="secondary" className="w-full">
-                  Sign in
-                </PillButton>
-              ) : (
-                <PillButton href="/app" variant="primary" className="w-full">
-                  Open app
-                </PillButton>
-              )}
+              <PillButton href={APP_CTA.href} variant="primary" className="w-full">
+                {APP_CTA.label}
+              </PillButton>
             </div>
           </div>
         </div>

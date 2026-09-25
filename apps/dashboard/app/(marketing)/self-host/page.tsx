@@ -179,8 +179,8 @@ export default function SelfHostPage() {
         />
         <div className="relative mx-auto max-w-[720px] py-10 text-center">
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <PillButton href="/sign-up" variant="primary">
-              Get an API key <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            <PillButton href="/download" variant="primary">
+              Get the app <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
             <PillButton href={GITHUB_URL} variant="secondary">
               <Terminal className="h-3.5 w-3.5" aria-hidden /> View on GitHub

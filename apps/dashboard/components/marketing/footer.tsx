@@ -33,12 +33,8 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
   {
     title: 'Tools',
     links: [
-      { label: 'Playground', href: '/app/playground' },
-      { label: 'Agent', href: '/app/agent' },
+      { label: 'Get the app', href: '/download' },
       { label: 'Canvas', href: '/canvas' },
-      { label: 'Health', href: '/app/self-host/health' },
-      { label: 'API Keys', href: '/app/keys' },
-      { label: 'Settings', href: '/app/settings' },
     ],
   },
   {

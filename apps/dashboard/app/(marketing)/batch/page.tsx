@@ -104,8 +104,8 @@ export default function BatchPage() {
             /scrape run on the crawl worker. Per-host politeness and robots.txt apply, every URL gets its own outcome, and nothing is followed.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <PillButton href="/sign-up" variant="primary">
-              Get an API key <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            <PillButton href="/download" variant="primary">
+              Get the app <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
             <PillButton href="/docs/api-reference" variant="secondary">
               Read the docs

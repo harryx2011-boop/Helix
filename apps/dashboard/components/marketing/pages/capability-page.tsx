@@ -106,13 +106,9 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
         <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-relaxed text-m-ink/72">{subhead}</p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          {isComing ? (
-            <PillButton href="/sign-up" variant="primary">
-              Notify me <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </PillButton>
-          ) : def.runnable ? (
-            <PillButton href={`/app/playground?tab=${def.id}`} variant="primary">
-              Open in playground <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          {isComing || def.runnable ? (
+            <PillButton href="/download" variant="primary">
+              Get the app <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
           ) : (
             <PillButton href={`/docs/${def.id}`} variant="primary">

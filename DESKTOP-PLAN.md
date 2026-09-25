@@ -109,6 +109,13 @@ About 50 files. Delete:
 
 ## Phase 4: the API serves the UI and builds to JS
 
+**Blocker found 2026-09-25: the self-host build does not compile, and did not before Phase 2 either.** Symptoms with `HELIX_HOSTED=0`:
+
+- `next build` fails with `Can't resolve private-next-app-dir/(app)/app/<page>/page` on five `(app)/app` pages.
+- `next dev` fails the same way on every page.
+
+It is reproduced on a clean worktree of `799f954`, and in a fresh `NEXT_DIST_DIR`, so it is neither Phase 2 nor a stale cache. Hosted mode builds and serves normally. The suspects are the self-host-only settings in `next.config.ts`: `pageExtensions: ['tsx']` and the `webpack()` override that aliases Clerk and disables the dev cache. Phase 2b removes the Clerk alias outright, so re-test there first.
+
 - `@fastify/static` serves the dashboard's `out/`, with an SPA fallback that excludes `/v1`, `/settings`, `/internal` and `/mcp`. The UI and API then share an origin: `resolveBaseUrl` already uses `origin + /v1` off port 3400, and CORS stops mattering.
 - `next.config.ts:8` already claims Fastify serves the export. It does not, yet.
 - esbuild bundles `apps/api` to one JS file, so Electron's own Node runs it without tsx.

@@ -117,6 +117,8 @@ With no app on the web, hosted mode (Clerk, Supabase, onboarding, `app/api/**`, 
 
 ## Phase 4: the API serves the UI and builds to JS
 
+**Resolved 2026-09-25: the self-host build compiles.** The cause was `pageExtensions: ['tsx']` on the self-host build. The same tree fails with it and exits 0 with `['tsx', 'ts']`, and the static export writes every `/app` page. Both builds now use the pair. Original finding:
+
 **Blocker found 2026-09-25: the self-host build does not compile, and did not before Phase 2 either.** Symptoms with `HELIX_HOSTED=0`:
 
 - `next build` fails with `Can't resolve private-next-app-dir/(app)/app/<page>/page` on five `(app)/app` pages.

@@ -17,13 +17,13 @@ const nextConfig: NextConfig = {
   // locked `.next/trace`. Setting this lets a second instance build elsewhere:
   //   NEXT_DIST_DIR=.next-alt pnpm exec next dev -p 3401
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
-  // Self-host has no dashboard server, and `force-dynamic` is illegal under
-  // `output: export`, so the static export accepts only `.tsx` special files;
-  // the static handlers it does serve (llms.txt, md, SKILL.md) are `.tsx`.
+  // Self-host once took `.tsx` only, to drop the hosted `route.ts` handlers.
+  // With that set, `next build` could not resolve a single `(app)/app` page
+  // (measured 2026-09-25), and Phase 2b deleted those handlers anyway.
   // Route handlers must NOT use a dotted extension like `route.hosted.ts`:
   // Vercel's builder derives the client-reference-manifest name by stripping
   // only the last extension and fails the build on the file it cannot find.
-  pageExtensions: hosted ? ['tsx', 'ts'] : ['tsx'],
+  pageExtensions: ['tsx', 'ts'],
   // Self-host serves the static export with no image-optimization server, so
   // next/image must fall back to plain <img>. Hosted has a server and gets
   // real optimization; the two next/image call sites (setup-prompt agent

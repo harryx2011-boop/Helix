@@ -1,6 +1,6 @@
 {
   "name": "@helix/sdk",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Typed client for Helix, a frontier utility hub.",
   "license": "Apache-2.0",
   "type": "module",
@@ -21,7 +21,9 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "generate": "npx tsx codegen/generate.ts",
+    "check:generated": "npx tsx codegen/generate.ts --check"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

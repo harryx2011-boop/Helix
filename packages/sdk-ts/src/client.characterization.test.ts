@@ -618,14 +618,19 @@ describe('HelixClient characterization: parse upload variants', () => {
     expect(request.url).toBe(`${BASE_URL}/parse`);
     expect(request.authorization).toBe(AUTH);
     expect(request.contentType).toBeUndefined();
-    expect(request.formEntries).toEqual([
-      ['file', { filename: 'report.pdf' }],
-      ['formats', 'markdown,json'],
-      ['ocr', 'force'],
-      ['maxPages', '10'],
-      ['tables', 'high-fidelity'],
-      ['jsonOptions', JSON.stringify({ prompt: 'Extract the total' })],
-    ]);
+    // Part order follows openapi.yaml's ParseUpload schema; the route reads each
+    // field by name (routes/parse.ts), so only the set of parts is pinned.
+    expect(request.formEntries[0]).toEqual(['file', { filename: 'report.pdf' }]);
+    expect(request.formEntries).toEqual(
+      expect.arrayContaining([
+        ['formats', 'markdown,json'],
+        ['ocr', 'force'],
+        ['maxPages', '10'],
+        ['tables', 'high-fidelity'],
+        ['jsonOptions', JSON.stringify({ prompt: 'Extract the total' })],
+      ]),
+    );
+    expect(request.formEntries).toHaveLength(6);
   });
 
   it('parse() with only `file` sends just the file field', async () => {

@@ -26,6 +26,22 @@ jobs:
       - run: pnpm --filter @helix/api typecheck
       - run: pnpm --filter @helix/api test
 
+  sdk:
+    name: sdk (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm --filter @helix/sdk typecheck
+      # Includes the check that src/client.ts is still what openapi.yaml generates.
+      - run: pnpm --filter @helix/sdk test
+
   fetch:
     name: fetch (Rust)
     runs-on: ubuntu-latest

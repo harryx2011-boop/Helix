@@ -11,13 +11,13 @@ Connect an agent harness to Helix, a frontier utility hub.
 Usage
   helix init --all -k <key>          configure every detected harness
   helix init --client cursor -k <key> configure one harness (repeatable)
-  helix init --browser                open the connect page instead of passing a key
+  helix init --browser                open the app download page instead of passing a key
 
 Options
   -k, --key <key>       Helix API key (helix-…); or HELIX_API_KEY
   --all                 write config for every detected harness
   --client <id>         claude-code | cursor | codex | windsurf
-  --browser             open the app's connect page and exit
+  --browser             open the Helix app download page and exit
   --mcp-url <url>       MCP endpoint (default ${DEFAULT_MCP_URL}; or HELIX_MCP_URL)
   --site-url <url>      app URL used to fetch SKILL.md (default ${DEFAULT_SITE_URL}; or HELIX_SITE_URL)
   --no-skill            write MCP config only

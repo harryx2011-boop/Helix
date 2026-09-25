@@ -54,15 +54,20 @@ export function selectHarnesses(opts: Pick<InitOptions, 'all' | 'clients'>, home
   return detected;
 }
 
+/** The website no longer hosts the app, so --browser sends a person to the desktop download. */
+export function browserUrl(siteUrl: string): string {
+  return `${siteUrl.replace(/\/$/, '')}/download`;
+}
+
 export async function runInit(opts: InitOptions): Promise<InitResult> {
   const log = opts.log ?? (() => undefined);
   const home = opts.home ?? homedir();
   const warnings: string[] = [];
 
   if (opts.browser) {
-    const url = `${opts.siteUrl.replace(/\/$/, '')}/app?connect=1`;
+    const url = browserUrl(opts.siteUrl);
     log(`Opening ${url}`);
-    log('Copy the command shown there and run it here.');
+    log('Install the Helix app from there, copy its API key, then run: helix init --all -k <key>');
     openInBrowser(url);
     return { harnesses: [], warnings };
   }

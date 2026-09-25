@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from 'react';
 import { Archive, Globe, X } from 'lucide-react';
 import { DiscordMark, GmailMark } from '@/components/converter/brand-marks';
-import type { GlyphIcon } from '@/components/marketing/icon-type';
+import type { GlyphIcon } from '@/components/shared/icon-type';
 import { PillButton } from '@/components/converter/pill-button';
 import { deletePreset, savePreset, usePresets } from '@/lib/converter/jobs/store';
 import { BUILTIN_PRESETS, formatBytes, type CompressPreset, type FileKind, type MediaMeta } from '@/lib/converter/jobs/types';

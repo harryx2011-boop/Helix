@@ -1,14 +1,13 @@
-import type { GlyphIcon } from '@/components/marketing/icon-type';
+import type { GlyphIcon } from '@/components/shared/icon-type';
 
-export type PaletteGroup = 'recent' | 'navigate' | 'actions' | 'docs' | 'keys' | 'monitors' | 'jobs';
+export type PaletteGroup = 'recent' | 'navigate' | 'actions' | 'keys' | 'monitors' | 'jobs';
 
-export const GROUP_ORDER: readonly PaletteGroup[] = ['recent', 'navigate', 'actions', 'docs', 'keys', 'monitors', 'jobs'];
+export const GROUP_ORDER: readonly PaletteGroup[] = ['recent', 'navigate', 'actions', 'keys', 'monitors', 'jobs'];
 
 export const GROUP_LABELS: Record<PaletteGroup, string> = {
   recent: 'Recent runs',
   navigate: 'Go to',
   actions: 'Actions',
-  docs: 'Docs',
   keys: 'API keys',
   monitors: 'Monitors',
   jobs: 'Jobs',
@@ -25,17 +24,6 @@ export interface PaletteItem {
   body?: string;
   icon: GlyphIcon;
   run: () => void | Promise<void>;
-}
-
-/** One entry of `/search-index.json`, built from the markdown twins at build time. */
-export interface DocIndexEntry {
-  path: string;
-  href: string;
-  kind: 'capability' | 'docs';
-  title: string;
-  description: string;
-  headings: string[];
-  body: string;
 }
 
 export interface PaletteSection {
@@ -104,8 +92,7 @@ export function scoreItem(item: PaletteItem, query: string): number {
 
 /**
  * Sections in display order. With a query, the section holding the best match
- * leads, so "crawl" opens on the Crawl route while "how do i use crawl" opens
- * on the Crawl docs. Ties keep the canonical order.
+ * leads, so "crawl" opens on the Crawl route. Ties keep the canonical order.
  */
 export function search(items: readonly PaletteItem[], query: string, perGroup: number): PaletteSection[] {
   const scored = items

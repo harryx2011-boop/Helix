@@ -15,8 +15,8 @@ import type { AgentPageResult } from '@/lib/agent';
 import { HelixApiError } from '@/lib/api';
 import { listProviders } from '@/lib/providers';
 import { createLatest } from '@/lib/latest-request';
-import { AsciiFluid } from '@/components/marketing/ascii-fluid';
-import { AsciiOrbit } from '@/components/marketing/ascii-fields';
+import { AsciiFluid } from '@/components/shared/ascii-fluid';
+import { AsciiOrbit } from '@/components/shared/ascii-fields';
 
 type Stage = 'idle' | 'schema-loading' | 'schema-ready' | 'running' | 'done';
 

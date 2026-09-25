@@ -16,7 +16,7 @@ import { createHostedKey, isHostedKeysNotConfigured, listHostedKeys, revokeHoste
 import { generateEphemeralKey } from '@/lib/ephemeral-keys';
 import { setApiKey } from '@/lib/auth';
 import { toast } from 'sonner';
-import { AsciiOrbit } from '@/components/marketing/ascii-fields';
+import { AsciiOrbit } from '@/components/shared/ascii-fields';
 
 interface KeyRow {
   id: string;

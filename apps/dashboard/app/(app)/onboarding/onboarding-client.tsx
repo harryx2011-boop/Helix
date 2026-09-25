@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { LocalSetupOffer } from '@/components/app/local-setup-offer';
-import { AsciiFluid } from '@/components/marketing/ascii-fluid';
+import { AsciiFluid } from '@/components/shared/ascii-fluid';
 import {
   DEPLOY_INTENT_CHOICES,
   ENDPOINT_CHOICES,

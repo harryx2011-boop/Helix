@@ -1,4 +1,4 @@
-import { AsciiNoise } from '@/components/marketing/ascii-fields';
+import { AsciiNoise } from '@/components/shared/ascii-fields';
 
 export function PlaceholderScreen({ title, note }: { title: string; note: string }) {
   return (

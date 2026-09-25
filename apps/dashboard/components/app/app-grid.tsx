@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 /*
  * Dark-token port of the marketing GridCells/PixelSquares techniques
- * (components/marketing/ambient.tsx) for the /app surface: hairline cell
+ * (components/shared/ambient.tsx) for the /app surface: hairline cell
  * grid, `+` crosshairs at intersections, drifting cell markers, and
  * assembling pixel clusters. Same contract — seeded PRNG, IntersectionObserver
  * gated, static under reduced motion, deterministic first paint.

@@ -51,8 +51,8 @@ import { MarkdownView } from '@/components/result/markdown-view';
 import { JsonView } from '@/components/result/json-view';
 import { FailurePanel } from '@/components/result/failure-panel';
 import { SiteIcon } from '@/components/result/site-icon';
-import { AnimatedCode } from '@/components/marketing/animated-code';
-import { AsciiFlow } from '@/components/marketing/ascii-fields';
+import { AnimatedCode } from '@/components/shared/animated-code';
+import { AsciiFlow } from '@/components/shared/ascii-fields';
 
 /**
  * A one-shot reveal (never `scramble` — that mode is reserved for decorative

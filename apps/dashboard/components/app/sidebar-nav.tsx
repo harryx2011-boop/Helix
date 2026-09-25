@@ -3,10 +3,10 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Activity, Home, KeyRound, Settings, Sparkles } from 'lucide-react';
+import { Activity, FileCog, Home, KeyRound, ListChecks, Settings, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { orderBySelection } from '@/lib/catalog';
-import type { GlyphIcon } from '@/components/marketing/icon-type';
+import type { GlyphIcon } from '@/components/shared/icon-type';
 
 interface NavRow {
   href: string;
@@ -51,7 +51,11 @@ export function buildNavGroups(selectedEndpoints: readonly string[]): NavGroup[]
     },
     {
       heading: 'Utilities',
-      rows: [{ href: '/app/agent', label: 'Agent', icon: Sparkles }],
+      rows: [
+        { href: '/app/agent', label: 'Agent', icon: Sparkles },
+        { href: '/convert', label: 'Converter', icon: FileCog },
+        { href: '/checks', label: 'Checks', icon: ListChecks },
+      ],
     },
     {
       heading: 'Instance',

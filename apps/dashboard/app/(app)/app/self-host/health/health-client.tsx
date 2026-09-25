@@ -4,9 +4,9 @@ import * as React from 'react';
 import { CircleAlert, CircleCheck, CircleDashed, CircleX, RotateCw } from 'lucide-react';
 import { PageFrame, FrameRow, FrameHeading, FrameCells, FrameTag } from '@/components/app/page-frame';
 import { PROVIDER_META, ProviderIcon } from '@/components/app/providers/provider-row';
-import { AsciiOrbit } from '@/components/marketing/ascii-fields';
-import { useReducedMotion } from '@/components/marketing/ambient';
-import { HistoryBars } from '@/components/marketing/status/history-bars';
+import { AsciiOrbit } from '@/components/shared/ascii-fields';
+import { useReducedMotion } from '@/components/shared/ambient';
+import { HistoryBars } from '@/components/shared/status/history-bars';
 import {
   averageUptime,
   collectIncidents,
@@ -14,7 +14,7 @@ import {
   orderServices,
   useHealthPolling,
   useHistory,
-} from '@/components/marketing/status/status-data';
+} from '@/components/shared/status/status-data';
 import { useOptionalApiKey } from '@/components/shell/api-key-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

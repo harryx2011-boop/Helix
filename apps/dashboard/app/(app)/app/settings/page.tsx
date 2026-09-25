@@ -5,7 +5,7 @@ import { InstanceSettingsPanel } from '@/components/app/settings/instance-settin
 import { PreferencesPanel } from '@/components/app/settings/preferences-panel';
 import { UsagePanel } from '@/components/app/settings/usage-panel';
 import { ProvidersPanel } from '@/components/app/providers/providers-panel';
-import { AsciiFlow } from '@/components/marketing/ascii-fields';
+import { AsciiFlow } from '@/components/shared/ascii-fields';
 import { HOSTED } from '@/lib/mode';
 
 /**

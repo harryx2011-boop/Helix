@@ -12,8 +12,8 @@ import { ConnectSheet } from '@/components/app/connect-sheet';
 import { HOSTED, MCP_URL, SITE_URL } from '@/lib/mode';
 import { claudeMcpAddCommand, cliInitCommand } from '@/lib/connect';
 import { endpointById, PRODUCTS } from '@/lib/catalog';
-import { AsciiFluid } from '@/components/marketing/ascii-fluid';
-import { AsciiNoise, AsciiOrbit } from '@/components/marketing/ascii-fields';
+import { AsciiFluid } from '@/components/shared/ascii-fluid';
+import { AsciiNoise, AsciiOrbit } from '@/components/shared/ascii-fields';
 
 interface EndpointSummary {
   id: string;

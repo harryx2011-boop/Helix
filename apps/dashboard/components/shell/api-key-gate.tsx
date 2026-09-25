@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { AsciiNoise } from '@/components/marketing/ascii-fields';
+import { AsciiNoise } from '@/components/shared/ascii-fields';
 
 /**
  * Blocks the app behind a key prompt until one is stored. Not a login —

@@ -2,6 +2,10 @@
 
 **Status:** decided, build starting · **Date:** 24 August 2026 · **Owner:** Harry
 
+> **2026-09-25:** Helix is becoming a desktop app. The marketing site, docs, capability pages and markdown twins are removed (§2 Marketing, §3.2, §4, §5, §9.4); `/convert` and `/checks` survive as tools under `app/(tools)` on the §3.2 light tokens. Plan of record: `DESKTOP-PLAN.md`.
+
+> **2026-09-25:** Helix is becoming a desktop app. The marketing site, docs, capability pages and markdown twins are removed (§2 Marketing, §3.2, §4, §5, §9.4); `/convert` and `/checks` survive as tools under `app/(tools)` on the §3.2 light tokens. Plan of record: `DESKTOP-PLAN.md`.
+
 This is the plan for `helix.dev`: the marketing site, sign-in, onboarding, the `/app` dashboard, the agent surfaces (MCP, CLI, SKILL.md), and the six-API catalog. It restates decisions; the evidence lives in `research/`. Companion documents: [DESIGN.md](DESIGN.md) (tokens, character motif), [ARCHITECTURE.md](ARCHITECTURE.md), [openapi.yaml](openapi.yaml), [MILESTONES.md](MILESTONES.md).
 
 Evidence base (do not duplicate here, read on demand):
@@ -53,6 +57,8 @@ The mode switch lives in `next.config.ts` and one `lib/mode.ts`; components neve
 ## 2. Site map
 
 ### Marketing (light theme)
+
+> **Retired 2026-09-25.** These routes are deleted; `/` forwards to `/app`. See `DESKTOP-PLAN.md`.
 
 | Route | Purpose | Notes |
 |---|---|---|
@@ -196,6 +202,8 @@ App conventions inherited from the reference: near-black sidebar with grouped up
 ---
 
 ## 4. Landing page
+
+> **Retired 2026-09-25.** The landing page is deleted. See `DESKTOP-PLAN.md`.
 
 Section order (reference order with the proof band, testimonials, final CTA, and FAQ removed):
 
@@ -406,6 +414,8 @@ Bottom bar: `© 2026 Helix · Terms · Privacy` left, status pill right (only on
 
 ## 5. Capability pages
 
+> **Retired 2026-09-25.** The capability pages are deleted. See `DESKTOP-PLAN.md`.
+
 One template, six instances, matching the reference's structure: eyebrow pill → two-line H1 (second line violet) → two-line subhead → CTA pair → device mock with real output → feature grid → agent block.
 
 | Route | H1 line 1 / **line 2** | Subhead | Primary CTA | Mock |
@@ -558,6 +568,8 @@ Generated per user from `profiles.selected_endpoints`. One file, one section per
 The public `/agent-onboarding/SKILL.md` is the same generator run with all six endpoints and no key, plus the sign-up instructions.
 
 ### 9.4 Markdown twins and llms.txt
+
+> **Retired 2026-09-25.** `/md/*`, `/llms.txt` and `/search-index.json` are deleted; `/agent-onboarding/SKILL.md` stays. See `DESKTOP-PLAN.md`.
 
 Every marketing and docs page is also served at `path.md` (content without chrome, generated from the same MDX source), and `/llms.txt` lists them. Every marketing page ends with the agent block (§4.8).
 

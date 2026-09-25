@@ -10,7 +10,7 @@ import { usePrefersReducedMotion } from '@/lib/preferences';
 import { matchCommands, slashQuery } from '@/lib/prompt-commands';
 import { uploadAccept } from '@/lib/uploads';
 import { cn } from '@/lib/utils';
-import { Segmented, type SegmentedItem } from '@/components/marketing/segmented';
+import { Segmented, type SegmentedItem } from '@/components/shared/segmented';
 import { FormatPicker, SURFACE, type PromptSurface } from './format-picker';
 
 const PLACEHOLDERS: Record<Endpoint, string[]> = {

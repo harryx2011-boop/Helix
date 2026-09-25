@@ -1,5 +1,5 @@
 import { SignIn } from '@clerk/nextjs';
-import { AuthFrame } from '@/components/marketing/auth-frame';
+import { AuthFrame } from '@/components/shared/auth-frame';
 import { marketingAppearance } from '@/lib/clerk-appearance';
 
 export const metadata = { title: 'Sign in' };

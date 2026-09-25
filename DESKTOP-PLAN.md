@@ -1,6 +1,6 @@
 # Helix desktop plan
 
-**Date:** 2026-09-25 · **Status:** Phases 0–1 done, Phases 2–7 planned. Decisions D1–D4 made.
+**Date:** 2026-09-25 · **Status:** Phases 0–2 done, Phases 2b–7 planned. Decisions D1–D4 made.
 
 Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, extract and fetch services. It drops the marketing site, needs no external database, and opens no console windows.
 
@@ -8,7 +8,8 @@ Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, e
 |---|---|---|
 | 0 | No visible console windows | Done 2026-09-25 |
 | 1 | Vulcan moves out to `D:\vulcan-scratchpad` | Done 2026-09-25 |
-| 2 | Marketing and docs removed | Planned (D2) |
+| 2 | Marketing and docs removed | Done 2026-09-25 |
+| 2b | Hosted mode removed (Clerk, Supabase, onboarding) | Planned (D2) |
 | 3 | No external database | Planned (D1) |
 | 4 | API serves the UI and builds to plain JS | Planned |
 | 5 | Extract as one windowless exe | Planned (D3) |
@@ -52,28 +53,39 @@ Vulcan is now a standalone Next.js app at `D:\vulcan-scratchpad`: port 4700, 26 
 - the sidebar row and the `localTools` plumbing through `AppShell`/`Sidebar`/`CommandPalette`
 - the palette entry and `VULCAN-CONTRACT.md`
 
-## Phase 2: remove marketing and docs
+## Phase 2: remove marketing and docs (done)
 
-**Move first.** These are core tools that sit in `(marketing)` only by folder:
+**Moved, not deleted.** `/convert` and `/checks` are tools, not marketing. They now live in `app/(tools)/` with the same URLs and the same light `--m-*` tokens. A slim header replaces the marketing nav and links Convert, Compress, Record, History and Checks, plus a way back to the app. Converter and Checks are also sidebar rows under Utilities, so the command palette lists them.
 
-- `(marketing)/convert/*` and `(marketing)/checks/*` move into the app shell.
-- Shared pieces move out of `components/marketing/` into a neutral folder: `ambient`, `ascii-fields`, `ascii-fluid`, `animated-code`, `segmented`, `icon-type`, `status/history-bars`, `status/status-data`, `checks/*`. Eleven core files import them today.
+Surviving pieces of `components/marketing/` moved: the checks UI to `components/checks/`, and the rest (ambient fields, animated code, segmented control, status bars, icon type, auth frame) to `components/shared/`.
 
-**Then delete:**
+**Deleted:**
 
-- The landing page and the 14 capability pages.
-- `docs/`, `architecture`, `self-host`, `status`, `privacy`, `terms` and `canvas/*`.
-- The rest of `components/marketing/`, plus `lib/github-stars.ts`, `lib/canvas.ts` and `lib/canvas-skills.ts`.
-- The docs-driven handlers: `llms.txt`, `md/[[...slug]]`, `search-index.json`, `agent-onboarding/SKILL.md`, and `lib/docs-content.ts`.
-- Removing the docs means also removing the command palette's doc search (`command-palette/doc-index.ts`), its "Open docs" action, and the `/docs` links in `top-bar.tsx`. The palette fails at runtime, not at build, if one is missed.
+- The whole `(marketing)` route group: the landing page, 14 capability pages, docs, architecture, self-host, status, privacy, terms and Canvas.
+- `llms.txt`, `md/[[...slug]]` and `search-index.json`.
+- The 39 component and lib files those routes alone kept alive, found by diffing an import graph before and after rather than by reading. The one orphan kept is `components/ui/dropdown-menu.tsx`, a UI primitive.
+- `public/canvas/`.
+- The dead `prose-helix` and scroll-reveal CSS.
+- The command palette's doc search, its "Open docs" action, and the top bar's Docs and Help links.
 
-**Keep:** `lib/codegen.ts`, `lib/mcp-tool-names.ts`, `lib/setup-prompt.ts`, `lib/status.ts`, `lib/catalog.ts`, `lib/api.ts`.
+**Kept:** `/agent-onboarding/SKILL.md` and `lib/docs-content.ts`, which feeds it. The Overview page links to it and `helix init` fetches it, so it is product, not docs.
 
-**Route `/` to `/app`.** A static export does not run `redirects()`, so this needs a client-side page.
+**Also:** `/` forwards to `/app` from the client, because the static export cannot run `redirects()`. The Checks diff tab's link to the deleted Monitor page now opens the Monitor playground.
 
-**Consequence:** `helixapi-dev.vercel.app` loses its site. Whether hosted mode (Clerk, Supabase, onboarding, `app/api/**`, `HELIX_MULTI_TENANT`) goes with it is D2.
+**Consequence:** `helixapi-dev.vercel.app` loses its site. `research/firecrawl-capture/` was left alone, since another session has uncommitted edits there. `WEBSITE.md`'s marketing sections are marked retired.
 
-**Left alone:** `research/firecrawl-capture/` has uncommitted edits from another session. `WEBSITE.md` §2–§5 get marked retired rather than deleted.
+## Phase 2b: hosted mode out (D2)
+
+About 50 files. Delete:
+
+- `(auth)`, `(app)/onboarding` and `app/api/**`.
+- `lib/session`, `profiles`, `onboarding*`, `hosted-keys`, `supabase/`, `clerk-appearance`, `clerk-stub`, `middleware.ts`.
+- The account and danger-zone settings panels.
+- `components/shared/auth-frame.tsx`.
+- Every `HOSTED` branch, so self-host is the only mode.
+- The `@clerk/nextjs`, `svix`, `gsap` and `lenis` dependencies, if nothing else uses them.
+
+`supabase/` and `HELIX_MULTI_TENANT` on the API go with Phase 3, since they are tied to the database.
 
 ## Phase 3: no external database
 

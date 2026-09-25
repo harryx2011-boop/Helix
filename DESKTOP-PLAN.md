@@ -1,14 +1,14 @@
 # Helix desktop plan
 
-**Date:** 2026-09-25 · **Status:** Phases 0–2 done, Phases 2b–7 planned. Decisions D1–D4 made.
+**Date:** 2026-09-25 · **Status:** Phases 0–1 done; Phase 2 being corrected; Phases 2b–7 planned. Decisions D1–D4 made.
 
-Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, extract and fetch services. It drops the marketing site, needs no external database, and opens no console windows.
+Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, extract and fetch services. The public website keeps its landing page, docs and marketing, and gates the app behind the desktop download. The desktop app needs no external database and opens no console windows.
 
 | Phase | Work | State |
 |---|---|---|
 | 0 | No visible console windows | Done 2026-09-25 |
 | 1 | Vulcan moves out to `D:\vulcan-scratchpad` | Done 2026-09-25 |
-| 2 | Marketing and docs removed | Done 2026-09-25 |
+| 2 | Website keeps marketing; the app ships only in the desktop download | Correcting: marketing restore pending |
 | 2b | Hosted mode removed (Clerk, Supabase, onboarding) | Planned (D2) |
 | 3 | No external database | Planned (D1) |
 | 4 | API serves the UI and builds to plain JS | Planned |
@@ -53,39 +53,37 @@ Vulcan is now a standalone Next.js app at `D:\vulcan-scratchpad`: port 4700, 26 
 - the sidebar row and the `localTools` plumbing through `AppShell`/`Sidebar`/`CommandPalette`
 - the palette entry and `VULCAN-CONTRACT.md`
 
-## Phase 2: remove marketing and docs (done)
+## Phase 2: the website keeps its marketing, the app leaves the web
 
-**Moved, not deleted.** `/convert` and `/checks` are tools, not marketing. They now live in `app/(tools)/` with the same URLs and the same light `--m-*` tokens. A slim header replaces the marketing nav and links Convert, Compress, Record, History and Checks, plus a way back to the app. Converter and Checks are also sidebar rows under Utilities, so the command palette lists them.
+**Corrected 2026-09-25.** Harry's intent: the landing page, docs and marketing stay exactly as they are, and the app (`/app`) exists only in the Electron download.
 
-Surviving pieces of `components/marketing/` moved: the checks UI to `components/checks/`, and the rest (ambient fields, animated code, segmented control, status bars, icon type, auth frame) to `components/shared/`.
+The first attempt (commits `8bf2d8a`, `493e927`) misread that and deleted the marketing site instead. It is being undone. The restore waits on another session's in-flight removal of the Converter, which overlaps the same files: the restore must not bring back `/convert` if the Converter is leaving Helix.
 
-**Deleted:**
+**Target shape.** One Next.js app, two build targets:
 
-- The whole `(marketing)` route group: the landing page, 14 capability pages, docs, architecture, self-host, status, privacy, terms and Canvas.
-- `llms.txt`, `md/[[...slug]]` and `search-index.json`.
-- The 39 component and lib files those routes alone kept alive, found by diffing an import graph before and after rather than by reading. The one orphan kept is `components/ui/dropdown-menu.tsx`, a UI primitive.
-- `public/canvas/`.
-- The dead `prose-helix` and scroll-reveal CSS.
-- The command palette's doc search, its "Open docs" action, and the top bar's Docs and Help links.
+| | Website (Vercel) | Desktop (Electron renderer) |
+|---|---|---|
+| Marketing, docs, capability pages, SKILL.md, llms.txt, md twins | Served | Not built |
+| `/app` and its routes | Not built | Served, the whole product |
+| Sign-in, onboarding, `app/api/**` | Removed | Not needed: first run generates the key |
+| "Sign in" / "Dashboard" / "Get started" CTAs | Become "Download for Windows", pointing at the latest `helix-releases` installer | n/a |
 
-**Kept:** `/agent-onboarding/SKILL.md` and `lib/docs-content.ts`, which feeds it. The Overview page links to it and `helix init` fetches it, so it is product, not docs.
+A separate `apps/web` was declined on 2026-08-24, so this stays one app with a build-target switch, not a split.
 
-**Also:** `/` forwards to `/app` from the client, because the static export cannot run `redirects()`. The Checks diff tab's link to the deleted Monitor page now opens the Monitor playground.
-
-**Consequence:** `helixapi-dev.vercel.app` loses its site. `research/firecrawl-capture/` was left alone, since another session has uncommitted edits there. `WEBSITE.md`'s marketing sections are marked retired.
+**Open question:** `/checks` and `/convert` call the API from the browser. On the website there is no longer a signed-in user or proxy for them to call through.
 
 ## Phase 2b: hosted mode out (D2)
 
-About 50 files. Delete:
+With no app on the web, hosted mode (Clerk, Supabase, onboarding, `app/api/**`, `HELIX_MULTI_TENANT`) has nothing left to serve. The website becomes marketing only, and the desktop app is single-user. This phase deletes:
 
-- `(auth)`, `(app)/onboarding` and `app/api/**`.
-- `lib/session`, `profiles`, `onboarding*`, `hosted-keys`, `supabase/`, `clerk-appearance`, `clerk-stub`, `middleware.ts`.
-- The account and danger-zone settings panels.
-- `components/shared/auth-frame.tsx`.
-- Every `HOSTED` branch, so self-host is the only mode.
-- The `@clerk/nextjs`, `svix`, `gsap` and `lenis` dependencies, if nothing else uses them.
+- the `(auth)` and onboarding routes
+- `app/api/**`
+- the session, profile, onboarding and hosted-key libs
+- `lib/supabase/`, the Clerk stub and `middleware.ts`
+- every `HOSTED` branch
+- the `@clerk/nextjs` and `svix` dependencies
 
-`supabase/` and `HELIX_MULTI_TENANT` on the API go with Phase 3, since they are tied to the database.
+`supabase/` and `HELIX_MULTI_TENANT` on the API go with Phase 3.
 
 ## Phase 3: no external database
 

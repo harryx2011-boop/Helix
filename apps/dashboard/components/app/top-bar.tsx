@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Bell, Menu, Plug, Search } from 'lucide-react';
+import { Bell, CircleHelp, Menu, Plug, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PUBLIC_API_URL } from '@/lib/mode';
@@ -69,6 +69,14 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav?: () => void }) {
           </TooltipTrigger>
           <TooltipContent>No notifications yet</TooltipContent>
         </Tooltip>
+        <Button variant="outline" size="icon" className="hidden sm:hidden md:inline-flex" aria-label="Help" asChild>
+          <Link href="/docs">
+            <CircleHelp className="h-3.5 w-3.5" />
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" className="hidden md:inline-flex" asChild>
+          <Link href="/docs">Docs</Link>
+        </Button>
         <Button size="icon" className="sm:hidden" aria-label="Set up an agent" asChild>
           <Link href="/app?connect=1">
             <Plug className="h-3.5 w-3.5" />

@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import type { LucideIcon } from 'lucide-react';
 import {
+  BookOpen,
   CircleAlert,
   Clock,
   Cpu,
   Eye,
+  FileText,
   KeyRound,
   ListChecks,
   PanelLeft,
@@ -34,10 +36,12 @@ import {
   GROUP_LABELS,
   GROUP_ORDER,
   search,
+  type DocIndexEntry,
   type PaletteGroup,
   type PaletteItem,
   type PaletteSection,
 } from '@/lib/palette-search';
+import { loadDocIndex } from './doc-index';
 import { closePalette, requestSidebarToggle, setPaletteOpen, togglePalette, usePaletteOpen } from './store';
 
 const PER_GROUP = 6;
@@ -84,7 +88,7 @@ export function CommandPalette({ selectedEndpoints }: { selectedEndpoints: reado
           className="dark fixed left-1/2 top-[8vh] z-50 grid max-h-[min(32rem,calc(92vh-1rem))] w-[calc(100vw-2rem)] min-w-0 max-w-xl -translate-x-1/2 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-card border border-border bg-card text-foreground shadow-lg focus-within:ring-1 focus-within:ring-ring/40 data-[state=open]:animate-slide-up motion-reduce:animate-none sm:top-[12vh] sm:max-h-[min(32rem,calc(88vh-1rem))]"
         >
           <DialogPrimitive.Description className="sr-only">
-            Type to search pages, keys, monitors and jobs. Use the arrow keys to move and Enter to open.
+            Type to search pages, docs, keys, monitors and jobs. Use the arrow keys to move and Enter to open.
           </DialogPrimitive.Description>
           {open && <PaletteBody selectedEndpoints={selectedEndpoints} />}
         </DialogPrimitive.Content>
@@ -99,9 +103,25 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
   const recentRuns = useRecentRuns();
   const [query, setQuery] = React.useState('');
   const [active, setActive] = React.useState(0);
+  const [docs, setDocs] = React.useState<Loadable<DocIndexEntry[]>>({ status: 'loading' });
   const [data, setData] = React.useState<Loadable<InstanceData>>({ status: 'loading' });
   const listRef = React.useRef<HTMLDivElement>(null);
   const listId = React.useId();
+
+  React.useEffect(() => {
+    let cancelled = false;
+    loadDocIndex().then(
+      (value) => {
+        if (!cancelled) setDocs({ status: 'ok', value });
+      },
+      (err: unknown) => {
+        if (!cancelled) setDocs({ status: 'error', reason: err instanceof Error ? err.message : 'The docs index failed to load.' });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // One deadline for every live lookup: a section that has not answered by
   // then reports that, rather than a skeleton that never resolves.
@@ -185,8 +205,25 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
         },
       },
       { id: 'action:connect', group: 'actions', title: 'Set up an agent', keywords: ['mcp', 'connect', 'cli', 'claude code', 'cursor'], icon: Plug, run: go('/app?connect=1') },
+      { id: 'action:open-docs', group: 'actions', title: 'Open docs', keywords: ['documentation', 'reference', 'help'], icon: BookOpen, run: go('/docs') },
       { id: 'action:toggle-sidebar', group: 'actions', title: 'Toggle sidebar', keywords: ['collapse', 'expand', 'navigation', 'menu'], icon: PanelLeft, run: requestSidebarToggle },
     );
+
+    if (docs.status === 'ok') {
+      for (const entry of docs.value) {
+        out.push({
+          id: `doc:${entry.path}`,
+          group: 'docs',
+          title: entry.title,
+          subtitle: entry.description || entry.href,
+          meta: entry.kind === 'capability' ? 'page' : 'docs',
+          keywords: entry.headings,
+          body: entry.body,
+          icon: entry.kind === 'capability' ? FileText : BookOpen,
+          run: go(entry.href),
+        });
+      }
+    }
 
     if (data.status === 'ok') {
       const { keys, monitors, jobs } = data.value;
@@ -235,13 +272,15 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
     }
 
     return out;
-  }, [recentRuns, selectedEndpoints, data, go]);
+  }, [recentRuns, selectedEndpoints, docs, data, go]);
 
   // Sections that cannot list anything still get a row saying why, but only
   // once there is a query: on an empty palette that would be noise.
   const notes = React.useMemo<Partial<Record<PaletteGroup, Note>>>(() => {
     if (!query.trim()) return {};
     const out: Partial<Record<PaletteGroup, Note>> = {};
+    if (docs.status === 'loading') out.docs = { kind: 'loading' };
+    else if (docs.status === 'error') out.docs = { kind: 'unavailable', reason: docs.reason };
 
     const sectionNote = (section: Section<unknown> | undefined, group: PaletteGroup): void => {
       if (data.status === 'loading') out[group] = { kind: 'loading' };
@@ -254,7 +293,7 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
     sectionNote(value?.monitors, 'monitors');
     sectionNote(value?.jobs, 'jobs');
     return out;
-  }, [query, data]);
+  }, [query, docs, data]);
 
   const sections = React.useMemo<PaletteSection[]>(() => {
     if (!query.trim()) {
@@ -328,7 +367,7 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
             aria-controls={listId}
             aria-autocomplete="list"
             aria-activedescendant={activeItem ? optionId(activeItem) : undefined}
-            aria-label="Search pages, keys, monitors and jobs"
+            aria-label="Search pages, docs, keys, monitors and jobs"
             autoComplete="off"
             spellCheck={false}
             placeholder="Search pages and sections…"

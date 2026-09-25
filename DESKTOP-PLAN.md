@@ -1,6 +1,6 @@
 # Helix desktop plan
 
-**Date:** 2026-09-25 · **Status:** Phases 0–1 done; Phase 2 being corrected; Phases 2b–7 planned. Decisions D1–D4 made.
+**Date:** 2026-09-25 · **Status:** Phases 0–1 done; Phase 2 marketing restored, build split next; Phases 2b–7 planned. Decisions D1–D4 made.
 
 Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, extract and fetch services. The public website keeps its landing page, docs and marketing, and gates the app behind the desktop download. The desktop app needs no external database and opens no console windows.
 
@@ -8,7 +8,7 @@ Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, e
 |---|---|---|
 | 0 | No visible console windows | Done 2026-09-25 |
 | 1 | Vulcan moves out to `D:\vulcan-scratchpad` | Done 2026-09-25 |
-| 2 | Website keeps marketing; the app ships only in the desktop download | Correcting: marketing restore pending |
+| 2 | Website keeps marketing; the app ships only in the desktop download | Marketing restored 2026-09-25; build-target split next |
 | 2b | Hosted mode removed (Clerk, Supabase, onboarding) | Planned (D2) |
 | 3 | No external database | Planned (D1) |
 | 4 | API serves the UI and builds to plain JS | Planned |
@@ -57,7 +57,7 @@ Vulcan is now a standalone Next.js app at `D:\vulcan-scratchpad`: port 4700, 26 
 
 **Corrected 2026-09-25.** Harry's intent: the landing page, docs and marketing stay exactly as they are, and the app (`/app`) exists only in the Electron download.
 
-The first attempt (commits `8bf2d8a`, `493e927`) misread that and deleted the marketing site instead. It is being undone. The restore waits on another session's in-flight removal of the Converter, which overlaps the same files: the restore must not bring back `/convert` if the Converter is leaving Helix.
+The first attempt (commits `8bf2d8a`, `493e927`) misread that and deleted the marketing site instead. It was undone on 2026-09-25. The marketing routes, docs, markdown twins, `llms.txt`, the search index, the palette's doc search and the top bar's Docs links are all back. The restore left out the Converter, which moved to Sparky in `6f1f7a7` (`/convert`, `POST /v1/convert` and `helix_convert` are gone), so the restored pages lost their `convert` entries and the Document page its convert operation. `components/shared/` and `components/checks/` keep their new names; the restored marketing files import from them.
 
 **Target shape.** One Next.js app, two build targets:
 
@@ -70,7 +70,9 @@ The first attempt (commits `8bf2d8a`, `493e927`) misread that and deleted the ma
 
 A separate `apps/web` was declined on 2026-08-24, so this stays one app with a build-target switch, not a split.
 
-**Open question:** `/checks` and `/convert` call the API from the browser. On the website there is no longer a signed-in user or proxy for them to call through.
+**Checks is desktop-only** (Harry, 2026-09-25). It calls the API, and the website has no API to call. It stays in `app/(tools)` and in the app sidebar, and its website nav and footer links are removed.
+
+**Next:** the build-target switch. It excludes `(app)`, `(tools)`, `(auth)` and onboarding from the website build, and the marketing group from the desktop build. It also turns the site's Sign in, Get started and `/app` links into Download.
 
 ## Phase 2b: hosted mode out (D2)
 
@@ -139,7 +141,7 @@ It health-polls before opening the window, shows a splash with a status line, re
 
 **Ports.** The app uses its own block (8400–8402, registered in `reference/ports.md` when built), so it never collides with the dev stack on 7400–7402.
 
-**Bundled assets.** Playwright's Chromium headless shell ships in `extraResources`. The ffmpeg.wasm core is vendored, so `/convert` works offline.
+**Bundled assets.** Playwright's Chromium headless shell ships in `extraResources`.
 
 ## Phase 7: installer
 

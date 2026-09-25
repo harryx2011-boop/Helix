@@ -3,10 +3,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/shell/logo';
 
 const LINKS = [
-  { label: 'Convert', href: '/convert' },
-  { label: 'Compress', href: '/convert/compress' },
-  { label: 'Record', href: '/convert/record' },
-  { label: 'History', href: '/convert/history' },
   { label: 'Checks', href: '/checks' },
 ] as const;
 

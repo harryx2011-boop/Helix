@@ -1,6 +1,6 @@
 # Helix
 
-A self-hostable, BYOK frontier utility hub — scrape · parse · search · crawl · interact · monitor — with a hosted app. Three runtimes behind one HTTP surface.
+A self-hostable, BYOK frontier utility hub — scrape · parse · search · crawl · interact · monitor — shipped as a Windows desktop app. Three runtimes behind one HTTP surface.
 
 **`context.md` is canonical.** Read it at session start; update it after features, schema changes, version bumps, and layout refactors. This file is the entry point only — it holds what is true across every turn, not rolling status. Per-version history lives in git log.
 
@@ -28,7 +28,7 @@ Standing facts (deployment, verified runtime recipes, known gotchas, dead decisi
 
 ## Layout and ports
 
-- `apps/dashboard` — one Next.js app: marketing and docs (light), `/app` (dark), `/checks` in `app/(tools)` (light, desktop-only), Clerk auth and onboarding (hosted only, leaving in `DESKTOP-PLAN.md` Phase 2b). The website keeps marketing; `/app` ships only in the Electron download. **Port 3400.** `HELIX_HOSTED=1` selects hosted mode; default is the self-host static export.
+- `apps/dashboard` — one Next.js app: marketing and docs (light), `/app` (dark), `/checks` in `app/(tools)` (light, desktop-only). No accounts, no sign-in: Clerk, Supabase, onboarding and `app/api/**` left in `DESKTOP-PLAN.md` Phase 2b. The website keeps marketing; `/app` ships only in the Electron download. **Port 3400.** `HELIX_HOSTED=1` selects the website build (Vercel, server output, `/app` redirected to `/download`); default is the self-host static export.
 - `apps/api` — Fastify, Playwright pool, jobs. **Port 7400.** Routes mount under a `/v1` prefix; `/settings*` and `/internal/keys` mount outside it, on the admin-token boundary.
 - `apps/fetch` — Rust, TLS identity. **Port 7401.**
 - `apps/extract` — Python, parsing/LLM/embeddings. **Port 7402.**

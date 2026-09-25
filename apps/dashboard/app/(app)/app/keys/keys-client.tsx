@@ -10,11 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatRelativeTime } from '@/lib/format';
-import { HOSTED, PUBLIC_API_URL } from '@/lib/mode';
+import { PUBLIC_API_URL } from '@/lib/mode';
 import { createInstanceKey, listInstanceKeys, revokeInstanceKey } from '@/lib/instance-keys';
-import { createHostedKey, isHostedKeysNotConfigured, listHostedKeys, revokeHostedKey } from '@/lib/hosted-keys';
 import { generateEphemeralKey } from '@/lib/ephemeral-keys';
-import { setApiKey } from '@/lib/auth';
 import { toast } from 'sonner';
 import { AsciiOrbit } from '@/components/shared/ascii-fields';
 
@@ -34,45 +32,10 @@ function useKeys() {
   // nothing to list, and the only thing left worth offering is a locally
   // generated key the operator can install on an instance themselves.
   const [instanceReachable, setInstanceReachable] = React.useState(true);
-  // In hosted mode, account keys come from the dashboard's own Supabase-backed
-  // routes first. A 503 means this deployment has no Supabase configured, so
-  // it falls back to the instance/ephemeral flow exactly like self-host.
-  const [hostedAvailable, setHostedAvailable] = React.useState(HOSTED);
   const [loading, setLoading] = React.useState(true);
 
   const refresh = React.useCallback(async () => {
     setLoading(true);
-
-    if (HOSTED) {
-      try {
-        const rows = await listHostedKeys();
-        setKeys(
-          rows.map((k) => ({
-            id: k.id,
-            name: k.name,
-            masked: `${k.keyPrefix}${'•'.repeat(8)}`,
-            rateLimitPerMin: k.rateLimit,
-            lastUsedAt: k.lastUsedAt,
-            createdAt: k.createdAt,
-            revoked: Boolean(k.revokedAt),
-          })),
-        );
-        setHostedAvailable(true);
-        setInstanceReachable(true);
-        setLoading(false);
-        return;
-      } catch (error) {
-        if (!isHostedKeysNotConfigured(error)) {
-          setKeys([]);
-          setHostedAvailable(true);
-          setInstanceReachable(false);
-          setLoading(false);
-          return;
-        }
-        setHostedAvailable(false);
-      }
-    }
-
     try {
       const rows = await listInstanceKeys();
       setKeys(
@@ -99,17 +62,15 @@ function useKeys() {
     refresh();
   }, [refresh]);
 
-  return { keys, loading, instanceReachable, hostedAvailable, refresh };
+  return { keys, loading, instanceReachable, refresh };
 }
 
 function CreateKeyDialog({
   onCreated,
   ephemeral = false,
-  hosted = false,
 }: {
   onCreated: () => void;
   ephemeral?: boolean;
-  hosted?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState('');
@@ -139,9 +100,6 @@ function CreateKeyDialog({
     try {
       if (ephemeral) {
         setCreatedKey(generateEphemeralKey());
-      } else if (hosted) {
-        const created = await createHostedKey(name.trim() || 'New key', rateLimit ? Number(rateLimit) : undefined);
-        setCreatedKey(created.key);
       } else {
         const created = await createInstanceKey(name.trim() || 'New key', rateLimit ? Number(rateLimit) : null);
         setCreatedKey(created.key);
@@ -160,12 +118,6 @@ function CreateKeyDialog({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
-  };
-
-  const usePlayground = () => {
-    if (!createdKey) return;
-    setApiKey(createdKey);
-    toast.success('Key set for the playground.');
   };
 
   return (
@@ -198,11 +150,6 @@ function CreateKeyDialog({
               </Button>
             </div>
             <div className="flex gap-2">
-              {hosted && (
-                <Button variant="outline" onClick={usePlayground} className="flex-1">
-                  Use in playground
-                </Button>
-              )}
               <Button onClick={() => setOpen(false)} className="flex-1">
                 Done
               </Button>
@@ -250,12 +197,10 @@ function RevokeButton({
   id,
   disabled,
   onRevoked,
-  hosted = false,
 }: {
   id: string;
   disabled: boolean;
   onRevoked: () => void;
-  hosted?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
   const [revoking, setRevoking] = React.useState(false);
@@ -263,8 +208,7 @@ function RevokeButton({
   const handleRevoke = async () => {
     setRevoking(true);
     try {
-      if (hosted) await revokeHostedKey(id);
-      else await revokeInstanceKey(id);
+      await revokeInstanceKey(id);
       onRevoked();
       setOpen(false);
     } catch (err) {
@@ -300,9 +244,8 @@ function RevokeButton({
 }
 
 export function KeysClient() {
-  const { keys, loading, instanceReachable, hostedAvailable, refresh } = useKeys();
+  const { keys, loading, instanceReachable, refresh } = useKeys();
   const activeCount = keys?.filter((k) => !k.revoked).length ?? 0;
-  const usingHosted = HOSTED && hostedAvailable;
 
   return (
     <div className="relative flex flex-col gap-4 bg-background p-4 lg:p-6">
@@ -323,7 +266,7 @@ export function KeysClient() {
             <CardDescription>Named keys with an optional per-minute limit. Revoked keys stop authenticating immediately.</CardDescription>
           </div>
           <div className="relative shrink-0">
-            <CreateKeyDialog onCreated={refresh} ephemeral={!usingHosted && !instanceReachable} hosted={usingHosted} />
+            <CreateKeyDialog onCreated={refresh} ephemeral={!instanceReachable} />
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -333,7 +276,7 @@ export function KeysClient() {
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </div>
-          ) : !usingHosted && !instanceReachable ? (
+          ) : !instanceReachable ? (
             <p className="p-4 text-sm text-muted-foreground">
               Could not reach the instance at <code className="font-mono text-xs">{PUBLIC_API_URL}</code>, so there are
               no keys to list. You can still generate one here — it is created in your browser and never sent anywhere.
@@ -342,14 +285,8 @@ export function KeysClient() {
             </p>
           ) : keys.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">
-              {usingHosted ? (
-                'No keys yet. Create one to call the hosted API.'
-              ) : (
-                <>
-                  No keys yet. Save your instance&rsquo;s <code className="font-mono text-xs">HELIX_BOOTSTRAP_KEY</code>{' '}
-                  on the settings page, then create keys here.
-                </>
-              )}
+              No keys yet. Save your instance&rsquo;s <code className="font-mono text-xs">HELIX_BOOTSTRAP_KEY</code>{' '}
+              on the settings page, then create keys here.
             </p>
           ) : (
             <Table>
@@ -373,7 +310,7 @@ export function KeysClient() {
                     <TableCell className="text-sm text-muted-foreground">{k.lastUsedAt ? formatRelativeTime(k.lastUsedAt) : 'Never'}</TableCell>
                     <TableCell className="text-right">
                       {!k.revoked && (
-                        <RevokeButton id={k.id} disabled={activeCount <= 1} onRevoked={refresh} hosted={usingHosted} />
+                        <RevokeButton id={k.id} disabled={activeCount <= 1} onRevoked={refresh} />
                       )}
                     </TableCell>
                   </TableRow>

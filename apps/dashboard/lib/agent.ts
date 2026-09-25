@@ -3,27 +3,13 @@
 import { HelixClient, HelixApiError } from '@/lib/api';
 import type { AgentSchemaRequest, AgentSchemaResponse, SearchResponse, ScrapeResponse } from '@/lib/api';
 import { runEndpoint } from '@/lib/run-endpoint';
-import { HOSTED } from '@/lib/mode';
 
 const MAX_CONCURRENT_PAGES = 3;
 
-/** Hosted has no browser-held key to call the instance with; the proxy resolves the signed-in user's own key server-side. */
 export async function requestAgentSchema(
   request: AgentSchemaRequest,
   apiKey: string | null,
 ): Promise<AgentSchemaResponse> {
-  if (HOSTED) {
-    const response = await fetch('/api/app/run?endpoint=agent-schema', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-    const json = (await response.json().catch(() => null)) as (AgentSchemaResponse & { message?: string }) | null;
-    if (!response.ok) {
-      throw new HelixApiError(json?.message ?? `Request failed with status ${response.status}`, response.status);
-    }
-    return json as AgentSchemaResponse;
-  }
   if (!apiKey) throw new HelixApiError('No API key configured.', 401);
   const client = new HelixClient({ apiKey });
   return client.agentSchema(request);

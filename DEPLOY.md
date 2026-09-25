@@ -1,5 +1,11 @@
 # Deploying the hosted backend
 
+> **Superseded 2026-09-25 (`DESKTOP-PLAN.md` Phase 2b).** Hosted mode is gone: the dashboard has no
+> Clerk, no Supabase client, no onboarding and no `app/api/**`, and the website on Vercel serves
+> marketing and docs only. What follows is kept as history. The Clerk app, the Supabase project
+> (`gytknetqttkdmkhmysbm`) and the Vercel env vars it names still exist and are the owner's to retire;
+> `supabase/` and `HELIX_MULTI_TENANT` on the API go with Phase 3.
+
 The dashboard is live at `https://helixapi-dev.vercel.app`. **Done on
 2026-09-02:** the Supabase project exists (`Helix`, ref `gytknetqttkdmkhmysbm`,
 us-east-2, Postgres 17), `schema.sql` is applied, the CLI is linked and the

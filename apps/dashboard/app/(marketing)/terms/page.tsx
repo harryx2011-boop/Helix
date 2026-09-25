@@ -4,7 +4,7 @@ import { GITHUB_URL } from '@/lib/github-stars';
 
 export const metadata: Metadata = {
   title: 'Terms',
-  description: 'Terms of use for the Helix hosted app and the Apache-2.0 licence covering the self-hosted software.',
+  description: 'Terms of use for Helix and this website, and the Apache-2.0 licence covering the software.',
 };
 
 export default function TermsPage() {
@@ -28,9 +28,8 @@ export default function TermsPage() {
         <Section title="What Helix is">
           <p>
             Helix is a self-hostable, bring-your-own-key frontier utility hub. The software is open source under the
-            Apache-2.0 licence. This hosted app at this site is one way to run it without operating your own
-            infrastructure; running your own instance is equally supported and covered by the licence, not by these
-            terms.
+            Apache-2.0 licence. It runs on your own machine; this website describes it and offers the download, and
+            has no accounts or hosted service. Running the software is covered by the licence, not by these terms.
           </p>
         </Section>
 
@@ -49,9 +48,9 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="Using the hosted app">
+        <Section title="Using Helix">
           <p>
-            An account gets you API keys, usage tracking and a dashboard on infrastructure we operate. You are
+            Your instance issues its own API keys, and you run it on infrastructure you control. You are
             responsible for the requests made with your keys, including making sure you have the right to fetch,
             parse or crawl the targets you point Helix at, and for complying with the target site&apos;s own terms and
             robots.txt where applicable.
@@ -60,15 +59,15 @@ export default function TermsPage() {
 
         <Section title="Acceptable use">
           <p>
-            Do not use the hosted app to attempt unauthorised access to systems, to evade rate limits or security
-            controls on a scale intended to harm a target, to scrape data for the purpose of harassment or
-            impersonation, or to violate any law applicable to you. We may suspend a key used this way.
+            Do not use Helix to attempt unauthorised access to systems, to evade rate limits or security controls
+            on a scale intended to harm a target, to scrape data for the purpose of harassment or impersonation, or
+            to violate any law applicable to you.
           </p>
         </Section>
 
         <Section title="Provider keys">
           <p>
-            If you add your own LLM, proxy or vector-store provider key to the hosted app, it is encrypted at rest
+            If you add your own LLM, proxy or vector-store provider key to your instance, it is encrypted at rest
             and used only to make calls on your behalf against the provider you configured. Your provider bills you
             directly; Helix takes no margin on inference.
           </p>
@@ -76,7 +75,7 @@ export default function TermsPage() {
 
         <Section title="No warranty">
           <p>
-            The hosted app and the underlying software are provided as-is, without warranty of any kind, to the
+            The software and this website are provided as-is, without warranty of any kind, to the
             fullest extent the law allows. We do not guarantee uninterrupted availability, that every fetch will
             succeed, or that extracted data will be accurate — targets change, block, or return malformed content,
             and Helix reports that as a typed failure rather than guessing.
@@ -85,9 +84,9 @@ export default function TermsPage() {
 
         <Section title="Changes">
           <p>
-            These terms may change as the hosted app changes. Continuing to use the hosted app after a change means
-            you accept the update. The self-hosted software&apos;s licence does not change retroactively for versions
-            you have already deployed.
+            These terms may change as Helix changes. Continuing to use this website after a change means you accept
+            the update. The software&apos;s licence does not change retroactively for versions you have already
+            installed.
           </p>
         </Section>
 

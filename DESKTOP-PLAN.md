@@ -1,6 +1,6 @@
 # Helix desktop plan
 
-**Date:** 2026-09-25 · **Status:** Phases 0–1 done; Phase 2 done; Phases 2b–7 planned. Decisions D1–D4 made.
+**Date:** 2026-09-25 · **Status:** Phases 0–1 done; Phases 2 and 2b done; Phases 3–7 planned. Decisions D1–D4 made.
 
 Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, extract and fetch services. The public website keeps its landing page, docs and marketing, and gates the app behind the desktop download. The desktop app needs no external database and opens no console windows.
 
@@ -9,7 +9,7 @@ Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, e
 | 0 | No visible console windows | Done 2026-09-25 |
 | 1 | Vulcan moves out to `D:\vulcan-scratchpad` | Done 2026-09-25 |
 | 2 | Website keeps marketing; the app ships only in the desktop download | Done 2026-09-25: restore, `/download`, redirect gate |
-| 2b | Hosted mode removed (Clerk, Supabase, onboarding) | Planned (D2) |
+| 2b | Hosted mode removed (Clerk, Supabase, onboarding) | Done 2026-09-25 |
 | 3 | No external database | Planned (D1) |
 | 4 | API serves the UI and builds to plain JS | Planned |
 | 5 | Extract as one windowless exe | Planned (D3) |
@@ -93,6 +93,8 @@ With no app on the web, hosted mode (Clerk, Supabase, onboarding, `app/api/**`, 
 
 `supabase/` and `HELIX_MULTI_TENANT` on the API go with Phase 3.
 
+**Done 2026-09-25.** Every item above is deleted, plus the account, usage and danger-zone settings panels, `components/shared/auth-frame.tsx` and `@supabase/supabase-js`. The `HOSTED` branches that proxied the app through `/api/app/*` are removed, so the app always calls the instance directly. `HOSTED` itself stays as the website-build flag, since `next.config.ts` redirects and the status page read it. The Clerk app, the Supabase project and their Vercel env vars are untouched; retiring them is the owner's call.
+
 ## Phase 3: no external database
 
 **Recommended: PGlite**, a WASM Postgres running inside the API process, with its data in a folder.
@@ -121,6 +123,8 @@ With no app on the web, hosted mode (Clerk, Supabase, onboarding, `app/api/**`, 
 - `next dev` fails the same way on every page.
 
 It is reproduced on a clean worktree of `799f954`, and in a fresh `NEXT_DIST_DIR`, so it is neither Phase 2 nor a stale cache. Hosted mode builds and serves normally. The suspects are the self-host-only settings in `next.config.ts`: `pageExtensions: ['tsx']` and the `webpack()` override that aliases Clerk and disables the dev cache. Phase 2b removes the Clerk alias outright, so re-test there first.
+
+**Cleared 2026-09-25 by Phase 2b.** With the Clerk alias, the stub and the `.hosted.tsx` pages gone, `next build` with `HELIX_HOSTED` unset exits 0 and exports 85/85 pages.
 
 - `@fastify/static` serves the dashboard's `out/`, with an SPA fallback that excludes `/v1`, `/settings`, `/internal` and `/mcp`. The UI and API then share an origin: `resolveBaseUrl` already uses `origin + /v1` off port 3400, and CORS stops mattering.
 - `next.config.ts:8` already claims Fastify serves the export. It does not, yet.

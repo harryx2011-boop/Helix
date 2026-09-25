@@ -197,9 +197,9 @@ function agentSurfaceMarkdown(): Record<string, string> {
 
 const STATIC_DOCS_MARKDOWN: Record<string, string> = {
   'docs/getting-started': [
-    frontmatter('Getting started', 'Sign up, get a key, make your first request.'),
-    '1. Sign up at /sign-up. A default API key is minted automatically.',
-    '2. Find your key at /app/keys.',
+    frontmatter('Getting started', 'Run Helix, get a key, make your first request.'),
+    '1. A Windows app that runs every service for you is coming (/download). Today, run Helix from source with the self-host guide at /self-host.',
+    '2. A new instance accepts the HELIX_BOOTSTRAP_KEY from its .env; mint more under API Keys in the app.',
     '3. Make a request:',
     '```bash',
     generateCode('curl', { endpoint: 'scrape', body: { url: 'https://example.com' } }),

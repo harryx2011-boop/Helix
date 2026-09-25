@@ -3,7 +3,7 @@ import { HeroField } from '@/components/marketing/hero-field';
 
 export const metadata: Metadata = {
   title: 'Privacy',
-  description: 'What the Helix hosted app stores, how provider keys are protected, and what self-hosting means for your data.',
+  description: 'Where Helix keeps your data, how provider keys are protected, and what this website collects.',
 };
 
 export default function PrivacyPage() {
@@ -24,28 +24,19 @@ export default function PrivacyPage() {
           and have it reviewed before relying on it for anything.
         </p>
 
-        <Section title="Two ways to run Helix">
+        <Section title="Where your data lives">
           <p>
-            Helix is self-hostable software: run it yourself and no data ever reaches us. This page describes the
-            hosted app at this site, which uses Clerk for authentication and Supabase for account, key and run
-            storage. If you self-host instead, this page does not apply — you control the database.
-          </p>
-        </Section>
-
-        <Section title="What the hosted app stores">
-          <p>
-            Your account details (via Clerk), your API keys and their usage counters, and metadata about the
-            requests you make (timestamps, endpoint, status) so the dashboard can show you what happened. We do
-            not store the full content of every page you scrape by default; check the retention settings for your
-            plan for anything that goes beyond request metadata.
+            Helix runs on your own machine, from source today and as a Windows app when it ships. Your API keys, their
+            usage counters, and the requests and results you run stay in that instance&rsquo;s own database, and
+            none of it reaches us. This website has no accounts and no sign-in.
           </p>
         </Section>
 
         <Section title="Provider keys">
           <p>
-            If you add your own LLM, proxy or vector-store credentials in the dashboard, they are encrypted at rest
-            and decrypted only at the moment a request needs them. The plaintext is never returned by the API after
-            you set it — only the last four characters, so you can confirm which key is active.
+            If you add your own LLM, proxy or vector-store credentials in the app, they are encrypted at rest and
+            decrypted only at the moment a request needs them. The plaintext is never returned by the API after you
+            set it — only the last four characters, so you can confirm which key is active.
           </p>
         </Section>
 
@@ -59,17 +50,15 @@ export default function PrivacyPage() {
 
         <Section title="Third parties">
           <p>
-            Authentication runs through Clerk; account and application data is stored in Supabase (Postgres). Both
-            process data on our behalf under their own security commitments. We do not add further third-party
-            trackers to the hosted app beyond what operating the service requires.
+            This website adds no third-party trackers. The app calls only the providers you configure, with the
+            credentials you gave it.
           </p>
         </Section>
 
         <Section title="Your choices">
           <p>
-            You can delete an API key at any time from the dashboard, which stops it from being used immediately.
-            You can remove a stored provider key the same way. For account deletion or a full data export, contact
-            us using the address below.
+            You can revoke an API key at any time from the app, which stops it from being used immediately. You can
+            remove a stored provider key the same way. Everything else is in your own database, under your control.
           </p>
         </Section>
 

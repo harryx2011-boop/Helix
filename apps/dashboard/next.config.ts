@@ -10,22 +10,20 @@ const website = hosted && (process.env.VERCEL === '1' || process.env.HELIX_TARGE
 const APP_ROUTES = ['/app/:path*', '/sign-in/:path*', '/sign-up/:path*', '/onboarding/:path*', '/checks/:path*'];
 
 // Self-host: static export served by the Fastify API at `/` (FRONTEND.md §3).
-// Hosted: server output, because Clerk middleware and the route handlers need it (WEBSITE.md §1).
+// Hosted: the public website on Vercel, server output so the redirects below run.
 const nextConfig: NextConfig = {
   ...(hosted ? {} : { output: 'export' as const }),
   // Two dev servers on one checkout fight over `.next` — the second dies on a
   // locked `.next/trace`. Setting this lets a second instance build elsewhere:
   //   NEXT_DIST_DIR=.next-alt pnpm exec next dev -p 3401
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
-  // Self-host has no dashboard server: the route handlers under app/api are
-  // hosted-only, and `force-dynamic` is illegal under `output: export`. The
-  // static export therefore accepts only `.tsx` special files, which drops every
-  // `route.ts` handler and the `.hosted.tsx` Clerk pages in one rule; the
-  // static handlers self-host does serve (llms.txt, md, SKILL.md) are `.tsx`.
+  // Self-host has no dashboard server, and `force-dynamic` is illegal under
+  // `output: export`, so the static export accepts only `.tsx` special files;
+  // the static handlers it does serve (llms.txt, md, SKILL.md) are `.tsx`.
   // Route handlers must NOT use a dotted extension like `route.hosted.ts`:
   // Vercel's builder derives the client-reference-manifest name by stripping
   // only the last extension and fails the build on the file it cannot find.
-  pageExtensions: hosted ? ['hosted.tsx', 'tsx', 'ts'] : ['tsx'],
+  pageExtensions: hosted ? ['tsx', 'ts'] : ['tsx'],
   // Self-host serves the static export with no image-optimization server, so
   // next/image must fall back to plain <img>. Hosted has a server and gets
   // real optimization; the two next/image call sites (setup-prompt agent
@@ -36,18 +34,10 @@ const nextConfig: NextConfig = {
   ...(website
     ? { redirects: async () => APP_ROUTES.map((source) => ({ source, destination: '/download', permanent: false })) }
     : {}),
-  // Clerk ships Server Actions, which `output: export` refuses. A runtime
-  // HOSTED branch is not enough — the static import alone pulls them in — so
-  // the self-host build aliases the package to a stub instead.
   ...(hosted
     ? {}
     : {
-        webpack: (
-          webpackConfig: { resolve: { alias: Record<string, string> }; cache?: unknown },
-          { dev }: { dev: boolean },
-        ) => {
-          webpackConfig.resolve.alias['@clerk/nextjs/server'] = resolve(currentDir, 'lib', 'clerk-stub', 'server.ts');
-          webpackConfig.resolve.alias['@clerk/nextjs'] = resolve(currentDir, 'lib', 'clerk-stub', 'index.tsx');
+        webpack: (webpackConfig: { cache?: unknown }, { dev }: { dev: boolean }) => {
           // E:\ is a USB flash volume with confirmed exFAT filesystem corruption
           // (chkdsk: bad volume bitmap). Webpack's persistent disk cache snapshots
           // node_modules into .next/cache and intermittently fails to read it back

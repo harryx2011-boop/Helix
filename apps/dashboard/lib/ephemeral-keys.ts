@@ -3,9 +3,8 @@
 /**
  * Stateless key generation for deployments with no key store.
  *
- * The hosted demo on Vercel has no Supabase behind it, so there is nothing to
- * persist a key into and no account to attribute one to. Rather than disable
- * the page, mint the key in the browser and show it once: nothing is sent to a
+ * When the instance cannot be reached there is nothing to persist a key into.
+ * Rather than disable the page, mint the key in the browser and show it once: nothing is sent to a
  * server, nothing is stored, and no record of it exists anywhere afterwards.
  *
  * A key only becomes real when the operator adds it to their own instance —

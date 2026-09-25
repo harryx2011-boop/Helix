@@ -108,7 +108,7 @@ export function SelfHostPromise() {
               <span className="text-violet">And it&rsquo;s all yours.</span>
             </h2>
             <p className="mx-auto mt-3 max-w-[480px] text-[16px] leading-relaxed text-m-ink/72">
-              The self-host build is the product, not a stripped-down trial of the hosted one.
+              The self-host build is the whole product, not a stripped-down trial.
             </p>
           </div>
         </div>

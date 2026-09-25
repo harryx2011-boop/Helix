@@ -4,15 +4,13 @@ import * as React from 'react';
 import Link from 'next/link';
 import { CircleAlert, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { HOSTED } from '@/lib/mode';
 import { getApiKey } from '@/lib/auth';
 import { CHECK_TABS, TAB_LABELS, type CheckTab } from '@/lib/checks-tabs';
 
 /**
- * Hosted resolves the signed-in user's key server-side in the proxy, so the
- * browser needs nothing. Self-host calls the instance directly and needs the
- * operator's own key, which `(tools)` does not mount an ApiKeyProvider
- * for — this reads the same `localStorage` entry that provider does.
+ * Checks calls the instance directly and needs the operator's own key, which
+ * `(tools)` does not mount an ApiKeyProvider for — this reads the same
+ * `localStorage` entry that provider does.
  */
 export function useCheckKey(): { apiKey: string | null; ready: boolean } {
   const [apiKey, setKey] = React.useState<string | null>(null);
@@ -24,13 +22,9 @@ export function useCheckKey(): { apiKey: string | null; ready: boolean } {
   return { apiKey, ready };
 }
 
-/**
- * Self-host has only the browser-held key, so without one there is nothing to
- * call with. Hosted can still fall back to the proxy for a signed-in user, so
- * a missing key is not a dead end there.
- */
+/** Without the browser-held key there is nothing to call with. */
 export function needsKey(apiKey: string | null): boolean {
-  return !HOSTED && !apiKey;
+  return !apiKey;
 }
 
 export function CheckTabs({ active }: { active: CheckTab }) {

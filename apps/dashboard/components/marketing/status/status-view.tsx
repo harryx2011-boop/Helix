@@ -158,8 +158,8 @@ export function StatusView() {
           <h1 className="relative text-[28px] font-normal leading-tight tracking-tight">No instance connected</h1>
         </div>
         <p className="relative mx-auto mt-3 max-w-[480px] text-[15px] leading-relaxed text-m-ink/64">
-          The hosted app has no Helix instance behind it yet. Point this page at a self-hosted deployment&rsquo;s
-          API to see its live status.
+          This website has no Helix instance behind it. Point this page at your own instance&rsquo;s API to see
+          its live status.
         </p>
         <div className="relative">
           <InstanceUrlForm onSubmit={connectInstance} />

@@ -18,17 +18,14 @@ import {
 import { useOptionalApiKey } from '@/components/shell/api-key-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AccountError, getUsage } from '@/lib/account';
 import type { UsageEndpoint } from '@/lib/account';
 import { HelixApiError, resolveBaseUrl } from '@/lib/api';
 import type { HealthProviders, HealthService, HealthStatus } from '@/lib/api';
 import { RUNNABLE } from '@/lib/catalog';
-import { HOSTED } from '@/lib/mode';
 import { listProviders } from '@/lib/providers';
 import type { ProviderId, ProviderStatus } from '@/lib/providers';
-import { getStoredInstanceUrl, normalizeInstanceUrl, serviceLabel, setStoredInstanceUrl } from '@/lib/status';
+import { serviceLabel } from '@/lib/status';
 import type { ServiceHistory } from '@/lib/status';
 import {
   DEPENDENCY_LABEL,
@@ -69,34 +66,15 @@ const UTILITY_META: Record<
 
 const EMPTY_BAR = 'bg-muted-foreground/20';
 
-/** Long enough for the 90-day uptime strip; the route caps at exactly this. */
-const OUTCOME_WINDOW_HOURS = 24 * 90;
-
 function formatChecked(date: Date): string {
   return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' });
 }
 
-/**
- * Self-host talks to the API this build was pointed at. Hosted has no
- * instance of its own, so it borrows the public status page's setting: a
- * per-browser instance URL, shared under the same storage key.
- */
-function useInstanceBase(): { baseUrl: string | null; hydrated: boolean; connect: (origin: string) => void } {
-  const [stored, setStored] = React.useState<string | null>(null);
+/** The API this build was pointed at, resolved after hydration because it reads `window.location`. */
+function useInstanceBase(): { baseUrl: string | null; hydrated: boolean } {
   const [hydrated, setHydrated] = React.useState(false);
-
-  React.useEffect(() => {
-    setStored(getStoredInstanceUrl());
-    setHydrated(true);
-  }, []);
-
-  const connect = React.useCallback((origin: string) => {
-    setStoredInstanceUrl(origin);
-    setStored(origin);
-  }, []);
-
-  const baseUrl = !hydrated ? null : HOSTED ? (stored ? `${stored}/v1` : null) : resolveBaseUrl();
-  return { baseUrl, hydrated, connect };
+  React.useEffect(() => setHydrated(true), []);
+  return { baseUrl: hydrated ? resolveBaseUrl() : null, hydrated };
 }
 
 type OutcomesState =
@@ -107,79 +85,15 @@ type OutcomesState =
 const SELF_HOST_NO_OUTCOMES =
   'This build is a static export with no usage route, and the instance’s /v1/usage reports errors in total rather than per tool.';
 
-/**
- * Recorded request outcomes for the signed-in profile's keys. Read through the
- * dashboard's own usage route rather than the instance, for the reason that
- * route states: the instance scopes `/v1/usage` to one key, and the proxy holds
- * only the dashboard's.
- */
-function useOutcomes(enabled: boolean, nonce: number): OutcomesState {
+/** Per-tool outcomes came from the hosted dashboard's usage route, which left with hosted mode. */
+function useOutcomes(enabled: boolean): OutcomesState {
   const [state, setState] = React.useState<OutcomesState>({ kind: 'loading' });
 
   React.useEffect(() => {
-    if (!enabled) return;
-    if (!HOSTED) {
-      setState({ kind: 'unavailable', message: SELF_HOST_NO_OUTCOMES });
-      return;
-    }
-    let cancelled = false;
-    setState({ kind: 'loading' });
-    getUsage(OUTCOME_WINDOW_HOURS)
-      .then((usage) => {
-        if (!cancelled) setState({ kind: 'ready', endpoints: usage.endpoints, since: usage.since });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setState({
-          kind: 'unavailable',
-          message: err instanceof AccountError ? err.message : 'Could not load recorded request outcomes.',
-        });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, nonce]);
+    if (enabled) setState({ kind: 'unavailable', message: SELF_HOST_NO_OUTCOMES });
+  }, [enabled]);
 
   return state;
-}
-
-function InstanceUrlForm({ onSubmit }: { onSubmit: (origin: string) => void }) {
-  const [value, setValue] = React.useState('');
-  const [invalid, setInvalid] = React.useState(false);
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        const url = normalizeInstanceUrl(value);
-        if (url) onSubmit(url);
-        else setInvalid(true);
-      }}
-      className="flex w-full max-w-[560px] flex-col gap-2 sm:flex-row"
-    >
-      <Input
-        type="url"
-        value={value}
-        onChange={(e) => {
-          setValue(e.target.value);
-          setInvalid(false);
-        }}
-        aria-label="Instance URL"
-        aria-invalid={invalid || undefined}
-        aria-describedby={invalid ? 'health-instance-url-error' : undefined}
-        placeholder="https://your-instance.example.com"
-        autoComplete="off"
-        className="font-mono text-[13px] aria-[invalid]:border-destructive"
-      />
-      <Button type="submit" className="shrink-0 rounded-pill">
-        Point health here
-      </Button>
-      {invalid && (
-        <p id="health-instance-url-error" className="w-full text-xs text-destructive sm:basis-full">
-          Enter a full http or https URL, like https://helix.example.com
-        </p>
-      )}
-    </form>
-  );
 }
 
 function Stat({ value, label, tone = 'text-foreground' }: { value: string; label: string; tone?: string }) {
@@ -499,9 +413,7 @@ function KeyProviderRows({ apiKey, flushLast }: { apiKey: string | null; flushLa
     return (
       <FrameRow flush={flushLast} className="px-6 py-4">
         <p className="max-w-[560px] text-[13px] leading-snug text-muted-foreground">
-          {HOSTED
-            ? 'Hosted mode keeps your API key server-side, so the providers attached to it are not listed here yet.'
-            : 'This browser holds no instance key, so the providers attached to a key cannot be listed.'}
+          This browser holds no instance key, so the providers attached to a key cannot be listed.
         </p>
       </FrameRow>
     );
@@ -591,13 +503,13 @@ function collectMeasuredIncidents(rows: UtilityRowData[]): MeasuredIncident[] {
 export function HealthClient() {
   const reduced = useReducedMotion();
   const apiKey = useOptionalApiKey()?.apiKey ?? null;
-  const { baseUrl, hydrated, connect } = useInstanceBase();
+  const { baseUrl, hydrated } = useInstanceBase();
   const [nonce, setNonce] = React.useState(0);
   const refresh = React.useCallback(() => setNonce((n) => n + 1), []);
 
   const { health, error, loading, fetching, lastUpdated } = useHealthPolling(baseUrl, nonce);
   const { history, error: historyError } = useHistory(baseUrl, nonce);
-  const outcomes = useOutcomes(Boolean(baseUrl), nonce);
+  const outcomes = useOutcomes(Boolean(baseUrl));
 
   const historyByService = React.useMemo(() => indexHistory(history), [history]);
   const services = React.useMemo(() => orderServices(health, historyByService), [health, historyByService]);
@@ -618,21 +530,6 @@ export function HealthClient() {
         <UtilityRowSkeleton />
       </>
     );
-  } else if (!baseUrl) {
-    body = (
-      <FrameRow flush>
-        <div className="flex flex-col gap-5 px-6 py-10">
-          <div className="max-w-[560px]">
-            <h2 className="text-[17px] font-medium leading-tight tracking-tight text-foreground">No instance connected</h2>
-            <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
-              Hosted Helix has no instance behind this page. Point it at a self-hosted deployment&apos;s API to see that
-              instance&apos;s health; the public status page shares this setting.
-            </p>
-          </div>
-          <InstanceUrlForm onSubmit={connect} />
-        </div>
-      </FrameRow>
-    );
   } else if (!loading && error && !health) {
     body = (
       <FrameRow flush>
@@ -644,9 +541,7 @@ export function HealthClient() {
             </div>
             <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
               Could not reach <span className="font-mono text-foreground">{baseUrl}</span>.{' '}
-              {HOSTED
-                ? 'Check the URL, or point this page at another instance.'
-                : 'The API is down, or NEXT_PUBLIC_HELIX_API_URL points at the wrong host.'}
+              The API is down, or NEXT_PUBLIC_HELIX_API_URL points at the wrong host.
             </p>
           </div>
           <div className="flex flex-col gap-4">
@@ -654,7 +549,6 @@ export function HealthClient() {
               <RotateCw className={cn('h-3.5 w-3.5', fetching && 'animate-spin')} />
               {fetching ? 'Trying…' : 'Try again'}
             </Button>
-            {HOSTED && <InstanceUrlForm onSubmit={connect} />}
           </div>
         </div>
       </FrameRow>

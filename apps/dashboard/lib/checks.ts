@@ -8,62 +8,21 @@ import type {
   PdfAssessResponse,
   RobotsCheckRequest,
   RobotsCheckResponse,
-  ScrapeResponse,
 } from '@/lib/api';
-import { HOSTED } from '@/lib/mode';
-
-/**
- * These endpoints ship and are tested, but none is in `lib/endpoints.ts` —
- * that union is the playground's tab list, and adding them there would force
- * cases into its dispatcher and put them in its tabs. So they take the path
- * `lib/agent.ts` already takes: a call to `/api/app/run` by string literal,
- * which resolves the signed-in user's key server-side. See `shouldUseProxy`
- * for when this is used over a direct call.
- */
-async function viaProxy<T>(endpoint: string, body: Record<string, unknown> | FormData): Promise<T> {
-  const isFormData = body instanceof FormData;
-  const response = await fetch(`/api/app/run?endpoint=${endpoint}`, {
-    method: 'POST',
-    ...(isFormData
-      ? { body }
-      : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-  });
-  const json = (await response.json().catch(() => null)) as (T & { message?: string }) | null;
-  if (!response.ok) {
-    throw new HelixApiError(json?.message ?? `Request failed with status ${response.status}`, response.status);
-  }
-  return json as T;
-}
-
 function requireClient(apiKey: string | null): HelixClient {
   if (!apiKey) throw new HelixApiError('No API key configured.', 401);
   return new HelixClient({ apiKey });
 }
 
-/**
- * Unlike the Agent panel, Checks is a public page: a visitor may hold their own
- * key with no Clerk session, and a hosted build still serves self-host
- * operators. So a browser-held key wins wherever there is one, and the proxy —
- * which needs a signed-in user to resolve a key server-side — is the fallback.
- */
-function shouldUseProxy(apiKey: string | null): boolean {
-  return HOSTED && !apiKey;
-}
-
 export async function runRobotsCheck(request: RobotsCheckRequest, apiKey: string | null): Promise<RobotsCheckResponse> {
-  if (shouldUseProxy(apiKey)) return viaProxy<RobotsCheckResponse>('robots-check', request as unknown as Record<string, unknown>);
   return requireClient(apiKey).robotsCheck(request);
 }
 
 export async function runDiff(request: DiffRequest, apiKey: string | null): Promise<DiffResponse> {
-  if (shouldUseProxy(apiKey)) return viaProxy<DiffResponse>('diff', request as unknown as Record<string, unknown>);
   return requireClient(apiKey).diff(request);
 }
 
 export async function runPdfAssess(request: PdfAssessRequest | FormData, apiKey: string | null): Promise<PdfAssessResponse> {
-  if (shouldUseProxy(apiKey)) {
-    return viaProxy<PdfAssessResponse>('pdf-assess', request instanceof FormData ? request : (request as unknown as Record<string, unknown>));
-  }
   return requireClient(apiKey).pdfAssess(request);
 }
 
@@ -75,9 +34,7 @@ export async function runPdfAssess(request: PdfAssessRequest | FormData, apiKey:
  */
 export async function fetchHtmlForSelectors(url: string, apiKey: string | null): Promise<string> {
   const body = { url, formats: ['rawHtml'] };
-  const response = shouldUseProxy(apiKey)
-    ? await viaProxy<ScrapeResponse>('scrape', body)
-    : await requireClient(apiKey).scrape(body as never);
+  const response = await requireClient(apiKey).scrape(body as never);
   if (!response.success) {
     throw new HelixApiError(response.failure.detail ?? response.failure.reason, 502);
   }

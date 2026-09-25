@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation';
 import { HOSTED } from '@/lib/mode';
 import { requireUserId } from '@/lib/session';
 import { readOnboardingState } from '@/lib/onboarding-gate';
-import { vulcanEnabled } from '@/lib/vulcan/gate';
 import { ApiKeyProvider } from '@/components/shell/api-key-provider';
 import { ApiKeyGate } from '@/components/shell/api-key-gate';
 import { AppShell } from '@/components/app/app-shell';
@@ -19,18 +18,16 @@ import { AppShell } from '@/components/app/app-shell';
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   let selectedEndpoints: readonly string[] = [];
-  let localTools = false;
 
   if (HOSTED) {
     await requireUserId();
     const onboarding = await readOnboardingState();
     if (onboarding.pending) redirect('/onboarding');
     selectedEndpoints = onboarding.selectedEndpoints;
-    localTools = await vulcanEnabled();
   }
 
   const shell = (
-    <AppShell selectedEndpoints={selectedEndpoints} localTools={localTools}>
+    <AppShell selectedEndpoints={selectedEndpoints}>
       {children}
     </AppShell>
   );

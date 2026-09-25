@@ -3,18 +3,16 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Activity, Home, KeyRound, Lock, Settings, Sparkles } from 'lucide-react';
+import { Activity, Home, KeyRound, Settings, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { orderBySelection } from '@/lib/catalog';
 import type { GlyphIcon } from '@/components/marketing/icon-type';
-import { VulcanFlame } from '@/components/vulcan/vulcan-flame';
 
 interface NavRow {
   href: string;
   label: string;
   icon: GlyphIcon;
-  /** `local`: the row only works when the server is reached on localhost; drawn as a lock. */
-  badge?: 'new' | 'coming' | 'local';
+  badge?: 'new' | 'coming';
 }
 
 interface NavGroup {
@@ -30,7 +28,7 @@ function isRecentlyLive(liveSince: string | undefined): boolean {
   return days >= 0 && days <= NEW_WINDOW_DAYS;
 }
 
-export function buildNavGroups(selectedEndpoints: readonly string[], localTools: boolean): NavGroup[] {
+export function buildNavGroups(selectedEndpoints: readonly string[]): NavGroup[] {
   const ordered = orderBySelection(selectedEndpoints);
 
   return [
@@ -53,10 +51,7 @@ export function buildNavGroups(selectedEndpoints: readonly string[], localTools:
     },
     {
       heading: 'Utilities',
-      rows: [
-        { href: '/app/agent', label: 'Agent', icon: Sparkles },
-        { href: '/app/vulcan', label: 'Vulcan', icon: VulcanFlame, ...(localTools ? {} : { badge: 'local' as const }) },
-      ],
+      rows: [{ href: '/app/agent', label: 'Agent', icon: Sparkles }],
     },
     {
       heading: 'Instance',
@@ -92,7 +87,6 @@ function isActive(pathname: string, href: string, activeTab: string | null, defa
 
 interface SidebarNavProps {
   selectedEndpoints: readonly string[];
-  localTools: boolean;
   collapsed: boolean;
 }
 
@@ -108,10 +102,10 @@ export function SidebarNav(props: SidebarNavProps) {
   );
 }
 
-function SidebarNavInner({ selectedEndpoints, localTools, collapsed }: SidebarNavProps) {
+function SidebarNavInner({ selectedEndpoints, collapsed }: SidebarNavProps) {
   const pathname = usePathname();
   const activeTab = useSearchParams().get('tab');
-  const groups = buildNavGroups(selectedEndpoints, localTools);
+  const groups = buildNavGroups(selectedEndpoints);
   const defaultTab = orderBySelection(selectedEndpoints)[0]?.id;
 
   return (
@@ -127,12 +121,12 @@ function SidebarNavInner({ selectedEndpoints, localTools, collapsed }: SidebarNa
           {group.rows.map((row) => {
             const active = isActive(pathname, row.href, activeTab, defaultTab);
             const Icon = row.icon;
-            const dim = row.badge === 'coming' || row.badge === 'local';
+            const dim = row.badge === 'coming';
             return (
               <Link
                 key={row.href}
                 href={row.href}
-                title={collapsed ? (row.badge === 'local' ? `${row.label} (localhost only)` : row.label) : row.badge === 'local' ? 'Localhost only' : undefined}
+                title={collapsed ? row.label : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'group flex min-w-0 items-center gap-2.5 rounded-card px-2.5 py-1.5 text-sm transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -151,12 +145,6 @@ function SidebarNavInner({ selectedEndpoints, localTools, collapsed }: SidebarNa
                 {!collapsed && row.badge === 'coming' && (
                   <span className="rounded-pill bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                     Soon
-                  </span>
-                )}
-                {!collapsed && row.badge === 'local' && (
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Lock className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-                    <span className="font-mono text-[10px] uppercase tracking-wide">localhost</span>
                   </span>
                 )}
               </Link>

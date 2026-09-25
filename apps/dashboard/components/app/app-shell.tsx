@@ -9,12 +9,9 @@ import { CommandPalette } from './command-palette/command-palette';
 
 export function AppShell({
   selectedEndpoints,
-  localTools,
   children,
 }: {
   selectedEndpoints: readonly string[];
-  /** The server is being reached on localhost, so operator-only tools (Vulcan) are shown. */
-  localTools: boolean;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -22,7 +19,7 @@ export function AppShell({
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
-        <Sidebar selectedEndpoints={selectedEndpoints} localTools={localTools} mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
+        <Sidebar selectedEndpoints={selectedEndpoints} mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar onOpenMobileNav={() => setMobileOpen(true)} />
           {/*
@@ -44,7 +41,7 @@ export function AppShell({
           </main>
         </div>
       </div>
-      <CommandPalette selectedEndpoints={selectedEndpoints} localTools={localTools} />
+      <CommandPalette selectedEndpoints={selectedEndpoints} />
     </TooltipProvider>
   );
 }

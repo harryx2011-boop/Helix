@@ -869,36 +869,6 @@ export interface MetadataScrubSuccess {
 
 export type MetadataScrubResponse = MetadataScrubSuccess | MetadataResponseFailure;
 
-// --- Convert ---
-
-export type ConvertFormat = 'png' | 'jpeg';
-
-export interface ConvertRequest {
-  url: string;
-  to: ConvertFormat;
-  /** 1-based. PDF sources only. */
-  page?: number;
-  dpi?: number;
-  timeout?: number;
-}
-
-export interface ConvertSuccess {
-  success: true;
-  /** The converted file, held in memory for the download button and preview. */
-  blob: Blob;
-  filename: string;
-  contentType: string;
-  pages: number;
-  pageConverted?: number;
-}
-
-export interface ConvertResponseFailure {
-  success: false;
-  failure: FetchFailure;
-}
-
-export type ConvertResponse = ConvertSuccess | ConvertResponseFailure;
-
 export type ScreenshotFormat = 'png' | 'jpeg' | 'webp';
 
 export interface ScreenshotRequest {
@@ -977,7 +947,7 @@ export interface ExtractResponse {
 }
 
 /** The operations `POST /document` dispatches to. */
-export type DocumentOp = 'parse' | 'convert' | 'metadata' | 'scrub' | 'assess';
+export type DocumentOp = 'parse' | 'metadata' | 'scrub' | 'assess';
 
 export type DocumentRequest = { op: DocumentOp } & Record<string, unknown>;
 
@@ -1128,56 +1098,6 @@ export class HelixClient {
       blob: await response.blob(),
       filename: filenameFromDisposition(response.headers.get('content-disposition')) ?? 'file.scrubbed',
       report,
-    };
-  }
-
-  /**
-   * `POST /v1/convert` answers with the converted file as the body, same shape
-   * as `/metadata/scrub` — unwrapped here rather than through `post()`, which
-   * assumes a JSON body.
-   */
-  async convert(request: ConvertRequest | FormData, signal?: AbortSignal): Promise<ConvertResponse> {
-    const isFormData = typeof FormData !== 'undefined' && request instanceof FormData;
-    let response: Response;
-    try {
-      response = await fetch(`${this.baseUrl}/convert`, {
-        method: 'POST',
-        headers: isFormData
-          ? { Authorization: `Bearer ${this.apiKey}` }
-          : { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
-        body: isFormData ? (request as FormData) : JSON.stringify(request),
-        ...(signal ? { signal } : {}),
-      });
-    } catch (error) {
-      throw new HelixApiError(error instanceof Error ? error.message : 'Network request failed', 0);
-    }
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => undefined)) as ApiErrorBody | undefined;
-      throw new HelixApiError(
-        errorBody?.message ?? `Request failed with status ${response.status}`,
-        response.status,
-        errorBody,
-      );
-    }
-
-    // A typed failure comes back as JSON in the usual envelope; a success comes
-    // back as the converted file's raw bytes, told apart by content type.
-    if (response.headers.get('content-type')?.includes('application/json')) {
-      return (await response.json()) as ConvertResponseFailure;
-    }
-
-    const contentType = response.headers.get('content-type') ?? 'application/octet-stream';
-    const pages = Number(response.headers.get('x-helix-convert-pages') ?? '1');
-    const pageConvertedHeader = response.headers.get('x-helix-convert-page');
-
-    return {
-      success: true,
-      blob: await response.blob(),
-      filename: filenameFromDisposition(response.headers.get('content-disposition')) ?? 'converted',
-      contentType,
-      pages: Number.isFinite(pages) ? pages : 1,
-      ...(pageConvertedHeader ? { pageConverted: Number(pageConvertedHeader) } : {}),
     };
   }
 

@@ -8,7 +8,6 @@ export type Endpoint =
   | 'crawl'
   | 'interact'
   | 'monitor'
-  | 'convert'
   | 'document'
   | 'extract'
   | 'screenshot';

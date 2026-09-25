@@ -164,28 +164,6 @@ export interface MetadataOptions {
   timeoutMs?: number | undefined;
 }
 
-/** Target formats /convert can produce. Deliberately narrow: rasterizing a PDF page or re-encoding an image, nothing that authors a new document. */
-export type ConvertFormat = 'png' | 'jpeg';
-
-export interface ConvertOptions {
-  data: Buffer;
-  contentType: string;
-  to: ConvertFormat;
-  /** 1-based. PDF only; ignored for an image source. */
-  page?: number | undefined;
-  dpi?: number | undefined;
-  timeoutMs?: number | undefined;
-}
-
-export interface ConvertResult {
-  data: Buffer;
-  contentType: string;
-  /** Total pages in the source PDF; `1` for an image source. */
-  pages: number;
-  /** The page that was rasterized, or undefined for an image-to-image conversion. */
-  pageConverted?: number | undefined;
-}
-
 /** How much a disclosed value gives away. An ordinal band, not a probability. */
 export type MetadataRisk = 'high' | 'medium' | 'low';
 
@@ -481,36 +459,6 @@ export class ExtractClient {
       warnings: report.warnings ?? [],
       bytesBefore: report.bytes_before,
       bytesAfter: report.bytes_after,
-    };
-  }
-
-  /** Rasterize a PDF page, or re-encode an image between PNG and JPEG. */
-  async convert(options: ConvertOptions): Promise<ConvertResult> {
-    const query = new URLSearchParams({ to: options.to });
-    if (options.page !== undefined) query.set('page', String(options.page));
-    if (options.dpi !== undefined) query.set('dpi', String(options.dpi));
-
-    const response = await fetch(`${this.#baseUrl}/convert?${query.toString()}`, {
-      method: 'POST',
-      headers: { 'content-type': options.contentType },
-      body: options.data as Uint8Array<ArrayBuffer>,
-      signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
-    });
-
-    if (!response.ok) {
-      throw new ExtractHttpError(response.status, await detailOf(response));
-    }
-
-    const converted = Buffer.from(await response.arrayBuffer());
-    const contentType = response.headers.get('content-type') ?? '';
-    const pages = Number(response.headers.get('x-helix-convert-pages') ?? '1');
-    const pageHeader = response.headers.get('x-helix-convert-page');
-
-    return {
-      data: converted,
-      contentType,
-      pages: Number.isFinite(pages) ? pages : 1,
-      pageConverted: pageHeader ? Number(pageHeader) : undefined,
     };
   }
 

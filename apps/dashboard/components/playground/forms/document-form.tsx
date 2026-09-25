@@ -2,8 +2,6 @@
 
 import * as React from 'react';
 import type { DocumentOp, DocumentRequest } from '@/lib/api';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { FormFooter } from './form-footer';
 import { cn } from '@/lib/utils';
 
@@ -14,7 +12,6 @@ import { cn } from '@/lib/utils';
  */
 const OPS: readonly { id: Exclude<DocumentOp, 'scrub'>; label: string; hint: string }[] = [
   { id: 'parse', label: 'Parse', hint: 'The document as markdown, or as JSON against a schema.' },
-  { id: 'convert', label: 'Convert', hint: 'A PDF page as an image, or an Office file as markdown.' },
   { id: 'metadata', label: 'Metadata', hint: 'What the file discloses about who and what made it.' },
   { id: 'assess', label: 'Assess', hint: 'Text-layer quality, before you spend on OCR.' },
 ];
@@ -31,9 +28,6 @@ interface DocumentFormProps {
 export function DocumentForm({ url, onSubmit, onGetCode, loading }: DocumentFormProps) {
   const [op, setOp] = React.useState<Exclude<DocumentOp, 'scrub'>>('parse');
   const [ocr, setOcr] = React.useState<(typeof OCR_MODES)[number]>('auto');
-  const [to, setTo] = React.useState<'png' | 'jpeg'>('png');
-  const [page, setPage] = React.useState('1');
-  const [dpi, setDpi] = React.useState('144');
 
   const canSubmit = url.trim().length > 0;
 
@@ -45,16 +39,8 @@ export function DocumentForm({ url, onSubmit, onGetCode, loading }: DocumentForm
       body.ocr = ocr;
     }
 
-    if (op === 'convert') {
-      body.to = to;
-      const pageNum = Number.parseInt(page, 10);
-      const dpiNum = Number.parseInt(dpi, 10);
-      if (Number.isFinite(pageNum) && pageNum > 0) body.page = pageNum;
-      if (Number.isFinite(dpiNum) && dpiNum > 0) body.dpi = dpiNum;
-    }
-
     return body;
-  }, [op, url, ocr, to, page, dpi]);
+  }, [op, url, ocr]);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -73,7 +59,7 @@ export function DocumentForm({ url, onSubmit, onGetCode, loading }: DocumentForm
 
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-medium">Operation</legend>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {OPS.map((entry) => (
             <button
               key={entry.id}
@@ -119,58 +105,6 @@ export function DocumentForm({ url, onSubmit, onGetCode, loading }: DocumentForm
             <code>auto</code> runs OCR only when the text layer is missing or garbled.
           </p>
         </fieldset>
-      )}
-
-      {op === 'convert' && (
-        <>
-          <fieldset className="flex flex-col gap-1.5">
-            <legend className="mb-1.5 text-sm font-medium">Convert to</legend>
-            <div className="grid grid-cols-2 gap-2">
-              {(['png', 'jpeg'] as const).map((format) => (
-                <button
-                  key={format}
-                  type="button"
-                  aria-pressed={to === format}
-                  onClick={() => setTo(format)}
-                  className={cn(
-                    'rounded-card border px-3 py-2 text-sm font-medium transition-colors duration-fast',
-                    to === format
-                      ? 'border-violet bg-violet-8 text-foreground'
-                      : 'border-border text-muted-foreground hover:bg-secondary',
-                  )}
-                >
-                  {format.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="document-page">Page</Label>
-              <Input
-                id="document-page"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                value={page}
-                onChange={(event) => setPage(event.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="document-dpi">DPI</Label>
-              <Input
-                id="document-dpi"
-                type="number"
-                inputMode="numeric"
-                min={36}
-                max={600}
-                value={dpi}
-                onChange={(event) => setDpi(event.target.value)}
-              />
-            </div>
-          </div>
-        </>
       )}
 
       <FormFooter

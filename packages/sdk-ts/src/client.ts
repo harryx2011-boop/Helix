@@ -160,7 +160,7 @@ export class HelixClient extends HelixTransport {
   }
 
   /**
-   * One surface over parse, convert, metadata and assess; `op` picks which.
+   * One surface over parse, metadata and assess; `op` picks which.
    *
    * The four original methods still work and are better typed — reach for this
    * when the operation is chosen at runtime rather than written in the code.

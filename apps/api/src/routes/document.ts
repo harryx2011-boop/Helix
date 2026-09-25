@@ -4,7 +4,7 @@ import { abortable } from '../core/abortable.js';
 /**
  * POST /v1/document — one endpoint over every document operation.
  *
- * Parse, convert, metadata and assess were four endpoints a caller had to know
+ * Parse, metadata and assess were three endpoints a caller had to know
  * about separately, all taking the same file and answering in the same
  * envelope. This is the single surface; `op` picks the operation.
  *
@@ -15,14 +15,13 @@ import { abortable } from '../core/abortable.js';
  * about upload ceilings. Rewriting the URL and re-entering the router keeps one
  * implementation of each operation.
  *
- * The four original paths stay registered and documented: this is an addition,
+ * The original paths stay registered and documented: this is an addition,
  * not a migration, and callers already using `/v1/parse` are not broken by it.
  */
 
 /** `op` values and the route each one forwards to. */
 const OPERATIONS = {
   parse: '/v1/parse',
-  convert: '/v1/convert',
   metadata: '/v1/metadata',
   scrub: '/v1/metadata/scrub',
   assess: '/v1/pdf-assess',

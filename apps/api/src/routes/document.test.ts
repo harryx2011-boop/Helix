@@ -11,13 +11,13 @@ import { registerDocument, DOCUMENT_OPS } from './document.js';
 
 let app: FastifyInstance | undefined;
 
-/** Stands in for the four real routes, echoing what it was handed. */
+/** Stands in for the real routes, echoing what it was handed. */
 async function build(): Promise<FastifyInstance> {
   const instance = Fastify();
 
   await instance.register(
     async (scope) => {
-      for (const path of ['/parse', '/convert', '/metadata', '/pdf-assess']) {
+      for (const path of ['/parse', '/metadata', '/pdf-assess']) {
         scope.post(path, async (request, reply) => {
           return reply.code(200).send({ hit: path, body: request.body });
         });
@@ -74,7 +74,6 @@ describe('POST /v1/document', () => {
 
   it.each([
     ['parse', '/parse'],
-    ['convert', '/convert'],
     ['metadata', '/metadata'],
     ['assess', '/pdf-assess'],
   ])('forwards op=%s to %s with the body intact', async (op, path) => {
@@ -96,12 +95,12 @@ describe('POST /v1/document', () => {
 
     const response = await instance.inject({
       method: 'POST',
-      url: '/v1/document?op=convert',
-      payload: { to: 'png' },
+      url: '/v1/document?op=metadata',
+      payload: { url: 'https://example.com/a.pdf' },
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json().hit).toBe('/convert');
+    expect(response.json().hit).toBe('/metadata');
   });
 
   it('returns scrubbed file bytes unchanged rather than re-encoding them as JSON', async () => {

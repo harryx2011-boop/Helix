@@ -18,7 +18,6 @@ from pydantic import BaseModel, Field, model_validator
 
 from . import (
     chunking,
-    convert,
     documents,
     embeddings,
     enrich,
@@ -293,68 +292,6 @@ async def scrub_metadata(request: Request) -> Response:
         content=result.data,
         media_type=content_type.split(";")[0].strip() or "application/octet-stream",
         headers={"x-helix-metadata-report": json.dumps(report, separators=(",", ":"))},
-    )
-
-
-def _convert_source_type(content_type: str) -> str:
-    base = content_type.split(";")[0].strip().lower()
-    kind = documents.CONTENT_TYPES.get(base)
-    if kind is not None and kind.value in convert.SUPPORTED_TARGETS:
-        return kind.value
-    image = {"image/png": "png", "image/jpeg": "jpg", "image/jpg": "jpg"}.get(base)
-    if image is not None and image in convert.SUPPORTED_TARGETS:
-        return image
-    raise ValueError(
-        f"conversion is not supported from {content_type or 'an unspecified type'}; "
-        f"supported sources: {', '.join(convert.SUPPORTED_TARGETS)}"
-    )
-
-
-@app.post("/convert")
-async def convert_file(
-    request: Request,
-    to: str = Query(pattern="^(png|jpeg)$"),
-    page: int = Query(default=1, ge=1),
-    dpi: int = Query(default=convert.DEFAULT_DPI, ge=36, le=600),
-) -> Response:
-    """Return the converted bytes directly, the same wire shape as /metadata/scrub.
-
-    PDF rasterizes one page at a time (`page`, 1-based); PNG and JPEG convert
-    to each other whole. Nothing here writes PDF, DOCX, PPTX or XLSX -- this
-    endpoint reads a format the pipeline already parses and re-encodes pixels
-    it already has, not a document-authoring path.
-    """
-    content_type = request.headers.get("content-type", "")
-    data = await request.body()
-    if not data:
-        raise HTTPException(status_code=400, detail="the request body is empty")
-
-    try:
-        source_type = _convert_source_type(content_type)
-        target = convert.ConvertFormat(to)
-        if target not in convert.SUPPORTED_TARGETS[source_type]:
-            allowed = ", ".join(f.value for f in convert.SUPPORTED_TARGETS[source_type])
-            raise ValueError(f"{source_type} cannot convert to {to}; supported targets: {allowed}")
-    except ValueError as exc:
-        raise HTTPException(status_code=415, detail=str(exc)) from exc
-
-    try:
-        if source_type == "pdf":
-            result = convert.convert_pdf_page(data, target, page=page, dpi=dpi)
-        else:
-            result = convert.convert_image(data, convert.SOURCE_FORMAT[source_type], target)
-    except documents.DocumentError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    return Response(
-        content=result.data,
-        media_type=result.content_type,
-        headers={
-            "x-helix-convert-pages": str(result.pages),
-            "x-helix-convert-page": (
-                str(result.page_converted) if result.page_converted is not None else ""
-            ),
-        },
     )
 
 

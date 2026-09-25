@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Braces, Camera, Eye, FileOutput, FileScan, FileText, Files, Map as MapIcon, MousePointerClick, Network, ScanEye, Search } from 'lucide-react';
+import { Braces, Camera, Eye, FileScan, FileText, Files, Map as MapIcon, MousePointerClick, Network, ScanEye, Search } from 'lucide-react';
 import type { Endpoint, RunnableEndpoint } from './endpoints';
 
 /**
@@ -43,7 +43,6 @@ export const ENDPOINTS: readonly EndpointDef[] = [
   { id: 'document', name: 'Document', productName: 'Document API', sidebarLabel: 'Document', tagline: 'PDF, DOCX, PPTX and XLSX in. Markdown, structured JSON, page images or a scrubbed copy out.', method: 'POST', path: '/v1/document', route: '/document', group: 'EXTRACT', status: 'live', icon: Files, product: true, async: false, runnable: true },
   { id: 'parse', name: 'Parse', productName: 'Document Parsing', sidebarLabel: 'Parse', tagline: 'PDF, DOCX, PPTX and XLSX by upload or URL. OCR only when the text layer is missing.', method: 'POST', path: '/v1/parse', route: '/document#parse', group: 'EXTRACT', status: 'live', icon: FileScan, product: false, async: false, runnable: true },
   { id: 'metadata', name: 'Metadata', productName: 'File Metadata', sidebarLabel: 'Metadata', tagline: 'What a file gives away about who and what made it \u2014 and a copy without it.', method: 'POST', path: '/v1/metadata', route: '/document#metadata', group: 'EXTRACT', status: 'live', icon: ScanEye, product: false, async: false, runnable: true },
-  { id: 'convert', name: 'Convert', productName: 'Document Conversion', sidebarLabel: 'Convert', tagline: 'Rasterize a PDF page to an image, or turn an Office file into markdown.', method: 'POST', path: '/v1/convert', route: '/document#convert', group: 'EXTRACT', status: 'live', icon: FileOutput, product: false, async: false, runnable: true },
   { id: 'extract', name: 'Extract', productName: 'Structured Extraction API', sidebarLabel: 'Extract', tagline: 'Describe the shape you want. Get typed rows back, every field traced to where it came from.', method: 'POST', path: '/v1/extract', route: '/extract', group: 'EXTRACT', status: 'live', icon: Braces, product: true, async: false, runnable: true },
   { id: 'screenshot', name: 'Screenshot', productName: 'Screenshot API', sidebarLabel: 'Screenshot', tagline: 'Full page, viewport or one element. PNG, JPEG, WebP or PDF, at any device size.', method: 'POST', path: '/v1/screenshot', route: '/screenshot', group: 'EXTRACT', status: 'live', icon: Camera, product: true, async: false, runnable: true },
   { id: 'search', name: 'Search', productName: 'Web Search API', sidebarLabel: 'Search', tagline: 'Search the web and read every result in the same call. Bring your own search backend.', method: 'POST', path: '/v1/search', route: '/search', group: 'DISCOVER', status: 'live', icon: Search, product: true, async: false, runnable: true },
@@ -91,7 +90,6 @@ export const EXAMPLE_REQUEST: Record<Endpoint, Record<string, unknown>> = {
   document: { op: 'parse', url: 'https://example.com/files/report.pdf', formats: ['markdown'], ocr: 'auto' },
   parse: { url: 'https://example.com/files/report.pdf', formats: ['markdown'], ocr: 'auto' },
   metadata: { url: 'https://example.com/files/report.pdf' },
-  convert: { url: 'https://example.com/files/report.pdf', to: 'png', page: 1, dpi: 144 },
   extract: { urls: ['https://example.com/pricing'], prompt: 'every plan name and its monthly price' },
   screenshot: { url: 'https://example.com', fullPage: true, format: 'png', viewport: { width: 1440, height: 900 } },
   search: { query: 'transactional email APIs', limit: 5, scrapeOptions: { formats: ['markdown'] } },

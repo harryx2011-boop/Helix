@@ -2,9 +2,9 @@
 
 **Status:** decided, build starting · **Date:** 24 August 2026 · **Owner:** Harry
 
-> **2026-09-25:** Helix is becoming a desktop app. The marketing site, docs, capability pages and markdown twins are removed (§2 Marketing, §3.2, §4, §5, §9.4); `/convert` and `/checks` survive as tools under `app/(tools)` on the §3.2 light tokens. Plan of record: `DESKTOP-PLAN.md`.
+> **2026-09-25:** Helix is becoming a desktop app. The marketing site, docs, capability pages and markdown twins are removed (§2 Marketing, §3.2, §4, §5, §9.4); `/checks` survives as a tool under `app/(tools)` on the §3.2 light tokens; `/convert` was removed the same day (file conversion lives in Sparky). Plan of record: `DESKTOP-PLAN.md`.
 
-> **2026-09-25:** Helix is becoming a desktop app. The marketing site, docs, capability pages and markdown twins are removed (§2 Marketing, §3.2, §4, §5, §9.4); `/convert` and `/checks` survive as tools under `app/(tools)` on the §3.2 light tokens. Plan of record: `DESKTOP-PLAN.md`.
+> **2026-09-25:** Helix is becoming a desktop app. The marketing site, docs, capability pages and markdown twins are removed (§2 Marketing, §3.2, §4, §5, §9.4); `/checks` survives as a tool under `app/(tools)` on the §3.2 light tokens; `/convert` was removed the same day (file conversion lives in Sparky). Plan of record: `DESKTOP-PLAN.md`.
 
 This is the plan for `helix.dev`: the marketing site, sign-in, onboarding, the `/app` dashboard, the agent surfaces (MCP, CLI, SKILL.md), and the six-API catalog. It restates decisions; the evidence lives in `research/`. Companion documents: [DESIGN.md](DESIGN.md) (tokens, character motif), [ARCHITECTURE.md](ARCHITECTURE.md), [openapi.yaml](openapi.yaml), [MILESTONES.md](MILESTONES.md).
 

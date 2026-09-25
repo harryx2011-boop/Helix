@@ -202,7 +202,7 @@ kbd {
 }
 
 /*
- * Light surface for the browser-side tools (/convert, /checks); formerly the marketing site's.
+ * Light surface for the browser-side tools (/checks); formerly the marketing site's.
  * Scoped by data-surface so app and marketing tokens never mix.
  */
 [data-surface='marketing'] {

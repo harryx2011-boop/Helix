@@ -2,6 +2,7 @@ import type { Endpoint } from './endpoints';
 import type { FailureReason } from './api';
 import { endpointById, EXAMPLE_REQUEST, ENDPOINTS } from './catalog';
 import { generateCode } from './codegen';
+import { mcpToolName } from './mcp-tool-names';
 
 export interface EndpointDocs {
   id: Endpoint;
@@ -50,11 +51,11 @@ export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
   document: {
     id: 'document',
     purpose:
-      'One endpoint over every document operation: parse a file to markdown or schema-shaped JSON, convert it to page images or markdown, report what it discloses about its author and tooling, or assess its text layer before spending on OCR. Send the file as a multipart `file` part or point at a `url` and Helix fetches it first.',
+      'One endpoint over every document operation: parse a file to markdown or schema-shaped JSON, report what it discloses about its author and tooling, or assess its text layer before spending on OCR. Send the file as a multipart `file` part or point at a `url` and Helix fetches it first.',
     whenToUse:
-      'Reach for Document whenever the input is a file rather than a page — PDF, DOCX, PPTX or XLSX. Pick the operation with `op`: `parse` for content, `convert` for page images or an Office file as markdown, `metadata` for disclosure (and `metadata/scrub` for a cleaned copy), `assess` for a text-layer verdict before committing to OCR. Use Scrape for HTML pages; Document refuses them with `unsupported_type`. `ocr: auto` runs OCR only when the text layer is missing or garbled. The same file sent twice is read once, keyed by content hash, whichever operation asks for it.',
+      'Reach for Document whenever the input is a file rather than a page — PDF, DOCX, PPTX or XLSX. Pick the operation with `op`: `parse` for content, `metadata` for disclosure (and `metadata/scrub` for a cleaned copy), `assess` for a text-layer verdict before committing to OCR. Use Scrape for HTML pages; Document refuses them with `unsupported_type`. `ocr: auto` runs OCR only when the text layer is missing or garbled. The same file sent twice is read once, keyed by content hash, whichever operation asks for it.',
     responseShape:
-      "`{ success, data: { op, ...operation fields, metadata: { filename, pageCount, fileType, ocrUsed, needsOcr, parser, sizeBytes, contentHash, sourceUrl, fromCache } }, warnings }`. The operation's own fields vary: `parse` returns `markdown`/`json`, `convert` returns `image`/`markdown`, `metadata` returns `findings`/`riskSummary`, `assess` returns `needsOcr`/`textLayerQuality`. A remote fetch problem, an unsupported type or an unreachable parser is `{ success: false, failure: { reason, detail, statusCode } }`; a file over the operator's upload ceiling is HTTP 413.",
+      "`{ success, data: { op, ...operation fields, metadata: { filename, pageCount, fileType, ocrUsed, needsOcr, parser, sizeBytes, contentHash, sourceUrl, fromCache } }, warnings }`. The operation's own fields vary: `parse` returns `markdown`/`json`, `metadata` returns `findings`/`riskSummary`, `assess` returns `needsOcr`/`textLayerQuality`. A remote fetch problem, an unsupported type or an unreachable parser is `{ success: false, failure: { reason, detail, statusCode } }`; a file over the operator's upload ceiling is HTTP 413.",
     failureReasons: ['unsupported_type', 'http_error', 'dns', 'tls', 'timeout', 'empty', 'service_unavailable'],
   },
   extract: {
@@ -165,9 +166,9 @@ export interface AgentSurfaceDocs {
   sections: DocSectionContent[];
 }
 
-/** `helix_<id>` for every endpoint whose route is live; the MCP server derives the same names from openapi.yaml operationIds. */
+/** The tool name for every endpoint whose route is live; the MCP server derives the same names from openapi.yaml operationIds. */
 export function liveMcpToolNames(): string[] {
-  return ENDPOINTS.filter((e) => e.status === 'live').map((e) => `helix_${e.id}`);
+  return ENDPOINTS.filter((e) => e.status === 'live').map((e) => mcpToolName(e.id));
 }
 
 const CLI_COMMAND = 'npx -y @helix/cli@latest init --all -k helix-YOUR_KEY';
@@ -193,7 +194,7 @@ export function agentSurfaceDocs(opts: { mcpUrl: string; siteUrl: string }): Rec
         },
         {
           title: 'Tools',
-          body: `Tools are generated from openapi.yaml by the running server, one per operation the running server actually serves: ${toolNames.map((n) => `\`${n}\``).join(', ')}, plus \`helix_get_job\`, \`helix_cancel_job\` and \`helix_get_job_errors\` for asynchronous work and \`helix_health\`. Each tool's description and input schema are the spec's own, with references inlined, so what an agent reads is what the HTTP endpoint accepts. A path that exists in the spec but has no route yet produces no tool.`,
+          body: `Tools are generated from openapi.yaml by the running server, one per operation the running server actually serves: ${toolNames.map((n) => `\`${n}\``).join(', ')}, plus \`helix_get_job\`, \`helix_cancel_job\` and \`helix_get_job_errors\` for asynchronous work and \`helix_health\`. Each tool's description and input schema are the spec's own, with references inlined, so what an agent reads is what the HTTP endpoint accepts. A path that exists in the spec but has no route yet produces no tool. Every listed schema is loaded into the agent's context on connect, so an operator can trim the list with \`HELIX_MCP_TOOLS\` (comma-separated tool names); unset exposes every live operation.`,
         },
         {
           title: 'Calls',

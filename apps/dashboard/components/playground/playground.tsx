@@ -6,11 +6,9 @@ import { usePreferences } from '@/lib/preferences';
 import { useRouter } from 'next/navigation';
 import { HelixApiError } from '@/lib/api';
 import type {
-  ConvertRequest,
   DocumentRequest,
   ExtractRequest,
   ScreenshotRequest,
-  ConvertResponse,
   CrawlRequest,
   CrawlResponse,
   Format,
@@ -44,7 +42,6 @@ import { SearchForm } from './forms/search-form';
 import { CrawlForm } from './forms/crawl-form';
 import { ParseForm } from './forms/parse-form';
 import { MetadataForm } from './forms/metadata-form';
-import { ConvertForm } from './forms/convert-form';
 import { DocumentForm } from './forms/document-form';
 import { ExtractForm } from './forms/extract-form';
 import { ScreenshotForm } from './forms/screenshot-form';
@@ -308,16 +305,6 @@ export function Playground() {
               onGetCode={(body, mode) => openCode('metadata', body, mode)}
             />
           )}
-          {activeDef.id === 'convert' && (
-            <ConvertForm
-              url={promptValue}
-              file={attachment}
-              onFileChange={setAttachment}
-              loading={loading}
-              onSubmit={(request: ConvertRequest | FormData) => run('convert', 'convert', request instanceof FormData ? request : (request as unknown as Record<string, unknown>), false)}
-              onGetCode={(body) => openCode('convert', body)}
-            />
-          )}
           {activeDef.id === 'document' && (
             <DocumentForm
               url={promptValue}
@@ -396,7 +383,6 @@ export type {
   MapResponse,
   MetadataResponse,
   MetadataScrubResponse,
-  ConvertResponse,
   SearchResponse,
   CrawlResponse,
   ParseResponse,

@@ -8,9 +8,7 @@ const compat = new FlatCompat({
 
 const config = [
   ...compat.extends('next/core-web-vitals'),
-  // public/workers/** is esbuild output from scripts/build-workers.mjs, not
-  // source: linting a bundled wasm loader reports on its vendored code.
-  { ignores: ['.next/**', '.next-*/**', 'out/**', 'node_modules/**', 'public/workers/**'] },
+  { ignores: ['.next/**', '.next-*/**', 'out/**', 'node_modules/**'] },
 ];
 
 export default config;

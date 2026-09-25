@@ -4,7 +4,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { deref, flattenAllOf, loadSpec, parseSpec, type OpenApiSpec } from './spec.js';
-import { generateTools, planRequest, toolName } from './tools.js';
+import { CONFIRM_REQUIRED, generateTools, planRequest, toolName } from './tools.js';
 import { registerMcp } from './server.js';
 import { InternalTickets, registerAuth } from '../core/auth.js';
 import { RateLimiter } from '../core/rate-limit.js';
@@ -183,7 +183,7 @@ describe('the real openapi.yaml', () => {
     const spec = loadSpec();
     const tools = generateTools(spec);
     const names = tools.map((t) => t.name);
-    for (const expected of ['helix_scrape', 'helix_map', 'helix_crawl', 'helix_search', 'helix_get_job', 'helix_health', 'helix_convert']) {
+    for (const expected of ['helix_scrape', 'helix_map', 'helix_crawl', 'helix_search', 'helix_get_job', 'helix_health']) {
       expect(names).toContain(expected);
     }
     for (const tool of tools) {
@@ -194,14 +194,17 @@ describe('the real openapi.yaml', () => {
     const scrape = tools.find((t) => t.name === 'helix_scrape')!;
     expect(scrape.inputSchema['required']).toEqual(['url']);
     expect(scrape.inputSchema['properties']).toHaveProperty('formats');
+  });
 
-    // /convert's response is raw bytes, not the usual JSON envelope; the tool
-    // still needs a normal object schema built from its request body alone.
-    const convert = tools.find((t) => t.name === 'helix_convert')!;
-    expect(convert.method).toBe('POST');
-    expect(convert.inputSchema['required']).toEqual(['url', 'to']);
-    expect(convert.inputSchema['properties']).toHaveProperty('page');
-    expect(convert.inputSchema['properties']).toHaveProperty('dpi');
+  // A gate entry whose path does not exist in the spec matches nothing and
+  // gates nothing. Batch cancel was listed as /batch/scrape/{jobId} while the
+  // spec says {id}, so the tool shipped without confirm.
+  it('gates only paths the spec has, so batch cancel requires confirm', () => {
+    const spec = loadSpec();
+    const paths = Object.keys(spec.paths);
+    for (const entry of CONFIRM_REQUIRED) expect(paths).toContain(entry.path);
+    const cancel = generateTools(spec).find((t) => t.name === 'helix_cancel_batch_scrape')!;
+    expect(cancel.inputSchema['required']).toContain('confirm');
   });
 });
 
@@ -234,6 +237,26 @@ describe('/mcp over streamable HTTP', () => {
     return { app, client, seen };
   }
 
+  it('exposes only the allowlisted tools when one is configured', async () => {
+    // Every tool schema is loaded into the agent's context on connect; an
+    // operator who wants the core dozen must be able to say so.
+    const app = Fastify();
+    await app.register(async (i) => { i.post('/scrape', async () => ({})); i.get('/jobs/:id', async () => ({})); }, { prefix: '/v1' });
+    await registerMcp(app, { spec: MINI_SPEC, only: ['helix_get_job', 'helix_nope'] });
+    await app.listen({ port: 0, host: '127.0.0.1' });
+    const port = (app.server.address() as { port: number }).port;
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    try {
+      await client.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp`)) as unknown as Transport);
+      expect((await client.listTools()).tools.map((t) => t.name)).toEqual(['helix_get_job']);
+      const r = await client.callTool({ name: 'helix_scrape', arguments: { url: 'https://example.com' } });
+      expect(r.isError).toBe(true);
+    } finally {
+      await client.close();
+      await app.close();
+    }
+  });
+
   it('lists only live tools and forwards calls, with the bearer key, through the HTTP routes', async () => {
     const { app, client, seen } = await boot(MINI_SPEC);
     try {
@@ -242,6 +265,8 @@ describe('/mcp over streamable HTTP', () => {
 
       const ok = await client.callTool({ name: 'helix_scrape', arguments: { url: 'https://example.com' } });
       expect(ok.isError).toBeFalsy();
+      // One line: a pretty-printed envelope spends tokens on indentation.
+      expect((ok.content as { text: string }[])[0]!.text).not.toContain('\n');
       expect(JSON.parse((ok.content as { text: string }[])[0]!.text)).toEqual({
         success: true,
         data: { markdown: '# hi' },

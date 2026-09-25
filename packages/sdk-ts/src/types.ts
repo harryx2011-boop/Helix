@@ -1146,7 +1146,7 @@ export interface ExtractResponse {
 }
 
 /** The operations `POST /document` dispatches to. */
-export type DocumentOp = 'parse' | 'convert' | 'metadata' | 'scrub' | 'assess';
+export type DocumentOp = 'parse' | 'metadata' | 'scrub' | 'assess';
 
 /**
  * A `/document` request: the operation, plus whatever that operation takes.

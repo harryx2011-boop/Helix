@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Helix
-  version: 1.23.1
+  version: 1.24.0
   summary: A frontier utility hub. Self-hostable and BYOK.
   description: |
     Helix turns web pages and documents into clean, structured, LLM-ready data.
@@ -404,102 +404,6 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
-  /convert:
-    post:
-      tags: [Parse]
-      summary: Rasterize a PDF page, or convert PNG to JPEG and back
-      description: |
-        Returns the converted file directly, the same wire shape
-        `/metadata/scrub` uses — no base64, no JSON wrapper, so the response
-        streams straight to disk or into a vision call.
-
-        Scoped to what helix-extract's pipeline can actually produce: a PDF
-        page rasterized to `png` or `jpeg` (`page` selects which one, 1-based;
-        `dpi` controls resolution, default 144), and `png`/`jpeg` re-encoded to
-        each other. There is no path to `pdf`, `docx`, `pptx` or `xlsx` as a
-        *target* — authoring those formats from other content needs a
-        document-layout engine this project does not carry, a separate and
-        much larger decision than rasterizing or re-encoding what already
-        exists.
-
-        Two ways to send the file, exactly like `/parse`: a JSON body with
-        `url`, or a `multipart/form-data` body with a `file` part and `to` as
-        a form field.
-      operationId: convert
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ConvertRequest' }
-            examples:
-              rasterizePage:
-                summary: Turn page 2 of a PDF into a PNG for a vision call
-                value:
-                  url: 'https://example.com/files/report.pdf'
-                  to: png
-                  page: 2
-              normalizeImage:
-                summary: Re-encode a PNG as JPEG
-                value:
-                  url: 'https://example.com/files/photo.png'
-                  to: jpeg
-          multipart/form-data:
-            schema: { $ref: '#/components/schemas/ConvertUpload' }
-            encoding:
-              file: { contentType: 'application/pdf, image/png, image/jpeg' }
-      responses:
-        '200':
-          description: |
-            The converted file. On a typed failure the body is
-            `application/json` carrying a `ConvertResponse` with
-            `success: false` instead — an unsupported source, an unreachable
-            target for that source, or a corrupt file too broken to rasterize
-            or re-encode are all reported here rather than as an HTTP error.
-          headers:
-            X-Helix-Convert-Pages:
-              schema: { type: integer }
-              description: Total pages in the source PDF; `1` for an image source.
-            X-Helix-Convert-Page:
-              schema: { type: string }
-              description: The 1-based page that was rasterized. Empty for an image-to-image conversion.
-            X-RateLimit-Limit: { $ref: '#/components/headers/RateLimitLimit' }
-            X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimitRemaining' }
-            X-RateLimit-Reset: { $ref: '#/components/headers/RateLimitReset' }
-          content:
-            image/png:
-              schema: { type: string, format: binary }
-            image/jpeg:
-              schema: { type: string, format: binary }
-            application/json:
-              schema: { $ref: '#/components/schemas/ConvertResponse' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '413':
-          description: The file (uploaded or fetched) exceeds this instance's upload ceiling.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
-        '415':
-          description: The source cannot reach the requested `to` format, or the request body is neither JSON nor `multipart/form-data`.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
-        '422':
-          description: The file could not be opened as the type it was declared to be — a corrupt or mislabelled upload.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
-        '429': { $ref: '#/components/responses/RateLimited' }
-        '503':
-          description: This instance is already converting `HELIX_PARSE_MAX_INFLIGHT` files. Retry after the `Retry-After` header.
-          headers:
-            Retry-After:
-              schema: { type: integer }
-              description: Seconds to wait before retrying.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
-
   /metadata:
     post:
       tags: [Metadata]
@@ -685,13 +589,12 @@ paths:
       tags: [Parse, Metadata]
       summary: One surface over every document operation
       description: |
-        Parse, convert, inspect and scrub a document through one endpoint. `op`
+        Parse, inspect and scrub a document through one endpoint. `op`
         picks the operation; every other field is whatever that operation takes.
 
         | `op` | Does what `/v1/…` does |
         |---|---|
         | `parse` | `/parse` — markdown, or JSON against a schema |
-        | `convert` | `/convert` — a PDF page as an image |
         | `metadata` | `/metadata` — what the file discloses |
         | `scrub` | `/metadata/scrub` — a cleaned copy, as file bytes |
         | `assess` | `/pdf-assess` — text-layer quality before OCR |
@@ -699,7 +602,7 @@ paths:
         It **dispatches** rather than reimplements: each operation keeps its own
         multipart parsing, upload ceiling, in-flight cap and result cache, so a
         request behaves identically whether it arrives here or at the original
-        path. Those four paths remain valid and unchanged — this is an addition,
+        path. Those paths remain valid and unchanged — this is an addition,
         not a migration.
 
         A multipart upload cannot name `op` in the body without the body being
@@ -3002,53 +2905,6 @@ components:
                 sourceUrl: { type: string, format: uri, description: Present on the `url` path only. }
         failure: { $ref: '#/components/schemas/FetchFailure' }
 
-    ConvertRequest:
-      type: object
-      required: [url, to]
-      properties:
-        url:
-          type: string
-          format: uri
-          description: The file to fetch and convert. An HTML page here is a typed `unsupported_type` failure.
-        to:
-          type: string
-          enum: [png, jpeg]
-          description: Target format. `pdf` sources can reach either; `png` and `jpeg` only reach each other.
-        page:
-          type: integer
-          minimum: 1
-          default: 1
-          description: 1-based. PDF sources only; ignored for an image source.
-        dpi:
-          type: integer
-          minimum: 36
-          maximum: 600
-          default: 144
-          description: Rasterization resolution. PDF sources only; ignored for an image source.
-        timeout:
-          type: integer
-          minimum: 1000
-          maximum: 300000
-          default: 30000
-          description: Remote fetch budget in milliseconds. Applies to the `url` path only.
-
-    ConvertUpload:
-      type: object
-      required: [file, to]
-      properties:
-        file: { type: string, format: binary }
-        to: { type: string, enum: [png, jpeg] }
-        page: { type: integer, minimum: 1 }
-        dpi: { type: integer, minimum: 36, maximum: 600 }
-
-    ConvertResponse:
-      type: object
-      required: [success]
-      description: Present only on a typed failure; a successful conversion answers with the file bytes instead.
-      properties:
-        success: { type: boolean }
-        failure: { $ref: '#/components/schemas/FetchFailure' }
-
     MetadataRequest:
       type: object
       required: [url]
@@ -4490,7 +4346,7 @@ components:
 
     DocumentOp:
       type: string
-      enum: [parse, convert, metadata, scrub, assess]
+      enum: [parse, metadata, scrub, assess]
       description: Which document operation `/document` dispatches to.
 
     DocumentRequest:
@@ -4513,9 +4369,6 @@ components:
           items: { $ref: '#/components/schemas/Format' }
         ocr: { type: string, enum: [auto, force, off], description: '`parse` only.' }
         jsonOptions: { type: object, additionalProperties: true, description: '`parse` only.' }
-        to: { type: string, enum: [png, jpeg], description: '`convert` only.' }
-        page: { type: integer, minimum: 1, description: '`convert` only. 1-based.' }
-        dpi: { type: integer, description: '`convert` only.' }
         timeout: { type: integer }
 
     ScreenshotRequest:

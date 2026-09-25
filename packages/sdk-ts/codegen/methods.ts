@@ -105,7 +105,7 @@ does not have to construct a job body it has no intention of running.`,
     request: 'DocumentRequest | FormData',
     query: 'none',
     response: 'DocumentResponse',
-    doc: `One surface over parse, convert, metadata and assess; \`op\` picks which.
+    doc: `One surface over parse, metadata and assess; \`op\` picks which.
 
 The four original methods still work and are better typed — reach for this
 when the operation is chosen at runtime rather than written in the code.`,
@@ -168,7 +168,6 @@ A field with no grounding span in its source is dropped and reported in
 export const NOT_IN_SDK: Readonly<Record<string, string>> = {
   interactLiveView: 'An HTML page for a browser tab, not an API call.',
   pdfAssess: 'Not in the SDK yet; reachable through document({ op: "assess" }).',
-  convert: 'Not in the SDK yet; reachable through document({ op: "convert" }).',
   robotsCheck: 'Not in the SDK yet.',
   diff: 'Not in the SDK yet.',
   getJobSchema: 'Not in the SDK yet.',

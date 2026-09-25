@@ -37,26 +37,6 @@ const config: Config = {
           border: { faint: 'var(--m-border-faint)', muted: 'var(--m-border-muted)', loud: 'var(--m-border-loud)' },
           illus: { faint: 'var(--m-illus-faint)', muted: 'var(--m-illus-muted)', DEFAULT: 'var(--m-illus-default)' },
         },
-        // Converter surface only ([data-surface='convert'], app/converter.css).
-        // Kept in its own namespace rather than mapped onto `m-*`/`violet`:
-        // the converter's blue is an action colour with its own contrast pair
-        // (--p-on-blue), and remapping it would change the design, not port it.
-        p: {
-          bg: 'var(--p-bg)',
-          surface: 'var(--p-surface)',
-          ink: 'var(--p-ink)',
-          'ink-2': 'var(--p-ink-2)',
-          'ink-3': 'var(--p-ink-3)',
-          line: 'var(--p-line)',
-          'line-2': 'var(--p-line-2)',
-          code: 'var(--p-code)',
-        },
-        blue: {
-          DEFAULT: 'var(--p-blue)',
-          hover: 'var(--p-blue-hover)',
-          soft: 'var(--p-blue-soft)',
-          ring: 'var(--p-blue-ring)',
-        },
         violet: {
           DEFAULT: 'rgb(var(--violet-rgb) / <alpha-value>)',
           100: 'var(--violet-100)',
@@ -77,11 +57,6 @@ const config: Config = {
         pill: '999px',
         card: '6px',
         panel: '8px',
-        // The converter's own radii. Its markup uses rounded-card/-panel at
-        // 10px/14px; those names are taken here at 6px/8px, so the converter
-        // components were rewritten to these two.
-        'cv-card': '10px',
-        'cv-panel': '14px',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
@@ -89,22 +64,6 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-geist-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
-      },
-      // Named rungs the converter's markup uses. The dashboard's own type
-      // comes from Tailwind's default scale and is untouched by these.
-      fontSize: {
-        micro: ['11px', { lineHeight: '1.45' }],
-        caption: ['12px', { lineHeight: '1.5' }],
-        note: ['13px', { lineHeight: '1.55' }],
-        body: ['15px', { lineHeight: '1.6' }],
-        lead: ['17px', { lineHeight: '1.55' }],
-        h4: ['18px', { lineHeight: '1.4', letterSpacing: '-0.005em' }],
-        h3: ['22px', { lineHeight: '1.3', letterSpacing: '-0.01em' }],
-        h3x: ['24px', { lineHeight: '1.3', letterSpacing: '-0.01em' }],
-        h2: ['26px', { lineHeight: '1.25', letterSpacing: '-0.01em' }],
-        h2lg: ['32px', { lineHeight: '1.2', letterSpacing: '-0.015em' }],
-        h1: ['30px', { lineHeight: '1.15', letterSpacing: '-0.02em' }],
-        h1lg: ['40px', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
       },
       fontWeight: { normal: '400', medium: '450', semibold: '500' },
       letterSpacing: { tightest: '-0.52px', tighter: '-0.4px', tight: '-0.24px', normal: '0.14px', wide: '0.8px' },

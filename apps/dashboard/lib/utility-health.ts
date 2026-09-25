@@ -47,12 +47,11 @@ const DEPENDENCIES: Record<RunnableEndpoint, UtilityDependencies> = {
   // routes/scrape.ts: fetchClient, extractClient, browserPool?. The plain and
   // tls tiers need no browser; jsonOptions goes through the LLM.
   scrape: { hard: ['postgres', 'fetch', 'extract'], soft: ['browser'], optional: 'llm' },
-  // routes/parse.ts, metadata.ts, convert.ts: extractClient only.
+  // routes/parse.ts, metadata.ts: extractClient only.
   parse: { hard: ['postgres', 'extract'], soft: [] },
   metadata: { hard: ['postgres', 'extract'], soft: [] },
-  convert: { hard: ['postgres', 'extract'], soft: [] },
-  // routes/document.ts forwards to the four above, so it needs what they need
-  // and nothing more; parse's `jsonOptions` is the one path that reaches a model.
+  // routes/document.ts forwards to parse, metadata and pdf-assess, so it needs
+  // what they need and nothing more; parse's `jsonOptions` is the one path that reaches a model.
   document: { hard: ['postgres', 'extract'], soft: [], optional: 'llm' },
   // routes/extract.ts: the scrape pipeline per URL, then the model. The model
   // is the point of the endpoint rather than one option of it, but `llm` is not

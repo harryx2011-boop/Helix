@@ -18,7 +18,6 @@ import { registerHealth } from './routes/health.js';
 import { registerScrape } from './routes/scrape.js';
 import { registerParse } from './routes/parse.js';
 import { registerMetadata } from './routes/metadata.js';
-import { registerConvert } from './routes/convert.js';
 import { registerKeys } from './routes/keys.js';
 import { registerProviders } from './routes/providers.js';
 import { deriveEncryptionKey } from './providers/crypto.js';
@@ -320,12 +319,6 @@ await app.register(
       encryptionKey: providerEncryptionKey,
     });
     await registerMetadata(instance, {
-      extractClient,
-      maxUploadBytes: config.parseMaxUploadMb * 1024 * 1024,
-      maxInFlight: config.parseMaxInflight,
-      userAgent: config.userAgent,
-    });
-    await registerConvert(instance, {
       extractClient,
       maxUploadBytes: config.parseMaxUploadMb * 1024 * 1024,
       maxInFlight: config.parseMaxInflight,

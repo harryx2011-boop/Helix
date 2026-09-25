@@ -11,7 +11,6 @@ const ENDPOINTS: Endpoint[] = [
   'scrape',
   'parse',
   'metadata',
-  'convert',
   'document',
   'extract',
   'screenshot',
@@ -95,19 +94,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // Scan/JSON endpoints answer with a typed envelope the browser already parses;
-  // scrub and convert answer with file bytes (scrub with a report header too),
-  // and get forwarded byte-for-byte instead of round-tripped through JSON.
+  // scrub answers with file bytes and a report header, and is forwarded
+  // byte-for-byte instead of round-tripped through JSON.
   if (endpointParam === 'metadata' && mode === 'scrub' && upstream.ok) {
     const headers = new Headers();
     for (const name of ['content-type', 'content-disposition', 'x-helix-metadata-report', 'x-helix-metadata-removed', 'x-helix-metadata-retained']) {
-      const value = upstream.headers.get(name);
-      if (value) headers.set(name, value);
-    }
-    return new NextResponse(upstream.body, { status: upstream.status, headers });
-  }
-  if (endpointParam === 'convert' && upstream.ok && !upstream.headers.get('content-type')?.includes('application/json')) {
-    const headers = new Headers();
-    for (const name of ['content-type', 'content-disposition', 'x-helix-convert-pages', 'x-helix-convert-page']) {
       const value = upstream.headers.get(name);
       if (value) headers.set(name, value);
     }

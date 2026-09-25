@@ -28,9 +28,8 @@ The full stack runs locally and nothing local needs any of this.
 
 - [ ] Host the API, then set `HELIX_MULTI_TENANT=1` on it. Verify `/v1/keys` and
       `/v1/usage/all` return 404 — a 200 means the variable never reached the API.
-- [ ] Host the Converter (`apps/converter`, 4400, fully client-side — no backend to
-      deploy alongside it), then set `NEXT_PUBLIC_CONVERTER_URL`. The footer and nav rows
-      appear on their own once it is set.
+- [x] ~~Host the Converter.~~ Dropped 2026-09-25: the Converter left Helix; file conversion
+      lives in Sparky.
 - [ ] `--build-arg HELIX_BROWSER_ENGINES="chromium firefox"` when building the API image,
       if a container should offer Firefox or WebKit. Chromium alone is the default.
 

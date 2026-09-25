@@ -83,8 +83,8 @@ Dockerfile: `apps/extract/Dockerfile` (python:3.12-slim). Any container host wor
 Health check: `GET /health` returns `llm_configured`.
 
 **`apps/extract` and `apps/api` deploy together, not independently.** A feature
-that adds a route to one and calls it from the other — `POST /v1/convert` is
-the first example — fails in a specific, misleading way if only `apps/api` is
+that adds a route to one and calls it from the other — `POST /v1/convert`, since
+removed, was the first example — fails in a specific, misleading way if only `apps/api` is
 redeployed: the API answers `service_unavailable` with detail `"Not Found"`,
 which reads like extract is down rather than merely out of date. Locally this
 also bites through `uvicorn`'s dev server, which does not hot-reload new

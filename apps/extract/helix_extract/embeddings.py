@@ -14,6 +14,7 @@ import asyncio
 from dataclasses import dataclass
 from functools import lru_cache
 
+from . import runtime
 from .provider import CALL_TIMEOUT_SECONDS
 from .settings import settings
 
@@ -40,7 +41,11 @@ def _local_model():  # type: ignore[no-untyped-def]
     First call pays the load cost — hundreds of megabytes and several seconds —
     so it is cached for the process lifetime. The Docker image pre-downloads the
     weights so the first request does not also pay for a download.
+
+    The desktop exe carries no torch: `ensure()` fetches the runtime pack on first
+    use and raises `RuntimeNotReadyError` until it has installed.
     """
+    runtime.embeddings_runtime.ensure()
     try:
         from sentence_transformers import SentenceTransformer
     except ImportError as exc:  # pragma: no cover - declared dependency
@@ -49,7 +54,8 @@ def _local_model():  # type: ignore[no-untyped-def]
             "to a hosted provider, or install the base dependencies."
         ) from exc
 
-    return SentenceTransformer(settings.helix_embedding_model)
+    name = settings.helix_embedding_model
+    return SentenceTransformer(runtime.embeddings_runtime.model_path(name) or name)
 
 
 async def _embed_local(texts: list[str]) -> EmbeddingResult:

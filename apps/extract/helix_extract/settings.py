@@ -38,6 +38,14 @@ class Settings(BaseSettings):
     voyage_api_key: str | None = None
     cohere_api_key: str | None = None
 
+    # --- local-embeddings runtime (desktop exe) ------------------------------
+    # The exe ships without torch; the runtime pack is fetched here on first use.
+    helix_runtime_dir: str | None = None
+    helix_embeddings_runtime_url: str = (
+        "https://github.com/harryx2011-boop/helix-releases/releases/latest/download/"
+        "helix-embeddings-runtime-win-x64.zip"
+    )
+
     @property
     def llm_configured(self) -> bool:
         return any(

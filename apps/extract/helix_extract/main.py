@@ -24,6 +24,7 @@ from . import (
     extraction,
     llm,
     metadata,
+    runtime,
     schema_gen,
 )
 from .schema_compiler import SchemaError
@@ -35,6 +36,15 @@ app = FastAPI(
     description="Internal service. Not exposed publicly.",
 )
 
+runtime.embeddings_runtime.activate()
+
+
+class LocalEmbeddings(BaseModel):
+    # missing | downloading | ready | failed
+    state: str
+    percent: int | None = None
+    message: str | None = None
+
 
 class Health(BaseModel):
     status: str
@@ -43,10 +53,12 @@ class Health(BaseModel):
     document_parsers: list[str]
     llm_configured: bool
     embedding_model: str
+    local_embeddings: LocalEmbeddings
 
 
 @app.get("/health", response_model=Health)
 async def health() -> Health:
+    local = runtime.embeddings_runtime.state()
     return Health(
         status="ok",
         version="1.4.0",
@@ -54,6 +66,9 @@ async def health() -> Health:
         document_parsers=documents.available_parsers(),
         llm_configured=settings.llm_configured,
         embedding_model=settings.embedding_model,
+        local_embeddings=LocalEmbeddings(
+            state=local.state, percent=local.percent, message=local.message
+        ),
     )
 
 
@@ -551,6 +566,12 @@ async def chunk(request: ChunkRequest) -> ChunkResponse:
             vectors = result.vectors
             model_used = result.model
             dimensions = result.dimensions
+        except runtime.RuntimeNotReadyError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail=str(exc),
+                headers={"Retry-After": str(exc.retry_after)},
+            ) from exc
         except embeddings.EmbeddingError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
 

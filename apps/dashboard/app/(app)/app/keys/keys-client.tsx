@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatRelativeTime } from '@/lib/format';
-import { PUBLIC_API_URL } from '@/lib/mode';
+import { instanceUrl } from '@/lib/mode';
 import { createInstanceKey, listInstanceKeys, revokeInstanceKey } from '@/lib/instance-keys';
 import { generateEphemeralKey } from '@/lib/ephemeral-keys';
 import { toast } from 'sonner';
@@ -278,7 +278,7 @@ export function KeysClient() {
             </div>
           ) : !instanceReachable ? (
             <p className="p-4 text-sm text-muted-foreground">
-              Could not reach the instance at <code className="font-mono text-xs">{PUBLIC_API_URL}</code>, so there are
+              Could not reach the instance at <code className="font-mono text-xs">{instanceUrl()}</code>, so there are
               no keys to list. You can still generate one here — it is created in your browser and never sent anywhere.
               Install it on an instance with <code className="font-mono text-xs">HELIX_BOOTSTRAP_KEY</code> or{' '}
               <code className="font-mono text-xs">POST /internal/keys</code> to make it authenticate.

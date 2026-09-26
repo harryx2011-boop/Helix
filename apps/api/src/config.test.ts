@@ -1,32 +1,42 @@
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { loadConfig } from './config.js';
 
 /**
- * The multi-tenant flag decides whether the tenant boundary is enforced at all,
- * so its default and its parsing are the load-bearing part. A self-host
- * operator upgrading must not have to set anything to keep the flat model.
+ * The driver default decides whether an operator with nothing configured gets
+ * a working instance. Unset HELIX_DB follows DATABASE_URL: present means the
+ * existing Postgres keeps serving, absent means the in-process engine.
  */
 
 const base = { DATABASE_URL: 'postgres://localhost/helix' } as NodeJS.ProcessEnv;
 
-describe('multiTenant', () => {
-  it('is off when the variable is unset, so an upgrade changes nothing for self-host', () => {
-    expect(loadConfig({ ...base }).multiTenant).toBe(false);
+describe('db', () => {
+  it('keeps pg when DATABASE_URL is set, so an upgrade changes nothing', () => {
+    expect(loadConfig({ ...base }).db).toBe('pg');
   });
 
-  it('is on for 1', () => {
-    expect(loadConfig({ ...base, HELIX_MULTI_TENANT: '1' }).multiTenant).toBe(true);
+  it('falls back to pglite when nothing is configured', () => {
+    const config = loadConfig({});
+    expect(config.db).toBe('pglite');
+    expect(config.databaseUrl).toBeUndefined();
   });
 
-  it('is on for true', () => {
-    expect(loadConfig({ ...base, HELIX_MULTI_TENANT: 'true' }).multiTenant).toBe(true);
+  it('honours an explicit HELIX_DB over the DATABASE_URL default', () => {
+    expect(loadConfig({ ...base, HELIX_DB: 'pglite' }).db).toBe('pglite');
   });
 
-  it('is off for anything else, rather than treating a typo as enabled', () => {
-    expect(loadConfig({ ...base, HELIX_MULTI_TENANT: 'yes' }).multiTenant).toBe(false);
-    expect(loadConfig({ ...base, HELIX_MULTI_TENANT: '' }).multiTenant).toBe(false);
-    expect(loadConfig({ ...base, HELIX_MULTI_TENANT: 'false' }).multiTenant).toBe(false);
+  it('refuses pg without a DATABASE_URL rather than failing at the first query', () => {
+    expect(() => loadConfig({ HELIX_DB: 'pg' })).toThrow(/DATABASE_URL/);
+  });
+
+  it('rejects an unknown driver', () => {
+    expect(() => loadConfig({ HELIX_DB: 'sqlite' })).toThrow();
+  });
+
+  it('puts the data folder under the working directory unless HELIX_DATA_DIR says otherwise', () => {
+    expect(loadConfig({}).dataDir).toBe(join(process.cwd(), 'data'));
+    expect(loadConfig({ HELIX_DATA_DIR: 'D:/helix-data' }).dataDir).toBe('D:/helix-data');
   });
 });
 

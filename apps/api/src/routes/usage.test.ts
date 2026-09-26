@@ -127,7 +127,7 @@ const KEY_B: ApiKey = { ...KEY_A, id: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', na
 
 let app: FastifyInstance;
 
-async function build(options: { multiTenant?: boolean } = {}): Promise<FastifyInstance> {
+async function build(): Promise<FastifyInstance> {
   const built = Fastify();
   // The same redacting handler index.ts installs. Without it a bare Fastify
   // returns the driver's own message, so a leak test on a handler-less app
@@ -150,7 +150,7 @@ async function build(options: { multiTenant?: boolean } = {}): Promise<FastifyIn
   });
   await built.register(
     async (instance) => {
-      await registerUsage(instance, { multiTenant: options.multiTenant === true });
+      await registerUsage(instance);
     },
     { prefix: '/v1' },
   );
@@ -490,31 +490,11 @@ describe('GET /v1/usage when the usage table is missing', () => {
 });
 
 /**
- * `/usage/all` totals every key on the instance. On a shared one that crosses
- * the tenant boundary and has no owner predicate to narrow it by, so it is not
- * registered at all.
+ * `/usage/all` totals every key on the instance, all of them the one
+ * operator's, so it is always registered.
  */
-describe('multi-tenant registration', () => {
-  it('does not register the instance-wide summary', async () => {
-    app = await build({ multiTenant: true });
-    db.state.usage = [row({ api_key_id: KEY_B.id })];
-
-    const response = await app.inject({ method: 'GET', url: '/v1/usage/all', headers: { 'x-test-key': 'a' } });
-
-    expect(response.statusCode).toBe(404);
-  });
-
-  it('leaves the per-key summary serving, since it already reads only the caller key', async () => {
-    app = await build({ multiTenant: true });
-    db.state.usage = [row({ api_key_id: KEY_A.id })];
-
-    const response = await app.inject({ method: 'GET', url: '/v1/usage', headers: { 'x-test-key': 'a' } });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.json().key.id).toBe(KEY_A.id);
-  });
-
-  it('serves the instance-wide summary under self-host', async () => {
+describe('registration', () => {
+  it('serves the instance-wide summary', async () => {
     app = await build();
     db.state.usage = [row({ api_key_id: KEY_A.id })];
 

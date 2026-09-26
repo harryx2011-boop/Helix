@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { z } from 'zod';
 
 /**
@@ -34,13 +35,18 @@ const positiveInt = (d: number) => int(d).pipe(z.number().min(1));
 
 const ConfigSchema = z.object({
   port: int(7400),
+  /** Bind address. The desktop app sets 127.0.0.1 so the instance never reaches the LAN. */
+  host: z.string().default('0.0.0.0'),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
   bootstrapKey: z.string().optional(),
   internalAdminToken: z.string().optional(),
   /** AES-256-GCM key for stored provider keys, as 32 bytes of hex or base64. Unset derives it from HELIX_BOOTSTRAP_KEY (SHA-256), so self-host stays zero-config. */
   encryptionKey: z.string().optional(),
 
-  databaseUrl: z.string().min(1, 'DATABASE_URL is required'),
+  /** `pglite` runs Postgres in-process with its data under `dataDir`; `pg` connects to `databaseUrl`. */
+  db: z.enum(['pg', 'pglite']),
+  databaseUrl: z.string().optional(),
+  dataDir: z.string().default(join(process.cwd(), 'data')),
   fetchUrl: z.string().default('http://localhost:7401'),
   extractUrl: z.string().default('http://localhost:7402'),
 
@@ -121,15 +127,6 @@ const ConfigSchema = z.object({
   /** A page whose text exceeds this many bytes fails the check instead of being stored. */
   monitorMaxContentBytes: int(1_048_576),
 
-  /**
-   * Many tenants share this instance, so one API key stands for one tenant and
-   * must not reach another's jobs or keys. The API cannot infer this: the same
-   * code serves a single-operator self-host, where every key on the instance is
-   * the same person's and a flat model is correct. Off by default so upgrading
-   * a self-host changes nothing.
-   */
-  multiTenant: bool(false),
-
   // Comma-separated allowed origins for the dashboard. Defaults to the dev
   // origins for the split-port setup (dashboard 3400 -> API 7400). Set
   // explicitly in production to the dashboard's real origin.
@@ -141,11 +138,15 @@ const ConfigSchema = z.object({
         ? ['http://localhost:3400', 'http://127.0.0.1:3400']
         : v.split(',').map((o) => o.trim()).filter(Boolean),
     ),
+  staticDir: z.string().optional(),
   // MCP tool names to expose (comma list); unset exposes every live operation.
   mcpTools: z
     .string()
     .optional()
     .transform((v) => (v === undefined ? undefined : v.split(',').map((o) => o.trim()).filter(Boolean))),
+}).refine((c) => c.db !== 'pg' || c.databaseUrl !== undefined, {
+  message: 'DATABASE_URL is required when HELIX_DB=pg',
+  path: ['databaseUrl'],
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -153,11 +154,14 @@ export type Config = z.infer<typeof ConfigSchema>;
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = ConfigSchema.safeParse({
     port: env.HELIX_PORT,
+    host: env.HELIX_HOST,
     logLevel: env.HELIX_LOG_LEVEL,
     bootstrapKey: env.HELIX_BOOTSTRAP_KEY,
     internalAdminToken: env.HELIX_INTERNAL_ADMIN_TOKEN,
     encryptionKey: env.HELIX_ENCRYPTION_KEY || undefined,
-    databaseUrl: env.DATABASE_URL,
+    db: env.HELIX_DB || (env.DATABASE_URL ? 'pg' : 'pglite'),
+    databaseUrl: env.DATABASE_URL || undefined,
+    dataDir: env.HELIX_DATA_DIR || undefined,
     fetchUrl: env.HELIX_FETCH_URL,
     extractUrl: env.HELIX_EXTRACT_URL,
     respectRobots: env.HELIX_RESPECT_ROBOTS,
@@ -201,8 +205,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     monitorRetainDays: env.HELIX_MONITOR_RETAIN_DAYS,
     monitorRetainChecks: env.HELIX_MONITOR_RETAIN_CHECKS,
     monitorMaxContentBytes: env.HELIX_MONITOR_MAX_CONTENT_BYTES,
-    multiTenant: env.HELIX_MULTI_TENANT,
     corsOrigins: env.HELIX_CORS_ORIGINS,
+    staticDir: env.HELIX_STATIC_DIR || undefined,
     mcpTools: env.HELIX_MCP_TOOLS,
   });
 

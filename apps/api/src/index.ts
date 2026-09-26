@@ -10,6 +10,7 @@ import { ensureBootstrapKey, verifyApiKey } from './core/api-keys.js';
 import { InternalTickets, registerAuth } from './core/auth.js';
 import { closePool, createPool } from './db/pool.js';
 import { migrate } from './db/migrate.js';
+import { startSweeper } from './db/sweeper.js';
 import { FetchClient } from './fetch/client.js';
 import { ExtractClient } from './extract/client.js';
 import { BrowserPool } from './browser/pool.js';
@@ -48,6 +49,7 @@ import { registerInteract } from './routes/interact.js';
 import { createSearchProvider } from './search/providers.js';
 import { WebhookDispatcher as CrawlWebhookDispatcher } from './webhooks/dispatcher.js';
 import { registerMcp } from './mcp/server.js';
+import { registerStatic } from './static/serve.js';
 import { registerMonitor } from './routes/monitor.js';
 import { PgMonitorStore } from './monitor/store.js';
 import { MonitorScheduler } from './monitor/scheduler.js';
@@ -100,7 +102,7 @@ app.setErrorHandler((error: FastifyError, request, reply) => {
   });
 });
 
-const pool = createPool(config.databaseUrl, app.log);
+const pool = createPool({ driver: config.db, connectionString: config.databaseUrl, dataDir: config.dataDir }, app.log);
 
 // Stored overrides are merged before anything reads `config`, so a setting the
 // screen reported as "restart required" genuinely takes effect on restart.
@@ -332,7 +334,7 @@ await app.register(
       allowPrivateUrls: config.allowPrivateUrls,
       encryptionKey: providerEncryptionKey,
     });
-    await registerKeys(instance, { multiTenant: config.multiTenant });
+    await registerKeys(instance);
     await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured });
     await registerMap(instance, {
       fetchClient,
@@ -346,7 +348,6 @@ await app.register(
       userAgent: config.userAgent,
       allowPrivateUrls: config.allowPrivateUrls,
       defaultModel: process.env['HELIX_LLM_MODEL'] ?? 'unset',
-      multiTenant: config.multiTenant,
       limits: {
         defaultLimit: config.crawlDefaultLimit,
         maxLimit: config.crawlMaxLimit,
@@ -354,9 +355,9 @@ await app.register(
         respectRobots: config.respectRobots,
       },
     });
-    await registerBatch(instance, { multiTenant: config.multiTenant });
-    await registerJobs(instance, { multiTenant: config.multiTenant });
-    await registerUsage(instance, { multiTenant: config.multiTenant });
+    await registerBatch(instance);
+    await registerJobs(instance);
+    await registerUsage(instance);
     await registerSearch(instance, {
       provider: searchProvider,
       fetchClient,
@@ -460,6 +461,7 @@ await registerSettings(app, {
 // bearer key on the MCP request is the same key the HTTP API takes, verified
 // and rate limited once on the way in; the replayed tool call rides a ticket.
 await registerMcp(app, { prefix: '/v1', tickets, only: config.mcpTools });
+if (config.staticDir) await registerStatic(app, { dir: config.staticDir });
 
 const start = async (): Promise<void> => {
   try {
@@ -499,8 +501,9 @@ const start = async (): Promise<void> => {
         app.log.warn({ error }, 'usage retention sweep failed'),
       );
     }, 60 * 60 * 1000).unref();
+    startSweeper({ logger: app.log });
 
-    await app.listen({ port: config.port, host: '0.0.0.0' });
+    await app.listen({ port: config.port, host: config.host });
     app.log.info(
       { port: config.port },
       'Helix API listening. Provider credentials are read from the environment; Helix calls your models with your keys.',
@@ -513,29 +516,36 @@ const start = async (): Promise<void> => {
 };
 
 let shuttingDown = false;
-for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-  process.on(signal, () => {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    app.log.info({ signal }, 'shutting down');
+const shutdown = (reason: string): void => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  app.log.info({ reason }, 'shutting down');
 
-    void (async () => {
-      crawlWorker.stop();
-      monitorScheduler.stop();
-      monitorWebhookDispatcher.stop();
-      crawlWebhookDispatcher.stop();
-      statusSampler.stop();
-      usageRecorder.stop();
-      // Flushed before the pool closes, or the final interval of counts is lost
-      // on every clean restart rather than only on a crash.
-      await usageRecorder.flush().catch(() => undefined);
-      await sessions.closeAll().catch(() => undefined);
-      await app.close().catch(() => undefined);
-      await browserPool.close().catch(() => undefined);
-      await closePool().catch(() => undefined);
-      process.exit(0);
-    })();
-  });
+  void (async () => {
+    crawlWorker.stop();
+    monitorScheduler.stop();
+    monitorWebhookDispatcher.stop();
+    crawlWebhookDispatcher.stop();
+    statusSampler.stop();
+    usageRecorder.stop();
+    // Flushed before the pool closes, or the final interval of counts is lost
+    // on every clean restart rather than only on a crash.
+    await usageRecorder.flush().catch(() => undefined);
+    await sessions.closeAll().catch(() => undefined);
+    await app.close().catch(() => undefined);
+    await browserPool.close().catch(() => undefined);
+    await closePool().catch(() => undefined);
+    process.exit(0);
+  })();
+};
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(signal, () => shutdown(signal));
 }
+// Windows has no SIGTERM: the desktop supervisor asks over the IPC channel instead.
+process.on('message', (message: unknown) => {
+  if (typeof message === 'object' && message !== null && (message as { type?: unknown }).type === 'shutdown') {
+    shutdown('ipc');
+  }
+});
 
 await start();

@@ -115,44 +115,52 @@ With no app on the web, hosted mode (Clerk, Supabase, onboarding, `app/api/**`, 
 
 **Also in this phase:** a results sweeper. Nothing deletes `jobs` or `documents` today, despite `expires_at`.
 
-### Status 2026-09-25: spike mostly passed, implementation not started
-
-The session stopped early because of a machine shutdown. Nothing is committed.
+### Status 2026-09-25: implemented and proven live; not yet committed
 
 **Baseline before any change:** API suite 93 files / 1360 tests passing; `tsc --noEmit` exit 0.
 
-**Spike results.** Script: `spike.mjs` in that session's scratchpad. Rerun it by opening PGlite on a `mkdtemp` dir with `extensions: { uuid_ossp, vector }`, then applying each migration with `db.exec('BEGIN;' + sql + ';COMMIT;')`.
+**After:** 97 files / 1361 tests passing; `tsc --noEmit` exit 0; eslint clean on every touched file. The count nets out as follows: 29 multi-tenant tests removed, 19 tests added (6 config, 6 driver, 5 engine, 2 sweeper), and the rest from the concurrent static-serving work.
+
+**Spike results.** Script: `spike.mjs` in the first session's scratchpad. Rerun it by opening PGlite on a `mkdtemp` dir with `extensions: { uuid_ossp, vector }`, then applying each migration with `db.exec('BEGIN;' + sql + ';COMMIT;')`.
 
 | Check | Result |
 |---|---|
 | (a) all 12 migrations, unchanged | **Pass.** 001–012 all applied with no SQL edits. |
 | (b) queue claim (`UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED) RETURNING`) | **Pass.** 1000 of 1000 tasks claimed in batches of 10. |
 | (c) pgvector, so `chunks` is created | **Pass.** `to_regclass('chunks')` = `chunks`. The `pg_available_extensions` guard in 001 sees `vector` once the extension is passed in. |
-| (d) `transaction()` beside concurrent `query()` behind a mutex | **Not run yet.** |
+| (d) `transaction()` beside concurrent `query()` behind a mutex | **Pass.** Three transactions (A, B, C) and three bare queries (q1, q2, q3) were fired together. Each transaction inserts a marker, sleeps, then reads the table, and B throws. The observed order was `A:A, q1:A, B:A,B, q2:A, C:A,C, q3:A,C`: no bare query saw an uncommitted row, B's rollback left nothing behind, and nothing deadlocked (335 ms total). A bare query issued mid-transaction waited for the commit and then saw the committed row. The spike became `src/db/pglite.test.ts`. A mutation check that let `query()` skip the mutex failed both tests: the stray query read the uncommitted row before the commit. |
 | (e) speed | Opening a fresh data dir (initdb) took 5.8 s. 1000 single-row parameterised inserts took 1.24 s (~1.2 ms each). The full claim loop over 1000 tasks took 0.36 s. `percentile_cont` works. |
 
-**Findings the driver must handle:**
+**Driver findings, all handled in `db/drivers/pglite.ts`:**
 
-- **pgvector is a separate package in 0.5.x:** `@electric-sql/pglite-pgvector` (0.0.9, peer `pglite` 0.5.8). `uuid_ossp` is at `@electric-sql/pglite/contrib/uuid_ossp`.
-- **Multi-statement SQL.** PGlite `query()` uses the extended protocol, so it takes one statement. `migrate.ts` calls `client.query(sql)` with a whole file. The adapter must send a parameterless call to `exec()` and return its last result, so `migrate.ts` stays unchanged.
-- **Type parity with `pg`.** `pg` returns `int8` and `numeric` as strings and `bytea` as `Buffer`. PGlite returns `int8` as a number (or a BigInt past 2^53, which breaks `JSON.stringify`) and `bytea` as `Uint8Array`. Pass `parsers` for INT8 and NUMERIC (string), and map BYTEA to `Buffer`. PGlite also returns `affectedRows` where `pg` returns `rowCount`, so the adapter maps it.
+- **pgvector is a separate package in 0.5.x:** `@electric-sql/pglite-pgvector` (0.0.9, peer `pglite` 0.5.8). `uuid_ossp` is at `@electric-sql/pglite/contrib/uuid_ossp`. Both are imported dynamically inside the driver, so the pg path never loads WASM and a bundle can externalise them.
+- **Multi-statement SQL.** A parameterless call goes to `exec()` and returns its last result, so `migrate.ts` is unchanged.
+- **Type parity with `pg`.** Parsers keep INT8 and NUMERIC as strings and turn BYTEA into a `Buffer`; `exec()` applies them too. `rowCount` comes from the command tag, with `affectedRows` as the fallback. This repo never calls `types.setTypeParser`, so `pg` defaults are the target.
 
-**In the working tree, uncommitted:**
+**What landed:**
 
-- `apps/api/package.json` and `pnpm-lock.yaml` add `@electric-sql/pglite` ^0.5.8 and `@electric-sql/pglite-pgvector` 0.0.9.
-- This section.
+- `db/pool.ts` is a registry over `db/drivers/pg.ts` and `db/drivers/pglite.ts`. Every export keeps its name. `Pool` and `PoolClient` are now the structural interface in `db/drivers/types.ts`, which `pg.Pool` satisfies as-is. `createPool({ driver, connectionString, dataDir }, logger)` returns at once; PGlite opens on the first query.
+- `config.ts`: `db` comes from `HELIX_DB`. When that is unset, the driver is `pg` if `DATABASE_URL` is set and `pglite` if not. `pg` without `DATABASE_URL` is a config error. `DATABASE_URL` is optional, and `dataDir` comes from `HELIX_DATA_DIR`, defaulting to `./data`.
+- `HELIX_MULTI_TENANT` is removed, along with every `multiTenant` branch, the `JobOwner` owner clause and their tests. The SQL the single-operator path sends is byte-identical to before.
+- `db/sweeper.ts` deletes expired `documents`, then expired `jobs`, every hour, and logs what it deleted. Deleting a job cascades to its tasks, failures and deliveries. A running job on a live lease is spared. It is registered in `index.ts` beside `pruneUsage`.
+- `status/sampler.ts` now imports `Pool` from `db/pool.js` instead of `pg`. That one-line change was required for the typecheck.
 
-Nothing else has been edited. The install printed `-152`: pnpm pruned orphaned hoisted packages that are not in the lockfile. The lockfile diff contains only the two additions.
+**Live proof, 2026-09-25.** The API ran from `apps/api` with `HELIX_DB=pglite`, a fresh `HELIX_DATA_DIR`, and port 7419, via `node --import tsx src/index.ts`:
+
+- Boot: `pglite ready`, then `migration applied` for 001 through 012, all within 466 ms of the engine opening, then `bootstrap API key registered` and listening.
+- `GET /v1/health`: 200.
+- `POST /v1/scrape` for `https://example.com`: 200, `success: true`, markdown `# Example Domain\n\nThis domain is for use in documentation examples…`.
+- `POST /v1/crawl` (limit 1), then `GET /v1/jobs/{id}`: 200, `status: completed`. So the worker's SKIP LOCKED job claim, task leases and job lifecycle all ran on PGlite. There is no `GET /v1/jobs` list route; the plan's step named one that does not exist.
+- After the process was stopped, reopening the data folder showed all 12 migrations, the job row and the API key still present.
+
+**Found along the way, not caused by this phase:** a crawl or batch scrape of `https://example.com` finishes `completed` with 0 pages and an empty `data`. The frontier logs `rejections: { limit-reached }` after resuming its own freshly seeded tasks. The live pg-backed stack on 7400 gives the identical result for the same requests, so this is a worker bug on both engines.
 
 **Next steps, in order:**
 
-1. Run spike (d): two concurrent `transaction()` calls plus plain `query()` calls through a mutex adapter, showing that no statement lands inside another transaction.
-2. Build the driver registry: `db/pool.ts` plus `db/drivers/{pg,pglite}.ts`, selected by `HELIX_DB`.
-3. Make `DATABASE_URL` optional and add `HELIX_DATA_DIR`.
-4. Remove `HELIX_MULTI_TENANT`. It touches `config.ts:131/204`, `index.ts:335–359`, and `routes/{batch,crawl,jobs,keys,usage}.ts` plus their tests.
-5. Add the sweeper module and the real-engine tests.
-6. Do the live proof on 7410.
-7. Bump versions to 1.25.0 and update the docs.
+1. Bump versions to 1.25.0 and update the docs. `DEPLOY.md` still documents `HELIX_MULTI_TENANT` (the line-7 note, the env table row and the §157 check), and `context.md` mentions it too.
+2. Take the Postgres start out of `helix-ensure.js`, once the desktop build defaults to PGlite.
+3. Fix the zero-page crawl/batch bug above.
+4. Time a 500-page crawl on PGlite (spike item 3, not yet measured).
 
 ## Phase 4: the API serves the UI and builds to JS
 
@@ -170,6 +178,14 @@ It is reproduced on a clean worktree of `799f954`, and in a fresh `NEXT_DIST_DIR
 - `@fastify/static` serves the dashboard's `out/`, with an SPA fallback that excludes `/v1`, `/settings`, `/internal` and `/mcp`. The UI and API then share an origin: `resolveBaseUrl` already uses `origin + /v1` off port 3400, and CORS stops mattering.
 - `next.config.ts:8` already claims Fastify serves the export. It does not, yet.
 - esbuild bundles `apps/api` to one JS file, so Electron's own Node runs it without tsx.
+
+**Done 2026-09-25.**
+
+- `src/static/serve.ts`, on when `HELIX_STATIC_DIR` is set: exact file, then `<path>.html`, then `<path>/index.html`, then the export's `404.html`; `/` redirects 302 to `/app`; `/v1`, `/settings`, `/internal` and `/mcp` never fall through. Static routes carry a route-level `config.public` flag that `core/auth.ts` honours only on a matched route, so an unmatched `/v1/...` path is still judged as before (11 inject tests).
+- `scripts/bundle.mjs` → `dist/helix-api.js` (3.4 MB, ESM, node22) plus `dist/externals.json` (playwright, playwright-core, @electric-sql/pglite, @electric-sql/pglite-pgvector, pino: WASM, browser drivers and worker files that cannot be inlined) and `dist/runtime-files.json` (migrations, `openapi.yaml`, `packages/profiles/definitions`, `package.json`). Two paths that broke under `dist/` were fixed: `status/checks.ts` takes a build-time `HELIX_API_VERSION` define, and `browser/profiles.ts` walks upward for its definitions dir the way `mcp/spec.ts` finds `openapi.yaml`.
+- Proved on a staged copy (externals installed alone, PGlite and Postgres both): `/` 302, `/app` 200, `/app/keys` 200, `/nope` 404, `/v1/health` 200, `/v1/keys` 401 then 200 with the key, MCP `tools/list` 53 tools.
+- Dashboard: `lib/desktop.ts` reads `window.helixDesktop`; `getApiKey()` and `getAdminToken()` return the desktop credentials first, so `ApiKeyGate` never shows in the app; `instance-keys`, `instance-settings` and `status` fetch through `resolveBaseUrl()` instead of the baked `localhost:7400`.
+- **The desktop export must be built with `HELIX_HOSTED=0 NEXT_PUBLIC_HELIX_API_URL=` set explicitly.** `apps/dashboard/.env.local` sets both; with `HELIX_HOSTED` merely unset the build comes out hosted (no `out/`), and a non-empty API URL is baked into the chunks so `resolveBaseUrl` ignores the page origin. The stage script passes both.
 
 ## Phase 5: extract as one windowless exe
 
@@ -210,5 +226,18 @@ Decided by Harry 2026-09-25.
 | D2 | Hosted mode (Clerk, Supabase, multi-tenant, Vercel deploy) | **Delete.** The desktop app is single-user. Postgres stays only as long as the PGlite spike needs a comparison. |
 | D3 | Local embeddings in the installer | **Fetched on demand.** The installer ships without torch; the app downloads the embeddings runtime when first needed. |
 | D4 | Release channel | **A `helix-releases` repo with autoupdate** (created 2026-09-25: github.com/harryx2011-boop/helix-releases) (check `gh release list` before choosing the first version) |
+
+Decided by Harry 2026-09-25, evening session (Phases 3–7 built in one session):
+
+| # | Question | Decision |
+|---|---|---|
+| D5 | Scope of the session | **All of Phases 3–7**, each phase its own commit. |
+| D6 | Extract (torch) in the installer | **Fetched on first use if feasible; bundled if not.** Amends D3 from "ship without torch" to "prefer download, fall back to bundling". |
+| D7 | Playwright Chromium | **Bundled in `extraResources`.** Scrape works the moment the app opens. |
+| D8 | Desktop ports | **7410 API (serves the UI), 7411 fetch, 7412 extract.** The plan's 8400 block collides with Composer's sidecar (`reference/ports.md`). The scheme keeps a project inside its own index, and Cortex's packaged UI sits at an offset in its block (3801), so the desktop app takes the +10 offset of Helix's 7400 block, clear of the dev stack on 7400–7402. Same numbers Phase 0's evidence run used. |
+| D9 | Version | **2.0.0.** Hosted mode and the external database are gone and the product becomes an installed app: a breaking change to how Helix runs. |
+| D10 | Publish | **Yes:** the first installer goes to `helix-releases` as a GitHub release once it passes its checks. |
+| D11 | Autoupdate | **electron-updater wired in 2.0.0**, background check on launch, install on quit. |
+| D12 | Decisions while Harry is asleep | **Take the recommended option and log it here** as a further decision row. Safety-gate items still stop. |
 
 **Later:** whether the desktop app replaces the hook-launched stack as Claude Code's web layer (the `helix` MCP entry on 7400).

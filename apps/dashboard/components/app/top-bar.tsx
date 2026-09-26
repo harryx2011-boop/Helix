@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Bell, CircleHelp, Menu, Plug, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { PUBLIC_API_URL } from '@/lib/mode';
+import { PUBLIC_API_URL, instanceUrl } from '@/lib/mode';
 import { openPalette } from './command-palette/store';
 
 function truncateUrl(url: string): string {
@@ -13,13 +13,16 @@ function truncateUrl(url: string): string {
 }
 
 function WorkspacePill() {
+  // The export is rendered with the fallback; the real origin is swapped in after mount so hydration matches.
+  const [url, setUrl] = React.useState(PUBLIC_API_URL);
+  React.useEffect(() => setUrl(instanceUrl()), []);
   return (
     <div className="flex min-w-0 items-center gap-2 rounded-pill border border-border px-2.5 py-1.5 text-[13px] text-foreground">
       <span className="flex h-5 w-5 items-center justify-center rounded-card bg-primary/12 font-mono text-[11px] text-primary">
         H
       </span>
       Instance
-      <span className="font-mono text-[11px] text-muted-foreground">{truncateUrl(PUBLIC_API_URL)}</span>
+      <span className="font-mono text-[11px] text-muted-foreground">{truncateUrl(url)}</span>
     </div>
   );
 }

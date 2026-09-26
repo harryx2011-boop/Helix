@@ -41,8 +41,6 @@ export const DEFAULT_CRAWL_LIMITS: CrawlLimits = {
 export interface CrawlRouteDeps extends MapRouteDeps {
   defaultModel: string;
   limits?: Partial<CrawlLimits> | undefined;
-  /** Restricts `/crawl/{id}` to the key that created the job. See `JobOwner`. */
-  multiTenant?: boolean | undefined;
 }
 
 /**
@@ -374,7 +372,6 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
     // key for the same reason GET /crawl/{id} checks it.
     if (parsed.data.resume) {
       const jobId = parsed.data.resume;
-      const apiKeyId = request.apiKey?.id ?? null;
       const { rows } = await getPool().query<{
         api_key_id: string | null;
         status: string;
@@ -388,9 +385,7 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
       );
 
       const existing = rows[0];
-      // A job belonging to another key is reported as absent, not as forbidden:
-      // "that job is not yours" confirms the id exists.
-      if (!existing || (deps.multiTenant && existing.api_key_id !== apiKeyId)) {
+      if (!existing) {
         return reply.code(404).send({
           error: 'not_found',
           message: `No crawl job ${jobId}.`,
@@ -553,20 +548,13 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
         basePath: '/v1/crawl',
         type: 'crawl',
         requestId: request.id,
-        apiKeyId: request.apiKey?.id ?? null,
-        multiTenant: deps.multiTenant === true,
       });
       return reply.code(result.code).send(result.body);
     },
   );
 
   app.delete<{ Params: { id: string } }>('/crawl/:id', async (request, reply) => {
-    const result = await cancelJob(request.params.id, {
-      type: 'crawl',
-      requestId: request.id,
-      apiKeyId: request.apiKey?.id ?? null,
-      multiTenant: deps.multiTenant === true,
-    });
+    const result = await cancelJob(request.params.id, { type: 'crawl', requestId: request.id });
     return reply.code(result.code).send(result.body);
   });
 }

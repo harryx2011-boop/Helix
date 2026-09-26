@@ -1,5 +1,5 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Log } from '../core/logger.js';
@@ -49,9 +49,23 @@ export interface BrowserProfile {
   js: ProfileJs;
 }
 
+/**
+ * `packages/profiles/definitions` at the repo root in development; beside
+ * `dist/` when the bundle is staged. Walks upward from this module, as
+ * `mcp/spec.ts` does for openapi.yaml, so both layouts resolve.
+ */
 function definitionsDir(): string {
+  const start = dirname(fileURLToPath(import.meta.url));
+  let dir = start;
+  for (let i = 0; i < 6; i++) {
+    const candidate = join(dir, 'packages', 'profiles', 'definitions');
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
   // src/browser -> apps/api -> apps -> repo root
-  return join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'packages', 'profiles', 'definitions');
+  return join(start, '..', '..', '..', '..', 'packages', 'profiles', 'definitions');
 }
 
 let cache: Map<string, BrowserProfile> | undefined;

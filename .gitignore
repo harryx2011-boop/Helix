@@ -50,3 +50,10 @@ apps/graphify-out/
 
 # Supabase CLI link state
 supabase/.temp/
+
+# desktop app: staged sidecars, electron-builder output, PGlite data
+apps/desktop/out/
+apps/desktop/release/
+apps/desktop/resources/
+!apps/desktop/build/
+apps/api/data/

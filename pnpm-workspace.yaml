@@ -1,6 +1,7 @@
-﻿packages:
+packages:
   - 'apps/api'
   - 'apps/dashboard'
+  - 'apps/desktop'
   - 'packages/schema'
   - 'packages/sdk-ts'
   - 'packages/cli'

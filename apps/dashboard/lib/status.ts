@@ -1,4 +1,5 @@
-import { HOSTED, PUBLIC_API_URL } from './mode';
+import { resolveBaseUrl } from './api';
+import { HOSTED } from './mode';
 
 const STORAGE_KEY = 'helix.statusInstanceUrl';
 
@@ -31,7 +32,7 @@ export function setStoredInstanceUrl(url: string): void {
 
 /** The API base the status page should poll, or null when hosted mode has no instance configured. */
 export function resolveStatusApiUrl(stored: string | null): string | null {
-  if (!HOSTED) return PUBLIC_API_URL;
+  if (!HOSTED) return resolveBaseUrl().replace(/\/v1$/, '');
   return stored;
 }
 

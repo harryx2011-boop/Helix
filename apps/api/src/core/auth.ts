@@ -8,6 +8,10 @@ declare module 'fastify' {
   interface FastifyRequest {
     apiKey?: ApiKey;
   }
+  interface FastifyContextConfig {
+    /** Serves the request without a key when it returns true for the request path. */
+    public?: (path: string) => boolean;
+  }
 }
 
 /** Header carrying a one-time ticket on requests the server replays against itself. */
@@ -75,11 +79,22 @@ export function registerAuth(app: FastifyInstance, deps: AuthDeps): void {
    * raw path is otherwise stripped of its query and refused outright when it
    * carries a traversal segment in any spelling.
    */
-  const isOpen = (request: { url: string; routeOptions?: { url?: string | undefined } }): boolean => {
-    const matched = request.routeOptions?.url;
-    if (typeof matched === 'string') return open.some((prefix) => matched.startsWith(prefix));
-
+  const isOpen = (request: {
+    url: string;
+    routeOptions?: { url?: string | undefined; config?: { public?: (path: string) => boolean } };
+  }): boolean => {
     const path = request.url.split(/[?#]/)[0] ?? '';
+    // Only a matched route can carry the flag, so it never opens a path that
+    // routed to an API handler. A catch-all that declines a path hands it on
+    // as if nothing had matched, so an unknown API path is judged as before.
+    const isPublic = request.routeOptions?.config?.public;
+    const matched = request.routeOptions?.url;
+    if (typeof isPublic === 'function') {
+      if (isPublic(path)) return true;
+    } else if (typeof matched === 'string') {
+      return open.some((prefix) => matched.startsWith(prefix));
+    }
+
     if (/%2e/i.test(path)) return false;
     if (path.split('/').includes('..') || path.split('/').includes('.')) return false;
     return open.some((prefix) => path.startsWith(prefix));

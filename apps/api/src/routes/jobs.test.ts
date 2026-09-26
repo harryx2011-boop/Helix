@@ -213,11 +213,10 @@ function doc(over: Partial<DocRow> = {}): DocRow {
 
 /**
  * `caller` stands in for the auth hook, which has already resolved the key by
- * the time a route runs. Defaults to KEY_A so the existing single-tenant tests
- * read unchanged.
+ * the time a route runs. Defaults to KEY_A.
  */
 async function build(
-  options: { multiTenant?: boolean; caller?: string | null } = {},
+  options: { caller?: string | null } = {},
 ): Promise<FastifyInstance> {
   const built = Fastify();
   const caller = options.caller === undefined ? KEY_A : options.caller;
@@ -226,7 +225,7 @@ async function build(
   });
   await built.register(
     async (instance) => {
-      await registerJobs(instance, { multiTenant: options.multiTenant === true });
+      await registerJobs(instance);
     },
     { prefix: '/v1' },
   );
@@ -381,11 +380,8 @@ describe('GET /v1/jobs/:id', () => {
   });
 
   /**
-   * `jobs.api_key_id` is populated by crawl and batch. Whether the read path
-   * filters on it is the whole tenant boundary, so both halves are pinned: the
-   * predicate must be absent under self-host and present, in the statement
-   * itself, under multi-tenant. These are the assertions that fail if the
-   * filter is dropped.
+   * `jobs.api_key_id` is populated by crawl and batch, but one operator owns
+   * every key, so the read path must not filter on it.
    */
   it('serves a job to a caller whose key did not create it, under self-host', async () => {
     app = await build();
@@ -397,56 +393,6 @@ describe('GET /v1/jobs/:id', () => {
     const select = db.state.calls.find((c) => c.text.includes('SELECT id, type, status'))!;
     expect(select.values).toEqual([JOB]);
     expect(select.text).not.toContain('api_key_id');
-  });
-
-  it('hides a job owned by another tenant behind the same 404 as a missing one', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_B })];
-
-    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}` });
-
-    expect(response.statusCode).toBe(404);
-    expect(response.json().error).toBe('not_found');
-  });
-
-  it('narrows the statement itself, not the rows it returns', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_B })];
-
-    await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}` });
-
-    const select = db.state.calls.find((c) => c.text.includes('SELECT id, type, status'))!;
-    expect(select.text).toContain('api_key_id = $2');
-    expect(select.values).toEqual([JOB, KEY_A]);
-  });
-
-  it('serves the caller their own job when multi-tenant', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_A })];
-
-    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}` });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.json().id).toBe(JOB);
-  });
-
-  /** Jobs predating the column, and anything a worker writes unattributed, must survive the upgrade. */
-  it('still serves a job with no owner recorded when multi-tenant', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: null })];
-
-    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}` });
-
-    expect(response.statusCode).toBe(200);
-  });
-
-  it('does not hand an unauthenticated caller every attributed job', async () => {
-    app = await build({ multiTenant: true, caller: null });
-    db.state.jobs = [job({ api_key_id: KEY_B })];
-
-    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}` });
-
-    expect(response.statusCode).toBe(404);
   });
 });
 
@@ -594,46 +540,6 @@ describe('DELETE /v1/jobs/:id', () => {
     expect(response.statusCode).toBe(200);
     expect(db.state.jobs[0]!.status).toBe('cancelled');
   });
-
-  /** Destroying another tenant's unfinished crawl is irrecoverable, so the UPDATE must not match it. */
-  it('refuses to cancel a job owned by another tenant, and leaves it running', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_B, status: 'running' })];
-
-    const response = await app.inject({ method: 'DELETE', url: `/v1/jobs/${JOB}` });
-
-    expect(response.statusCode).toBe(404);
-    expect(db.state.jobs[0]!.status).toBe('running');
-  });
-
-  /** A 409 here would confirm the job exists; a tenant who cannot see it must get the same 404 either way. */
-  it('does not reveal a finished job of another tenant through the not-cancellable branch', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_B, status: 'completed' })];
-
-    const response = await app.inject({ method: 'DELETE', url: `/v1/jobs/${JOB}` });
-
-    expect(response.statusCode).toBe(404);
-  });
-
-  it('cancels the caller own job when multi-tenant', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_A, status: 'running' })];
-
-    const response = await app.inject({ method: 'DELETE', url: `/v1/jobs/${JOB}` });
-
-    expect(response.statusCode).toBe(200);
-    expect(db.state.jobs[0]!.status).toBe('cancelled');
-  });
-
-  it('still reports a finished job of the caller own as not cancellable', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_A, status: 'completed' })];
-
-    const response = await app.inject({ method: 'DELETE', url: `/v1/jobs/${JOB}` });
-
-    expect(response.statusCode).toBe(409);
-  });
 });
 
 describe('GET /v1/jobs/:id/errors', () => {
@@ -767,41 +673,6 @@ describe('GET /v1/jobs/:id/errors', () => {
 
     expect(response.statusCode).toBe(200);
   });
-
-  /** The list names every crawled URL and the tier and profile each was tried at. */
-  it('hides the failure list of another tenant job behind a 404', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_B })];
-    db.state.failures = [
-      {
-        job_id: JOB,
-        url: 'https://victim.example/private',
-        reason: 'blocked',
-        detail: null,
-        status_code: 403,
-        detected_by: ['cloudflare'],
-        tier: 'chromium',
-        tiers_tried: ['plain', 'chromium'],
-        profile: 'stealth',
-        escalation_available: true,
-        occurred_at: new Date('2026-09-01T11:00:00Z'),
-      },
-    ];
-
-    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/errors` });
-
-    expect(response.statusCode).toBe(404);
-    expect(response.body).not.toContain('victim.example');
-  });
-
-  it('serves the failure list for the caller own job when multi-tenant', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_A })];
-
-    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/errors` });
-
-    expect(response.statusCode).toBe(200);
-  });
 });
 
 describe('GET /v1/jobs/:id/schema', () => {
@@ -886,55 +757,6 @@ describe('GET /v1/jobs/:id/schema', () => {
     const select = db.state.calls.find((c) => c.text.includes('SELECT request FROM jobs'))!;
     expect(select.values).toEqual([JOB]);
     expect(select.text).not.toContain('api_key_id');
-  });
-
-  it('hides the schema of another tenant job behind the same 404 as a missing one', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_B })];
-
-    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
-
-    expect(response.statusCode).toBe(404);
-    expect(response.json().error).toBe('not_found');
-  });
-
-  it('narrows the statement itself with the owner predicate, not the rows it returns', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_B })];
-
-    await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
-
-    const select = db.state.calls.find((c) => c.text.includes('SELECT request FROM jobs'))!;
-    expect(select.text).toContain('api_key_id = $2');
-    expect(select.values).toEqual([JOB, KEY_A]);
-  });
-
-  it('serves the caller their own job schema when multi-tenant', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: KEY_A })];
-
-    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
-
-    expect(response.statusCode).toBe(200);
-  });
-
-  /** Jobs predating the column, and anything a worker writes unattributed, must survive the upgrade. */
-  it('still serves the schema of a job with no owner recorded when multi-tenant', async () => {
-    app = await build({ multiTenant: true, caller: KEY_A });
-    db.state.jobs = [job({ api_key_id: null })];
-
-    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
-
-    expect(response.statusCode).toBe(200);
-  });
-
-  it('does not hand an unauthenticated caller every attributed job schema', async () => {
-    app = await build({ multiTenant: true, caller: null });
-    db.state.jobs = [job({ api_key_id: KEY_B })];
-
-    const response = await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}/schema` });
-
-    expect(response.statusCode).toBe(404);
   });
 
   it('fetchJobSchema returns a plain result object outside the route, for direct calls', async () => {

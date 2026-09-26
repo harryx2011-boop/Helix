@@ -1,6 +1,6 @@
 'use client';
 
-import { PUBLIC_API_URL } from '@/lib/mode';
+import { resolveBaseUrl } from '@/lib/api';
 import { getApiKey } from '@/lib/auth';
 
 /**
@@ -52,12 +52,12 @@ async function call(path: string, init: RequestInit = {}): Promise<unknown> {
 
   let response: Response;
   try {
-    response = await fetch(`${PUBLIC_API_URL}/v1${path}`, {
+    response = await fetch(`${resolveBaseUrl()}${path}`, {
       ...init,
       headers: { ...init.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     });
   } catch {
-    throw new KeysError(`Could not reach the API at ${PUBLIC_API_URL}.`, 0);
+    throw new KeysError(`Could not reach the API at ${resolveBaseUrl()}.`, 0);
   }
 
   if (response.status === 204) return null;

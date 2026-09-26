@@ -30,8 +30,6 @@ export const DEFAULT_BATCH_LIMITS: BatchLimits = { maxUrls: 10_000 };
 
 export interface BatchRouteDeps {
   limits?: Partial<BatchLimits> | undefined;
-  /** Restricts `/batch/scrape/{id}` to the key that created the job. See `JobOwner`. */
-  multiTenant?: boolean | undefined;
 }
 
 const HttpUrlSchema = z
@@ -211,20 +209,13 @@ export async function registerBatch(app: FastifyInstance, deps: BatchRouteDeps =
         basePath: '/v1/batch/scrape',
         type: 'batch_scrape',
         requestId: request.id,
-        apiKeyId: request.apiKey?.id ?? null,
-        multiTenant: deps.multiTenant === true,
       });
       return reply.code(result.code).send(result.body);
     },
   );
 
   app.delete<{ Params: { id: string } }>('/batch/scrape/:id', async (request, reply) => {
-    const result = await cancelJob(request.params.id, {
-      type: 'batch_scrape',
-      requestId: request.id,
-      apiKeyId: request.apiKey?.id ?? null,
-      multiTenant: deps.multiTenant === true,
-    });
+    const result = await cancelJob(request.params.id, { type: 'batch_scrape', requestId: request.id });
     return reply.code(result.code).send(result.body);
   });
 }

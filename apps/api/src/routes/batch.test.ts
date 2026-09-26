@@ -33,14 +33,14 @@ import type { ApiKey } from '../core/api-keys.js';
 
 const KEY_A = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
 
-async function buildApp(limits?: { maxUrls?: number }, options: { multiTenant?: boolean; caller?: string } = {}) {
+async function buildApp(limits?: { maxUrls?: number }, options: { caller?: string } = {}) {
   const app = Fastify();
   const caller = options.caller ?? KEY_A;
   app.addHook('onRequest', async (request) => {
     request.apiKey = { id: caller } as ApiKey;
   });
   await app.register(
-    async (instance) => registerBatch(instance, { limits, multiTenant: options.multiTenant === true }),
+    async (instance) => registerBatch(instance, { limits }),
     { prefix: '/v1' },
   );
   await app.ready();
@@ -233,34 +233,11 @@ describe('GET /v1/batch/scrape/:id', () => {
 });
 
 /**
- * `/batch/scrape/{id}` serves the same rows as `/jobs/{id}`. Scoping one and
- * not the other would move the hole rather than close it.
+ * `/batch/scrape/{id}` serves the same rows as `/jobs/{id}`: one operator owns
+ * every key, so neither statement carries an owner predicate.
  */
-describe('batch job ownership', () => {
-  it('narrows the read by the calling key when multi-tenant', async () => {
-    const app = await buildApp(undefined, { multiTenant: true, caller: KEY_A });
-    db.state.job = undefined;
-
-    await app.inject({ method: 'GET', url: `/v1/batch/scrape/${JOB}` });
-
-    const select = db.state.calls.find((c) => c.text.startsWith('SELECT id, type, status'))!;
-    expect(select.text).toContain('api_key_id');
-    expect(select.values).toEqual([JOB, KEY_A]);
-    await app.close();
-  });
-
-  it('narrows the cancellation by the calling key when multi-tenant', async () => {
-    const app = await buildApp(undefined, { multiTenant: true, caller: KEY_A });
-
-    await app.inject({ method: 'DELETE', url: `/v1/batch/scrape/${JOB}` });
-
-    const update = db.state.calls.find((c) => c.text.startsWith('UPDATE jobs'))!;
-    expect(update.text).toContain('api_key_id');
-    expect(update.values).toEqual([JOB, 'batch_scrape', KEY_A]);
-    await app.close();
-  });
-
-  it('leaves both statements unscoped under self-host', async () => {
+describe('batch job reads', () => {
+  it('leaves both statements unscoped', async () => {
     const app = await buildApp();
 
     await app.inject({ method: 'GET', url: `/v1/batch/scrape/${JOB}` });

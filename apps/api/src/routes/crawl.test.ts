@@ -58,7 +58,7 @@ const KEY_A = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
 
 function buildApp(
   limits?: { defaultLimit?: number; maxLimit?: number; maxDepth?: number; respectRobots?: boolean },
-  options: { multiTenant?: boolean; caller?: string } = {},
+  options: { caller?: string } = {},
 ) {
   const app = Fastify();
   const caller = options.caller ?? KEY_A;
@@ -74,7 +74,6 @@ function buildApp(
           userAgent: 'HelixBot/test',
           defaultModel: 'test-model',
           limits,
-          multiTenant: options.multiTenant === true,
         });
       },
       { prefix: '/v1' },
@@ -556,34 +555,11 @@ describe('DELETE /v1/crawl/{jobId}', () => {
 });
 
 /**
- * `/crawl/{jobId}` serves the same rows as `/jobs/{id}` and spreads the scraped
- * page content into `data[]`. Scoping one path and not the other would move the
- * hole rather than close it.
+ * `/crawl/{jobId}` serves the same rows as `/jobs/{id}`: one operator owns
+ * every key, so neither statement carries an owner predicate.
  */
-describe('crawl job ownership', () => {
-  it('narrows the read by the calling key when multi-tenant', async () => {
-    const app = await buildApp(undefined, { multiTenant: true, caller: KEY_A });
-
-    await app.inject({ method: 'GET', url: `/v1/crawl/${JOB}` });
-
-    const select = db.state.calls.find((c) => c.text.startsWith('SELECT id, type, status'))!;
-    expect(select.text).toContain('api_key_id');
-    expect(select.values).toEqual([JOB, KEY_A]);
-    await app.close();
-  });
-
-  it('narrows the cancellation by the calling key when multi-tenant', async () => {
-    const app = await buildApp(undefined, { multiTenant: true, caller: KEY_A });
-
-    await app.inject({ method: 'DELETE', url: `/v1/crawl/${JOB}` });
-
-    const update = db.state.calls.find((c) => c.text.startsWith('UPDATE jobs'))!;
-    expect(update.text).toContain('api_key_id');
-    expect(update.values).toEqual([JOB, 'crawl', KEY_A]);
-    await app.close();
-  });
-
-  it('leaves both statements unscoped under self-host', async () => {
+describe('crawl job reads', () => {
+  it('leaves both statements unscoped', async () => {
     const app = await buildApp();
 
     await app.inject({ method: 'GET', url: `/v1/crawl/${JOB}` });

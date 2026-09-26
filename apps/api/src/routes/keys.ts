@@ -10,25 +10,12 @@ import { createApiKey, listApiKeys, revokeApiKey } from '../core/api-keys.js';
  * environment and never pass through the API.
  */
 
-export interface KeyRouteDeps {
-  /**
-   * Many tenants share this instance. Listing and revoking are instance-wide
-   * with no owner predicate, so on a shared instance either one lets a tenant
-   * read or destroy another's credentials. There is no owner column to filter
-   * by here — the hosted dashboard mints keys through Supabase directly and
-   * never calls these — so the routes are withheld rather than narrowed.
-   */
-  multiTenant?: boolean;
-}
-
 const CreateKeySchema = z.object({
   name: z.string().min(1).max(100),
   rateLimit: z.number().int().min(1).max(1_000_000).default(1000),
 });
 
-export async function registerKeys(app: FastifyInstance, deps: KeyRouteDeps = {}): Promise<void> {
-  if (deps.multiTenant === true) return;
-
+export async function registerKeys(app: FastifyInstance): Promise<void> {
   app.post('/keys', async (request, reply) => {
     const parsed = CreateKeySchema.safeParse(request.body);
     if (!parsed.success) {

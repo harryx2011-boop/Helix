@@ -1,40 +1,38 @@
-import pg from 'pg';
 import type { Log } from '../core/logger.js';
+import { pgDriver } from './drivers/pg.js';
+import { pgliteDriver } from './drivers/pglite.js';
+import type { Driver, DriverName, DriverOptions, Pool, PoolClient } from './drivers/types.js';
 
 /**
- * Postgres connection pool.
+ * The database behind jobs, results, keys, monitors and vectors.
  *
- * One datastore backs jobs, results, keys, monitors and vectors. No Redis, no
- * broker — which is what makes `docker compose up` a single health-gated step
- * rather than a startup race to retry past.
+ * One datastore, no Redis, no broker. Which engine serves it is a driver
+ * chosen at boot: `pg` for an external Postgres, `pglite` for Postgres in this
+ * process with its data in a folder. Both speak the same SQL, so every query
+ * site, migration and the SKIP LOCKED queue run unchanged on either.
  */
 
-export type Pool = pg.Pool;
-export type PoolClient = pg.PoolClient;
+export type { Pool, PoolClient };
 
-let pool: pg.Pool | undefined;
+const drivers: Record<DriverName, Driver> = {
+  pg: pgDriver,
+  pglite: pgliteDriver,
+};
 
-export function createPool(connectionString: string, logger?: Log): pg.Pool {
+export interface CreatePoolOptions extends DriverOptions {
+  driver: DriverName;
+}
+
+let pool: Pool | undefined;
+
+export function createPool(options: CreatePoolOptions, logger?: Log): Pool {
   if (pool) return pool;
-
-  pool = new pg.Pool({
-    connectionString,
-    max: 20,
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000,
-  });
-
-  pool.on('error', (error) => {
-    // An idle client erroring is not fatal — the pool replaces it. Logging it
-    // matters because a silent connection churn looks like random slowness.
-    logger?.error({ error }, 'idle postgres client error');
-  });
-
+  pool = drivers[options.driver](options, logger);
   return pool;
 }
 
-export function getPool(): pg.Pool {
-  if (!pool) throw new Error('Postgres pool not initialised. Call createPool() at boot.');
+export function getPool(): Pool {
+  if (!pool) throw new Error('Database pool not initialised. Call createPool() at boot.');
   return pool;
 }
 
@@ -44,7 +42,7 @@ export async function closePool(): Promise<void> {
 }
 
 /** Run work inside a transaction, rolling back on any throw. */
-export async function transaction<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await getPool().connect();
   try {
     await client.query('BEGIN');

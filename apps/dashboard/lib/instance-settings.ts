@@ -1,6 +1,7 @@
 'use client';
 
-import { PUBLIC_API_URL } from '@/lib/mode';
+import { desktopCredentials } from '@/lib/desktop';
+import { resolveBaseUrl } from '@/lib/api';
 
 /**
  * Instance settings, called straight from the browser.
@@ -18,7 +19,7 @@ const STORAGE_KEY = 'helix.adminToken';
 
 export function getAdminToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem(STORAGE_KEY);
+  return desktopCredentials()?.adminToken ?? window.localStorage.getItem(STORAGE_KEY);
 }
 
 export function setAdminToken(token: string): void {
@@ -82,14 +83,15 @@ async function call(path: string, init: RequestInit = {}): Promise<unknown> {
   const token = getAdminToken();
   if (!token) throw new SettingsError('No admin token saved.', 401);
 
+  const origin = resolveBaseUrl().replace(/\/v1$/, '');
   let response: Response;
   try {
-    response = await fetch(`${PUBLIC_API_URL}${path}`, {
+    response = await fetch(`${origin}${path}`, {
       ...init,
       headers: { ...init.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     });
   } catch {
-    throw new SettingsError(`Could not reach the API at ${PUBLIC_API_URL}.`, 0);
+    throw new SettingsError(`Could not reach the API at ${origin}.`, 0);
   }
 
   const body = (await response.json().catch(() => null)) as FailureBody | null;

@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { Pool } from '../db/pool.js';
 import type { Log } from '../core/logger.js';
 import { runServiceChecks, type ServiceCheckDeps } from './checks.js';
 

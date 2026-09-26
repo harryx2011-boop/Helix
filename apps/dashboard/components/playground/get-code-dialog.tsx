@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { generateCode, LANGS, type Lang } from '@/lib/codegen';
-import { MCP_URL, PUBLIC_API_URL } from '@/lib/mode';
+import { instanceMcpUrl, instanceUrl } from '@/lib/mode';
 import type { Endpoint } from '@/lib/endpoints';
 
 interface GetCodeDialogProps {
@@ -31,8 +31,8 @@ export function GetCodeDialog({ endpoint, body, apiKey, open, onOpenChange, path
       generateCode(lang, {
         endpoint,
         body,
-        baseUrl: PUBLIC_API_URL,
-        mcpUrl: MCP_URL,
+        baseUrl: instanceUrl(),
+        mcpUrl: instanceMcpUrl(),
         ...(pathSuffix ? { pathSuffix } : {}),
         ...(includeKey && apiKey ? { apiKey } : {}),
       }),

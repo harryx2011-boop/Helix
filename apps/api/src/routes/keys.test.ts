@@ -76,7 +76,7 @@ import { createApiKey, hashKey, verifyApiKey } from '../core/api-keys.js';
 
 let app: FastifyInstance;
 
-async function build(options: { multiTenant?: boolean } = {}): Promise<FastifyInstance> {
+async function build(): Promise<FastifyInstance> {
   const built = Fastify();
   registerAuth(built, {
     verifyApiKey,
@@ -86,7 +86,7 @@ async function build(options: { multiTenant?: boolean } = {}): Promise<FastifyIn
   });
   await built.register(
     async (instance) => {
-      await registerKeys(instance, { multiTenant: options.multiTenant === true });
+      await registerKeys(instance);
     },
     { prefix: '/v1' },
   );
@@ -246,7 +246,7 @@ describe('GET /v1/keys', () => {
    * There is no ownership model on `api_keys` — the schema has no owner column
    * and the route has no filter — so any valid key sees every key on the
    * instance. That is the designed self-host behaviour, not an oversight, and
-   * this pins it: if a multi-tenant scope is ever added, this test must be the
+   * this pins it: if an owner scope is ever added, this test must be the
    * thing that fails and forces the decision to be explicit.
    */
   it('shows every key on the instance to any valid caller, the flat self-host model', async () => {
@@ -341,52 +341,11 @@ describe('DELETE /v1/keys/:id', () => {
 });
 
 /**
- * Listing and revoking have no owner predicate, so on a shared instance they
- * read and destroy every tenant's credentials. Withheld rather than narrowed:
- * nothing in the hosted deployment calls them.
+ * Listing and revoking have no owner predicate: one operator owns every key
+ * on the instance, so both routes are always registered.
  */
-describe('multi-tenant registration', () => {
-  it('does not register the instance-wide key list', async () => {
-    app = await build({ multiTenant: true });
-    const { key } = await seedKey();
-
-    const response = await app.inject({ method: 'GET', url: '/v1/keys', headers: auth(key) });
-
-    expect(response.statusCode).toBe(404);
-  });
-
-  it('does not let one tenant revoke another tenant key', async () => {
-    app = await build({ multiTenant: true });
-    const { key } = await seedKey('attacker');
-    const victim = await seedKey('victim');
-
-    const response = await app.inject({
-      method: 'DELETE',
-      url: `/v1/keys/${victim.id}`,
-      headers: auth(key),
-    });
-
-    expect(response.statusCode).toBe(404);
-    expect(db.state.rows.find((r) => r.id === victim.id)!.revoked_at).toBeNull();
-  });
-
-  it('does not register minting either', async () => {
-    app = await build({ multiTenant: true });
-    const { key } = await seedKey();
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/v1/keys',
-      payload: { name: 'new' },
-      headers: auth(key),
-    });
-
-    expect(response.statusCode).toBe(404);
-    // The gate must stop the write, not merely colour the response.
-    expect(db.state.rows).toHaveLength(1);
-  });
-
-  it('serves both routes under self-host, where every key is the same operator', async () => {
+describe('registration', () => {
+  it('serves both routes, since every key belongs to the same operator', async () => {
     app = await build();
     const { key } = await seedKey();
     const other = await seedKey('other');

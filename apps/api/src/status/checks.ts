@@ -5,8 +5,13 @@ import type { ExtractClient } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
 
 const require = createRequire(import.meta.url);
+/** Set by `scripts/bundle.mjs`: the bundle sits at a different depth, so `../../package.json` would miss. */
+declare const HELIX_API_VERSION: string | undefined;
 /** Read once at import time — the manifest does not change while the process runs. */
-export const API_VERSION: string = (require('../../package.json') as { version: string }).version;
+export const API_VERSION: string =
+  typeof HELIX_API_VERSION === 'string'
+    ? HELIX_API_VERSION
+    : (require('../../package.json') as { version: string }).version;
 
 export interface ServiceCheckDeps {
   fetchClient: FetchClient;

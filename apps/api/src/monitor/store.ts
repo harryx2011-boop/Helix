@@ -229,6 +229,7 @@ export interface MonitorStore {
   markRetry(id: number, attempts: number, nextRetryAt: Date, error: string, responseStatus: number | null): Promise<void>;
   markDead(id: number, attempts: number, error: string, responseStatus: number | null): Promise<void>;
   listDeliveries(monitorId: string, limit: number): Promise<DeliveryRecord[]>;
+  getDelivery(monitorId: string, deliveryId: number): Promise<DeliveryRecord | undefined>;
   replayDelivery(monitorId: string, deliveryId: number): Promise<DeliveryRecord | undefined>;
 }
 
@@ -480,6 +481,11 @@ export class MemoryMonitorStore implements MonitorStore {
       .sort((a, b) => b.id - a.id)
       .slice(0, limit)
       .map((d) => ({ ...d }));
+  }
+
+  async getDelivery(monitorId: string, deliveryId: number): Promise<DeliveryRecord | undefined> {
+    const d = this.deliveries.find((x) => x.id === deliveryId && x.monitorId === monitorId);
+    return d ? { ...d } : undefined;
   }
 
   async replayDelivery(monitorId: string, deliveryId: number): Promise<DeliveryRecord | undefined> {
@@ -926,6 +932,14 @@ export class PgMonitorStore implements MonitorStore {
       [monitorId, limit],
     );
     return rows.map(rowToDelivery);
+  }
+
+  async getDelivery(monitorId: string, deliveryId: number): Promise<DeliveryRecord | undefined> {
+    const { rows } = await this.#pool.query<DeliveryRow>(
+      `SELECT ${DELIVERY_COLUMNS} FROM webhook_deliveries WHERE id = $1 AND monitor_id = $2`,
+      [deliveryId, monitorId],
+    );
+    return rows[0] ? rowToDelivery(rows[0]) : undefined;
   }
 
   async replayDelivery(monitorId: string, deliveryId: number): Promise<DeliveryRecord | undefined> {

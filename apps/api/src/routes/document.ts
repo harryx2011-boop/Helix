@@ -90,7 +90,7 @@ export async function registerDocument(app: FastifyInstance): Promise<void> {
     const onClose = (): void => {
       if (!reply.raw.writableFinished) controller.abort();
     };
-    request.raw.on('close', onClose);
+    reply.raw.on('close', onClose);
 
     let response;
     try {
@@ -113,7 +113,7 @@ export async function registerDocument(app: FastifyInstance): Promise<void> {
       }
       throw error;
     } finally {
-      request.raw.off('close', onClose);
+      reply.raw.off('close', onClose);
     }
 
     for (const [header, value] of Object.entries(response.headers)) {

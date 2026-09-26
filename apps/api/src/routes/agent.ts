@@ -69,7 +69,7 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
     const onClose = (): void => {
       if (!reply.raw.writableFinished) controller.abort();
     };
-    request.raw.on('close', onClose);
+    reply.raw.on('close', onClose);
 
     try {
       const apiKeyId = request.apiKey?.id;
@@ -136,7 +136,7 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
         failure: { reason: 'service_unavailable', detail: err.message ?? 'helix-extract is unreachable' },
       });
     } finally {
-      request.raw.off('close', onClose);
+      reply.raw.off('close', onClose);
     }
   });
 }

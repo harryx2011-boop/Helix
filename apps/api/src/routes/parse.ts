@@ -500,7 +500,7 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
       const onClose = (): void => {
         if (!reply.raw.writableFinished) controller.abort();
       };
-      request.raw.on('close', onClose);
+      reply.raw.on('close', onClose);
 
       try {
       let file: FileInput;
@@ -701,7 +701,7 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
         ...(warnings.length > 0 ? { warnings } : {}),
       });
       } finally {
-        request.raw.off('close', onClose);
+        reply.raw.off('close', onClose);
       }
     }
   });

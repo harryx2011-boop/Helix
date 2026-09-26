@@ -173,8 +173,10 @@ if (mon.json?.id) {
   await check('monitor get', 'GET', m, undefined, [200]);
   await check('monitor patch', 'PATCH', m, { sensitivity: 'significant' }, [200], (j) => (j.sensitivity === 'significant' ? null : `sensitivity ${j.sensitivity}`));
   await check('monitor check', 'POST', `${m}/check`, undefined, [200], (j) => (j.check?.reason === 'first' ? null : { note: j.check?.reason }));
-  await check('monitor history', 'GET', `${m}/history`, undefined, [200], (j) => (j.entries?.length ? null : 'empty'));
-  await check('monitor snapshot', 'GET', `${m}/snapshots/1`, undefined, [200]);
+  const hist = await check('monitor history', 'GET', `${m}/history`, undefined, [200], (j) => (j.entries?.length ? null : 'empty'));
+  // Snapshot ids are numbered across every monitor, so follow this one's link from its history.
+  const snapshotUrl = hist.json?.entries?.find((e) => e.snapshotUrl)?.snapshotUrl;
+  await check('monitor snapshot', 'GET', snapshotUrl ?? `${m}/snapshots/0`, undefined, [200]);
   await check('monitor deliveries', 'GET', `${m}/deliveries`, undefined, [200]);
   await check('monitor replay, unknown', 'POST', `${m}/deliveries/999999/replay`, undefined, [404]);
   await check('monitor delete', 'DELETE', m, undefined, [200, 204]);
@@ -185,7 +187,9 @@ if (mon.json?.id) {
 await check('usage', 'GET', '/v1/usage', undefined, [200]);
 await check('usage/all', 'GET', '/v1/usage/all', undefined, [200, 403]);
 await check('providers', 'GET', '/v1/providers', undefined, [200]);
-await check('providers/{p}/models', 'GET', '/v1/providers/ollama/models', undefined, [200, 503]);
+// A local runtime is browsed only after its base URL is saved; unsaved is a 400 naming `baseUrl`.
+await check('providers/{p}/models', 'GET', '/v1/providers/ollama/models', undefined, [200, 400, 503], (j) =>
+  j.error === 'invalid_request' && j.field !== 'baseUrl' ? `400 on ${j.field}` : null);
 await check('providers put, invalid', 'PUT', '/v1/providers/openai', { apiKey: 'x' }, [400, 403]);
 skip('providers delete', 'DELETE', '/v1/providers/{provider}', 'would remove stored provider config');
 await check('profiles/{id}/health', 'GET', '/v1/profiles/chrome-131-win/health', undefined, [200, 404]);

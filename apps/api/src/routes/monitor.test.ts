@@ -484,4 +484,13 @@ describe('history, snapshots, check and deliveries', () => {
     expect(replayed.statusCode).toBe(200);
     expect(replayed.json().delivery).toMatchObject({ status: 'pending', attempts: 0 });
   });
+
+  it('answers 404 for a delivery that does not exist, not "only dead-lettered"', async () => {
+    const { id } = (await create({ url: 'https://example.com', schedule: '0 * * * *', webhook: 'https://hooks.test/x' })).json();
+
+    const unknown = await app.inject({ method: 'POST', url: `/v1/monitor/${id}/deliveries/999999/replay` });
+
+    expect(unknown.statusCode).toBe(404);
+    expect(unknown.json()).toMatchObject({ error: 'not_found' });
+  });
 });

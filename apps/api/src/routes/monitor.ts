@@ -559,6 +559,7 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
       if (!Number.isFinite(deliveryId)) return notFound(reply, request, 'delivery');
       const replayed = await deps.store.replayDelivery(monitor.id, deliveryId);
       if (!replayed) {
+        if (!(await deps.store.getDelivery(monitor.id, deliveryId))) return notFound(reply, request, 'delivery');
         return reply.code(409).send({
           error: 'not_replayable',
           message: 'Only dead-lettered deliveries can be replayed.',

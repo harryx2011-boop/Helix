@@ -1,5 +1,7 @@
 # Follow-ups plan: after the 2026-09-26 live smoke
 
+**Status: complete (2026-09-26).** Phases 0–4 are committed. The closing full live smoke (`smoke-live.mjs`, authenticated) passes 64, fails 0 and skips 2 (the SSE stream and the provider delete, both on purpose). It found three defects, all fixed in the closing commit: `/parse`, `/document` parse, `/agent/schema` and `/extract` read a false caller disconnect, and a replay of an unknown delivery answered 409 instead of 404. Two smoke expectations were stale.
+
 Plan of record for the work Harry picked on 2026-09-26 after the first live pass over every
 endpoint (`apps/api/scripts/smoke-live.mjs`, all 27 MCP tools). One phase per turn; each phase
 ends with its tests green, the live smoke re-run, `context.md` updated, and a commit.
@@ -15,7 +17,12 @@ claims and completes rows by `normaliseUrl()`'s form, so any seed the normaliser
 normalised form; regression test in `batch.test.ts` fails on HEAD; 1368/1368 green.
 
 - [x] Restart the dev API (Harry authorised, 2026-09-26) and re-run live through MCP: the tutorial crawl went from 0 pages to 1/1, the batch from 0 done to 2 done + 1 failed (the bad host), and the example.com `limit: 1` crawl to 1/1.
-- [ ] Full `smoke-live.mjs` with `HELIX_API_KEY` (still needs the key).
+- [x] Full `smoke-live.mjs` with `HELIX_API_KEY` (2026-09-26, key taken from `HELIX_BOOTSTRAP_KEY` in `apps/api/.env`). It found three defects:
+  - **False disconnects:** `routes/{parse,document,agent,extract}.ts` listened for `close` on the request, which Node fires once the body has been read. With auth running first, every `/parse` by URL answered `aborted` in about 5 ms. These routes now listen on the reply, like `search` and `enrich`. The regression test in `parse.test.ts` runs over a real socket, because `inject` never emits that event.
+  - **Replay of an unknown delivery:** it answered 409 `not_replayable`. It now answers 404, using the new `MonitorStore.getDelivery`.
+  - **Two stale smoke expectations:** a hard-coded snapshot id (ids are global), and Ollama models expecting 200 where the contract says 400 until a base URL is saved.
+
+  The rerun passes 64, fails 0 and skips 2.
 - [x] **Second defect found by the same run** (fixed: fetch the URL as found, dedupe on the normalised key; `FrontierItem.url` / `.key`, `fetchUrl()` in `crawl/url.ts`): the frontier fetches the *normalised* URL, and `normaliseUrl()` strips the trailing slash (`crawl/url.ts`). A server that serves `/3/tutorial` without redirecting makes every relative link resolve one directory too high (`/3/appetite.html` for `/3/tutorial/appetite.html`), so `includePaths: ['/3/tutorial/*']` rejects them and the crawl stops at the seed. `/scrape` of the slashed URL resolves correctly. Harry chose this direction 2026-09-26.
 - [x] **Third defect:** `PersistentFrontier.next()` claimed discovered links before they were flushed (the worker flushes only past 50), so the claim matched no row and every discovered page was fetched and dropped. `next()` now flushes before claiming. Live: the tutorial crawl returns 3/3.
 - [ ] Fourth, not fixed here: markdown links inside page content resolve against the site root, not the page (`links` is correct). Extract service.

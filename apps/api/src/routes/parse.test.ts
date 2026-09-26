@@ -42,8 +42,9 @@ function remote(
 
 const publicLookup: Lookup = async () => [{ address: '93.184.216.34', family: 4 }];
 
-async function build(deps: Partial<ParseRouteDeps> = {}): Promise<FastifyInstance> {
+async function build(deps: Partial<ParseRouteDeps> = {}, setup?: (app: FastifyInstance) => void): Promise<FastifyInstance> {
   const app = Fastify();
+  setup?.(app);
   await app.register(
     async (instance) => {
       await registerParse(instance, {
@@ -79,6 +80,68 @@ async function multipart(
 async function postJson(app: FastifyInstance, body: unknown) {
   return app.inject({ method: 'POST', url: '/v1/parse', payload: body as Record<string, unknown> });
 }
+
+describe('POST /v1/parse — over a real socket', () => {
+  // `inject` has no socket, so it never emits the request `close` that Node
+  // fires once a body has been read; only a listening server shows it. The
+  // async onRequest hook stands in for auth, which is what lets that `close`
+  // land after the handler starts listening.
+  const withAuth = (app: FastifyInstance): void => {
+    app.addHook('onRequest', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    });
+  };
+
+  it('parses a url instead of reporting a disconnect that did not happen', async () => {
+    const download = remote(PDF, { headers: { 'content-type': 'application/pdf' } });
+    const honouringAbort = vi.fn(async (url: unknown, init?: RequestInit) => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      if (init?.signal?.aborted) throw new DOMException('aborted', 'AbortError');
+      return download(url as string, init);
+    }) as unknown as typeof fetch;
+    const app = await build({ fetchImpl: honouringAbort }, withAuth);
+    const base = await app.listen({ port: 0, host: '127.0.0.1' });
+    try {
+      const response = await fetch(`${base}/v1/parse`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com/files/report.pdf' }),
+      });
+      const body = (await response.json()) as { success: boolean; failure?: unknown };
+      expect(body.failure).toBeUndefined();
+      expect(body.success).toBe(true);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('still stops the download when the caller really goes away', async () => {
+    let downloadSignal: AbortSignal | undefined;
+    const hanging = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      downloadSignal = init?.signal ?? undefined;
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+      });
+    }) as unknown as typeof fetch;
+    const app = await build({ fetchImpl: hanging }, withAuth);
+    const base = await app.listen({ port: 0, host: '127.0.0.1' });
+    try {
+      const caller = new AbortController();
+      const request = fetch(`${base}/v1/parse`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com/files/report.pdf' }),
+        signal: caller.signal,
+      }).catch(() => undefined);
+      await vi.waitFor(() => expect(downloadSignal).toBeDefined());
+      caller.abort();
+      await request;
+      await vi.waitFor(() => expect(downloadSignal?.aborted).toBe(true));
+    } finally {
+      await app.close();
+    }
+  });
+});
 
 describe('POST /v1/parse — url path', () => {
   it('fetches the file, parses it and returns the parse envelope', async () => {

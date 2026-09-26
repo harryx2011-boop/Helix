@@ -160,7 +160,7 @@ export async function registerExtract(app: FastifyInstance, deps: ExtractRouteDe
     const onClose = (): void => {
       if (!reply.raw.writableFinished) controller.abort();
     };
-    request.raw.on('close', onClose);
+    reply.raw.on('close', onClose);
 
     try {
       for (const url of body.urls) {
@@ -258,7 +258,7 @@ export async function registerExtract(app: FastifyInstance, deps: ExtractRouteDe
         },
       });
     } finally {
-      request.raw.off('close', onClose);
+      reply.raw.off('close', onClose);
     }
   });
 }

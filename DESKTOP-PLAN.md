@@ -1,6 +1,6 @@
 # Helix desktop plan
 
-**Date:** 2026-09-25 · **Status:** Phases 0–1 done; Phases 2 and 2b done; Phases 3–7 planned. Decisions D1–D4 made.
+**Date:** 2026-09-25 · **Status:** Phases 0–7 all done; 2.0.0 released 2026-09-26 (Phases 3–7 in one overnight session). Decisions D1–D16 made.
 
 Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, extract and fetch services. The public website keeps its landing page, docs and marketing, and gates the app behind the desktop download. The desktop app needs no external database and opens no console windows.
 
@@ -216,11 +216,15 @@ It health-polls before opening the window, shows a splash with a status line, re
 
 **Dev smoke, real Electron (2026-09-26 03:34 UTC):** `node scripts/dev.mjs` spawned the API (`node --import tsx`, PGlite), extract (`pythonw -m helix_extract`) and fetch; fetch healthy after 2 probes, extract after 6, the API after 15 (8 s total); `/v1/health`, `/app`, fetch and extract `/health` all 200; the only process with a window was Electron's main window titled with the app; after `taskkill /T` on the Electron pid every port was free. Stale-child kill was also exercised live by the shell agent: an orphaned `helix-fetch.exe` with a pid file was killed at the next start.
 
+**Installed smoke, `Helix-Setup-2.0.0.exe` (2026-09-26 04:09 UTC, silent install to `%LOCALAPPDATA%\Programs\Helix`, 795 MB on disk):** all three children healthy in 5 s, each bound to `127.0.0.1` (7410/7411/7412); `/v1/health` reported version 2.0.0 with postgres (PGlite), fetch, extract and browser all `ok`; fetch 1.6.0; extract `local_embeddings: missing` as expected before the pack download; the main window opened with the app title and was the only visible window; `/app` served 13.7 KB of HTML; closing the window sent the IPC shutdown (`api.log`: `reason: ipc`, exit code 0) and within 12 s no child process or listener remained. The updater checked `helix-releases`, found no release yet, logged it and did not interrupt the app. The first build of the installer had shipped without the API's externals (see Phase 7); this is the second build.
+
 ## Phase 7: installer
 
 - NSIS, with `artifactName: Helix-Setup-${version}.${ext}`.
 - The version follows the product line.
 - Where releases publish is D4.
+
+**Built 2026-09-26.** `apps/desktop/electron-builder.yml`: `appId dev.helix.desktop`, NSIS x64, assisted installer (`oneClick: false`, per-user, directory choice, desktop and Start Menu shortcuts, `LICENSE` shown), `publish` → `harryx2011-boop/helix-releases`. `extraResources` maps `resources/{api,ui,extract,fetch,browsers}`; the API's externals travel as `resources/api_modules` → `api/node_modules`, because electron-builder drops every `node_modules` directory under `extraResources` (the first build installed without them and the API died with `ERR_MODULE_NOT_FOUND` for `playwright`; the fix is in `scripts/stage.mjs` and the yml). `corepack pnpm --filter @helix/desktop exec electron-builder --win --x64` writes `release/Helix-Setup-<version>.exe`, its `.blockmap` and `latest.yml`; the version is `apps/desktop/package.json`'s, mirrored with the product line. Unsigned: SmartScreen warns on first launch.
 
 ## Decisions
 

@@ -25,10 +25,10 @@ export function instanceUrl(): string {
 
 /** `MCP_URL` for display, on the same origin rule as `instanceUrl`. */
 export function instanceMcpUrl(): string {
-  return process.env.NEXT_PUBLIC_HELIX_MCP_URL ?? `${instanceUrl()}/mcp`;
+  return process.env.NEXT_PUBLIC_HELIX_MCP_URL || `${instanceUrl()}/mcp`;
 }
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3400';
 
 /** The API serves MCP at `/mcp` on its own host; a hosted deployment may front it with `https://mcp.helix.dev/v1`. */
-export const MCP_URL = process.env.NEXT_PUBLIC_HELIX_MCP_URL ?? `${PUBLIC_API_URL}/mcp`;
+export const MCP_URL = process.env.NEXT_PUBLIC_HELIX_MCP_URL || `${PUBLIC_API_URL}/mcp`;

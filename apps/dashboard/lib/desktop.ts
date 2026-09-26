@@ -35,3 +35,9 @@ export function desktopCredentials(): { apiKey: string | null; adminToken: strin
   const pick = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
   return { apiKey: pick(value.apiKey), adminToken: pick(value.adminToken) };
 }
+
+/** Whether a listed key (known only by its prefix) is the one the desktop app authenticates with. */
+export function isDesktopKey(keyPrefix: string): boolean {
+  const apiKey = desktopCredentials()?.apiKey;
+  return Boolean(apiKey && keyPrefix.length > 0 && apiKey.startsWith(keyPrefix));
+}

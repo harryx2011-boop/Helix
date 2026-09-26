@@ -118,6 +118,26 @@ describe('pglite driver: parity with node-postgres', () => {
     expect(rowCount).toBe(2);
   });
 
+  it('drops bound parameters from a failed query error, since request logs serialise them', async () => {
+    const error = await pool
+      .query('INSERT INTO marks (n) VALUES ($1)', ['not-a-number-secret'])
+      .then(() => undefined, (e: unknown) => e as Record<string, unknown>);
+    expect(error).toBeDefined();
+    expect(Object.keys(error!)).not.toContain('params');
+    expect(Object.keys(error!)).not.toContain('queryOptions');
+    expect(JSON.stringify(error)).not.toContain('not-a-number-secret');
+
+    const client = await pool.connect();
+    try {
+      const inTx = await client
+        .query('INSERT INTO marks (n) VALUES ($1)', ['also-secret'])
+        .then(() => undefined, (e: unknown) => e as Record<string, unknown>);
+      expect(Object.keys(inTx!)).not.toContain('params');
+    } finally {
+      client.release();
+    }
+  });
+
   it('runs a parameterless multi-statement call and returns the last result, as migrate.ts needs', async () => {
     const { rows } = await pool.query('SELECT 1 AS one; SELECT 2 AS two');
     expect(rows).toEqual([{ two: 2 }]);

@@ -1741,10 +1741,8 @@ paths:
       tags: [Jobs]
       summary: Get job status and results
       description: |
-        On a multi-tenant instance a job is visible only to the API key that
-        created it; another key gets the same 404 as a job that does not exist.
-        Jobs with no key recorded stay readable. A single-operator instance is
-        unscoped, so any of its keys can read any of its jobs.
+        An instance has a single operator, so every API key on it can read
+        every job. An unknown id answers 404.
       operationId: getJob
       responses:
         '200':
@@ -1760,10 +1758,8 @@ paths:
         Stops the job. Already-completed results stay retrievable. Cancellation does
         not emit a failure webhook per queued URL.
 
-        On a multi-tenant instance a job is visible only to the API key that
-        created it; another key gets the same 404 as a job that does not exist.
-        Jobs with no key recorded stay readable. A single-operator instance is
-        unscoped, so any of its keys can read any of its jobs.
+        An instance has a single operator, so every API key on it can cancel
+        every job. An unknown id answers 404.
       operationId: cancelJob
       responses:
         '200':
@@ -1781,8 +1777,8 @@ paths:
       summary: Per-URL failures for a job
       description: |
         Every failure with its typed reason, the tier and profile tried, and
-        whether escalation remains. This names every URL the job touched, so
-        ownership is scoped as on `GET /jobs/{id}`.
+        whether escalation remains. Readable by every API key on the instance,
+        as `GET /jobs/{id}` is.
       operationId: getJobErrors
       responses:
         '200':
@@ -1813,10 +1809,8 @@ paths:
         finishes, so a caller building a consumer for the results does not
         have to wait on the first page to learn the shape.
 
-        On a multi-tenant instance a job is visible only to the API key that
-        created it; another key gets the same 404 as a job that does not exist.
-        Jobs with no key recorded stay readable. A single-operator instance is
-        unscoped, so any of its keys can read any of its jobs.
+        An instance has a single operator, so every API key on it can read
+        every job. An unknown id answers 404.
       operationId: getJobSchema
       responses:
         '200':

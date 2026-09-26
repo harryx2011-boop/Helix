@@ -58,6 +58,46 @@ describe('safeEqual', () => {
   });
 });
 
+describe('ensureBootstrapKey', () => {
+  /**
+   * The desktop app injects the bootstrap key from its bridge. A revoke from the
+   * Keys page that survived a restart would lock the app out for good.
+   */
+  it('reactivates a revoked bootstrap key on the next boot', async () => {
+    const { pgliteDriver } = await import('../db/drivers/pglite.js');
+    const db = pgliteDriver({});
+    await db.query(`CREATE TABLE api_keys (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      name text NOT NULL,
+      key_hash text NOT NULL UNIQUE,
+      key_prefix text NOT NULL,
+      rate_limit integer NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      last_used_at timestamptz,
+      revoked_at timestamptz
+    )`);
+    vi.doMock('../db/pool.js', () => ({ getPool: () => db }));
+    vi.resetModules();
+    try {
+      const keys = await import('./api-keys.js');
+      const plaintext = 'helix-BootstrapKey000001';
+
+      await keys.ensureBootstrapKey(plaintext);
+      expect(await keys.revokeApiKeyByHash(keys.hashKey(plaintext))).toBe(true);
+      expect(await keys.verifyApiKey(plaintext)).toBeUndefined();
+
+      await keys.ensureBootstrapKey(plaintext);
+      expect((await keys.verifyApiKey(plaintext))?.name).toBe('bootstrap');
+      const { rows } = await db.query<{ n: string }>('SELECT count(*) AS n FROM api_keys', []);
+      expect(rows[0]!.n).toBe('1');
+    } finally {
+      vi.doUnmock('../db/pool.js');
+      vi.resetModules();
+      await db.end();
+    }
+  }, 60_000);
+});
+
 describe('listApiKeys', () => {
   /**
    * /usage/all runs one aggregate query per key this returns, so an unbounded

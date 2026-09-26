@@ -318,7 +318,11 @@ async fn main() -> anyhow::Result<()> {
     let port: u16 = std::env::var("HELIX_FETCH_PORT")
         .unwrap_or_else(|_| "7401".into())
         .parse()?;
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    // The desktop app binds loopback only; the container default stays open for compose.
+    let host: std::net::IpAddr = std::env::var("HELIX_FETCH_HOST")
+        .unwrap_or_else(|_| "0.0.0.0".into())
+        .parse()?;
+    let addr = SocketAddr::from((host, port));
 
     tracing::info!(
         %addr,

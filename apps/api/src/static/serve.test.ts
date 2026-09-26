@@ -76,6 +76,20 @@ describe('registerStatic', () => {
     expect(res.body).toBe('<html>pricing</html>');
   });
 
+  it('serves <path>.html for a trailing-slash path, as the export writes app.html', async () => {
+    const res = await app.inject({ method: 'GET', url: '/pricing/' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toBe('<html>pricing</html>');
+  });
+
+  it('refuses a path with a colon, so an NTFS stream name cannot address a file', async () => {
+    for (const url of ['/pricing.html::$DATA', '/pricing.html%3A%3A%24DATA', '/pricing::$DATA']) {
+      const res = await app.inject({ method: 'GET', url });
+      expect(res.statusCode, url).toBe(404);
+      expect(res.body, url).not.toBe('<html>pricing</html>');
+    }
+  });
+
   it('serves assets by their own name', async () => {
     const res = await app.inject({ method: 'GET', url: '/_next/static/chunk.js' });
     expect(res.statusCode).toBe(200);

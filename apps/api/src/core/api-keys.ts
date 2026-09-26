@@ -173,10 +173,12 @@ export async function revokeApiKey(id: string): Promise<boolean> {
 }
 
 /**
- * Ensure the bootstrap key from the environment exists as a real row.
+ * Ensure the bootstrap key from the environment exists as a real, active row.
  *
- * Without this the first request has nothing to authenticate against. Idempotent,
- * so restarts are harmless.
+ * Without this the first request has nothing to authenticate against. The key
+ * named by `HELIX_BOOTSTRAP_KEY` is registered and active at every boot, so a
+ * revoke lasts only until the next restart: the desktop app injects this key
+ * and would otherwise be locked out for good. To retire it, unset the variable.
  */
 export async function ensureBootstrapKey(plaintext: string): Promise<void> {
   const hash = hashKey(plaintext);
@@ -185,7 +187,7 @@ export async function ensureBootstrapKey(plaintext: string): Promise<void> {
   await getPool().query(
     `INSERT INTO api_keys (name, key_hash, key_prefix, rate_limit)
      VALUES ('bootstrap', $1, $2, 10000)
-     ON CONFLICT (key_hash) DO NOTHING`,
+     ON CONFLICT (key_hash) DO UPDATE SET revoked_at = NULL`,
     [hash, prefix],
   );
 }

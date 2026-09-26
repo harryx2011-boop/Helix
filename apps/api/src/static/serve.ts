@@ -39,7 +39,7 @@ async function isFile(root: string, candidate: string): Promise<boolean> {
 
 /** A Next.js static export writes `/app/keys` as `app/keys.html` or `app/keys/index.html` depending on `trailingSlash`. */
 function candidatesFor(path: string): string[] {
-  if (path.endsWith('/')) return [`${path}index.html`];
+  if (path.endsWith('/')) return [`${path}index.html`, `${path.slice(0, -1)}.html`];
   return [path, `${path}.html`, `${path}/index.html`];
 }
 
@@ -59,7 +59,10 @@ export async function registerStatic(app: FastifyInstance, options: StaticOption
     config: { public: isUiPath },
     handler: async (request, reply) => {
       const path = safeDecode(request.url.split(/[?#]/)[0] ?? '/');
-      if (path === undefined || isApiPath(path) || path.includes('\0')) return reply.callNotFound();
+      // A colon names an NTFS alternate data stream (`app.html::$DATA`), which resolves inside the root.
+      if (path === undefined || isApiPath(path) || path.includes('\0') || path.includes(':')) {
+        return reply.callNotFound();
+      }
 
       for (const candidate of candidatesFor(path)) {
         if (await isFile(root, candidate)) return reply.sendFile(candidate);

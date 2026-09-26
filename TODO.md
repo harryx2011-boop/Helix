@@ -26,8 +26,8 @@ exercised against it.
 The full stack runs locally and nothing local needs any of this.
 `helixapi-dev.vercel.app` has no API behind it, so it is a shell for anyone but you.
 
-- [ ] Host the API, then set `HELIX_MULTI_TENANT=1` on it. Verify `/v1/keys` and
-      `/v1/usage/all` return 404 — a 200 means the variable never reached the API.
+- [x] ~~Host the API, then set `HELIX_MULTI_TENANT=1` on it.~~ Dropped 2026-09-25: the flag was
+      removed in `DESKTOP-PLAN.md` Phase 3; Helix ships as a single-user desktop app.
 - [x] ~~Host the Converter.~~ Dropped 2026-09-25: the Converter left Helix; file conversion
       lives in Sparky.
 - [ ] `--build-arg HELIX_BROWSER_ENGINES="chromium firefox"` when building the API image,

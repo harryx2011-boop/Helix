@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatRelativeTime } from '@/lib/format';
 import { instanceUrl } from '@/lib/mode';
 import { createInstanceKey, listInstanceKeys, revokeInstanceKey } from '@/lib/instance-keys';
+import { isDesktopKey } from '@/lib/desktop';
 import { generateEphemeralKey } from '@/lib/ephemeral-keys';
 import { toast } from 'sonner';
 import { AsciiOrbit } from '@/components/shared/ascii-fields';
@@ -24,6 +25,7 @@ interface KeyRow {
   lastUsedAt: string | null;
   createdAt: string;
   revoked: boolean;
+  desktop: boolean;
 }
 
 function useKeys() {
@@ -47,6 +49,7 @@ function useKeys() {
           lastUsedAt: k.lastUsedAt,
           createdAt: k.createdAt,
           revoked: Boolean(k.revokedAt),
+          desktop: isDesktopKey(k.keyPrefix),
         })),
       );
       setInstanceReachable(true);
@@ -309,7 +312,10 @@ export function KeysClient() {
                     <TableCell className="text-sm text-muted-foreground">{formatRelativeTime(k.createdAt)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{k.lastUsedAt ? formatRelativeTime(k.lastUsedAt) : 'Never'}</TableCell>
                     <TableCell className="text-right">
-                      {!k.revoked && (
+                      {!k.revoked && k.desktop && (
+                        <span className="text-xs text-muted-foreground">This key runs the desktop app</span>
+                      )}
+                      {!k.revoked && !k.desktop && (
                         <RevokeButton id={k.id} disabled={activeCount <= 1} onRevoked={refresh} />
                       )}
                     </TableCell>

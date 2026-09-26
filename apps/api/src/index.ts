@@ -80,7 +80,17 @@ const app = Fastify({
   },
   trustProxy: true,
   bodyLimit: 5 * 1024 * 1024,
+  // Shutdown must not wait on idle keep-alive sockets; the database closes after it.
+  forceCloseConnections: true,
 });
+
+// A server that lost DATABASE_URL would otherwise boot silently on an empty local database.
+if (!process.env['HELIX_DB']) {
+  app.log.warn(
+    config.db === 'pglite' ? { driver: config.db, dataDir: config.dataDir } : { driver: config.db },
+    'HELIX_DB is not set; database driver chosen by default',
+  );
+}
 
 // A thrown error must not reach the caller as the database's or a library's
 // own message. Fastify's own errors carry a status (413 for an oversized body,
@@ -501,7 +511,7 @@ const start = async (): Promise<void> => {
         app.log.warn({ error }, 'usage retention sweep failed'),
       );
     }, 60 * 60 * 1000).unref();
-    startSweeper({ logger: app.log });
+    startSweeper({ ttlHours: config.resultTtlHours, vacuum: config.db === 'pglite', logger: app.log });
 
     await app.listen({ port: config.port, host: config.host });
     app.log.info(
@@ -520,6 +530,11 @@ const shutdown = (reason: string): void => {
   if (shuttingDown) return;
   shuttingDown = true;
   app.log.info({ reason }, 'shutting down');
+  // The ceiling. The desktop supervisor force-kills after 10 s.
+  setTimeout(() => process.exit(0), 8_000).unref();
+
+  const within = (work: Promise<unknown>, ms: number): Promise<unknown> =>
+    Promise.race([work.catch(() => undefined), new Promise((resolve) => setTimeout(resolve, ms).unref())]);
 
   void (async () => {
     crawlWorker.stop();
@@ -531,10 +546,12 @@ const shutdown = (reason: string): void => {
     // Flushed before the pool closes, or the final interval of counts is lost
     // on every clean restart rather than only on a crash.
     await usageRecorder.flush().catch(() => undefined);
-    await sessions.closeAll().catch(() => undefined);
-    await app.close().catch(() => undefined);
-    await browserPool.close().catch(() => undefined);
+    await within(sessions.closeAll(), 2_000);
+    // Bounded: an in-flight scrape can run 30 s, and the database must close
+    // inside the supervisor's grace window or PGlite is killed mid-write.
+    await within(app.close(), 3_000);
     await closePool().catch(() => undefined);
+    await browserPool.close().catch(() => undefined);
     process.exit(0);
   })();
 };

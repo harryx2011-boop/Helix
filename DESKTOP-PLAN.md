@@ -157,7 +157,7 @@ With no app on the web, hosted mode (Clerk, Supabase, onboarding, `app/api/**`, 
 
 **Next steps, in order:**
 
-1. Bump versions to 1.25.0 and update the docs. `DEPLOY.md` still documents `HELIX_MULTI_TENANT` (the line-7 note, the env table row and the §157 check), and `context.md` mentions it too.
+1. ~~Bump versions to 1.25.0 and update the docs.~~ Superseded by D9: the desktop release is 2.0.0. `DEPLOY.md`'s header now says the flag is gone (the doc is history); `TODO.md`'s hosting item is dropped.
 2. Take the Postgres start out of `helix-ensure.js`, once the desktop build defaults to PGlite.
 3. Fix the zero-page crawl/batch bug above.
 4. Time a 500-page crawl on PGlite (spike item 3, not yet measured).
@@ -192,6 +192,8 @@ It is reproduced on a clean worktree of `799f954`, and in a fresh `NEXT_DIST_DIR
 - PyInstaller, `--noconsole`, one-folder build of `helix_extract`.
 - `sentence-transformers` (with torch, over 1 GB) is a hard dependency today. Making local embeddings a lazy, optional import keeps the installer small (D3).
 
+**Done 2026-09-25 (D6 as preferred: torch downloads on first use; the bundling fallback was not needed).** `helix_extract/__main__.py` takes `--port`/`--host`; `helix-extract.spec` + `build-exe.ps1` freeze a one-folder `--noconsole` app of 123 MB with no torch, numpy, scipy or sklearn. `runtime.py`: on the first local-embedding request with the package missing, it downloads the runtime pack (`build-runtime-pack.ps1`: CPU torch 2.14 for Python 3.14 and sentence-transformers at the venv's pinned versions, plus the all-MiniLM-L6-v2 weights as a plain folder; 279 MB zipped, 1.08 GB unpacked, sha256 sidecar checked) into `HELIX_RUNTIME_DIR` (default `%LOCALAPPDATA%\Helix\runtime`), unpacks with long-path names, puts it first on `sys.path` only when the package is otherwise missing, and loads the model from the pack's own copy so nothing else is fetched. `/health` gains `local_embeddings` (`missing`, `downloading` with percent, `ready`, `failed`); `/chunk` with `embed` answers 503 + `Retry-After: 30` while downloading; a failed download retries no sooner than 5 minutes later. Proved on the frozen exe: `/health`, `/extract`, `/document` for PDF/DOCX/PPTX/XLSX all 200 with `MainWindowHandle` 0; `/chunk` 503 at 0.3 s, 200 with 384-dim vectors at 40 s; ready at startup after a restart with the pack URL unreachable. pytest 278 passed (from 265), 8 skipped. Known gap: torch needs the Microsoft Visual C++ runtime (`msvcp140.dll`); the pack does not carry it and the installer does not check for it yet.
+
 ## Phase 6: `apps/desktop`
 
 **Supervision.** Electron's main process supervises three children, each spawned directly with `windowsHide`:
@@ -209,6 +211,10 @@ It health-polls before opening the window, shows a splash with a status line, re
 **Ports.** The app uses its own block (8400–8402, registered in `reference/ports.md` when built), so it never collides with the dev stack on 7400–7402.
 
 **Bundled assets.** Playwright's Chromium headless shell ships in `extraResources`.
+
+**Built 2026-09-25.** `apps/desktop`: one `ChildSpec` module per child (`children/{api,extract,fetch}.ts`) over a registry, `supervisor.ts` (exists-check, port-free check, health poll 60 × 500 ms, restart backoff 1/3/9 s in a 5-minute window, pid files that record image name and start time so a recycled pid is never killed, IPC shutdown then `taskkill /T`), `keys.ts` (`helix-` + 32 hex key, 64 hex admin token, `safeStorage` in `credentials.json`), `splash.ts` + `splash.html` (DESIGN.md dark tokens, 600 ms minimum, status glyph at 2 Hz and a 220 ms ease-out fade, both skipped under reduced motion, per-child Show log, Retry, Quit), `window.ts` (loads `http://127.0.0.1:7410/app`, sandboxed, keys handed only to same-origin pages, outside links to the OS browser), `updater.ts` (electron-updater against `helix-releases`, install on quit, never throws), `preload.ts` (`window.helixDesktop`), `scripts/stage.mjs` (registry of five stage steps, each asserting its output), `build/icon.ico` (7 layers from `apps/dashboard/app/icon.svg`, the tile mark; `logo.svg` carries the wordmark and is unreadable at 16 px). 46 tests, `tsc` clean.
+
+**Dev smoke, real Electron (2026-09-26 03:34 UTC):** `node scripts/dev.mjs` spawned the API (`node --import tsx`, PGlite), extract (`pythonw -m helix_extract`) and fetch; fetch healthy after 2 probes, extract after 6, the API after 15 (8 s total); `/v1/health`, `/app`, fetch and extract `/health` all 200; the only process with a window was Electron's main window titled with the app; after `taskkill /T` on the Electron pid every port was free. Stale-child kill was also exercised live by the shell agent: an orphaned `helix-fetch.exe` with a pid file was killed at the next start.
 
 ## Phase 7: installer
 
@@ -239,5 +245,16 @@ Decided by Harry 2026-09-25, evening session (Phases 3–7 built in one session)
 | D10 | Publish | **Yes:** the first installer goes to `helix-releases` as a GitHub release once it passes its checks. |
 | D11 | Autoupdate | **electron-updater wired in 2.0.0**, background check on launch, install on quit. |
 | D12 | Decisions while Harry is asleep | **Take the recommended option and log it here** as a further decision row. Safety-gate items still stop. |
+
+Taken under D12 during the session:
+
+| # | Question | Decision |
+|---|---|---|
+| D13 | Phases 3 and 4 as separate commits (D5) | **One commit (`50fb19c`).** Both phases edit the same lines of `index.ts` and `config.ts`; either order alone is a commit that does not build. |
+| D14 | Which Playwright browsers ship (D7) | **`chromium_headless_shell` only.** `apps/api/src/browser` never sets `headless: false`, so Playwright uses the headless shell; the full Chromium (about 450 MB of the 701 MB `browsers/` dir) is never launched. Firefox and WebKit are not bundled either: choosing one in settings fails with Playwright's own "browser not installed" message. |
+| D15 | Loopback binding | **The API and fetch take `HELIX_HOST` / `HELIX_FETCH_HOST`**, default `0.0.0.0` for compose, `127.0.0.1` from the desktop supervisor. Found by the shell agent: the API was answering on the LAN address, and Windows Firewall would prompt on first launch. |
+| D16 | Graceful stop on Windows | **IPC.** Windows has no SIGTERM, so the supervisor spawns the API with an IPC channel and sends `{ type: 'shutdown' }`; the API runs the same close sequence as SIGTERM, and the supervisor force-kills the tree after 10 s (raised from 3 s after the review below). |
+
+**Review of `50fb19c` (code-reviewer, 2026-09-25).** Nothing Critical or High. The PGlite mutex releases on every throw path, no transaction's own queries re-enter it, type parity held on a direct probe (int8/int8[], numeric, bytea, jsonb, text[], timestamptz), the static route blocks every traversal form and `config.public` can only reach the two static routes, and the bridge hands credentials only to same-origin pages. Fixed before release: the bootstrap key could be revoked from the Keys page and stayed revoked across restarts, locking the desktop app out (now `ON CONFLICT DO UPDATE SET revoked_at = NULL`, and the UI refuses to revoke the desktop key); `closePool()` came after `app.close()` and `browserPool.close()`, so PGlite was force-killed mid-write on most quits (reordered, capped, grace 10 s); the sweeper's first run was an hour after boot, ignored `resultTtlHours`, could delete documents under a running job, and PGlite has no autovacuum (first run at 60 s, TTL from config, held-job exemption, `VACUUM` after a sweep on pglite); PGlite errors carried bound parameters into the logs; `/app/` 404'd while `app.html` exists and `:` paths reached NTFS streams; `mode.ts` used `??` for the MCP URL; the preload gate now also requires the main frame; `openapi.yaml` still described the multi-tenant model. Deferred (no current call site): the re-entrant `pool.query` deadlock guard and reopening a dead engine, recorded in memory `project_open_threads.md`.
 
 **Later:** whether the desktop app replaces the hook-launched stack as Claude Code's web layer (the `helix` MCP entry on 7400).

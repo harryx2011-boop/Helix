@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { desktopCredentials, isDesktop } from './desktop';
+import { desktopCredentials, isDesktop, isDesktopKey } from './desktop';
 import { getApiKey } from './auth';
 import { getAdminToken } from './instance-settings';
 
@@ -40,6 +40,14 @@ describe('desktop bridge', () => {
     expect(desktopCredentials()).toEqual({ apiKey: 'helix-desktop', adminToken: 'admin-desktop' });
     expect(getApiKey()).toBe('helix-desktop');
     expect(getAdminToken()).toBe('admin-desktop');
+  });
+
+  it('recognises the key the desktop app runs on by its listed prefix, and only inside the app', () => {
+    expect(isDesktopKey('helix-desk')).toBe(false);
+    fakeWindow({ ...BRIDGE, apiKey: 'helix-deskTopKey0000000' });
+    expect(isDesktopKey('helix-desk')).toBe(true);
+    expect(isDesktopKey('helix-abcd')).toBe(false);
+    expect(isDesktopKey('')).toBe(false);
   });
 
   it('falls back to storage for a credential the bridge left empty', () => {

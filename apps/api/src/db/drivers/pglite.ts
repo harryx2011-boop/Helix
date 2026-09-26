@@ -51,15 +51,25 @@ async function open(dataDir: string | undefined): Promise<PGlite> {
 }
 
 async function run<R>(db: PGlite, text: string, values?: unknown[]): Promise<QueryResult<R>> {
-  // PGlite's query() is the extended protocol, one statement only; a migration
-  // file is many. pg sends a parameterless call as a simple query, so exec() it.
-  if (values === undefined) {
-    const results = await db.exec(text);
-    const last = results.at(-1);
-    return { rows: (last?.rows ?? []) as R[], rowCount: last?.rowCount ?? last?.affectedRows ?? null };
+  try {
+    // PGlite's query() is the extended protocol, one statement only; a migration
+    // file is many. pg sends a parameterless call as a simple query, so exec() it.
+    if (values === undefined) {
+      const results = await db.exec(text);
+      const last = results.at(-1);
+      return { rows: (last?.rows ?? []) as R[], rowCount: last?.rowCount ?? last?.affectedRows ?? null };
+    }
+    const result = await db.query<R>(text, values);
+    return { rows: result.rows, rowCount: result.rowCount ?? result.affectedRows ?? null };
+  } catch (error) {
+    // PGlite attaches the bound values; the request logger serialises every
+    // enumerable field, and desktop log files ride along with bug reports.
+    if (typeof error === 'object' && error !== null) {
+      delete (error as { params?: unknown }).params;
+      delete (error as { queryOptions?: unknown }).queryOptions;
+    }
+    throw error;
   }
-  const result = await db.query<R>(text, values);
-  return { rows: result.rows, rowCount: result.rowCount ?? result.affectedRows ?? null };
 }
 
 export const pgliteDriver: Driver = ({ dataDir }, logger) => {

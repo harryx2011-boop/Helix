@@ -4,7 +4,9 @@
 > Clerk, no Supabase client, no onboarding and no `app/api/**`, and the website on Vercel serves
 > marketing and docs only. What follows is kept as history. The Clerk app, the Supabase project
 > (`gytknetqttkdmkhmysbm`) and the Vercel env vars it names still exist and are the owner's to retire;
-> `supabase/` and `HELIX_MULTI_TENANT` on the API go with Phase 3.
+> `HELIX_MULTI_TENANT` was removed in Phase 3 (`50fb19c`, 2026-09-25): the API is single-operator, and
+> the env-table row and the tenant-boundary check below describe a flag that no longer exists.
+> `supabase/` still exists and goes with the owner's retirement of the project.
 
 The dashboard is live at `https://helixapi-dev.vercel.app`. **Done on
 2026-09-02:** the Supabase project exists (`Helix`, ref `gytknetqttkdmkhmysbm`,

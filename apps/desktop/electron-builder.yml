@@ -1,0 +1,50 @@
+appId: dev.helix.desktop
+productName: Helix
+copyright: Copyright © 2026 harryx2011-boop and Helix contributors
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+  - "!**/*.map"
+asar: true
+extraResources:
+  - from: resources/api
+    to: api
+  # Staged apart from api/ because electron-builder skips node_modules dirs inside extraResources.
+  - from: resources/api_modules
+    to: api/node_modules
+  - from: resources/ui
+    to: ui
+  - from: resources/extract
+    to: extract
+  - from: resources/fetch
+    to: fetch
+  - from: resources/browsers
+    to: browsers
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+  artifactName: Helix-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Helix
+  uninstallDisplayName: Helix
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  license: ../../LICENSE
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+publish:
+  provider: github
+  owner: harryx2011-boop
+  repo: helix-releases
+  releaseType: release

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:" />
+<title>Helix</title>
+<style>
+  :root {
+    --color-bg: #0b1220;
+    --color-bg-raised: #121a2b;
+    --color-border: #232d44;
+    --color-border-strong: #33405c;
+    --color-fg: #f2f4f8;
+    --color-fg-muted: #98a2b8;
+    --color-fg-faint: #5f6b85;
+    --color-accent: #8b5cf6;
+    --color-accent-hover: #9d75f8;
+    --color-accent-fg: #ffffff;
+    --color-danger: #f87171;
+    --font-sans: "Geist", "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "Geist Mono", "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+    --duration-base: 220ms;
+    --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font: 400 13px/1.5 var(--font-sans);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-app-region: drag;
+    overflow: hidden;
+  }
+  main {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 28px 20px;
+    gap: 20px;
+  }
+  .reveal { animation: reveal var(--duration-base) var(--easing-out) both; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(4px); } }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand svg { width: 36px; height: 36px; flex: none; }
+  .brand span { font-size: 18px; font-weight: 500; letter-spacing: -0.01em; }
+  .status {
+    font: 400 13px/1.5 var(--font-mono);
+    font-variant-ligatures: none;
+    color: var(--color-fg-muted);
+    display: flex;
+    gap: 8px;
+  }
+  .glyph { color: var(--color-accent); width: 1ch; flex: none; }
+  .failures { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; min-height: 0; padding: 4px; margin: -4px; }
+  .failure { display: grid; grid-template-columns: 1ch 1fr; column-gap: 8px; }
+  .failure .glyph { color: var(--color-danger); font-family: var(--font-mono); }
+  .failure h2 { font-size: 13px; font-weight: 500; color: var(--color-fg); }
+  .failure p { grid-column: 2; color: var(--color-fg-muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+  .failure .log { grid-column: 2; margin-top: 6px; justify-self: start; }
+  .spacer { flex: 1; }
+  .actions { display: flex; gap: 8px; justify-content: flex-end; }
+  button {
+    -webkit-app-region: no-drag;
+    font: 500 13px/1 var(--font-sans);
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border-strong);
+    background: transparent;
+    color: var(--color-fg);
+    cursor: pointer;
+    transition: background-color 160ms var(--easing-out), border-color 160ms var(--easing-out);
+  }
+  button:hover { background: var(--color-bg-raised); }
+  button.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-fg); }
+  button.primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+  button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  footer { display: flex; align-items: center; justify-content: space-between; min-height: 28px; font: 400 12px/1.4 var(--font-mono); color: var(--color-fg-faint); }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { animation: none; }
+    button { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main class="reveal">
+  <div class="brand">
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <rect width="64" height="64" rx="14" fill="#121a2b"/>
+      <path d="M32 10 L50 20 L32 30 L14 20 Z" fill="#8B5CF6"/>
+      <path d="M32 26 L48 35 L32 44 L16 35 Z" fill="#5B21B6"/>
+      <path d="M32 42 L50 52 L32 62 L14 52 Z" fill="#F2F4F8"/>
+    </svg>
+    <span>Helix</span>
+  </div>
+
+  <div id="starting" class="status" role="status" aria-live="polite">
+    <span class="glyph" id="glyph" aria-hidden="true">&#9670;</span>
+    <span id="label">Starting</span>
+  </div>
+
+  <section id="failed" class="failures" hidden aria-live="assertive"></section>
+
+  <div class="spacer"></div>
+
+  <footer>
+    <span id="version"></span>
+    <div id="actions" class="actions" hidden>
+      <button id="quit" type="button">Quit</button>
+      <button id="retry" type="button" class="primary">Retry</button>
+    </div>
+  </footer>
+</main>
+<script>
+  const reduced = new URLSearchParams(location.search).get('rm') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches
+  const $ = (id) => document.getElementById(id)
+  let timer = null
+
+  // DESIGN.md sequence D: the boot glyph swaps at 2 Hz and stops the moment the wait resolves.
+  function cycle(on) {
+    clearInterval(timer)
+    timer = null
+    $('glyph').textContent = '◆'
+    if (on && !reduced) {
+      let open = false
+      timer = setInterval(() => { open = !open; $('glyph').textContent = open ? '◇' : '◆' }, 500)
+    }
+  }
+
+  function render(state) {
+    $('version').textContent = state.version ? 'v' + state.version : ''
+    if (state.phase === 'starting') {
+      $('starting').hidden = false
+      $('failed').hidden = true
+      $('actions').hidden = true
+      $('label').textContent = (state.label || 'Starting') + (reduced ? ' (in progress)' : '')
+      cycle(true)
+      return
+    }
+    cycle(false)
+    $('starting').hidden = true
+    const list = $('failed')
+    list.replaceChildren(...state.failures.map((f) => {
+      const row = document.createElement('div')
+      row.className = 'failure'
+      const glyph = document.createElement('span')
+      glyph.className = 'glyph'
+      glyph.setAttribute('aria-hidden', 'true')
+      glyph.textContent = '●'
+      const title = document.createElement('h2')
+      title.textContent = f.title + ' did not start'
+      const detail = document.createElement('p')
+      detail.textContent = f.detail
+      const log = document.createElement('button')
+      log.type = 'button'
+      log.className = 'log'
+      log.textContent = 'Show log'
+      log.addEventListener('click', () => window.helixSplash.showLog(f.name))
+      row.append(glyph, title, detail, log)
+      return row
+    }))
+    list.hidden = false
+    $('actions').hidden = false
+    list.querySelector('button')?.focus()
+  }
+
+  $('retry').addEventListener('click', () => window.helixSplash.retry())
+  $('quit').addEventListener('click', () => window.helixSplash.quit())
+  window.helixSplash.onState(render)
+</script>
+</body>
+</html>

@@ -16,13 +16,17 @@ const db = vi.hoisted(() => {
     claimHeld: true,
     /** Task rows still queued or running when the crawl finishes. */
     leftover: 0,
+    /** The claimed job's type; undefined keeps the projection out of older tests. */
+    type: undefined as string | undefined,
+    /** Queued task rows resume() finds, as the crawl route leaves the seed. */
+    queued: [] as { url: string; depth: number; site: string }[],
   };
   const query = vi.fn(async (text: string, values: unknown[] = []) => {
     state.calls.push({ text, values });
     if (text.includes('FOR UPDATE SKIP LOCKED')) {
       const request = state.request;
       state.request = undefined;
-      return request ? { rows: [{ id: JOB_ID, request }], rowCount: 1 } : { rows: [], rowCount: 0 };
+      return request ? { rows: [{ id: JOB_ID, request, type: state.type }], rowCount: 1 } : { rows: [], rowCount: 0 };
     }
     // The guarded mark: no row matches once another worker has reclaimed the
     // lease, which is what tells the worker its result is stale.
@@ -31,6 +35,7 @@ const db = vi.hoisted(() => {
     }
     // The outcome write lands: zero rows here reads as a cancellation mid-finish.
     if (text.includes('rejections = $6')) return { rows: [], rowCount: 1 };
+    if (text.includes('SELECT url, depth, site FROM job_tasks')) return { rows: state.queued, rowCount: state.queued.length };
     if (text.includes('count(*)::int AS n FROM job_tasks')) return { rows: [{ n: state.leftover }], rowCount: 1 };
     if (text.includes('FROM job_tasks WHERE job_id')) return { rows: [], rowCount: 0 };
     return { rows: [], rowCount: 0 };
@@ -60,6 +65,9 @@ const sink = vi.hoisted(() => ({
 }));
 const createSink = vi.hoisted(() => vi.fn((): typeof sink | undefined => sink));
 vi.mock('../vectors/sink.js', () => ({ createSink }));
+
+const estimateCrawl = vi.hoisted(() => vi.fn(async () => ({ pages: 7, assumptions: ['7 pages discovered'] })));
+vi.mock('./estimate.js', () => ({ estimateCrawl }));
 
 const discover = vi.hoisted(() => vi.fn(async () => [] as { url: string }[]));
 vi.mock('./sitemap.js', () => ({
@@ -103,6 +111,7 @@ function pipelineSuccess(markdown = '# Title\n\nSome content.') {
     },
     tier: 'tls' as const,
     tiersAttempted: ['tls'] as const,
+    escalations: [] as { from: string; to: string; reason: string }[],
     statusCode: 200,
     timingMs: 5,
   };
@@ -152,6 +161,9 @@ beforeEach(() => {
   db.state.request = undefined;
   db.state.claimHeld = true;
   db.state.leftover = 0;
+  db.state.type = undefined;
+  db.state.queued = [];
+  estimateCrawl.mockClear();
   discover.mockClear();
   discover.mockResolvedValue([]);
   runPipeline.mockReset();
@@ -621,5 +633,102 @@ describe('CrawlWorker — a finished job accounts for every page', () => {
     const events = calls.map((call) => call[1].event);
     expect(events).toContain('failed');
     expect(events).not.toContain('completed');
+  });
+});
+
+describe('CrawlWorker — what a job cost, and what it was projected to cost', () => {
+  function outcome(): Record<string, unknown> {
+    const update = db.state.calls.find((c) => c.text.includes('UPDATE jobs') && c.text.includes('rejections = $6'));
+    return JSON.parse(String(update?.values[4])) as Record<string, unknown>;
+  }
+
+  it('counts recorded pages by tier and the time a render tier took', async () => {
+    db.state.request = baseRequest();
+    runPipeline.mockResolvedValueOnce({ ...pipelineSuccess(), tier: 'chromium', tiersAttempted: ['plain', 'chromium'], timingMs: 2_340 });
+
+    await buildWorker().runOnce();
+
+    expect(outcome()).toMatchObject({ pagesFetched: 1, tierBreakdown: { chromium: 1 }, browserSeconds: 2.3 });
+  });
+
+  it('keeps each page climb with the page', async () => {
+    db.state.request = baseRequest();
+    const escalations = [{ from: 'plain', to: 'tls', reason: 'content absent' }];
+    runPipeline.mockResolvedValueOnce({ ...pipelineSuccess(), tiersAttempted: ['plain', 'tls'], escalations });
+
+    await buildWorker().runOnce();
+
+    const document = db.state.calls.find((c) => c.text.includes('INSERT INTO documents'));
+    const metadata = document?.values.map((v) => (typeof v === 'string' && v.startsWith('{') ? JSON.parse(v) : v)).find((v) => v && typeof v === 'object' && 'tiersAttempted' in v);
+    expect(metadata).toMatchObject({ escalations });
+  });
+
+  it('saves a projection before a fresh crawl fetches anything', async () => {
+    db.state.request = baseRequest();
+    db.state.type = 'crawl';
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    await buildWorker().runOnce();
+
+    expect(estimateCrawl).toHaveBeenCalledTimes(1);
+    const saved = db.state.calls.findIndex((c) => c.text.includes('SET estimate = $2'));
+    const firstDocument = db.state.calls.findIndex((c) => c.text.includes('INSERT INTO documents'));
+    expect(saved).toBeGreaterThan(-1);
+    expect(saved).toBeLessThan(firstDocument);
+    expect(JSON.parse(String(db.state.calls[saved]?.values[1]))).toMatchObject({ pages: 7 });
+  });
+
+  it('makes no projection for a batch, which discovers nothing', async () => {
+    db.state.request = baseRequest();
+    db.state.type = 'batch_scrape';
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    await buildWorker().runOnce();
+
+    expect(estimateCrawl).not.toHaveBeenCalled();
+    expect(db.state.calls.some((c) => c.text.includes('SET estimate'))).toBe(false);
+  });
+
+  it('crawls on when the projection fails', async () => {
+    db.state.request = baseRequest();
+    db.state.type = 'crawl';
+    estimateCrawl.mockRejectedValueOnce(new Error('sitemap unreachable'));
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    await buildWorker().runOnce();
+
+    expect(outcome()).toMatchObject({ pagesFetched: 1 });
+  });
+});
+
+// The crawl route queues the seed row before the worker claims the job. Read
+// as a resume, that one row switched off the projection and sitemap seeding
+// for every crawl submitted through the API.
+describe('CrawlWorker — a crawl whose seed the route already queued', () => {
+  it('still starts fresh: projects the crawl and seeds from the sitemap', async () => {
+    db.state.request = baseRequest({ sitemap: 'include', maxDepth: 2 });
+    db.state.type = 'crawl';
+    db.state.queued = [{ url: 'https://example.com/', depth: 0, site: 'example.com' }];
+    runPipeline.mockResolvedValue(pipelineSuccess());
+
+    await buildWorker().runOnce();
+
+    expect(estimateCrawl).toHaveBeenCalledTimes(1);
+    expect(discover).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a crawl that already finished pages as a resume', async () => {
+    db.state.request = baseRequest({ sitemap: 'include', maxDepth: 2 });
+    db.state.type = 'crawl';
+    db.state.queued = [
+      { url: 'https://example.com/a', depth: 1, site: 'example.com' },
+      { url: 'https://example.com/b', depth: 1, site: 'example.com' },
+    ];
+    runPipeline.mockResolvedValue(pipelineSuccess());
+
+    await buildWorker().runOnce();
+
+    expect(estimateCrawl).not.toHaveBeenCalled();
+    expect(discover).not.toHaveBeenCalled();
   });
 });

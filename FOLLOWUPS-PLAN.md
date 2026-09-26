@@ -62,7 +62,14 @@ exempts loopback for local providers and verifies before storing).
 - Wire: additive fields on `/health` and `/providers`; run `mcp/tools.test.ts` and `mcp-tool-names.test.ts`. **MINOR.**
 - Verify on the installed desktop app too (its loopback-only binding must not block reaching 11434).
 
-## Phase 3: `GET /v1/jobs/{id}/ladder` and `GET /v1/jobs/{id}/cost`
+## Phase 3: `GET /v1/jobs/{id}/ladder` and `GET /v1/jobs/{id}/cost` — done 2026-09-26
+
+Landed: `PipelineSuccess.escalations` (`from`, `to`, `reason` per climb) kept in `documents.metadata`; `routes/job-ladder.ts` and `routes/job-cost.ts` (own modules, one registration line each); the worker counts `tierBreakdown` and `browserSeconds` into `usage` and, per Harry, projects the crawl itself when it claims it (`crawl/estimate.ts`, moved out of the route unchanged; migration `014_job_estimate.sql`); the `Usage` schema now lists only what is written. Both tools joined the default MCP list (29 tools, `helix-ensure.js`). **Found on the way and fixed:** every crawl submitted through the API was read as a resume, because the route queues the seed row before the worker runs and `freshStart` required zero queued rows; that silently switched off sitemap seeding since the baseline commit, and the projection with it. Verified live: a tutorial crawl saved its projection (3 pages, tls) and finished 3 plain pages with `escalations: []`; a batch of python.org/psf and example.com shows each climb with its reason.
+
+**New findings from the first ladder reads (not fixed):**
+- example.com (about 130 characters of text) now climbs plain → tls → lightpanda → chromium because of Phase 1b's 200-character floor: 3.6 s where it was 0.3 s. Short but complete pages pay for a browser.
+- The ladder steps onto the lightpanda tier on an instance where it is not enabled, recording `transport error: lightpanda tier requested but not enabled` before reaching chromium. Automatic escalation should skip a disabled tier.
+
 
 **Ladder (S).** Per page: winning `tier`, `tiersAttempted`, `profile`, `timingMs`, from
 `documents` (`001_init.sql:83-101`, written at `worker.ts:880-896`). Escalation reasons for a

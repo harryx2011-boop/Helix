@@ -10,6 +10,7 @@ import { SessionPool } from './sessions.js';
 import { RobotsCache } from './robots.js';
 import { SitemapFetcher } from './sitemap.js';
 import { siteOf } from './url.js';
+import { estimateCrawl } from './estimate.js';
 import type { Log } from '../core/logger.js';
 import { enqueueDelivery, type WebhookConfig, type WebhookEvent } from '../webhooks/deliveries.js';
 import { createSink, type VectorSink } from '../vectors/sink.js';
@@ -115,6 +116,8 @@ function isAbort(error: unknown): boolean {
   return typeof named?.message === 'string' && /abort/i.test(named.message);
 }
 
+const RENDER_TIERS = new Set(['chromium', 'camoufox']);
+
 function pages(count: number): string {
   return count === 1 ? '1 page was' : `${count} pages were`;
 }
@@ -170,6 +173,10 @@ export interface WorkerDeps extends PipelineDeps {
    * extraction runs against their model rather than failing for want of a key.
    */
   encryptionKey?: Buffer | undefined;
+  /** Shown in the saved projection, as `/crawl/estimate` shows it. */
+  defaultModel?: string | undefined;
+  /** `HELIX_ALLOW_PRIVATE_URLS`, for the projection's discovery. */
+  allowPrivateUrls?: boolean | undefined;
 }
 
 export class CrawlWorker {
@@ -190,10 +197,11 @@ export class CrawlWorker {
    * queue without a broker: each claims a different row, and none blocks.
    */
   async #claimJob(): Promise<
-    { id: string; request: CrawlJobRequest; api_key_id: string | null } | undefined
+    { id: string; type?: string; request: CrawlJobRequest; api_key_id: string | null } | undefined
   > {
     const { rows } = await getPool().query<{
       id: string;
+      type?: string;
       request: CrawlJobRequest;
       api_key_id: string | null;
     }>(
@@ -215,7 +223,7 @@ export class CrawlWorker {
            FOR UPDATE SKIP LOCKED
            LIMIT 1
         )
-        RETURNING id, request, api_key_id`,
+        RETURNING id, type, request, api_key_id`,
       [JOB_LEASE_SECONDS],
     );
     return rows[0];
@@ -246,7 +254,7 @@ export class CrawlWorker {
     this.#logger?.info({ jobId: job.id, url: job.request.url }, 'crawl started');
 
     try {
-      await this.#crawl(job.id, job.request, job.api_key_id);
+      await this.#crawl(job.id, job.request, job.api_key_id, job.type);
     } catch (error) {
       this.#logger?.error({ error, jobId: job.id }, 'crawl failed');
       const message = error instanceof Error ? error.message : String(error);
@@ -260,7 +268,7 @@ export class CrawlWorker {
     return true;
   }
 
-  async #crawl(jobId: string, request: CrawlJobRequest, apiKeyId?: string | null): Promise<void> {
+  async #crawl(jobId: string, request: CrawlJobRequest, apiKeyId?: string | null, type?: string): Promise<void> {
     const frontier = new PersistentFrontier(jobId, {
       seedUrl: request.url,
       limit: request.limit,
@@ -317,7 +325,9 @@ export class CrawlWorker {
       );
     }
 
-    const freshStart = resumed.restored === 0 && resumed.alreadyDone === 0;
+    // The route queues the seed before any worker sees the job, so one queued
+    // row and nothing else is a crawl that has not started, not a resume.
+    const freshStart = resumed.alreadyDone === 0 && resumed.reclaimed === 0 && resumed.restored <= 1;
     if (freshStart) frontier.add(request.url, 0);
 
     // Dedupe keys make this safe on resume: a restarted crawl does not announce
@@ -327,6 +337,23 @@ export class CrawlWorker {
       limit: request.limit,
       maxDepth: request.maxDepth ?? null,
     });
+
+    // The projection this crawl is measured against, made before any page is
+    // fetched. A resumed crawl keeps its first run's; a batch discovers nothing.
+    if (freshStart && type === 'crawl') {
+      try {
+        const estimate = await estimateCrawl(request, {
+          fetchClient: this.#deps.fetchClient,
+          extractClient: this.#deps.extractClient,
+          userAgent: this.#deps.userAgent,
+          allowPrivateUrls: this.#deps.allowPrivateUrls,
+          defaultModel: this.#deps.defaultModel ?? 'unset',
+        });
+        await getPool().query('UPDATE jobs SET estimate = $2 WHERE id = $1', [jobId, JSON.stringify(estimate)]);
+      } catch (error) {
+        this.#logger?.debug({ error, jobId }, 'crawl projection failed; the job keeps no estimate');
+      }
+    }
 
     // Previous visits to this site, for incremental mode.
     const seedSite = siteOf(request.url);
@@ -369,6 +396,10 @@ export class CrawlWorker {
     let pathCapped = 0;
     /** Results discarded because this worker no longer held the task row. */
     let notOwned = 0;
+    /** Recorded pages by the tier that served them. */
+    const tierBreakdown: Record<string, number> = {};
+    /** Wall time of pages a render tier served, cheaper tiers tried first included. */
+    let browserMs = 0;
     let jsonExtracted = 0;
     let jsonFailed = 0;
     let cancelChecked = Date.now();
@@ -662,6 +693,8 @@ export class CrawlWorker {
 
             await this.#recordDocument(jobId, item.url, result, structured);
             completed++;
+            tierBreakdown[result.tier] = (tierBreakdown[result.tier] ?? 0) + 1;
+            if (RENDER_TIERS.has(result.tier)) browserMs += result.timingMs;
 
             if (sink && request.destination) {
               const failure = await this.#storeToDestination(
@@ -779,6 +812,8 @@ export class CrawlWorker {
         JSON.stringify({
           pagesFetched: completed,
           pagesUnchanged: unchanged,
+          tierBreakdown,
+          browserSeconds: Math.round(browserMs / 100) / 10,
           // Named even at zero when the caller asked for the filter, so an
           // empty result is distinguishable from a filter that matched nothing.
           ...(hasContentFilters ? { pagesFiltered: filtered } : {}),
@@ -923,6 +958,7 @@ export class CrawlWorker {
           language: result.content.language,
           tier: result.tier,
           tiersAttempted: result.tiersAttempted,
+          escalations: result.escalations,
           extractor: result.content.extractorUsed,
           timingMs: result.timingMs,
           favicon: result.content.favicon,

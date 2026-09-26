@@ -63,11 +63,20 @@ export interface PipelineOptions {
   skipExtraction?: boolean | undefined;
 }
 
+/** One climb up the ladder, and the evidence that caused it. */
+export interface Escalation {
+  from: Tier;
+  to: Tier;
+  reason: string;
+}
+
 export interface PipelineSuccess {
   success: true;
   content: ExtractResult & { rawHtml?: string | undefined; screenshot?: string | undefined; favicon?: string | undefined };
   tier: Tier;
   tiersAttempted: Tier[];
+  /** Empty when the first tier served the page. */
+  escalations: Escalation[];
   profileUsed?: string | undefined;
   engineUsed?: RenderEngine | undefined;
   /** Options the tier could not honour, e.g. a profile that did not fit the engine. */
@@ -247,6 +256,7 @@ export async function runPipeline(
   const capabilities = capabilitiesFor(options);
   const wantsExtractedText = options.formats.some((f) => EXTRACTED_TEXT_FORMATS.has(f));
   const tiersAttempted: Tier[] = [];
+  const escalations: Escalation[] = [];
 
   const explicit = options.tier && options.tier !== 'auto' ? (options.tier as Tier) : undefined;
   // An explicit tier is both floor and ceiling: the caller asked for that tier.
@@ -289,6 +299,7 @@ export async function runPipeline(
           { url: options.url, from: tier, to: decision.nextTier, reason: attempt.transportError },
           'escalating after transport error',
         );
+        escalations.push({ from: tier, to: decision.nextTier, reason: `transport error: ${attempt.transportError}` });
         tier = decision.nextTier;
         continue;
       }
@@ -360,6 +371,7 @@ export async function runPipeline(
           },
           tier,
           tiersAttempted,
+          escalations,
           screenshotResult: attempt.screenshotResult,
           profileUsed: attempt.profileUsed,
           engineUsed: attempt.engineUsed,
@@ -377,6 +389,7 @@ export async function runPipeline(
           { url: options.url, from: tier, to: decision.nextTier, reason: decision.reason },
           'escalating',
         );
+        escalations.push({ from: tier, to: decision.nextTier, reason: decision.reason });
         tier = decision.nextTier;
         continue;
       }
@@ -395,6 +408,7 @@ export async function runPipeline(
         { url: options.url, from: tier, to: decision.nextTier, reason: decision.reason },
         'escalating after block or empty result',
       );
+      escalations.push({ from: tier, to: decision.nextTier, reason: decision.reason });
       tier = decision.nextTier;
       continue;
     }

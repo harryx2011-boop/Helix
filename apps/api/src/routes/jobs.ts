@@ -12,7 +12,7 @@ import { getPool } from '../db/pool.js';
  * the path the crawl spec documents.
  */
 
-const PAGE_SIZE = 100;
+export const PAGE_SIZE = 100;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -26,9 +26,9 @@ export function isJobId(id: string): boolean {
 }
 
 /** Only an offset this API handed out is a cursor. Postgres rejects a negative or oversized one. */
-const CURSOR = /^\d{1,15}$/;
+export const CURSOR = /^\d{1,15}$/;
 
-function notFound(requestId: string): RouteResult {
+export function notFound(requestId: string): RouteResult {
   return {
     code: 404,
     body: { error: 'not_found', message: 'No such job.', requestId },

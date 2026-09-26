@@ -28,6 +28,8 @@ import { registerMap } from './routes/map.js';
 import { registerCrawl } from './routes/crawl.js';
 import { registerBatch } from './routes/batch.js';
 import { registerJobs } from './routes/jobs.js';
+import { registerJobLadder } from './routes/job-ladder.js';
+import { registerJobCost } from './routes/job-cost.js';
 import { registerUsage } from './routes/usage.js';
 import { UsageRecorder, pruneUsage } from './core/usage.js';
 import { CrawlWorker } from './crawl/worker.js';
@@ -179,6 +181,8 @@ const crawlWorker = new CrawlWorker({
   sessionMaxBlocks: config.crawlSessionMaxBlocks,
   ...(config.proxyUrl ? { proxyUrl: config.proxyUrl } : {}),
   encryptionKey: providerEncryptionKey,
+  defaultModel: process.env['HELIX_LLM_MODEL'] ?? 'unset',
+  allowPrivateUrls: config.allowPrivateUrls,
   logger: app.log,
 });
 
@@ -370,6 +374,8 @@ await app.register(
     });
     await registerBatch(instance);
     await registerJobs(instance);
+    await registerJobLadder(instance);
+    await registerJobCost(instance);
     await registerUsage(instance);
     await registerSearch(instance, {
       provider: searchProvider,

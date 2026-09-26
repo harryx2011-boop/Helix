@@ -22,7 +22,7 @@ Standing facts (deployment, verified runtime recipes, known gotchas, dead decisi
 
 ## Search
 
-**Helix is also the tool you use.** The API's own MCP surface (`mcp__helix__helix_*`, user-scope server `helix` at `http://127.0.0.1:7400/mcp`) is how this and every other session reads the live web; `~/.claude/hooks/helix-ensure.js` starts the local stack. A change to `openapi.yaml` or `apps/api/src/mcp/` changes those tools, so run `apps/api/src/mcp/tools.test.ts` and `apps/dashboard/lib/mcp-tool-names.test.ts` after either. `HELIX_MCP_TOOLS` names the tools exposed; the hook sets the 27-tool core.
+**Helix is also the tool you use.** The API's own MCP surface (`mcp__helix__helix_*`, user-scope server `helix` at `http://127.0.0.1:7400/mcp`) is how this and every other session reads the live web; `~/.claude/hooks/helix-ensure.js` starts the local stack. A change to `openapi.yaml` or `apps/api/src/mcp/` changes those tools, so run `apps/api/src/mcp/tools.test.ts` and `apps/dashboard/lib/mcp-tool-names.test.ts` after either. `HELIX_MCP_TOOLS` names the tools exposed; the hook sets the 29-tool core.
 
 **Graphify first.** `graphify-out/` is the primary search path — locate the node, then read the narrow range it points at. Read/Grep/Glob are fallbacks, and falling back requires saying why. Regenerate the graph after structural changes (files added/renamed/moved, a refactor touching 3+ files); `--update`'s prune leaves ghost nodes, so check counts after.
 

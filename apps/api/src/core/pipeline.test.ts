@@ -423,7 +423,7 @@ describe('runPipeline â€” Retry-After', () => {
   });
 });
 
-describe('runPipeline — empty extraction on a server-rendered page', () => {
+describe('runPipeline ï¿½ empty extraction on a server-rendered page', () => {
   const BOILERPLATE = `<html><body><nav>${'Home About Donate Jobs Community Events Blog Contact '.repeat(6)}</nav><main></main><footer>${'Copyright notice, privacy policy, terms of use, sitemap. '.repeat(6)}</footer></body></html>`;
 
   const extractEmptyOnBoilerplate = (): ExtractClient =>
@@ -454,6 +454,45 @@ describe('runPipeline — empty extraction on a server-rendered page', () => {
     expect(result.tiersAttempted).toEqual(['plain', 'tls']);
     expect(result.tier).toBe('tls');
     expect(result.content.markdown).toContain('Real article text');
+  });
+
+  // The ladder endpoint reports why a page climbed; the reason has to be kept
+  // on the result, not only logged.
+  it('records each climb and the reason for it', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'] },
+      deps({
+        fetchClient: fetchClientReturning([
+          { status: 200, body: BOILERPLATE },
+          { status: 200, body: ARTICLE },
+        ]),
+        extractClient: extractEmptyOnBoilerplate(),
+        browserPool: browserPoolReturning(ARTICLE),
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.escalations).toHaveLength(1);
+    expect(result.escalations[0]).toMatchObject({ from: 'plain', to: 'tls' });
+    expect(result.escalations[0]?.reason).toEqual(expect.any(String));
+    expect(result.escalations[0]?.reason.length).toBeGreaterThan(0);
+  });
+
+  it('records no climb when the first tier serves the page', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'] },
+      deps({
+        fetchClient: fetchClientReturning([{ status: 200, body: ARTICLE }]),
+        extractClient: extractEmptyOnBoilerplate(),
+        browserPool: browserPoolReturning(ARTICLE),
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tier).toBe('plain');
+    expect(result.escalations).toEqual([]);
   });
 
   it('returns the empty page as-is once the ladder is spent', async () => {

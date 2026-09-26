@@ -1833,6 +1833,112 @@ paths:
                     description: The extraction prompt, when one was given.
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /jobs/{id}/ladder:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - name: cursor
+        in: query
+        schema: { type: string }
+        description: Continue a paginated result set.
+    get:
+      tags: [Jobs]
+      summary: Which tier served each page, and why it climbed
+      description: |
+        One row per page the job recorded: the tier that served it, every tier
+        tried on the way, each climb with the evidence behind it, the browser
+        identity used and the time taken. Paginated by `next`, the same as
+        `GET /jobs/{id}`. Failed pages are on `GET /jobs/{id}/errors`.
+
+        `escalations` is `[]` when the first tier served the page, and `null`
+        for a page recorded before climbs were kept: an empty list there would
+        claim the first tier served it.
+
+        Every API key on the instance can read every job. An unknown id answers 404.
+      operationId: getJobLadder
+      responses:
+        '200':
+          description: The pages, in the order they were recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string, format: uuid }
+                  next: { type: [string, 'null'], description: Path of the next page, or null on the last. }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        url: { type: string }
+                        tier: { type: [string, 'null'] }
+                        tiersAttempted: { type: array, items: { type: string } }
+                        escalations:
+                          type: [array, 'null']
+                          items:
+                            type: object
+                            properties:
+                              from: { type: string }
+                              to: { type: string }
+                              reason: { type: string }
+                        profile: { type: [string, 'null'] }
+                        timingMs: { type: [integer, 'null'] }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /jobs/{id}/cost:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Jobs]
+      summary: What a job consumed, beside its projection
+      description: |
+        Measured figures from the finished job next to the projection the
+        worker made when it claimed the crawl, before fetching a page (the same
+        calculation as `POST /crawl/estimate`). The projection is never
+        recomputed: that would describe today's site, not the one crawled.
+
+        A figure that was not measured is `null`, and `reasons` says why.
+        Tokens and provider spend are always `null` here; your provider reports
+        them. A batch, a resumed crawl, and a job made before projections were
+        kept have `estimate: null`.
+
+        Every API key on the instance can read every job. An unknown id answers 404.
+      operationId: getJobCost
+      responses:
+        '200':
+          description: Actual spend, the saved projection, and why any figure is missing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string, format: uuid }
+                  type: { type: string, enum: [crawl, batch_scrape, enrich] }
+                  status: { type: string, enum: [queued, running, completed, failed, cancelled] }
+                  actual:
+                    type: object
+                    properties:
+                      pagesFetched: { type: [integer, 'null'] }
+                      pagesUnchanged: { type: [integer, 'null'] }
+                      tierBreakdown:
+                        type: [object, 'null']
+                        additionalProperties: { type: integer }
+                        description: Recorded pages by the tier that served them.
+                      browserSeconds:
+                        type: [number, 'null']
+                        description: Wall time of pages a render tier (chromium, camoufox) served, cheaper tiers tried first included.
+                      tokens: { type: 'null' }
+                      providerCost: { type: 'null' }
+                  estimate:
+                    type: [object, 'null']
+                    description: The saved projection, in the shape `POST /crawl/estimate` returns.
+                  reasons:
+                    type: array
+                    items: { type: string }
+                    description: One line per figure that is `null`, saying why.
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /usage:
     get:
       tags: [Usage]
@@ -4618,22 +4724,25 @@ components:
 
     Usage:
       type: object
-      description: What the job actually consumed. Provider spend is what your provider bills you, not a Helix charge.
+      description: |
+        What the job consumed, written when it finishes. Only measured figures
+        appear; tokens and provider spend are not tracked per job, and
+        `GET /jobs/{id}/cost` says so beside the saved projection.
       properties:
         pagesFetched: { type: integer }
-        pagesFromCache: { type: integer }
         pagesUnchanged: { type: integer }
-        browserSeconds: { type: number }
-        tokens:
+        tierBreakdown:
           type: object
-          properties:
-            input: { type: integer }
-            output: { type: integer }
-        providerCost:
-          type: object
-          properties:
-            amount: { type: number }
-            currency: { type: string }
+          additionalProperties: { type: integer }
+          description: Recorded pages by the tier that served them.
+        browserSeconds:
+          type: number
+          description: Wall time of pages a render tier (chromium, camoufox) served, cheaper tiers tried first included.
+        pagesFiltered: { type: integer, description: Present when the crawl set a content filter. }
+        pagesOverPathCap: { type: integer, description: Present when the crawl set `maxPagesPerPath`. }
+        jsonExtracted: { type: integer, description: Present when the crawl requested structured extraction. }
+        jsonFailed: { type: integer, description: Present when the crawl requested structured extraction. }
+        vectorFailures: { type: integer, description: Present when the crawl set a `destination`. }
 
     ProviderName:
       type: string

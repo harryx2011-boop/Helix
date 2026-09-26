@@ -28,11 +28,12 @@ from . import (
     schema_gen,
 )
 from .schema_compiler import SchemaError
+from . import __version__
 from .settings import settings
 
 app = FastAPI(
     title="helix-extract",
-    version="1.4.0",
+    version=__version__,
     description="Internal service. Not exposed publicly.",
 )
 
@@ -61,7 +62,7 @@ async def health() -> Health:
     local = runtime.embeddings_runtime.state()
     return Health(
         status="ok",
-        version="1.4.0",
+        version=__version__,
         extractors=["trafilatura", "readability"],
         document_parsers=documents.available_parsers(),
         llm_configured=settings.llm_configured,

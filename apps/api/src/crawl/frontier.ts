@@ -5,6 +5,7 @@ import {
   isSameOrigin,
   isSameSite,
   matchesAny,
+  fetchUrl,
   normaliseUrl,
   siteOf,
   type PathMatcher,
@@ -38,7 +39,10 @@ export interface FrontierOptions {
 }
 
 export interface FrontierItem {
+  /** Fetched and stored as-is: the key for `job_tasks` rows and documents. */
   url: string;
+  /** The normalised form, used only to recognise the same page twice. */
+  key: string;
   depth: number;
   site: string;
 }
@@ -99,7 +103,8 @@ export class Frontier {
     const url = normaliseUrl(rawUrl, {
       ignoreQuery: this.#options.ignoreQuery ?? false,
     });
-    if (!url) return this.#reject('invalid');
+    const target = fetchUrl(rawUrl);
+    if (!url || !target) return this.#reject('invalid');
 
     if (this.#seen(url)) return this.#reject('duplicate');
 
@@ -117,7 +122,7 @@ export class Frontier {
     if (!site) return this.#reject('invalid');
 
     this.#remember(url);
-    this.#queue.push({ url, depth, site });
+    this.#queue.push({ url: target, key: url, depth, site });
     this.#enqueued++;
     return true;
   }

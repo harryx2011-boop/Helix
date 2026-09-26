@@ -8,6 +8,8 @@ exercised against it.
 
 ## Next
 
+- [ ] **`FOLLOWUPS-PLAN.md`** (2026-09-26): Phase 0 commits the crawl/batch URL fix after a live
+      smoke; then loud failures, Ollama detection, `/jobs/{id}/ladder` + `/cost`, `/vectors/search`.
 - [ ] **RLS keyed on `profile_id` from the Clerk claim.** 1.11.1 closed the browser
       surface; `/v1/*` is still guarded by application code alone. Read `context.md`
       1.11.1 first — the obvious design was rejected for three concrete reasons and

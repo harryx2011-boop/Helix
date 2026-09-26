@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { getPool } from '../db/pool.js';
-import { compilePathPattern } from '../crawl/url.js';
+import { compilePathPattern, fetchUrl, normaliseUrl } from '../crawl/url.js';
 import type { CrawlJobRequest } from '../crawl/worker.js';
 import { WEBHOOK_EVENTS } from '../webhooks/deliveries.js';
 import { MAX_WEBHOOK_BYTES, webhookHeadersProblem, webhookTargetProblem } from '../webhooks/target.js';
@@ -485,11 +485,16 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
     }
 
     // The seed is the frontier's first entry; the worker expands from there.
+    // Written as the frontier's `url` and `key` (see FrontierItem): the worker
+    // claims and completes rows by that exact string, so a raw
+    // `https://example.com` row was never matched and its page was dropped.
+    const seed = fetchUrl(body.url) ?? body.url;
+    const key = normaliseUrl(body.url, { ignoreQuery: body.ignoreQueryParameters }) ?? seed;
     await getPool().query(
       `INSERT INTO job_tasks (job_id, url, depth, idempotency_key)
        VALUES ($1, $2, 0, $3)
        ON CONFLICT (job_id, idempotency_key) DO NOTHING`,
-      [job.id, body.url, `${body.url}::0`],
+      [job.id, seed, `${key}::0`],
     );
 
     return reply.code(202).send({

@@ -24,6 +24,19 @@ describe('Frontier', () => {
     expect(frontier.enqueued).toBe(1);
   });
 
+  // Fetching the slash-stripped key made docs.python.org serve `/3/tutorial`,
+  // and every relative link on it resolved one directory too high.
+  it('dedupes on the normalised key but fetches the URL as found', () => {
+    const frontier = base();
+
+    expect(frontier.add('https://example.com/docs/guide/#intro', 1)).toBe(true);
+    expect(frontier.add('https://example.com/docs/guide', 1)).toBe(false);
+
+    const item = frontier.next(() => true);
+    expect(item?.url).toBe('https://example.com/docs/guide/');
+    expect(item?.key).toBe('https://example.com/docs/guide');
+  });
+
   it('keeps the crawl on-site by default', () => {
     const frontier = base();
 

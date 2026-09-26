@@ -186,7 +186,7 @@ export class PersistentFrontier {
           url: item.url,
           depth: item.depth,
           site: item.site,
-          idempotencyKey: `${item.url}::${item.depth}`,
+          idempotencyKey: `${item.key}::${item.depth}`,
         });
       }
     }
@@ -247,6 +247,10 @@ export class PersistentFrontier {
     }
 
     if (batch.length === 0) return undefined;
+
+    // The claim matches rows by URL, so any still buffered must exist first;
+    // otherwise the claim misses, the fetch runs unowned and its result is dropped.
+    await this.flush();
 
     await getPool().query(
       `UPDATE job_tasks

@@ -424,4 +424,18 @@ describe('PersistentFrontier — a reclaimed task is not marked by its old holde
     expect(await frontier.markCompleted('https://example.com/a')).toBe(true);
     expect(db.state.rows[0]?.status).toBe('completed');
   });
+
+  // The worker adds discovered links and flushes only past a threshold, so a
+  // claim that ran before the INSERT matched nothing and the fetched page was
+  // dropped: a crawl kept its seed and lost every page it discovered.
+  it('claims a page that was added but not yet flushed', async () => {
+    const frontier = new PersistentFrontier(JOB_ID, options, 'worker-a');
+    frontier.add('https://example.com/a', 1);
+
+    const item = await frontier.next(() => true);
+
+    expect(item?.url).toBe('https://example.com/a');
+    expect(await frontier.markCompleted('https://example.com/a')).toBe(true);
+    expect(db.state.rows[0]?.status).toBe('completed');
+  });
 });

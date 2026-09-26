@@ -88,6 +88,24 @@ export function normaliseUrl(input: string, options: NormaliseOptions = {}): str
   return url.toString();
 }
 
+/**
+ * The URL a crawl requests and records: parsed, fragment dropped, otherwise as
+ * found. `normaliseUrl` is only the dedup key; fetching its slash-stripped form
+ * makes a server that answers `/docs` without redirecting resolve every
+ * relative link one directory too high.
+ */
+export function fetchUrl(input: string): string | undefined {
+  let url: URL;
+  try {
+    url = new URL(input);
+  } catch {
+    return undefined;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined;
+  url.hash = '';
+  return url.toString();
+}
+
 /** The registrable domain, used to partition politeness per site. */
 export function siteOf(input: string): string | undefined {
   try {

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { getPool } from '../db/pool.js';
+import { fetchUrl, normaliseUrl } from '../crawl/url.js';
 import type { CrawlJobRequest } from '../crawl/worker.js';
 import { ScrapeOptionsSchema, WebhookSchema, TIERS, EXTRACTORS, CRAWL_FORMATS } from './crawl.js';
 import { cancelJob, fetchJobView } from './jobs.js';
@@ -70,11 +71,17 @@ function partitionUrls(urls: string[]): PartitionedUrls {
       invalid.push(candidate);
       continue;
     }
-    // The frontier dedupes too, but doing it here keeps `total` honest in the
-    // 202 rather than reporting a count the job will never reach.
-    if (seen.has(candidate)) continue;
-    seen.add(candidate);
-    valid.push(candidate);
+    // Stored as the frontier's `url` (see FrontierItem): the worker claims and
+    // completes rows by that exact string, so a raw `https://example.com` row
+    // was never matched and its page was dropped.
+    const url = fetchUrl(candidate) ?? candidate;
+    // The frontier dedupes on the normalised key too, but doing it here keeps
+    // `total` honest in the 202 rather than reporting a count the job will
+    // never reach.
+    const key = normaliseUrl(candidate) ?? url;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    valid.push(url);
   }
 
   return { valid, invalid };

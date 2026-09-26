@@ -153,7 +153,7 @@ describe('POST /v1/crawl', () => {
     expect(response.json()).toEqual({ success: true, id: JOB, jobId: JOB, url: `/v1/crawl/${JOB}` });
 
     const seed = db.state.calls.find((call) => call.text.includes('INSERT INTO job_tasks'));
-    expect(seed?.values).toEqual([JOB, 'https://example.com', 'https://example.com::0']);
+    expect(seed?.values).toEqual([JOB, 'https://example.com/', 'https://example.com/::0']);
   });
 
   it('applies the operator default limit and rejects a request above the ceiling', async () => {

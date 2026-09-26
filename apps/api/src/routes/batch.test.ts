@@ -90,6 +90,20 @@ describe('POST /v1/batch/scrape', () => {
     expect(seededUrls()).toEqual(['https://a.example/x', 'https://b.example/y', 'https://c.example/z']);
   });
 
+  // The worker claims and completes rows by the frontier's normalised URL; a
+  // raw `https://example.com` row matched nothing and its page was dropped.
+  it('seeds each URL in the form the frontier claims it by', async () => {
+    const app = await buildApp();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/batch/scrape',
+      payload: { urls: ['https://example.com', 'https://docs.python.org/3/', 'https://docs.python.org/3'] },
+    });
+
+    expect(response.json()).toMatchObject({ total: 2 });
+    expect(seededUrls()).toEqual(['https://example.com/', 'https://docs.python.org/3/']);
+  });
+
   it('records the job as batch_scrape so a crawl view cannot claim it', async () => {
     const app = await buildApp();
     await app.inject({ method: 'POST', url: '/v1/batch/scrape', payload: { urls: ['https://a.example/x'] } });

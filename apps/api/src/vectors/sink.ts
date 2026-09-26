@@ -28,6 +28,8 @@ export interface StoreRequest {
   url: string;
   collection: string;
   chunks: ChunkToStore[];
+  /** The model that made the embeddings, kept so a later query can refuse to mix models. */
+  model?: string | undefined;
   metadata?: Record<string, unknown> | undefined;
 }
 
@@ -37,12 +39,50 @@ export interface StoreResult {
   collection: string;
 }
 
+export interface QueryRequest {
+  collection: string;
+  vector: number[];
+  k: number;
+  filter?: { url?: string | undefined } | undefined;
+}
+
+export interface QueryHit {
+  text: string;
+  anchor: string;
+  url: string;
+  headingPath: string[];
+  /** Cosine similarity: 1 is the same direction, 0 unrelated. */
+  score: number;
+}
+
+/**
+ * What a collection records about the model its chunks were embedded with,
+ * measured against the model about to embed a query.
+ */
+export interface CollectionModels {
+  exists: boolean;
+  /** A recorded model other than the one asked about, when any chunk carries one. */
+  otherModel: string | undefined;
+  /** Some chunks were stored before the model was recorded. */
+  untracked: boolean;
+  dimensions: number | undefined;
+}
+
 export interface VectorSink {
   readonly name: string;
   store(request: StoreRequest): Promise<StoreResult>;
   ensureCollection(collection: string, dimensions: number): Promise<void>;
+  query(request: QueryRequest): Promise<QueryHit[]>;
+  models(collection: string, model: string): Promise<CollectionModels>;
   health(): Promise<boolean>;
 }
+
+/** The collection a destination writes to, and so the one a search of it reads. */
+export function collectionName(destination: { collection?: string | undefined; namespace?: string | undefined }): string {
+  return destination.collection ?? destination.namespace ?? 'default';
+}
+
+const MODEL_KEY = 'embeddingModel';
 
 /** A batch mixed embeddings from more than one dimensionality, so the collection could not be sized from chunk 0 alone. */
 export class MismatchedEmbeddingDimensionsError extends Error {
@@ -149,6 +189,7 @@ export class QdrantSink implements VectorSink {
         tokens: chunk.tokens,
         headingPath: chunk.headingPath ?? [],
         ...request.metadata,
+        ...(request.model ? { [MODEL_KEY]: request.model } : {}),
       },
     }));
 
@@ -175,6 +216,81 @@ export class QdrantSink implements VectorSink {
     // Qdrant does not distinguish insert from update in its response, so the
     // count is reported as stored rather than guessed at.
     return { stored: points.length, updated: 0, collection: request.collection };
+  }
+
+  async #scrollOne(collection: string, filter: unknown): Promise<Record<string, unknown> | undefined> {
+    const response = await fetch(`${this.#url}/collections/${collection}/points/scroll`, {
+      method: 'POST',
+      headers: this.#headers(),
+      body: JSON.stringify({ filter, limit: 1, with_payload: [MODEL_KEY], with_vector: false }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(`Qdrant scroll failed: ${detail.slice(0, 200)}`);
+    }
+    const body = (await response.json()) as { result?: { points?: Array<{ payload?: Record<string, unknown> }> } };
+    const point = body.result?.points?.[0];
+    return point ? (point.payload ?? {}) : undefined;
+  }
+
+  async models(collection: string, model: string): Promise<CollectionModels> {
+    const info = await fetch(`${this.#url}/collections/${collection}`, {
+      headers: this.#headers(),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (info.status === 404) return { exists: false, otherModel: undefined, untracked: false, dimensions: undefined };
+    if (!info.ok) {
+      const detail = await info.text().catch(() => '');
+      throw new Error(`Qdrant collection lookup failed: ${detail.slice(0, 200)}`);
+    }
+    const body = (await info.json()) as { result?: { config?: { params?: { vectors?: { size?: number } } } } };
+
+    const empty = { is_empty: { key: MODEL_KEY } };
+    const [other, untracked] = await Promise.all([
+      this.#scrollOne(collection, { must_not: [empty, { key: MODEL_KEY, match: { value: model } }] }),
+      this.#scrollOne(collection, { must: [empty] }),
+    ]);
+    const otherModel = other?.[MODEL_KEY];
+
+    return {
+      exists: true,
+      otherModel: typeof otherModel === 'string' ? otherModel : undefined,
+      untracked: untracked !== undefined,
+      dimensions: body.result?.config?.params?.vectors?.size,
+    };
+  }
+
+  async query(request: QueryRequest): Promise<QueryHit[]> {
+    const response = await fetch(`${this.#url}/collections/${request.collection}/points/query`, {
+      method: 'POST',
+      headers: this.#headers(),
+      body: JSON.stringify({
+        query: request.vector,
+        limit: request.k,
+        with_payload: true,
+        ...(request.filter?.url ? { filter: { must: [{ key: 'url', match: { value: request.filter.url } }] } } : {}),
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(`Qdrant query failed: ${detail.slice(0, 200)}`);
+    }
+    const body = (await response.json()) as {
+      result?: { points?: Array<{ score: number; payload?: Record<string, unknown> }> };
+    };
+    return (body.result?.points ?? []).map((point) => {
+      const payload = point.payload ?? {};
+      const headingPath = payload['headingPath'];
+      return {
+        text: String(payload['text'] ?? ''),
+        anchor: String(payload['anchor'] ?? ''),
+        url: String(payload['url'] ?? ''),
+        headingPath: Array.isArray(headingPath) ? headingPath.map(String) : [],
+        score: point.score,
+      };
+    });
   }
 
   async health(): Promise<boolean> {
@@ -217,13 +333,15 @@ export class PgVectorSink implements VectorSink {
       // xmax is zero on an insert and non-zero on an update, which is how
       // Postgres lets an upsert report which one happened.
       const { rows } = await getPool().query<{ inserted: boolean }>(
-        `INSERT INTO chunks (id, collection, url, anchor, text, tokens, embedding, metadata)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO chunks (id, collection, url, anchor, text, tokens, embedding, metadata, model, dimensions)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          ON CONFLICT (id) DO UPDATE SET
            text       = EXCLUDED.text,
            tokens     = EXCLUDED.tokens,
            embedding  = EXCLUDED.embedding,
-           metadata   = EXCLUDED.metadata
+           metadata   = EXCLUDED.metadata,
+           model      = EXCLUDED.model,
+           dimensions = EXCLUDED.dimensions
          RETURNING (xmax = 0) AS inserted`,
         [
           id,
@@ -234,6 +352,8 @@ export class PgVectorSink implements VectorSink {
           chunk.tokens,
           JSON.stringify(chunk.embedding),
           JSON.stringify({ headingPath: chunk.headingPath ?? [], ...request.metadata }),
+          request.model ?? null,
+          chunk.embedding.length,
         ],
       );
 
@@ -247,6 +367,45 @@ export class PgVectorSink implements VectorSink {
     );
 
     return { stored, updated, collection: request.collection };
+  }
+
+  async models(collection: string, model: string): Promise<CollectionModels> {
+    const { rows } = await getPool().query<{ model: string | null; dimensions: number | null }>(
+      `SELECT model, COALESCE(max(dimensions), max(vector_dims(embedding))) AS dimensions
+         FROM chunks WHERE collection = $1 GROUP BY model`,
+      [collection],
+    );
+    return {
+      exists: rows.length > 0,
+      otherModel: rows.find((r) => r.model !== null && r.model !== model)?.model ?? undefined,
+      untracked: rows.some((r) => r.model === null),
+      dimensions: rows.find((r) => r.dimensions !== null)?.dimensions ?? undefined,
+    };
+  }
+
+  async query(request: QueryRequest): Promise<QueryHit[]> {
+    const { rows } = await getPool().query<{
+      text: string;
+      anchor: string;
+      url: string;
+      heading_path: unknown;
+      score: number;
+    }>(
+      `SELECT text, anchor, url, metadata->'headingPath' AS heading_path,
+              1 - (embedding <=> $1::vector) AS score
+         FROM chunks
+        WHERE collection = $2 AND ($3::text IS NULL OR url = $3)
+        ORDER BY embedding <=> $1::vector
+        LIMIT $4`,
+      [JSON.stringify(request.vector), request.collection, request.filter?.url ?? null, request.k],
+    );
+    return rows.map((row) => ({
+      text: row.text,
+      anchor: row.anchor,
+      url: row.url,
+      headingPath: Array.isArray(row.heading_path) ? row.heading_path.map(String) : [],
+      score: Number(row.score),
+    }));
   }
 
   async health(): Promise<boolean> {

@@ -64,7 +64,7 @@ const sink = vi.hoisted(() => ({
   health: vi.fn(async () => true),
 }));
 const createSink = vi.hoisted(() => vi.fn((): typeof sink | undefined => sink));
-vi.mock('../vectors/sink.js', () => ({ createSink }));
+vi.mock('../vectors/sink.js', async (importOriginal) => ({ ...(await importOriginal<object>()), createSink }));
 
 const estimateCrawl = vi.hoisted(() => vi.fn(async () => ({ pages: 7, assumptions: ['7 pages discovered'] })));
 vi.mock('./estimate.js', () => ({ estimateCrawl }));
@@ -203,6 +203,7 @@ describe('CrawlWorker destination wiring', () => {
     expect(sink.store).toHaveBeenCalledWith({
       url: 'https://example.com/',
       collection: 'docs',
+      model: 'local',
       chunks: [{ text: 'chunk', anchor: '#a:1', tokens: 3, embedding: [0.1, 0.2], headingPath: [] }],
     });
   });

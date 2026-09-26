@@ -219,8 +219,10 @@ interface WireFinding {
 export class ExtractHttpError extends Error {
   readonly status: number;
   readonly detail: string;
+  /** The `Retry-After` helix-extract sent, in seconds: set while the local embeddings runtime downloads. */
+  readonly retryAfterSeconds: number | undefined;
 
-  constructor(status: number, detail: string) {
+  constructor(status: number, detail: string, retryAfterSeconds?: number) {
     // Redacted here rather than at each route: the detail is quoted back to the
     // caller, and a provider's message may echo the key it rejected.
     const safe = redactSecrets(detail);
@@ -228,7 +230,13 @@ export class ExtractHttpError extends Error {
     this.name = 'ExtractHttpError';
     this.status = status;
     this.detail = safe;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
+}
+
+export interface QueryEmbedding {
+  vector: number[];
+  model: string;
 }
 
 /**
@@ -623,6 +631,41 @@ export class ExtractClient {
       embeddingModel: body.embedding_model,
       embeddingDimensions: body.embedding_dimensions,
     };
+  }
+
+  /**
+   * Embeds a search query with the model the instance stores chunks with.
+   *
+   * It goes through `/chunk` as one fixed-size piece rather than a dedicated
+   * endpoint, so it works against every helix-extract already shipped. The
+   * budget is far above the query cap, so the text comes back whole.
+   */
+  async embedQuery(text: string): Promise<QueryEmbedding> {
+    const response = await fetch(`${this.#baseUrl}/chunk`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text, url: 'query:', strategy: 'fixed', max_tokens: 4096, overlap: 0, embed: true }),
+      signal: AbortSignal.timeout(180_000),
+    });
+
+    if (!response.ok) {
+      const retryAfter = Number.parseInt(response.headers.get('retry-after') ?? '', 10);
+      throw new ExtractHttpError(
+        response.status,
+        await detailOf(response),
+        Number.isFinite(retryAfter) ? retryAfter : undefined,
+      );
+    }
+
+    const body = (await response.json()) as {
+      chunks: { embedding?: number[] }[];
+      embedding_model?: string;
+    };
+    const vector = body.chunks[0]?.embedding;
+    if (body.chunks.length !== 1 || !vector?.length || !body.embedding_model) {
+      throw new ExtractHttpError(502, `expected one embedded piece, got ${body.chunks.length}`);
+    }
+    return { vector, model: body.embedding_model };
   }
 
   async health(): Promise<boolean> {

@@ -86,7 +86,9 @@ first-tier success is asserted in tests, so no reason is ever invented.
 Both join the MCP core list (`helix_get_job_ladder`, `helix_get_job_cost`), cost only once the
 worker counters land. **MINOR.**
 
-## Phase 4: `POST /v1/vectors/search` (L)
+## Phase 4: `POST /v1/vectors/search` (L) — done 2026-09-26, 2.1.0
+
+Landed: `query` and `models` on both sinks; `routes/vectors.ts` (one registration line) takes the crawl's own `destination` object; migration `015_chunk_model.sql` (guarded like 001: no chunks table, no-op). One change from the plan: Qdrant has no per-collection payload, so the model is written on every point as `embeddingModel` and checked with two one-point scrolls (a foreign model; an untracked point). The query is embedded through helix-extract's existing `/chunk` (fixed strategy, one piece), so the shipped 2.0.0 extract exe needs no rebuild; `ExtractHttpError` now carries `retryAfterSeconds`. Refusals: 400 `invalid_request`, `destination_unavailable`, `model_required`; 404 `collection_not_found`; 409 `model_mismatch` (model or dimensions); 503 `embeddings_not_ready` with `Retry-After`, or `service_unavailable`. SDK: `vectorsSearch` is listed as not in the SDK yet. Verified: pgvector sink on real PGlite (`db/engine.test.ts`); route refusals (`routes/vectors.test.ts`, 12); live against Qdrant 1.19 and MiniLM (the right section ranks first, 0.600 vs 0.439 vs 0.038); over MCP after restarting the dev API, a real crawl of qdrant.tech's filtering page wrote 68 points and `helix_vectors_search` returned them ranked with heading paths.
 
 The blocker is confirmed: `VectorSink` (`vectors/sink.ts:40-45`) has `store`, `ensureCollection`
 and `health`, and no `query`, so nothing can read stored chunks back.

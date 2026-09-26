@@ -173,6 +173,7 @@ export const NOT_IN_SDK: Readonly<Record<string, string>> = {
   getJobSchema: 'Not in the SDK yet.',
   getJobLadder: 'Not in the SDK yet.',
   getJobCost: 'Not in the SDK yet.',
+  vectorsSearch: 'Not in the SDK yet.',
   listProviderModels: 'Not in the SDK yet.',
   getStatusHistory: 'Not in the SDK yet.',
   getProfileHealth: 'Not in the SDK yet.',

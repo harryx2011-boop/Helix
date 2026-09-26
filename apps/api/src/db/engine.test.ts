@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closePool, createPool, getPool } from './pool.js';
 import { migrate, type MigrationResult } from './migrate.js';
 import { PgMonitorStore } from '../monitor/store.js';
+import { PgVectorSink } from '../vectors/sink.js';
 
 /**
  * The shipped migrations and queue SQL on the real engine, through the same
@@ -99,5 +100,56 @@ describe('queue claims on pglite', () => {
 
     expect(first.map((m) => m.url)).toEqual(['https://due.test']);
     expect(second).toEqual([]);
+  });
+});
+
+describe('pgvector sink on pglite', () => {
+  // chunks.embedding is vector(384); a unit vector along one axis per chunk
+  // makes the expected ranking exact.
+  const axis = (i: number, lean = 0) => Array.from({ length: 384 }, (_, j) => (j === i ? 1 : j === i + 1 ? lean : 0));
+  const sink = new PgVectorSink();
+
+  beforeAll(async () => {
+    await sink.store({
+      url: 'https://docs.test/keys',
+      collection: 'docs',
+      model: 'm1',
+      chunks: [
+        { text: 'Rotate keys monthly.', anchor: '#rotate', tokens: 4, embedding: axis(0), headingPath: ['Keys', 'Rotation'] },
+        { text: 'Revoke a key at once.', anchor: '#revoke', tokens: 5, embedding: axis(1) },
+      ],
+    });
+    await sink.store({
+      url: 'https://docs.test/billing',
+      collection: 'docs',
+      model: 'm1',
+      chunks: [{ text: 'Invoices are monthly.', anchor: '#invoices', tokens: 4, embedding: axis(2) }],
+    });
+    await sink.store({
+      url: 'https://docs.test/old',
+      collection: 'legacy',
+      chunks: [{ text: 'Stored before tracking.', anchor: '#old', tokens: 3, embedding: axis(3) }],
+    });
+  });
+
+  it('returns the nearest chunks first, with score, anchor and heading path', async () => {
+    const hits = await sink.query({ collection: 'docs', vector: axis(0, 0.1), k: 2 });
+
+    expect(hits.map((h) => h.anchor)).toEqual(['#rotate', '#revoke']);
+    expect(hits[0]).toMatchObject({ url: 'https://docs.test/keys', text: 'Rotate keys monthly.', headingPath: ['Keys', 'Rotation'] });
+    expect(hits[0]!.score).toBeCloseTo(0.995, 2);
+    expect(hits[0]!.score).toBeGreaterThan(hits[1]!.score);
+  });
+
+  it('keeps to one page under a url filter', async () => {
+    const hits = await sink.query({ collection: 'docs', vector: axis(0), k: 10, filter: { url: 'https://docs.test/billing' } });
+    expect(hits.map((h) => h.anchor)).toEqual(['#invoices']);
+  });
+
+  it('reports the recorded model, a foreign one, and untracked chunks', async () => {
+    await expect(sink.models('docs', 'm1')).resolves.toEqual({ exists: true, otherModel: undefined, untracked: false, dimensions: 384 });
+    await expect(sink.models('docs', 'm2')).resolves.toMatchObject({ otherModel: 'm1' });
+    await expect(sink.models('legacy', 'm1')).resolves.toMatchObject({ exists: true, untracked: true, dimensions: 384 });
+    await expect(sink.models('nothing-here', 'm1')).resolves.toMatchObject({ exists: false });
   });
 });

@@ -13,7 +13,7 @@ import { siteOf } from './url.js';
 import { estimateCrawl } from './estimate.js';
 import type { Log } from '../core/logger.js';
 import { enqueueDelivery, type WebhookConfig, type WebhookEvent } from '../webhooks/deliveries.js';
-import { createSink, type VectorSink } from '../vectors/sink.js';
+import { collectionName, createSink, type VectorSink } from '../vectors/sink.js';
 
 /**
  * The crawl worker.
@@ -878,7 +878,7 @@ export class CrawlWorker {
     url: string,
     markdown: string,
   ): Promise<string | undefined> {
-    const collection = destination.collection ?? destination.namespace ?? 'default';
+    const collection = collectionName(destination);
 
     try {
       const chunked = await this.#deps.extractClient.chunk({ text: markdown, url, embed: true });
@@ -893,6 +893,7 @@ export class CrawlWorker {
       await sink.store({
         url,
         collection,
+        model: chunked.embeddingModel,
         chunks: chunked.chunks.map((chunk) => ({
           text: chunk.text,
           anchor: destination.upsertMode === 'append' ? `${chunk.anchor}:${randomUUID()}` : chunk.anchor,

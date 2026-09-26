@@ -17,7 +17,7 @@
 -- find so it does not re-apply its own files at boot.
 --
 -- Regenerate after any migration lands:  node supabase/build-schema.mjs
--- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql, 012_job_leases.sql, 013_job_warnings.sql, 014_job_estimate.sql | 0001_hosted_identity.sql, 0003_onboarding.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql, 0008_browser_role_hardening.sql
+-- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql, 012_job_leases.sql, 013_job_warnings.sql, 014_job_estimate.sql, 015_chunk_model.sql | 0001_hosted_identity.sql, 0003_onboarding.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql, 0008_browser_role_hardening.sql
 
 -- ============================================================================
 -- API migrations
@@ -631,6 +631,29 @@ ALTER TABLE jobs ADD COLUMN IF NOT EXISTS warnings jsonb NOT NULL DEFAULT '[]';
 
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS estimate jsonb;
 
+-- ---- apps/api/migrations/015_chunk_model.sql
+-- The embedding model each stored chunk was made with.
+--
+-- `/vectors/search` embeds the query and compares it against stored vectors.
+-- Two models place text in unrelated spaces, so a query embedded with one and
+-- scored against chunks from another returns confident nonsense. Recording the
+-- model beside each chunk lets the search refuse that instead. Rows written
+-- before this carry NULL: the search asks the caller to name their model.
+--
+-- The chunks table exists only where the vector extension does (001), so the
+-- columns are added under the same guard.
+--
+-- Rollback:
+--   ALTER TABLE chunks DROP COLUMN IF EXISTS model;
+--   ALTER TABLE chunks DROP COLUMN IF EXISTS dimensions;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'chunks') THEN
+    ALTER TABLE chunks ADD COLUMN IF NOT EXISTS model text;
+    ALTER TABLE chunks ADD COLUMN IF NOT EXISTS dimensions integer;
+  END IF;
+END $$;
+
 -- ============================================================================
 -- schema_migrations seed (what apps/api/src/db/migrate.ts would have recorded)
 -- ============================================================================
@@ -654,7 +677,8 @@ INSERT INTO schema_migrations (filename, checksum) VALUES
   ('011_request_usage.sql', 'da301b5ca5498b03c69266b85b533a01d229020d9e0d0c9a8b6155547191684c'),
   ('012_job_leases.sql', 'fac3e17a266584ea8d12718fe560e893bb5e642b86a1728918626e592123ebd2'),
   ('013_job_warnings.sql', '52812d3141b25f414b3dc61ec01462dd433a0e562f2da314d838cc757db47f6b'),
-  ('014_job_estimate.sql', '4bb3d936547999dc0c183b602bc94b1a3200d7d170f048fb9f51807e57377f13')
+  ('014_job_estimate.sql', '4bb3d936547999dc0c183b602bc94b1a3200d7d170f048fb9f51807e57377f13'),
+  ('015_chunk_model.sql', '65ec4e3cc633b228e7eab21c9a2ae6a15208da151148fcc7fb22341394cf4582')
 ON CONFLICT (filename) DO NOTHING;
 
 -- ============================================================================

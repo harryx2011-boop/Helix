@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Helix
-  version: 2.0.0
+  version: 2.1.0
   summary: A frontier utility hub. Self-hostable and BYOK.
   description: |
     Helix turns web pages and documents into clean, structured, LLM-ready data.
@@ -63,6 +63,8 @@ tags:
     description: What a file discloses about who and what made it, and a copy without it.
   - name: Crawl
     description: Multi-page discovery and read.
+  - name: Vectors
+    description: Semantic search over what a crawl wrote to a vector destination.
   - name: Search
     description: Web search, optionally scraping each result.
   - name: Agent
@@ -1938,6 +1940,109 @@ paths:
                     items: { type: string }
                     description: One line per figure that is `null`, saying why.
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /vectors/search:
+    post:
+      tags: [Vectors]
+      summary: Search a crawl's vector destination
+      description: |
+        Embeds `query` with the same model this instance embeds crawled chunks
+        with, and returns the `k` nearest chunks from the collection a crawl's
+        `destination` wrote to. Pass the crawl's `destination` object as it was.
+
+        The model is checked before any score is computed. A collection whose
+        chunks were embedded with another model answers 409 `model_mismatch`:
+        two models place text in unrelated spaces, so their scores mean nothing.
+        Chunks stored before Helix recorded the model answer 400 `model_required`
+        until `model` names the model they were made with.
+
+        Where it runs: `qdrant` wherever `QDRANT_URL` is set; `pgvector` on the
+        desktop app, whose built-in database includes the vector extension. A
+        Postgres without that extension has no chunks table and answers 400
+        `destination_unavailable`. While the local embeddings runtime is still
+        downloading, the answer is 503 `embeddings_not_ready` with `Retry-After`.
+      operationId: vectorsSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query, destination]
+              properties:
+                query: { type: string, minLength: 1, maxLength: 2000 }
+                destination: { $ref: '#/components/schemas/Destination' }
+                k: { type: integer, minimum: 1, maximum: 50, default: 10, description: How many chunks to return. }
+                filter:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    url: { type: string, format: uri, description: Only chunks from this page. }
+                model:
+                  type: string
+                  description: |
+                    The model the collection was embedded with. Needed only for
+                    chunks stored before Helix recorded it; it must match the
+                    model this instance embeds queries with.
+            examples:
+              docs:
+                summary: Search what a crawl wrote to Qdrant
+                value:
+                  query: How are API keys rotated?
+                  destination: { type: qdrant, collection: docs }
+                  k: 5
+      responses:
+        '200':
+          description: Nearest chunks first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, collection, model, results]
+                properties:
+                  success: { type: boolean, const: true }
+                  collection: { type: string }
+                  model: { type: string, description: The model the query was embedded with. }
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      required: [text, anchor, score, url, headingPath]
+                      properties:
+                        text: { type: string }
+                        anchor: { type: string, description: Stable across re-crawls of the page. }
+                        score: { type: number, description: 'Cosine similarity: 1 is identical in direction.' }
+                        url: { type: string }
+                        headingPath:
+                          type: array
+                          items: { type: string }
+        '400':
+          description: |
+            Invalid body (`invalid_request`), a destination this instance cannot
+            serve (`destination_unavailable`), or chunks stored before the model
+            was recorded with no `model` given (`model_required`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: No chunks are stored in the collection (`collection_not_found`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: The collection was embedded with another model or dimension (`model_mismatch`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: |
+            The local embeddings runtime is downloading (`embeddings_not_ready`,
+            retry after `Retry-After` seconds), or helix-extract or the vector
+            store did not answer (`service_unavailable`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /usage:
     get:

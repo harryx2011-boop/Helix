@@ -43,6 +43,7 @@ interface JobRow {
   completed: number;
   failed: number;
   usage: Record<string, unknown>;
+  warnings: string[] | null;
   error: string | null;
   created_at: Date;
   started_at: Date | null;
@@ -80,7 +81,7 @@ export async function fetchJobView(id: string, options: JobViewOptions): Promise
   }
 
   const { rows } = await getPool().query<JobRow>(
-    `SELECT id, type, status, total, completed, failed, usage, error,
+    `SELECT id, type, status, total, completed, failed, usage, warnings, error,
             created_at, started_at, finished_at, expires_at
        FROM jobs WHERE id = $1`,
     [id],
@@ -125,6 +126,7 @@ export async function fetchJobView(id: string, options: JobViewOptions): Promise
       finishedAt: job.finished_at,
       expiresAt: job.expires_at,
       error: job.error,
+      warnings: job.warnings ?? [],
       next: hasMore ? `${options.basePath}/${job.id}?cursor=${nextOffset}` : null,
       data: documents.map((doc) => ({
         url: doc.url,

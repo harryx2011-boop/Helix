@@ -411,14 +411,19 @@ def parse(
 
     if should_ocr:
         markdown, parser = _ocr_pdf(data, max_pages)
-        return ParsedDocument(
-            markdown=markdown,
-            pages=assessment.pages,
-            needs_ocr=assessment.needs_ocr,
-            ocr_applied=parser != "none",
-            suspected_garbled_text=assessment.suspected_garbled_text,
-            parser_used=parser,
-        )
+        # With no OCR parser, a text layer that is merely short is still real
+        # text: fall through and return it, as `never` would. Only a garbled
+        # layer is withheld, and a layer with nothing in it has nothing to give.
+        text_layer_usable = not assessment.suspected_garbled_text and assessment.chars_extracted > 0
+        if parser != "none" or not text_layer_usable:
+            return ParsedDocument(
+                markdown=markdown,
+                pages=assessment.pages,
+                needs_ocr=assessment.needs_ocr,
+                ocr_applied=parser != "none",
+                suspected_garbled_text=assessment.suspected_garbled_text,
+                parser_used=parser,
+            )
 
     if tables == "high-fidelity":
         markdown, parser = _docling_pdf(data)

@@ -19,6 +19,7 @@ interface JobRow {
   completed: number;
   failed: number;
   usage: Record<string, unknown>;
+  warnings?: string[];
   error: string | null;
   created_at: Date;
   started_at: Date | null;
@@ -291,6 +292,17 @@ describe('GET /v1/jobs/:id', () => {
     expect(body.completed).toBe(4);
     expect(body.failed).toBe(1);
     expect(body.usage).toEqual({ pages: 4 });
+    expect(body.warnings).toEqual([]);
+  });
+
+  it('returns the warnings a finished job recorded', async () => {
+    app = await build();
+    const warning = '2 pages were queued but never recorded as fetched or failed.';
+    db.state.jobs = [{ ...job(), status: 'completed', warnings: [warning] }];
+
+    const body = (await app.inject({ method: 'GET', url: `/v1/jobs/${JOB}` })).json();
+
+    expect(body.warnings).toEqual([warning]);
   });
 
   it('returns documents with the source url folded into their metadata', async () => {

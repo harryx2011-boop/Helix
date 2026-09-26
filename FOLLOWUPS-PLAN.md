@@ -21,7 +21,9 @@ normalised form; regression test in `batch.test.ts` fails on HEAD; 1368/1368 gre
 - [ ] Fourth, not fixed here: markdown links inside page content resolve against the site root, not the page (`links` is correct). Extract service.
 - [ ] Commit the fixes, the tests, the smoke script and the doc updates. No version bump: Harry chose (2026-09-26) to rebuild and replace the `Helix-Setup-2.0.0.exe` installer once the phases land, knowing installed 2.0.0 apps will not auto-update to it and the `v2.0.0` tag stays on `a3895f4`.
 
-## Phase 1: loud failures (no new routes)
+## Phase 1: loud failures (no new routes) — done 2026-09-26
+
+Landed as planned; verified live on the dev stack: python.org/psf climbs plain → chromium and returns the page; w3.org dummy.pdf returns "Dummy PDF file" (pypdfium2) with a "text layer is sparse" warning instead of "missing"; the tutorial crawl returns 3/3 with `warnings: []`. Migration 013 is `013_job_warnings.sql`, so `/cost` takes **014** and vectors **015**. Side effect to know: any page whose main text is under 200 characters now climbs to the browser tier when a text format is asked for (a rawHtml/html/links/screenshot-only request does not).
 
 **1a. A job must not report a clean success after losing pages.** `crawl/worker.ts:745` sets
 `status = 'completed'` unconditionally. `total` is the in-memory `frontier.enqueued`, not the
@@ -67,7 +69,7 @@ Paginated like `GET /jobs/{id}` (`next`, page size 100). An empty `escalationRea
 first-tier success is asserted in tests, so no reason is ever invented.
 
 **Cost (M).** Two honesty gaps, both confirmed:
-- The estimate is never stored. `estimateCrawl` (`routes/crawl.ts:289`) is computed and thrown away. Recomputing later would report today's discovery as the original estimate. Migration `013_job_estimate.sql` adds `jobs.estimate jsonb`, written once at submit; older jobs answer `estimate: null`. It must run on both drivers (pg and PGlite `exec()`).
+- The estimate is never stored. `estimateCrawl` (`routes/crawl.ts:289`) is computed and thrown away. Recomputing later would report today's discovery as the original estimate. Migration `014_job_estimate.sql` adds `jobs.estimate jsonb`, written once at submit; older jobs answer `estimate: null`. It must run on both drivers (pg and PGlite `exec()`).
 - Actual usage is thin. `worker.ts:745` writes only `pagesFetched`/`pagesUnchanged`, yet `openapi.yaml`'s `Usage` schema documents `browserSeconds`, `tokens` and `providerCost`. Count `tierBreakdown` and `browserSeconds` in the worker. Tokens and provider cost stay `null` with a `reasons` entry until the extract service reports them per call. Fix the `Usage` schema so it stops promising fields nobody writes.
 - Tests first: an unmeasured field is `null` plus a reason, never `0`.
 
@@ -79,7 +81,7 @@ worker counters land. **MINOR.**
 The blocker is confirmed: `VectorSink` (`vectors/sink.ts:40-45`) has `store`, `ensureCollection`
 and `health`, and no `query`, so nothing can read stored chunks back.
 - Add `query(collection, vector, k, filter)` to the Qdrant and pgvector sinks.
-- Record the embedding model per collection: migration 014 adds `chunks.model` and `chunks.dimensions`, written where `sink.store` runs; for Qdrant it goes in the collection payload. A query embedded with a different model is refused, and a collection older than tracking requires an explicit `model`.
+- Record the embedding model per collection: migration 015 adds `chunks.model` and `chunks.dimensions`, written where `sink.store` runs; for Qdrant it goes in the collection payload. A query embedded with a different model is refused, and a collection older than tracking requires an explicit `model`.
 - Runtime matrix, stated in the docs and the 400s: Qdrant everywhere; pgvector on the desktop app (PGlite ships `pglite-pgvector`) but not on the dev PG18, where the chunks table is gated off. When the local embeddings pack is still downloading, pass through the extract service's 503 + `Retry-After`.
 - Response: chunk `text`, stable `anchor`, `score`, `url`, `headingPath`.
 - MCP: `helix_vectors_search` joins the core tool list (Harry, 2026-09-26); update `HELIX_MCP_TOOLS` in `~/.claude/hooks/helix-ensure.js` when it ships. **MINOR.**

@@ -629,10 +629,13 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
 
       const warnings: string[] = [];
       if (parsed.needsOcr && !parsed.ocrApplied) {
+        const layer = parsed.markdown.trim()
+          ? 'The text layer is sparse, so this text may be incomplete,'
+          : 'The text layer is missing or unreadable';
         warnings.push(
           options.ocr === 'off'
-            ? 'The text layer is missing or unreadable and OCR was not applied (`ocr: off`).'
-            : 'The text layer is missing or unreadable and no OCR parser is installed on this instance.',
+            ? `${layer} and OCR was not applied (\`ocr: off\`).`
+            : `${layer} and no OCR parser is installed on this instance.`,
         );
       }
       if (parsed.suspectedGarbledText && !parsed.ocrApplied) {

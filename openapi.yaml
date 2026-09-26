@@ -4597,6 +4597,14 @@ components:
         finishedAt: { type: string, format: date-time }
         expiresAt: { type: string, format: date-time }
         error: { type: [string, 'null'] }
+        warnings:
+          type: array
+          items: { type: string }
+          description: |
+            Gaps between what the job queued and what it recorded, e.g. pages
+            queued but never recorded as fetched or failed. Empty on a clean
+            run. A job with nothing recorded and pages left over is `failed`
+            instead, with the same text in `error`.
         next: { type: [string, 'null'], description: "Path of the next page, relative to this API's base (e.g. `/v1/jobs/<id>?cursor=100`), or null on the last page." }
         data:
           type: array

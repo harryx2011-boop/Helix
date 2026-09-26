@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import sys
 
 import pytest
 
@@ -44,6 +45,54 @@ def make_empty_pdf(pages: int = 2) -> bytes:
         pdf.showPage()
     pdf.save()
     return buffer.getvalue()
+
+
+def make_short_pdf(text: str, to_unicode_start: int | None = None) -> bytes:
+    """A one-page PDF built by hand, so it needs no PDF-writing dependency.
+
+    With `to_unicode_start`, a ToUnicode CMap remaps every byte into that code
+    point range: the broken-CMap case that yields a garbled text layer.
+    """
+    content = f"BT /F1 12 Tf 72 720 Td ({text}) Tj ET".encode("latin-1")
+    font = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica"
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]"
+        b" /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        font + (b" >>" if to_unicode_start is None else b" /ToUnicode 6 0 R >>"),
+        b"<< /Length %d >>\nstream\n" % len(content) + content + b"\nendstream",
+    ]
+    if to_unicode_start is not None:
+        cmap = (
+            "/CIDInit /ProcSet findresource begin 12 dict begin begincmap "
+            "/CMapName /Garbled def 1 begincodespacerange <00> <FF> endcodespacerange "
+            f"1 beginbfrange <00> <FF> <{to_unicode_start:04X}> endbfrange "
+            "endcmap CMapName currentdict /CMap defineresource pop end end"
+        ).encode()
+        objects.append(b"<< /Length %d >>\nstream\n" % len(cmap) + cmap + b"\nendstream")
+
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += b"%d 0 obj\n" % number + body + b"\nendobj\n"
+    xref = len(out)
+    out += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objects) + 1)
+    for offset in offsets:
+        out += b"%010d 00000 n \n" % offset
+    out += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (
+        len(objects) + 1,
+        xref,
+    )
+    return bytes(out)
+
+
+@pytest.fixture
+def marker_absent(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A None entry in sys.modules makes every `from marker... import` raise
+    # ImportError, which is exactly what a base install without the extra sees.
+    monkeypatch.setitem(sys.modules, "marker", None)
 
 
 class TestClassifyContentType:
@@ -159,6 +208,46 @@ class TestParse:
     def test_rejects_an_unsupported_type(self) -> None:
         with pytest.raises(ValueError, match="unsupported content type"):
             parse(b"\x89PNG", "image/png")
+
+
+@pytest.mark.usefixtures("marker_absent")
+class TestShortPdfWithoutOcr:
+    # A one-line PDF falls under MIN_CHARS_PER_PAGE and so is flagged for OCR,
+    # but its text is real. With no OCR parser installed, that text is the best
+    # answer available and must not be thrown away.
+
+    @pytest.mark.parametrize("ocr", ["auto", "always", "never"])
+    def test_keeps_a_short_clean_text_layer(self, ocr: str) -> None:
+        data = make_short_pdf("Dummy PDF file")
+        assert assess_pdf(data).needs_ocr
+
+        result = parse(data, "application/pdf", ocr=ocr)
+
+        assert "Dummy PDF file" in result.markdown
+        assert result.needs_ocr
+        assert not result.ocr_applied
+        assert not result.suspected_garbled_text
+        assert result.parser_used == "pypdfium2"
+
+    def test_still_withholds_a_garbled_text_layer(self) -> None:
+        data = make_short_pdf("Dummy PDF file", to_unicode_start=0xE000)
+        assert assess_pdf(data).suspected_garbled_text
+
+        result = parse(data, "application/pdf", ocr="auto")
+
+        assert result.markdown == ""
+        assert result.needs_ocr
+        assert result.suspected_garbled_text
+        assert not result.ocr_applied
+        assert result.parser_used == "none"
+
+    def test_reports_no_parser_for_a_scan_with_no_text_at_all(self) -> None:
+        result = parse(make_short_pdf(""), "application/pdf", ocr="auto")
+
+        assert result.markdown == ""
+        assert result.needs_ocr
+        assert not result.ocr_applied
+        assert result.parser_used == "none"
 
 
 class TestCorruptFiles:

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  contentLooksAbsent,
   DEFAULT_MAX_TIER,
   minimumViableTier,
   shouldEscalate,
@@ -147,5 +148,32 @@ describe('the lower ladder is unchanged', () => {
       walked.push(current);
     }
     expect(walked).toEqual(['plain', 'tls', 'lightpanda', 'chromium', 'camoufox']);
+  });
+});
+
+describe('an empty extraction on a server-rendered page', () => {
+  const BOILERPLATE = `<html><body><nav>${'Home About Donate Jobs Community Events Blog Contact '.repeat(6)}</nav><main></main><footer>${'Copyright notice, privacy policy, terms of use, sitemap. '.repeat(6)}</footer></body></html>`;
+
+  it('reads as content absent even though the raw HTML carries boilerplate text', () => {
+    expect(contentLooksAbsent(BOILERPLATE, '')).toBe(true);
+  });
+
+  it('escalates off the cheap tier', () => {
+    const decision = shouldEscalate({
+      currentTier: 'plain',
+      response: facts({ body: BOILERPLATE, extractedText: '' }),
+      capabilities: {},
+    });
+    expect(decision.escalate).toBe(true);
+    expect(decision.nextTier).toBe('tls');
+  });
+
+  it('keeps an extraction of 200 or more characters as content present', () => {
+    expect(contentLooksAbsent(BOILERPLATE, 'x'.repeat(200))).toBe(false);
+  });
+
+  it('falls back to the raw-HTML checks when no extraction ran', () => {
+    expect(contentLooksAbsent(BOILERPLATE)).toBe(false);
+    expect(contentLooksAbsent('<html><body><div id="root"></div></body></html>')).toBe(true);
   });
 });

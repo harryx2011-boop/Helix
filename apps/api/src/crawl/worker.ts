@@ -115,6 +115,10 @@ function isAbort(error: unknown): boolean {
   return typeof named?.message === 'string' && /abort/i.test(named.message);
 }
 
+function pages(count: number): string {
+  return count === 1 ? '1 page was' : `${count} pages were`;
+}
+
 /**
  * How often a running crawl asks whether it has been cancelled.
  *
@@ -363,6 +367,8 @@ export class CrawlWorker {
     let filtered = 0;
     /** Pages dropped for exceeding their path's budget. */
     let pathCapped = 0;
+    /** Results discarded because this worker no longer held the task row. */
+    let notOwned = 0;
     let jsonExtracted = 0;
     let jsonFailed = 0;
     let cancelChecked = Date.now();
@@ -483,7 +489,7 @@ export class CrawlWorker {
             const rules = await robots.forUrl(item.url);
             if (!rules.isAllowed(item.url)) {
               await this.#recordFailure(jobId, item.url, 'robots_denied', 'disallowed by robots.txt');
-              await frontier.markFailed(item.url);
+              if (!(await frontier.markFailed(item.url))) notOwned++;
               failed++;
               return;
             }
@@ -536,7 +542,7 @@ export class CrawlWorker {
             // spins until the lease expires.
             if (result.reason === 'aborted' && jobAbort.signal.aborted) return;
             if (result.reason === 'aborted') {
-              await frontier.markFailed(item.url);
+              if (!(await frontier.markFailed(item.url))) notOwned++;
               failed++;
               return;
             }
@@ -557,7 +563,7 @@ export class CrawlWorker {
               result.tier,
               result.tiersAttempted,
             );
-            await frontier.markFailed(item.url);
+            if (!(await frontier.markFailed(item.url))) notOwned++;
             failed++;
             return;
           }
@@ -607,6 +613,7 @@ export class CrawlWorker {
           // page itself — writing it here too is a duplicate `documents` row
           // and a page counted twice.
           const held = await frontier.markCompleted(item.url);
+          if (!held) notOwned++;
 
           // An unchanged page still contributes its links — the page did not
           // move, but the pages it points at may have.
@@ -702,7 +709,7 @@ export class CrawlWorker {
             'http_error',
             error instanceof Error ? error.message : String(error),
           );
-          await frontier.markFailed(item.url);
+          if (!(await frontier.markFailed(item.url))) notOwned++;
           failed++;
         } finally {
           politeness.release(item.site, {
@@ -742,9 +749,26 @@ export class CrawlWorker {
       return;
     }
 
+    // Every path that ends a page moves its task row to a terminal status, so a
+    // row still queued or running here is a page the job would silently omit.
+    const { rows: leftover } = await getPool().query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM job_tasks
+        WHERE job_id = $1 AND status IN ('queued', 'running')`,
+      [jobId],
+    );
+    const unresolved = Number(leftover[0]?.n ?? 0);
+    const warnings: string[] = [];
+    if (unresolved > 0) {
+      warnings.push(`${pages(unresolved)} queued but never recorded as fetched or failed.`);
+    }
+    if (notOwned > 0) {
+      warnings.push(`${pages(notOwned)} fetched and discarded because the task was no longer held by this worker.`);
+    }
+    const lost = completed === 0 && unresolved > 0;
+
     const { rowCount } = await getPool().query(
       `UPDATE jobs
-          SET status = 'completed', finished_at = now(),
+          SET status = $7, finished_at = now(), warnings = $8, error = $9,
               completed = $2, failed = $3, total = $4, usage = $5, rejections = $6
         WHERE id = $1 AND status != 'cancelled'`,
       [
@@ -763,6 +787,9 @@ export class CrawlWorker {
           ...(request.destination ? { vectorFailures } : {}),
         }),
         JSON.stringify(frontier.rejections()),
+        lost ? 'failed' : 'completed',
+        JSON.stringify(warnings),
+        lost ? warnings.join(' ') : null,
       ],
     );
 
@@ -784,9 +811,15 @@ export class CrawlWorker {
         sessions: sessions.stats(),
         hosts: politeness.stats(),
         rejections: frontier.rejections(),
+        ...(warnings.length > 0 ? { warnings } : {}),
       },
       'crawl finished',
     );
+
+    if (lost) {
+      await this.#emit(jobId, request, 'failed', undefined, { error: warnings.join(' ') });
+      return;
+    }
 
     await this.#emit(jobId, request, 'completed', undefined, {
       total: frontier.enqueued,

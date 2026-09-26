@@ -510,6 +510,19 @@ describe('POST /v1/parse — parser outcomes', () => {
     expect(body.warnings[0]).toContain('ocr: off');
   });
 
+  // A short but clean layer now comes back as text, so the warning must not
+  // call it missing.
+  it('calls a returned text layer sparse, not missing', async () => {
+    const client = extractClient({
+      document: vi.fn(async () => ({ ...PARSED, markdown: 'Dummy PDF file', needsOcr: true, ocrApplied: false })),
+    });
+    const app = await build({ extractClient: client });
+    const body = (await postJson(app, { url: 'https://example.com/short.pdf' })).json();
+    expect(body.data.markdown).toBe('Dummy PDF file');
+    expect(body.warnings[0]).toMatch(/^The text layer is sparse/);
+    expect(body.warnings[0]).toContain('no OCR parser is installed');
+  });
+
   it('reports ocrUsed when OCR ran', async () => {
     const client = extractClient({
       document: vi.fn(async () => ({ ...PARSED, needsOcr: true, ocrApplied: true, parserUsed: 'marker' })),

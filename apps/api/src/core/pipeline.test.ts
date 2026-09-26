@@ -422,3 +422,74 @@ describe('runPipeline â€” Retry-After', () => {
     if (!result.success) expect(result.retryAfterSeconds).toBeUndefined();
   });
 });
+
+describe('runPipeline — empty extraction on a server-rendered page', () => {
+  const BOILERPLATE = `<html><body><nav>${'Home About Donate Jobs Community Events Blog Contact '.repeat(6)}</nav><main></main><footer>${'Copyright notice, privacy policy, terms of use, sitemap. '.repeat(6)}</footer></body></html>`;
+
+  const extractEmptyOnBoilerplate = (): ExtractClient =>
+    ({
+      extract: vi.fn(async ({ html }: { html: string }) =>
+        html === BOILERPLATE
+          ? { markdown: '', text: '', links: [], extractorUsed: 'trafilatura', contentHash: 'empty' }
+          : { markdown: ARTICLE_TEXT, text: ARTICLE_TEXT, links: [], extractorUsed: 'trafilatura', contentHash: 'abc' },
+      ),
+      health: vi.fn(async () => true),
+    }) as unknown as ExtractClient;
+
+  it('escalates past a cheap tier whose page extracts to nothing', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'] },
+      deps({
+        fetchClient: fetchClientReturning([
+          { status: 200, body: BOILERPLATE },
+          { status: 200, body: ARTICLE },
+        ]),
+        extractClient: extractEmptyOnBoilerplate(),
+        browserPool: browserPoolReturning(ARTICLE),
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tiersAttempted).toEqual(['plain', 'tls']);
+    expect(result.tier).toBe('tls');
+    expect(result.content.markdown).toContain('Real article text');
+  });
+
+  it('returns the empty page as-is once the ladder is spent', async () => {
+    const browserPool = browserPoolReturning(BOILERPLATE);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'] },
+      deps({
+        fetchClient: fetchClientReturning([{ status: 200, body: BOILERPLATE }]),
+        extractClient: extractEmptyOnBoilerplate(),
+        browserPool,
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tiersAttempted).toEqual(['plain', 'tls', 'lightpanda', 'chromium']);
+    expect(result.content.markdown).toBe('');
+  });
+
+  it('does not escalate when no requested format needs extracted text', async () => {
+    // Extraction still runs for metadata, so its empty text must not drive a
+    // browser render for a caller who only asked for the raw bytes.
+    const browserPool = browserPoolReturning(ARTICLE);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['rawHtml'] },
+      deps({
+        fetchClient: fetchClientReturning([{ status: 200, body: BOILERPLATE }]),
+        extractClient: extractEmptyOnBoilerplate(),
+        browserPool,
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tiersAttempted).toEqual(['plain']);
+    expect(result.content.rawHtml).toBe(BOILERPLATE);
+    expect(browserPool.render).not.toHaveBeenCalled();
+  });
+});

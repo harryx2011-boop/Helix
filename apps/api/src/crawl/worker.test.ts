@@ -14,6 +14,8 @@ const db = vi.hoisted(() => {
     request: undefined as CrawlJobRequest | undefined,
     /** Whether this worker still holds the task claim when it marks a page. */
     claimHeld: true,
+    /** Task rows still queued or running when the crawl finishes. */
+    leftover: 0,
   };
   const query = vi.fn(async (text: string, values: unknown[] = []) => {
     state.calls.push({ text, values });
@@ -27,6 +29,9 @@ const db = vi.hoisted(() => {
     if (text.includes('UPDATE job_tasks') && text.includes('claimed_by = $3')) {
       return { rows: [], rowCount: state.claimHeld ? 1 : 0 };
     }
+    // The outcome write lands: zero rows here reads as a cancellation mid-finish.
+    if (text.includes('rejections = $6')) return { rows: [], rowCount: 1 };
+    if (text.includes('count(*)::int AS n FROM job_tasks')) return { rows: [{ n: state.leftover }], rowCount: 1 };
     if (text.includes('FROM job_tasks WHERE job_id')) return { rows: [], rowCount: 0 };
     return { rows: [], rowCount: 0 };
   });
@@ -146,6 +151,7 @@ beforeEach(() => {
   db.state.calls = [];
   db.state.request = undefined;
   db.state.claimHeld = true;
+  db.state.leftover = 0;
   discover.mockClear();
   discover.mockResolvedValue([]);
   runPipeline.mockReset();
@@ -234,7 +240,7 @@ describe('CrawlWorker destination wiring', () => {
     const documentInsert = db.state.calls.find((call) => call.text.includes('INSERT INTO documents'));
     expect(documentInsert).toBeDefined();
 
-    const completion = db.state.calls.find((call) => call.text.includes('UPDATE jobs') && call.text.includes("status = 'completed'"));
+    const completion = db.state.calls.find((call) => call.text.includes('UPDATE jobs') && call.text.includes('rejections = $6'));
     expect(completion?.values[1]).toBe(1);
     expect(JSON.parse(String(completion?.values[4]))).toMatchObject({ vectorFailures: 1 });
   });
@@ -506,7 +512,7 @@ describe('CrawlWorker task claims', () => {
     expect(documentInsert, 'a stale result must not be written').toBeUndefined();
 
     const completion = db.state.calls.find(
-      (call) => call.text.includes('UPDATE jobs') && call.text.includes("status = 'completed'"),
+      (call) => call.text.includes('UPDATE jobs') && call.text.includes('rejections = $6'),
     );
     expect(completion?.values[1], 'a page this worker lost is not a page it completed').toBe(0);
   });
@@ -562,5 +568,58 @@ describe('CrawlWorker sitemap seeding', () => {
 
     expect(renewIndex, 'the job lease must be renewed after the preamble').toBeGreaterThan(-1);
     expect(renewIndex).toBeLessThan(totalIndex);
+  });
+});
+
+describe('CrawlWorker — a finished job accounts for every page', () => {
+  function finish(): Call {
+    const update = db.state.calls.find((c) => c.text.includes('UPDATE jobs') && c.text.includes('rejections = $6'));
+    expect(update, 'the worker should write the job outcome').toBeDefined();
+    return update!;
+  }
+
+  it('finishes clean with no warnings when every page is recorded', async () => {
+    db.state.request = baseRequest();
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    await buildWorker().runOnce();
+
+    const update = finish();
+    expect(update.values[6]).toBe('completed');
+    expect(JSON.parse(String(update.values[7]))).toEqual([]);
+    expect(update.values[8]).toBeNull();
+  });
+
+  // A fetched page whose task row this worker no longer held was dropped with
+  // nothing on the job to say so, and the crawl read as complete.
+  it('warns when a fetched page is discarded because the task was not held', async () => {
+    db.state.request = baseRequest();
+    db.state.claimHeld = false;
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    await buildWorker().runOnce();
+
+    const update = finish();
+    expect(update.values[6]).toBe('completed');
+    const warnings = JSON.parse(String(update.values[7])) as string[];
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/1 page was fetched and discarded/);
+  });
+
+  it('fails a job that recorded nothing and left pages unresolved', async () => {
+    db.state.request = baseRequest({ webhook: { url: 'https://hooks.example.com/helix' } });
+    db.state.claimHeld = false;
+    db.state.leftover = 2;
+    runPipeline.mockResolvedValueOnce(pipelineSuccess());
+
+    await buildWorker().runOnce();
+
+    const update = finish();
+    expect(update.values[6]).toBe('failed');
+    expect(String(update.values[8])).toMatch(/2 pages were queued but never recorded/);
+    const calls = enqueueDelivery.mock.calls as unknown as [unknown, { event: string }][];
+    const events = calls.map((call) => call[1].event);
+    expect(events).toContain('failed');
+    expect(events).not.toContain('completed');
   });
 });

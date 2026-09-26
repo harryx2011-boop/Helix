@@ -17,7 +17,7 @@
 -- find so it does not re-apply its own files at boot.
 --
 -- Regenerate after any migration lands:  node supabase/build-schema.mjs
--- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql, 012_job_leases.sql | 0001_hosted_identity.sql, 0003_onboarding.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql, 0008_browser_role_hardening.sql
+-- Sources: 001_init.sql, 002_frontier.sql, 003_monitor.sql, 004_monitor_claims.sql, 005_provider_keys.sql, 006_instance_settings.sql, 007_local_providers.sql, 008_monitor_json_options.sql, 009_uptime_samples.sql, 010_task_leases.sql, 011_request_usage.sql, 012_job_leases.sql, 013_job_warnings.sql | 0001_hosted_identity.sql, 0003_onboarding.sql, 0005_onboarding_attribution.sql, 0006_dashboard_keys.sql, 0007_request_usage_rls.sql, 0008_browser_role_hardening.sql
 
 -- ============================================================================
 -- API migrations
@@ -601,6 +601,21 @@ CREATE INDEX IF NOT EXISTS jobs_reclaimable
   ON jobs (lease_expires_at)
   WHERE status = 'running';
 
+-- ---- apps/api/migrations/013_job_warnings.sql
+-- Job warnings.
+--
+-- A crawl could finish 'completed' with pages it fetched and never recorded:
+-- a task row left 'queued' or 'running', or a result dropped because this
+-- worker no longer owned the row. Nothing on the job said so, so a partial
+-- crawl read as a whole one. The worker now checks `job_tasks` at finish and
+-- names any gap here; a job with nothing recorded and rows left over is
+-- 'failed' instead.
+--
+-- Rollback:
+--   ALTER TABLE jobs DROP COLUMN IF EXISTS warnings;
+
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS warnings jsonb NOT NULL DEFAULT '[]';
+
 -- ============================================================================
 -- schema_migrations seed (what apps/api/src/db/migrate.ts would have recorded)
 -- ============================================================================
@@ -622,7 +637,8 @@ INSERT INTO schema_migrations (filename, checksum) VALUES
   ('009_uptime_samples.sql', '44f4a473d4d6fe3bbe89df261c29a5fa9af0c476ba9a7b33fd7442fae1245860'),
   ('010_task_leases.sql', 'be4ed9bdb767e68aab42f10d304f8df030bc0abee3e4ff6c7b08c3e36f73fb0f'),
   ('011_request_usage.sql', 'da301b5ca5498b03c69266b85b533a01d229020d9e0d0c9a8b6155547191684c'),
-  ('012_job_leases.sql', 'fac3e17a266584ea8d12718fe560e893bb5e642b86a1728918626e592123ebd2')
+  ('012_job_leases.sql', 'fac3e17a266584ea8d12718fe560e893bb5e642b86a1728918626e592123ebd2'),
+  ('013_job_warnings.sql', '52812d3141b25f414b3dc61ec01462dd433a0e562f2da314d838cc757db47f6b')
 ON CONFLICT (filename) DO NOTHING;
 
 -- ============================================================================

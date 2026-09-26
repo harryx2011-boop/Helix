@@ -123,6 +123,9 @@ function capabilitiesFor(options: PipelineOptions): Capabilities {
   return caps;
 }
 
+/** Formats whose output is the extracted main content. */
+const EXTRACTED_TEXT_FORMATS = new Set(['markdown', 'text', 'json', 'chunks']);
+
 /**
  * `Retry-After` in seconds, from either of the two forms the header takes.
  *
@@ -242,6 +245,7 @@ export async function runPipeline(
 ): Promise<PipelineResult> {
   const started = Date.now();
   const capabilities = capabilitiesFor(options);
+  const wantsExtractedText = options.formats.some((f) => EXTRACTED_TEXT_FORMATS.has(f));
   const tiersAttempted: Tier[] = [];
 
   const explicit = options.tier && options.tier !== 'auto' ? (options.tier as Tier) : undefined;
@@ -328,7 +332,9 @@ export async function runPipeline(
     if (!verdict.blocked && (extracted || options.skipExtraction)) {
       const decision = shouldEscalate({
         currentTier: tier,
-        response: attempt.facts,
+        // Extraction also runs for metadata; an empty result only means an
+        // empty answer when a requested format is built from it.
+        response: wantsExtractedText ? attempt.facts : { ...attempt.facts, extractedText: undefined },
         capabilities,
         maxTier,
       });

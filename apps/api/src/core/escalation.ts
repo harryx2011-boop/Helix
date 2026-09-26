@@ -90,13 +90,17 @@ export function minimumViableTier(caps: Capabilities): Tier {
   return DEFAULT_MAX_TIER;
 }
 
+const MIN_CONTENT_CHARS = 200;
+
 /**
  * Whether the raw HTML actually carries the content, or is a hydration shell.
  *
  * Deliberately signal-based rather than framework-based.
  */
 export function contentLooksAbsent(html: string, extractedText?: string): boolean {
-  if (extractedText !== undefined && extractedText.trim().length >= 200) return false;
+  // Nav and footer boilerplate would pass the raw-HTML checks below, so an
+  // extraction that ran and came back short is the deciding signal.
+  if (extractedText !== undefined) return extractedText.trim().length < MIN_CONTENT_CHARS;
 
   const emptyRoot =
     /<div[^>]+id=["'](root|app|__next|__nuxt)["'][^>]*>\s*<\/div>/i.test(html);
@@ -110,7 +114,7 @@ export function contentLooksAbsent(html: string, extractedText?: string): boolea
     .replace(/\s+/g, ' ')
     .trim();
 
-  if (withoutCode.length < 200) return true;
+  if (withoutCode.length < MIN_CONTENT_CHARS) return true;
 
   // A body that is overwhelmingly script is a shell, whatever framework made it.
   const scriptBytes = (html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) ?? []).join('').length;

@@ -21,6 +21,7 @@ import { registerParse } from './routes/parse.js';
 import { registerMetadata } from './routes/metadata.js';
 import { registerKeys } from './routes/keys.js';
 import { registerProviders } from './routes/providers.js';
+import { createLocalDetector } from './providers/detect.js';
 import { deriveEncryptionKey } from './providers/crypto.js';
 import type { Provider } from './providers/repository.js';
 import { registerMap } from './routes/map.js';
@@ -156,6 +157,7 @@ const searchProvider = createSearchProvider(config.searchProvider, process.env, 
 
 const providerEncryptionKey = deriveEncryptionKey(config.encryptionKey, config.bootstrapKey);
 const instanceHasLocalBaseUrl = Boolean(process.env['OPENAI_COMPATIBLE_BASE_URL']);
+const detectLocal = createLocalDetector();
 const instanceConfigured: Record<Provider, boolean> = {
   anthropic: Boolean(process.env['ANTHROPIC_API_KEY']),
   openai: Boolean(process.env['OPENAI_API_KEY']),
@@ -313,6 +315,7 @@ await app.register(
       lightpandaEnabled: config.lightpandaEnabled,
       camoufoxEnabled: config.camoufoxEnabled,
       remoteCdpConfigured: Boolean(config.remoteCdpUrl),
+      detectLocal,
     });
     await registerStatus(instance);
     await registerScrape(instance, {
@@ -345,7 +348,7 @@ await app.register(
       encryptionKey: providerEncryptionKey,
     });
     await registerKeys(instance);
-    await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured });
+    await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured, detectLocal });
     await registerMap(instance, {
       fetchClient,
       extractClient,

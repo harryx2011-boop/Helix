@@ -78,7 +78,11 @@ function parseOpenAiModels(body: OpenAiModelsResponse): ModelInfo[] {
     .filter((m): m is ModelInfo => m !== undefined);
 }
 
-export async function listLocalProviderModels(provider: LocalProvider, baseUrl: string): Promise<ListModelsResult> {
+export async function listLocalProviderModels(
+  provider: LocalProvider,
+  baseUrl: string,
+  timeoutMs = FETCH_TIMEOUT_MS,
+): Promise<ListModelsResult> {
   if (!isLocalProvider(provider)) {
     return { ok: false, reason: 'unsupported', message: `${provider} has no installed-model listing.` };
   }
@@ -92,7 +96,7 @@ export async function listLocalProviderModels(provider: LocalProvider, baseUrl: 
 
   let response: Response;
   try {
-    response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
   } catch {
     return { ok: false, reason: 'unreachable', message: `Could not reach ${provider} at ${baseUrl}.` };
   }

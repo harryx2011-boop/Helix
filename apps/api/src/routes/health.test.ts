@@ -222,7 +222,7 @@ describe('provider reporting', () => {
 
     const providers = (await app.inject({ method: 'GET', url: '/v1/health' })).json().providers;
 
-    expect(providers.llm).toEqual({ configured: false, model: 'unset' });
+    expect(providers.llm).toEqual({ configured: false, model: 'unset', detected: [] });
   });
 
   it.each([
@@ -318,7 +318,7 @@ describe('provider reporting', () => {
       expect(response.body).not.toContain(value);
     }
     expect(response.json().providers).toEqual({
-      llm: { configured: true, model: 'unset' },
+      llm: { configured: true, model: 'unset', detected: [] },
       embedding: { configured: true, model: 'local' },
       proxy: { configured: true },
       search: { configured: true },
@@ -331,8 +331,23 @@ describe('provider reporting', () => {
     const providers = (await app.inject({ method: 'GET', url: '/v1/health' })).json().providers;
 
     expect(Object.keys(providers).sort()).toEqual(['embedding', 'llm', 'proxy', 'search']);
-    expect(Object.keys(providers.llm).sort()).toEqual(['configured', 'model']);
+    // `detected` carries runtime names only, never an address or a model list.
+    expect(Object.keys(providers.llm).sort()).toEqual(['configured', 'detected', 'model']);
     expect(Object.keys(providers.proxy)).toEqual(['configured']);
     expect(Object.keys(providers.search)).toEqual(['configured']);
+  });
+});
+
+describe('local runtime detection', () => {
+  it('names a detected runtime without calling the llm configured or exposing its address', async () => {
+    const detectLocal = vi.fn(async () => [
+      { provider: 'ollama' as const, baseUrl: 'http://127.0.0.1:11434/v1', models: ['gemma3:4b'] },
+    ]);
+    app = await build(deps({ detectLocal }));
+
+    const llm = (await app.inject({ method: 'GET', url: '/v1/health' })).json().providers.llm;
+
+    expect(llm).toEqual({ configured: false, model: 'unset', detected: ['ollama'] });
+    expect(JSON.stringify(llm)).not.toContain('11434');
   });
 });

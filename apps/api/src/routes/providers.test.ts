@@ -75,6 +75,7 @@ const db = vi.hoisted(() => {
 vi.mock('../db/pool.js', () => ({ getPool: () => ({ query: db.query }) }));
 
 import { registerProviders } from './providers.js';
+import type { DetectLocal } from '../providers/detect.js';
 import type { Provider } from '../providers/repository.js';
 
 const ENCRYPTION_KEY = createHash('sha256').update('test-secret').digest();
@@ -83,7 +84,10 @@ const KEY_B = { ...KEY_A, id: 'key-b' };
 
 let app: FastifyInstance;
 
-async function build(instanceConfigured: Partial<Record<Provider, boolean>> = {}): Promise<FastifyInstance> {
+async function build(
+  instanceConfigured: Partial<Record<Provider, boolean>> = {},
+  detectLocal?: DetectLocal,
+): Promise<FastifyInstance> {
   const built = Fastify();
   built.addHook('onRequest', async (request) => {
     const header = request.headers['x-test-key'];
@@ -104,6 +108,7 @@ async function build(instanceConfigured: Partial<Record<Provider, boolean>> = {}
           'openai-compatible': false,
           ...instanceConfigured,
         },
+        ...(detectLocal ? { detectLocal } : {}),
       });
     },
     { prefix: '/v1' },
@@ -641,5 +646,40 @@ describe('GET /v1/providers/:provider/models', () => {
     app = await build();
     const response = await app.inject({ method: 'GET', url: '/v1/providers/ollama/models' });
     expect(response.statusCode).toBe(401);
+  });
+});
+
+describe('GET /providers — a detected local runtime', () => {
+  const ollama = { provider: 'ollama' as const, baseUrl: 'http://127.0.0.1:11434/v1', models: ['gemma3:4b', 'gemma4:latest'] };
+
+  it('offers a detected runtime that is not set up, and stores nothing', async () => {
+    app = await build({}, async () => [ollama]);
+
+    const providers = (await app.inject({ method: 'GET', url: '/v1/providers', headers: { 'x-test-key': 'a' } })).json().providers;
+
+    expect(providers.find((p: { provider: string }) => p.provider === 'ollama')).toEqual({
+      provider: 'ollama',
+      configured: false,
+      source: 'none',
+      detected: { baseUrl: 'http://127.0.0.1:11434/v1', models: ['gemma3:4b', 'gemma4:latest'] },
+    });
+    expect(providers.filter((p: { detected?: unknown }) => p.detected)).toHaveLength(1);
+    expect(db.state.rows).toHaveLength(0);
+  });
+
+  it('stops offering a runtime once the caller has stored it', async () => {
+    app = await build({}, async () => [ollama]);
+    await app.inject({
+      method: 'PUT',
+      url: '/v1/providers/ollama',
+      headers: { 'x-test-key': 'a' },
+      payload: { baseUrl: 'http://127.0.0.1:11434/v1' },
+    });
+
+    const providers = (await app.inject({ method: 'GET', url: '/v1/providers', headers: { 'x-test-key': 'a' } })).json().providers;
+    const row = providers.find((p: { provider: string }) => p.provider === 'ollama');
+
+    expect(row.configured).toBe(true);
+    expect(row.detected).toBeUndefined();
   });
 });

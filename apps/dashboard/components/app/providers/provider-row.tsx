@@ -169,7 +169,21 @@ function ModelPicker({
   );
 }
 
+/** A runtime the API found answering on its default address, offered only while nothing is stored for it. */
+function detectedRuntime(status: ProviderStatus): { baseUrl: string; models: string[] } | undefined {
+  return status.source === 'none' ? status.detected : undefined;
+}
+
+function modelCount(models: string[]): string {
+  if (models.length === 0) return 'no models yet';
+  return models.length === 1 ? '1 model' : `${models.length} models`;
+}
+
 function statusLine(status: ProviderStatus, local: boolean | undefined): { text: string; className: string } {
+  const detected = detectedRuntime(status);
+  if (detected) {
+    return { text: `Found running on this computer · ${modelCount(detected.models)}`, className: 'text-foreground' };
+  }
   if (status.source === 'key') {
     if (local) {
       return {
@@ -198,17 +212,22 @@ export function ProviderRow({
   onChanged: (next: ProviderStatus) => void;
   flush?: boolean;
 }) {
+  const detected = detectedRuntime(status);
   const [apiKeyInput, setApiKeyInput] = React.useState('');
-  const [baseUrlInput, setBaseUrlInput] = React.useState(status.baseUrl ?? '');
+  /* A detected address pre-fills the field, so "Use it" and a hand-typed URL
+     share one save path — nothing is stored until the button is clicked. */
+  const [baseUrlInput, setBaseUrlInput] = React.useState(status.baseUrl ?? detected?.baseUrl ?? '');
   const [model, setModel] = React.useState(status.model ?? '');
   const [saving, setSaving] = React.useState(false);
   const [confirmingRemove, setConfirmingRemove] = React.useState(false);
   const [removing, setRemoving] = React.useState(false);
   const confirmTimeout = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const statusId = React.useId();
 
   React.useEffect(() => () => clearTimeout(confirmTimeout.current), []);
 
   const line = statusLine(status, meta.local);
+  const offeringDetected = detected !== undefined && baseUrlInput.trim() === detected.baseUrl;
 
   const handleSave = async () => {
     if (meta.local) {
@@ -281,7 +300,9 @@ export function ProviderRow({
           <ProviderIcon meta={meta} />
           <div className="flex flex-col gap-0.5">
             <span className="text-[13px] font-medium text-foreground">{meta.name}</span>
-            <span className={cn('text-xs', line.className)}>{line.text}</span>
+            <span id={statusId} aria-live="polite" className={cn('text-xs', line.className)}>
+              {line.text}
+            </span>
           </div>
         </div>
 
@@ -325,8 +346,13 @@ export function ProviderRow({
             />
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Button onClick={handleSave} disabled={saving} className="shrink-0 rounded-pill">
-              {saving ? 'Saving…' : 'Save'}
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              aria-describedby={offeringDetected ? statusId : undefined}
+              className="shrink-0 rounded-pill"
+            >
+              {saving ? 'Saving…' : offeringDetected ? 'Use it' : 'Save'}
             </Button>
             {status.source === 'key' && (
               <Button

@@ -14,6 +14,7 @@ import { verifyProvider } from '../providers/verify.js';
 import { isCloudProvider, listCloudModels } from '../providers/cloud-models.js';
 import { blockedRange, checkUrl } from '../core/url-guard.js';
 import { resolveProviderKeys } from '../providers/repository.js';
+import type { DetectLocal } from '../providers/detect.js';
 
 /**
  * A caller's own LLM provider keys, stored against their Helix API key.
@@ -39,6 +40,7 @@ const PutBodySchema = z.object({
 export interface ProviderRouteDeps {
   encryptionKey: Buffer;
   instanceConfigured: Record<Provider, boolean>;
+  detectLocal?: DetectLocal;
 }
 
 function isProvider(value: string): value is Provider {
@@ -52,7 +54,8 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
       return reply.code(401).send({ error: 'unauthorized', message: 'Missing API key.', requestId: request.id });
     }
 
-    const providers = await getProviderStatuses(apiKeyId, deps.instanceConfigured);
+    const detected = deps.detectLocal ? await deps.detectLocal() : [];
+    const providers = await getProviderStatuses(apiKeyId, deps.instanceConfigured, detected);
     return reply.send({ success: true, providers });
   });
 

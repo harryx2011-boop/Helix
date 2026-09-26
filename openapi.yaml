@@ -4664,6 +4664,15 @@ components:
           type: string
           format: date-time
           description: Present only when `source` is `key`.
+        detected:
+          type: object
+          description: |
+            Present only when `source` is `none` and this local runtime answers
+            on its default address. Save `baseUrl` with `PUT /providers/{provider}`
+            to use it; until then no request goes to it.
+          properties:
+            baseUrl: { type: string }
+            models: { type: array, items: { type: string } }
 
     ProviderModel:
       type: object
@@ -4700,6 +4709,15 @@ components:
             properties:
               configured: { type: boolean }
               model: { type: string }
+              detected:
+                type: array
+                items: { type: string }
+                description: |
+                  `llm` only. Local runtimes answering on their default address,
+                  by provider name (e.g. `ollama`). Offered, never used: nothing
+                  is stored or called until one is saved through
+                  `PUT /providers/{provider}`. Addresses and model lists are on
+                  the authenticated `GET /providers`, not here.
 
     Error:
       type: object

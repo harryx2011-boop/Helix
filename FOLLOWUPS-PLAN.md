@@ -46,7 +46,10 @@ Landed as planned; verified live on the dev stack: python.org/psf climbs plain â
 
 Release: **2.1.0** (1a adds a response field). Extract gets its own PATCH line.
 
-## Phase 2: detect a running Ollama, offer it, never auto-use it
+## Phase 2: detect a running Ollama, offer it, never auto-use it â€” done 2026-09-26
+
+Landed as planned: `providers/detect.ts` (a registry of install-default addresses, Ollama only; 1 s probe reusing `listLocalProviderModels`, 10 s cache), `/health` `providers.llm.detected` (names only, the route is open), `GET /providers` `detected: { baseUrl, models }` on an unset row, and the providers panel relabels its one save button "Use it" with the address pre-filled. Verified live: `/health` and `helix_health` report `detected: ["ollama"]` with `configured: false`. Not verified: the panel rendered (no dashboard server was up; the dashboard has no component-test setup), and the installed desktop app, which still runs the old 2.0.0 build until the installer is rebuilt.
+
 
 Today `/health` reads LLM configuration from env only (`routes/health.ts:24-46`), and local
 runtimes are gated on `OPENAI_COMPATIBLE_BASE_URL` alone (`index.ts:158`). A running Ollama is

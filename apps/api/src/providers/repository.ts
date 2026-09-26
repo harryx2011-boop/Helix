@@ -1,3 +1,4 @@
+import type { DetectedRuntime } from './detect.js';
 import { getPool } from '../db/pool.js';
 import { decryptSecret, encryptSecret, last4 } from './crypto.js';
 
@@ -38,6 +39,8 @@ export interface ProviderKeyStatus {
   model?: string | null;
   baseUrl?: string | null;
   updatedAt?: string;
+  /** A runtime answering on its default address that is not set up yet: offered, never used. */
+  detected?: { baseUrl: string; models: string[] };
 }
 
 interface ProviderKeyRow {
@@ -116,6 +119,7 @@ export async function deleteProviderKey(apiKeyId: string, provider: Provider): P
 export async function getProviderStatuses(
   apiKeyId: string,
   instanceConfigured: Record<Provider, boolean>,
+  detected: DetectedRuntime[] = [],
 ): Promise<ProviderKeyStatus[]> {
   const rows = await listProviderKeys(apiKeyId);
   const byProvider = new Map(rows.map((r) => [r.provider, r]));
@@ -136,7 +140,10 @@ export async function getProviderStatuses(
     if (instanceConfigured[provider]) {
       return { provider, configured: true, source: 'instance' };
     }
-    return { provider, configured: false, source: 'none' };
+    const runtime = detected.find((d) => d.provider === provider);
+    return runtime
+      ? { provider, configured: false, source: 'none', detected: { baseUrl: runtime.baseUrl, models: runtime.models } }
+      : { provider, configured: false, source: 'none' };
   });
 }
 

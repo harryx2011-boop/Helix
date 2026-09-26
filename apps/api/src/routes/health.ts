@@ -3,6 +3,7 @@ import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
 import { API_VERSION, runServiceChecks } from '../status/checks.js';
+import type { DetectLocal } from '../providers/detect.js';
 
 export interface HealthDeps {
   fetchClient: FetchClient;
@@ -11,6 +12,7 @@ export interface HealthDeps {
   lightpandaEnabled?: boolean;
   camoufoxEnabled?: boolean;
   remoteCdpConfigured?: boolean;
+  detectLocal?: DetectLocal;
 }
 
 /**
@@ -22,7 +24,10 @@ export interface HealthDeps {
  */
 export async function registerHealth(app: FastifyInstance, deps: HealthDeps): Promise<void> {
   app.get('/health', async (_request, reply) => {
-    const services = await runServiceChecks(deps);
+    const [services, detected] = await Promise.all([
+      runServiceChecks(deps),
+      deps.detectLocal ? deps.detectLocal() : Promise.resolve([]),
+    ]);
 
     const env = process.env;
     const providers = {
@@ -36,6 +41,8 @@ export async function registerHealth(app: FastifyInstance, deps: HealthDeps): Pr
             env['OPENAI_COMPATIBLE_API_KEY'],
         ),
         model: env['HELIX_LLM_MODEL'] ?? 'unset',
+        // Names only: this route is open, and a detected runtime is offered, not used.
+        detected: detected.map((runtime) => runtime.provider),
       },
       embedding: {
         configured: true, // the local model needs no key

@@ -690,6 +690,8 @@ export interface ProviderStatus {
   model?: string | null;
   baseUrl?: string | null;
   updatedAt?: string;
+  /** A local runtime answering on its default address that is not set up yet. Present only when `source` is `none`; offered, never used until saved. */
+  detected?: { baseUrl: string; models: string[] };
 }
 
 export interface ListProvidersResponse {

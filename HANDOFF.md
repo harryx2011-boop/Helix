@@ -1,3 +1,9 @@
+# Handoff — 2026-09-27: parked at 2.1.0
+
+Helix is parked. What is left, in order, and the prompt that restarts it live in the Helix entry of `~/.claude/BACKLOG.md`. Everything below is older and kept for its local-run recipes.
+
+---
+
 # Handoff — 2026-09-12: Persona split out, nav Title Cased
 
 **Persona is no longer part of this repo.** It is a standalone project at `D:\Persona` with its

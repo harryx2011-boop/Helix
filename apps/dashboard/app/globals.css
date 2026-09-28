@@ -190,6 +190,16 @@ kbd {
 .markdown-body img { max-width: 100%; border-radius: var(--radius); }
 .markdown-body hr { border-color: hsl(var(--border)); margin: 1.5em 0; }
 
+/* Shiki's dual-theme output (components/result/markdown-code-block.tsx) ships
+   both palettes as `--shiki-light`/`--shiki-dark` CSS variables per token and
+   defers to a `.dark` ancestor to pick which one shows, the same switch the
+   dashboard's own hsl(var(--token)) system uses. */
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

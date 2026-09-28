@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { CANVAS_NAME } from '@/lib/canvas';
+import { ChangelogMarkdown } from './changelog-markdown';
 
 export const metadata: Metadata = {
   title: `Changelog — ${CANVAS_NAME}`,
@@ -30,9 +29,7 @@ export default async function CanvasChangelogPage() {
       </div>
 
       <article className="prose-helix mx-auto mt-12 max-w-[720px] animate-fade-up [animation-delay:60ms]">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ h1: () => null }}>
-          {markdown}
-        </ReactMarkdown>
+        <ChangelogMarkdown content={markdown} />
       </article>
     </div>
   );

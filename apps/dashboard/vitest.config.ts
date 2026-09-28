@@ -6,7 +6,8 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('.', import.meta.url)) },
   },
   test: {
+    include: ['lib/**/*.test.ts', 'components/**/*.test.tsx'],
+    environmentMatchGlobs: [['components/**/*.test.tsx', 'jsdom']],
     environment: 'node',
-    include: ['lib/**/*.test.ts'],
   },
 });

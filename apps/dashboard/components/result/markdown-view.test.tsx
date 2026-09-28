@@ -94,6 +94,20 @@ describe('MarkdownView', () => {
     expect(b.querySelector('a[href^="file:"]')).toBeFalsy();
   });
 
+  it('refuses a protocol-relative link, which a browser resolves off-site', () => {
+    const { container } = render(<MarkdownView content={'[x](//evil.com/phish)'} />);
+    expect(container.querySelector('a')).toBeFalsy();
+    expect(container.textContent).toContain('x');
+  });
+
+  // CommonMark's own backslash-escaping collapses `\\` to a single literal `\`
+  // in link-destination source before it ever reaches urlTransform, so the
+  // `\\evil.com` / `/\evil.com` bypass forms cannot be expressed through
+  // ordinary markdown link syntax at all — they are exercised directly against
+  // isSafeHref in lib/markdown-links.test.ts instead, which is where a raw
+  // href (e.g. from HTML, already stripped here since there is no rehype-raw)
+  // would actually reach the policy unmolested.
+
   it('allows http(s) and mailto links, with rel=noopener noreferrer on external links', () => {
     const { container } = render(<MarkdownView content={'[a](https://example.com) [b](mailto:x@example.com)'} />);
     const httpLink = container.querySelector('a[href="https://example.com"]');

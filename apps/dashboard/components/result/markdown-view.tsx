@@ -5,7 +5,7 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { markdownUrlTransform } from '@/lib/markdown-links';
+import { isHttpHref, markdownUrlTransform } from '@/lib/markdown-links';
 import { preprocessMarkdownMath } from '@/lib/markdown-math';
 import { MarkdownCodeBlock } from './markdown-code-block';
 
@@ -28,7 +28,11 @@ function useKatexCss(enabled: boolean) {
 /** Anchors safe (http/https/mailto/relative); anything else — `javascript:`, `data:`, `file:` — renders as plain text, never a link. */
 function SafeAnchor({ href, children, ...props }: React.ComponentPropsWithoutRef<'a'>) {
   if (!href) return <span>{children}</span>;
-  const isExternal = /^https?:/i.test(href);
+  // Same http(s)-detection the link policy itself uses (lib/markdown-links.ts),
+  // rather than a second ad hoc `/^https?:/` — so a URL shape the policy treats
+  // as "http-like" (a protocol-relative URL, if one ever slipped through a
+  // future change to the policy) still gets rel="noopener noreferrer" here too.
+  const isExternal = isHttpHref(href);
   return (
     <a href={href} {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})} {...props}>
       {children}

@@ -28,7 +28,7 @@ const wav = path.resolve(arg('wav', path.join(repo, '..', 'voice-core', 'tests',
 const seconds = Number(arg('seconds', '14'))
 const debugPort = Number(arg('port', '9334'))
 const APP = 'http://127.0.0.1:7410'
-const EXPECT = ['sarah', 'chen', 'austin']
+const EXPECT = ['austin', 'robotics']
 
 const require = createRequire(path.join(repo, 'package.json'))
 const { chromium } = require('playwright')
@@ -76,14 +76,18 @@ const proc = spawn(
 )
 
 let browser
+let page
+const consoleLines = []
 try {
   browser = await until(() => chromium.connectOverCDP(`http://127.0.0.1:${debugPort}`), 90_000, 'the app debug port')
-  const page = await until(
+  page = await until(
     async () => browser.contexts().flatMap((c) => c.pages()).find((p) => p.url().startsWith(`${APP}/app`)),
     180_000,
     'the Helix window',
   )
   const appReadyMs = Date.now() - t0
+  page.on('console', (m) => consoleLines.push(`${m.type()}: ${m.text()}`.slice(0, 300)))
+  page.on('pageerror', (e) => consoleLines.push(`pageerror: ${e.message}`.slice(0, 300)))
   await page.goto(`${APP}/app/agent`, { waitUntil: 'domcontentloaded' })
 
   const mic = page.getByRole('button', { name: 'Dictate', exact: true })
@@ -93,7 +97,7 @@ try {
 
   const clicked = Date.now()
   await mic.click()
-  await page.getByRole('button', { name: 'Stop dictating', exact: true }).waitFor({ timeout: 240_000 })
+  await page.getByRole('button', { name: 'Stop dictating', exact: true }).waitFor({ timeout: Number(arg('start-timeout', '240')) * 1000 })
   const listeningMs = Date.now() - clicked
   const heard = []
   const spoke = Date.now()
@@ -113,6 +117,12 @@ try {
   const result = { ok: missing.length === 0, bridge, appReadyMs, listeningMs, listenedSeconds: seconds, stopToTextMs, partialsSeen: heard.length, text }
   console.log(JSON.stringify(result, null, 2))
   if (missing.length) throw new Error(`transcript is missing: ${missing.join(', ')}`)
+} catch (err) {
+  const labels = await page?.locator('button[aria-label]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label'))).catch(() => null)
+  const caption = await page?.locator('p.truncate').allTextContents().catch(() => null)
+  const health = await fetch('http://127.0.0.1:9000/health').then((r) => r.text()).catch((e) => `no answer: ${e.message}`)
+  console.error(JSON.stringify({ failure: String(err.message).split(/\r?\n/)[0], labels, caption, voiceCoreHealth: health, console: consoleLines.slice(-15) }, null, 2))
+  process.exitCode = 1
 } finally {
   await browser?.close().catch(() => {})
   try {

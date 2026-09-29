@@ -19,44 +19,59 @@ const MAX_DELIMITER_SPAN = 2000;
 /**
  * Linear replacement for `text.replace(/\\\[([\s\S]*?)\\\]/g, ...)`: a lazy
  * `[\s\S]*?` against an *unclosed* opener degenerates to O(n^2), since the
- * engine retries the lazy match from every position between opener and end of
- * string with nothing ever closing it. This scans forward once, bounding how
- * far a closer may be from its opener (and never crossing a blank line, which
- * LaTeX math never legitimately spans) so a pathological unclosed run costs
- * O(n), not O(n^2).
+ * engine retries the lazy match from every opener with nothing ever closing it.
+ *
+ * A closer may sit at most MAX_DELIMITER_SPAN past its opener and never past a
+ * blank line (LaTeX math does not span a paragraph break). Bounding each search
+ * is not enough on its own: text packed with unclosed openers would still pay a
+ * fresh bounded scan per opener (~n/2 openers x 2000 chars). So the position of
+ * the next closer and the next blank line are each found once and reused for
+ * every opener until the cursor passes them; each is recomputed only from
+ * beyond its previous hit, so the scanned ranges never overlap and the whole
+ * pass is O(n) whatever the opener density.
  */
-function bridgeDelimiters(text: string, open: string, close: string, wrap: (inner: string) => string): string {
-  let result = '';
-  let cursor = 0;
-  for (;;) {
-    const start = text.indexOf(open, cursor);
-    if (start === -1) {
-      result += text.slice(cursor);
-      break;
-    }
-    const searchEnd = Math.min(text.length, start + open.length + MAX_DELIMITER_SPAN);
-    const window = text.slice(start, searchEnd);
-    const blankLine = window.search(/\n[ \t]*\n/);
-    const boundedEnd = blankLine === -1 ? searchEnd : start + blankLine;
-    // Bounded to `window`/`boundedEnd`, never the rest of the document: a
-    // document with many unclosed openers must not pay for an `indexOf` that
-    // walks to the end of the string on every single one of them (that is
-    // exactly how the regex this replaces went quadratic).
-    const relativeEnd = text.slice(start + open.length, boundedEnd).indexOf(close);
-    const end = relativeEnd === -1 ? -1 : start + open.length + relativeEnd;
+const BLANK_LINE_RE = /\n[ \t]*\n/g;
 
-    if (end === -1) {
-      // No closer within the bound: emit the opener literally and resume
-      // right after it, rather than re-scanning the same unclosed run again.
-      result += text.slice(cursor, start + open.length);
-      cursor = start + open.length;
+function bridgeDelimiters(text: string, open: string, close: string, wrap: (inner: string) => string): string {
+  const parts: string[] = [];
+  // `cursor` is how much of `text` has been emitted; `scan` is how far openers
+  // have been examined. An unmatched opener only advances `scan`, so it stays
+  // literal text and costs no allocation.
+  let cursor = 0;
+  let scan = 0;
+  // Cached lookahead: `Infinity` once nothing remains; recomputed only after
+  // the scan position has moved beyond the cached position.
+  let closePos = -2;
+  let blankPos = -2;
+
+  for (;;) {
+    const start = text.indexOf(open, scan);
+    if (start === -1) break;
+    const innerStart = start + open.length;
+
+    if (closePos !== Infinity && closePos < innerStart) {
+      const found = text.indexOf(close, innerStart);
+      closePos = found === -1 ? Infinity : found;
+    }
+    if (blankPos !== Infinity && blankPos < start) {
+      BLANK_LINE_RE.lastIndex = start;
+      const found = BLANK_LINE_RE.exec(text);
+      blankPos = found ? found.index : Infinity;
+    }
+
+    const limit = Math.min(text.length, innerStart + MAX_DELIMITER_SPAN, blankPos);
+    if (closePos === Infinity || closePos + close.length > limit) {
+      // No closer within the bound: the opener stays literal text.
+      scan = innerStart;
       continue;
     }
 
-    result += text.slice(cursor, start) + wrap(text.slice(start + open.length, end));
-    cursor = end + close.length;
+    parts.push(text.slice(cursor, start), wrap(text.slice(innerStart, closePos)));
+    cursor = closePos + close.length;
+    scan = cursor;
   }
-  return result;
+  parts.push(text.slice(cursor));
+  return parts.join('');
 }
 
 function transformProse(text: string): string {

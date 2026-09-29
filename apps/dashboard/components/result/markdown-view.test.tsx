@@ -34,9 +34,10 @@ describe('MarkdownView', () => {
       () => {
         expect(container.querySelector('pre.shiki')).toBeTruthy();
       },
-      { timeout: 10000 },
+      { timeout: 20000 },
     );
-  });
+    // The lazy Shiki import can be slow on a loaded machine; the test budget must exceed the waitFor budget.
+  }, 30000);
 
   it('falls back to plain text for an unknown fence language', () => {
     const { container } = render(<MarkdownView content={'```totally-unknown-lang\nhello\n```'} />);

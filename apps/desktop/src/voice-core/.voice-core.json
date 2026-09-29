@@ -1,0 +1,13 @@
+{
+  "package": "@harry/voice-core",
+  "target": "main",
+  "version": "0.1.0",
+  "commit": "e4f9a19",
+  "source": "D:/voice-core/src",
+  "files": {
+    "shared/protocol.ts": "4d6e1bc70e2e20b9a15a88aff6742b4206a1254d3f5ad1fd6912d21adab296ed",
+    "shared/speak.ts": "cdb06e1b065f7b25db760de8e51dee7301372bf29b3df1cff811ef359292706b",
+    "main/supervisor.ts": "a5236a985c0da445194eaa981ab16dc422f68711646ed175abe00ac77f375f60",
+    "main/index.ts": "4dc5c1c944aa3cffdbddda76feec5bccf483d9c96414f798e71d2befd0be7b0b"
+  }
+}

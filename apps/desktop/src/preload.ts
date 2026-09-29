@@ -5,6 +5,12 @@ const info = ipcRenderer.sendSync('helix:desktop-info') as { apiKey: string; adm
 if (info) {
   contextBridge.exposeInMainWorld(
     'helixDesktop',
-    Object.freeze({ apiKey: info.apiKey, adminToken: info.adminToken, version: info.version, platform: 'win32' as const }),
+    Object.freeze({
+      apiKey: info.apiKey,
+      adminToken: info.adminToken,
+      version: info.version,
+      platform: 'win32' as const,
+      voice: Object.freeze({ connect: () => ipcRenderer.invoke('helix:voice-connect') as Promise<unknown> }),
+    }),
   )
 }

@@ -1,7 +1,7 @@
 // VSCode shells export this; a relaunch after an update must not inherit it.
 delete process.env.ELECTRON_RUN_AS_NODE
 
-import { app, BrowserWindow, dialog, Menu, safeStorage, shell, systemPreferences } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, safeStorage, shell, systemPreferences } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { children } from './children'
@@ -15,7 +15,8 @@ import { isPortFree, killTree, listProcs, spawnChild } from './procs'
 import { openSplash, type Splash } from './splash'
 import { Supervisor, type Failure } from './supervisor'
 import { startUpdater } from './updater'
-import { createMainWindow } from './window'
+import { createVoice, registerVoiceIpc, resolveVoice, type VoiceHost } from './voice'
+import { createMainWindow, trustedSender } from './window'
 
 const dev = process.env.HELIX_DESKTOP_DEV === '1'
 if (dev) app.setPath('userData', path.join(app.getPath('appData'), 'Helix-dev'))
@@ -38,6 +39,7 @@ let supervisor: Supervisor | null = null
 let secretsCache: ReturnType<typeof loadOrCreateSecrets> | null = null
 let splash: Splash | null = null
 let mainWindow: BrowserWindow | null = null
+let voice: VoiceHost | null = null
 let quitting = false
 
 function reducedMotion(): boolean {
@@ -90,6 +92,8 @@ function openMainWindow(): void {
     ...(icon ? { icon } : {}),
   })
   mainWindow = win
+  const origin = loopback(DESKTOP_PORTS.api)
+  if (voice) win.on('closed', registerVoiceIpc(ipcMain, voice, (e) => !win.isDestroyed() && trustedSender(e, win.webContents, origin)))
   win.once('ready-to-show', () => {
     void (splash?.close() ?? Promise.resolve()).then(() => {
       splash = null
@@ -135,6 +139,7 @@ app.on('before-quit', (e) => {
   const s = supervisor
   void s
     .stopAll()
+    .then(() => voice?.stop())
     .catch((err) => log(`stop: ${String(err)}`))
     .finally(() => app.quit())
 })
@@ -166,6 +171,8 @@ if (primary) {
       },
       log,
     )
+
+    voice = createVoice(resolveVoice({ resources: layout.resources, repo: layout.repo, env: process.env, exists: fs.existsSync }))
 
     const pids = fileStore(layout.runDir)
     await killStale({ store: pids, list: listProcs, killTree, log })

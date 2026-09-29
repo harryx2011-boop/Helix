@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { ArrowUp, Link2, Loader2, Sparkles } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { DictationButton, joinDictation, type DictationCaption } from './dictation-button';
 import { UrlList } from './url-list';
 import { OutputToggle, type AgentOutputFormat } from './output-toggle';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ export function Composer({
   const [urlsOpen, setUrlsOpen] = React.useState(urls.length > 0);
   const disabled = value.trim().length === 0 || loading;
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const [caption, setCaption] = React.useState<DictationCaption | null>(null);
 
   const resize = React.useCallback(() => {
     const el = textareaRef.current;
@@ -81,6 +83,7 @@ export function Composer({
           </TooltipTrigger>
           <TooltipContent>Add URLs</TooltipContent>
         </Tooltip>
+        <DictationButton onText={(heard) => onValueChange(joinDictation(value, heard))} onCaption={setCaption} />
         <OutputToggle value={outputFormat} onChange={onOutputFormatChange} />
         <button
           type="button"
@@ -92,6 +95,14 @@ export function Composer({
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
         </button>
       </div>
+      {caption && (
+        <p
+          role={caption.error ? 'alert' : undefined}
+          className={cn('max-w-[720px] truncate px-4 text-xs', caption.error ? 'text-destructive' : 'text-muted-foreground')}
+        >
+          {caption.text}
+        </p>
+      )}
       {urlsOpen && (
         <div className="max-w-[720px] rounded-panel border border-border bg-card p-3">
           <UrlList urls={urls} onChange={onUrlsChange} />

@@ -23,6 +23,8 @@ extraResources:
     to: fetch
   - from: resources/browsers
     to: browsers
+  - from: resources/voice-core
+    to: voice-core
 win:
   target:
     - target: nsis

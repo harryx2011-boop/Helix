@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { desktopCredentials, isDesktop, isDesktopKey } from './desktop';
+import { desktopCredentials, desktopVoice, isDesktop, isDesktopKey } from './desktop';
 import { getApiKey } from './auth';
 import { getAdminToken } from './instance-settings';
 
@@ -55,5 +55,35 @@ describe('desktop bridge', () => {
     expect(desktopCredentials()).toEqual({ apiKey: null, adminToken: null });
     expect(getApiKey()).toBe('helix-stored');
     expect(getAdminToken()).toBe('admin-stored');
+  });
+});
+
+describe('desktop voice bridge', () => {
+  const voiceBridge = (connect: () => Promise<unknown>) => ({ ...BRIDGE, voice: { connect } });
+
+  it('is absent in a browser and in a desktop build without dictation', () => {
+    expect(desktopVoice()).toBeNull();
+    fakeWindow();
+    expect(desktopVoice()).toBeNull();
+    fakeWindow(BRIDGE);
+    expect(desktopVoice()).toBeNull();
+  });
+
+  it('passes on a loopback connection', async () => {
+    const found = { baseUrl: 'http://127.0.0.1:9000', token: 'abc' };
+    fakeWindow(voiceBridge(async () => found));
+    await expect(desktopVoice()!.connect()).resolves.toEqual(found);
+  });
+
+  it.each([
+    ['nothing', null],
+    ['a string', 'http://127.0.0.1:9000'],
+    ['a foreign host', { baseUrl: 'http://192.168.1.5:9000', token: 'abc' }],
+    ['a localhost alias', { baseUrl: 'http://localhost:9000', token: 'abc' }],
+    ['an empty token', { baseUrl: 'http://127.0.0.1:9000', token: '' }],
+    ['a broken url', { baseUrl: 'not a url', token: 'abc' }],
+  ])('turns %s into null', async (_label, reply) => {
+    fakeWindow(voiceBridge(async () => reply));
+    await expect(desktopVoice()!.connect()).resolves.toBeNull();
   });
 });

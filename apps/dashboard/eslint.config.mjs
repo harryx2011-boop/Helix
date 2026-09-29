@@ -8,7 +8,7 @@ const compat = new FlatCompat({
 
 const config = [
   ...compat.extends('next/core-web-vitals'),
-  { ignores: ['.next/**', '.next-*/**', 'out/**', 'node_modules/**'] },
+  { ignores: ['.next/**', '.next-*/**', 'out/**', 'node_modules/**', 'lib/voice-core/**'] },
 ];
 
 export default config;

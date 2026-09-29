@@ -1,0 +1,19 @@
+{
+  "package": "@harry/voice-core",
+  "target": "web",
+  "version": "0.1.0",
+  "commit": "e4f9a19",
+  "source": "D:/voice-core/src",
+  "files": {
+    "shared/protocol.ts": "4d6e1bc70e2e20b9a15a88aff6742b4206a1254d3f5ad1fd6912d21adab296ed",
+    "shared/speak.ts": "cdb06e1b065f7b25db760de8e51dee7301372bf29b3df1cff811ef359292706b",
+    "shared/wav.ts": "eacd562d4b0ce380e50995f6be52722ab66ba810f3a2b422b54b3630690f59fc",
+    "client/client.ts": "92f62c744b3100512b8a8ec7e675d7f35b87111edd16c945ce74403fad30d3de",
+    "client/index.ts": "c6160dad448cee1b25e66fbde1aae0e95acc76510660e54886ceed9f80058e86",
+    "react/capture.ts": "30c490819629a90948a1af5275a0beccffb01b67a5c475aa9166eca4e6ef727b",
+    "react/dictation.ts": "05357442a037c76619b489e45d25a966340024f2ade4e3b4d601a7aca87a0c35",
+    "react/useDictation.ts": "ae575bed8fb080db96766673b0fe056bfedf977b9265e482da9e575ce83f5d60",
+    "react/worklet.ts": "c549ff89653a4885bb84808bfb03c83a9d1ab34e89e5a2542292a5a3237be14f",
+    "react/index.ts": "59b7e609d68a9468866ee893d47f2ea7b7bf7448d8561b50be18f369acbe55f9"
+  }
+}

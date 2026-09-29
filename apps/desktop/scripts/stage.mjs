@@ -1,5 +1,5 @@
 // Builds every runtime piece and copies it into apps/desktop/resources for electron-builder's extraResources.
-// Usage: node scripts/stage.mjs [--skip api,ui,extract,fetch,browsers] [--skip <step>]...
+// Usage: node scripts/stage.mjs [--skip api,ui,extract,fetch,voice,browsers] [--skip <step>]...
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
@@ -175,6 +175,20 @@ const steps = {
     const profiles = join(repo, 'packages', 'profiles', 'definitions')
     if (existsSync(profiles)) cpSync(profiles, join(out, 'profiles'), { recursive: true })
     assertExists(join(out, 'helix-fetch.exe'), 'staged fetch exe')
+    return mb(dirSize(out))
+  },
+
+  voice() {
+    // voice-core is a sibling repo with its own build (uv + PyInstaller); HELIX_VOICE_CORE_SRC points elsewhere.
+    const src = resolve(process.env.HELIX_VOICE_CORE_SRC ?? join(repo, '..', 'voice-core'))
+    assertExists(join(src, 'package.json'), 'voice-core checkout')
+    npm(['run', 'build:service'], { cwd: src })
+    const built = join(src, 'service-dist', 'voice-core')
+    assertExists(join(built, 'voice-core.exe'), 'voice-core exe')
+    const out = join(res, 'voice-core')
+    fresh(out)
+    cpSync(built, out, { recursive: true })
+    assertExists(join(out, 'voice-core.exe'), 'staged voice-core exe')
     return mb(dirSize(out))
   },
 

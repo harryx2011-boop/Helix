@@ -5,14 +5,14 @@ import { cn } from '@/lib/utils';
 import { mulberry32, useInView, useReducedMotion } from '@/components/shared/ambient';
 
 /*
- * ScrollStrip: one thin line of wire-format tokens between sections whose
+ * ScrollStrip: one thin line of plain words between sections whose
  * horizontal offset is the strip's own scroll progress through the viewport,
  * so the page's motion is the only clock. Same contract as the ambient
  * primitives: seeded first paint, rAF-throttled, idle off-screen, static
  * under reduced motion.
  */
 
-const STRIP_TOKENS = ['{', '}', '[ ]', '"url":', '200', '->', '0x1f', '·', ':', '=', '"tier":', 'POST', '/v1/scrape', '"markdown"', 'true'];
+const STRIP_TOKENS = ['read', 'search', 'watch', 'click', 'page', 'site', 'file', 'table', 'change', '·', '→', 'new', 'saved', 'found'];
 const TOKEN_COUNT = 160;
 /** Total horizontal travel across the strip's pass through the viewport, in px. */
 const TRAVEL = 200;

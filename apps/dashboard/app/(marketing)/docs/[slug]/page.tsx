@@ -20,6 +20,8 @@ import {
   type ReferenceDoc,
   type ReferenceSlug,
 } from '@/lib/docs-content';
+import { PlainDoc } from '@/components/marketing/docs/plain-doc';
+import { DOCS } from '@/lib/docs';
 import { MCP_URL, SITE_URL } from '@/lib/mode';
 import { generateCode } from '@/lib/codegen';
 import type { Endpoint } from '@/lib/endpoints';
@@ -35,7 +37,8 @@ const REFERENCE_DOCS: Record<ReferenceSlug, () => ReferenceDoc> = {
 export function generateStaticParams() {
   const endpointSlugs = ENDPOINTS.filter((e) => e.product).map((e) => ({ slug: e.id }));
   const staticSlugs = STATIC_SLUGS.map((slug) => ({ slug }));
-  return [...staticSlugs, ...endpointSlugs];
+  const plainSlugs = DOCS.map((d) => ({ slug: d.slug }));
+  return [...plainSlugs, ...staticSlugs, ...endpointSlugs];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -45,9 +48,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 function titleFor(slug: string): string | undefined {
+  const plain = DOCS.find((d) => d.slug === slug);
+  if (plain) return plain.title;
   const endpoint = docsEndpointOrThrow(slug);
   if (endpoint) return endpoint.def.productName;
-  if (slug === 'getting-started') return 'Getting Started';
+  if (slug === 'getting-started') return 'Developer quickstart';
   if (isAgentSurfaceSlug(slug)) return agentSurfaceDocs({ mcpUrl: MCP_URL, siteUrl: SITE_URL })[slug].title;
   if (isReferenceSlug(slug)) return REFERENCE_DOCS[slug]().title;
   return undefined;
@@ -61,6 +66,8 @@ function seedFor(text: string): number {
 
 export default async function DocsSlugPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const plain = DOCS.find((d) => d.slug === slug);
+  if (plain) return <PlainDoc page={plain} />;
   const endpoint = docsEndpointOrThrow(slug);
   if (endpoint) return <EndpointDoc def={endpoint.def} docs={endpoint.docs} />;
   if (isAgentSurfaceSlug(slug)) return <AgentSurfaceDoc slug={slug} />;
@@ -258,15 +265,15 @@ function ReferenceDocPage({ doc }: { doc: ReferenceDoc }) {
 
 function GettingStartedDoc() {
   return (
-    <StaticShell h1="Getting Started">
+    <StaticShell h1="Developer quickstart">
       <DocSection title="1. Run Helix">
         <p className="text-[15px] leading-relaxed text-m-ink/72">
-          A Windows app that runs every service for you is <Link href="/download" className="text-violet underline decoration-violet-40 underline-offset-4">coming</Link>. Today, run it from source with the <Link href="/self-host" className="text-violet underline decoration-violet-40 underline-offset-4">self-host guide</Link>.
+          The <Link href="/download" className="text-violet underline decoration-violet-40 underline-offset-4">Windows app</Link> starts every service for you and listens on <code className="font-mono text-[13px]">http://127.0.0.1:7410</code>. To run it from source instead, follow the <Link href="/self-host" className="text-violet underline decoration-violet-40 underline-offset-4">self-host guide</Link>; a source checkout listens on port 7400.
         </p>
       </DocSection>
       <DocSection title="2. Get your key">
         <p className="text-[15px] leading-relaxed text-m-ink/72">
-          A new instance accepts the <code className="font-mono text-[13px]">HELIX_BOOTSTRAP_KEY</code> from its <code className="font-mono text-[13px]">.env</code>; mint more under API Keys in the app. Keys look like <code className="font-mono text-[13px]">helix-a7K2mQ9xP4wR8sT1</code>.
+          The Windows app makes its own key on first launch; find it under API Keys in the app. A self-hosted instance accepts the <code className="font-mono text-[13px]">HELIX_BOOTSTRAP_KEY</code> from its <code className="font-mono text-[13px]">.env</code>; mint more under API Keys in the app. Keys look like <code className="font-mono text-[13px]">helix-a7K2mQ9xP4wR8sT1</code>.
         </p>
       </DocSection>
       <DocSection title="3. Make a request">

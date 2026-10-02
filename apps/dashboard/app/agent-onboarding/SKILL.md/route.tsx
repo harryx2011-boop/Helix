@@ -27,7 +27,7 @@ function buildSkillMd(): string {
     '',
     '## 1. Get a key',
     '',
-    `Helix runs on the user's own machine (${site}/self-host; a Windows app is coming at ${site}/download). A new instance accepts the HELIX_BOOTSTRAP_KEY from its \`.env\`; mint more under API Keys in the app, or \`POST /v1/keys\` with an existing key. The key is shown once.`,
+    `Helix runs on the user's own machine (the Windows app from ${site}/download, or a source checkout from ${site}/self-host). A new instance accepts the HELIX_BOOTSTRAP_KEY from its \`.env\`; mint more under API Keys in the app, or \`POST /v1/keys\` with an existing key. The key is shown once.`,
     '',
     'The key is a secret. Resolve it from `HELIX_API_KEY` in your own shell or from `.env.local`; check for it with a presence test (`${HELIX_API_KEY:+set}`) or an HTTP status code, and never print, echo, cat or grep-with-output anything that may contain it. If it is exposed, revoke it and mint a new one — from the app\'s API Keys page, or with `DELETE /v1/keys/{id}` on a self-hosted instance.',
     '',

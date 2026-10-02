@@ -5,17 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { Logo } from '@/components/shell/logo';
-import { GITHUB_URL } from '@/lib/github-stars';
 import { cn } from '@/lib/utils';
 import { PillButton } from '@/components/shared/pill-button';
-import { GithubMark } from './github-mark';
 import {
-  ApisPanel,
+  FeaturesPanel,
   DocsPanel,
   ToolsPanel,
   MenuRowItem,
-  ENDPOINT_ROWS,
-  SURFACE_ROWS,
+  FEATURE_ROWS,
   DOCS_ROWS,
   TOOL_ROWS,
   type MenuId,
@@ -29,7 +26,7 @@ const APP_CTA =
     : { href: '/app', label: 'Open app' };
 
 const MENUS: readonly { id: MenuId; label: string }[] = [
-  { id: 'apis', label: 'APIs' },
+  { id: 'features', label: 'Features' },
   { id: 'docs', label: 'Docs' },
   { id: 'tools', label: 'Tools' },
 ];
@@ -37,16 +34,7 @@ const MENUS: readonly { id: MenuId; label: string }[] = [
 const topLinkClass =
   'flex items-center gap-1 rounded-card px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink focus-visible:text-m-ink';
 
-export interface NavProps {
-  /** Formatted star count (`1.2K`) or `null` when the repo is private or the fetch failed. */
-  stars?: string | null;
-}
-
-/**
- * WEBSITE.md §4.1, LANDING-REVAMP-2 "Nav". Sticky, blends with page bg, bottom
- * hairline. Three full-width panels under the bar; one open at a time.
- */
-export function Nav({ stars = null }: NavProps) {
+export function Nav() {
   const [open, setOpen] = React.useState<MenuId | null>(null);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const rootRef = React.useRef<HTMLDivElement>(null);
@@ -127,7 +115,7 @@ export function Nav({ stars = null }: NavProps) {
                     aria-labelledby={`nav-${menu.id}-trigger`}
                     className="absolute inset-x-0 top-full animate-fade-in-up overflow-hidden rounded-b-panel border border-t-0 border-m-border-muted bg-m-surface shadow-card"
                   >
-                    {menu.id === 'apis' && <ApisPanel onNavigate={close} />}
+                    {menu.id === 'features' && <FeaturesPanel onNavigate={close} />}
                     {menu.id === 'docs' && <DocsPanel onNavigate={close} />}
                     {menu.id === 'tools' && <ToolsPanel onNavigate={close} />}
                   </div>
@@ -138,16 +126,6 @@ export function Nav({ stars = null }: NavProps) {
         </nav>
 
         <div onMouseEnter={close} className="hidden items-center gap-3 lg:flex">
-          <Link
-            href={GITHUB_URL}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={stars ? `Helix on GitHub, ${stars} stars` : 'Helix on GitHub'}
-            className="flex items-center gap-2 rounded-card px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink"
-          >
-            <GithubMark className="h-4 w-4" />
-            {stars ? <span className="font-mono text-[13px] tabular-nums">{stars}</span> : 'GitHub'}
-          </Link>
           <PillButton href={APP_CTA.href} variant="primary">
             {APP_CTA.label}
           </PillButton>
@@ -171,18 +149,9 @@ export function Nav({ stars = null }: NavProps) {
           className="max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-m-border-faint bg-m-bg px-4 py-3 lg:hidden"
         >
           <div className="flex flex-col">
-            <MobileGroup label="APIs" rows={[...ENDPOINT_ROWS, ...SURFACE_ROWS]} onNavigate={() => setMobileOpen(false)} />
+            <MobileGroup label="Features" rows={FEATURE_ROWS} onNavigate={() => setMobileOpen(false)} />
             <MobileGroup label="Docs" rows={DOCS_ROWS} onNavigate={() => setMobileOpen(false)} />
             <MobileGroup label="Tools" rows={TOOL_ROWS} onNavigate={() => setMobileOpen(false)} />
-            <Link
-              href={GITHUB_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 border-b border-m-border-faint px-1 py-3 text-[14px] font-medium text-m-ink"
-            >
-              <GithubMark className="h-4 w-4" />
-              {stars ? <span className="font-mono text-[13px] tabular-nums">{stars}</span> : 'GitHub'}
-            </Link>
             <div className="pt-3">
               <PillButton href={APP_CTA.href} variant="primary" className="w-full">
                 {APP_CTA.label}

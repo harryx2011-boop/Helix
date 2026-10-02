@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Server, Terminal, Puzzle, type LucideIcon } from 'lucide-react';
 import { HeroField } from '@/components/marketing/hero-field';
+import { DOCS } from '@/lib/docs';
 import { docsEndpointList, agentSurfaceDocs } from '@/lib/docs-content';
 import { MCP_URL, SITE_URL } from '@/lib/mode';
 
 export const metadata: Metadata = {
   title: 'Docs',
-  description: 'Getting started, the self-host guide, the six endpoint references, and MCP, CLI and Skills.',
+  description: 'Install Helix, learn how it works, see what stays on your PC, and find help. Developer references are at the bottom.',
 };
 
 export default function DocsIndexPage() {
@@ -23,7 +24,7 @@ export default function DocsIndexPage() {
             Documentation
           </h1>
           <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-relaxed text-m-ink/72">
-            Getting started, the self-host guide, and a reference page for every endpoint in the catalog.
+            Install Helix, learn how it works, see exactly what stays on your PC, and find help.
           </p>
         </div>
       </div>
@@ -31,13 +32,25 @@ export default function DocsIndexPage() {
       <section className="mx-auto mt-16 max-w-[880px] animate-fade-up [animation-delay:60ms]">
         <h2 className="text-[13px] font-medium uppercase tracking-wide text-m-ink/48">Start here</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <DocLink href="/docs/getting-started" icon={BookOpen} title="Getting Started" body="Run Helix, get a key, make your first request." />
-          <DocLink href="/self-host" icon={Server} title="Self-host" body="docker compose up, health-gated, nothing withheld." />
+          {DOCS.map((d) => (
+            <DocLink key={d.slug} href={`/docs/${d.slug}`} icon={BookOpen} title={d.nav} body={d.intro} />
+          ))}
         </div>
       </section>
 
-      <section className="mx-auto mt-14 max-w-[880px] animate-fade-up [animation-delay:120ms]">
-        <h2 className="text-[13px] font-medium uppercase tracking-wide text-m-ink/48">Endpoints</h2>
+      <section className="mx-auto mt-16 max-w-[880px] animate-fade-up [animation-delay:120ms]">
+        <h2 className="text-[13px] font-medium uppercase tracking-wide text-m-ink/48">For developers</h2>
+        <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-m-ink/72">
+          Build on Helix, connect it to your AI tools or run it from source. Each feature has a technical page with every option and the exact request.
+        </p>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <DocLink href="/docs/getting-started" icon={BookOpen} title="Developer Quickstart" body="Run Helix, get a key, make your first request." />
+          <DocLink href="/self-host" icon={Server} title="Run It From Source" body="docker compose up, with nothing withheld." />
+        </div>
+      </section>
+
+      <section className="mx-auto mt-14 max-w-[880px] animate-fade-up [animation-delay:160ms]">
+        <h2 className="text-[13px] font-medium uppercase tracking-wide text-m-ink/48">Feature references</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {endpoints.map((endpoint) => (
             <DocLink
@@ -52,8 +65,8 @@ export default function DocsIndexPage() {
         </div>
       </section>
 
-      <section className="mx-auto mt-14 max-w-[880px] animate-fade-up [animation-delay:180ms]">
-        <h2 className="text-[13px] font-medium uppercase tracking-wide text-m-ink/48">Agent surfaces</h2>
+      <section className="mx-auto mt-14 max-w-[880px] animate-fade-up [animation-delay:200ms]">
+        <h2 className="text-[13px] font-medium uppercase tracking-wide text-m-ink/48">Connect your AI tools</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <DocLink href="/docs/mcp" icon={Puzzle} title={surfaces.mcp.title} body={surfaces.mcp.summary} />
           <DocLink href="/docs/cli" icon={Terminal} title={surfaces.cli.title} body={surfaces.cli.summary} />

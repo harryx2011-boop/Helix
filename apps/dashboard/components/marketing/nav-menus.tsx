@@ -1,24 +1,9 @@
 import Link from 'next/link';
-import {
-  ArrowUpRight,
-  BookOpen,
-  Bot,
-  Braces,
-  FileText,
-  Activity,
-  Download,
-  Package,
-  Plug,
-  Puzzle,
-  Server,
-  Terminal,
-} from 'lucide-react';
+import { ArrowUpRight, Braces, Compass, Download, HelpCircle, Activity, Lock, Rocket, Settings } from 'lucide-react';
 import { Logo } from '@/components/shell/logo';
-import { PRODUCTS, TAB_GROUPS, type EndpointDef, type TabGroup } from '@/lib/catalog';
-import { GITHUB_URL } from '@/lib/github-stars';
+import { FEATURES, FEATURE_GROUPS } from '@/lib/feature-copy';
 import { cn } from '@/lib/utils';
 import { IconTile } from './icon-tile';
-import { GithubMark } from './github-mark';
 import { CanvasMarkCompact } from './canvas-mark';
 import type { GlyphIcon } from '@/components/shared/icon-type';
 
@@ -30,80 +15,36 @@ export interface MenuRow {
   external?: boolean;
 }
 
-export type MenuId = 'apis' | 'docs' | 'tools';
-
-const fromCatalog = (e: EndpointDef): MenuRow => ({
-  label: e.name,
-  href: e.route,
-  icon: e.icon,
-  pill: e.status === 'coming' ? 'Coming' : undefined,
-});
-
-/** Human label per catalog group, in the order the nav lists them. */
-export const GROUP_LABEL: Record<TabGroup, string> = {
-  DISCOVER: 'Discover',
-  EXTRACT: 'Extract',
-  CRAWL: 'Crawl',
-  ACT: 'Act',
-  WATCH: 'Watch',
-};
+export type MenuId = 'features' | 'docs' | 'tools';
 
 export interface MenuGroup {
-  group: TabGroup;
   label: string;
   rows: MenuRow[];
 }
 
-/**
- * The API menu, derived from the catalog rather than hand-listed: a new
- * `product: true` endpoint appears here without touching this file.
- */
-export const API_GROUPS: readonly MenuGroup[] = TAB_GROUPS.map((group) => ({
-  group,
-  label: GROUP_LABEL[group],
-  rows: PRODUCTS.filter((e) => e.group === group).map((e) => fromCatalog(e)),
+/** The features menu, derived from the plain-language registry: a new feature appears here without touching this file. */
+export const FEATURE_MENU_GROUPS: readonly MenuGroup[] = FEATURE_GROUPS.map((group) => ({
+  label: group,
+  rows: FEATURES.filter((f) => f.group === group).map((f) => ({ label: f.name, href: f.route, icon: f.icon })),
 })).filter((g) => g.rows.length > 0);
 
-/** Flat order, for the mobile drawer and anything that cannot render columns. */
-export const ENDPOINT_ROWS: readonly MenuRow[] = [
-  ...API_GROUPS.flatMap((g) => g.rows),
-  {
-    label: 'Agent',
-    href: '/agent',
-    icon: Bot,
-  },
-];
-
-export const SURFACE_ROWS: readonly MenuRow[] = [
-  { label: 'MCP', href: '/docs/mcp', icon: Plug },
-  { label: 'CLI', href: '/docs/cli', icon: Terminal },
-  { label: 'API', href: '/docs/api-reference', icon: Braces },
-  { label: 'SDKs', href: '/docs/sdks', icon: Package },
-  { label: 'Skills', href: '/docs/skills', icon: Puzzle },
-];
+/** Flat order, for the mobile drawer. */
+export const FEATURE_ROWS: readonly MenuRow[] = FEATURE_MENU_GROUPS.flatMap((g) => g.rows);
 
 export const DOCS_ROWS: readonly MenuRow[] = [
-  { label: 'Getting Started', href: '/docs/getting-started', icon: BookOpen },
-  { label: 'API Reference', href: '/docs/api-reference', icon: Braces },
-  { label: 'Self-Host Guide', href: '/self-host', icon: Server },
-  { label: 'CLI', href: '/docs/cli', icon: Terminal },
-  { label: 'MCP', href: '/docs/mcp', icon: Plug },
-  { label: 'Agent Onboarding', href: '/agent-onboarding/SKILL.md', icon: Bot },
-  { label: 'llms.txt', href: '/llms.txt', icon: FileText },
+  { label: 'Quickstart', href: '/docs/quickstart', icon: Rocket },
+  { label: 'How It Works', href: '/docs/how-it-works', icon: Compass },
+  { label: 'Settings and Models', href: '/docs/settings-and-models', icon: Settings },
+  { label: 'Privacy and Data', href: '/docs/privacy-and-data', icon: Lock },
+  { label: 'Help', href: '/docs/help', icon: HelpCircle },
+  { label: 'For Developers', href: '/docs', icon: Braces },
 ];
 
 export const TOOL_ROWS: readonly MenuRow[] = [
-  {
-    label: 'Canvas',
-    href: '/canvas',
-    icon: CanvasMarkCompact,
-  },
   { label: 'Get the app', href: '/download', icon: Download },
+  { label: 'Canvas', href: '/canvas', icon: CanvasMarkCompact },
   { label: 'Status', href: '/status', icon: Activity },
-].filter((row) => row.href);
-
-/** @deprecated Kept while callers migrate to `TOOL_ROWS`. */
-export const UTILITY_ROWS = TOOL_ROWS;
+];
 
 export interface MenuRowProps {
   row: MenuRow;
@@ -145,10 +86,10 @@ function ColumnHeader({ children }: { children: React.ReactNode }) {
   return <div className="border-b border-m-border-faint px-4 py-2.5 text-[13px] text-m-ink/56">{children}</div>;
 }
 
-export function OpenSourcePanel({ onNavigate }: { onNavigate: () => void }) {
+export function DownloadPanel({ onNavigate }: { onNavigate: () => void }) {
   return (
     <div className="flex flex-col bg-m-bg">
-      <ColumnHeader>Open Source</ColumnHeader>
+      <ColumnHeader>Helix for Windows</ColumnHeader>
       <div className="flex flex-1 flex-col gap-4 px-4 py-4">
         <span
           aria-hidden="true"
@@ -156,50 +97,34 @@ export function OpenSourcePanel({ onNavigate }: { onNavigate: () => void }) {
         >
           <Logo markOnly className="h-6 w-auto" />
         </span>
-        <p className="text-[13px] leading-snug text-m-ink/72">Helix is Apache-2.0. Star it if it saved you a build.</p>
+        <p className="text-[13px] leading-snug text-m-ink/72">Runs on your own PC. No account to create.</p>
       </div>
       <Link
-        href={GITHUB_URL}
-        target="_blank"
-        rel="noreferrer"
+        href="/download"
         onClick={onNavigate}
         className="flex items-center gap-2 border-t border-m-border-faint px-4 py-3 text-[14px] font-medium text-m-ink transition-colors duration-150 ease-out hover:bg-m-ink/[0.039] focus-visible:bg-m-ink/[0.039] focus-visible:outline-none"
       >
-        <GithubMark className="h-4 w-4" />
-        See GitHub
-        <ArrowUpRight className="ml-auto h-3.5 w-3.5 text-m-ink/40" aria-hidden />
+        <Download className="h-4 w-4" aria-hidden />
+        Get the app
       </Link>
     </div>
   );
 }
 
-export function ApisPanel({ onNavigate }: { onNavigate: () => void }) {
+export function FeaturesPanel({ onNavigate }: { onNavigate: () => void }) {
   return (
-    <div className="grid grid-cols-[1fr_1fr_280px] divide-x divide-m-border-faint">
-      <div>
-        <ColumnHeader>Endpoints</ColumnHeader>
-        <div className="grid grid-cols-2 gap-x-2 py-1">
-          {API_GROUPS.map((group) => (
-            <div key={group.group} className="min-w-0">
-              <div className="px-4 pb-1 pt-2 font-mono text-[11px] uppercase tracking-wide text-m-ink/40">
-                {group.label}
-              </div>
-              {group.rows.map((row) => (
-                <MenuRowItem key={row.label} row={row} onNavigate={onNavigate} />
-              ))}
-            </div>
-          ))}
+    <div className="grid grid-cols-[1fr_1fr_1fr_260px] divide-x divide-m-border-faint">
+      {FEATURE_MENU_GROUPS.map((group) => (
+        <div key={group.label} className="min-w-0">
+          <ColumnHeader>{group.label}</ColumnHeader>
+          <div className="py-1">
+            {group.rows.map((row) => (
+              <MenuRowItem key={row.label} row={row} onNavigate={onNavigate} />
+            ))}
+          </div>
         </div>
-      </div>
-      <div>
-        <ColumnHeader>Surfaces</ColumnHeader>
-        <div className="py-1">
-          {SURFACE_ROWS.map((row) => (
-            <MenuRowItem key={row.label} row={row} onNavigate={onNavigate} />
-          ))}
-        </div>
-      </div>
-      <OpenSourcePanel onNavigate={onNavigate} />
+      ))}
+      <DownloadPanel onNavigate={onNavigate} />
     </div>
   );
 }

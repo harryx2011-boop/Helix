@@ -1,99 +1,76 @@
 'use client';
 
 import * as React from 'react';
-import { Bot, RefreshCw, Search, UserPlus, Wrench } from 'lucide-react';
+import { Bell, Bot, Search, Table2 } from 'lucide-react';
 import { FrameBand } from './section-frame';
 import { AsciiNoise } from '@/components/shared/ascii-fields';
 import { IconTile } from './icon-tile';
 import { CodePanel } from '@/components/shared/code-panel';
-import { AnimatedCode, type Token } from '@/components/shared/animated-code';
+import { AnimatedCode } from '@/components/shared/animated-code';
 
 interface UseCase {
   icon: typeof Search;
   title: string;
   body: string;
   label: string;
-  code: Token[][];
+  sample: string;
 }
-
-const K = (text: string): Token => ({ kind: 'key', text });
-const S = (text: string): Token => ({ kind: 'string', text });
-const P = (text: string): Token => ({ kind: 'punct', text });
-const PL = (text: string): Token => ({ kind: 'plain', text });
 
 const CASES: UseCase[] = [
   {
     icon: Search,
-    title: 'Deep research',
-    body: 'Search, read every result, follow the citations in one call.',
-    label: 'research.sh',
-    code: [
-      [K('POST'), PL(' '), S('/v1/search')],
-      [P('{')],
-      [PL('  '), K('"query"'), P(':'), PL(' '), S('"series a seed valuations 2026"'), P(',')],
-      [PL('  '), K('"limit"'), P(':'), PL(' '), PL('5'), P(',')],
-      [PL('  '), K('"scrapeOptions"'), P(':'), PL(' '), P('{'), K('"formats"'), P(':'), PL(' '), P('['), S('"markdown"'), P(']'), PL(' '), P('}')],
-      [P('}')],
-      [],
-      [PL('5 results · 5 pages read · 41 KB markdown')],
-    ],
+    title: 'Research a topic',
+    body: 'Search, read every result and keep the text of each page, with its link.',
+    label: 'Example: research',
+    sample: `You ask:   seed round valuations 2026
+
+Helix:    found 5 pages
+          read all 5
+          kept the text of each, with its link`,
   },
   {
-    icon: RefreshCw,
-    title: 'Fresh context for chats',
-    body: 'Pull the live page into context instead of a stale cached index.',
-    label: 'scrape.sh',
-    code: [
-      [K('POST'), PL(' '), S('/v1/scrape')],
-      [P('{')],
-      [PL('  '), K('"url"'), P(':'), PL(' '), S('"https://example.com/pricing"'), P(',')],
-      [PL('  '), K('"formats"'), P(':'), PL(' '), P('['), S('"markdown"'), P(']')],
-      [P('}')],
-      [],
-      [K('"tier"'), P(':'), PL(' '), S('"plain"'), PL('  ·  200  ·  312ms')],
-    ],
+    icon: Bell,
+    title: 'Keep an eye on a page',
+    body: 'Get told when a price, a policy or a listing changes.',
+    label: 'Example: watching a page',
+    sample: `Watching: example.com/pricing, once a day
+
+Today:    Standard went from $29 to $34 a month
+          nothing else changed`,
   },
   {
-    icon: Wrench,
-    title: 'Tools for agents',
-    body: 'Every endpoint as an MCP tool. One command wires up the agent.',
-    label: 'init.sh',
-    code: [
-      [PL('$ '), K('npx'), PL(' -y @helix/cli@latest init --all')],
-      [],
-      [PL('✓ claude-code  '), PL('mcp + SKILL.md')],
-      [PL('✓ cursor       '), PL('mcp')],
-      [PL('✓ windsurf     '), PL('mcp')],
-    ],
+    icon: Table2,
+    title: 'Build a table from a site',
+    body: 'Pull names, prices or dates from many pages into one table.',
+    label: 'Example: a table',
+    sample: `You ask:   every plan with its name and monthly price
+
+Helix:    read 12 pages
+          filled one table, 31 rows
+          left 2 values blank, not on the page`,
   },
   {
-    icon: UserPlus,
-    title: 'Onboarding from a URL',
-    body: "Read a customer's site during signup, pre-fill their workspace.",
-    label: 'onboard.sh',
-    code: [
-      [K('POST'), PL(' '), S('/v1/scrape')],
-      [P('{')],
-      [PL('  '), K('"url"'), P(':'), PL(' '), S('"https://acme.com"'), P(',')],
-      [PL('  '), K('"jsonOptions"'), P(':'), PL(' '), P('{'), K('"schema"'), P(':'), PL(' '), PL('companySchema'), PL(' '), P('}')],
-      [P('}')],
-      [],
-      [P('{')],
-      [PL('  '), K('"company"'), P(':'), PL(' '), S('"Acme"'), P(',')],
-      [PL('  '), K('"products"'), P(':'), PL(' '), P('['), PL('...'), P(']')],
-      [P('}')],
-    ],
+    icon: Bot,
+    title: 'Help your AI assistant',
+    body: 'Connect Helix to the AI tools you already use so they can read live pages.',
+    label: 'Example: an AI tool',
+    sample: `You ask your AI tool:
+  "What does their pricing page say today?"
+
+The tool asks Helix to open the page.
+Helix returns the text.
+The tool answers from it.`,
   },
 ];
 
-/** WEBSITE.md §4.7: selectable use-case list driving a live demo panel. */
+/** Home §4: selectable use-case list driving a plain-words example panel. */
 export function UseCases() {
   const [active, setActive] = React.useState(0);
   const current = CASES[active]!;
 
   return (
     <section className="relative overflow-hidden px-6 py-16 sm:px-10">
-      <FrameBand step="06" icon={Bot} />
+      <FrameBand step="04" icon={Bot} />
 
       <div className="relative py-16">
         <div data-reveal className="relative mx-auto max-w-[640px] px-6 py-6 text-center">
@@ -105,12 +82,10 @@ export function UseCases() {
           />
           <div className="relative">
             <h2 className="mx-auto max-w-[560px] text-[28px] font-normal leading-[1.1] tracking-tighter sm:text-[36px]">
-              Give your agents
-              <br />
-              <span className="text-violet">the live web.</span>
+              What people use it for<span className="text-violet">.</span>
             </h2>
             <p className="mx-auto mt-3 max-w-[480px] text-[16px] leading-relaxed text-m-ink/72">
-              Four ways teams point an agent at the open web today.
+              Four everyday jobs. Pick one to see what it looks like.
             </p>
           </div>
         </div>
@@ -142,7 +117,7 @@ export function UseCases() {
 
           <div className="min-w-0">
             <CodePanel chrome="terminal" label={current.label}>
-              <AnimatedCode key={active} code={current.code} mode="reveal" lineMs={45} playOnView />
+              <AnimatedCode key={active} code={current.sample} mode="reveal" lineMs={45} playOnView className="text-foreground" />
             </CodePanel>
           </div>
         </div>

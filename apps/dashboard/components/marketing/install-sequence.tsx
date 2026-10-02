@@ -60,7 +60,7 @@ export function InstallSequence({ installer, className }: { installer: string; c
     <div ref={ref} className={className}>
       <CodePanel chrome="terminal" label="Helix — first launch">
         <pre
-          aria-label="Download, install, then the API, extract and fetch services start and Helix runs on this machine."
+          aria-label="Download, install, then Helix starts and runs on this PC."
           role="img"
           className="min-h-[11.5em] whitespace-pre font-mono text-[11px] leading-relaxed sm:text-[13px]"
         >

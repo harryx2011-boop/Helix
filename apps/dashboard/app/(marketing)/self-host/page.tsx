@@ -6,7 +6,6 @@ import { CodePanel, CodeBlock } from '@/components/shared/code-panel';
 import { HeroField } from '@/components/marketing/hero-field';
 import { ScrollStrip } from '@/components/marketing/scroll-strip';
 import { AsciiFluid } from '@/components/shared/ascii-fluid';
-import { GITHUB_URL } from '@/lib/github-stars';
 
 export const metadata: Metadata = {
   title: 'Self-host',
@@ -82,8 +81,8 @@ export default function SelfHostPage() {
             that stops you embedding it.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <PillButton href={GITHUB_URL} variant="primary">
-              View on GitHub <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            <PillButton href="/docs/getting-started" variant="primary">
+              Developer quickstart <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
             <PillButton href="/architecture" variant="secondary">
               Read the architecture
@@ -182,8 +181,8 @@ export default function SelfHostPage() {
             <PillButton href="/download" variant="primary">
               Get the app <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </PillButton>
-            <PillButton href={GITHUB_URL} variant="secondary">
-              <Terminal className="h-3.5 w-3.5" aria-hidden /> View on GitHub
+            <PillButton href="/docs/getting-started" variant="secondary">
+              <Terminal className="h-3.5 w-3.5" aria-hidden /> Developer quickstart
             </PillButton>
           </div>
           <p className="mt-8 text-[14px] text-m-ink/56">

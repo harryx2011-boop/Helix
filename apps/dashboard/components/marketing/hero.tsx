@@ -1,19 +1,15 @@
-import { HeroPanel } from './hero-panel';
 import { GridCells, AsciiHelix } from '@/components/shared/ambient';
 import { AsciiFluid } from '@/components/shared/ascii-fluid';
 import { AsciiNoise } from '@/components/shared/ascii-fields';
 import { PillButton } from '@/components/shared/pill-button';
-import { GithubMark } from './github-mark';
-import { SetupPrompt } from './setup-prompt';
-import { GITHUB_URL } from '@/lib/github-stars';
 
-/** WEBSITE.md §4.2. H1 + subhead + CTA pair + hero panel, over a hairline grid texture. */
+/** WEBSITE.md §4.2. H1, one sentence, one download button, over a hairline grid texture. */
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pb-32 pt-20 sm:pt-28">
+    <section className="relative overflow-hidden pb-28 pt-24 sm:pb-36 sm:pt-32">
       <GridCells
-        labels={{ tl: '[ 200 OK ]', tr: '[ SCRAPE ]', bl: '[ .JSON ]', br: '[ .MD ]' }}
-        sparkles={[[3, 2], [10, 2]]}
+        labels={{ tl: '[ READ ]', tr: '[ SEARCH ]', bl: '[ WATCH ]', br: '[ CLICK ]' }}
+        sparkles={[[3, 1], [10, 1]]}
         clusters={[
           { col: 1, row: 2, size: 4 },
           { col: 0, row: 4, size: 3, assemble: true },
@@ -48,9 +44,9 @@ export function Hero() {
           data-reveal
           className="max-w-[760px] text-[44px] font-normal leading-[1.03] tracking-tightest sm:text-[64px]"
         >
-          A frontier
+          Read and watch the web,
           <br />
-          <span className="text-violet">utility hub</span>
+          <span className="text-violet">from your own PC</span>
         </h1>
 
         <div className="relative flex flex-col items-center">
@@ -72,27 +68,22 @@ export function Hero() {
           />
 
           <p data-reveal className="mt-5 max-w-[560px] text-[18px] leading-relaxed text-m-ink/72">
-            Scrape, parse, search and crawl — on your own keys.{' '}
-            <span className="rounded-card bg-m-ink/[0.039] px-1.5 py-0.5">Completely open source, run it locally.</span>
+            Helix reads pages and documents, searches the web, follows the links across a whole site and tells you
+            when something changes. It runs on your Windows PC.
           </p>
 
           <div data-reveal className="mt-8 flex flex-col gap-3 sm:flex-row">
             <PillButton href="/download" variant="primary">
-              Get the app
+              Download for Windows
             </PillButton>
-            <PillButton href={GITHUB_URL} variant="secondary">
-              <GithubMark className="h-4 w-4" />
-              View on GitHub
+            <PillButton href="/docs/how-it-works" variant="secondary">
+              How it works
             </PillButton>
           </div>
 
-          <div data-reveal className="mt-4">
-            <SetupPrompt />
-          </div>
-        </div>
-
-        <div data-reveal className="relative mt-16 w-full min-w-0 max-w-full">
-          <HeroPanel id="ladder" />
+          <p data-reveal className="mt-4 text-[14px] text-m-ink/56">
+            No account to create.
+          </p>
         </div>
       </div>
     </section>

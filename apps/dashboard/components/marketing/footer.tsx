@@ -5,9 +5,10 @@ import { AsciiHelix, GridCells } from '@/components/shared/ambient';
 import { AsciiNoise } from '@/components/shared/ascii-fields';
 import { cn } from '@/lib/utils';
 import pkg from '@/package.json';
-import { GITHUB_REPO, GITHUB_URL } from '@/lib/github-stars';
+import { FEATURES } from '@/lib/feature-copy';
+import { RELEASES_REPO, RELEASES_URL } from '@/lib/latest-release';
 
-/** WEBSITE.md §4.9. Three groups, hairline-divided rows, no Company column. */
+/** WEBSITE.md §4.9. Four groups, hairline-divided rows. */
 interface FooterLink {
   label: string;
   href: string;
@@ -15,52 +16,37 @@ interface FooterLink {
 
 const COLUMNS: { title: string; links: FooterLink[] }[] = [
   {
-    title: 'Capabilities',
-    links: [
-      { label: 'Web Scraping API', href: '/scrape' },
-      { label: 'Document Parsing API', href: '/parse' },
-      { label: 'Web Search API', href: '/search' },
-      { label: 'Web Crawling API', href: '/crawl' },
-      { label: 'Site Map', href: '/map' },
-      { label: 'Metadata API', href: '/metadata' },
-      { label: 'Field Enrichment', href: '/enrich' },
-      { label: 'Batch Scraping', href: '/batch' },
-      { label: 'Agent Schemas', href: '/agent' },
-      { label: 'Browser Interaction', href: '/interact' },
-      { label: 'Web Monitoring', href: '/monitor' },
-    ],
+    title: 'What it does',
+    links: FEATURES.map((f) => ({ label: f.name, href: f.route })),
   },
   {
-    title: 'Tools',
+    title: 'Get it',
     links: [
       { label: 'Get the app', href: '/download' },
+      { label: 'All releases', href: RELEASES_URL },
       { label: 'Canvas', href: '/canvas' },
-    ],
-  },
-  {
-    title: 'Documentation',
-    links: [
-      { label: 'Getting Started', href: '/docs' },
-      { label: 'API Reference', href: '/docs/api-reference' },
-      { label: 'Self-Host Guide', href: '/self-host' },
-      { label: 'SDKs', href: '/docs/sdks' },
-      { label: 'MCP · CLI · Skills', href: '/docs/agents' },
-    ],
-  },
-  {
-    title: 'Project',
-    links: [
-      { label: 'GitHub', href: GITHUB_URL },
-      { label: 'Licence (Apache-2.0)', href: `${GITHUB_URL}/blob/main/LICENSE` },
-      { label: 'Architecture', href: '/architecture' },
-      { label: 'Roadmap', href: '/architecture#roadmap' },
-      { label: 'Security', href: '/self-host#security' },
       { label: 'Status', href: '/status' },
     ],
   },
-  // A link is dropped rather than rendered href-less when its URL is blanked,
-  // which is how a self-host build removes a sibling app it does not run.
-].map((column) => ({ ...column, links: column.links.filter((l) => l.href) }));
+  {
+    title: 'Docs',
+    links: [
+      { label: 'Quickstart', href: '/docs/quickstart' },
+      { label: 'How It Works', href: '/docs/how-it-works' },
+      { label: 'Settings and Models', href: '/docs/settings-and-models' },
+      { label: 'Privacy and Data', href: '/docs/privacy-and-data' },
+      { label: 'Help', href: '/docs/help' },
+      { label: 'For Developers', href: '/docs' },
+    ],
+  },
+  {
+    title: 'More',
+    links: [
+      { label: 'Architecture', href: '/architecture' },
+      { label: 'Security', href: '/self-host#security' },
+    ],
+  },
+];
 
 export function Footer() {
   return (
@@ -83,17 +69,15 @@ export function Footer() {
           <div className="min-w-0 border-b border-m-border-faint p-8 lg:border-b-0 lg:border-r">
             <Logo className="h-10 w-auto text-m-ink/56" />
             <p className="mt-6 text-[20px] leading-tight tracking-tight text-m-ink/88">
-              A frontier utility hub you run yourself.
+              Reads and watches the web, on your own PC.
             </p>
-            <p className="mt-3 font-mono text-[12px] text-m-ink/56">
-              Apache-2.0 · self-hosted · bring your own keys
-            </p>
+            <p className="mt-3 font-mono text-[12px] text-m-ink/56">Windows · no account</p>
             <div className="mt-8 hidden min-w-0 overflow-hidden sm:block">
               <AsciiHelix orientation="horizontal" cols={44} rows={9} pitch={20} seed={21} />
             </div>
           </div>
 
-          <div className="grid min-w-0 grid-cols-1 sm:grid-cols-3 lg:contents">
+          <div className="grid min-w-0 grid-cols-1 sm:grid-cols-4 lg:contents">
             {COLUMNS.map((col, i) => (
               <div
                 key={col.title}
@@ -132,12 +116,12 @@ export function Footer() {
             </Link>
           </p>
           <Link
-            href={GITHUB_URL}
+            href={RELEASES_URL}
             className="flex items-center gap-2 font-mono text-[12px] text-m-ink/56 transition-colors duration-150 ease-out hover:text-m-ink"
           >
             <span>[ v{pkg.version} ]</span>
             <GithubMark className="h-[14px] w-[14px]" />
-            <span>{GITHUB_REPO}</span>
+            <span>{RELEASES_REPO}</span>
           </Link>
         </div>
       </div>

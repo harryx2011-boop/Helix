@@ -5,6 +5,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { INTERNAL_TICKET_HEADER, type InternalTickets } from '../core/auth.js';
 import { loadSpec, type OpenApiSpec } from './spec.js';
+import { slimManifest, type ManifestTool } from './slim.js';
 import { generateTools, needsConfirmation, planRequest, type HttpMethod, type ToolDef } from './tools.js';
 
 /**
@@ -31,8 +32,8 @@ export interface McpDeps {
   tickets?: InternalTickets;
   /**
    * Tool names to expose; undefined exposes every live operation. An MCP client
-   * loads every listed schema into the model's context on connect (the full
-   * list is ~120 KB), so an operator can trim it to the tools an agent needs.
+   * loads every listed schema into the model's context on connect, so an
+   * operator can trim the list to the tools an agent needs.
    */
   only?: readonly string[] | undefined;
 }
@@ -82,11 +83,14 @@ export async function registerMcp(app: FastifyInstance, deps: McpDeps = {}): Pro
     return tools;
   };
 
+  let manifest: ManifestTool[] | undefined;
+  const getManifest = (): ManifestTool[] => (manifest ??= slimManifest(getTools()));
+
   const buildServer = (request: FastifyRequest): Server => {
     const server = new Server({ name: 'helix', version }, { capabilities: { tools: {} } });
 
     server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: getTools().map((tool) => ({
+      tools: getManifest().map((tool) => ({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema as { type: 'object'; properties?: Record<string, unknown>; required?: string[] },

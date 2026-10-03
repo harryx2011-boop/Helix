@@ -5,6 +5,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { INTERNAL_TICKET_HEADER, type InternalTickets } from '../core/auth.js';
 import { loadSpec, type OpenApiSpec } from './spec.js';
+import { slimManifest, type ManifestTool } from './slim.js';
+import { pullImages, shapeResponse, type ImageBlock } from './shape.js';
 import { generateTools, needsConfirmation, planRequest, type HttpMethod, type ToolDef } from './tools.js';
 
 /**
@@ -31,8 +33,8 @@ export interface McpDeps {
   tickets?: InternalTickets;
   /**
    * Tool names to expose; undefined exposes every live operation. An MCP client
-   * loads every listed schema into the model's context on connect (the full
-   * list is ~120 KB), so an operator can trim it to the tools an agent needs.
+   * loads every listed schema into the model's context on connect, so an
+   * operator can trim the list to the tools an agent needs.
    */
   only?: readonly string[] | undefined;
 }
@@ -45,20 +47,24 @@ export function liveTools(app: FastifyInstance, spec: OpenApiSpec, prefix: strin
   return generateTools(spec, isLive);
 }
 
-function contentFromResponse(statusCode: number, payload: string): {
-  content: { type: 'text'; text: string }[];
+function contentFromResponse(statusCode: number, payload: string, shaped?: (body: unknown) => unknown): {
+  content: ({ type: 'text'; text: string } | ImageBlock)[];
   isError?: boolean;
 } {
   // Compact, not pretty-printed: the reader is a model, and indentation
   // carries nothing. Small on a scrape (one markdown string), larger on crawl
-  // and search pages that nest one object per result.
+  // and search pages that nest one object per result. A failure is passed
+  // through whole: the model needs every word of it.
   let text = payload;
+  const images: ImageBlock[] = [];
   try {
-    text = JSON.stringify(JSON.parse(payload));
+    const body: unknown = JSON.parse(payload);
+    text = JSON.stringify(statusCode < 400 ? pullImages(shaped ? shaped(body) : body, images) : body);
   } catch {
     // Not JSON (204, or a body the route streamed); return it verbatim.
   }
-  return statusCode >= 400 ? { content: [{ type: 'text', text }], isError: true } : { content: [{ type: 'text', text }] };
+  const content = [{ type: 'text' as const, text }, ...images];
+  return statusCode >= 400 ? { content, isError: true } : { content };
 }
 
 export async function registerMcp(app: FastifyInstance, deps: McpDeps = {}): Promise<void> {
@@ -82,11 +88,14 @@ export async function registerMcp(app: FastifyInstance, deps: McpDeps = {}): Pro
     return tools;
   };
 
+  let manifest: ManifestTool[] | undefined;
+  const getManifest = (): ManifestTool[] => (manifest ??= slimManifest(getTools()));
+
   const buildServer = (request: FastifyRequest): Server => {
     const server = new Server({ name: 'helix', version }, { capabilities: { tools: {} } });
 
     server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: getTools().map((tool) => ({
+      tools: getManifest().map((tool) => ({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema as { type: 'object'; properties?: Record<string, unknown>; required?: string[] },
@@ -129,7 +138,8 @@ export async function registerMcp(app: FastifyInstance, deps: McpDeps = {}): Pro
           headers,
           ...(planned.body !== undefined ? { payload: planned.body } : {}),
         });
-        return contentFromResponse(response.statusCode, response.body);
+        const args = call.params.arguments ?? {};
+        return contentFromResponse(response.statusCode, response.body, (body) => shapeResponse(tool.name, body, args));
       } finally {
         if (ticket) deps.tickets?.revoke(ticket);
       }

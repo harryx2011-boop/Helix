@@ -270,7 +270,6 @@ describe('/mcp over streamable HTTP', () => {
       expect(JSON.parse((ok.content as { text: string }[])[0]!.text)).toEqual({
         success: true,
         data: { markdown: '# hi' },
-        warnings: [],
       });
       expect(seen[0]).toEqual({ auth: 'Bearer helix-testkey', body: { url: 'https://example.com' } });
 

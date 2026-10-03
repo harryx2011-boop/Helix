@@ -1,0 +1,432 @@
+{
+  "helix_agent_schema": {
+    "properties": [
+      "hint",
+      "instruction",
+      "model",
+      "prompt",
+      "provider",
+      "urls"
+    ],
+    "required": [
+      "prompt"
+    ]
+  },
+  "helix_batch_scrape": {
+    "properties": [
+      "delay",
+      "extractor",
+      "formats",
+      "ignoreInvalidURLs",
+      "maxConcurrency",
+      "onlyMainContent",
+      "scrapeOptions",
+      "tier",
+      "urls",
+      "webhook"
+    ],
+    "required": [
+      "urls"
+    ]
+  },
+  "helix_cancel_crawl": {
+    "properties": [
+      "cursor",
+      "id"
+    ],
+    "required": [
+      "id"
+    ]
+  },
+  "helix_check_monitor": {
+    "properties": [
+      "id"
+    ],
+    "required": [
+      "id"
+    ]
+  },
+  "helix_crawl": {
+    "properties": [
+      "actions",
+      "allowExternal",
+      "allowExternalLinks",
+      "allowSubdomains",
+      "changesOnly",
+      "chunk",
+      "delay",
+      "destination",
+      "engine",
+      "estimate",
+      "excludeContent",
+      "excludePaths",
+      "excludeSelectors",
+      "extract",
+      "extractor",
+      "formats",
+      "headers",
+      "ignoreQueryParameters",
+      "includeContent",
+      "includePaths",
+      "includeSelectors",
+      "incremental",
+      "jsonOptions",
+      "limit",
+      "maxConcurrency",
+      "maxDepth",
+      "maxPagesPerPath",
+      "mobile",
+      "onlyMainContent",
+      "politeness",
+      "profile",
+      "proxy",
+      "respectRobots",
+      "resume",
+      "scrapeOptions",
+      "sitemap",
+      "tier",
+      "timeout",
+      "url",
+      "waitFor",
+      "webhook"
+    ],
+    "required": []
+  },
+  "helix_create_monitor": {
+    "properties": [
+      "diff",
+      "jsonOptions",
+      "schedule",
+      "scrapeOptions",
+      "sensitivity",
+      "trigger",
+      "url",
+      "webhook"
+    ],
+    "required": [
+      "schedule",
+      "url"
+    ]
+  },
+  "helix_diff": {
+    "properties": [
+      "after",
+      "before",
+      "granularity",
+      "mode"
+    ],
+    "required": [
+      "after",
+      "before"
+    ]
+  },
+  "helix_document": {
+    "properties": [
+      "file",
+      "formats",
+      "jsonOptions",
+      "ocr",
+      "op",
+      "timeout",
+      "url"
+    ],
+    "required": [
+      "op"
+    ]
+  },
+  "helix_enrich": {
+    "properties": [
+      "fields",
+      "maxSources",
+      "model",
+      "provider",
+      "subject",
+      "timeout",
+      "urls"
+    ],
+    "required": [
+      "fields",
+      "subject"
+    ]
+  },
+  "helix_estimate_crawl": {
+    "properties": [
+      "actions",
+      "allowExternal",
+      "allowExternalLinks",
+      "allowSubdomains",
+      "changesOnly",
+      "chunk",
+      "delay",
+      "destination",
+      "engine",
+      "estimate",
+      "excludeContent",
+      "excludePaths",
+      "excludeSelectors",
+      "extract",
+      "extractor",
+      "formats",
+      "headers",
+      "ignoreQueryParameters",
+      "includeContent",
+      "includePaths",
+      "includeSelectors",
+      "incremental",
+      "jsonOptions",
+      "limit",
+      "maxConcurrency",
+      "maxDepth",
+      "maxPagesPerPath",
+      "mobile",
+      "onlyMainContent",
+      "politeness",
+      "profile",
+      "proxy",
+      "respectRobots",
+      "resume",
+      "scrapeOptions",
+      "sitemap",
+      "tier",
+      "timeout",
+      "url",
+      "waitFor",
+      "webhook"
+    ],
+    "required": []
+  },
+  "helix_extract": {
+    "properties": [
+      "allowUngrounded",
+      "instruction",
+      "model",
+      "prompt",
+      "provider",
+      "schema",
+      "tier",
+      "timeout",
+      "urls"
+    ],
+    "required": [
+      "urls"
+    ]
+  },
+  "helix_get_batch_scrape": {
+    "properties": [
+      "cursor",
+      "id"
+    ],
+    "required": [
+      "id"
+    ]
+  },
+  "helix_get_crawl": {
+    "properties": [
+      "cursor",
+      "id"
+    ],
+    "required": [
+      "id"
+    ]
+  },
+  "helix_get_job": {
+    "properties": [
+      "cursor",
+      "id"
+    ],
+    "required": [
+      "id"
+    ]
+  },
+  "helix_get_job_cost": {
+    "properties": [
+      "id"
+    ],
+    "required": [
+      "id"
+    ]
+  },
+  "helix_get_job_errors": {
+    "properties": [
+      "id"
+    ],
+    "required": [
+      "id"
+    ]
+  },
+  "helix_get_job_ladder": {
+    "properties": [
+      "cursor",
+      "id"
+    ],
+    "required": [
+      "id"
+    ]
+  },
+  "helix_get_monitor": {
+    "properties": [
+      "id"
+    ],
+    "required": [
+      "id"
+    ]
+  },
+  "helix_health": {
+    "properties": [],
+    "required": []
+  },
+  "helix_interact": {
+    "properties": [
+      "actions",
+      "headers",
+      "keepSessionOpen",
+      "sessionId",
+      "url",
+      "viewport"
+    ],
+    "required": [
+      "actions"
+    ]
+  },
+  "helix_list_monitors": {
+    "properties": [],
+    "required": []
+  },
+  "helix_map": {
+    "properties": [
+      "ignoreQueryParameters",
+      "includeSubdomains",
+      "limit",
+      "search",
+      "sitemap",
+      "url"
+    ],
+    "required": [
+      "url"
+    ]
+  },
+  "helix_metadata_scan": {
+    "properties": [
+      "timeout",
+      "url"
+    ],
+    "required": [
+      "url"
+    ]
+  },
+  "helix_monitor_history": {
+    "properties": [
+      "cursor",
+      "id",
+      "limit"
+    ],
+    "required": [
+      "id"
+    ]
+  },
+  "helix_parse": {
+    "properties": [
+      "formats",
+      "jsonOptions",
+      "maxPages",
+      "ocr",
+      "tables",
+      "timeout",
+      "url"
+    ],
+    "required": [
+      "url"
+    ]
+  },
+  "helix_robots_check": {
+    "properties": [
+      "url",
+      "userAgent"
+    ],
+    "required": [
+      "url"
+    ]
+  },
+  "helix_scrape": {
+    "properties": [
+      "actions",
+      "chunk",
+      "engine",
+      "excludeSelectors",
+      "extract",
+      "extractor",
+      "formats",
+      "headers",
+      "includeSelectors",
+      "jsonOptions",
+      "mobile",
+      "onlyMainContent",
+      "profile",
+      "proxy",
+      "tier",
+      "timeout",
+      "url",
+      "waitFor"
+    ],
+    "required": [
+      "url"
+    ]
+  },
+  "helix_screenshot": {
+    "properties": [
+      "actions",
+      "blockAds",
+      "clip",
+      "darkMode",
+      "engine",
+      "format",
+      "fullPage",
+      "mobile",
+      "omitBackground",
+      "profile",
+      "proxy",
+      "quality",
+      "selector",
+      "tier",
+      "timeout",
+      "url",
+      "viewport",
+      "waitFor"
+    ],
+    "required": [
+      "url"
+    ]
+  },
+  "helix_search": {
+    "properties": [
+      "categories",
+      "country",
+      "excludeDomains",
+      "freshness",
+      "includeDomains",
+      "lang",
+      "limit",
+      "query",
+      "scrape",
+      "scrapeOptions",
+      "sources",
+      "tbs"
+    ],
+    "required": [
+      "query"
+    ]
+  },
+  "helix_vectors_search": {
+    "properties": [
+      "destination",
+      "filter",
+      "k",
+      "model",
+      "query"
+    ],
+    "required": [
+      "destination",
+      "query"
+    ]
+  }
+}

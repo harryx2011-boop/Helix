@@ -1867,7 +1867,7 @@ paths:
                 type: object
                 properties:
                   jobId: { type: string, format: uuid }
-                  next: { type: [string, 'null'], description: Path of the next page, or null on the last. }
+                  next: { type: [string, 'null'], description: 'Path of the next page, or null on the last.' }
                   data:
                     type: array
                     items:
@@ -2343,7 +2343,7 @@ paths:
                             type: object
                             properties:
                               day: { type: string, format: date }
-                              okPct: { type: [number, 'null'], description: Share of probes that succeeded, 0-100. Null when no samples were recorded. }
+                              okPct: { type: [number, 'null'], description: 'Share of probes that succeeded, 0-100. Null when no samples were recorded.' }
                               p50Ms: { type: [integer, 'null'], description: Median probe latency in milliseconds. Null when no samples were recorded. }
                               samples: { type: integer }
 
@@ -2600,7 +2600,7 @@ components:
       properties:
         since: { type: string, format: date-time }
         until: { type: string, format: date-time }
-        total: { type: integer, description: Requests in the window, including rate-limited ones. }
+        total: { type: integer, description: 'Requests in the window, including rate-limited ones.' }
         rateLimited: { type: integer, description: Requests the limiter answered with 429. }
         errors: { type: integer, description: Responses with a 4xx or 5xx status. }
         series:
@@ -3099,7 +3099,7 @@ components:
           type: object
           properties:
             pageCount: { type: integer }
-            charsExtracted: { type: integer, description: Characters read from a sample of pages, for judging the text layer. }
+            charsExtracted: { type: integer, description: 'Characters read from a sample of pages, for judging the text layer.' }
             needsOcr: { type: boolean }
             suspectedGarbledText: { type: boolean, description: 'The text layer decoded, but to characters that look like broken font encoding rather than prose.' }
             reason: { type: string, description: Human-readable justification for the verdict. }
@@ -3841,7 +3841,7 @@ components:
         reason:
           type: string
           enum: [parked_domain, placeholder_page, blocklisted_social, below_content_floor, unsafe_url, unreadable]
-        detail: { type: string, description: What the guardrail saw, in one line. }
+        detail: { type: string, description: 'What the guardrail saw, in one line.' }
 
     EnrichResponse:
       type: object
@@ -4126,8 +4126,8 @@ components:
           items: { type: integer, minimum: 0, maximum: 6 }
           default: [1, 2, 3, 4, 5]
           description: 0 = Sunday .. 6 = Saturday. Defaults to Monday-Friday.
-        startHour: { type: integer, minimum: 0, maximum: 23, description: Hour the window opens, inclusive. }
-        endHour: { type: integer, minimum: 1, maximum: 24, description: Hour the window closes, exclusive. }
+        startHour: { type: integer, minimum: 0, maximum: 23, description: 'Hour the window opens, inclusive.' }
+        endHour: { type: integer, minimum: 1, maximum: 24, description: 'Hour the window closes, exclusive.' }
 
     MonitorDiffOptions:
       type: object
@@ -4307,8 +4307,8 @@ components:
             type: object
             properties:
               path: { type: string, description: 'Dot-pathed for nested objects (`address.city`), index-pathed for arrays (`items.0.price`).' }
-              before: { description: Omitted, not null, when the field did not exist before. }
-              after: { description: Omitted, not null, when the field no longer exists. }
+              before: { description: 'Omitted, not null, when the field did not exist before.' }
+              after: { description: 'Omitted, not null, when the field no longer exists.' }
 
     MonitorHistoryEntry:
       type: object
@@ -4626,7 +4626,7 @@ components:
           properties:
             width: { type: integer, minimum: 200, maximum: 3840 }
             height: { type: integer, minimum: 200, maximum: 2160 }
-            dpr: { type: number, minimum: 1, maximum: 3, description: Device pixel ratio, for retina output. }
+            dpr: { type: number, minimum: 1, maximum: 3, description: 'Device pixel ratio, for retina output.' }
         darkMode:
           type: boolean
           default: false
@@ -4898,7 +4898,7 @@ components:
           description: The exact string to pass as `model` — Ollama's tag, or an OpenAI-compatible model id.
         parameterSize: { type: string, description: 'e.g. "8.0B", when the runtime reports it.' }
         quantization: { type: string, description: 'e.g. "Q4_K_M", when the runtime reports it.' }
-        sizeBytes: { type: integer, description: On-disk size, when the runtime reports it. }
+        sizeBytes: { type: integer, description: 'On-disk size, when the runtime reports it.' }
         capabilities:
           type: array
           items: { type: string }

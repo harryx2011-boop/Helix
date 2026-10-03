@@ -6,12 +6,12 @@
   "license": "Apache-2.0",
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
     "bundle": "node scripts/bundle.mjs",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "node ../../node_modules/typescript-native/bin/tsc -p tsconfig.json --noEmit",
     "lint": "eslint src"
   },
   "dependencies": {

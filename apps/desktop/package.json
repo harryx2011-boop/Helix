@@ -15,7 +15,7 @@
     "stage": "node scripts/stage.mjs",
     "package": "node scripts/build.mjs && node scripts/stage.mjs && electron-builder --win --x64",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit"
   },
   "dependencies": {
     "electron-updater": "^6.8.9"

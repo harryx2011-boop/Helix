@@ -55,6 +55,7 @@ SemVer; currently **2.2.0** in the root `package.json` — the one source of tru
 - **Parallelize by default.** Independent reads, greps, edits, and subagent dispatches go out in one message. Serialize only on real data dependencies.
 - **Surgical edits.** Fix the broken section; never regenerate untouched code. Every changed line traces to the request.
 - **Stage by name** (`git add path/to/file`, not `-A`), commit to `main`, **no AI co-author trailer**.
+- **Typecheck is TS 7 native (2026-10-03).** `pnpm -r typecheck` runs the root devDependency `typescript-native` (alias of `typescript@^7`, the Go port) as `node ../../node_modules/typescript-native/bin/tsc`; the dashboard passes `--noUncheckedSideEffectImports false`. `typescript` stays 5.9 for `next build`, typescript-eslint and the `build` emits: TS 7 has no stable programmatic API until 7.1, so revisit then. Median of 7 runs of `pnpm -r typecheck`: cold 8954 ms before, 2177 ms after; warm 3706 ms before, 1186 ms after; both green. The hoisted linker links the higher version to the root `node_modules/.bin/tsc`, so a bare `tsc` is TS 7 here: the `build` scripts in `apps/api`, `packages/cli` and `packages/sdk-ts` call `node ../../node_modules/typescript/bin/tsc` to keep emitting with 5.9.
 - Tokens: marketing and `/checks` = the Firecrawl-structured light violet `--m-*` theme under `data-surface="marketing"`; app = `DESIGN.md` dark. Fonts Geist + Geist Mono; radii pill/6px/8px; weights 400/450/500 only.
 
 ## Design skills

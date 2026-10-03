@@ -248,7 +248,8 @@ export function slimManifest(tools: readonly ManifestTool[], budget: Budget = DE
     }
 
     const description = briefTool(tool.description, budget.tool);
-    const pointer = dropped >= POINTER_PROSE ? ` Option notes: ${[...sources].join(', ')}.` : '';
+    const stop = /[.!?]$/.test(description) ? '' : '.';
+    const pointer = dropped >= POINTER_PROSE ? `${stop} Option notes: ${[...sources].join(', ')}.` : '';
     return { name: tool.name, description: description + pointer, inputSchema: hoistShared(trimmed) };
   });
 }

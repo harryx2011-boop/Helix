@@ -82,6 +82,12 @@ describe('slimManifest', () => {
     expect(slim.find((t) => t.name === 'helix_crawl')!.description).toContain('helix_scrape');
   });
 
+  it('ends the summary with a full stop before the pointer to the option notes', () => {
+    const pointed = slim.filter((t) => t.description.includes('Option notes:'));
+    expect(pointed.length).toBeGreaterThan(0);
+    for (const tool of pointed) expect(tool.description, tool.name).toMatch(/[.!?] Option notes: /);
+  });
+
   it('leaves a lone description untouched when it already fits', () => {
     const [only] = slimManifest([
       { name: 't', description: 'Short.', inputSchema: { type: 'object', properties: { a: { type: 'string', description: 'Fits.' } } } },

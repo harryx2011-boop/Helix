@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
   // Vercel's builder derives the client-reference-manifest name by stripping
   // only the last extension and fails the build on the file it cannot find.
   pageExtensions: ['tsx', 'ts'],
+  // `pnpm build` has already type-checked with tsgo (seconds, against Next's
+  // ~90 s tsc pass), so Next skips its own; a bare `next build` still checks.
+  typescript: { ignoreBuildErrors: process.env.npm_lifecycle_event === 'build' },
   // Self-host serves the static export with no image-optimization server, so
   // next/image must fall back to plain <img>. Hosted has a server and gets
   // real optimization; the two next/image call sites (setup-prompt agent

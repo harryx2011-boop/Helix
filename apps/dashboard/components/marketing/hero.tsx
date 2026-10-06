@@ -1,6 +1,7 @@
 import { GridCells, AsciiHelix } from '@/components/shared/ambient';
 import { AsciiFluid } from '@/components/shared/ascii-fluid';
 import { AsciiNoise } from '@/components/shared/ascii-fields';
+import { BrandMark } from '@/components/shared/brand-mark';
 import { PillButton } from '@/components/shared/pill-button';
 
 /** WEBSITE.md §4.2. H1, one sentence, one download button, over a hairline grid texture. */
@@ -74,6 +75,7 @@ export function Hero() {
 
           <div data-reveal className="mt-8 flex flex-col gap-3 sm:flex-row">
             <PillButton href="/download" variant="primary">
+              <BrandMark id="windows" mono />
               Download for Windows
             </PillButton>
             <PillButton href="/docs/how-it-works" variant="secondary">

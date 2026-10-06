@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
-import { ArrowRight, Lock, ShieldCheck, Server, Terminal, Users } from 'lucide-react';
+import { ArrowRight, Lock, ShieldCheck, Server, Users } from 'lucide-react';
 import { PillButton } from '@/components/shared/pill-button';
 import { CodePanel, CodeBlock } from '@/components/shared/code-panel';
 import { HeroField } from '@/components/marketing/hero-field';
 import { ScrollStrip } from '@/components/marketing/scroll-strip';
 import { BentoCard } from '@/components/marketing/bento';
 import { CanvasMark } from '@/components/marketing/canvas-mark';
+import { GithubMark } from '@/components/marketing/github-mark';
 import { CanvasInstall } from '@/components/marketing/canvas/install';
 import { CanvasSetupPrompt } from '@/components/marketing/canvas/setup-prompt';
 import {
@@ -182,7 +183,7 @@ export default function CanvasPage() {
               <Users className="h-3.5 w-3.5" aria-hidden /> Browse the skills
             </PillButton>
             <PillButton href={CANVAS_REPO.replace(/\.git$/, '')} variant="secondary">
-              <Terminal className="h-3.5 w-3.5" aria-hidden /> Source on GitHub
+              <GithubMark className="h-3.5 w-3.5" /> Source on GitHub
             </PillButton>
           </div>
         </div>

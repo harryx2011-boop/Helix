@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Segmented } from '@/components/shared/segmented';
+import { isBrandId } from '@/lib/brand-marks';
 import { CodePanel, CodeBlock } from '@/components/shared/code-panel';
 import {
   CANVAS_CLIENTS,
@@ -12,8 +13,12 @@ import {
   type CanvasOS,
 } from '@/lib/canvas';
 
-const OS_ITEMS = (Object.keys(OS_LABEL) as CanvasOS[]).map((id) => ({ id, label: OS_LABEL[id] }));
-const CLIENT_ITEMS = CANVAS_CLIENTS.map((c) => ({ id: c.id, label: c.label }));
+const OS_ITEMS = (Object.keys(OS_LABEL) as CanvasOS[]).map((id) => ({ id, label: OS_LABEL[id], brand: id }));
+const CLIENT_ITEMS = CANVAS_CLIENTS.map((c) => ({
+  id: c.id,
+  label: c.label,
+  ...(isBrandId(c.id) && { brand: c.id }),
+}));
 
 /**
  * The two-step install: pick an OS to get the server running, then pick a client

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Download } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { PillButton } from '@/components/shared/pill-button';
 import { HeroField } from '@/components/marketing/hero-field';
 import { InstallSequence } from '@/components/marketing/install-sequence';
 import { GithubMark } from '@/components/marketing/github-mark';
+import { BrandMark } from '@/components/shared/brand-mark';
 import { RELEASES_URL, fetchLatestInstaller, formatBytes } from '@/lib/latest-release';
 
 export const metadata: Metadata = {
@@ -39,7 +40,7 @@ export default async function DownloadPage() {
             {installer ? (
               <>
                 <PillButton href={installer.url} variant="primary">
-                  <Download className="h-4 w-4" aria-hidden />
+                  <BrandMark id="windows" mono />
                   Download for Windows
                 </PillButton>
                 <PillButton href={RELEASES_URL} variant="secondary">

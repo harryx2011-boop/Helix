@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { Check, ChevronDown, Copy, ExternalLink, FileText } from 'lucide-react';
+import { Check, ChevronDown, Copy, ExternalLink } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { GithubMark } from '@/components/marketing/github-mark';
 import { CANVAS_REPO, canvasSetupPrompt } from '@/lib/canvas';
 import { cn } from '@/lib/utils';
 
@@ -120,7 +121,7 @@ export function CanvasSetupPrompt({ className }: { className?: string }) {
           <DropdownMenuSeparator className="my-1.5 bg-m-border-muted" />
           <DropdownMenuItem asChild className="gap-2.5 rounded-card px-2 py-2 text-[14px] focus:bg-m-ink/[0.039] focus:text-m-ink">
             <a href={CANVAS_REPO.replace(/\.git$/, '')} target="_blank" rel="noreferrer">
-              <FileText className="h-[18px] w-[18px] text-m-ink/56" aria-hidden />
+              <GithubMark className="h-[18px] w-[18px] text-m-ink/56" />
               <span className="flex-1">Source on GitHub</span>
               <ExternalLink className="h-3.5 w-3.5 text-m-ink/40" aria-hidden />
             </a>

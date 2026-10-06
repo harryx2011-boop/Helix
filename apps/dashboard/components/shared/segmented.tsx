@@ -2,12 +2,16 @@
 
 import * as React from 'react';
 import type { LucideIcon } from 'lucide-react';
+import { BrandMark } from '@/components/shared/brand-mark';
+import type { BrandId } from '@/lib/brand-marks';
 import { cn } from '@/lib/utils';
 
 export interface SegmentedItem<T extends string> {
   id: T;
   label: string;
   icon?: LucideIcon;
+  /** A real brand mark, shown instead of an icon. */
+  brand?: BrandId;
   /** Items sharing a group get one mono label above them. */
   group?: string;
 }
@@ -88,6 +92,7 @@ export function Segmented<T extends string>({ items, value, onChange, className,
                       : 'text-m-ink/56 hover:text-m-ink/80',
                   )}
                 >
+                  {item.brand && <BrandMark id={item.brand} className={active ? '' : 'opacity-70'} />}
                   {Icon && <Icon className={cn('h-3 w-3', active ? 'text-violet' : 'text-m-ink/40')} aria-hidden />}
                   {item.label}
                 </button>

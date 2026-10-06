@@ -104,14 +104,32 @@ interface Signal {
   name: string;
   weight: number;
   reason: FailureReason;
-  test: (r: ResponseFacts) => boolean;
+  test: (r: ScanFacts) => boolean;
+}
+
+/** ResponseFacts plus the body lowercased once, and whether the page is interstitial-shaped. */
+interface ScanFacts extends ResponseFacts {
+  lower: string;
+  interstitial: boolean;
 }
 
 const hasHeader = (r: ResponseFacts, name: string): boolean =>
   Object.keys(r.headers).some((h) => h.toLowerCase() === name.toLowerCase());
 
-const bodyIncludes = (r: ResponseFacts, needle: string): boolean =>
-  r.body.toLowerCase().includes(needle.toLowerCase());
+// Body markers only count on a page shaped like an interstitial: an error status, or
+// little real content. A full page that embeds Turnstile, loads Cloudflare's JS
+// detections or names a vendor in prose is content, not a block.
+const bodyIncludes = (r: ScanFacts, needle: string): boolean =>
+  r.interstitial && r.lower.includes(needle);
+
+const INTERSTITIAL_TEXT_CHARS = 1000;
+const INTERSTITIAL_BODY_BYTES = 32_768;
+
+const isInterstitialShaped = (r: ResponseFacts): boolean =>
+  r.statusCode >= 400 ||
+  (r.extractedText !== undefined
+    ? r.extractedText.trim().length < INTERSTITIAL_TEXT_CHARS
+    : r.body.length < INTERSTITIAL_BODY_BYTES);
 
 /**
  * Vendor fingerprints are deliberately specific. Matching on a bare mention of
@@ -149,9 +167,12 @@ const SIGNALS: Signal[] = [
     name: 'cloudflare-challenge',
     weight: 0.95,
     reason: 'challenge',
+    // Not the bare "challenge-platform": ordinary pages load
+    // /cdn-cgi/challenge-platform/scripts/jsd/main.js; only the interstitial sets _cf_chl_opt.
     test: (r) =>
       bodyIncludes(r, 'cf-browser-verification') ||
-      bodyIncludes(r, 'challenge-platform') ||
+      bodyIncludes(r, '_cf_chl_opt') ||
+      bodyIncludes(r, '<title>just a moment...</title>') ||
       bodyIncludes(r, 'checking your browser before accessing'),
   },
   {
@@ -165,8 +186,9 @@ const SIGNALS: Signal[] = [
     name: 'datadome',
     weight: 0.95,
     reason: 'challenge',
+    // DataDome sets x-datadome on every response it lets through, so the header alone is not a block.
     test: (r) =>
-      hasHeader(r, 'x-datadome') ||
+      (r.interstitial && hasHeader(r, 'x-datadome')) ||
       bodyIncludes(r, 'datadome') ||
       bodyIncludes(r, 'geo.captcha-delivery.com'),
   },
@@ -246,9 +268,12 @@ const SIGNALS: Signal[] = [
 const BLOCK_THRESHOLD = 0.5;
 
 export function detectBlock(response: ResponseFacts): BlockVerdict {
+  const interstitial = isInterstitialShaped(response);
+  // Lowercase once, and only when a body marker can count: a full 1 MB page skips it.
+  const scan: ScanFacts = { ...response, interstitial, lower: interstitial ? response.body.toLowerCase() : '' };
   const fired = SIGNALS.filter((s) => {
     try {
-      return s.test(response);
+      return s.test(scan);
     } catch {
       return false;
     }

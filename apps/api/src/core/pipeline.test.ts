@@ -512,6 +512,26 @@ describe('runPipeline � empty extraction on a server-rendered page', () => {
     expect(result.content.markdown).toBe('');
   });
 
+  it('stops at the first tier when the domain does not resolve', async () => {
+    // A heavier tier resolves the same name the same way; walking four tiers on
+    // NXDOMAIN only burns a browser launch and the full timeout per tier.
+    const fetchClient = {
+      fetch: vi.fn(async () => ({ success: false, error: 'dns error: failed to lookup address information', timingMs: 5 })),
+      health: vi.fn(async () => true),
+    } as unknown as FetchClient;
+    const browserPool = browserPoolReturning(ARTICLE);
+    const result = await runPipeline(
+      { url: 'https://no-such-host.invalid', formats: ['markdown'] },
+      deps({ fetchClient, extractClient: extractClientReturning(''), browserPool }),
+    );
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.reason).toBe('dns');
+    expect(result.tiersAttempted).toEqual(['plain']);
+    expect(browserPool.render).not.toHaveBeenCalled();
+  });
+
   it('does not escalate when no requested format needs extracted text', async () => {
     // Extraction still runs for metadata, so its empty text must not drive a
     // browser render for a caller who only asked for the raw bytes.

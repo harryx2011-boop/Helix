@@ -73,6 +73,30 @@ describe('detectBlock', () => {
     expect(verdict.confidence).toBeLessThan(0.5);
   });
 
+  it('does not flag a full page that carries Cloudflare bot-management scripts or a vendor name', () => {
+    // Cloudflare injects /cdn-cgi/challenge-platform/scripts/jsd/main.js into ordinary
+    // pages, sites embed Turnstile on login forms, and READMEs name DataDome. Probed
+    // live 2026-10-05: discord.com, medium.com and github READMEs were all flagged,
+    // walking every tier and failing pages the tls tier had already fetched.
+    const prose = 'Ordinary article text about scraping tools and their trade-offs. '.repeat(40);
+    for (const marker of [
+      '<script src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"></script>',
+      '<div class="cf-turnstile" data-sitekey="x"></div>',
+      '<p>Works against DataDome and PerimeterX. Access denied errors are retried.</p>',
+    ]) {
+      const body = `<html><body><article>${prose}</article>${marker}</body></html>`;
+      expect(detectBlock(facts({ body, extractedText: prose })).blocked).toBe(false);
+    }
+  });
+
+  it('still flags the Cloudflare interstitial by its challenge markers', () => {
+    const body =
+      '<html><head><title>Just a moment...</title></head><body><script>window._cf_chl_opt={cvId:"3"};</script></body></html>';
+    const verdict = detectBlock(facts({ statusCode: 403, body }));
+    expect(verdict.blocked).toBe(true);
+    expect(verdict.detectedBy).toContain('cloudflare-challenge');
+  });
+
   it('names every signal that fired, for debuggability', () => {
     const verdict = detectBlock(
       facts({

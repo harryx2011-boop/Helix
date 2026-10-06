@@ -288,12 +288,12 @@ export async function runPipeline(
     last = attempt;
 
     if (attempt.transportError) {
-      const decision = shouldEscalate({
-        currentTier: tier,
-        response: attempt.facts,
-        capabilities,
-        maxTier,
-      });
+      const transportReason = classifyTransportError(attempt.transportError);
+      // A name that does not resolve fails the same way on every tier.
+      const decision =
+        transportReason === 'dns'
+          ? { escalate: false as const, nextTier: undefined }
+          : shouldEscalate({ currentTier: tier, response: attempt.facts, capabilities, maxTier });
       if (decision.escalate && decision.nextTier) {
         deps.logger?.debug(
           { url: options.url, from: tier, to: decision.nextTier, reason: attempt.transportError },
@@ -303,7 +303,6 @@ export async function runPipeline(
         tier = decision.nextTier;
         continue;
       }
-      const transportReason = classifyTransportError(attempt.transportError);
       return {
         success: false,
         url: options.url,

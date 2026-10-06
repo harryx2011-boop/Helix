@@ -2,6 +2,48 @@
 
 > **Build loop (2026-10-06, no version bump).** `apps/api` typecheck (tsgo) now writes `.native.tsbuildinfo`: it shared `.tsbuildinfo` with the tsc 5.9 build, each overwrote the other's format, and a build after a typecheck re-checked from scratch (measured: build after typecheck 8.4-15.1 s to 2.8-5.2 s, typecheck after build 3.6-8.6 s to 0.8-2.0 s). `apps/api` no longer emits declarations or source maps: it is an app, nothing imports its `.d.ts`, and Docker runs `node dist/index.js` without `--enable-source-maps`. The dashboard's `pnpm build` runs `next typegen` and the tsgo typecheck first, so Next skips its own tsc pass (`next.config.ts` sets `ignoreBuildErrors` only when `npm_lifecycle_event === 'build'`; a bare `next build`, as Vercel may run, still checks). In `.next/trace` the type phase went from 91 s to 1.5 s. The machine was heavily loaded while measuring and whole `next build` wall times swung from 333 s to 1,104 s, so only phase and warm-loop timings are claimed.
 
+> **2.3.0 — anti-bot pass 2 and search backend (2026-10-06, `42c68ef`, `10e8d60`, unpushed, untagged).** The work in `SUITE-PLAN.md` Phase 1 plus Harry's five-phase anti-bot list. Benchmark: `apps/api/scripts/bench-scrape.mjs` (32 fixed URLs, 4 serial runs, per-URL medians; results `research/research_notes/Helix anti bot scraping 2026/bench-*.json`). "Useful" success counts only a success with at least 100 bytes of markdown, because reddit and httpbin's 404 succeed with empty pages.
+>
+> | Phase | Useful success | Walled with content | p50 / p95 ms | Sum of medians ms |
+> |---|---|---|---|---|
+> | Baseline (HEAD `8cbc2c9`) | 69.8% | 2/10 | 800 / 5517 | 217,718 (37,715 without reddit) |
+> | 2 Ladder | 69.8% | 2/10 | 511 / 4397 | 48,408 (32,587) |
+> | 4 Browser stealth | 75.9% | 4/10 | 644 / 3569 | 33,158 (32,854) |
+> | 5 Memory | 75.9% | 4/10 | 538 / 2407 | 25,199 |
+> | 3 helix-fetch 1.7.0 (final, all phases) | 75.9% | 4/10 | 417 / 2623 | 22,462 (22,216) |
+>
+> By URL class, baseline to final sum of medians: static and GitHub 13.6 s to 7.6 s, SPA 14.3 s to 7.5 s, walled 188.1 s to 6.4 s, the failure set 1.8 s to 1.0 s. Network variance is visible: static pages got faster between Phases 4 and 5 (11.6 s to 8.4 s), and no change in those phases touches them. Phases 2 and 4 were measured on a second API from a clean worktree (port 7420) so each phase is isolated. Phase 5 was measured on the live API, with only tier memory active, because the old fetch binary sent no `set_cookies`. Walled-site results move with Cloudflare's view of this IP: npmjs failed at tls in the baseline and passed at tls in Phase 4 without a fetch change.
+> - **Ladder (`core/escalation.ts`, `core/pipeline.ts`):**
+>   - `auto` starts at `tls`; `plain` is only reachable as an explicit tier.
+>   - A short complete page stops. The extractor must have found nearly all the visible text, with no empty root, no "enable JavaScript" text and no script-dominated body. example.com went from 474 ms at chromium to 94 ms at tls.
+>   - Disabled engines are skipped (`BrowserPool.disabledEngines()`).
+>   - One `timeout` is shared across tiers, and a tier that overruns its budget by 1 s counts as timed out. Before this, reddit hung the API for the full 180 s client timeout.
+>   - `Retry-After` is waited out when it fits within 10 s and the budget; a longer one ends the request with `retryAfterSeconds`.
+>   - A blocked 4xx skips the extract call.
+> - **Browser (`browser/pool.ts`, `profiles.ts`, `engines.ts`):**
+>   - The UA is the profile's, or the browser's own with HeadlessChrome changed to Chrome, and client hints match it through CDP. Accept-Language is sent.
+>   - `--disable-blink-features=AutomationControlled`; `window.chrome` and Chrome's 5 PDF plugins exist on every render.
+>   - Overrides print `[native code]`.
+>   - Canvas noise goes on a scratch copy, so every read returns the same value. The keyed HMAC seed is unchanged.
+>   - Images, fonts and media are blocked unless the host has blocked this request or a recent one, or a screenshot or pdf is wanted.
+>   - The reddit hang: `page.close()` waited forever when a page navigated while closing (`Target.closeTarget` with no detach). Cleanup now closes the context, bounded by the budget, and a disconnected browser leaves the pool.
+>   - Context reuse was measured and skipped: page creation is the cost, about 80 ms either way.
+>   - Patchright: evaluated, not adopted. Its init-script routing would have to be re-proven against the private-address guard, and `executeJavascript` would lose page globals. The cheaper step is `channel: 'chromium'` (full build), which conflicts with DESKTOP-PLAN D14's headless-shell-only bundle. That is Harry's call.
+> - **Memory:**
+>   - `core/tier-memory.ts`: a per-host floor learned only from block-driven climbs. Process-local, 30 minutes.
+>   - `core/cookie-jar.ts`: Set-Cookie replayed only to the same host + proxy + tier + profile; a caller's `Cookie` header wins.
+>   - Crawl session jars are filled from `setCookies` (`crawl/worker.ts`).
+>   - `core/scrape-cache.ts`: `POST /v1/scrape` `maxAge` (ms) serves a cached result with `metadata.fromCache: true`. 0 by default, never for actions. Added to `openapi.yaml` and `tool-surface.json`.
+> - **helix-fetch (`apps/fetch`):**
+>   - Accept-Encoding gzip, deflate, br and zstd, with decoding.
+>   - A client cached per (profile, proxy, allow_private), cleared at 64 keys.
+>   - A 10 MiB decoded body cap (`HELIX_FETCH_MAX_BODY_BYTES`).
+>   - Chrome and Edge identities present Windows.
+>   - Every Set-Cookie in `set_cookies`.
+>   - Transport errors carry their cause chain, so a missing host reads `dns error` and stops at the first tier.
+> - **Search:** SearXNG runs in WSL Ubuntu Docker as container `helix-searxng` on 127.0.0.1:7440. `~/.claude/hooks/helix-ensure.js` starts it through `hooks/helix-searxng.sh` and passes `SEARXNG_URL` to the dev API. `helix_search` over MCP returned web results and image results with `imageUrl`. Brave, DuckDuckGo and Google rate-limit or captcha this IP; Bing, Google CSE, Bing Images and Wikimedia Commons answer. The desktop app has no SearXNG yet.
+> - **Still failing:** airbnb, g2 (both URLs), zillow and indeed: Cloudflare, DataDome and PerimeterX walls at chromium. reddit returns its "Prove your humanity" page as an empty success, because no block signal recognises it.
+
 > **Anti-bot pass 1 (2026-10-05, commits `ee184a6`, line-ending fix after).** Block detection counts body markers only on interstitial-shaped responses: status 400+, under 1,000 chars of extracted text, or under 32 KB of HTML before extraction. The bare `challenge-platform` match is replaced by `_cf_chl_opt` and the "Just a moment..." title, and `x-datadome` alone no longer counts. Before the fix, discord.com, medium.com and cloudflare.com (HTTP 200 on the tls tier) were flagged, so every tier ran and the scrape failed. The body is lowercased once, and only when a marker can count; before, it was lowercased per signal, about 76 ms per call on 1.3 MB. A DNS failure now stops at the first tier. Notes: `research/research_notes/Helix anti bot scraping 2026/`. **Next (SUITE-PLAN Phase 1 overlap):**
 > 1. Start `auto` at `tls`: plain sends no User-Agent and a non-browser JA4, so npmjs returns 403. Eight `pipeline.test.ts` cases assume plain.
 > 2. `Accept-Encoding` and compression in helix-fetch.

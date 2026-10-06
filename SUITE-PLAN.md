@@ -68,6 +68,12 @@ Trims, ranked by tokens saved per session:
 
 Total achievable: roughly 10k of the 61k start budget (about 16%).
 
+Status 2026-10-06 (Harry approved trims 1-3; MCP servers kept):
+
+- Trim 1 done: `PROJECTS.md` 10481 to 2967 characters; the removed text is in `reference/projects-detail.md` (harness commit `33bdfda`).
+- Trim 3 done: `hooks/caveman-activate.js` and `hooks/ponytail-activate.js` emit one line, for example `CAVEMAN MODE ACTIVE — level: lite. Full rules: mcp__caveman__caveman_rules`. The output fell from 5139 and 5231 characters to 76 and 79. The subagent hooks still inject the full rules, because most custom agents cannot call MCP tools.
+- Trim 2 premise was wrong: all 53 `SKILL.md` files under `.claude/skills/` have a valid `description:`. The bare names come from Claude Code's listing budget. That budget is context window × 4 × `skillListingBudgetFraction` (default 0.01) characters, or `SLASH_COMMAND_TOOL_CHAR_BUDGET`. Skills over the budget list by name only, so writing descriptions saves nothing. The real saving is moving rarely used design skills out of `.claude/skills/`. The duplicates `mcp-builder` and `skill-creator` come from `~/.claude/skills/` and the `anthropic-skills` plugin, not from this repo.
+
 ## Feature phases
 
 Order: the ladder fixes and a backend first, because three features depend on search and every feature
@@ -95,7 +101,23 @@ p50/p95 latency, tier reached, bytes and success rate, built on `apps/api/script
 7. Anti-bot: real captured profiles beyond the two in `packages/profiles/definitions/` (no fabricated JA4;
    see the dead-ends memory), and camoufox as an automatic last tier when it is installed.
 
+**Status 2026-10-06: items 1, 2, 3 and 5 done; items 4 and 6 open; item 7 partly done.** Evidence: `context.md` "Anti-bot pass 2". The benchmark baseline-to-Phase-5 numbers moved:
+
+- useful success: 69.8% to 75.9%
+- p50: 800 ms to 538 ms
+- p95: 5517 ms to 2407 ms
+- sum of medians: 217.7 s to 25.2 s, mostly the end of a 180 s reddit hang; 37.7 s to 25.2 s without it
+
+What remains:
+
+- Item 4 (one CDP connection for lightpanda, camoufox and remote CDP) is not built.
+- Item 6 (parallel `/extract`, per-host limits) is not built.
+- Item 5's `If-None-Match` on crawl re-fetches is not built; the scrape `maxAge` cache is.
+- Item 7: the browser tier is hardened (UA and client hints, webdriver, `window.chrome`, plugins, native `toString`, stable canvas). Camoufox as an automatic last tier and new captured profiles are not done.
+
 ### Phase 2: search backend
+
+**Status 2026-10-06: done for the dev stack.** The container `helix-searxng` runs on 127.0.0.1:7440 in WSL Docker. `helix-ensure.js` starts it and sets `SEARXNG_URL` (harness commit `6af2ed4`). `helix_search` over MCP returned 3 web and 3 image results for "red panda", with `imageUrl` set. The desktop app's settings do not carry `SEARXNG_URL` yet.
 
 SearXNG in WSL Ubuntu Docker (`wsl.exe -d Ubuntu docker`), JSON output enabled, `SEARXNG_URL` in
 `apps/api/.env` and in the desktop app's settings. `SearxngProvider` already exists

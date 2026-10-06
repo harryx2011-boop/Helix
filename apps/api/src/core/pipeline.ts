@@ -4,11 +4,14 @@ import {
   minimumViableTier,
   shouldEscalate,
   TIER_ORDER,
+  tierSupports,
   type Capabilities,
   type Tier,
 } from './escalation.js';
 import { classifyTransportError, detectBlock, type FailureReason, type ResponseFacts } from './block-detection.js';
 import { resolveFavicon } from './favicon.js';
+import type { TierMemory } from './tier-memory.js';
+import type { CookieJar } from './cookie-jar.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient, ExtractResult } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
@@ -85,6 +88,8 @@ export interface PipelineSuccess {
   finalUrl?: string | undefined;
   /** Format, byte count and any warning from the screenshot. Absent when none was taken. */
   screenshotResult?: ScreenshotResult | undefined;
+  /** Every `Set-Cookie` the serving tier received, for a crawl session's jar. */
+  setCookies?: string[] | undefined;
   /** Validators from the response, so a later crawl can ask "has this changed?". */
   etag?: string | undefined;
   lastModified?: string | undefined;
@@ -120,6 +125,10 @@ export interface PipelineDeps {
   extractClient: ExtractClient;
   browserPool?: BrowserPool | undefined;
   logger?: Log | undefined;
+  /** Per-host floor learned from blocks; `auto` requests start there. */
+  tierMemory?: TierMemory | undefined;
+  /** Cookies hosts set, replayed to the same identity on the fetch tiers. */
+  cookieJar?: CookieJar | undefined;
 }
 
 function capabilitiesFor(options: PipelineOptions): Capabilities {
@@ -160,6 +169,44 @@ function retryAfterSeconds(headers: Record<string, string>): number | undefined 
   return seconds > 0 && seconds <= 86_400 ? seconds : undefined;
 }
 
+/** The longest `Retry-After` the ladder waits out before its next tier; longer ends the request. */
+const MAX_RETRY_AFTER_WAIT_MS = 10_000;
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
+  });
+}
+
+/** How long past its budget a tier may run before the ladder stops waiting for it. */
+const TIER_OVERRUN_GRACE_MS = 1_000;
+
+/**
+ * A tier that ignores its own timeout (a render stuck past navigation) must not
+ * hold the caller: past budget plus grace, the attempt counts as timed out. The
+ * tier keeps running in the background until its own cleanup ends it.
+ */
+async function withinBudget(attempt: Promise<TierAttempt>, tier: Tier, budgetMs: number | undefined): Promise<TierAttempt> {
+  if (budgetMs === undefined) return attempt;
+  let timer: NodeJS.Timeout | undefined;
+  const overrun = new Promise<TierAttempt>((resolve) => {
+    timer = setTimeout(
+      () =>
+        resolve({
+          facts: { statusCode: 0, headers: {}, body: '' },
+          transportError: `tier ${tier} timed out: no answer within its ${budgetMs} ms budget`,
+        }),
+      budgetMs + TIER_OVERRUN_GRACE_MS,
+    );
+  });
+  try {
+    return await Promise.race([attempt, overrun]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function abortDetail(signal: AbortSignal): string {
   return signal.reason instanceof Error ? signal.reason.message : 'the read was cancelled';
 }
@@ -173,24 +220,33 @@ interface TierAttempt {
   screenshot?: string | undefined;
   screenshotResult?: ScreenshotResult | undefined;
   transportError?: string | undefined;
+  setCookies?: string[] | undefined;
 }
 
 async function attemptTier(
   tier: Tier,
   options: PipelineOptions,
   deps: PipelineDeps,
+  /** The host has blocked this request or a recent one; render it with every asset. */
+  hostIsWalled = false,
 ): Promise<TierAttempt> {
   if (tier === 'plain' || tier === 'tls') {
+    // The identity is the caller's profile; with none, helix-fetch's default,
+    // which is fixed per tier.
+    const identity = { url: options.url, proxy: options.proxy, tier, profile: options.profile };
+    const callerCookie = Object.keys(options.headers ?? {}).some((h) => h.toLowerCase() === 'cookie');
+    const jarCookie = callerCookie ? undefined : deps.cookieJar?.header(identity);
     const result = await deps.fetchClient.fetch({
       url: options.url,
       impersonate: tier === 'tls',
       profile: options.profile,
       proxy: options.proxy,
-      headers: options.headers,
+      headers: jarCookie ? { ...options.headers, Cookie: jarCookie } : options.headers,
       timeoutMs: options.timeout,
       allowPrivate: options.allowPrivate,
       signal: options.signal,
     });
+    deps.cookieJar?.store(identity, result.setCookies);
 
     return {
       facts: {
@@ -198,6 +254,7 @@ async function attemptTier(
         headers: result.headers,
         body: result.body ?? '',
       },
+      setCookies: result.setCookies,
       profileUsed: result.profileUsed,
       transportError: result.error,
     };
@@ -222,6 +279,10 @@ async function attemptTier(
     screenshotOptions: options.screenshotOptions,
     viewport: options.viewport,
     blockAds: options.blockAds,
+    // Skipping images, fonts and media saves most of a render's transfer; a bot
+    // wall can read the missing loads as a tell, so walled hosts get them all.
+    blockResources: !hostIsWalled,
+    pdf: options.formats.includes('pdf'),
     darkMode: options.darkMode,
     actions: options.actions,
     mobile: options.mobile,
@@ -252,8 +313,31 @@ export async function runPipeline(
   options: PipelineOptions,
   deps: PipelineDeps,
 ): Promise<PipelineResult> {
+  const result = await walkLadder(options, deps);
+  const memory = deps.tierMemory;
+  if (!memory || (options.tier && options.tier !== 'auto')) return result;
+
+  const floor = memory.floor(options.url);
+  if (result.success) {
+    const climbedPastBlock = result.escalations.some((e) => e.reason.startsWith('blocked'));
+    if (climbedPastBlock || result.tier === floor) memory.learn(options.url, result.tier);
+  } else if (floor !== undefined && result.tiersAttempted[0] === floor) {
+    memory.forget(options.url);
+  }
+  return result;
+}
+
+async function walkLadder(
+  options: PipelineOptions,
+  deps: PipelineDeps,
+): Promise<PipelineResult> {
   const started = Date.now();
-  const capabilities = capabilitiesFor(options);
+  // One budget for the whole ladder: a 30 s request used to take up to 4 x 30 s.
+  const deadline = options.timeout !== undefined ? started + options.timeout : undefined;
+  const capabilities: Capabilities = {
+    ...capabilitiesFor(options),
+    unavailable: deps.browserPool?.disabledEngines?.() ?? [],
+  };
   const wantsExtractedText = options.formats.some((f) => EXTRACTED_TEXT_FORMATS.has(f));
   const tiersAttempted: Tier[] = [];
   const escalations: Escalation[] = [];
@@ -264,6 +348,13 @@ export async function runPipeline(
   // the ladder up to chromium but never into camoufox on its own.
   const maxTier: Tier = explicit ?? DEFAULT_MAX_TIER;
   let tier: Tier = explicit ?? minimumViableTier(capabilities);
+  const learned = explicit ? undefined : deps.tierMemory?.floor(options.url);
+  const startsFromMemory =
+    learned !== undefined &&
+    TIER_ORDER.indexOf(learned) > TIER_ORDER.indexOf(tier) &&
+    TIER_ORDER.indexOf(learned) <= TIER_ORDER.indexOf(maxTier) &&
+    tierSupports(learned, capabilities);
+  if (startsFromMemory) tier = learned;
 
   let last: TierAttempt | undefined;
 
@@ -283,8 +374,32 @@ export async function runPipeline(
       };
     }
 
+    const remaining = deadline === undefined ? undefined : deadline - Date.now();
+    if (remaining !== undefined && remaining <= 0) {
+      return {
+        success: false,
+        url: options.url,
+        reason: 'timeout',
+        detail: `the ${options.timeout} ms timeout ran out before tier ${tier}`,
+        detectedBy: [],
+        tier,
+        tiersAttempted,
+        escalationAvailable: true,
+        timingMs: Date.now() - started,
+      };
+    }
+
     tiersAttempted.push(tier);
-    const attempt = await attemptTier(tier, options, deps);
+    const attempt = await withinBudget(
+      attemptTier(
+        tier,
+        remaining === undefined ? options : { ...options, timeout: remaining },
+        deps,
+        startsFromMemory || escalations.some((e) => e.reason.startsWith('blocked')),
+      ),
+      tier,
+      remaining,
+    );
     last = attempt;
 
     if (attempt.transportError) {
@@ -318,10 +433,14 @@ export async function runPipeline(
       };
     }
 
+    // An error status makes the page interstitial-shaped whatever its text, so
+    // extraction could only add signals: a block found here skips the extract hop.
+    const early = attempt.facts.statusCode >= 400 ? detectBlock(attempt.facts) : undefined;
+
     // Extract before deciding, so the classifier can use extracted length as a
     // corroborating signal and so a success needs no second fetch.
     let extracted: ExtractResult | undefined;
-    if (!options.skipExtraction && attempt.facts.body.length > 0) {
+    if (!options.skipExtraction && attempt.facts.body.length > 0 && !early?.blocked) {
       try {
         extracted = await deps.extractClient.extract({
           html: attempt.facts.body,
@@ -337,7 +456,7 @@ export async function runPipeline(
       }
     }
 
-    const verdict = detectBlock(attempt.facts);
+    const verdict = early?.blocked ? early : detectBlock(attempt.facts);
 
     if (!verdict.blocked && (extracted || options.skipExtraction)) {
       const decision = shouldEscalate({
@@ -377,6 +496,7 @@ export async function runPipeline(
           ...(attempt.warnings && attempt.warnings.length > 0 ? { warnings: attempt.warnings } : {}),
           statusCode: attempt.facts.statusCode,
           finalUrl: attempt.finalUrl,
+          ...(attempt.setCookies?.length ? { setCookies: attempt.setCookies } : {}),
           etag: attempt.facts.headers['etag'],
           lastModified: attempt.facts.headers['last-modified'],
           timingMs: Date.now() - started,
@@ -402,7 +522,15 @@ export async function runPipeline(
       maxTier,
     });
 
-    if (decision.escalate && decision.nextTier) {
+    // A host that states a cooldown gets it before the next tier hits it again;
+    // one that asks for longer than the budget allows ends the request here.
+    const retryAfter = verdict.blocked ? retryAfterSeconds(attempt.facts.headers) : undefined;
+    const waitMs = retryAfter === undefined ? 0 : retryAfter * 1000;
+    const waitFits =
+      waitMs <= Math.min(MAX_RETRY_AFTER_WAIT_MS, deadline === undefined ? Infinity : deadline - Date.now());
+
+    if (decision.escalate && decision.nextTier && waitFits) {
+      if (waitMs > 0) await sleep(waitMs, options.signal);
       deps.logger?.debug(
         { url: options.url, from: tier, to: decision.nextTier, reason: decision.reason },
         'escalating after block or empty result',

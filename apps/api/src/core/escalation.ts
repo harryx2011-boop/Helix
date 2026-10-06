@@ -47,6 +47,8 @@ export interface Capabilities {
   waitFor?: number;
   /** The request must leave through a proxy. */
   proxy?: boolean;
+  /** Tiers this instance cannot run (a disabled lightpanda or camoufox). */
+  unavailable?: readonly Tier[];
 }
 
 export interface EscalationDecision {
@@ -61,7 +63,9 @@ export interface EscalationDecision {
  * over CDP is honoured there, and a fetch that quietly leaves from the
  * instance's own address is worse than one tier fewer.
  */
-function tierSupports(tier: Tier, caps: Capabilities): boolean {
+export function tierSupports(tier: Tier, caps: Capabilities): boolean {
+  if (caps.unavailable?.includes(tier)) return false;
+
   const needsRealBrowser =
     caps.screenshot || caps.actions || caps.visualLayout || caps.pdfRender;
   if (needsRealBrowser) return tier === 'chromium' || tier === 'camoufox';
@@ -77,6 +81,10 @@ function tierSupports(tier: Tier, caps: Capabilities): boolean {
 /**
  * The lowest tier that can satisfy the request at all. Capability requirements
  * are known up front, so there is no reason to start below them.
+ *
+ * Never `plain`: it sends no User-Agent and a non-browser JA4, which a WAF scores
+ * as a bot before `tls` runs, for the same round trip. `plain` stays reachable
+ * as an explicit tier.
  */
 export function minimumViableTier(caps: Capabilities): Tier {
   // Bounded by the default ceiling, so a capability requirement can never
@@ -84,6 +92,7 @@ export function minimumViableTier(caps: Capabilities): Tier {
   // does, and picking the lowest viable tier without this bound would still
   // never choose it — but the bound is stated rather than relied upon.
   for (const tier of TIER_ORDER) {
+    if (tier === 'plain') continue;
     if (tierSupports(tier, caps)) return tier;
     if (tier === DEFAULT_MAX_TIER) break;
   }
@@ -91,6 +100,28 @@ export function minimumViableTier(caps: Capabilities): Tier {
 }
 
 const MIN_CONTENT_CHARS = 200;
+/** Below this an extraction is a placeholder ("Loading..."), not a short page. */
+const MIN_SHORT_PAGE_CHARS = 40;
+/** Visible text the extractor may leave out of a short page (title, a link) and still have found it all. */
+const SHORT_PAGE_SLACK_CHARS = 100;
+
+const EMPTY_ROOT = /<div[^>]+id=["'](root|app|__next|__nuxt)["'][^>]*>\s*<\/div>/i;
+const JS_REQUIRED = /(enable|turn on) javascript|javascript is (required|disabled)|requires javascript/i;
+
+function visibleText(html: string): string {
+  return html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// A body that is overwhelmingly script is a shell, whatever framework made it.
+function scriptHeavy(html: string): boolean {
+  const scriptBytes = (html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) ?? []).join('').length;
+  return html.length > 0 && scriptBytes / html.length > 0.9;
+}
 
 /**
  * Whether the raw HTML actually carries the content, or is a hydration shell.
@@ -100,27 +131,24 @@ const MIN_CONTENT_CHARS = 200;
 export function contentLooksAbsent(html: string, extractedText?: string): boolean {
   // Nav and footer boilerplate would pass the raw-HTML checks below, so an
   // extraction that ran and came back short is the deciding signal.
-  if (extractedText !== undefined) return extractedText.trim().length < MIN_CONTENT_CHARS;
+  if (extractedText !== undefined) {
+    const text = extractedText.trim();
+    if (text.length >= MIN_CONTENT_CHARS) return false;
+    // A short page is complete (example.com) when the extractor found nearly all
+    // of its visible text and nothing marks it as a shell; a browser would only
+    // render the same sentence seconds later.
+    return (
+      text.length < MIN_SHORT_PAGE_CHARS ||
+      EMPTY_ROOT.test(html) ||
+      JS_REQUIRED.test(html) ||
+      scriptHeavy(html) ||
+      visibleText(html).length - text.length > SHORT_PAGE_SLACK_CHARS
+    );
+  }
 
-  const emptyRoot =
-    /<div[^>]+id=["'](root|app|__next|__nuxt)["'][^>]*>\s*<\/div>/i.test(html);
-  if (emptyRoot) return true;
-
-  // Strip scripts/styles and see whether meaningful text remains.
-  const withoutCode = html
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (withoutCode.length < MIN_CONTENT_CHARS) return true;
-
-  // A body that is overwhelmingly script is a shell, whatever framework made it.
-  const scriptBytes = (html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) ?? []).join('').length;
-  if (html.length > 0 && scriptBytes / html.length > 0.9) return true;
-
-  return false;
+  if (EMPTY_ROOT.test(html)) return true;
+  if (visibleText(html).length < MIN_CONTENT_CHARS) return true;
+  return scriptHeavy(html);
 }
 
 export interface EscalationInput {

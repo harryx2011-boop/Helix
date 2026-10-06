@@ -8,6 +8,8 @@ import {
   loadProfiles,
   resetInstanceSecret,
   resetProfileCache,
+  userAgentOverride,
+  type BrowserIdentity,
   type BrowserProfile,
 } from './profiles.js';
 
@@ -229,5 +231,64 @@ describe('fingerprintScript', () => {
     // A script that throws on parse would break every render that used the
     // profile, and addInitScript reports it far from here.
     expect(() => new Function(fingerprintScript(profileFixture()))).not.toThrow();
+  });
+
+  it('builds a profile-free script for a default chromium render', () => {
+    const script = fingerprintScript(undefined);
+    expect(seedOf(script)).toBeUndefined();
+    expect(() => new Function(script)).not.toThrow();
+  });
+});
+
+const SHELL: BrowserIdentity = {
+  userAgent:
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36',
+  brands: [
+    { brand: 'Not=A?Brand', version: '99' },
+    { brand: 'HeadlessChrome', version: '151' },
+    { brand: 'Chromium', version: '151' },
+  ],
+  fullVersionList: [
+    { brand: 'Not=A?Brand', version: '99.0.0.0' },
+    { brand: 'HeadlessChrome', version: '151.0.7922.34' },
+    { brand: 'Chromium', version: '151.0.7922.34' },
+  ],
+  platform: 'Windows',
+  platformVersion: '19.0.0',
+  architecture: 'x86',
+  bitness: '64',
+};
+
+describe('userAgentOverride', () => {
+  it('drops HeadlessChrome from the UA and the client hints of a default render', () => {
+    const override = userAgentOverride(SHELL, undefined, false);
+
+    expect(override.userAgent).toBe(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36',
+    );
+    expect(JSON.stringify(override)).not.toContain('Headless');
+    expect(override.userAgentMetadata.brands.map((b) => b.brand)).toEqual(['Not=A?Brand', 'Google Chrome', 'Chromium']);
+    expect(override.acceptLanguage).toBeTruthy();
+  });
+
+  it('presents the profile UA, language and platform, with brand versions to match', () => {
+    const override = userAgentOverride(
+      SHELL,
+      profileFixture({
+        headers: {
+          userAgent:
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+          acceptLanguage: 'en-GB,en-US;q=0.9,en;q=0.8',
+        },
+      }),
+      false,
+    );
+
+    expect(override.userAgent).toContain('Chrome/137.0.0.0');
+    expect(override.acceptLanguage).toBe('en-GB,en-US,en');
+    expect(override.userAgentMetadata.platform).toBe('macOS');
+    expect(override.userAgentMetadata.brands).toContainEqual({ brand: 'Google Chrome', version: '137' });
+    expect(override.userAgentMetadata.fullVersionList).toContainEqual({ brand: 'Chromium', version: '137.0.0.0' });
+    expect(override.userAgentMetadata.brands).toContainEqual({ brand: 'Not=A?Brand', version: '99' });
   });
 });

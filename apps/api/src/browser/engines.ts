@@ -40,6 +40,8 @@ const CHROMIUM_ARGS: readonly string[] = [
   '--disable-background-timer-throttling',
   '--disable-backgrounding-occluded-windows',
   '--disable-renderer-backgrounding',
+  // Playwright's --enable-automation otherwise sets navigator.webdriver to true.
+  '--disable-blink-features=AutomationControlled',
 ];
 
 export function launchArgsFor(engine: RenderEngine): string[] {

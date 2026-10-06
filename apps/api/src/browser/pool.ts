@@ -1,6 +1,13 @@
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
+import { chromium, type Browser, type BrowserContext, type Page, type Response } from 'playwright';
 import type { Log } from '../core/logger.js';
-import { fingerprintScript, getProfile, type BrowserProfile } from './profiles.js';
+import {
+  fingerprintScript,
+  getProfile,
+  headfulUserAgent,
+  userAgentOverride,
+  type BrowserIdentity,
+  type BrowserProfile,
+} from './profiles.js';
 import { isPrivateHost } from '../core/url-guard.js';
 import { capture, type ScreenshotOptions, type ScreenshotResult } from './screenshot.js';
 import {
@@ -60,6 +67,10 @@ export interface RenderOptions {
   blockAds?: boolean | undefined;
   /** Emulate `prefers-color-scheme: dark`. Pages that ignore the query are unaffected. */
   darkMode?: boolean | undefined;
+  /** Abort image, font and media requests. Ignored when a screenshot or PDF is wanted. */
+  blockResources?: boolean | undefined;
+  /** The caller will print this page, so it needs its images and fonts. */
+  pdf?: boolean | undefined;
   /** Browser identity to present to the page's own JavaScript. Unknown names are ignored. */
   profile?: string | undefined;
   /** Operator opt-in: let the page, its redirects and its subresources reach private addresses. */
@@ -72,11 +83,27 @@ function abortMessage(signal: AbortSignal): string {
   return signal.reason instanceof Error ? signal.reason.message : 'render cancelled';
 }
 
-/** Playwright has no cancellation token; closing the page rejects whatever is awaiting it. */
+/**
+ * Waits for `promise` at most `ms`, then lets it run on. Cleanup is bounded this
+ * way so a stuck close spends the render's slot, never the caller's answer.
+ */
+async function settleWithin(promise: Promise<unknown>, ms: number): Promise<void> {
+  let timer: NodeJS.Timeout | undefined;
+  await Promise.race([promise, new Promise<void>((resolve) => (timer = setTimeout(resolve, ms)))]);
+  clearTimeout(timer);
+}
+
+/**
+ * Playwright has no cancellation token; closing the context rejects whatever is
+ * awaiting its page. Not `page.close()`: Chrome drops a close that lands on a
+ * navigation commit, and Playwright then waits minutes for a detach that never
+ * comes (reddit's JS challenge held a 20 s render for 393 s). Disposing the
+ * context detaches the page at once.
+ */
 function abortClosesPage(page: Page, signal: AbortSignal | undefined): void {
   if (!signal) return;
   const close = (): void => {
-    void page.close().catch(() => undefined);
+    void page.context().close().catch(() => undefined);
   };
   signal.addEventListener('abort', close, { once: true });
   page.once('close', () => signal.removeEventListener('abort', close));
@@ -198,9 +225,9 @@ function isAdHost(hostname: string): boolean {
  */
 async function blockRequests(
   context: BrowserContext,
-  options: { blockPrivate: boolean; blockAds: boolean },
+  options: { blockPrivate: boolean; blockAds: boolean; blockResources?: boolean },
 ): Promise<void> {
-  if (!options.blockPrivate && !options.blockAds) return;
+  if (!options.blockPrivate && !options.blockAds && !options.blockResources) return;
   await context.route(
     () => true,
     (route) => {
@@ -214,9 +241,85 @@ async function blockRequests(
       if (!isHttp) return route.continue();
       if (options.blockPrivate && isPrivateHost(url)) return route.abort('blockedbyclient');
       if (options.blockAds && isAdHost(url.hostname)) return route.abort('blockedbyclient');
+      if (options.blockResources && HEAVY_RESOURCES.has(route.request().resourceType())) {
+        return route.abort('blockedbyclient');
+      }
       return route.continue();
     },
   );
+}
+
+const HEAVY_RESOURCES = new Set(['image', 'font', 'media']);
+
+/** Images and fonts are what a screenshot or a PDF is made of. */
+function wantsResourceBlocking(options: RenderOptions): boolean {
+  if (!options.blockResources || options.screenshot || options.pdf) return false;
+  return !options.actions?.some((a) => (a as { type?: unknown } | null)?.type === 'screenshot');
+}
+
+/**
+ * What the launched headless shell says about itself, so a render can present
+ * the same build without the "HeadlessChrome" brand. A page is needed because
+ * `navigator.userAgentData` exists only in a secure context; the URL is
+ * answered by the route and never leaves the process.
+ */
+async function probeIdentity(browser: Browser): Promise<BrowserIdentity> {
+  const context = await browser.newContext();
+  try {
+    await context.route('https://identity.invalid/', (route) =>
+      route.fulfill({ body: '<html></html>', contentType: 'text/html' }),
+    );
+    const page = await context.newPage();
+    await page.goto('https://identity.invalid/');
+    return await page.evaluate(async () => {
+      interface UaData {
+        brands: BrowserIdentity['brands'];
+        platform: string;
+        getHighEntropyValues(
+          hints: string[],
+        ): Promise<Pick<BrowserIdentity, 'fullVersionList' | 'platformVersion' | 'architecture' | 'bitness'>>;
+      }
+      const data = (navigator as Navigator & { userAgentData: UaData }).userAgentData;
+      const high = await data.getHighEntropyValues(['fullVersionList', 'platformVersion', 'architecture', 'bitness']);
+      return {
+        userAgent: navigator.userAgent,
+        brands: data.brands,
+        fullVersionList: high.fullVersionList,
+        platform: data.platform,
+        platformVersion: high.platformVersion,
+        architecture: high.architecture,
+        bitness: high.bitness,
+      };
+    });
+  } finally {
+    await context.close().catch(() => undefined);
+  }
+}
+
+/**
+ * Sets the UA, Accept-Language and client hints on the page's own session.
+ * The session stays attached: detaching it would drop the override.
+ */
+async function presentIdentity(
+  context: BrowserContext,
+  page: Page,
+  identity: BrowserIdentity,
+  profile: BrowserProfile | undefined,
+  mobile: boolean,
+): Promise<void> {
+  const session = await context.newCDPSession(page);
+  await session.send('Emulation.setUserAgentOverride', userAgentOverride(identity, profile, mobile));
+}
+
+/** Chromium always gets the script: its stealth half applies with no profile named. */
+async function addIdentityScript(
+  context: BrowserContext,
+  profile: BrowserProfile | undefined,
+  engine: RenderEngine,
+): Promise<void> {
+  if (engine === 'chromium' || profile) {
+    await context.addInitScript(fingerprintScript(profile, engine === 'chromium'));
+  }
 }
 
 /** Navigate, wait, act and capture, each step bounded by the shared deadline. */
@@ -228,7 +331,14 @@ async function drivePage(
   // Never 0: Playwright reads a zero timeout as "no timeout".
   const remaining = (): number => Math.max(1, deadline - Date.now());
 
-  const response = await page.goto(options.url, {
+  // The document the page ends on, which after a self-navigation is not the
+  // one goto answered: block detection needs that status, not the challenge's.
+  let landed: Response | undefined;
+  page.on('response', (r) => {
+    if (r.frame() === page.mainFrame() && r.request().isNavigationRequest()) landed = r;
+  });
+
+  const goto = await page.goto(options.url, {
     timeout: remaining(),
     waitUntil: 'domcontentloaded',
   });
@@ -242,7 +352,20 @@ async function drivePage(
     await runActions(page, options.actions, { deadline });
   }
 
-  const html = await page.content();
+  // A JS challenge answers, then navigates itself (reddit submits a form to
+  // ?solution=...), so content() can land mid-navigation. Read the document it
+  // lands on instead; the deadline race in render bounds a page that never settles.
+  let html: string | undefined;
+  while (html === undefined) {
+    try {
+      html = await page.content();
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes('page is navigating')) throw error;
+      await page.waitForLoadState('domcontentloaded', { timeout: remaining() });
+    }
+  }
+
+  const response = landed ?? goto;
 
   let screenshot: string | undefined;
   let screenshotResult: ScreenshotResult | undefined;
@@ -295,9 +418,13 @@ function resolveProfileForEngine(
   };
 }
 
-function profileContextOptions(profile: BrowserProfile | undefined): Record<string, unknown> {
-  if (!profile) return {};
-  const options: Record<string, unknown> = {};
+function profileContextOptions(
+  profile: BrowserProfile | undefined,
+  defaultUserAgent?: string,
+): Record<string, unknown> {
+  const userAgent = profile?.headers?.userAgent ?? defaultUserAgent;
+  const options: Record<string, unknown> = userAgent ? { userAgent } : {};
+  if (!profile) return options;
   if (profile.js.timezone) options['timezoneId'] = profile.js.timezone;
   if (profile.headers?.acceptLanguage) {
     options['locale'] = profile.headers.acceptLanguage.split(',')[0];
@@ -315,6 +442,8 @@ interface PooledBrowser {
   activeContexts: number;
   /** Set while the browser drains before being replaced. */
   retiring: boolean;
+  /** Chromium only. Absent when the probe failed, and then nothing is rewritten. */
+  identity?: BrowserIdentity | undefined;
 }
 
 export class BrowserPool {
@@ -392,13 +521,30 @@ export class BrowserPool {
       throw error;
     }
 
+    const identity =
+      engine === 'chromium'
+        ? await probeIdentity(browser).catch((error: unknown) => {
+            this.#logger?.warn({ error }, 'could not read the browser identity; renders will say HeadlessChrome');
+            return undefined;
+          })
+        : undefined;
+
     const pooled: PooledBrowser = {
       browser,
       engine,
       pagesServed: 0,
       activeContexts: 0,
       retiring: false,
+      identity,
     };
+
+    // A crashed or killed browser would otherwise stay in the pool, failing
+    // every render routed to it with "Target page, context or browser has been closed".
+    browser.on('disconnected', () => {
+      if (!this.#browsers.includes(pooled)) return;
+      this.#browsers = this.#browsers.filter((b) => b !== pooled);
+      this.#releaseWaiter();
+    });
 
     this.#browsers.push(pooled);
     return pooled;
@@ -484,14 +630,16 @@ export class BrowserPool {
 
     try {
       const { profile } = resolveProfileForEngine(options.profile, engine, this.#logger);
+      const identity = pooled.identity;
       const context = await pooled.browser.newContext({
         ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
         ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
-        ...profileContextOptions(profile),
+        ...profileContextOptions(profile, identity && headfulUserAgent(identity.userAgent)),
         ...(options.viewport ? { viewport: options.viewport } : {}),
       });
-      if (profile) await context.addInitScript(fingerprintScript(profile));
+      await addIdentityScript(context, profile, engine);
       const page = await context.newPage();
+      if (identity) await presentIdentity(context, page, identity, profile, false);
 
       let closed = false;
       return {
@@ -500,7 +648,6 @@ export class BrowserPool {
         close: async () => {
           if (closed) return;
           closed = true;
-          await page.close().catch(() => undefined);
           await context.close().catch(() => undefined);
           pooled.pagesServed++;
           pooled.activeContexts--;
@@ -595,12 +742,13 @@ export class BrowserPool {
       const resolved = resolveProfileForEngine(options.profile, engine, this.#logger);
       const profile = resolved.profile;
       warnings.push(...resolved.warnings);
+      const identity = pooled.identity;
       context = await pooled.browser.newContext({
         ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
         ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
         // A mobile viewport is the caller's explicit request; it wins over the
         // profile's desktop screen.
-        ...profileContextOptions(profile),
+        ...profileContextOptions(profile, identity && headfulUserAgent(identity.userAgent)),
         ...(mobileApplied ? MOBILE_CONTEXT : {}),
         ...(options.darkMode ? { colorScheme: 'dark' as const } : {}),
         // Last, so an explicit viewport wins over both the profile's screen and
@@ -615,14 +763,16 @@ export class BrowserPool {
           : {}),
       });
 
-      if (profile) await context.addInitScript(fingerprintScript(profile));
+      await addIdentityScript(context, profile, engine);
       await blockRequests(context, {
         blockPrivate: !options.allowPrivate,
         blockAds: options.blockAds === true,
+        blockResources: wantsResourceBlocking(options),
       });
 
       page = await context.newPage();
       abortClosesPage(page, options.signal);
+      if (identity) await presentIdentity(context, page, identity, profile, mobileApplied);
 
       const expired = new Promise<never>((_, reject) => {
         timer = setTimeout(
@@ -657,9 +807,9 @@ export class BrowserPool {
       };
     } finally {
       if (timer) clearTimeout(timer);
-      // Closing the page aborts whatever step the deadline interrupted.
-      await page?.close().catch(() => undefined);
-      await context?.close().catch(() => undefined);
+      // Closing the context aborts whatever step the deadline interrupted. See
+      // abortClosesPage for why it is never page.close().
+      await settleWithin(context?.close().catch(() => undefined) ?? Promise.resolve(), Math.max(0, deadline - Date.now()));
       pooled.activeContexts--;
       this.#releaseWaiter();
       void this.#maybeRecycle(pooled);
@@ -848,7 +998,7 @@ export class BrowserPool {
           ...(options.mobile ? MOBILE_CONTEXT : {}),
         });
 
-        if (profile) await context.addInitScript(fingerprintScript(profile));
+        await addIdentityScript(context, profile, engine);
 
         if (!options.allowPrivate) {
           try {
@@ -899,6 +1049,14 @@ export class BrowserPool {
     } finally {
       if (timer) clearTimeout(timer);
     }
+  }
+
+  /** Engines this instance will refuse, so the ladder can step over them. */
+  disabledEngines(): Engine[] {
+    return [
+      ...(this.#options.lightpandaEnabled ? [] : (['lightpanda'] as const)),
+      ...(this.#options.camoufoxEnabled ? [] : (['camoufox'] as const)),
+    ];
   }
 
   stats(): {

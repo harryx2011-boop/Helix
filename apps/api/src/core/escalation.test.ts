@@ -119,8 +119,10 @@ describe('camoufox capabilities', () => {
 });
 
 describe('the lower ladder is unchanged', () => {
-  it('starts a plain request at the cheapest tier', () => {
-    expect(minimumViableTier({})).toBe('plain');
+  // Plain sends no User-Agent and a non-browser JA4; a WAF scores that as a bot
+  // before tls ever runs (npmjs answered plain with 403 cf-mitigated).
+  it('starts an auto request at tls, never plain', () => {
+    expect(minimumViableTier({})).toBe('tls');
   });
 
   it('still starts visual work at chromium', () => {
@@ -175,5 +177,51 @@ describe('an empty extraction on a server-rendered page', () => {
   it('falls back to the raw-HTML checks when no extraction ran', () => {
     expect(contentLooksAbsent(BOILERPLATE)).toBe(false);
     expect(contentLooksAbsent('<html><body><div id="root"></div></body></html>')).toBe(true);
+  });
+});
+
+describe('a short page that is complete', () => {
+  // example.com as served 2026-10-06: one sentence, one external script.
+  const EXAMPLE = `<!doctype html><html lang=en><head><meta charset=utf-8><title>Example Domain</title><style>body{font:16px/1.6 system-ui}</style></head><body><p>This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.</p><script src=/s.js></script></body></html>`;
+  const EXAMPLE_TEXT =
+    'This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.';
+
+  it('reads as content present when the extractor found nearly all the visible text', () => {
+    expect(contentLooksAbsent(EXAMPLE, EXAMPLE_TEXT)).toBe(false);
+  });
+
+  it('stops at tls instead of climbing to a browser', () => {
+    const decision = shouldEscalate({
+      currentTier: 'tls',
+      response: facts({ body: EXAMPLE, extractedText: EXAMPLE_TEXT }),
+      capabilities: {},
+    });
+    expect(decision.escalate).toBe(false);
+  });
+
+  it('still escalates a loading shell whose only text is a placeholder', () => {
+    const shell = '<html><body><div id="app">Loading...</div><script src="/main.js"></script></body></html>';
+    expect(contentLooksAbsent(shell, 'Loading...')).toBe(true);
+  });
+
+  it('still escalates a short page that asks for JavaScript', () => {
+    const html =
+      '<html><body><noscript>You need to enable JavaScript to run this app.</noscript><p>Welcome to our product, the best way to manage your team tasks and projects online today.</p></body></html>';
+    expect(contentLooksAbsent(html, 'Welcome to our product, the best way to manage your team tasks and projects online today.')).toBe(true);
+  });
+});
+
+describe('a tier the instance cannot run', () => {
+  it('is skipped by escalation', () => {
+    const decision = shouldEscalate({
+      currentTier: 'tls',
+      response: BLOCKED,
+      capabilities: { unavailable: ['lightpanda'] },
+    });
+    expect(decision.nextTier).toBe('chromium');
+  });
+
+  it('is never a starting tier', () => {
+    expect(minimumViableTier({ waitFor: 500, unavailable: ['lightpanda'] })).toBe('chromium');
   });
 });

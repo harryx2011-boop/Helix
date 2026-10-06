@@ -35,6 +35,10 @@ describe('launch arguments', () => {
     expect(args).toContain('--disable-dev-shm-usage');
   });
 
+  it('turns off the automation flag that sets navigator.webdriver', () => {
+    expect(launchArgsFor('chromium')).toContain('--disable-blink-features=AutomationControlled');
+  });
+
   it('sends no chromium switches to firefox or webkit', () => {
     // These are Chromium command-line switches. Firefox and WebKit do not
     // accept them, so passing them through breaks the launch outright.

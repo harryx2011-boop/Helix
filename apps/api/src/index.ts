@@ -61,6 +61,8 @@ import { WebhookDispatcher as MonitorWebhookDispatcher } from './monitor/webhook
 import { includeSelectorsFor, runCheck, type FetchOutcome } from './monitor/checker.js';
 import { runPipeline } from './core/pipeline.js';
 import type { MonitorRecord } from './monitor/store.js';
+import { tierMemory } from './core/tier-memory.js';
+import { cookieJar } from './core/cookie-jar.js';
 
 const config = loadConfig();
 
@@ -220,7 +222,7 @@ const fetchMonitorPage = async (monitor: MonitorRecord): Promise<FetchOutcome> =
       profile: options.profile,
       proxy: options.proxy?.url,
     },
-    { fetchClient, extractClient, browserPool, logger: app.log },
+    { fetchClient, extractClient, browserPool, logger: app.log, tierMemory, cookieJar },
   );
   if (!result.success) return { ok: false, reason: result.reason, detail: result.detail };
   const content = result.content.markdown || result.content.text || '';

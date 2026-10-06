@@ -1,0 +1,2090 @@
+{
+  "summary": {
+    "label": "phase4-stealth",
+    "at": "2026-10-06T22:35:12.051Z",
+    "runs": 4,
+    "urls": 32,
+    "successRate": 0.8275862068965517,
+    "p50Ms": 644,
+    "p95Ms": 3569,
+    "totalMedianMs": 33158,
+    "failSetMedianMs": 1496,
+    "tierCounts": {
+      "tls": 21,
+      "chromium": 11
+    },
+    "totalMedianBytes": 138820,
+    "rawCalls": 128
+  },
+  "perUrl": [
+    {
+      "kind": "static",
+      "url": "https://example.com/",
+      "successes": 4,
+      "medianMs": 91,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 622,
+      "medianMdBytes": 156
+    },
+    {
+      "kind": "static",
+      "url": "https://example.org/",
+      "successes": 4,
+      "medianMs": 81,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 622,
+      "medianMdBytes": 156
+    },
+    {
+      "kind": "static",
+      "url": "https://www.iana.org/help/example-domains",
+      "successes": 4,
+      "medianMs": 104,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 1433,
+      "medianMdBytes": 854
+    },
+    {
+      "kind": "static",
+      "url": "https://httpbin.org/html",
+      "successes": 4,
+      "medianMs": 192,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 4081,
+      "medianMdBytes": 3568
+    },
+    {
+      "kind": "static",
+      "url": "https://en.wikipedia.org/wiki/Web_scraping",
+      "successes": 4,
+      "medianMs": 784,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 42818,
+      "medianMdBytes": 41938
+    },
+    {
+      "kind": "static",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept-Encoding",
+      "successes": 4,
+      "medianMs": 509,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 7646,
+      "medianMdBytes": 6909
+    },
+    {
+      "kind": "static",
+      "url": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "successes": 4,
+      "medianMs": 3569,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 8973,
+      "medianMdBytes": 8304
+    },
+    {
+      "kind": "static",
+      "url": "https://news.ycombinator.com/",
+      "successes": 4,
+      "medianMs": 1691,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 4975,
+      "medianMdBytes": 4026
+    },
+    {
+      "kind": "static",
+      "url": "https://docs.python.org/3/library/asyncio.html",
+      "successes": 4,
+      "medianMs": 308,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 3985,
+      "medianMdBytes": 3342
+    },
+    {
+      "kind": "static",
+      "url": "https://blog.cloudflare.com/",
+      "successes": 4,
+      "medianMs": 348,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 4482,
+      "medianMdBytes": 3933
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/microsoft/playwright",
+      "successes": 4,
+      "medianMs": 1289,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 9271,
+      "medianMdBytes": 8358
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/fastify/fastify",
+      "successes": 4,
+      "medianMs": 1395,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 7707,
+      "medianMdBytes": 6933
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/rust-lang/rust",
+      "successes": 4,
+      "medianMs": 1125,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 2972,
+      "medianMdBytes": 2323
+    },
+    {
+      "kind": "github",
+      "url": "https://raw.githubusercontent.com/microsoft/playwright/main/README.md",
+      "successes": 4,
+      "medianMs": 105,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 11409,
+      "medianMdBytes": 10578
+    },
+    {
+      "kind": "spa",
+      "url": "https://react.dev/",
+      "successes": 4,
+      "medianMs": 765,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 4157,
+      "medianMdBytes": 3625
+    },
+    {
+      "kind": "spa",
+      "url": "https://vercel.com/",
+      "successes": 4,
+      "medianMs": 1097,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 1249,
+      "medianMdBytes": 649
+    },
+    {
+      "kind": "spa",
+      "url": "https://linear.app/",
+      "successes": 4,
+      "medianMs": 1698,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 1290,
+      "medianMdBytes": 704
+    },
+    {
+      "kind": "spa",
+      "url": "https://www.notion.com/",
+      "successes": 4,
+      "medianMs": 2519,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 728,
+      "medianMdBytes": 165
+    },
+    {
+      "kind": "spa",
+      "url": "https://www.airbnb.com/",
+      "successes": 0,
+      "medianMs": 3790,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 281,
+      "medianMdBytes": 0,
+      "reason": "challenge"
+    },
+    {
+      "kind": "walled",
+      "url": "https://discord.com/",
+      "successes": 4,
+      "medianMs": 391,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 2118,
+      "medianMdBytes": 1471
+    },
+    {
+      "kind": "walled",
+      "url": "https://medium.com/",
+      "successes": 4,
+      "medianMs": 836,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 691,
+      "medianMdBytes": 86
+    },
+    {
+      "kind": "walled",
+      "url": "https://www.cloudflare.com/",
+      "successes": 4,
+      "medianMs": 2233,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 3338,
+      "medianMdBytes": 2719
+    },
+    {
+      "kind": "walled",
+      "url": "https://www.npmjs.com/",
+      "successes": 4,
+      "medianMs": 135,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 1414,
+      "medianMdBytes": 861
+    },
+    {
+      "kind": "walled",
+      "url": "https://www.npmjs.com/package/playwright",
+      "successes": 4,
+      "medianMs": 523,
+      "tier": "tls",
+      "tiers": "tls",
+      "medianBytes": 9164,
+      "medianMdBytes": 8374
+    },
+    {
+      "kind": "walled",
+      "url": "https://www.g2.com/",
+      "successes": 0,
+      "medianMs": 387,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 265,
+      "medianMdBytes": 0,
+      "reason": "challenge"
+    },
+    {
+      "kind": "walled",
+      "url": "https://www.g2.com/products/notion/reviews",
+      "successes": 0,
+      "medianMs": 386,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 288,
+      "medianMdBytes": 0,
+      "reason": "challenge"
+    },
+    {
+      "kind": "walled",
+      "url": "https://www.zillow.com/",
+      "successes": 0,
+      "medianMs": 2099,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 258,
+      "medianMdBytes": 0,
+      "reason": "challenge"
+    },
+    {
+      "kind": "walled",
+      "url": "https://www.indeed.com/",
+      "successes": 0,
+      "medianMs": 2908,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 304,
+      "medianMdBytes": 0,
+      "reason": "challenge"
+    },
+    {
+      "kind": "walled",
+      "url": "https://www.reddit.com/r/programming/",
+      "successes": 4,
+      "medianMs": 304,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 678,
+      "medianMdBytes": 0
+    },
+    {
+      "kind": "fail",
+      "url": "https://www.npmjs.com/does-not-exist-404",
+      "successes": 4,
+      "medianMs": 940,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 643,
+      "medianMdBytes": 51
+    },
+    {
+      "kind": "fail",
+      "url": "https://httpbin.org/status/404",
+      "successes": 4,
+      "medianMs": 427,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 513,
+      "medianMdBytes": 0
+    },
+    {
+      "kind": "fail",
+      "url": "https://nonexistent-host-helix-bench.example/",
+      "successes": 0,
+      "medianMs": 129,
+      "tier": "chromium",
+      "tiers": "tls>chromium",
+      "medianBytes": 445,
+      "medianMdBytes": 0,
+      "reason": "dns"
+    }
+  ],
+  "runs": [
+    [
+      {
+        "kind": "static",
+        "url": "https://example.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 578,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 623,
+        "mdBytes": 156
+      },
+      {
+        "kind": "static",
+        "url": "https://example.org/",
+        "ok": true,
+        "status": 200,
+        "ms": 180,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 623,
+        "mdBytes": 156
+      },
+      {
+        "kind": "static",
+        "url": "https://www.iana.org/help/example-domains",
+        "ok": true,
+        "status": 200,
+        "ms": 206,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1433,
+        "mdBytes": 854
+      },
+      {
+        "kind": "static",
+        "url": "https://httpbin.org/html",
+        "ok": true,
+        "status": 200,
+        "ms": 300,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4081,
+        "mdBytes": 3568
+      },
+      {
+        "kind": "static",
+        "url": "https://en.wikipedia.org/wiki/Web_scraping",
+        "ok": true,
+        "status": 200,
+        "ms": 1105,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 42819,
+        "mdBytes": 41938
+      },
+      {
+        "kind": "static",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept-Encoding",
+        "ok": true,
+        "status": 200,
+        "ms": 637,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 7646,
+        "mdBytes": 6909
+      },
+      {
+        "kind": "static",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "ok": true,
+        "status": 200,
+        "ms": 4149,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 8973,
+        "mdBytes": 8304
+      },
+      {
+        "kind": "static",
+        "url": "https://news.ycombinator.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 1707,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4974,
+        "mdBytes": 4025
+      },
+      {
+        "kind": "static",
+        "url": "https://docs.python.org/3/library/asyncio.html",
+        "ok": true,
+        "status": 200,
+        "ms": 382,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 3985,
+        "mdBytes": 3342
+      },
+      {
+        "kind": "static",
+        "url": "https://blog.cloudflare.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 369,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4482,
+        "mdBytes": 3933
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/microsoft/playwright",
+        "ok": true,
+        "status": 200,
+        "ms": 1346,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 9271,
+        "mdBytes": 8358
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/fastify/fastify",
+        "ok": true,
+        "status": 200,
+        "ms": 1437,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 7707,
+        "mdBytes": 6933
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/rust-lang/rust",
+        "ok": true,
+        "status": 200,
+        "ms": 1144,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 2972,
+        "mdBytes": 2323
+      },
+      {
+        "kind": "github",
+        "url": "https://raw.githubusercontent.com/microsoft/playwright/main/README.md",
+        "ok": true,
+        "status": 200,
+        "ms": 186,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 11409,
+        "mdBytes": 10578
+      },
+      {
+        "kind": "spa",
+        "url": "https://react.dev/",
+        "ok": true,
+        "status": 200,
+        "ms": 821,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4157,
+        "mdBytes": 3625
+      },
+      {
+        "kind": "spa",
+        "url": "https://vercel.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 1207,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1249,
+        "mdBytes": 649
+      },
+      {
+        "kind": "spa",
+        "url": "https://linear.app/",
+        "ok": true,
+        "status": 200,
+        "ms": 1693,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1290,
+        "mdBytes": 704
+      },
+      {
+        "kind": "spa",
+        "url": "https://www.notion.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 3747,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 728,
+        "mdBytes": 165
+      },
+      {
+        "kind": "spa",
+        "url": "https://www.airbnb.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 2650,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 281,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://discord.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 490,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 2118,
+        "mdBytes": 1471
+      },
+      {
+        "kind": "walled",
+        "url": "https://medium.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 1030,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 692,
+        "mdBytes": 86
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.cloudflare.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 3829,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 3338,
+        "mdBytes": 2719
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.npmjs.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 169,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1414,
+        "mdBytes": 861
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.npmjs.com/package/playwright",
+        "ok": true,
+        "status": 200,
+        "ms": 3559,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 9178,
+        "mdBytes": 8374
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.g2.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 1925,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 265,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.g2.com/products/notion/reviews",
+        "ok": false,
+        "status": 200,
+        "ms": 851,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 288,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.zillow.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 3757,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 258,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.indeed.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 5129,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 304,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.reddit.com/r/programming/",
+        "ok": true,
+        "status": 200,
+        "ms": 372,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 678,
+        "mdBytes": 0
+      },
+      {
+        "kind": "fail",
+        "url": "https://www.npmjs.com/does-not-exist-404",
+        "ok": true,
+        "status": 200,
+        "ms": 1206,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 643,
+        "mdBytes": 51
+      },
+      {
+        "kind": "fail",
+        "url": "https://httpbin.org/status/404",
+        "ok": true,
+        "status": 200,
+        "ms": 447,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 513,
+        "mdBytes": 0
+      },
+      {
+        "kind": "fail",
+        "url": "https://nonexistent-host-helix-bench.example/",
+        "ok": false,
+        "status": 200,
+        "ms": 393,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 445,
+        "mdBytes": 0,
+        "reason": "dns"
+      }
+    ],
+    [
+      {
+        "kind": "static",
+        "url": "https://example.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 87,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 622,
+        "mdBytes": 156
+      },
+      {
+        "kind": "static",
+        "url": "https://example.org/",
+        "ok": true,
+        "status": 200,
+        "ms": 85,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 622,
+        "mdBytes": 156
+      },
+      {
+        "kind": "static",
+        "url": "https://www.iana.org/help/example-domains",
+        "ok": true,
+        "status": 200,
+        "ms": 98,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1432,
+        "mdBytes": 854
+      },
+      {
+        "kind": "static",
+        "url": "https://httpbin.org/html",
+        "ok": true,
+        "status": 200,
+        "ms": 199,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4081,
+        "mdBytes": 3568
+      },
+      {
+        "kind": "static",
+        "url": "https://en.wikipedia.org/wiki/Web_scraping",
+        "ok": true,
+        "status": 200,
+        "ms": 836,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 42818,
+        "mdBytes": 41938
+      },
+      {
+        "kind": "static",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept-Encoding",
+        "ok": true,
+        "status": 200,
+        "ms": 658,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 7646,
+        "mdBytes": 6909
+      },
+      {
+        "kind": "static",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "ok": true,
+        "status": 200,
+        "ms": 3835,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 8973,
+        "mdBytes": 8304
+      },
+      {
+        "kind": "static",
+        "url": "https://news.ycombinator.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 1675,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4975,
+        "mdBytes": 4026
+      },
+      {
+        "kind": "static",
+        "url": "https://docs.python.org/3/library/asyncio.html",
+        "ok": true,
+        "status": 200,
+        "ms": 319,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 3985,
+        "mdBytes": 3342
+      },
+      {
+        "kind": "static",
+        "url": "https://blog.cloudflare.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 413,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4482,
+        "mdBytes": 3933
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/microsoft/playwright",
+        "ok": true,
+        "status": 200,
+        "ms": 1596,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 9271,
+        "mdBytes": 8358
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/fastify/fastify",
+        "ok": true,
+        "status": 200,
+        "ms": 1535,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 7707,
+        "mdBytes": 6933
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/rust-lang/rust",
+        "ok": true,
+        "status": 200,
+        "ms": 1246,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 2972,
+        "mdBytes": 2323
+      },
+      {
+        "kind": "github",
+        "url": "https://raw.githubusercontent.com/microsoft/playwright/main/README.md",
+        "ok": true,
+        "status": 200,
+        "ms": 104,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 11409,
+        "mdBytes": 10578
+      },
+      {
+        "kind": "spa",
+        "url": "https://react.dev/",
+        "ok": true,
+        "status": 200,
+        "ms": 779,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4157,
+        "mdBytes": 3625
+      },
+      {
+        "kind": "spa",
+        "url": "https://vercel.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 987,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1248,
+        "mdBytes": 649
+      },
+      {
+        "kind": "spa",
+        "url": "https://linear.app/",
+        "ok": true,
+        "status": 200,
+        "ms": 1703,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1290,
+        "mdBytes": 704
+      },
+      {
+        "kind": "spa",
+        "url": "https://www.notion.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 2320,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 728,
+        "mdBytes": 165
+      },
+      {
+        "kind": "spa",
+        "url": "https://www.airbnb.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 3358,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 281,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://discord.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 360,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 2118,
+        "mdBytes": 1471
+      },
+      {
+        "kind": "walled",
+        "url": "https://medium.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 645,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 691,
+        "mdBytes": 86
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.cloudflare.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 2252,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 3338,
+        "mdBytes": 2719
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.npmjs.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 116,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1414,
+        "mdBytes": 861
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.npmjs.com/package/playwright",
+        "ok": true,
+        "status": 200,
+        "ms": 476,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 9164,
+        "mdBytes": 8374
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.g2.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 318,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 265,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.g2.com/products/notion/reviews",
+        "ok": false,
+        "status": 200,
+        "ms": 347,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 288,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.zillow.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 2289,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 258,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.indeed.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 3276,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 304,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.reddit.com/r/programming/",
+        "ok": true,
+        "status": 200,
+        "ms": 317,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 678,
+        "mdBytes": 0
+      },
+      {
+        "kind": "fail",
+        "url": "https://www.npmjs.com/does-not-exist-404",
+        "ok": true,
+        "status": 200,
+        "ms": 1189,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 643,
+        "mdBytes": 51
+      },
+      {
+        "kind": "fail",
+        "url": "https://httpbin.org/status/404",
+        "ok": true,
+        "status": 200,
+        "ms": 407,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 513,
+        "mdBytes": 0
+      },
+      {
+        "kind": "fail",
+        "url": "https://nonexistent-host-helix-bench.example/",
+        "ok": false,
+        "status": 200,
+        "ms": 110,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 445,
+        "mdBytes": 0,
+        "reason": "dns"
+      }
+    ],
+    [
+      {
+        "kind": "static",
+        "url": "https://example.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 94,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 622,
+        "mdBytes": 156
+      },
+      {
+        "kind": "static",
+        "url": "https://example.org/",
+        "ok": true,
+        "status": 200,
+        "ms": 76,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 622,
+        "mdBytes": 156
+      },
+      {
+        "kind": "static",
+        "url": "https://www.iana.org/help/example-domains",
+        "ok": true,
+        "status": 200,
+        "ms": 94,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1432,
+        "mdBytes": 854
+      },
+      {
+        "kind": "static",
+        "url": "https://httpbin.org/html",
+        "ok": true,
+        "status": 200,
+        "ms": 176,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4081,
+        "mdBytes": 3568
+      },
+      {
+        "kind": "static",
+        "url": "https://en.wikipedia.org/wiki/Web_scraping",
+        "ok": true,
+        "status": 200,
+        "ms": 732,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 42818,
+        "mdBytes": 41938
+      },
+      {
+        "kind": "static",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept-Encoding",
+        "ok": true,
+        "status": 200,
+        "ms": 381,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 7646,
+        "mdBytes": 6909
+      },
+      {
+        "kind": "static",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "ok": true,
+        "status": 200,
+        "ms": 3303,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 8973,
+        "mdBytes": 8304
+      },
+      {
+        "kind": "static",
+        "url": "https://news.ycombinator.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 1445,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4975,
+        "mdBytes": 4026
+      },
+      {
+        "kind": "static",
+        "url": "https://docs.python.org/3/library/asyncio.html",
+        "ok": true,
+        "status": 200,
+        "ms": 297,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 3985,
+        "mdBytes": 3342
+      },
+      {
+        "kind": "static",
+        "url": "https://blog.cloudflare.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 327,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4482,
+        "mdBytes": 3933
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/microsoft/playwright",
+        "ok": true,
+        "status": 200,
+        "ms": 1077,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 9271,
+        "mdBytes": 8358
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/fastify/fastify",
+        "ok": true,
+        "status": 200,
+        "ms": 1261,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 7707,
+        "mdBytes": 6933
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/rust-lang/rust",
+        "ok": true,
+        "status": 200,
+        "ms": 1106,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 2972,
+        "mdBytes": 2323
+      },
+      {
+        "kind": "github",
+        "url": "https://raw.githubusercontent.com/microsoft/playwright/main/README.md",
+        "ok": true,
+        "status": 200,
+        "ms": 102,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 11408,
+        "mdBytes": 10578
+      },
+      {
+        "kind": "spa",
+        "url": "https://react.dev/",
+        "ok": true,
+        "status": 200,
+        "ms": 750,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4157,
+        "mdBytes": 3625
+      },
+      {
+        "kind": "spa",
+        "url": "https://vercel.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 1472,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1249,
+        "mdBytes": 649
+      },
+      {
+        "kind": "spa",
+        "url": "https://linear.app/",
+        "ok": true,
+        "status": 200,
+        "ms": 2033,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1290,
+        "mdBytes": 704
+      },
+      {
+        "kind": "spa",
+        "url": "https://www.notion.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 2658,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 728,
+        "mdBytes": 165
+      },
+      {
+        "kind": "spa",
+        "url": "https://www.airbnb.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 4222,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 281,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://discord.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 388,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 2118,
+        "mdBytes": 1471
+      },
+      {
+        "kind": "walled",
+        "url": "https://medium.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 801,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 691,
+        "mdBytes": 86
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.cloudflare.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 2107,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 3338,
+        "mdBytes": 2719
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.npmjs.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 119,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1414,
+        "mdBytes": 861
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.npmjs.com/package/playwright",
+        "ok": true,
+        "status": 200,
+        "ms": 464,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 9164,
+        "mdBytes": 8374
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.g2.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 391,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 265,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.g2.com/products/notion/reviews",
+        "ok": false,
+        "status": 200,
+        "ms": 316,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 288,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.zillow.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 1899,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 258,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.indeed.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 2539,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 304,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.reddit.com/r/programming/",
+        "ok": true,
+        "status": 200,
+        "ms": 290,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 678,
+        "mdBytes": 0
+      },
+      {
+        "kind": "fail",
+        "url": "https://www.npmjs.com/does-not-exist-404",
+        "ok": true,
+        "status": 200,
+        "ms": 691,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 642,
+        "mdBytes": 51
+      },
+      {
+        "kind": "fail",
+        "url": "https://httpbin.org/status/404",
+        "ok": true,
+        "status": 200,
+        "ms": 387,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 513,
+        "mdBytes": 0
+      },
+      {
+        "kind": "fail",
+        "url": "https://nonexistent-host-helix-bench.example/",
+        "ok": false,
+        "status": 200,
+        "ms": 115,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 445,
+        "mdBytes": 0,
+        "reason": "dns"
+      }
+    ],
+    [
+      {
+        "kind": "static",
+        "url": "https://example.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 79,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 622,
+        "mdBytes": 156
+      },
+      {
+        "kind": "static",
+        "url": "https://example.org/",
+        "ok": true,
+        "status": 200,
+        "ms": 73,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 622,
+        "mdBytes": 156
+      },
+      {
+        "kind": "static",
+        "url": "https://www.iana.org/help/example-domains",
+        "ok": true,
+        "status": 200,
+        "ms": 110,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1433,
+        "mdBytes": 854
+      },
+      {
+        "kind": "static",
+        "url": "https://httpbin.org/html",
+        "ok": true,
+        "status": 200,
+        "ms": 184,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4081,
+        "mdBytes": 3568
+      },
+      {
+        "kind": "static",
+        "url": "https://en.wikipedia.org/wiki/Web_scraping",
+        "ok": true,
+        "status": 200,
+        "ms": 638,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 42818,
+        "mdBytes": 41938
+      },
+      {
+        "kind": "static",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept-Encoding",
+        "ok": true,
+        "status": 200,
+        "ms": 349,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 7646,
+        "mdBytes": 6909
+      },
+      {
+        "kind": "static",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "ok": true,
+        "status": 200,
+        "ms": 2832,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 8973,
+        "mdBytes": 8304
+      },
+      {
+        "kind": "static",
+        "url": "https://news.ycombinator.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 2978,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4975,
+        "mdBytes": 4026
+      },
+      {
+        "kind": "static",
+        "url": "https://docs.python.org/3/library/asyncio.html",
+        "ok": true,
+        "status": 200,
+        "ms": 270,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 3985,
+        "mdBytes": 3342
+      },
+      {
+        "kind": "static",
+        "url": "https://blog.cloudflare.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 291,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4482,
+        "mdBytes": 3933
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/microsoft/playwright",
+        "ok": true,
+        "status": 200,
+        "ms": 1232,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 9271,
+        "mdBytes": 8358
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/fastify/fastify",
+        "ok": true,
+        "status": 200,
+        "ms": 1353,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 7707,
+        "mdBytes": 6933
+      },
+      {
+        "kind": "github",
+        "url": "https://github.com/rust-lang/rust",
+        "ok": true,
+        "status": 200,
+        "ms": 796,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 2971,
+        "mdBytes": 2323
+      },
+      {
+        "kind": "github",
+        "url": "https://raw.githubusercontent.com/microsoft/playwright/main/README.md",
+        "ok": true,
+        "status": 200,
+        "ms": 106,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 11409,
+        "mdBytes": 10578
+      },
+      {
+        "kind": "spa",
+        "url": "https://react.dev/",
+        "ok": true,
+        "status": 200,
+        "ms": 703,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 4157,
+        "mdBytes": 3625
+      },
+      {
+        "kind": "spa",
+        "url": "https://vercel.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 919,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1248,
+        "mdBytes": 649
+      },
+      {
+        "kind": "spa",
+        "url": "https://linear.app/",
+        "ok": true,
+        "status": 200,
+        "ms": 1288,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1290,
+        "mdBytes": 704
+      },
+      {
+        "kind": "spa",
+        "url": "https://www.notion.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 2379,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 728,
+        "mdBytes": 165
+      },
+      {
+        "kind": "spa",
+        "url": "https://www.airbnb.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 4624,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 256,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://discord.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 394,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 2118,
+        "mdBytes": 1471
+      },
+      {
+        "kind": "walled",
+        "url": "https://medium.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 871,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 691,
+        "mdBytes": 86
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.cloudflare.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 2214,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 3338,
+        "mdBytes": 2719
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.npmjs.com/",
+        "ok": true,
+        "status": 200,
+        "ms": 151,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 1414,
+        "mdBytes": 861
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.npmjs.com/package/playwright",
+        "ok": true,
+        "status": 200,
+        "ms": 570,
+        "tier": "tls",
+        "tiers": [
+          "tls"
+        ],
+        "bytes": 9164,
+        "mdBytes": 8374
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.g2.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 383,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 265,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.g2.com/products/notion/reviews",
+        "ok": false,
+        "status": 200,
+        "ms": 424,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 288,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.zillow.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 1909,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 258,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.indeed.com/",
+        "ok": false,
+        "status": 200,
+        "ms": 2344,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 304,
+        "mdBytes": 0,
+        "reason": "challenge"
+      },
+      {
+        "kind": "walled",
+        "url": "https://www.reddit.com/r/programming/",
+        "ok": true,
+        "status": 200,
+        "ms": 234,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 678,
+        "mdBytes": 0
+      },
+      {
+        "kind": "fail",
+        "url": "https://www.npmjs.com/does-not-exist-404",
+        "ok": true,
+        "status": 200,
+        "ms": 656,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 642,
+        "mdBytes": 51
+      },
+      {
+        "kind": "fail",
+        "url": "https://httpbin.org/status/404",
+        "ok": true,
+        "status": 200,
+        "ms": 1489,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 513,
+        "mdBytes": 0
+      },
+      {
+        "kind": "fail",
+        "url": "https://nonexistent-host-helix-bench.example/",
+        "ok": false,
+        "status": 200,
+        "ms": 142,
+        "tier": "chromium",
+        "tiers": [
+          "tls",
+          "chromium"
+        ],
+        "bytes": 445,
+        "mdBytes": 0,
+        "reason": "dns"
+      }
+    ]
+  ]
+}

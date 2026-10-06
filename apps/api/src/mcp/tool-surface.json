@@ -359,6 +359,7 @@
       "headers",
       "includeSelectors",
       "jsonOptions",
+      "maxAge",
       "mobile",
       "onlyMainContent",
       "profile",

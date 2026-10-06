@@ -4,6 +4,8 @@ import { runPipeline, type PipelineDeps } from '../core/pipeline.js';
 import { StructuredError, type ExtractClient } from '../extract/client.js';
 import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 import { checkUrl, type HostResolver } from '../core/url-guard.js';
+import { tierMemory } from '../core/tier-memory.js';
+import { cookieJar } from '../core/cookie-jar.js';
 
 /**
  * POST /v1/extract — the same shape across a set of URLs, as a table.
@@ -176,7 +178,7 @@ export async function registerExtract(app: FastifyInstance, deps: ExtractRouteDe
             allowPrivate: deps.allowPrivateUrls,
             signal: controller.signal,
           },
-          deps,
+          { ...deps, tierMemory, cookieJar },
         );
 
         if (!page.success) {

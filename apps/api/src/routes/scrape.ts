@@ -7,6 +7,9 @@ import { sanitizeHtml } from '../extract/sanitize.js';
 import type { BrowserPool } from '../browser/pool.js';
 import { checkUrl, type HostResolver } from '../core/url-guard.js';
 import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
+import { tierMemory } from '../core/tier-memory.js';
+import { cookieJar } from '../core/cookie-jar.js';
+import { scrapeCache } from '../core/scrape-cache.js';
 
 /**
  * Scrape: one URL in, one document out.
@@ -80,6 +83,8 @@ const ScrapeRequestSchema = z.object({
   /** The spec's name for `extract`. Either key is accepted; not both. */
   jsonOptions: ExtractSchema.optional(),
   chunk: ChunkSchema.optional(),
+  /** Accept a cached result up to this many milliseconds old. 0 always fetches. */
+  maxAge: z.number().int().min(0).max(2_592_000_000).default(0),
 });
 
 export type ScrapeRequest = z.infer<typeof ScrapeRequestSchema>;
@@ -241,6 +246,16 @@ export async function registerScrape(
       });
     }
 
+    // Actions change the page they run on, so their result is never replayed.
+    const { maxAge, ...cacheable } = body;
+    const cacheKey = maxAge > 0 && !body.actions?.length ? JSON.stringify(cacheable) : undefined;
+    const hit = cacheKey ? scrapeCache.get(cacheKey, maxAge) : undefined;
+    if (hit) {
+      const cached = structuredClone(hit.value) as { data: { metadata: Record<string, unknown> } };
+      cached.data.metadata['fromCache'] = true;
+      return reply.code(200).send(cached);
+    }
+
     // A phone layout only exists in a browser. Forcing the tier here keeps the
     // caller's `tier: "auto"` honest instead of returning the desktop HTML with
     // `mobile: true` quietly ignored.
@@ -278,6 +293,8 @@ export async function registerScrape(
         extractClient: deps.extractClient,
         browserPool: deps.browserPool,
         logger: request.log,
+        tierMemory,
+        cookieJar,
       },
     );
 
@@ -405,11 +422,13 @@ export async function registerScrape(
       favicon: content.favicon,
     };
 
-    return reply.code(200).send({
+    const payload = {
       success: true,
       data,
       warnings,
       ...(usage ? { usage } : {}),
-    });
+    };
+    if (cacheKey) scrapeCache.set(cacheKey, payload);
+    return reply.code(200).send(payload);
   });
 }

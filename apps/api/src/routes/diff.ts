@@ -6,6 +6,8 @@ import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
 import { checkUrl, type HostResolver } from '../core/url-guard.js';
+import { tierMemory } from '../core/tier-memory.js';
+import { cookieJar } from '../core/cookie-jar.js';
 
 /**
  * One-shot diff, with no monitor and nothing stored.
@@ -61,7 +63,7 @@ async function resolveText(
 
   const result = await runPipeline(
     { url: input.url, formats: ['markdown'], allowPrivate: deps.allowPrivateUrls },
-    { fetchClient: deps.fetchClient, extractClient: deps.extractClient, browserPool: deps.browserPool },
+    { fetchClient: deps.fetchClient, extractClient: deps.extractClient, browserPool: deps.browserPool, tierMemory, cookieJar },
   );
 
   if (!result.success) {

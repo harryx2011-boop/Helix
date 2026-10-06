@@ -26,6 +26,8 @@ export interface FetchResult {
   success: boolean;
   status?: number | undefined;
   headers: Record<string, string>;
+  /** Every `Set-Cookie` line; `headers` keeps only one of them. */
+  setCookies?: string[] | undefined;
   body?: string | undefined;
   profileUsed?: string | undefined;
   timingMs: number;

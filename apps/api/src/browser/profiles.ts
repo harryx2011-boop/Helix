@@ -169,17 +169,113 @@ function seedFor(profile: BrowserProfile): number {
   return digest.readUInt32BE(0);
 }
 
+export interface UaBrand {
+  brand: string;
+  version: string;
+}
+
+/** What the launched browser reports about itself, read once per launch. */
+export interface BrowserIdentity {
+  userAgent: string;
+  brands: UaBrand[];
+  fullVersionList: UaBrand[];
+  platform: string;
+  platformVersion: string;
+  architecture: string;
+  bitness: string;
+}
+
+export interface UserAgentOverride {
+  userAgent: string;
+  acceptLanguage: string;
+  userAgentMetadata: {
+    brands: UaBrand[];
+    fullVersionList: UaBrand[];
+    platform: string;
+    platformVersion: string;
+    architecture: string;
+    model: string;
+    mobile: boolean;
+    bitness: string;
+    wow64: boolean;
+  };
+}
+
+/** The headless shell's UA with the reduced version a real Chrome sends. */
+export function headfulUserAgent(userAgent: string): string {
+  return userAgent.replace(/HeadlessChrome\/(\d+)[\d.]*/, 'Chrome/$1.0.0.0');
+}
+
+function platformOf(userAgent: string): string | undefined {
+  if (userAgent.includes('Windows')) return 'Windows';
+  if (userAgent.includes('Mac OS X')) return 'macOS';
+  if (userAgent.includes('Android')) return 'Android';
+  if (/Linux|X11/.test(userAgent)) return 'Linux';
+  return undefined;
+}
+
+/**
+ * The UA, Accept-Language and client hints for one page.
+ *
+ * Playwright's `userAgent` option changes the string but not `sec-ch-ua` or
+ * `navigator.userAgentData`, which keep saying "HeadlessChrome" at the real
+ * version. The browser's own brand list is kept, GREASE entry and order
+ * included, with the headless brand renamed and the version moved to the UA's.
+ */
+export function userAgentOverride(
+  identity: BrowserIdentity,
+  profile: BrowserProfile | undefined,
+  mobile: boolean,
+): UserAgentOverride {
+  const userAgent = profile?.headers?.userAgent ?? headfulUserAgent(identity.userAgent);
+  const major = /Chrome\/(\d+)/.exec(userAgent)?.[1];
+  const rebrand = (list: UaBrand[], full: boolean): UaBrand[] =>
+    list.map(({ brand, version }) => {
+      if (brand !== 'HeadlessChrome' && brand !== 'Chromium' && brand !== 'Google Chrome') return { brand, version };
+      const renamed = brand === 'HeadlessChrome' ? 'Google Chrome' : brand;
+      if (!major || version.split('.')[0] === major) return { brand: renamed, version };
+      return { brand: renamed, version: full ? `${major}.0.0.0` : major };
+    });
+  const platform = platformOf(userAgent) ?? identity.platform;
+
+  return {
+    userAgent,
+    // Chrome adds the q-values itself; passing them through doubles them.
+    acceptLanguage: (profile?.headers?.acceptLanguage ?? 'en-US,en')
+      .split(',')
+      .map((tag) => tag.split(';')[0]?.trim())
+      .join(','),
+    userAgentMetadata: {
+      brands: rebrand(identity.brands, false),
+      fullVersionList: rebrand(identity.fullVersionList, true),
+      platform,
+      platformVersion: platform === identity.platform ? identity.platformVersion : '',
+      architecture: identity.architecture,
+      model: '',
+      mobile,
+      bitness: identity.bitness,
+      wow64: false,
+    },
+  };
+}
+
 /**
  * The init script a context runs before any page code.
+ *
+ * With no profile it still runs on chromium: the headless shell has no
+ * `window.chrome` and no plugins, which a page reads without any identity
+ * being asked for. Every replaced function and getter reports itself as
+ * native code through one patched `Function.prototype.toString`.
  *
  * Every override is guarded: a property that cannot be redefined is left alone
  * rather than throwing, because a page that sees an exception from a getter has
  * learned more about us than the value would have told it.
  */
-export function fingerprintScript(profile: BrowserProfile): string {
-  const js = profile.js;
+export function fingerprintScript(profile: BrowserProfile | undefined, chromium = true): string {
+  const js = profile?.js ?? {};
   const payload = {
-    seed: seedFor(profile),
+    ...(profile ? { seed: seedFor(profile) } : {}),
+    chromium,
     webglVendor: js.webglVendor ?? null,
     webglRenderer: js.webglRenderer ?? null,
     hardwareConcurrency: js.hardwareConcurrency ?? null,
@@ -189,11 +285,128 @@ export function fingerprintScript(profile: BrowserProfile): string {
 
   return `(() => {
   const p = ${JSON.stringify(payload)};
+
+  const nativeToString = Function.prototype.toString;
+  const disguised = new WeakMap();
+  const native = (fn) => {
+    disguised.set(fn, 'function ' + fn.name + '() { [native code] }');
+    return fn;
+  };
+  Function.prototype.toString = native({
+    toString() {
+      return disguised.has(this) ? disguised.get(this) : nativeToString.call(this);
+    },
+  }.toString);
+
   const define = (target, prop, value) => {
     try {
-      Object.defineProperty(target, prop, { get: () => value, configurable: true });
+      const original = Object.getOwnPropertyDescriptor(target, prop);
+      const get = native(Object.getOwnPropertyDescriptor({ get [prop]() { return value; } }, prop).get);
+      Object.defineProperty(target, prop, { get, enumerable: original ? original.enumerable : true, configurable: true });
     } catch {}
   };
+
+  if (navigator.webdriver) define(Navigator.prototype, 'webdriver', false);
+
+  if (p.chromium) {
+    try {
+      if (!('chrome' in window)) {
+        const app = {
+          isInstalled: false,
+          getDetails() { return null; },
+          getIsInstalled() { return false; },
+          installState(callback) { if (typeof callback === 'function') setTimeout(() => callback('not_installed'), 0); },
+          runningState() { return 'cannot_run'; },
+          InstallState: { DISABLED: 'disabled', INSTALLED: 'installed', NOT_INSTALLED: 'not_installed' },
+          RunningState: { CANNOT_RUN: 'cannot_run', READY_TO_RUN: 'ready_to_run', RUNNING: 'running' },
+        };
+        const chrome = {
+          loadTimes() {
+            const t = performance.timing;
+            const nav = performance.getEntriesByType('navigation')[0];
+            const paint = performance.getEntriesByName('first-paint')[0];
+            const protocol = nav ? nav.nextHopProtocol : 'http/1.1';
+            const spdy = protocol === 'h2' || protocol === 'h3';
+            return {
+              requestTime: t.requestStart / 1000,
+              startLoadTime: t.navigationStart / 1000,
+              commitLoadTime: t.responseStart / 1000,
+              finishDocumentLoadTime: t.domContentLoadedEventEnd / 1000,
+              finishLoadTime: t.loadEventEnd / 1000,
+              firstPaintTime: paint ? (performance.timeOrigin + paint.startTime) / 1000 : 0,
+              firstPaintAfterLoadTime: 0,
+              navigationType: 'Other',
+              wasFetchedViaSpdy: spdy,
+              wasNpnNegotiated: spdy,
+              npnNegotiatedProtocol: spdy ? protocol : 'unknown',
+              wasAlternateProtocolAvailable: false,
+              connectionInfo: protocol,
+            };
+          },
+          csi() {
+            const t = performance.timing;
+            return { startE: t.navigationStart, onloadT: t.loadEventEnd, pageT: performance.now(), tran: 15 };
+          },
+          app,
+        };
+        for (const fn of [chrome.loadTimes, chrome.csi, app.getDetails, app.getIsInstalled, app.installState, app.runningState]) native(fn);
+        Object.defineProperty(window, 'chrome', { value: chrome, writable: true, enumerable: true, configurable: false });
+      }
+    } catch {}
+
+    // Chrome's fixed PDF plugin list. The fakes are real Plugin / PluginArray
+    // instances by prototype, and the prototype accessors answer for them, so
+    // their own keys match a real browser's: indexes and names, never 'length'.
+    try {
+      if (navigator.plugins.length === 0) {
+        const fakes = new WeakMap();
+        const fake = (proto, data, items, key) => {
+          const object = Object.create(proto);
+          fakes.set(object, data);
+          items.forEach((item, i) => Object.defineProperty(object, i, { value: item, enumerable: true, configurable: true }));
+          for (const item of items) Object.defineProperty(object, fakes.get(item)[key], { value: item, configurable: true });
+          data.length = items.length;
+          data.item = (i) => items[i] ?? null;
+          data.namedItem = (name) => items.find((item) => fakes.get(item)[key] === name) ?? null;
+          return object;
+        };
+        const doc = 'Portable Document Format';
+        const mimes = ['application/pdf', 'text/pdf'].map((type) =>
+          fake(MimeType.prototype, { type, suffixes: 'pdf', description: doc, enabledPlugin: null }, [], ''),
+        );
+        const plugins = ['PDF Viewer', 'Chrome PDF Viewer', 'Chromium PDF Viewer', 'Microsoft Edge PDF Viewer', 'WebKit built-in PDF']
+          .map((name) => fake(Plugin.prototype, { name, filename: 'internal-pdf-viewer', description: doc }, mimes, 'type'));
+        for (const mime of mimes) fakes.get(mime).enabledPlugin = plugins[0];
+        const pluginArray = fake(PluginArray.prototype, {}, plugins, 'name');
+        const mimeArray = fake(MimeTypeArray.prototype, {}, mimes, 'type');
+
+        const answer = (proto, getters, methods) => {
+          for (const prop of getters) {
+            const d = Object.getOwnPropertyDescriptor(proto, prop);
+            if (!d || !d.get) continue;
+            const original = d.get;
+            const get = native(Object.getOwnPropertyDescriptor({
+              get [prop]() { return fakes.has(this) ? fakes.get(this)[prop] : original.call(this); },
+            }, prop).get);
+            Object.defineProperty(proto, prop, { ...d, get });
+          }
+          for (const prop of methods) {
+            const original = proto[prop];
+            proto[prop] = native({
+              [prop](arg) { return fakes.has(this) ? fakes.get(this)[prop](arg) : original.apply(this, arguments); },
+            }[prop]);
+          }
+        };
+        answer(PluginArray.prototype, ['length'], ['item', 'namedItem']);
+        answer(MimeTypeArray.prototype, ['length'], ['item', 'namedItem']);
+        answer(Plugin.prototype, ['name', 'filename', 'description', 'length'], ['item', 'namedItem']);
+        answer(MimeType.prototype, ['type', 'suffixes', 'description', 'enabledPlugin'], []);
+        define(Navigator.prototype, 'plugins', pluginArray);
+        define(Navigator.prototype, 'mimeTypes', mimeArray);
+        define(Navigator.prototype, 'pdfViewerEnabled', true);
+      }
+    } catch {}
+  }
 
   if (p.hardwareConcurrency !== null) define(Navigator.prototype, 'hardwareConcurrency', p.hardwareConcurrency);
   if (p.deviceMemory !== null) define(Navigator.prototype, 'deviceMemory', p.deviceMemory);
@@ -213,11 +426,13 @@ export function fingerprintScript(profile: BrowserProfile): string {
     for (const ctor of [window.WebGLRenderingContext, window.WebGL2RenderingContext]) {
       if (!ctor) continue;
       const original = ctor.prototype.getParameter;
-      ctor.prototype.getParameter = function (parameter) {
-        if (parameter === 37445 && p.webglVendor !== null) return p.webglVendor;
-        if (parameter === 37446 && p.webglRenderer !== null) return p.webglRenderer;
-        return original.call(this, parameter);
-      };
+      ctor.prototype.getParameter = native({
+        getParameter(parameter) {
+          if (parameter === 37445 && p.webglVendor !== null) return p.webglVendor;
+          if (parameter === 37446 && p.webglRenderer !== null) return p.webglRenderer;
+          return original.call(this, parameter);
+        },
+      }.getParameter);
     }
   }
 
@@ -226,36 +441,53 @@ export function fingerprintScript(profile: BrowserProfile): string {
   // detected because it varies between two reads; a publicly-derivable one is
   // worse still, because the transform can simply be replayed and inverted.
   //
-  // The offset walks with a small PRNG rather than a fixed stride, and the
-  // delta varies per pixel, so knowing one touched byte does not give the rest.
-  const toBlobOrDataUrl = HTMLCanvasElement.prototype.toDataURL;
-  HTMLCanvasElement.prototype.toDataURL = function (...args) {
-    try {
-      const ctx = this.getContext('2d');
-      if (ctx && this.width > 0 && this.height > 0) {
-        const image = ctx.getImageData(0, 0, this.width, this.height);
-        const d = image.data;
-        let state = p.seed >>> 0;
-        const next = () => {
-          // xorshift32: cheap, and every bit of the seed reaches the output.
-          state ^= state << 13; state >>>= 0;
-          state ^= state >>> 17;
-          state ^= state << 5; state >>>= 0;
-          return state;
-        };
-        for (let i = 0; i < d.length; ) {
-          const r = next();
-          // Nudge one channel by ±1, clamped. Sub-perceptual, but it moves the hash.
-          const delta = (r & 1) === 0 ? 1 : -1;
-          const v = d[i] + delta;
-          d[i] = v < 0 ? 0 : v > 255 ? 255 : v;
-          // 4..~1024 bytes on, so the touched set is not a fixed lattice.
-          i += 4 * (1 + ((r >>> 1) & 0xff));
-        }
-        ctx.putImageData(image, 0, 0);
+  // Which pixels move, and which way, is a hash of the seed and the pixel's
+  // canvas coordinates, so a getImageData of any sub-rectangle agrees with the
+  // full-canvas export, and knowing one touched pixel does not give the rest.
+  // The noise goes on a scratch copy: writing it back into the page's canvas
+  // would stack on every read and change the hash each time.
+  if (p.seed !== undefined) {
+    const perturb = (d, x0, y0, width) => {
+      for (let i = 0; i < d.length; i += 4) {
+        const px = i >> 2;
+        let h = Math.imul(((x0 + (px % width)) * 73856093) ^ ((y0 + ((px / width) | 0)) * 19349663) ^ p.seed, 0x9e3779b1);
+        h ^= h >>> 15; h = Math.imul(h, 0x85ebca6b); h ^= h >>> 13;
+        // About one pixel in 64, one channel by ±1: sub-perceptual, but it moves the hash.
+        if ((h & 63) === 0) d[i] += h & 64 ? 1 : -1;
       }
-    } catch {}
-    return toBlobOrDataUrl.apply(this, args);
-  };
+    };
+    const getImageData = CanvasRenderingContext2D.prototype.getImageData;
+    const noisy = (canvas) => {
+      if (!(canvas.width > 0 && canvas.height > 0)) return canvas;
+      try {
+        const scratch = document.createElement('canvas');
+        scratch.width = canvas.width;
+        scratch.height = canvas.height;
+        const ctx = scratch.getContext('2d');
+        ctx.drawImage(canvas, 0, 0);
+        const image = getImageData.call(ctx, 0, 0, scratch.width, scratch.height);
+        perturb(image.data, 0, 0, scratch.width);
+        ctx.putImageData(image, 0, 0);
+        return scratch;
+      } catch {
+        return canvas;
+      }
+    };
+    const toDataURL = HTMLCanvasElement.prototype.toDataURL;
+    const toBlob = HTMLCanvasElement.prototype.toBlob;
+    HTMLCanvasElement.prototype.toDataURL = native({
+      toDataURL() { return toDataURL.apply(noisy(this), arguments); },
+    }.toDataURL);
+    HTMLCanvasElement.prototype.toBlob = native({
+      toBlob(callback) { return toBlob.apply(noisy(this), arguments); },
+    }.toBlob);
+    CanvasRenderingContext2D.prototype.getImageData = native({
+      getImageData(sx, sy, sw, sh) {
+        const image = getImageData.apply(this, arguments);
+        try { perturb(image.data, Math.trunc(sx), Math.trunc(sy), image.width); } catch {}
+        return image;
+      },
+    }.getImageData);
+  }
 })();`;
 }

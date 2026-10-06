@@ -14,6 +14,8 @@ import { estimateCrawl } from './estimate.js';
 import type { Log } from '../core/logger.js';
 import { enqueueDelivery, type WebhookConfig, type WebhookEvent } from '../webhooks/deliveries.js';
 import { collectionName, createSink, type VectorSink } from '../vectors/sink.js';
+import { tierMemory } from '../core/tier-memory.js';
+import { liveCookies } from '../core/cookie-jar.js';
 
 /**
  * The crawl worker.
@@ -508,6 +510,7 @@ export class CrawlWorker {
         const started = Date.now();
         let statusCode: number | undefined;
         let blocked = false;
+        let setCookies: string[] | undefined;
         let retryAfterSeconds: number | undefined;
 
         // One identity for this whole request, pinned before the fetch. The
@@ -551,10 +554,11 @@ export class CrawlWorker {
               // that keeps loading pages in a browser tier is still spending.
               signal: jobAbort.signal,
             },
-            this.#deps,
+            { ...this.#deps, tierMemory },
           );
 
           statusCode = result.success ? result.statusCode : result.statusCode;
+          if (result.success) setCookies = result.setCookies;
 
           if (!result.success) {
             // A page the job itself stopped is not a page that failed. Writing
@@ -756,7 +760,7 @@ export class CrawlWorker {
           // "how fast may I go"; the pool asks "is this identity still usable".
           // A host that blocks one identity and accepts another is answering
           // only the second question, so both have to be asked separately.
-          const { retired } = sessions.release(session, { blocked, statusCode });
+          const { retired } = sessions.release(session, { blocked, statusCode, cookies: liveCookies(setCookies) });
           if (retired) {
             this.#logger?.debug(
               { jobId, session: session.id, url: item.url },

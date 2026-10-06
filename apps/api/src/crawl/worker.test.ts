@@ -733,3 +733,25 @@ describe('CrawlWorker — a crawl whose seed the route already queued', () => {
     expect(discover).not.toHaveBeenCalled();
   });
 });
+
+describe('CrawlWorker session cookies', () => {
+  it('sends the cookies one page set on the next page of the same session', async () => {
+    db.state.request = baseRequest();
+    const first = { ...pipelineSuccess(), setCookies: ['cf_clearance=abc; Path=/; HttpOnly'] };
+    first.content.links.push('https://example.com/b');
+    runPipeline.mockResolvedValueOnce(first).mockResolvedValueOnce(pipelineSuccess());
+
+    // One identity, so both pages share its jar.
+    const worker = new CrawlWorker({
+      fetchClient: {} as never,
+      extractClient: extractClient(),
+      userAgent: 'HelixBot/test',
+      sessionPoolSize: 1,
+    });
+    await worker.runOnce();
+
+    expect(runPipeline).toHaveBeenCalledTimes(2);
+    const second = runPipeline.mock.calls[1]?.[0] as { headers?: Record<string, string> };
+    expect(second.headers?.['Cookie']).toBe('cf_clearance=abc');
+  });
+});

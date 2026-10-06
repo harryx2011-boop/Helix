@@ -18,6 +18,8 @@ import {
 import { buildContent, buildPrompt, buildSchema } from '../enrich/model-phase.js';
 import type { FieldSpec, PageEvidence } from '../enrich/routing.js';
 import { mapWithLimit } from './search.js';
+import { tierMemory } from '../core/tier-memory.js';
+import { cookieJar } from '../core/cookie-jar.js';
 
 /**
  * POST /v1/enrich - sparse identifier in, grounded columns out.
@@ -160,7 +162,7 @@ async function readCandidate(
       timeout: body.timeout,
       signal,
     },
-    { fetchClient: deps.fetchClient, extractClient: deps.extractClient, browserPool: deps.browserPool, logger },
+    { fetchClient: deps.fetchClient, extractClient: deps.extractClient, browserPool: deps.browserPool, logger, tierMemory, cookieJar },
   );
 
   if (!result.success) {

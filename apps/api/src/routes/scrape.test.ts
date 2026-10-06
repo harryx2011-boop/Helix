@@ -190,7 +190,7 @@ describe('POST /scrape formats', () => {
     expect(body.data.markdown).toContain('Real article text');
     expect(body.data.html).toBeUndefined();
     expect(body.warnings).toEqual([]);
-    expect(body.data.metadata).toMatchObject({ sourceUrl: 'https://example.com', tier: 'plain', mobile: false });
+    expect(body.data.metadata).toMatchObject({ sourceUrl: 'https://example.com', tier: 'tls', mobile: false });
   });
 
   it('serves html with scripts, comments and handlers stripped, and rawHtml untouched', async () => {
@@ -513,5 +513,37 @@ describe('POST /scrape failures', () => {
     expect(body.success).toBe(false);
     expect(body.failure.tiersAttempted).toEqual(['plain']);
     expect(body.warnings).toEqual([]);
+  });
+});
+
+describe('POST /scrape maxAge', () => {
+  it('serves a repeat request within maxAge from the cache, without fetching', async () => {
+    const { app, deps } = await build();
+    const url = 'https://example.com/cache-hit';
+    const first = await post(app, { url, maxAge: 60_000 });
+    expect(first.json().data.metadata.fromCache).toBe(false);
+
+    const second = await post(app, { url, maxAge: 60_000 });
+    expect(second.json().success).toBe(true);
+    expect(second.json().data.metadata.fromCache).toBe(true);
+    expect(second.json().data.markdown).toBe(first.json().data.markdown);
+    expect(deps.fetchClient.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('fetches again when maxAge is absent', async () => {
+    const { app, deps } = await build();
+    const url = 'https://example.com/cache-off';
+    await post(app, { url, maxAge: 60_000 });
+    const again = await post(app, { url });
+    expect(again.json().data.metadata.fromCache).toBe(false);
+    expect(deps.fetchClient.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('keys the cache on the request options, not only the URL', async () => {
+    const { app, deps } = await build();
+    const url = 'https://example.com/cache-formats';
+    await post(app, { url, maxAge: 60_000 });
+    await post(app, { url, maxAge: 60_000, formats: ['markdown', 'links'] });
+    expect(deps.fetchClient.fetch).toHaveBeenCalledTimes(2);
   });
 });

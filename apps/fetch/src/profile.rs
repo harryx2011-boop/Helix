@@ -23,7 +23,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
-use wreq_util::Profile as Identity;
+use wreq_util::{Emulation, Platform, Profile as Identity};
 
 /// The JSON definitions are camelCase, so every struct here renames. Unknown
 /// keys are ignored rather than rejected: the definitions carry `$comment`
@@ -149,11 +149,11 @@ impl Profile {
 /// wreq-util 0.2 renamed what 0.1 called `Emulation` to `Profile`, and gave the
 /// name `Emulation` to a struct pairing a profile with a platform. It is
 /// imported as `Identity` here because this module already defines its own
-/// `Profile` (the JSON definition). It implements `IntoEmulation`, so it can be
-/// handed to the request builder directly.
+/// `Profile` (the JSON definition). The `Emulation` pairing implements
+/// `IntoEmulation`, so it can be handed to the client builder directly.
 pub struct Resolved {
     pub id: String,
-    pub emulation: Identity,
+    pub emulation: Emulation,
 }
 
 /// Map a profile name onto a wreq emulation profile.
@@ -224,6 +224,13 @@ pub fn resolve(name: Option<&str>) -> Resolved {
         "chrome" => DEFAULT_PROFILE.to_string(),
         other => other.to_string(),
     };
+
+    // wreq-util defaults to macOS, but the browser tier on the same host reports
+    // Windows. Safari's headers are fixed and ignore the platform.
+    let emulation = Emulation::builder()
+        .profile(emulation)
+        .platform(Platform::Windows)
+        .build();
 
     Resolved { id, emulation }
 }

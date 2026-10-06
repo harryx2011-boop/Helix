@@ -22,7 +22,9 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::sync::{LazyLock, Mutex, PoisonError};
 use std::time::{Duration, Instant};
+use http_body_util::{BodyExt, LengthLimitError, Limited};
 use wreq::redirect;
 use url::Url;
 
@@ -119,6 +121,8 @@ struct FetchResponse {
     success: bool,
     status: Option<u16>,
     headers: HashMap<String, String>,
+    /// Every Set-Cookie value; `headers` keeps only one of them.
+    set_cookies: Vec<String>,
     body: Option<String>,
     /// Which identity was actually presented, so a failure can be reproduced.
     profile_used: Option<String>,
@@ -133,6 +137,7 @@ impl FetchResponse {
             success: false,
             status: None,
             headers: HashMap::new(),
+            set_cookies: Vec::new(),
             body: None,
             profile_used: None,
             final_url: None,
@@ -162,20 +167,50 @@ async fn health() -> Json<Health> {
     })
 }
 
-/// Build a client for one request.
+/// Everything a client's identity is made of. `profile` is None for the plain tier.
+#[derive(Clone, PartialEq, Eq, Hash)]
+struct ClientKey {
+    profile: Option<String>,
+    proxy: Option<String>,
+    allow_private: bool,
+}
+
+// ponytail: cleared wholesale past 64 keys; LRU if callers rotate many proxies.
+const MAX_CLIENTS: usize = 64;
+static CLIENTS: LazyLock<Mutex<HashMap<ClientKey, wreq::Client>>> =
+    LazyLock::new(Default::default);
+
+static MAX_BODY_BYTES: LazyLock<usize> = LazyLock::new(|| {
+    std::env::var("HELIX_FETCH_MAX_BODY_BYTES")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(10 * 1024 * 1024)
+});
+
+/// The client for this request's identity, built on first use.
 ///
-/// A client is not reused across requests because identity and proxy vary per
-/// call, and a pooled connection carries the previous identity's TLS session
-/// with it — which would defeat the point of choosing a profile at all.
-fn build_client(req: &FetchRequest) -> anyhow::Result<(wreq::Client, Option<String>)> {
-    let mut builder = wreq::Client::builder().timeout(Duration::from_millis(req.timeout_ms));
+/// Clients are shared only between requests with the same key, so a pooled
+/// connection never carries another identity's TLS session — which would
+/// defeat the point of choosing a profile at all.
+fn client_for(req: &FetchRequest) -> anyhow::Result<(wreq::Client, Option<String>)> {
+    let resolved = req
+        .impersonate
+        .then(|| profile::resolve(req.profile.as_deref()));
+    let key = ClientKey {
+        profile: resolved.as_ref().map(|r| r.id.clone()),
+        proxy: req.proxy.clone(),
+        allow_private: req.allow_private,
+    };
 
-    let mut profile_used = None;
+    let mut clients = CLIENTS.lock().unwrap_or_else(PoisonError::into_inner);
+    if let Some(client) = clients.get(&key) {
+        return Ok((client.clone(), key.profile));
+    }
 
-    if req.impersonate {
-        let resolved = profile::resolve(req.profile.as_deref());
+    let mut builder = wreq::Client::builder();
+
+    if let Some(resolved) = resolved {
         builder = builder.emulation(resolved.emulation);
-        profile_used = Some(resolved.id);
     }
 
     if let Some(proxy) = &req.proxy {
@@ -194,7 +229,28 @@ fn build_client(req: &FetchRequest) -> anyhow::Result<(wreq::Client, Option<Stri
         }));
     }
 
-    Ok((builder.build()?, profile_used))
+    let client = builder.build()?;
+    if clients.len() >= MAX_CLIENTS {
+        clients.clear();
+    }
+    clients.insert(key.clone(), client.clone());
+    Ok((client, key.profile))
+}
+
+/// The error and every cause beneath it, so a DNS failure says "dns".
+fn error_chain(error: &dyn std::error::Error) -> String {
+    let mut text = error.to_string();
+    let mut source = error.source();
+    while let Some(cause) = source {
+        // wreq's Display already inlines some causes; skip the repeats.
+        let cause_text = cause.to_string();
+        if !text.contains(&cause_text) {
+            text.push_str(": ");
+            text.push_str(&cause_text);
+        }
+        source = cause.source();
+    }
+    text
 }
 
 async fn fetch(Json(req): Json<FetchRequest>) -> Json<FetchResponse> {
@@ -219,7 +275,7 @@ async fn fetch(Json(req): Json<FetchRequest>) -> Json<FetchResponse> {
         }
     }
 
-    let (client, profile_used) = match build_client(&req) {
+    let (client, profile_used) = match client_for(&req) {
         Ok(pair) => pair,
         Err(error) => {
             return Json(FetchResponse::failure(
@@ -229,7 +285,9 @@ async fn fetch(Json(req): Json<FetchRequest>) -> Json<FetchResponse> {
         }
     };
 
-    let mut request = client.get(&req.url);
+    let mut request = client
+        .get(&req.url)
+        .timeout(Duration::from_millis(req.timeout_ms));
 
     // Caller headers are applied last so they win over the profile's defaults.
     // Someone who explicitly sets a header meant it, even if it weakens the
@@ -247,9 +305,9 @@ async fn fetch(Json(req): Json<FetchRequest>) -> Json<FetchResponse> {
             let reason = if error.is_timeout() {
                 format!("timeout after {}ms", req.timeout_ms)
             } else if error.is_connect() {
-                format!("connection failed: {error}")
+                format!("connection failed: {}", error_chain(&error))
             } else {
-                format!("request failed: {error}")
+                format!("request failed: {}", error_chain(&error))
             };
             return Json(FetchResponse::failure(reason, elapsed(started)));
         }
@@ -269,25 +327,40 @@ async fn fetch(Json(req): Json<FetchRequest>) -> Json<FetchResponse> {
         })
         .collect::<HashMap<_, _>>();
 
+    let set_cookies = response
+        .headers()
+        .get_all(wreq::header::SET_COOKIE)
+        .iter()
+        .filter_map(|v| v.to_str().ok().map(str::to_string))
+        .collect();
+
+    // The cap counts decoded bytes, so a compression bomb stops at it too.
+    let max = *MAX_BODY_BYTES;
+    let mut error = None;
     // A body that fails to decode is still a real answer about the transport —
     // report the status and headers rather than discarding everything.
-    let body = match response.text().await {
-        Ok(text) => Some(text),
-        Err(error) => {
-            tracing::debug!(%error, url = %req.url, "failed to read body");
+    let body = match Limited::new(wreq::Body::from(response), max).collect().await {
+        Ok(collected) => Some(String::from_utf8_lossy(&collected.to_bytes()).into_owned()),
+        Err(e) if e.is::<LengthLimitError>() => {
+            error = Some(format!("body exceeds {max} bytes"));
+            None
+        }
+        Err(e) => {
+            tracing::debug!(error = %e, url = %req.url, "failed to read body");
             None
         }
     };
 
     Json(FetchResponse {
-        success: true,
+        success: error.is_none(),
         status: Some(status),
         headers,
+        set_cookies,
         body,
         profile_used,
         final_url: Some(final_url),
         timing_ms: elapsed(started),
-        error: None,
+        error,
     })
 }
 
@@ -346,4 +419,147 @@ async fn healthcheck(url: &str) -> anyhow::Result<bool> {
         .await
         .map(|r| r.status().is_success())
         .unwrap_or(false))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    const BIG_BODY: usize = 11 * 1024 * 1024;
+
+    fn gzip(data: &[u8]) -> Vec<u8> {
+        let mut encoder = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+        encoder.write_all(data).unwrap();
+        encoder.finish().unwrap()
+    }
+
+    fn respond(head: &str) -> Vec<u8> {
+        let path = head.split_whitespace().nth(1).unwrap_or("/");
+        let accepts_gzip = head
+            .lines()
+            .any(|l| l.starts_with("accept-encoding:") && l.contains("gzip"));
+        let mut extra = "";
+        let body = match path {
+            "/gzip" if accepts_gzip => {
+                extra = "content-encoding: gzip\r\n";
+                gzip(b"compressed hello")
+            }
+            "/gzip" => b"not compressed".to_vec(),
+            "/big" => vec![b'x'; BIG_BODY],
+            "/cookies" => {
+                extra = "set-cookie: a=1; Path=/\r\nset-cookie: b=2; Path=/\r\n";
+                b"ok".to_vec()
+            }
+            _ => head.as_bytes().to_vec(),
+        };
+        let mut out = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n{extra}\r\n", body.len())
+            .into_bytes();
+        out.extend(body);
+        out
+    }
+
+    /// Keep-alive HTTP/1.1 server; `/echo` returns the lowercased request head.
+    /// The counter is TCP connections accepted, which is how client reuse shows.
+    async fn serve() -> (String, Arc<AtomicUsize>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        let connections = Arc::new(AtomicUsize::new(0));
+        let counter = connections.clone();
+        tokio::spawn(async move {
+            loop {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                counter.fetch_add(1, Ordering::SeqCst);
+                tokio::spawn(async move {
+                    let mut buf = Vec::new();
+                    let mut chunk = [0u8; 4096];
+                    loop {
+                        let n = match socket.read(&mut chunk).await {
+                            Ok(0) | Err(_) => return,
+                            Ok(n) => n,
+                        };
+                        buf.extend_from_slice(&chunk[..n]);
+                        while let Some(end) = buf.windows(4).position(|w| w == b"\r\n\r\n") {
+                            let head = String::from_utf8_lossy(&buf[..end + 4]).to_lowercase();
+                            buf.drain(..end + 4);
+                            if socket.write_all(&respond(&head)).await.is_err() {
+                                return;
+                            }
+                        }
+                    }
+                });
+            }
+        });
+        (base, connections)
+    }
+
+    async fn call(body: serde_json::Value) -> FetchResponse {
+        fetch(Json(serde_json::from_value(body).unwrap())).await.0
+    }
+
+    #[tokio::test]
+    async fn tls_tier_asks_for_compression_like_chrome_and_decodes_it() {
+        let (base, _) = serve().await;
+        let echo = call(serde_json::json!({ "url": format!("{base}/echo"), "allow_private": true })).await;
+        let head = echo.body.unwrap();
+        assert!(
+            head.contains("accept-encoding: gzip, deflate, br, zstd\r\n"),
+            "no Chrome accept-encoding in: {head}"
+        );
+
+        let res = call(serde_json::json!({ "url": format!("{base}/gzip"), "allow_private": true })).await;
+        assert_eq!(res.body.as_deref(), Some("compressed hello"));
+    }
+
+    #[tokio::test]
+    async fn same_identity_reuses_a_client_and_another_identity_does_not() {
+        let (base, connections) = serve().await;
+        let plain = serde_json::json!({ "url": format!("{base}/echo"), "allow_private": true, "impersonate": false });
+
+        call(plain.clone()).await;
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        call(plain).await;
+        assert_eq!(connections.load(Ordering::SeqCst), 1, "same key opened a second connection");
+
+        call(serde_json::json!({ "url": format!("{base}/echo"), "allow_private": true, "profile": "edge-148" })).await;
+        assert_eq!(connections.load(Ordering::SeqCst), 2, "another identity shared a connection");
+    }
+
+    #[tokio::test]
+    async fn body_over_the_cap_is_refused() {
+        let (base, _) = serve().await;
+        let res = call(serde_json::json!({ "url": format!("{base}/big"), "allow_private": true })).await;
+        assert!(res.body.is_none());
+        let error = res.error.unwrap_or_default();
+        assert!(error.starts_with("body exceeds "), "got error {error:?}");
+        assert_eq!(res.status, Some(200));
+    }
+
+    #[tokio::test]
+    async fn default_identity_presents_windows() {
+        let (base, _) = serve().await;
+        let res = call(serde_json::json!({ "url": format!("{base}/echo"), "allow_private": true })).await;
+        let head = res.body.unwrap();
+        assert!(head.contains("sec-ch-ua-platform: \"windows\"\r\n"), "head: {head}");
+        assert!(head.contains("user-agent: mozilla/5.0 (windows nt 10.0; win64; x64)"), "head: {head}");
+    }
+
+    #[tokio::test]
+    async fn transport_error_keeps_its_dns_cause() {
+        let res = call(serde_json::json!({ "url": "https://nonexistent-host-helix-test.invalid/" })).await;
+        let error = res.error.unwrap_or_default();
+        assert!(error.to_lowercase().contains("dns"), "got error {error:?}");
+    }
+
+    #[tokio::test]
+    async fn every_set_cookie_survives() {
+        let (base, _) = serve().await;
+        let res = call(serde_json::json!({ "url": format!("{base}/cookies"), "allow_private": true })).await;
+        let json = serde_json::to_value(&res).unwrap();
+        assert_eq!(json["set_cookies"], serde_json::json!(["a=1; Path=/", "b=2; Path=/"]));
+        assert!(json["headers"]["set-cookie"].is_string());
+    }
 }

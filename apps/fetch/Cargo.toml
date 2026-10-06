@@ -1,6 +1,6 @@
 [package]
 name = "helix-fetch"
-version = "1.6.0"
+version = "1.7.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "TLS-impersonating fetch tier for Helix"
@@ -21,8 +21,13 @@ path = "src/main.rs"
 # what makes newer identities presentable: wreq-util 0.1 stopped at Chrome 137,
 # while real browsers are on 149+, so every capture recorded a user-agent the
 # transport layer could not match.
-wreq = "0.16"
-wreq-util = "0.2"
+#
+# The compression features decode bodies; wreq-util's emulation-compression
+# makes each identity send its own Accept-Encoding in its own header position.
+wreq = { version = "0.16", features = ["gzip", "brotli", "deflate", "zstd"] }
+wreq-util = { version = "0.2", features = ["emulation-compression"] }
+# Limited caps the body while it streams.
+http-body-util = "0.1"
 # wreq 0.16 dropped its Url re-export in favour of http::Uri; the initial URL
 # check still wants a parser, so depend on the crate wreq itself uses.
 url = "2"
@@ -37,6 +42,7 @@ thiserror = "2"
 
 [dev-dependencies]
 tokio-test = "0.4"
+flate2 = "1"
 
 [profile.release]
 opt-level = 3

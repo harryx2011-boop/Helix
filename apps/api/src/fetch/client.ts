@@ -80,6 +80,7 @@ export class FetchClient {
         success: boolean;
         status?: number;
         headers?: Record<string, string>;
+        set_cookies?: string[];
         body?: string;
         profile_used?: string;
         timing_ms?: number;
@@ -90,6 +91,7 @@ export class FetchClient {
         success: body.success,
         status: body.status,
         headers: body.headers ?? {},
+        setCookies: body.set_cookies,
         body: body.body,
         profileUsed: body.profile_used,
         timingMs: body.timing_ms ?? Date.now() - started,

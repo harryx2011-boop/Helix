@@ -1,5 +1,16 @@
 # Helix — context
 
+> **Anti-bot pass 1 (2026-10-05, commits `ee184a6`, line-ending fix after).** Block detection counts body markers only on interstitial-shaped responses: status 400+, under 1,000 chars of extracted text, or under 32 KB of HTML before extraction. The bare `challenge-platform` match is replaced by `_cf_chl_opt` and the "Just a moment..." title, and `x-datadome` alone no longer counts. Before the fix, discord.com, medium.com and cloudflare.com (HTTP 200 on the tls tier) were flagged, so every tier ran and the scrape failed. The body is lowercased once, and only when a marker can count; before, it was lowercased per signal, about 76 ms per call on 1.3 MB. A DNS failure now stops at the first tier. Notes: `research/research_notes/Helix anti bot scraping 2026/`. **Next (SUITE-PLAN Phase 1 overlap):**
+> 1. Start `auto` at `tls`: plain sends no User-Agent and a non-browser JA4, so npmjs returns 403. Eight `pipeline.test.ts` cases assume plain.
+> 2. `Accept-Encoding` and compression in helix-fetch.
+> 3. Browser stealth: `HeadlessChrome` user agent, `navigator.webdriver`, `Runtime.enable`, profile user agent never applied (`pool.ts:298-309`).
+> 4. Unstable canvas noise (`profiles.ts:231-259`).
+> 5. Per-domain tier memory and clearance-cookie reuse.
+> 6. Image and font blocking.
+> 7. Benchmark.
+>
+> No version bump yet.
+
 > **Suite plan (2026-10-05, plan only).** `SUITE-PLAN.md` holds two audits and six phases. The cross-MCP audit (vulcan, 30 days) found that `helix_search` failed 56 of 56 calls for lack of a backend, and that `helix_scrape` carries 66% of MCP result tokens at p50 7.2 s. The session-start audit measured about 51k tokens loaded before the first prompt plus about 9k of hook text, with about 10k trimmable. Phases: scraping efficiency and the two ladder findings; SearXNG in WSL Docker; `helix_image_sheet`; `helix_data_miner` (topic to table, Composio optional); Web Monitoring change summaries; the VS Code extension in `apps/vscode`. Nothing is built yet.
 
 > **2.2.0 — MCP token diet (2026-10-02 built, 2026-10-03 reviewed and merged, unpushed, untagged, installer not rebuilt).** MINOR because the MCP surface changes shape: a slimmer manifest, trimmed responses and screenshots as `image` blocks; REST, `openapi.yaml` structure and the desktop UI are untouched. The review added one fix (a tool whose summary lost its full stop ran into `Option notes:`; test `ends the summary with a full stop...`). **Residual, by design:** (1) prose that states a mutual exclusion or a conditional requirement inside a nested option (`selector` with `clip`, `extract` with `jsonOptions`, `viewport` with `mobile`, crawl `url` with `resume`) is no longer in the manifest; the REST route still rejects the call with a 400 that says why. (2) A crawl or batch poll cannot know the requested formats, so it drops each page's `text` copy even if the caller asked for `text` beside `markdown`; `markdown` carries the same content. (3) `usage.providerCost.amount: null` ("unknown") is dropped from an extract response, leaving `currency` alone. (4) MCP `serverInfo.version` still reports `0.1.0` (`registerMcp` is never passed a version; pre-existing). The desktop app bundles `apps/api`, so it needs `node ~/.claude/scripts/desktop-apps.mjs --rebuild helix` before the installed copy carries this. Original build notes follow.

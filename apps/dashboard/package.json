@@ -6,7 +6,8 @@
   "license": "Apache-2.0",
   "scripts": {
     "dev": "next dev -p 3400",
-    "build": "next typegen && pnpm -s typecheck && next build",
+    "build": "next build",
+    "build:fast": "next typegen && pnpm -s typecheck && node scripts/build-fast.mjs",
     "start": "next start",
     "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit --noUncheckedSideEffectImports false",
     "lint": "eslint .",

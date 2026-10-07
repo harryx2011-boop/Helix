@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { ENDPOINTS, EXAMPLE_REQUEST } from './catalog';
 import { ENDPOINT_DOCS, docsCurlExample, docsEndpointList, agentSurfaceDocs, AGENT_SURFACE_SLUGS } from './docs-content';
 import { MCP_URL, SITE_URL } from './mode';
-import { CANVAS_MODULES, CANVAS_NAME, CANVAS_PACKAGE, CANVAS_REPO, CANVAS_SUBDIR, TOOL_CONFIRMED, TOOL_READONLY, TOOL_TOTAL } from './canvas';
 import { generateCode } from './codegen';
 import type { Endpoint } from './endpoints';
 
@@ -90,51 +89,6 @@ async function architectureMarkdown(): Promise<string> {
   return [source.trim(), '', AGENT_BLOCK].join('\n');
 }
 
-/**
- * Canvas is a product page but not an endpoint, so it cannot go through
- * `capabilityPageMarkdown`. Built from the same catalog the page renders from,
- * so the twin cannot drift from the counts shown on `/canvas`.
- */
-function canvasMarkdown(): string {
-  return [
-    frontmatter(CANVAS_NAME, `Your Canvas LMS as ${TOOL_TOTAL} MCP tools. Runs on your machine with your own token.`),
-    '**Status:** live. Not affiliated with or endorsed by Instructure.\n',
-    '## Purpose',
-    `An MCP server that hands Claude, Cursor or any MCP client a Canvas LMS account: courses, assignments, grades, discussions, rubrics, peer reviews. It runs as a local process over stdio, authenticates with a Canvas personal access token you issue, and returns Markdown from every tool.`,
-    '',
-    '## Safety',
-    `${TOOL_READONLY} of the ${TOOL_TOTAL} tools only read. Every tool that changes Canvas — ${TOOL_CONFIRMED} of them — returns a preview and makes no mutating request until it is called again with \`confirm=true\`. (${TOOL_TOTAL - TOOL_READONLY} tools are non-read-only; the difference is \`clear_cache\`, which clears an in-memory cache and makes no Canvas request.)`,
-    '',
-    'Permissions are exactly what the Canvas role behind the token grants: a student token cannot grade. `CANVAS_ANONYMIZE_STUDENTS` replaces every student name with a stable pseudonym across all output.',
-    '',
-    '## Tool groups',
-    CANVAS_MODULES.map((m) => `- **${m.label}** (${m.count}, ${m.readOnly} read-only) — ${m.blurb}`).join('\n'),
-    '',
-    '## Install',
-    '```bash',
-    `git clone ${CANVAS_REPO}`,
-    `cd ${CANVAS_SUBDIR}`,
-    'uv venv .venv && uv pip install -e .',
-    'cp .env.example .env   # set CANVAS_URL and CANVAS_TOKEN',
-    `.venv/bin/${CANVAS_PACKAGE} --test`,
-    '```',
-    '',
-    'Then register it with a client, e.g. Claude Code:',
-    '```bash',
-    `claude mcp add --scope user ${CANVAS_PACKAGE} -- "/path/to/${CANVAS_SUBDIR}/.venv/bin/${CANVAS_PACKAGE}"`,
-    '```',
-    '',
-    'No client config carries the token — the server reads `.env` from its own folder.',
-    '',
-    '## More',
-    '- [Every tool, with parameters](/canvas/tools)',
-    '- [The eight bundled skills](/canvas/skills)',
-    '- [Changelog](/canvas/changelog)',
-    '',
-    AGENT_BLOCK,
-  ].join('\n');
-}
-
 function docsIndexMarkdown(): string {
   const endpoints = docsEndpointList();
   return [
@@ -217,7 +171,6 @@ export const MARKDOWN_TWIN_PATHS: readonly string[] = [
   ...PRODUCT_ENDPOINTS,
   'self-host',
   'architecture',
-  'canvas',
   'docs',
   ...PRODUCT_ENDPOINTS.map((id) => `docs/${id}`),
   'docs/getting-started',
@@ -229,7 +182,6 @@ export const MARKDOWN_TWIN_PATHS: readonly string[] = [
 /** Resolves the markdown body for a twin path (e.g. `scrape`, `docs/crawl`, `architecture`). Undefined if unknown. */
 export async function resolveMarkdownTwin(path: string): Promise<string | undefined> {
   if (path === 'self-host') return selfHostMarkdown();
-  if (path === 'canvas') return canvasMarkdown();
   if (path === 'architecture') return architectureMarkdown();
   if (path === 'docs') return docsIndexMarkdown();
   if (path in STATIC_DOCS_MARKDOWN) return STATIC_DOCS_MARKDOWN[path];

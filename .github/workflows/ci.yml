@@ -73,21 +73,6 @@ jobs:
       - run: ruff format --check .
       - run: pytest
 
-  canvas:
-    name: canvas-mcp (Python)
-    runs-on: ubuntu-latest
-    defaults:
-      run: { working-directory: tools/canvas-mcp }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: pip
-      - run: pip install -e ".[dev]"
-      - run: ruff check .
-      - run: pytest -q
-
   spec:
     name: OpenAPI spec
     runs-on: ubuntu-latest

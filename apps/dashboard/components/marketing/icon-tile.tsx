@@ -13,7 +13,7 @@ const GLYPH_CLASS: Record<NonNullable<IconTileProps['size']>, string> = { sm: 'h
 /**
  * A glyph set in a tinted square so it reads as a mark, not a bullet. Usually a
  * Lucide icon, which inherits the tile's violet via `currentColor`; a brand mark
- * (`CanvasMark`) carries its own colour and ignores the tint by design.
+ * carries its own colour and ignores the tint by design.
  */
 export function IconTile({ icon: Icon, size = 'md', className }: IconTileProps) {
   return (

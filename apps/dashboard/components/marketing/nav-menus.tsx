@@ -4,7 +4,6 @@ import { Logo } from '@/components/shell/logo';
 import { FEATURES, FEATURE_GROUPS } from '@/lib/feature-copy';
 import { cn } from '@/lib/utils';
 import { IconTile } from './icon-tile';
-import { CanvasMarkCompact } from './canvas-mark';
 import type { GlyphIcon } from '@/components/shared/icon-type';
 
 export interface MenuRow {
@@ -42,7 +41,6 @@ export const DOCS_ROWS: readonly MenuRow[] = [
 
 export const TOOL_ROWS: readonly MenuRow[] = [
   { label: 'Get the app', href: '/download', icon: Download },
-  { label: 'Canvas', href: '/canvas', icon: CanvasMarkCompact },
   { label: 'Status', href: '/status', icon: Activity },
 ];
 

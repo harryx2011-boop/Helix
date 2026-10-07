@@ -24,7 +24,6 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: 'Get the app', href: '/download' },
       { label: 'All releases', href: RELEASES_URL },
-      { label: 'Canvas', href: '/canvas' },
       { label: 'Status', href: '/status' },
     ],
   },

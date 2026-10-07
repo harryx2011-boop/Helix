@@ -227,10 +227,8 @@ export function AsciiOrbit({ cols = 34, rows = 17, seed = 3, fps = 8, quiet, cla
 
 /* ---------------------------------------------------------------------- */
 /* AsciiSegments: eight arc segments with gaps between them, turning as one */
-/* body while a highlight travels the ring. Echoes the Canvas mark's own    */
-/* geometry (eight arcs on 45° centres) so the field reads as that product  */
-/* rather than as generic ambience, and stays distinct from `orbit`, which  */
-/* is continuous concentric rings rather than a segmented band.             */
+/* body while a highlight travels the ring. Eight arcs on 45° centres read  */
+/* as a segmented band, distinct from `orbit`, which is continuous rings.   */
 /* ---------------------------------------------------------------------- */
 
 const SEG = ['·', '-', '=', '+'];

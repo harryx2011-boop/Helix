@@ -253,7 +253,7 @@ Copy, centred, max width 720px:
 > **CTAs:** [ **Get an API key** ] primary · [ **See how the ladder works** ] secondary
 
 The H1 was "The web-data API / you run yourself" until 2026-09-07. Helix had outgrown
-it: the converter, persona and canvas tools are peers of the web-data endpoints, not
+it: the converter and persona tools are peers of the web-data endpoints, not
 add-ons to them, and a name that says "web-data API" describes only one shelf of the
 hub. The subhead carries the concrete list the H1 no longer states. The primary CTA was "Run the interactive ladder demo" before the hosted pivot; with sign-up available it becomes the conversion event and the demo moves to the secondary button, which scrolls to and plays the ladder panel.
 

@@ -1,6 +1,6 @@
 {
   "name": "helix",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "private": true,
   "description": "A frontier utility hub. Self-hostable and BYOK.",
   "license": "Apache-2.0",

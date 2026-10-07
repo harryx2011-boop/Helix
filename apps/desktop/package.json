@@ -1,7 +1,7 @@
 {
   "name": "@helix/desktop",
   "productName": "Helix",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "private": true,
   "description": "Helix for Windows: scrape, parse, search, crawl, interact and monitor, on your own machine.",
   "license": "Apache-2.0",

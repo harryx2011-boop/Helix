@@ -11,14 +11,16 @@ const repo = join(desktop, '..', '..')
 // The dashboard's app icon is the mark from public/logo.svg on its square tile; the wordmark in logo.svg is unreadable at 16 px.
 const source = join(repo, 'apps', 'dashboard', 'app', 'icon.svg')
 const svg = readFileSync(source)
-const sizes = [16, 24, 32, 48, 64, 128, 256]
+const icoSizes = [16, 24, 32, 48, 64, 128, 256]
+const pngSize = 1024
 
-const layers = sizes.map((size) =>
-  new Resvg(svg, { fitTo: { mode: 'width', value: size }, background: 'rgba(0,0,0,0)' }).render().asPng(),
-)
+const render = (size) =>
+  new Resvg(svg, { fitTo: { mode: 'width', value: size }, background: 'rgba(0,0,0,0)' }).render().asPng()
+
+const layers = icoSizes.map(render)
 
 const outDir = join(desktop, 'build')
 mkdirSync(outDir, { recursive: true })
-writeFileSync(join(outDir, 'icon.png'), layers[layers.length - 1])
+writeFileSync(join(outDir, 'icon.png'), render(pngSize))
 writeFileSync(join(outDir, 'icon.ico'), await pngToIco(layers))
-console.log(`icon.ico: ${sizes.join(', ')} px from ${source}`)
+console.log(`icon.png: ${pngSize} px; icon.ico: ${icoSizes.join(', ')} px; from ${source}`)

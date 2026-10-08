@@ -2,7 +2,7 @@
 
 **A frontier utility hub.** Self-hostable and bring-your-own-key. Turn web pages and documents into clean, structured, LLM-ready data — using your own models, your own proxies, your own storage.
 
-> Status: pre-implementation. The design is settled ([ARCHITECTURE.md](ARCHITECTURE.md), [openapi.yaml](openapi.yaml)); the code is being built to it.
+> Status: v2.3.2. The API, the dashboard and the Windows desktop app are built. [ARCHITECTURE.md](ARCHITECTURE.md) and [openapi.yaml](openapi.yaml) are the design they follow.
 
 ---
 

@@ -1,5 +1,7 @@
 # Helix — context
 
+> **Checkout location (verified 2026-10-08).** The repo is on `D:\Helix`, an NTFS volume. `Get-Volume` lists no E: volume. Notes below that name the exFAT drive, E: or no-symlink limits describe the old checkout and are historical.
+
 > **Playground tab track fix (2026-10-07, patch 2.3.2).** The grouped `Segmented` track (`components/shared/segmented.tsx`) was clamped to `max-w-full` while its tabs overflowed, so the DISCOVER/EXTRACT/CRAWL/ACT/WATCH labels drifted onto the tabs in a windowed app. It is now `w-max` inside the existing scroll wrapper, so labels and tabs scroll together. Typecheck clean; the live app is behind the API-key gate, so the fix is not yet checked in a render.
 
 > **Canvas MCP removed from Helix (2026-10-07, patch 2.3.1).** `tools/canvas-mcp/`, the `/canvas` marketing routes, `components/marketing/canvas*`, `lib/canvas*.ts`, `public/canvas/`, the nav and footer links, the markdown twin, the `canvas` CI job and `CANVAS-MERGE.md` are gone. Canvas is a standalone project again at `D:\CanvasLMS - MCP`, not enabled in Helix. History stays in git (the commit before this one holds the last Helix copy) and in the archive at `D:/archive/CanvasLMS-API.git`, which holds the `claude/mcp-browser-connection-0ew1qj` branch (canvas-mcp 1.1.0). The standalone checkout's `main` is 1.0.2, so 1.1.0 is not on it. Version-history entries for 1.17.0 are left as written. Dashboard typecheck: the 12 errors that remain are stale `.next-hosted/types` entries for the deleted routes, not source.

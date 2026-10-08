@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronsUpDown, Loader2, Server } from 'lucide-react';
+import { ChevronsUpDown, Loader2, Server } from '@/components/icons/lucide';
 import { toast } from 'sonner';
 import { FrameRow } from '@/components/app/page-frame';
 import { Button } from '@/components/ui/button';

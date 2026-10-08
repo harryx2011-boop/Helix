@@ -1,42 +1,5 @@
-import type { LucideIcon } from 'lucide-react';
-import {
-  BellRing,
-  Camera,
-  CalendarClock,
-  CircleSlash,
-  Crop,
-  Eye,
-  FileStack,
-  Files,
-  Filter,
-  Gauge,
-  GitBranch,
-  GitCompareArrows,
-  Globe2,
-  KeyRound,
-  Layers,
-  Link2,
-  ListChecks,
-  Map as MapIcon,
-  MousePointerClick,
-  Quote,
-  RefreshCw,
-  ScanEye,
-  ScanSearch,
-  Search,
-  ShieldCheck,
-  ShieldHalf,
-  SlidersHorizontal,
-  Table2,
-  Timer,
-  FileText,
-  Network,
-  Braces,
-  Sparkles,
-  Calculator,
-  Crosshair,
-  Layers3,
-} from 'lucide-react';
+import type { LucideIcon } from '@/components/icons/lucide';
+import { BellRing, Camera, CalendarClock, CircleSlash, Crop, Eye, FileStack, Files, Filter, Gauge, GitBranch, GitCompareArrows, Globe2, KeyRound, Layers, Link2, ListChecks, Map as MapIcon, MousePointerClick, Quote, RefreshCw, ScanEye, ScanSearch, Search, ShieldCheck, ShieldHalf, SlidersHorizontal, Table2, Timer, FileText, Network, Braces, Sparkles, Calculator, Crosshair, Layers3 } from '@/components/icons/lucide';
 
 /**
  * Marketing copy for each thing Helix does, in plain words. One registry feeds the

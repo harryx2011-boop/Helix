@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles } from '@/components/icons/lucide';
 import { FEATURES } from '@/lib/feature-copy';
 import { cn } from '@/lib/utils';
 import { FrameBand } from './section-frame';

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Terminal } from 'lucide-react';
+import { ArrowRight, Terminal } from '@/components/icons/lucide';
 import { PillButton } from '@/components/shared/pill-button';
 import { CodePanel, CodeBlock } from '@/components/shared/code-panel';
 import { HeroField } from '@/components/marketing/hero-field';

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Link2, Loader2, Play, Wand2 } from 'lucide-react';
+import { Link2, Loader2, Play, Wand2 } from '@/components/icons/lucide';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { UrlList } from './url-list';
 import { OutputToggle, type AgentOutputFormat } from './output-toggle';

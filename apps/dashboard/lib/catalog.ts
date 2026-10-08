@@ -1,5 +1,5 @@
-import type { LucideIcon } from 'lucide-react';
-import { Braces, Camera, Eye, FileScan, FileText, Files, Map as MapIcon, MousePointerClick, Network, ScanEye, Search } from 'lucide-react';
+import type { LucideIcon } from '@/components/icons/lucide';
+import { Braces, Camera, Eye, FileScan, FileText, Files, Map as MapIcon, MousePointerClick, Network, ScanEye, Search } from '@/components/icons/lucide';
 import type { Endpoint, RunnableEndpoint } from './endpoints';
 
 /**

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Loader2, Mic, MicOff } from 'lucide-react';
+import { Loader2, Mic, MicOff } from '@/components/icons/lucide';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { desktopVoice } from '@/lib/desktop';
 import { useDictation } from '@/lib/voice-core/react';

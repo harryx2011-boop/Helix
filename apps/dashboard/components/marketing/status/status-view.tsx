@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronDown, CircleAlert, CircleCheck, CircleX, Loader2 } from 'lucide-react';
+import { ChevronDown, CircleAlert, CircleCheck, CircleX, Loader2 } from '@/components/icons/lucide';
 import { cn } from '@/lib/utils';
 import { HOSTED } from '@/lib/mode';
 import {

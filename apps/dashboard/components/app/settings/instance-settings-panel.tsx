@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { toast } from 'sonner';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw } from '@/components/icons/lucide';
 import { FrameRow, FrameHeading } from '@/components/app/page-frame';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight } from '@/components/icons/lucide';
 import { PillButton } from '@/components/shared/pill-button';
 import { CodePanel } from '@/components/shared/code-panel';
 import { AnimatedCode } from '@/components/shared/animated-code';

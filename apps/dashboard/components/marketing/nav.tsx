@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X } from '@/components/icons/lucide';
 import { Logo } from '@/components/shell/logo';
 import { cn } from '@/lib/utils';
 import { PillButton } from '@/components/shared/pill-button';

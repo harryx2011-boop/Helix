@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy } from '@/components/icons/lucide';
 import { cn } from '@/lib/utils';
 import { resolveShikiLang } from '@/lib/shiki-langs';
 

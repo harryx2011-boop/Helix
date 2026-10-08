@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw } from '@/components/icons/lucide';
 import { cn } from '@/lib/utils';
 import { CodePanel } from '@/components/shared/code-panel';
 import { useReducedMotion } from '@/components/shared/ambient';

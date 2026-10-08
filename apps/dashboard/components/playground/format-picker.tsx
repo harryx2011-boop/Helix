@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { Check, ChevronDown, FileText, X } from 'lucide-react';
+import { Check, ChevronDown, FileText, X } from '@/components/icons/lucide';
 import type { Format } from '@/lib/api';
 import { FORMAT_CARDS, summarizeFormats, toggleFormat, type FormatCard, type FormatIllustration } from '@/lib/formats';
 import { usePrefersReducedMotion } from '@/lib/preferences';

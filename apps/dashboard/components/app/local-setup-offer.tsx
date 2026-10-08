@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, Copy, Terminal } from 'lucide-react';
+import { Check, Copy, Terminal } from '@/components/icons/lucide';
 import { Button } from '@/components/ui/button';
 import { setupPrompt } from '@/lib/setup-prompt';
 import { cn } from '@/lib/utils';

@@ -1,5 +1,5 @@
-import { AlertTriangle, ArrowUpCircle, Ban, Clock, FileQuestion, Globe, ServerOff, ShieldOff } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { AlertTriangle, ArrowUpCircle, Ban, Clock, FileQuestion, Globe, ServerOff, ShieldOff } from '@/components/icons/lucide';
+import type { LucideIcon } from '@/components/icons/lucide';
 import type { FailureReason, FetchFailure } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { FetchLadder } from '@/components/ladder/fetch-ladder';

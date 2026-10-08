@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from '@/components/icons/lucide';
 import { BrandMark } from '@/components/shared/brand-mark';
 import type { BrandId } from '@/lib/brand-marks';
 import { cn } from '@/lib/utils';

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bell, Bot, Search, Table2 } from 'lucide-react';
+import { Bell, Bot, Search, Table2 } from '@/components/icons/lucide';
 import { FrameBand } from './section-frame';
 import { AsciiNoise } from '@/components/shared/ascii-fields';
 import { IconTile } from './icon-tile';

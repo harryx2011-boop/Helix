@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from '@/components/icons/lucide';
 
 /**
  * What `IconTile` and the nav rows accept as a glyph.

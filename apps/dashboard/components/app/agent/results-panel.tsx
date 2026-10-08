@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, Copy, Download, RotateCw } from 'lucide-react';
+import { Check, Copy, Download, RotateCw } from '@/components/icons/lucide';
 import { Button } from '@/components/ui/button';
 import { SchemaJson } from './schema-json';
 import { toCsv } from '@/lib/agent';

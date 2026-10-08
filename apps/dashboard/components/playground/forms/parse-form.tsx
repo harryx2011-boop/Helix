@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Upload } from 'lucide-react';
+import { Upload } from '@/components/icons/lucide';
 import type { ParseJsonOptions, ParseRequest } from '@/lib/api';
 import { UPLOAD_ACCEPT } from '@/lib/uploads';
 import { Input } from '@/components/ui/input';

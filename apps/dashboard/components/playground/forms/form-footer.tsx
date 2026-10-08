@@ -1,6 +1,6 @@
 'use client';
 
-import { Code2, Loader2, Play } from 'lucide-react';
+import { Code2, Loader2, Play } from '@/components/icons/lucide';
 import { Button } from '@/components/ui/button';
 
 interface FormFooterProps {

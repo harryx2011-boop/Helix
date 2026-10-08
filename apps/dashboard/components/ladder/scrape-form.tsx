@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Loader2, Play } from 'lucide-react';
+import { Loader2, Play } from '@/components/icons/lucide';
 import type { Extractor, Format, ScrapeRequest, Tier } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

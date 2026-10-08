@@ -1,6 +1,6 @@
 'use client';
 
-import { Server } from 'lucide-react';
+import { Server } from '@/components/icons/lucide';
 
 /**
  * `plain` and `tls` are Helix's own transports, not products, so they get a

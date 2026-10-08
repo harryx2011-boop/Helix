@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, ChevronDown, Copy, Pencil } from 'lucide-react';
+import { Check, ChevronDown, Copy, Pencil } from '@/components/icons/lucide';
 import { Button } from '@/components/ui/button';
 import { SchemaJson } from './schema-json';
 import { cn } from '@/lib/utils';

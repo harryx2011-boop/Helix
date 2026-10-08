@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Code2, FileText } from 'lucide-react';
+import { Code2, FileText } from '@/components/icons/lucide';
 import type { ScrapeResponse } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';

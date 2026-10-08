@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from '@/components/icons/lucide';
 import { cn } from '@/lib/utils';
 import { CodeRain, PixelSquares } from '@/components/shared/ambient';
 

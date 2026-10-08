@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X } from '@/components/icons/lucide';
 import type { ExtractRequest } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

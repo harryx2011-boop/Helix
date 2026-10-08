@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowUp, Link2, Loader2, Sparkles } from 'lucide-react';
+import { ArrowUp, Link2, Loader2, Sparkles } from '@/components/icons/lucide';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DictationButton, joinDictation, type DictationCaption } from './dictation-button';
 import { UrlList } from './url-list';

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Bell, CircleHelp, Menu, Plug, Search } from 'lucide-react';
+import { Bell, CircleHelp, Menu, Plug, Search } from '@/components/icons/lucide';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PUBLIC_API_URL, instanceUrl } from '@/lib/mode';

@@ -1,4 +1,4 @@
-import { Download } from 'lucide-react';
+import { Download } from '@/components/icons/lucide';
 import { PillButton } from '@/components/shared/pill-button';
 import { GridCells } from '@/components/shared/ambient';
 import { AsciiFluid } from '@/components/shared/ascii-fluid';

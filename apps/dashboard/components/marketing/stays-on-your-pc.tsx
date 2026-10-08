@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, HardDrive, KeyRound, UserX } from 'lucide-react';
+import { ArrowRight, HardDrive, KeyRound, UserX } from '@/components/icons/lucide';
 import { FrameBand } from './section-frame';
 import { IconTile } from './icon-tile';
 import { AmbientCode, CodeRain } from '@/components/shared/ambient';

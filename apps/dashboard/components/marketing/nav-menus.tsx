@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowUpRight, Braces, Compass, Download, HelpCircle, Activity, Lock, Rocket, Settings } from 'lucide-react';
+import { ArrowUpRight, Braces, Compass, Download, HelpCircle, Activity, Lock, Rocket, Settings } from '@/components/icons/lucide';
 import { Logo } from '@/components/shell/logo';
 import { FEATURES, FEATURE_GROUPS } from '@/lib/feature-copy';
 import { cn } from '@/lib/utils';

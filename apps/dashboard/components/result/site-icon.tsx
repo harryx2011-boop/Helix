@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Globe } from 'lucide-react';
+import { Globe } from '@/components/icons/lucide';
 import { cn } from '@/lib/utils';
 
 function hostnameFromUrl(url: string): string | undefined {

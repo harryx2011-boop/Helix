@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Download, Link2, FileText } from 'lucide-react';
+import { ArrowRight, Download, Link2, FileText } from '@/components/icons/lucide';
 import { FrameBand } from './section-frame';
 import { IconTile } from './icon-tile';
 import { AsciiFlow } from '@/components/shared/ascii-fields';

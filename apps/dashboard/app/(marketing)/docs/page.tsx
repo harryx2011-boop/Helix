@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Server, Terminal, Puzzle, type LucideIcon } from 'lucide-react';
+import { ArrowRight, BookOpen, Server, Terminal, Puzzle, type LucideIcon } from '@/components/icons/lucide';
 import { HeroField } from '@/components/marketing/hero-field';
 import { DOCS } from '@/lib/docs';
 import { docsEndpointList, agentSurfaceDocs } from '@/lib/docs-content';

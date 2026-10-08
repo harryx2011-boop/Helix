@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { FileUp, X } from 'lucide-react';
+import { FileUp, X } from '@/components/icons/lucide';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 

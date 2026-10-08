@@ -57,10 +57,10 @@ export function Segmented<T extends string>({ items, value, onChange, className,
       aria-label={rest['aria-label']}
       onKeyDown={onKeyDown}
       className={cn(
-        'relative inline-flex max-w-full items-end',
+        'relative inline-flex items-end',
         grouped
-          ? 'before:absolute before:inset-x-0 before:bottom-0 before:top-5 before:rounded-pill before:border before:border-m-border-muted before:bg-m-bg'
-          : 'rounded-pill border border-m-border-muted bg-m-bg',
+          ? 'w-max before:absolute before:inset-x-0 before:bottom-0 before:top-5 before:rounded-pill before:border before:border-m-border-muted before:bg-m-bg'
+          : 'max-w-full rounded-pill border border-m-border-muted bg-m-bg',
         className,
       )}
     >

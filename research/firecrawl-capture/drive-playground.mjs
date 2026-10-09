@@ -20,7 +20,7 @@ const [resp] = await Promise.all([
 ]);
 console.log('proxy response:', resp ? resp.status() : 'none');
 await page.waitForTimeout(2500);
-await page.screenshot({ path: 'E:/Helix/apps/dashboard/.screenshots/launch-playground-scrape.png', fullPage: true });
+await page.screenshot({ path: 'D:/Helix/apps/dashboard/.screenshots/launch-playground-scrape.png', fullPage: true });
 const text = await page.locator('main').innerText();
 console.log('result pane excerpt:', text.replace(/\s+/g, ' ').slice(0, 600));
 console.log('console errors:', errors.filter((e) => !e.includes('script-src')).length);

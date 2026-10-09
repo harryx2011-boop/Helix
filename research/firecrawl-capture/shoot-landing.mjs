@@ -25,7 +25,7 @@ for (const vp of viewports) {
     await page.waitForTimeout(800);
     await scrollThrough(page);
     const name = path === '/' ? 'home' : path.slice(1);
-    await page.screenshot({ path: `E:/Helix/apps/dashboard/.screenshots/${name}-${vp.name}.png`, fullPage: true });
+    await page.screenshot({ path: `D:/Helix/apps/dashboard/.screenshots/${name}-${vp.name}.png`, fullPage: true });
     console.log(`shot ${name}-${vp.name}`);
   }
   await ctx.close();

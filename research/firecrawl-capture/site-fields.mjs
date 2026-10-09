@@ -7,6 +7,6 @@ for (const [name, path] of PAGES) {
   await p.waitForTimeout(3000);
   const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, h: document.documentElement.scrollHeight }));
   console.log(name, JSON.stringify(m), m.sw > m.iw ? 'HSCROLL' : 'ok');
-  await p.screenshot({ path: `E:/Helix/apps/dashboard/.screenshots/site-fields-${name}.png` });
+  await p.screenshot({ path: `D:/Helix/apps/dashboard/.screenshots/site-fields-${name}.png` });
 }
 await b.close();

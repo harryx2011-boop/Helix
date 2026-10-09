@@ -1,6 +1,6 @@
 # firecrawl.dev — Interaction & Motion Capture
 
-Captured with Playwright (`e:\Helix\research\firecrawl-capture\interact.mjs`) against `https://firecrawl.dev/` and `https://firecrawl.dev/playground`. Viewport 1440×1000 unless noted. All raw artifacts in `e:\Helix\research\firecrawl-capture\out\interact-*`.
+Captured with Playwright (`D:\Helix\research\firecrawl-capture\interact.mjs`) against `https://firecrawl.dev/` and `https://firecrawl.dev/playground`. Viewport 1440×1000 unless noted. All raw artifacts in `D:\Helix\research\firecrawl-capture\out\interact-*`.
 
 ---
 

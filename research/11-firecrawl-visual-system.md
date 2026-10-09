@@ -1,6 +1,6 @@
 # Firecrawl Visual Design System — Extraction for Helix Homage
 
-Source: `e:\Helix\research\firecrawl-capture\out\` — computed CSS token frequency (`*-tokens.json`), section/copy structure (`*-structure.json`), and screenshots (`*-full.png`, `*-viewport.png`, `*-mobile.png`) captured across firecrawl.dev.
+Source: `D:\Helix\research\firecrawl-capture\out\` — computed CSS token frequency (`*-tokens.json`), section/copy structure (`*-structure.json`), and screenshots (`*-full.png`, `*-viewport.png`, `*-mobile.png`) captured across firecrawl.dev.
 
 Pages captured (11 at time of writing): `home`, `pricing`, `playground`, `cap-scrape`, `cap-crawl`, `cap-interact`, `cap-search`, `cap-parse`, `cap-monitor`, `alternatives`, `changelog`. All pages share **one identical `cssVars` root** — the design system is a single global token set with no per-page divergence. Product capability pages (`cap-*`) share one template (hero → visual demo panel → code sample → CTA).
 

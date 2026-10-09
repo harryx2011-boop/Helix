@@ -30,7 +30,7 @@ for (const vp of viewports) {
       await page.goto(`http://localhost:3400${path}`, { waitUntil: 'networkidle', timeout: 120000 });
       await page.waitForTimeout(800);
       await scrollThrough(page);
-      await page.screenshot({ path: `E:/Helix/apps/dashboard/.screenshots/revamp-${name}-${vp.name}.png`, fullPage: true });
+      await page.screenshot({ path: `D:/Helix/apps/dashboard/.screenshots/revamp-${name}-${vp.name}.png`, fullPage: true });
       console.log(`shot ${name}-${vp.name}`);
     } catch (e) {
       console.log(`FAIL ${name}-${vp.name}: ${String(e.message).slice(0, 120)}`);
@@ -44,7 +44,7 @@ for (const vp of viewports) {
         const sec = page.locator(`section:has-text("${label}")`).first();
         await sec.scrollIntoViewIfNeeded();
         await page.waitForTimeout(1200);
-        await sec.screenshot({ path: `E:/Helix/apps/dashboard/.screenshots/revamp-sec-${name}.png` });
+        await sec.screenshot({ path: `D:/Helix/apps/dashboard/.screenshots/revamp-sec-${name}.png` });
         console.log(`shot section ${name}`);
       } catch (e) {
         console.log(`FAIL section ${name}: ${String(e.message).slice(0, 100)}`);
@@ -53,13 +53,13 @@ for (const vp of viewports) {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.hover('button:has-text("Capabilities")');
     await page.waitForTimeout(500);
-    await page.screenshot({ path: 'E:/Helix/apps/dashboard/.screenshots/revamp-nav-capabilities.png' });
+    await page.screenshot({ path: 'D:/Helix/apps/dashboard/.screenshots/revamp-nav-capabilities.png' });
     await page.hover('button:has-text("Utilities")');
     await page.waitForTimeout(500);
-    await page.screenshot({ path: 'E:/Helix/apps/dashboard/.screenshots/revamp-nav-utilities.png' });
+    await page.screenshot({ path: 'D:/Helix/apps/dashboard/.screenshots/revamp-nav-utilities.png' });
     await page.mouse.move(10, 400);
     await page.waitForTimeout(300);
-    await page.screenshot({ path: 'E:/Helix/apps/dashboard/.screenshots/revamp-hero-1440.png' });
+    await page.screenshot({ path: 'D:/Helix/apps/dashboard/.screenshots/revamp-hero-1440.png' });
     console.log('shot nav + hero');
   }
   await ctx.close();

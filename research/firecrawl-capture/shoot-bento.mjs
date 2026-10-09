@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 
 const BASE = process.env.BASE || 'http://localhost:3400';
-const OUT = 'E:/Helix/apps/dashboard/.screenshots';
+const OUT = 'D:/Helix/apps/dashboard/.screenshots';
 const pages = (process.env.PAGES || 'home,scrape,crawl,parse,search,interact,monitor').split(',').map((p) => (p === 'home' ? '/' : '/' + p));
 
 async function scrollThrough(page) {

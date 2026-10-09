@@ -44,3 +44,12 @@ apps/dashboard/.screenshots/
 # graphify-specific exclusions
 graphify-out/
 .claude/skills/
+
+# Lean graph: shipped source only. Tests, docs, archives and builds are found by qmd or grep.
+research/
+tools/
+docs/
+**/*.test.*
+**/__tests__/
+*.json
+*.md

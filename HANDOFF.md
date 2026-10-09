@@ -1,3 +1,11 @@
+# Handoff — 2026-10-07: saved for tomorrow (2.3.0 open)
+
+Nothing was run today. The restart prompt for 2.3.0 (anti-bot pass 2) is saved verbatim in the Helix memory file `project_helix_handoff_2026_10_07.md`. Its First steps are: run `node ~/.claude/hooks/helix-ensure.js`, read every stray diff in the shared tree, commit the 2.3.0 version line if it is still uncommitted, and check the `desktop-apps.mjs --rebuild helix` install. Then ask the four questions it lists.
+
+Open at save time: 2.3.0 committed locally on main (42c68ef, 10e8d60, 9574d0d), unpushed and untagged; the installed desktop app is 2.3.0 against source 2.3.2.
+
+---
+
 # Handoff — 2026-09-27: parked at 2.1.0
 
 Helix is parked. What is left, in order, and the prompt that restarts it live in the Helix entry of `~/.claude/BACKLOG.md`. Everything below is older and kept for its local-run recipes.

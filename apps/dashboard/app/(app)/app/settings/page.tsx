@@ -15,7 +15,7 @@ export default function SettingsPage() {
           tone="app"
           className="absolute right-0 top-1/2 hidden -translate-y-1/2 lg:block [mask-image:linear-gradient(to_right,transparent,black_40%,black_90%,transparent)]"
         />
-        <h1 className="relative text-[32px] font-medium leading-tight tracking-tight text-foreground">Settings</h1>
+        <h1 className="relative truncate text-[32px] font-medium leading-tight tracking-tight text-foreground">Settings</h1>
         <p className="relative mt-1 text-sm text-muted-foreground">
           This instance’s configuration. Values come from the environment it was started with; changing one here overrides it.
         </p>

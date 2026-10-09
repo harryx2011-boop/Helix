@@ -116,7 +116,7 @@ function SidebarNavInner({ selectedEndpoints, collapsed }: SidebarNavProps) {
       {groups.map((group, gi) => (
         <div key={group.heading ?? `group-${gi}`} className="flex flex-col gap-0.5">
           {group.heading && !collapsed && (
-            <h3 className="px-2.5 pb-1 pt-2 font-mono text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <h3 className="truncate px-2.5 pb-1 pt-2 font-mono text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               {group.heading}
             </h3>
           )}

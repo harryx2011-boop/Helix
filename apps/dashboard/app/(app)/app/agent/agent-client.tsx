@@ -209,8 +209,8 @@ export function AgentClient() {
           className="absolute bottom-0 right-0 hidden lg:block [mask-image:linear-gradient(to_left,black_60%,transparent)]"
         />
         <div className="relative flex w-full max-w-[640px] flex-col items-center gap-6">
-          <h1 className="text-center text-[28px] font-medium leading-tight tracking-tight text-foreground">
-            What data do you want to gather?
+          <h1 className="max-w-full truncate text-center text-[28px] font-medium leading-tight tracking-tight text-foreground">
+            What Data Do You Want to Gather?
           </h1>
           <Composer
             value={prompt}

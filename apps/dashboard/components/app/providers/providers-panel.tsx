@@ -86,7 +86,7 @@ export function ProvidersPanel() {
               <React.Fragment key={meta.id}>
                 {enteringLocal && (
                   <FrameRow className="px-6 py-2.5">
-                    <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">On your own machine</span>
+                    <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">On Your Own Machine</span>
                   </FrameRow>
                 )}
                 <ProviderRow

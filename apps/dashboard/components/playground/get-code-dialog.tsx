@@ -49,7 +49,7 @@ export function GetCodeDialog({ endpoint, body, apiKey, open, onOpenChange, path
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Get code</DialogTitle>
+          <DialogTitle>Get Code</DialogTitle>
         </DialogHeader>
 
         <Tabs value={lang} onValueChange={(value) => setLang(value as Lang)}>

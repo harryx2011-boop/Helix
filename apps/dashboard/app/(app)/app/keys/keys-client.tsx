@@ -139,7 +139,7 @@ function CreateKeyDialog({
         {createdKey ? (
           <>
             <DialogHeader>
-              <DialogTitle>{ephemeral ? 'Key generated' : 'Key created'}</DialogTitle>
+              <DialogTitle>{ephemeral ? 'Key Generated' : 'Key Created'}</DialogTitle>
               <DialogDescription>
                 {ephemeral
                   ? 'Generated in your browser and never sent anywhere. Nothing is stored, so this is the only time you will see it — add it to your instance to make it work.'
@@ -161,7 +161,7 @@ function CreateKeyDialog({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>{ephemeral ? 'Generate API key' : 'Create API key'}</DialogTitle>
+              <DialogTitle>{ephemeral ? 'Generate API Key' : 'Create API Key'}</DialogTitle>
               <DialogDescription>
                 {ephemeral
                   ? 'This deployment has no key store, so the key is generated locally and not saved.'
@@ -229,7 +229,7 @@ function RevokeButton({
       </Button>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Revoke this key?</DialogTitle>
+          <DialogTitle>Revoke This Key?</DialogTitle>
           <DialogDescription>Anything using it will stop authenticating immediately. This cannot be undone.</DialogDescription>
         </DialogHeader>
         <div className="flex justify-end gap-2">
@@ -264,7 +264,7 @@ export function KeysClient() {
           <div className="relative">
             <CardTitle className="flex items-center gap-2 font-mono text-xs uppercase tracking-wide text-muted-foreground">
               <KeyRound className="h-3.5 w-3.5" />
-              API keys
+              API Keys
             </CardTitle>
             <CardDescription>Named keys with an optional per-minute limit. Revoked keys stop authenticating immediately.</CardDescription>
           </div>

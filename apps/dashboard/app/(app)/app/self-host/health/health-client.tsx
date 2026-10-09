@@ -660,7 +660,7 @@ export function HealthClient() {
           </FrameRow>
         )}
         <FrameRow className="px-6 py-2.5">
-          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">Your keys</span>
+          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">Your Keys</span>
         </FrameRow>
         <KeyProviderRows apiKey={apiKey} flushLast={false} />
 
@@ -735,7 +735,7 @@ export function HealthClient() {
           tone="app"
           className="absolute right-6 top-1/2 hidden -translate-y-1/2 lg:block [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_75%)]"
         />
-        <h1 className="relative text-[32px] font-medium leading-tight tracking-tight text-foreground">Health</h1>
+        <h1 className="relative truncate text-[32px] font-medium leading-tight tracking-tight text-foreground">Health</h1>
         <p className="relative mt-1 text-sm text-muted-foreground">
           Whether each tool works right now, how its recent requests went, and which dependency to look at when one does not.
         </p>

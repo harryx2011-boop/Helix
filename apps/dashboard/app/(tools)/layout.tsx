@@ -35,7 +35,7 @@ export default function ToolsLayout({ children }: { children: React.ReactNode })
             className="flex shrink-0 items-center gap-1.5 text-[14px] text-m-ink/64 transition-colors duration-150 ease-out hover:text-m-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="hidden sm:inline">Back to app</span>
+            <span className="hidden sm:inline">Back to App</span>
           </Link>
         </div>
       </header>

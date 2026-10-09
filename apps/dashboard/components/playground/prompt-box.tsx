@@ -384,7 +384,7 @@ export function PromptBox({
               className={cn('absolute left-3 top-full z-20 mt-1 w-[min(300px,calc(100%-24px))] rounded-panel p-1.5', s.popover)}
             >
               <div role="presentation" className={cn('px-2.5 pb-1 pt-1.5 font-mono text-[11px] uppercase tracking-wide', s.faint)}>
-                Jump to
+                Jump To
               </div>
               {commands.length === 0 ? (
                 <p role="option" aria-selected={false} aria-disabled="true" className={cn('px-2.5 pb-2 pt-1 text-[13px]', s.muted)}>

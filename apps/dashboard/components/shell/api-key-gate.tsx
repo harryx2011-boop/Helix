@@ -43,7 +43,7 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
           />
         </div>
         <DialogHeader>
-          <DialogTitle>Connect to your Helix instance</DialogTitle>
+          <DialogTitle>Connect to Your Helix Instance</DialogTitle>
           <DialogDescription>
             Paste an API key created on this instance. It is stored only in this
             browser&apos;s local storage and sent as a bearer token with every

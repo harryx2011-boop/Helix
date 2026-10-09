@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ tab: stri
   const { tab } = await params;
   if (!isCheckTab(tab)) return { title: 'Checks' };
   return {
-    title: `${TAB_LABELS[tab]} check`,
+    title: `${TAB_LABELS[tab]} Check`,
     description: DESCRIPTIONS[tab] as string,
   };
 }
@@ -33,7 +33,7 @@ export default async function CheckTabPage({ params }: { params: Promise<{ tab: 
 
   return (
     <section className="mx-auto w-full max-w-4xl px-5 py-16 sm:px-8 sm:py-20">
-      <h1 className="font-sans text-[32px] font-medium tracking-tight text-m-ink sm:text-[40px]">Checks</h1>
+      <h1 className="truncate font-sans text-[32px] font-medium tracking-tight text-m-ink sm:text-[40px]">Checks</h1>
       <p className="mt-3 max-w-prose font-sans text-[15px] leading-relaxed text-m-ink/56">
         Quick answers about a page, a file, or a change — each one running the same code the API runs.
       </p>

@@ -187,7 +187,7 @@ export function MetadataScrubView({ result }: { result: MetadataScrubSuccess }) 
       */}
       {retained.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-foreground">Still in the file</h3>
+          <h3 className="text-sm font-semibold text-foreground">Still in the File</h3>
           <p className="text-xs leading-relaxed text-muted-foreground">
             These could not be removed without corrupting the file. Treat the download as improved, not clean.
           </p>

@@ -5,11 +5,11 @@ export type PaletteGroup = 'recent' | 'navigate' | 'actions' | 'docs' | 'keys' |
 export const GROUP_ORDER: readonly PaletteGroup[] = ['recent', 'navigate', 'actions', 'docs', 'keys', 'monitors', 'jobs'];
 
 export const GROUP_LABELS: Record<PaletteGroup, string> = {
-  recent: 'Recent runs',
-  navigate: 'Go to',
+  recent: 'Recent Runs',
+  navigate: 'Go To',
   actions: 'Actions',
   docs: 'Docs',
-  keys: 'API keys',
+  keys: 'API Keys',
   monitors: 'Monitors',
   jobs: 'Jobs',
 };

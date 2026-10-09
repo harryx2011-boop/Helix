@@ -182,7 +182,7 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
     }
     out.push(
       { id: 'nav:settings-providers', group: 'navigate', title: 'AI Providers', subtitle: 'Settings', keywords: ['llm', 'anthropic', 'openai', 'ollama', 'byok', 'api key'], icon: Cpu, run: go('/app/settings#providers') },
-      { id: 'nav:settings-instance', group: 'navigate', title: 'Instance settings', subtitle: 'Settings', keywords: ['engine', 'proxy', 'browser', 'guarded', 'restart'], icon: SlidersHorizontal, run: go('/app/settings#instance') },
+      { id: 'nav:settings-instance', group: 'navigate', title: 'Instance Settings', subtitle: 'Settings', keywords: ['engine', 'proxy', 'browser', 'guarded', 'restart'], icon: SlidersHorizontal, run: go('/app/settings#instance') },
       { id: 'nav:settings-preferences', group: 'navigate', title: 'Preferences', subtitle: 'Settings', keywords: ['appearance', 'theme', 'reduce motion', 'default endpoint', 'sidebar'], icon: SlidersHorizontal, run: go('/app/settings#preferences') },
     );
 

@@ -38,7 +38,7 @@ export function CheckTabs({ active }: { active: CheckTab }) {
             href={`/checks/${tab}`}
             aria-current={current ? 'page' : undefined}
             className={cn(
-              '-mb-px border-b-2 px-4 py-2.5 font-sans text-[14px] transition-colors duration-150 ease-out',
+              '-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 font-sans text-[14px] transition-colors duration-150 ease-out',
               current
                 ? 'border-violet text-m-ink'
                 : 'border-transparent text-m-ink/56 hover:border-m-border-muted hover:text-m-ink',

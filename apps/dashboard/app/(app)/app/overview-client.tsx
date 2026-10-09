@@ -65,7 +65,7 @@ function ExploreRow({ endpoints }: { endpoints: EndpointSummary[] }) {
     <>
       <FrameRow>
         <FrameHeading
-          title="Explore your endpoints"
+          title="Explore Your Endpoints"
           description="Every endpoint, one envelope. Open any of them in the playground."
           field={
             <AsciiNoise
@@ -104,7 +104,7 @@ function ActiveBrowsersRow() {
       <div className="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 whitespace-nowrap">
-            <span className="text-[15px] font-medium leading-tight text-foreground">Active browsers</span>
+            <span className="text-[15px] font-medium leading-tight text-foreground">Active Browsers</span>
             <FrameTag tone="accent">live</FrameTag>
           </div>
           <span className="text-[13px] text-muted-foreground">Interact sessions currently open on this instance</span>
@@ -141,7 +141,7 @@ function ApiKeyRow({ welcome }: { welcome: boolean }) {
     <div className="flex flex-col gap-3 px-6 py-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="text-[15px] font-medium leading-tight text-foreground">API key</h3>
+          <h3 className="truncate text-[15px] font-medium leading-tight text-foreground">API Key</h3>
           <p className="text-[13px] text-muted-foreground">{welcome ? 'Copy it now — you can reveal it again anytime with the eye icon.' : 'Use it as a Bearer token'}</p>
         </div>
         <div aria-hidden className="pointer-events-none relative hidden h-10 w-24 shrink-0 overflow-hidden lg:block">
@@ -209,7 +209,7 @@ function AgentIntegrations({ initialOpen }: { initialOpen: boolean }) {
     <>
       <div className="flex items-center justify-between gap-4 px-6 py-5">
         <div>
-          <h3 className="text-[15px] font-medium leading-tight text-foreground">Agent integrations</h3>
+          <h3 className="truncate text-[15px] font-medium leading-tight text-foreground">Agent Integrations</h3>
           <p className="text-[13px] text-muted-foreground">Give your agents web data</p>
         </div>
         <Button size="sm" className="gap-1.5 rounded-pill" onClick={() => setOpen(true)}>

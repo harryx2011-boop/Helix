@@ -64,7 +64,7 @@ export function ConnectSheet({ open, onOpenChange, apiKey }: { open: boolean; on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Set up an agent</DialogTitle>
+          <DialogTitle>Set Up an Agent</DialogTitle>
           <DialogDescription>Connect an agent harness to Helix over MCP, or let the CLI write the config for every harness it finds.</DialogDescription>
         </DialogHeader>
         <Tabs defaultValue={CONNECT_CLIENTS[0]} className="w-full">

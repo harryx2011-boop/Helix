@@ -71,7 +71,7 @@ export function FrameHeading({
         </div>
       )}
       <div className="relative min-w-0">
-        <h2 className="text-[17px] font-medium leading-tight tracking-tight text-foreground">{title}</h2>
+        <h2 className="truncate text-[17px] font-medium leading-tight tracking-tight text-foreground">{title}</h2>
         {description && <p className="mt-1 text-[13px] leading-snug text-muted-foreground">{description}</p>}
       </div>
       {action && <div className="relative shrink-0">{action}</div>}

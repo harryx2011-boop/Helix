@@ -57,7 +57,7 @@ export function KeyMenu() {
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>API key</DialogTitle>
+            <DialogTitle>API Key</DialogTitle>
             <DialogDescription>Change the key this browser uses, or disconnect entirely.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSave} className="flex flex-col gap-3">

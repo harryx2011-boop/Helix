@@ -340,7 +340,7 @@ function Chrome({ endpoint, subject, status, facts = [], title = 'Result', count
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h3 className="text-sm font-medium text-foreground">
+          <h3 className="truncate text-sm font-medium text-foreground">
             {title}
             {count !== undefined && <span className="text-muted-foreground"> ({count})</span>}
           </h3>
@@ -726,7 +726,7 @@ export function Results({ result, loading, timingMs, error, pending, endpoint, i
         onBack={onBack}
         input={input}
       >
-        <HandoffCard title="Running as a background job" jobId={result.jobId} />
+        <HandoffCard title="Running as a Background Job" jobId={result.jobId} />
       </Chrome>
     );
   }
@@ -804,7 +804,7 @@ export function Results({ result, loading, timingMs, error, pending, endpoint, i
         );
       }
       return (
-        <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: true, label: 'Success' }} facts={timeFact} title="Scrubbed copy" debug={debug} input={input}>
+        <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: true, label: 'Success' }} facts={timeFact} title="Scrubbed Copy" debug={debug} input={input}>
           <MetadataScrubView result={response} />
         </Chrome>
       );
@@ -842,7 +842,7 @@ export function Results({ result, loading, timingMs, error, pending, endpoint, i
           subject={subjectFromInput}
           status={{ ok: true, label: `${response.data.length} row${response.data.length === 1 ? '' : 's'}` }}
           facts={timeFact}
-          title="Extracted rows"
+          title="Extracted Rows"
           debug={debug}
           input={input}
         >
@@ -969,7 +969,7 @@ export function Results({ result, loading, timingMs, error, pending, endpoint, i
           )}
           {response.sessionOpen && response.liveViewUrl && (
             <div className="flex flex-col gap-2 rounded-card border border-border bg-card p-4">
-              <span className="text-sm font-medium text-foreground">Session open</span>
+              <span className="text-sm font-medium text-foreground">Session Open</span>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Paste the session ID into the form to continue on this page.
                 {response.idleExpiresAt ? ` Closes at ${new Date(response.idleExpiresAt).toLocaleTimeString()} if nothing else happens.` : ''}
@@ -1060,7 +1060,7 @@ export function Results({ result, loading, timingMs, error, pending, endpoint, i
             onBack={onBack}
             input={input}
           >
-            <HandoffCard title="Crawl started" jobId={response.id} />
+            <HandoffCard title="Crawl Started" jobId={response.id} />
           </Chrome>
         );
       }
@@ -1105,7 +1105,7 @@ export function Results({ result, loading, timingMs, error, pending, endpoint, i
         >
           <div className="flex flex-col gap-3 rounded-card border border-border p-4">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-foreground">Monitor created</span>
+              <span className="text-sm font-medium text-foreground">Monitor Created</span>
               <Badge variant="secondary" className="font-mono text-[11px]">
                 {response.status}
               </Badge>

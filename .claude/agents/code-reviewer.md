@@ -1,5 +1,6 @@
 ---
 name: code-reviewer
+category: reviewer
 description: Review a diff or file set for correctness, security and maintainability defects. Report only; never edit. Use proactively in Helix whenever the task matches that shape.
 tools: Bash, Glob, Grep, Read, mcp__helix__*
 model: inherit

@@ -1,5 +1,6 @@
 ---
 name: debugger
+category: tester
 description: Diagnose a specific failing behavior by forming and eliminating hypotheses until the root cause is proven. Use proactively in Helix whenever the task matches that shape.
 tools: Bash, Glob, Grep, Read, mcp__helix__*
 model: opus

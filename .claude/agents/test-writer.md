@@ -1,5 +1,6 @@
 ---
 name: test-writer
+category: tester
 description: Write tests that catch regressions — characterization before a refactor, regression after a fix, coverage for untested paths. Use proactively in Helix whenever the task matches that shape.
 tools: Bash, Glob, Grep, Read, mcp__helix__*, Edit, Write
 model: inherit

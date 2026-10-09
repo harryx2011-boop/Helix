@@ -1,5 +1,6 @@
 ---
 name: visual-designer
+category: designer
 description: Designs visual and UI/UX changes across Helix — marketing pages, the dashboard, converter and playground surfaces, components, layout, theming, accessibility. Use proactively for any visual or UI/UX change in apps/dashboard or any marketing surface.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__helix__*
 model: sonnet

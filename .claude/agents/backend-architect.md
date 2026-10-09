@@ -1,5 +1,6 @@
 ---
 name: backend-architect
+category: reviewer
 description: Designs and reviews Helix's server-side work — route shape, auth boundaries, provider adapters, schema, and background jobs. Use proactively for any change to apps/api, any new endpoint, any auth or key-handling question, and whenever a change spans more than one layer of the API.
 tools: Bash, Glob, Grep, Read, mcp__helix__*
 model: sonnet

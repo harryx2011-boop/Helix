@@ -1,3 +1,9 @@
+# Handoff — 2026-10-10: backlog audit
+
+The 2026-10-07 handoff below is closed: 2.3.2 is pushed, tagged (`v2.3.2`) and installed. The open work and the restart prompt are in the Helix entry of `~/.claude/BACKLOG.md`, organized by Harry's five suite goals (`SUITE-PLAN.md` Phases 1-6): Phase 1 is partial, Phases 3-6 are not started.
+
+---
+
 # Handoff — 2026-10-07: saved for tomorrow (2.3.0 open)
 
 Nothing was run today. The restart prompt for 2.3.0 (anti-bot pass 2) is saved verbatim in the Helix memory file `project_helix_handoff_2026_10_07.md`. Its First steps are: run `node ~/.claude/hooks/helix-ensure.js`, read every stray diff in the shared tree, commit the 2.3.0 version line if it is still uncommitted, and check the `desktop-apps.mjs --rebuild helix` install. Then ask the four questions it lists.

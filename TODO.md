@@ -1,7 +1,8 @@
 # To Do
 
-Open work at 1.11.3, with another session's 1.12.0 converter work uncommitted in the tree.
-Detail and reasoning live in `HANDOFF.md` and `context.md`.
+Open work at 2.3.2 (audited 2026-10-10). Harry's five suite goals (anti-bot, `helix_image_sheet`,
+`helix_data_miner`, the VS Code extension with monitor summaries, Composio sources) are tracked in
+`SUITE-PLAN.md` and the Helix entry of `~/.claude/BACKLOG.md`. Detail lives in `context.md`.
 
 Nothing here is blocking. The full stack runs locally and every endpoint has been
 exercised against it.
@@ -17,9 +18,8 @@ exercised against it.
 - [ ] **Interaction testing.** Every UI check so far has been curl-level. No focus,
       keyboard or hover behaviour has ever been exercised, and `/app/*` sits behind a
       Clerk interstitial so those screens have only been source-reviewed.
-- [ ] Configure a search backend (`SEARXNG_URL`, `SERPER_API_KEY` or `SERPAPI_KEY`) if
-      `/v1/search` should work. It returns 503 until one is set — configuration, not a
-      fault.
+- [x] Configure a search backend: SearXNG on 127.0.0.1:7440 for the dev stack (2.3.0,
+      `SUITE-PLAN.md` Phase 2). Open: the desktop app's settings carry no `SEARXNG_URL`.
 - [ ] Decide whether the repo goes public. The site claims Apache-2.0 in several places
       and every GitHub link 404s while it is private.
 

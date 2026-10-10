@@ -61,3 +61,7 @@ SemVer; currently **2.3.2** in the root `package.json` — the one source of tru
 ## Design skills
 
 `.claude/rules/always-on-skills.md` adds the project's design-skill reads and the pre-commit review order for any landing-page change. It applies on every UI turn.
+
+## Design
+
+UI work reads `DESIGN-SYSTEM.md` and `TOKENS.md` first; no raw colour, size or easing outside `TOKENS.md` (format: `~/.claude/reference/design-system-files.md`).

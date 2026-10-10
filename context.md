@@ -1,5 +1,11 @@
 # Helix — context
 
+> **Suite roadmap decisions (2026-10-10, docs only — no code built).** Harry set the order and two design calls for the five suite goals; all are big plans captured as paste-ready prompts in `docs/next-session.md` and in the Helix entry of `~/.claude/BACKLOG.md`.
+> - **Order:** (1) `helix_image_sheet` (Phase 3), (2) finish anti-bot Phase 1, (3) VSIX + Web Monitoring change summaries (Phases 6 + 5), (4) `helix_data_miner` + Composio sources (Phase 4).
+> - **Full Chromium:** ship `channel: 'chromium'` (the full build, about 450 MB), reversing `DESKTOP-PLAN.md` D14's headless-shell-only bundle. Recorded as `DESKTOP-PLAN.md` D17. It is the next stealth step the anti-bot pass measured. Built in the Phase 1 session, not here; `channel` in `apps/api/src/browser` is still unchanged.
+> - **SearXNG in the desktop app:** add a `SEARXNG_URL` settings field so a user points the app at their own instance (no bundled Docker). The dev stack already sets `SEARXNG_URL`; the desktop app does not. Part of the Phase 1 session prompt.
+> - SUITE-PLAN phase-status lines reconciled against the code this day: `mapWithLimit` exists in `routes/search.ts` and is used by `routes/enrich.ts` but NOT by `routes/extract.ts` (still a serial loop); `crawl/worker.ts` stores `etag` but sends no `If-None-Match`; `summarizeDiff`, `routes/mine.ts`, `routes/image-sheet.ts`, `apps/vscode` and any Composio code in `apps/api` are absent. Audit was accurate.
+
 > **Checkout location (verified 2026-10-08).** The repo is on `D:\Helix`, an NTFS volume. `Get-Volume` lists no E: volume. Notes below that name the exFAT drive, E: or no-symlink limits describe the old checkout and are historical.
 
 > **Playground tab track fix (2026-10-07, patch 2.3.2).** The grouped `Segmented` track (`components/shared/segmented.tsx`) was clamped to `max-w-full` while its tabs overflowed, so the DISCOVER/EXTRACT/CRAWL/ACT/WATCH labels drifted onto the tabs in a windowed app. It is now `w-max` inside the existing scroll wrapper, so labels and tabs scroll together. Typecheck clean; the live app is behind the API-key gate, so the fix is not yet checked in a render.

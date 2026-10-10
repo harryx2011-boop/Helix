@@ -1,8 +1,18 @@
 # Suite plan: audits and five features (2026-10-05)
 
-Status: **plan only.** Harry chose "audits only, plan features" on 2026-10-05. Nothing below is built.
+Status: **plan only** for the features. Harry chose "audits only, plan features" on 2026-10-05. Phase 1 is partly built (see its status block); Phases 3-6 are not started.
 Decisions taken that day: the VS Code extension lives in `apps/vscode`; image search runs on SearXNG in
 WSL Docker; `helix_data_miner` is "topic to table" with Composio as one optional source.
+
+**Build order and two design calls (Harry, 2026-10-10).** Ordered roadmap for the five goals, as paste-ready prompts in `docs/next-session.md`:
+1. **Phase 3 `helix_image_sheet`** first (its SearXNG image input already works on the dev stack).
+2. **Finish Phase 1 anti-bot**: item 4 (one CDP connection), item 6 (parallel `/extract` with `mapWithLimit`, per-host limits), item 5's `If-None-Match` on crawl re-fetches, camoufox as an automatic last tier, new captured profiles, the reddit empty-success block signal. Plus the two design calls below.
+3. **Phase 6 VSIX** then **Phase 5 monitor change summaries** (`summarizeDiff`).
+4. **Phase 4 `helix_data_miner`** with Composio X/Twitter sources.
+
+Design calls folded into Phase 1:
+- **Full Chromium**: ship `channel: 'chromium'` (about 450 MB), reversing `DESKTOP-PLAN.md` D14 (recorded there as D17).
+- **SearXNG in the desktop app**: add a `SEARXNG_URL` settings field; user points at their own instance, no bundled Docker.
 
 ## Audit 1: cross-MCP performance and tokens (vulcan, last 30 days)
 

@@ -167,8 +167,8 @@ function changelogMarkdown(): string {
 const STATIC_DOCS_MARKDOWN: Record<string, string> = {
   'docs/getting-started': [
     frontmatter('Getting started', 'Run Helix, get a key, make your first request.'),
-    '1. The Windows app runs every service for you (/download) and listens on http://127.0.0.1:7410. To run Helix from source instead, use the self-host guide at /self-host; a source checkout listens on port 7400.',
-    '2. The Windows app makes its own key on first launch; find it under API Keys. A self-hosted instance accepts the HELIX_BOOTSTRAP_KEY from its .env; mint more under API Keys in the app.',
+    '1. A Windows app that runs every service for you is coming (/download). Today, run Helix from source with the self-host guide at /self-host.',
+    '2. A new instance accepts the HELIX_BOOTSTRAP_KEY from its .env; mint more under API Keys in the app.',
     '3. Make a request:',
     '```bash',
     generateCode('curl', { endpoint: 'scrape', body: { url: 'https://example.com' } }),

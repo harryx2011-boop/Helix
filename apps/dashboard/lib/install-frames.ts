@@ -7,7 +7,7 @@
 export const FRAME_MS = 125;
 
 const BAR = 16;
-const SERVICES = ['getting ready', 'page reader', 'document reader'] as const;
+const SERVICES = ['api', 'extract', 'fetch'] as const;
 
 export interface FrameLine {
   text: string;
@@ -53,7 +53,7 @@ function buildFrames(installer: string): FrameLine[][] {
     snap();
   });
 
-  lines.push({ text: '▸  Helix is running on this PC.', tone: 'done' });
+  lines.push({ text: '▸  Helix is running on this machine.', tone: 'done' });
   snap();
   return frames;
 }

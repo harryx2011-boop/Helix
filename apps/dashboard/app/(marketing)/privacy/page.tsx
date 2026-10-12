@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { HeroField } from '@/components/marketing/hero-field';
 
 export const metadata: Metadata = {
   title: 'Privacy',
-  description: 'Where Helix keeps your data, what leaves your PC and what this website collects.',
+  description: 'Where Helix keeps your data, how provider keys are protected, and what this website collects.',
 };
 
 export default function PrivacyPage() {
@@ -21,51 +20,50 @@ export default function PrivacyPage() {
 
       <article className="prose-helix mx-auto mt-14 max-w-[720px] animate-fade-up [animation-delay:60ms] space-y-8">
         <p className="text-[14px] italic leading-relaxed text-m-ink/56">
-          This is a plain-language template. A lawyer has not reviewed it. Treat it as a starting point, not legal
-          advice.
+          This is a template. It has not been reviewed by a lawyer. Treat it as a starting point, not legal advice,
+          and have it reviewed before relying on it for anything.
         </p>
 
         <Section title="Where your data lives">
           <p>
-            Helix runs on your own PC. Your results, your settings and the access keys you create stay in
-            Helix&rsquo;s folder on your computer, and none of it reaches us. This website has no accounts and no
-            sign-in.
+            Helix runs on your own machine, from source today and as a Windows app when it ships. Your API keys, their
+            usage counters, and the requests and results you run stay in that instance&rsquo;s own database, and
+            none of it reaches us. This website has no accounts and no sign-in.
           </p>
         </Section>
 
-        <Section title="AI and search accounts">
+        <Section title="Provider keys">
           <p>
-            If you connect an AI account or a search service, Helix sends it what the feature needs, such as the text
-            of a page or a search question, using the key you gave it. Keys are stored encrypted. After you save one,
-            the app shows only its last four characters.
+            If you add your own LLM, proxy or vector-store credentials in the app, they are encrypted at rest and
+            decrypted only at the moment a request needs them. The plaintext is never returned by the API after you
+            set it — only the last four characters, so you can confirm which key is active.
           </p>
         </Section>
 
         <Section title="What we don't do">
           <p>
-            We do not sell your data or the content of your requests. Helix does not send us usage statistics. We do
-            not send your keys anywhere except to the provider you set them up for. Your provider bills you directly,
-            and Helix adds nothing on top.
+            We do not sell your data or the content of your requests. We do not send your provider credentials
+            anywhere other than the provider you configured them for. Helix takes no margin on inference — your
+            provider bills you directly, and that billing relationship is between you and them.
           </p>
         </Section>
 
         <Section title="Third parties">
           <p>
-            This website adds no third-party trackers. The app talks to the sites you ask it to read, to any AI or
-            search account you connect and to GitHub, to check for updates and to download an extra add-on the first
-            time you use a feature that needs one.
+            This website adds no third-party trackers. The app calls only the providers you configure, with the
+            credentials you gave it.
           </p>
         </Section>
 
         <Section title="Your choices">
           <p>
-            You can revoke an access key at any time in the app, and remove a stored provider key the same way.
-            Uninstalling Helix keeps your data, so you can delete the Helix folder yourself if you want it gone.{' '}
-            <Link href="/docs/privacy-and-data" className="text-violet underline decoration-violet-40 underline-offset-4">
-              The full list of what stays and what leaves
-            </Link>{' '}
-            is in the docs.
+            You can revoke an API key at any time from the app, which stops it from being used immediately. You can
+            remove a stored provider key the same way. Everything else is in your own database, under your control.
           </p>
+        </Section>
+
+        <Section title="Contact">
+          <p>Questions about this policy: [contact email].</p>
         </Section>
       </article>
     </div>

@@ -22,9 +22,9 @@ describe('frameAt', () => {
     ]);
   });
 
-  it('ends on every part ready and the running line, and never past it', () => {
+  it('ends on every service ready and the running line, and never past it', () => {
     const last = frameAt(LAST_FRAME, EXE);
-    expect(last.map((l) => l.text).slice(3)).toEqual(['◆  getting ready', '◆  page reader', '◆  document reader', '▸  Helix is running on this PC.']);
+    expect(last.map((l) => l.text).slice(3)).toEqual(['◆  api', '◆  extract', '◆  fetch', '▸  Helix is running on this machine.']);
     expect(last.at(-1)?.tone).toBe('done');
     expect(frameAt(LAST_FRAME + 50, EXE)).toEqual(last);
   });

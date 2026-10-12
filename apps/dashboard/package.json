@@ -11,7 +11,8 @@
     "start": "next start",
     "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit --noUncheckedSideEffectImports false",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:changelog": "node scripts/check-changelog.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.2.6",

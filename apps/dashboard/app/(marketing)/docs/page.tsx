@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Server, Terminal, Puzzle, type LucideIcon } from '@/components/icons/lucide';
+import { ArrowRight, BookOpen, ListChecks, Server, Terminal, Puzzle, type LucideIcon } from '@/components/icons/lucide';
 import { HeroField } from '@/components/marketing/hero-field';
 import { DOCS } from '@/lib/docs';
 import { docsEndpointList, agentSurfaceDocs } from '@/lib/docs-content';
@@ -46,6 +46,7 @@ export default function DocsIndexPage() {
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <DocLink href="/docs/getting-started" icon={BookOpen} title="Developer Quickstart" body="Run Helix, get a key, make your first request." />
           <DocLink href="/self-host" icon={Server} title="Run It From Source" body="docker compose up, with nothing withheld." />
+          <DocLink href="/changelog" icon={ListChecks} title="Changelog" body="Every released version, newest first." />
         </div>
       </section>
 

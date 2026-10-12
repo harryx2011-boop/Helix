@@ -5,6 +5,7 @@ import { ENDPOINT_DOCS, docsCurlExample, docsEndpointList, agentSurfaceDocs, AGE
 import { MCP_URL, SITE_URL } from './mode';
 import { generateCode } from './codegen';
 import type { Endpoint } from './endpoints';
+import { CHANGELOG, formatDate, kindNote } from './changelog';
 
 /**
  * Markdown twins: every marketing page is also served as plain markdown, no
@@ -149,6 +150,20 @@ function agentSurfaceMarkdown(): Record<string, string> {
   return out;
 }
 
+function changelogMarkdown(): string {
+  return [
+    frontmatter('Changelog', 'Every released version of Helix, newest first, with its date and what changed for you.'),
+    ...CHANGELOG.flatMap((e) => [
+      `## ${e.version}`,
+      `${formatDate(e.date)}. ${kindNote(e)}.`,
+      '',
+      e.body.map((p, i) => (i === 0 && e.lead ? `**${e.lead}** ${p}` : p)).join('\n\n'),
+      '',
+    ]),
+    AGENT_BLOCK,
+  ].join('\n');
+}
+
 const STATIC_DOCS_MARKDOWN: Record<string, string> = {
   'docs/getting-started': [
     frontmatter('Getting started', 'Run Helix, get a key, make your first request.'),
@@ -171,6 +186,7 @@ export const MARKDOWN_TWIN_PATHS: readonly string[] = [
   ...PRODUCT_ENDPOINTS,
   'self-host',
   'architecture',
+  'changelog',
   'docs',
   ...PRODUCT_ENDPOINTS.map((id) => `docs/${id}`),
   'docs/getting-started',
@@ -183,6 +199,7 @@ export const MARKDOWN_TWIN_PATHS: readonly string[] = [
 export async function resolveMarkdownTwin(path: string): Promise<string | undefined> {
   if (path === 'self-host') return selfHostMarkdown();
   if (path === 'architecture') return architectureMarkdown();
+  if (path === 'changelog') return changelogMarkdown();
   if (path === 'docs') return docsIndexMarkdown();
   if (path in STATIC_DOCS_MARKDOWN) return STATIC_DOCS_MARKDOWN[path];
 

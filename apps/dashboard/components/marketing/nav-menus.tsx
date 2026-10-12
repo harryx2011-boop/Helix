@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowUpRight, Braces, Compass, Download, HelpCircle, Activity, Lock, Rocket, Settings } from '@/components/icons/lucide';
+import { ArrowUpRight, Braces, Compass, Download, HelpCircle, Activity, ListChecks, Lock, Rocket, Settings } from '@/components/icons/lucide';
 import { Logo } from '@/components/shell/logo';
 import { FEATURES, FEATURE_GROUPS } from '@/lib/feature-copy';
 import { cn } from '@/lib/utils';
@@ -36,6 +36,7 @@ export const DOCS_ROWS: readonly MenuRow[] = [
   { label: 'Settings and Models', href: '/docs/settings-and-models', icon: Settings },
   { label: 'Privacy and Data', href: '/docs/privacy-and-data', icon: Lock },
   { label: 'Help', href: '/docs/help', icon: HelpCircle },
+  { label: 'Changelog', href: '/changelog', icon: ListChecks },
   { label: 'For Developers', href: '/docs', icon: Braces },
 ];
 

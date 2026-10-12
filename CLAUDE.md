@@ -48,7 +48,7 @@ The Converter left Helix on 2026-09-25: file conversion is Sparky's (`D:\sparky\
 
 ## Versioning
 
-SemVer; currently **2.3.2** in the root `package.json` — the one source of truth. Mirror the product version into `apps/api`, `apps/dashboard`, `apps/desktop` and `openapi.yaml` **in the same commit** — `openapi.yaml` was missed for five releases and sat at 1.17.0. `packages/sdk-ts`, `packages/cli`, `apps/extract` (pyproject + `__init__.py`) and `apps/fetch` (Cargo.toml) carry their **own** lines, bumped only when that package changes. Grep the old string before calling a bump done; tag `v<version>`, never moved.
+SemVer; currently **2.3.2** in the root `package.json` — the one source of truth. Mirror the product version into `apps/api`, `apps/dashboard`, `apps/desktop` and `openapi.yaml` **in the same commit** — `openapi.yaml` was missed for five releases and sat at 1.17.0. `packages/sdk-ts`, `packages/cli`, `apps/extract` (pyproject + `__init__.py`) and `apps/fetch` (Cargo.toml) carry their **own** lines, bumped only when that package changes. Grep the old string before calling a bump done; tag `v<version>`, never moved. **Every bump also adds the newest entry to `apps/dashboard/lib/changelog.ts` in the same commit;** `pnpm --filter @helix/dashboard check:changelog` fails when a tag or manifest version is missing.
 
 ## Working rules
 

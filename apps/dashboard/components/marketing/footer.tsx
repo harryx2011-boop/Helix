@@ -35,6 +35,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: 'Settings and Models', href: '/docs/settings-and-models' },
       { label: 'Privacy and Data', href: '/docs/privacy-and-data' },
       { label: 'Help', href: '/docs/help' },
+      { label: 'Changelog', href: '/changelog' },
       { label: 'For Developers', href: '/docs' },
     ],
   },

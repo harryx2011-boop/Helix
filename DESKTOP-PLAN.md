@@ -1,6 +1,6 @@
 # Helix desktop plan
 
-**Date:** 2026-09-25 · **Status:** Phases 0–7 all done; 2.0.0 released 2026-09-26 (Phases 3–7 in one overnight session). Decisions D1–D16 made.
+**Date:** 2026-09-25 · **Status:** Phases 0–7 all done; 2.0.0 released 2026-09-26 (Phases 3–7 in one overnight session); latest installer 2.1.0 (2026-09-26, see `context.md` status line). Decisions D1–D16 made.
 
 Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, extract and fetch services. The public website keeps its landing page, docs and marketing, and gates the app behind the desktop download. The desktop app needs no external database and opens no console windows.
 

@@ -20,8 +20,8 @@ exercised against it.
       Clerk interstitial so those screens have only been source-reviewed.
 - [x] Configure a search backend: SearXNG on 127.0.0.1:7440 for the dev stack (2.3.0,
       `SUITE-PLAN.md` Phase 2). Open: the desktop app's settings carry no `SEARXNG_URL`.
-- [ ] Decide whether the repo goes public. The site claims Apache-2.0 in several places
-      and every GitHub link 404s while it is private.
+- [x] Decide whether the repo goes public. Done 2026-10-12: `harryx2011-boop/Helix` is PUBLIC.
+      Open: no `LICENSE` file in the repo root, though the site and manifests claim Apache-2.0.
 
 ## Hosting — only if the public site should work for other people
 

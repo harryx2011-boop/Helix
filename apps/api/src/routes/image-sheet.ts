@@ -2,11 +2,22 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { SearchHit, SearchProvider } from '../search/providers.js';
 import { mapWithLimit } from './search.js';
+import {
+  composeSheet,
+  dHash,
+  fetchImageBytes,
+  hamming,
+  MAX_CELLS,
+  NEAR_DUPLICATE_BITS,
+  type ImageFetcher,
+} from '../images/visual.js';
 
 /**
  * A contact sheet of image search results: several pages of the backend's
  * Images category, filtered by size and aspect, deduplicated, one JSON row per
- * image. Nothing is downloaded here, so the instance never connects to an image host.
+ * image. By default nothing is downloaded, so the instance never connects to an
+ * image host. `visualDedupe` and `render: "png"` fetch each image's thumbnail
+ * (egress-guarded) to drop near-duplicates by perceptual hash and to draw one PNG.
  */
 
 const DomainSchema = z
@@ -27,6 +38,10 @@ const ImageSheetRequestSchema = z
     /** Exclude images the backend gave no pixel size for, instead of keeping them unfiltered. */
     dropUnsized: z.boolean().default(false),
     motionReference: z.boolean().default(false),
+    /** `json` returns rows only; `png` also draws a contact sheet. Default json. */
+    render: z.enum(['json', 'png']).default('json'),
+    /** Fetch thumbnails and drop near-duplicates. Defaults to on when `render` is `png`. */
+    visualDedupe: z.boolean().optional(),
     lang: z
       .string()
       .regex(/^[a-z]{2}$/i, 'expected a two-letter language code')
@@ -51,6 +66,8 @@ export interface ImageSheetRouteDeps {
   maxResults?: number | undefined;
   /** Wall-clock budget for one call. */
   maxDurationMs?: number | undefined;
+  /** Test seam: how thumbnails are fetched. */
+  fetchImage?: ImageFetcher | undefined;
 }
 
 export interface ImageSheetEntry {
@@ -66,6 +83,9 @@ const MOTION_TERMS = 'storyboard frame keyframe';
 const PAGE_CONCURRENCY = 3;
 /** What one backend call may return; the sheet's own `limit` is applied after filtering. */
 const PER_PAGE = 50;
+/** Wall-clock budget for fetching every thumbnail of one call. */
+const IMAGE_FETCH_BUDGET_MS = 20_000;
+const IMAGE_CONCURRENCY = 6;
 
 /** An http(s) URL without its fragment, host lowercased; anything else (a data: URI, a script URL) is undefined. */
 function webUrl(raw: string | undefined): string | undefined {
@@ -83,6 +103,7 @@ function webUrl(raw: string | undefined): string | undefined {
 export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetRouteDeps): Promise<void> {
   const maxResults = deps.maxResults ?? 50;
   const maxDurationMs = deps.maxDurationMs ?? 60_000;
+  const fetchImage = deps.fetchImage ?? fetchImageBytes;
 
   app.post('/image-sheet', async (request, reply) => {
     const parsed = ImageSheetRequestSchema.safeParse(request.body);
@@ -163,11 +184,15 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
     }
     warnings.push(...failureMessages);
 
-    const filtered = { size: 0, aspect: 0, duplicate: 0, noImage: 0, unsized: 0 };
+    const visual = body.visualDedupe ?? body.render === 'png';
+    const fetching = visual || body.render === 'png';
+    // With near-duplicates to drop, read past `limit` so the sheet can still fill.
+    const take = fetching ? Math.min(body.limit * 2, maxResults * 2) : body.limit;
+    const filtered = { size: 0, aspect: 0, duplicate: 0, nearDuplicate: 0, noImage: 0, unsized: 0 };
     let unsized = 0;
     let candidates = 0;
     const seen = new Set<string>();
-    const images: ImageSheetEntry[] = [];
+    const survivors: ImageSheetEntry[] = [];
 
     for (const hit of answered.flat()) {
       candidates++;
@@ -201,8 +226,8 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
         unsized++;
       }
 
-      if (images.length >= body.limit) continue;
-      images.push({
+      if (survivors.length >= take) continue;
+      survivors.push({
         imageUrl: hit.imageUrl as string,
         thumbnailUrl: webUrl(hit.thumbnailUrl),
         sourcePage: webUrl(hit.url),
@@ -210,6 +235,50 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
         width: width && height ? width : undefined,
         height: width && height ? height : undefined,
       });
+    }
+
+    let images = survivors;
+    let unhashed = 0;
+    let sheet: Awaited<ReturnType<typeof composeSheet>> | undefined;
+    if (fetching && survivors.length > 0) {
+      const budget = AbortSignal.timeout(IMAGE_FETCH_BUDGET_MS);
+      const bytes = await mapWithLimit(survivors, IMAGE_CONCURRENCY, async (entry) => {
+        for (const url of [entry.thumbnailUrl, entry.imageUrl]) {
+          const data = url ? await fetchImage(url, budget) : undefined;
+          const hash = data ? await dHash(data) : undefined;
+          if (data && hash !== undefined) return { data, hash };
+        }
+        return undefined;
+      });
+
+      const kept: { entry: ImageSheetEntry; data?: Buffer | undefined }[] = [];
+      const hashes: bigint[] = [];
+      survivors.forEach((entry, i) => {
+        const got = bytes[i];
+        if (kept.length >= body.limit) return;
+        if (visual && got && hashes.some((h) => hamming(h, got.hash) <= NEAR_DUPLICATE_BITS)) {
+          filtered.nearDuplicate++;
+          return;
+        }
+        if (got) hashes.push(got.hash);
+        else unhashed++;
+        kept.push({ entry, data: got?.data });
+      });
+      images = kept.map((k) => k.entry);
+
+      if (unhashed > 0) {
+        warnings.push(
+          `${unhashed} image${unhashed === 1 ? '' : 's'} could not be fetched or decoded${visual ? ', so ' + (unhashed === 1 ? 'it was' : 'they were') + ' not compared for near-duplicates' : ''}.`,
+        );
+      }
+      if (body.render === 'png') {
+        if (kept.some((k) => k.data)) {
+          sheet = await composeSheet(kept.map((k) => k.data));
+          if (kept.length > MAX_CELLS) warnings.push(`The sheet shows the first ${MAX_CELLS} of ${kept.length} images.`);
+        } else {
+          warnings.push('No image could be fetched, so no sheet was drawn.');
+        }
+      }
     }
 
     const sizeFilterAsked =
@@ -223,7 +292,19 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
 
     return reply.send({
       success: true,
-      data: { images },
+      data: {
+        images,
+        ...(sheet && {
+          sheet: {
+            image: `data:image/png;base64,${sheet.png.toString('base64')}`,
+            columns: sheet.columns,
+            rows: sheet.rows,
+            cellWidth: sheet.cellWidth,
+            cellHeight: sheet.cellHeight,
+            cells: sheet.cells,
+          },
+        }),
+      },
       warnings,
       metadata: {
         backend: provider.name,
@@ -233,6 +314,7 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
         kept: images.length,
         filtered,
         unsized,
+        ...(fetching && { unhashed }),
       },
     });
   });

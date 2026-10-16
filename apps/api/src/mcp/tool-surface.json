@@ -289,7 +289,9 @@
       "minWidth",
       "motionReference",
       "pages",
-      "query"
+      "query",
+      "render",
+      "visualDedupe"
     ],
     "required": [
       "query"

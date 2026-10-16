@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
+import sharp from 'sharp';
 import { registerImageSheet, type ImageSheetRouteDeps } from './image-sheet.js';
 import type { ProviderResult, SearchHit, SearchProvider, SearchQuery } from '../search/providers.js';
 
@@ -208,5 +209,122 @@ describe('POST /image-sheet', () => {
     const { status, body } = await post(await build({ provider: undefined }), { query: 'x' });
     expect(status).toBe(503);
     expect(body.error).toBe('search_unavailable');
+  });
+});
+
+/** A 64x48 PNG: a left-to-right or right-to-left ramp, optionally dimmed or noisy, so its dHash is known. */
+async function ramp(direction: 'rtl' | 'ltr', { dim = 0, width = 64 }: { dim?: number; width?: number } = {}): Promise<Buffer> {
+  const w = 64;
+  const raw = Buffer.alloc(w * 48);
+  for (let y = 0; y < 48; y++) {
+    for (let x = 0; x < w; x++) {
+      const v = direction === 'ltr' ? x * 3 : 255 - x * 3;
+      raw[y * w + x] = Math.max(0, v - dim);
+    }
+  }
+  return sharp(raw, { raw: { width: w, height: 48, channels: 1 } })
+    .resize(width, Math.round((width * 48) / 64))
+    .png()
+    .toBuffer();
+}
+
+describe('POST /image-sheet visual dedupe and PNG sheet', () => {
+  async function fixtures() {
+    const files = new Map<string, Buffer>([
+      ['https://cdn1.test/thumb.jpg', await ramp('ltr')],
+      ['https://cdn2.test/thumb.jpg', await ramp('ltr', { dim: 12, width: 40 })],
+      ['https://cdn3.test/thumb.jpg', await ramp('rtl')],
+    ]);
+    const fetchImage = vi.fn(async (url: string) => files.get(url));
+    return { fetchImage };
+  }
+
+  it('does not download anything unless asked', async () => {
+    const { fetchImage } = await fixtures();
+    const { body } = await post(await build({ fetchImage }), { query: 'x' });
+    expect(fetchImage).not.toHaveBeenCalled();
+    expect(body.metadata.filtered.nearDuplicate).toBe(0);
+  });
+
+  it('drops a near-duplicate with a different URL when visualDedupe is on', async () => {
+    const { fetchImage } = await fixtures();
+    const provider = providerReturning([[image(1), image(2), image(3)]]);
+    const { body } = await post(await build({ provider, fetchImage }), { query: 'x', visualDedupe: true });
+
+    expect(body.data.images.map((i: { title: string }) => i.title)).toEqual(['Image 1', 'Image 3']);
+    expect(body.metadata.filtered).toMatchObject({ duplicate: 0, nearDuplicate: 1 });
+    expect(body.metadata).toMatchObject({ candidates: 3, kept: 2 });
+    expect(body.data.sheet).toBeUndefined();
+  });
+
+  it('fills the limit from later images after dropping near-duplicates', async () => {
+    const { fetchImage } = await fixtures();
+    const provider = providerReturning([[image(1), image(2), image(3)]]);
+    const { body } = await post(await build({ provider, fetchImage }), { query: 'x', visualDedupe: true, limit: 2 });
+    expect(body.data.images.map((i: { title: string }) => i.title)).toEqual(['Image 1', 'Image 3']);
+  });
+
+  it('keeps an image it could not fetch and warns', async () => {
+    const { fetchImage } = await fixtures();
+    const provider = providerReturning([[image(1), image(9)]]);
+    const { body } = await post(await build({ provider, fetchImage }), { query: 'x', visualDedupe: true });
+
+    expect(body.data.images).toHaveLength(2);
+    expect(body.metadata.unhashed).toBe(1);
+    expect(body.warnings.join(' ')).toMatch(/1 image .*could not be fetched or decoded/);
+  });
+
+  it('falls back to the full image when the thumbnail cannot be fetched', async () => {
+    const files = new Map<string, Buffer>([['https://cdn1.test/full.jpg', await ramp('ltr')]]);
+    const fetchImage = vi.fn(async (url: string) => files.get(url));
+    const { body } = await post(await build({ fetchImage }), { query: 'x', visualDedupe: true });
+    expect(body.metadata.unhashed).toBe(1);
+    expect(fetchImage.mock.calls.map((c) => c[0])).toContain('https://cdn1.test/full.jpg');
+  });
+
+  it('returns a PNG contact sheet as a data URI with a cell for every image', async () => {
+    const { fetchImage } = await fixtures();
+    const provider = providerReturning([[image(1), image(2), image(3), image(9)]]);
+    const { status, body } = await post(await build({ provider, fetchImage }), { query: 'x', render: 'png' });
+
+    expect(status).toBe(200);
+    expect(body.data.images.map((i: { title: string }) => i.title)).toEqual(['Image 1', 'Image 3', 'Image 9']);
+    const { image: uri, columns, rows, cellWidth, cellHeight, cells } = body.data.sheet;
+    expect(uri).toMatch(/^data:image\/png;base64,/);
+    expect(cells).toBe(3);
+    const png = sharp(Buffer.from(uri.split(',')[1], 'base64'));
+    const meta = await png.metadata();
+    expect(meta.format).toBe('png');
+    expect(meta.width).toBe(columns * cellWidth + (columns + 1) * 4);
+    expect(meta.height).toBe(rows * cellHeight + (rows + 1) * 4);
+    expect(rows * columns).toBeGreaterThanOrEqual(3);
+  });
+
+  it('caps the sheet at 24 cells and says so', async () => {
+    const png = await ramp('ltr');
+    const hits = Array.from({ length: 30 }, (_, i) => image(i + 1));
+    const fetchImage = vi.fn(async () => png);
+    const { body } = await post(await build({ provider: providerReturning([hits]), fetchImage, maxResults: 50 }), {
+      query: 'x',
+      limit: 30,
+      render: 'png',
+      visualDedupe: false,
+    });
+    expect(body.data.images).toHaveLength(30);
+    expect(body.data.sheet.cells).toBe(24);
+    expect(body.warnings.join(' ')).toMatch(/sheet shows the first 24 of 30/);
+  });
+
+  it('omits the sheet and warns when no image could be decoded', async () => {
+    const fetchImage = vi.fn(async () => undefined);
+    const { body } = await post(await build({ fetchImage }), { query: 'x', render: 'png' });
+    expect(body.data.sheet).toBeUndefined();
+    expect(body.warnings.join(' ')).toMatch(/no image could be fetched/i);
+  });
+
+  it('rejects an unknown render mode', async () => {
+    const { status, body } = await post(await build(), { query: 'x', render: 'gif' });
+    expect(status).toBe(400);
+    expect(body.field).toBe('render');
   });
 });

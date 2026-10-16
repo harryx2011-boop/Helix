@@ -1056,7 +1056,16 @@ paths:
         Searches the instance's Images category over several pages, drops results
         that are too small or the wrong shape, removes repeated image URLs and
         returns one row per image: the full image URL, a thumbnail, the page it
-        came from and its pixel size. Nothing is downloaded by this call.
+        came from and its pixel size. By default nothing is downloaded.
+
+        `visualDedupe` fetches each image's thumbnail (falling back to the full image)
+        through the instance's egress guard, hashes it and drops near-duplicates the
+        URL check missed, counted in `metadata.filtered.nearDuplicate`; an image that
+        cannot be fetched or decoded is kept and counted in `metadata.unhashed`.
+        `render: png` also draws the kept images as one contact-sheet PNG, returned as
+        `data.sheet.image` (a base64 data URI, an image block over MCP), and turns
+        `visualDedupe` on unless it is set to false. The sheet is a fixed grid of
+        160x120 cells, at most 24, row-major in `data.images` order.
 
         `minWidth`, `minHeight`, `minAspect` and `maxAspect` (width over height)
         apply only to images whose backend reported a size; an image with no
@@ -3695,6 +3704,14 @@ components:
           type: boolean
           default: false
           description: Add "storyboard frame keyframe" to the query.
+        render:
+          type: string
+          enum: [json, png]
+          default: json
+          description: "`png` also returns one contact-sheet PNG in `data.sheet`."
+        visualDedupe:
+          type: boolean
+          description: Fetch thumbnails and drop near-duplicates by perceptual hash. Defaults to true when `render` is `png`, else false.
         lang: { type: string, minLength: 2, maxLength: 2 }
         country: { type: string, minLength: 2, maxLength: 2 }
         includeDomains:
@@ -3729,6 +3746,17 @@ components:
             images:
               type: array
               items: { $ref: '#/components/schemas/ImageSheetEntry' }
+            sheet:
+              type: object
+              description: Present when `render` is `png` and at least one image could be fetched.
+              required: [image, columns, rows, cellWidth, cellHeight, cells]
+              properties:
+                image: { type: string, description: 'The sheet as a `data:image/png;base64,` URI.' }
+                columns: { type: integer }
+                rows: { type: integer }
+                cellWidth: { type: integer }
+                cellHeight: { type: integer }
+                cells: { type: integer, description: Cells drawn, row-major in `images` order; images past 24 are not drawn. }
         warnings:
           type: array
           items: { type: string }
@@ -3746,9 +3774,11 @@ components:
                 size: { type: integer }
                 aspect: { type: integer }
                 duplicate: { type: integer }
+                nearDuplicate: { type: integer, description: Dropped as a visual match of an earlier image. }
                 noImage: { type: integer }
                 unsized: { type: integer, description: Dropped because of `dropUnsized`. }
             unsized: { type: integer, description: Kept images the backend gave no pixel size for. }
+            unhashed: { type: integer, description: Kept images that could not be fetched or decoded; present only when thumbnails were fetched. }
 
     AgentSchemaRequest:
       type: object

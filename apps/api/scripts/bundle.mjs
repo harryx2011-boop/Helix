@@ -17,7 +17,8 @@ const pkg = JSON.parse(readFileSync(join(apiDir, 'package.json'), 'utf8'));
 //   playwright, playwright-core: browser registry, driver scripts, native launchers.
 //   @electric-sql/pglite(-pgvector): postgres.wasm, the data bundle and extension tarballs.
 //   pino: fastify's logger; its transports spawn thread-stream workers by file path.
-const EXTERNALS = ['playwright', 'playwright-core', '@electric-sql/pglite', '@electric-sql/pglite-pgvector', 'pino'];
+//   sharp: native libvips binaries, one optional package per platform.
+const EXTERNALS = ['playwright', 'playwright-core', '@electric-sql/pglite', '@electric-sql/pglite-pgvector', 'pino', 'sharp'];
 
 // Optional peers that are required lazily and never installed: pg's native
 // binding and ws's C accelerators. Left as runtime requires that fail softly.

@@ -98,7 +98,60 @@ describe('POST /image-sheet', () => {
     });
   });
 
-  it('reads several pages, asks only for images and stops at the limit', async () => {
+  it('warns when a size filter could not be applied to unsized images', async () => {
+    const provider = providerReturning([[image(1), image(2, { width: undefined, height: undefined }), image(3, { width: undefined, height: undefined })]]);
+    const { body } = await post(await build({ provider }), { query: 'x', minWidth: 1920 });
+
+    expect(body.data.images).toHaveLength(3);
+    expect(body.metadata.unsized).toBe(2);
+    expect(body.warnings.join(' ')).toMatch(/2 results? .*kept.*no (pixel )?size/i);
+
+    const none = await post(await build({ provider }), { query: 'x' });
+    expect(none.body.warnings).toEqual([]);
+  });
+
+  it('drops unsized images when dropUnsized is set', async () => {
+    const provider = providerReturning([[image(1), image(2, { width: undefined, height: undefined })]]);
+    const { body } = await post(await build({ provider }), { query: 'x', minWidth: 640, dropUnsized: true });
+
+    expect(body.data.images.map((i: { title: string }) => i.title)).toEqual(['Image 1']);
+    expect(body.metadata).toMatchObject({ kept: 1, unsized: 0, filtered: { unsized: 1 } });
+    expect(body.warnings).toEqual([]);
+  });
+
+  it('applies minAspect and keeps only landscape-or-wider images', async () => {
+    const provider = providerReturning([[image(1), image(2, { width: 1000, height: 1000 }), image(3, { width: 500, height: 1000 })]]);
+    const { body } = await post(await build({ provider }), { query: 'x', minAspect: 1.5 });
+
+    expect(body.data.images.map((i: { title: string }) => i.title)).toEqual(['Image 1']);
+    expect(body.metadata.filtered.aspect).toBe(2);
+  });
+
+  it('passes domain filters to the backend query', async () => {
+    const provider = providerReturning([[image(1)]]);
+    await post(await build({ provider }), {
+      query: 'x',
+      includeDomains: ['a.test'],
+      excludeDomains: ['b.test'],
+    });
+    expect(provider.search.mock.calls[0]?.[0]).toMatchObject({
+      includeDomains: ['a.test'],
+      excludeDomains: ['b.test'],
+    });
+  });
+
+  it('drops a non-http thumbnail and source page instead of passing it on', async () => {
+    const provider = providerReturning([
+      [image(1, { thumbnailUrl: 'data:image/png;base64,AAAA', url: 'javascript:alert(1)' })],
+    ]);
+    const { body } = await post(await build({ provider }), { query: 'x' });
+
+    expect(body.data.images).toHaveLength(1);
+    expect(body.data.images[0]).not.toHaveProperty('thumbnailUrl');
+    expect(body.data.images[0]).not.toHaveProperty('sourcePage');
+  });
+
+  it('reads several pages, asks only for images and truncates to the limit', async () => {
     const provider = providerReturning([[image(1), image(2)], [image(3), image(4)], [image(5)]]);
     const { body } = await post(await build({ provider }), { query: 'x', pages: 3, limit: 3 });
 

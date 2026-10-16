@@ -24,6 +24,8 @@ const ImageSheetRequestSchema = z
     /** Width over height; 1 is square, above 1 is landscape. */
     minAspect: z.number().positive().optional(),
     maxAspect: z.number().positive().optional(),
+    /** Exclude images the backend gave no pixel size for, instead of keeping them unfiltered. */
+    dropUnsized: z.boolean().default(false),
     motionReference: z.boolean().default(false),
     lang: z
       .string()
@@ -33,6 +35,8 @@ const ImageSheetRequestSchema = z
       .string()
       .regex(/^[a-z]{2}$/i, 'expected a two-letter country code')
       .optional(),
+    // Domain filters reach the backend only as `site:` operators; the rows are not
+    // post-filtered, so a backend that ignores operators drops them silently.
     includeDomains: z.array(DomainSchema).max(20).default([]),
     excludeDomains: z.array(DomainSchema).max(20).default([]),
   })
@@ -52,7 +56,7 @@ export interface ImageSheetRouteDeps {
 export interface ImageSheetEntry {
   imageUrl: string;
   thumbnailUrl?: string | undefined;
-  sourcePage: string;
+  sourcePage?: string | undefined;
   title: string;
   width?: number | undefined;
   height?: number | undefined;
@@ -63,8 +67,9 @@ const PAGE_CONCURRENCY = 3;
 /** What one backend call may return; the sheet's own `limit` is applied after filtering. */
 const PER_PAGE = 50;
 
-/** The identity of an image for deduplication: its URL without the fragment, host lowercased. */
-function imageKey(raw: string): string | undefined {
+/** An http(s) URL without its fragment, host lowercased; anything else (a data: URI, a script URL) is undefined. */
+function webUrl(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
   try {
     const url = new URL(raw);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined;
@@ -158,7 +163,7 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
     }
     warnings.push(...failureMessages);
 
-    const filtered = { size: 0, aspect: 0, duplicate: 0, noImage: 0 };
+    const filtered = { size: 0, aspect: 0, duplicate: 0, noImage: 0, unsized: 0 };
     let unsized = 0;
     let candidates = 0;
     const seen = new Set<string>();
@@ -166,7 +171,7 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
 
     for (const hit of answered.flat()) {
       candidates++;
-      const key = hit.imageUrl ? imageKey(hit.imageUrl) : undefined;
+      const key = webUrl(hit.imageUrl);
       if (!key) {
         filtered.noImage++;
         continue;
@@ -188,6 +193,9 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
           filtered.aspect++;
           continue;
         }
+      } else if (body.dropUnsized) {
+        filtered.unsized++;
+        continue;
       } else {
         // A backend that does not report pixels cannot be judged; keep the image and say so.
         unsized++;
@@ -196,14 +204,21 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
       if (images.length >= body.limit) continue;
       images.push({
         imageUrl: hit.imageUrl as string,
-        thumbnailUrl: hit.thumbnailUrl,
-        sourcePage: hit.url,
+        thumbnailUrl: webUrl(hit.thumbnailUrl),
+        sourcePage: webUrl(hit.url),
         title: hit.title,
         width: width && height ? width : undefined,
         height: width && height ? height : undefined,
       });
     }
 
+    const sizeFilterAsked =
+      body.minWidth !== undefined || body.minHeight !== undefined || body.minAspect !== undefined || body.maxAspect !== undefined;
+    if (sizeFilterAsked && unsized > 0) {
+      warnings.push(
+        `${unsized} result${unsized === 1 ? ' was' : 's were'} kept unfiltered because the backend gave no size; set dropUnsized to exclude them.`,
+      );
+    }
     if (images.length === 0) warnings.push('No image passed the filters for this query.');
 
     return reply.send({

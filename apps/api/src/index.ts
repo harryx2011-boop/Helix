@@ -392,7 +392,11 @@ await app.register(
       cacheTtlMs: config.searchCacheTtlMs,
       maxDurationMs: config.searchMaxDurationMs,
     });
-    await registerImageSheet(instance, { provider: searchProvider, maxResults: config.searchMaxResults });
+    await registerImageSheet(instance, {
+      provider: searchProvider,
+      maxResults: config.searchMaxResults,
+      maxDurationMs: config.searchMaxDurationMs,
+    });
     await registerMonitor(instance, {
       store: monitorStore,
       scheduler: monitorScheduler,

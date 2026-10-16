@@ -278,6 +278,7 @@
   "helix_image_sheet": {
     "properties": [
       "country",
+      "dropUnsized",
       "excludeDomains",
       "includeDomains",
       "lang",

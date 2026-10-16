@@ -1060,7 +1060,9 @@ paths:
 
         `minWidth`, `minHeight`, `minAspect` and `maxAspect` (width over height)
         apply only to images whose backend reported a size; an image with no
-        reported size is kept and counted in `metadata.unsized`. `motionReference`
+        reported size is kept, counted in `metadata.unsized` and flagged in `warnings`
+        unless `dropUnsized` is set. Domain filters are `site:` operators sent to the
+        backend, not a post-filter. `motionReference`
         adds the terms "storyboard frame keyframe" to the query, for finding
         reference frames of a motion. Failed pages are listed in `warnings`; when
         every page fails the call is a 502 `search_failed`.
@@ -3685,6 +3687,10 @@ components:
         minHeight: { type: integer, minimum: 1 }
         minAspect: { type: number, exclusiveMinimum: 0, description: Smallest width over height. }
         maxAspect: { type: number, exclusiveMinimum: 0, description: Largest width over height. }
+        dropUnsized:
+          type: boolean
+          default: false
+          description: Exclude images the backend gave no pixel size for, instead of keeping them unfiltered with a warning.
         motionReference:
           type: boolean
           default: false
@@ -3702,11 +3708,11 @@ components:
 
     ImageSheetEntry:
       type: object
-      required: [imageUrl, sourcePage, title]
+      required: [imageUrl, title]
       properties:
         imageUrl: { type: string, format: uri }
-        thumbnailUrl: { type: string, format: uri }
-        sourcePage: { type: string, format: uri }
+        thumbnailUrl: { type: string, format: uri, description: Present only when the backend gave an http(s) thumbnail. }
+        sourcePage: { type: string, format: uri, description: Present only when the backend gave an http(s) page. }
         title: { type: string }
         width: { type: integer }
         height: { type: integer }
@@ -3741,6 +3747,7 @@ components:
                 aspect: { type: integer }
                 duplicate: { type: integer }
                 noImage: { type: integer }
+                unsized: { type: integer, description: Dropped because of `dropUnsized`. }
             unsized: { type: integer, description: Kept images the backend gave no pixel size for. }
 
     AgentSchemaRequest:

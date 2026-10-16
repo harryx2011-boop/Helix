@@ -169,6 +169,7 @@ export const NOT_IN_SDK: Readonly<Record<string, string>> = {
   interactLiveView: 'An HTML page for a browser tab, not an API call.',
   pdfAssess: 'Not in the SDK yet; reachable through document({ op: "assess" }).',
   robotsCheck: 'Not in the SDK yet.',
+  imageSheet: 'Not in the SDK yet.',
   diff: 'Not in the SDK yet.',
   getJobSchema: 'Not in the SDK yet.',
   getJobLadder: 'Not in the SDK yet.',

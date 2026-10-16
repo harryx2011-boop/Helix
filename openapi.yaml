@@ -1048,6 +1048,48 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
+  /image-sheet:
+    post:
+      tags: [Search]
+      summary: Contact sheet of image search results for a topic
+      description: |
+        Searches the instance's Images category over several pages, drops results
+        that are too small or the wrong shape, removes repeated image URLs and
+        returns one row per image: the full image URL, a thumbnail, the page it
+        came from and its pixel size. Nothing is downloaded by this call.
+
+        `minWidth`, `minHeight`, `minAspect` and `maxAspect` (width over height)
+        apply only to images whose backend reported a size; an image with no
+        reported size is kept and counted in `metadata.unsized`. `motionReference`
+        adds the terms "storyboard frame keyframe" to the query, for finding
+        reference frames of a motion. Failed pages are listed in `warnings`; when
+        every page fails the call is a 502 `search_failed`.
+      operationId: imageSheet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ImageSheetRequest' }
+            example: { query: storm clouds, limit: 24, pages: 2, minWidth: 640, minHeight: 360 }
+      responses:
+        '200':
+          description: The filtered image rows, with counts of what each filter removed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImageSheetResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '502':
+          description: The search backend failed on every page.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: No search backend is configured on this instance.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
   /agent/schema:
     post:
       tags: [Agent]
@@ -3622,6 +3664,84 @@ components:
           properties:
             backend: { type: string, enum: [searxng, serper, serpapi] }
             fromCache: { type: boolean, description: The ranked list came from the short-TTL query cache; pages are always read fresh. }
+
+    ImageSheetRequest:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string, minLength: 1, maxLength: 500 }
+        limit:
+          type: integer
+          default: 24
+          minimum: 1
+          description: Images to return. The instance ceiling is `HELIX_SEARCH_MAX_RESULTS` (default 50).
+        pages:
+          type: integer
+          default: 2
+          minimum: 1
+          maximum: 5
+          description: Backend result pages to read.
+        minWidth: { type: integer, minimum: 1 }
+        minHeight: { type: integer, minimum: 1 }
+        minAspect: { type: number, exclusiveMinimum: 0, description: Smallest width over height. }
+        maxAspect: { type: number, exclusiveMinimum: 0, description: Largest width over height. }
+        motionReference:
+          type: boolean
+          default: false
+          description: Add "storyboard frame keyframe" to the query.
+        lang: { type: string, minLength: 2, maxLength: 2 }
+        country: { type: string, minLength: 2, maxLength: 2 }
+        includeDomains:
+          type: array
+          maxItems: 20
+          items: { $ref: '#/components/schemas/SearchDomain' }
+        excludeDomains:
+          type: array
+          maxItems: 20
+          items: { $ref: '#/components/schemas/SearchDomain' }
+
+    ImageSheetEntry:
+      type: object
+      required: [imageUrl, sourcePage, title]
+      properties:
+        imageUrl: { type: string, format: uri }
+        thumbnailUrl: { type: string, format: uri }
+        sourcePage: { type: string, format: uri }
+        title: { type: string }
+        width: { type: integer }
+        height: { type: integer }
+
+    ImageSheetResponse:
+      type: object
+      required: [success, data, warnings]
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          required: [images]
+          properties:
+            images:
+              type: array
+              items: { $ref: '#/components/schemas/ImageSheetEntry' }
+        warnings:
+          type: array
+          items: { type: string }
+        metadata:
+          type: object
+          properties:
+            backend: { type: string, enum: [searxng, serper, serpapi] }
+            query: { type: string, description: The query sent, including motion-reference terms. }
+            pagesFetched: { type: integer }
+            candidates: { type: integer, description: Image rows the backend returned. }
+            kept: { type: integer }
+            filtered:
+              type: object
+              properties:
+                size: { type: integer }
+                aspect: { type: integer }
+                duplicate: { type: integer }
+                noImage: { type: integer }
+            unsized: { type: integer, description: Kept images the backend gave no pixel size for. }
 
     AgentSchemaRequest:
       type: object

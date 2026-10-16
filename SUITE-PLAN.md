@@ -135,6 +135,8 @@ SearXNG in WSL Ubuntu Docker (`wsl.exe -d Ubuntu docker`), JSON output enabled, 
 
 ### Phase 3: `helix_image_sheet`
 
+**Status (2026-10-16): JSON sheet built.** `POST /v1/image-sheet` (`routes/image-sheet.ts`) reads up to 5 SearXNG/Serper/SerpAPI image pages, filters by `minWidth`/`minHeight`/`minAspect`/`maxAspect` where the backend reports pixels (unsized images are kept and counted), dedupes by image URL, and returns `{imageUrl, thumbnailUrl, sourcePage, title, width, height}` rows plus filter counts. `motionReference` appends "storyboard frame keyframe". All seven checklist rows are done. **Not built:** the perceptual-hash dedupe and the one-PNG grid / MCP `image` block: the API has no image decoder (no sharp/jimp), so both need a decision (add a dependency, or render the grid HTML through the browser pool and screenshot it).
+
 Image search already exists (`SearchSource` `images`, `SearchHit.imageUrl`). The tool:
 query in, then search images (several pages), dedupe by perceptual hash, filter by minimum size and aspect,
 and return a contact sheet (one PNG grid plus a JSON list of image URL, source page, size). Optional

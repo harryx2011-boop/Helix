@@ -27,6 +27,8 @@ Composio code in `apps/api` are absent.
 
 ## Goal 1 — `helix_image_sheet` (SUITE-PLAN Phase 3) — START HERE
 
+**2026-10-16: the JSON sheet and all seven checklist rows are built (`routes/image-sheet.ts`). Remaining: perceptual-hash dedupe and the PNG grid / MCP image block (no image decoder in `apps/api`; pick sharp or a browser-pool render).** The prompt below is the original; skip what is done.
+
 Recommended first: its SearXNG image input already works on the dev stack (`SearchHit.imageUrl`).
 
 ```

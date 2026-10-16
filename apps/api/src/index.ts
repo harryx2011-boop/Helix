@@ -35,6 +35,7 @@ import { registerUsage } from './routes/usage.js';
 import { UsageRecorder, pruneUsage } from './core/usage.js';
 import { CrawlWorker } from './crawl/worker.js';
 import { registerSearch } from './routes/search.js';
+import { registerImageSheet } from './routes/image-sheet.js';
 import { registerAgent } from './routes/agent.js';
 import { registerEnrich } from './routes/enrich.js';
 import { registerDiff } from './routes/diff.js';
@@ -391,6 +392,7 @@ await app.register(
       cacheTtlMs: config.searchCacheTtlMs,
       maxDurationMs: config.searchMaxDurationMs,
     });
+    await registerImageSheet(instance, { provider: searchProvider, maxResults: config.searchMaxResults });
     await registerMonitor(instance, {
       store: monitorStore,
       scheduler: monitorScheduler,

@@ -275,6 +275,25 @@
     "properties": [],
     "required": []
   },
+  "helix_image_sheet": {
+    "properties": [
+      "country",
+      "excludeDomains",
+      "includeDomains",
+      "lang",
+      "limit",
+      "maxAspect",
+      "minAspect",
+      "minHeight",
+      "minWidth",
+      "motionReference",
+      "pages",
+      "query"
+    ],
+    "required": [
+      "query"
+    ]
+  },
   "helix_interact": {
     "properties": [
       "actions",

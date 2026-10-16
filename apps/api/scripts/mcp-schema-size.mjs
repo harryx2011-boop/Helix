@@ -17,7 +17,7 @@ export const CORE_TOOLS = [
   'helix_parse', 'helix_document', 'helix_screenshot', 'helix_metadata_scan', 'helix_diff', 'helix_enrich',
   'helix_interact', 'helix_list_monitors', 'helix_create_monitor', 'helix_get_monitor', 'helix_monitor_history',
   'helix_check_monitor', 'helix_get_job', 'helix_get_job_errors', 'helix_get_job_ladder', 'helix_get_job_cost',
-  'helix_robots_check', 'helix_health', 'helix_vectors_search',
+  'helix_robots_check', 'helix_health', 'helix_vectors_search', 'helix_image_sheet',
 ].join(',');
 
 const here = dirname(fileURLToPath(import.meta.url));

@@ -166,6 +166,34 @@ describe('SearxngProvider', () => {
     ]);
   });
 
+  it('maps image rows to a thumbnail and pixel size and pages with pageno', async () => {
+    const calls: string[] = [];
+    globalThis.fetch = vi.fn(async (input: string | URL | Request) => {
+      calls.push(String(input));
+      return new Response(
+        JSON.stringify({
+          results: [
+            { url: 'https://a.test/p', title: 'A', img_src: 'https://a.test/full.jpg', thumbnail_src: 'https://a.test/t.jpg', resolution: '1920 x 1080' },
+            { url: 'https://b.test/p', title: 'B', img_src: 'https://b.test/full.jpg', resolution: 'large' },
+          ],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    }) as typeof fetch;
+
+    const { hits } = await new SearxngProvider('http://searxng:8080').search({
+      query: 'x',
+      limit: 5,
+      sources: ['images'],
+      page: 3,
+    });
+
+    expect(new URL(calls[0]!).searchParams.get('pageno')).toBe('3');
+    expect(new URL(calls[0]!).searchParams.get('categories')).toBe('images');
+    expect(hits[0]).toMatchObject({ imageUrl: 'https://a.test/full.jpg', thumbnailUrl: 'https://a.test/t.jpg', width: 1920, height: 1080 });
+    expect(hits[1]).toMatchObject({ imageUrl: 'https://b.test/full.jpg', width: undefined, height: undefined });
+  });
+
   it('reports a refused JSON format as a source failure, not as no results', async () => {
     globalThis.fetch = vi.fn(async () => new Response('forbidden', { status: 403 })) as typeof fetch;
     const result = await new SearxngProvider('http://searxng:8080').search({ query: 'x', limit: 5, sources: ['web'] });

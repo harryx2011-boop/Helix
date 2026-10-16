@@ -28,6 +28,8 @@ export interface SearchQuery {
   tbs?: string | undefined;
   includeDomains?: string[] | undefined;
   excludeDomains?: string[] | undefined;
+  /** 1-based result page; a backend without paging ignores it. */
+  page?: number | undefined;
 }
 
 export interface SearchHit {
@@ -38,6 +40,10 @@ export interface SearchHit {
   source: SearchSource;
   publishedAt?: string | undefined;
   imageUrl?: string | undefined;
+  thumbnailUrl?: string | undefined;
+  /** Image results only; pixels, when the backend reports them. */
+  width?: number | undefined;
+  height?: number | undefined;
 }
 
 /** One requested source the backend could not answer. */
@@ -165,6 +171,7 @@ export class SerperProvider implements SearchProvider {
         num: query.limit,
       };
 
+      if (query.page && query.page > 1) body['page'] = query.page;
       if (query.country) body['gl'] = query.country.toLowerCase();
       if (query.lang) body['hl'] = query.lang.toLowerCase();
       const tbs = resolveTbs(query);
@@ -190,7 +197,14 @@ export class SerperProvider implements SearchProvider {
         const payload = (await response.json()) as {
           organic?: { title?: string; link?: string; snippet?: string; date?: string }[];
           news?: { title?: string; link?: string; snippet?: string; date?: string; imageUrl?: string }[];
-          images?: { title?: string; link?: string; imageUrl?: string }[];
+          images?: {
+            title?: string;
+            link?: string;
+            imageUrl?: string;
+            thumbnailUrl?: string;
+            imageWidth?: number;
+            imageHeight?: number;
+          }[];
         };
 
         const rows =
@@ -206,6 +220,9 @@ export class SerperProvider implements SearchProvider {
             source,
             publishedAt: 'date' in row ? row.date : undefined,
             imageUrl: 'imageUrl' in row ? row.imageUrl : undefined,
+            thumbnailUrl: 'thumbnailUrl' in row ? row.thumbnailUrl : undefined,
+            width: 'imageWidth' in row ? row.imageWidth : undefined,
+            height: 'imageHeight' in row ? row.imageHeight : undefined,
           });
         });
       } catch (error) {
@@ -251,6 +268,7 @@ export class SerpApiProvider implements SearchProvider {
 
       if (source === 'news') params.set('tbm', 'nws');
       if (source === 'images') params.set('tbm', 'isch');
+      if (query.page && query.page > 1) params.set(source === 'images' ? 'ijn' : 'start', String(source === 'images' ? query.page - 1 : (query.page - 1) * query.limit));
       if (query.country) params.set('gl', query.country.toLowerCase());
       if (query.lang) params.set('hl', query.lang.toLowerCase());
 
@@ -271,7 +289,14 @@ export class SerpApiProvider implements SearchProvider {
         const payload = (await response.json()) as {
           organic_results?: { title?: string; link?: string; snippet?: string; date?: string }[];
           news_results?: { title?: string; link?: string; snippet?: string; date?: string }[];
-          images_results?: { title?: string; link?: string; original?: string }[];
+          images_results?: {
+            title?: string;
+            link?: string;
+            original?: string;
+            thumbnail?: string;
+            original_width?: number;
+            original_height?: number;
+          }[];
         };
 
         const rows =
@@ -291,6 +316,9 @@ export class SerpApiProvider implements SearchProvider {
             source,
             publishedAt: 'date' in row ? row.date : undefined,
             imageUrl: 'original' in row ? row.original : undefined,
+            thumbnailUrl: 'thumbnail' in row ? row.thumbnail : undefined,
+            width: 'original_width' in row ? row.original_width : undefined,
+            height: 'original_height' in row ? row.original_height : undefined,
           });
         });
       } catch (error) {
@@ -354,6 +382,8 @@ export class SearxngProvider implements SearchProvider {
         );
       }
 
+      if (query.page && query.page > 1) params.set('pageno', String(query.page));
+
       const range = tbsToSearxngRange(resolveTbs(query));
       if (range) params.set('time_range', range);
 
@@ -381,11 +411,13 @@ export class SearxngProvider implements SearchProvider {
             publishedDate?: string | null;
             img_src?: string;
             thumbnail_src?: string;
+            resolution?: string;
           }[];
         };
 
         payload.results?.slice(0, query.limit).forEach((row, index) => {
           if (!row.url) return;
+          const size = /^(\d+)\s*[x×]\s*(\d+)$/.exec(row.resolution ?? '');
           hits.push({
             title: row.title ?? '',
             url: row.url,
@@ -394,6 +426,9 @@ export class SearxngProvider implements SearchProvider {
             source,
             publishedAt: row.publishedDate ?? undefined,
             imageUrl: row.img_src ?? row.thumbnail_src ?? undefined,
+            thumbnailUrl: row.thumbnail_src ?? undefined,
+            width: size ? Number(size[1]) : undefined,
+            height: size ? Number(size[2]) : undefined,
           });
         });
       } catch (error) {

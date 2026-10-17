@@ -47,8 +47,37 @@ Verify live against the local stack (helix_search returns image results with ima
 
 ## Goal 2 — finish anti-bot Phase 1 (SUITE-PLAN Phase 1) + two design calls
 
-Partial today: baseline->final p50 800->417 ms, p95 5517->2623 ms, useful success 69.8%->75.9%.
-Open items below.
+**DONE 2026-10-16, except new captured profiles.** Built: the 304 fix item 5 actually needed
+(`If-None-Match` was already sent; the reply was scored as an `empty` failure, so incremental
+crawls recorded unchanged pages as fetch failures), a generic `human-verification` block signal,
+`/extract` at 4 URLs concurrently via `mapWithLimit`, per-host limits on `/scrape` and `/extract`
+through the new `apps/api/src/core/host-gate.ts`, one reused browser connection per external
+endpoint in `pool.ts`, the camoufox boot probe that makes it an automatic last rung, full Chromium
+(`channel: 'chromium'`, D17), and the `searxngUrl` settings row. Detail: `context.md`
+"Anti-bot Phase 1 finished (2026-10-16)". Seven review fixes landed 2026-10-17 (same entry).
+Tests: `apps/api` 113 files / 1578 pass. Follow-ups from the review (304 pages stop crawl
+expansion, host-gate state cap, `mapWithLimit` move, `notModified` on the wire) are in `TODO.md`.
+
+**Still open — new captured profiles.** Only this, and it needs a tool that does not exist yet:
+
+```
+Add captured browser profiles to D:\Helix (the last open item of SUITE-PLAN Phase 1).
+Read the shared rules in docs/next-session.md, then packages/profiles/definitions/chrome-148-windows.json
+and its $comment, and the dead-ends memory on fabricated JA4.
+
+packages/profiles/definitions/ holds two profiles; their $comment names a tools/capture that was
+never committed. Build packages/profiles/tools/capture.mjs: launch an installed browser through
+Playwright's `channel` (Harry's call 2026-10-16: capture from this machine, so chrome and msedge),
+read the navigator / screen / WebGL values the definitions carry, and write a definition with
+capturedAt and verified: false. The js block must be recorded, never hand-written — a plausible
+unmeasured value is what detection looks for. Leave tls/http2 as documentation with
+ja4: "unset_transport_owned_by_wreq_util"; the handshake is wreq-util's. Then capture chrome and
+msedge here, and check the Rust validator in apps/fetch accepts both (it checks the profile against
+its user-agent).
+```
+
+The old Goal 2 prompt, for reference (p50 800->417 ms, p95 5517->2623 ms, useful success 69.8%->75.9%
+at the time it was written):
 
 ```
 Finish Helix anti-bot Phase 1 in D:\Helix. Read the shared rules in docs/next-session.md, then

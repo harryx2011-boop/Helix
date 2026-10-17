@@ -111,7 +111,13 @@ p50/p95 latency, tier reached, bytes and success rate, built on `apps/api/script
 7. Anti-bot: real captured profiles beyond the two in `packages/profiles/definitions/` (no fabricated JA4;
    see the dead-ends memory), and camoufox as an automatic last tier when it is installed.
 
-**Status 2026-10-06: items 1, 2, 3 and 5 done; items 4 and 6 open; item 7 partly done.** Evidence: `context.md` "Anti-bot pass 2". The benchmark baseline-to-Phase-5 numbers moved:
+**Status 2026-10-16: Phase 1 is done except new captured profiles.** Items 1-6 are all built, and both design calls (full Chromium, `SEARXNG_URL` in settings) landed. Item 7 is half done: the browser tier is hardened and camoufox is now an automatic last rung, but the two captured profiles in `packages/profiles/definitions/` are still the only two — see "What remains" below. Detail: `context.md` "Anti-bot Phase 1 finished (2026-10-16)".
+
+Built on 2026-10-16: the 304 handling that item 5 actually needed (`If-None-Match` was already being sent; the *reply* was being scored as an `empty` failure), a generic `human-verification` block signal, `/extract` at 4 URLs concurrently, per-host limits on `/scrape` and `/extract` through `core/host-gate.ts`, one reused browser connection per external endpoint, the camoufox boot probe, `channel: 'chromium'`, and the `searxngUrl` settings row.
+
+Review fixes 2026-10-17 (seven defects a Fable 5.1 review found in the above; `context.md` lists them): the host gate no longer sits through its ceiling for a long `Retry-After`, scores a throw as a 500 and stops on abort; the gate's wait now comes out of the caller's timeout; the pool's reconnect race is closed; camoufox readiness clears on disconnect and the probe runs at boot on every instance (`probeExternalTiers()`); `searxngUrl` is a real config key; and a 304 page whose links could not be followed is reported. The crawl gap behind that last one (no links on a 304) is a migration, in `TODO.md`. Tests: `apps/api` 113 files / 1578 pass.
+
+**Status 2026-10-06 (superseded above): items 1, 2, 3 and 5 done; items 4 and 6 open; item 7 partly done.** Evidence: `context.md` "Anti-bot pass 2". The benchmark baseline-to-Phase-5 numbers moved:
 
 - useful success: 69.8% to 75.9%
 - p50: 800 ms to 538 ms

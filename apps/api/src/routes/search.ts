@@ -6,6 +6,7 @@ import { SearchCache } from '../search/cache.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
+import { mapWithLimit } from '../core/map-with-limit.js';
 
 /**
  * Search, optionally reading every result in the same call.
@@ -125,27 +126,6 @@ function baseItem(hit: SearchHit): SearchResultItem {
     publishedAt: hit.publishedAt,
     imageUrl: hit.imageUrl,
   };
-}
-
-/** Runs `fn` over `items` with at most `limit` in flight, preserving order. */
-export async function mapWithLimit<T, R>(
-  items: readonly T[],
-  limit: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array<R>(items.length);
-  let next = 0;
-
-  const worker = async (): Promise<void> => {
-    while (next < items.length) {
-      const index = next++;
-      results[index] = await fn(items[index] as T);
-    }
-  };
-
-  const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, () => worker());
-  await Promise.all(workers);
-  return results;
 }
 
 export async function registerSearch(

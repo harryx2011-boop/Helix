@@ -17,7 +17,7 @@ import {
 } from '../enrich/enrich.js';
 import { buildContent, buildPrompt, buildSchema } from '../enrich/model-phase.js';
 import type { FieldSpec, PageEvidence } from '../enrich/routing.js';
-import { mapWithLimit } from './search.js';
+import { mapWithLimit } from '../core/map-with-limit.js';
 import { tierMemory } from '../core/tier-memory.js';
 import { cookieJar } from '../core/cookie-jar.js';
 

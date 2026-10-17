@@ -7,7 +7,7 @@ import { checkUrl, type HostResolver } from '../core/url-guard.js';
 import { tierMemory } from '../core/tier-memory.js';
 import { cookieJar } from '../core/cookie-jar.js';
 import { gateOutcome, hostGate } from '../core/host-gate.js';
-import { mapWithLimit } from './search.js';
+import { mapWithLimit } from '../core/map-with-limit.js';
 
 /**
  * POST /v1/extract — the same shape across a set of URLs, as a table.

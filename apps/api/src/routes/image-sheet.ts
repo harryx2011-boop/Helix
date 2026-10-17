@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { SearchHit, SearchProvider } from '../search/providers.js';
-import { mapWithLimit } from './search.js';
+import { mapWithLimit } from '../core/map-with-limit.js';
 import {
   composeSheet,
   dHash,

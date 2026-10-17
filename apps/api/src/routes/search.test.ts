@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { registerSearch, mapWithLimit, type SearchRouteDeps } from './search.js';
+import { registerSearch, type SearchRouteDeps } from './search.js';
 import type { ProviderResult, SearchHit, SearchProvider, SearchQuery } from '../search/providers.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient } from '../extract/client.js';
@@ -422,19 +422,5 @@ describe('POST /search', () => {
     await post(app, { query: 'same' });
 
     expect(provider.search).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe('mapWithLimit', () => {
-  it('preserves input order regardless of completion order', async () => {
-    const out = await mapWithLimit([30, 10, 20], 3, async (ms) => {
-      await new Promise((resolve) => setTimeout(resolve, ms));
-      return ms;
-    });
-    expect(out).toEqual([30, 10, 20]);
-  });
-
-  it('handles an empty input', async () => {
-    expect(await mapWithLimit([], 4, async (x: number) => x)).toEqual([]);
   });
 });

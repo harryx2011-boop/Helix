@@ -23,6 +23,19 @@ function safeDecode(path: string): string | undefined {
   }
 }
 
+/**
+ * Who may show the UI in a frame: this origin, and a VS Code webview (the
+ * Helix extension hosts `/app` in one). `vscode-file:` is the workbench the
+ * webview sits in, and frame-ancestors checks every ancestor, not only the
+ * parent. The API's own replies keep helmet's SAMEORIGIN.
+ *
+ * Accepted surface: the scheme admits any extension's webview, not only
+ * Helix's (an origin per webview is random, so it cannot be pinned). No web
+ * page can frame the UI, and an installed extension already runs with this
+ * user's full access, so it gains nothing a frame would add.
+ */
+export const UI_FRAME_ANCESTORS = "frame-ancestors 'self' vscode-webview: vscode-file:";
+
 /** A path the UI may answer without a key: anything outside the API's prefixes. */
 export const isUiPath = (path: string): boolean => !isApiPath(path);
 
@@ -63,6 +76,10 @@ export async function registerStatic(app: FastifyInstance, options: StaticOption
       if (path === undefined || isApiPath(path) || path.includes('\0') || path.includes(':')) {
         return reply.callNotFound();
       }
+
+      // X-Frame-Options has no allow-list, so it gives way to the CSP form.
+      reply.removeHeader('x-frame-options');
+      reply.header('content-security-policy', UI_FRAME_ANCESTORS);
 
       for (const candidate of candidatesFor(path)) {
         if (await isFile(root, candidate)) return reply.sendFile(candidate);

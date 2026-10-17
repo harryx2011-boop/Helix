@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { getApiKey, setApiKey as persistApiKey, clearApiKey as removeApiKey } from '@/lib/auth';
+import { listenForEmbedKey } from '@/lib/embed';
 
 interface ApiKeyContextValue {
   apiKey: string | null;
@@ -23,6 +24,12 @@ export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     setApiKeyState(getApiKey());
     setHydrated(true);
+    // Inside the VS Code extension the key arrives by message, and replaces
+    // whatever this frame's storage held.
+    return listenForEmbedKey((key) => {
+      persistApiKey(key);
+      setApiKeyState(key);
+    });
   }, []);
 
   const setApiKey = React.useCallback((key: string) => {

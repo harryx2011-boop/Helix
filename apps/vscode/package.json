@@ -1,0 +1,101 @@
+{
+  "name": "helix",
+  "displayName": "Helix",
+  "description": "Open the Helix app inside VS Code, watch its API health in the status bar, and read what your web monitors saw change.",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "publisher": "harry",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.137.0",
+    "node": ">=20"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "helix",
+          "title": "Helix",
+          "icon": "media/activitybar.svg"
+        }
+      ]
+    },
+    "views": {
+      "helix": [
+        {
+          "id": "helix.monitors",
+          "name": "Monitors"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "helix.open",
+        "title": "Helix: Open"
+      },
+      {
+        "command": "helix.openMonitoring",
+        "title": "Helix: Open Web Monitoring"
+      },
+      {
+        "command": "helix.setApiKey",
+        "title": "Helix: Set API Key"
+      },
+      {
+        "command": "helix.clearApiKey",
+        "title": "Helix: Clear API Key"
+      },
+      {
+        "command": "helix.refreshMonitors",
+        "title": "Helix: Refresh Monitors",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "helix.refreshMonitors",
+          "when": "view == helix.monitors",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Helix",
+      "properties": {
+        "helix.port": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "minimum": 1,
+          "maximum": 65535,
+          "scope": "machine",
+          "description": "Port of the Helix API. Leave empty to try the desktop app (7410), then the dev API (7400). Machine-wide only, so a workspace cannot redirect your key."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "node ../../node_modules/typescript-native/bin/tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "vscode:prepublish": "node scripts/build.mjs",
+    "package": "npx --yes @vscode/vsce@3 package --allow-missing-repository --skip-license --no-rewrite-relative-links --no-dependencies -o helix.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "~1.137.0",
+    "esbuild": "^0.28.2",
+    "vitest": "^2.1.9"
+  }
+}

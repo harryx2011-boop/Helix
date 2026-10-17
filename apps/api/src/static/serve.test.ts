@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
+import helmet from '@fastify/helmet';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { InternalTickets, registerAuth } from '../core/auth.js';
 import { RateLimiter } from '../core/rate-limit.js';
@@ -151,5 +152,34 @@ describe('isApiPath', () => {
     expect(isApiPath('/mcp')).toBe(true);
     expect(isApiPath('/v1beta')).toBe(false);
     expect(isApiPath('/app')).toBe(false);
+  });
+});
+
+describe('framing the UI from VS Code', () => {
+  let framed: FastifyInstance;
+
+  beforeAll(async () => {
+    framed = Fastify();
+    // As `index.ts` registers it: helmet's X-Frame-Options SAMEORIGIN on every reply.
+    await framed.register(helmet, { contentSecurityPolicy: false });
+    framed.get('/v1/health', async () => ({ status: 'ok' }));
+    await registerStatic(framed, { dir });
+    await framed.ready();
+  });
+
+  afterAll(async () => {
+    await framed.close();
+  });
+
+  it('lets a VS Code webview frame a UI page', async () => {
+    const res = await framed.inject({ method: 'GET', url: '/app' });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['x-frame-options']).toBeUndefined();
+    expect(res.headers['content-security-policy']).toBe("frame-ancestors 'self' vscode-webview: vscode-file:");
+  });
+
+  it('keeps the API itself unframeable', async () => {
+    const res = await framed.inject({ method: 'GET', url: '/v1/health' });
+    expect(res.headers['x-frame-options']).toBe('SAMEORIGIN');
   });
 });

@@ -2,6 +2,7 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+*.vsix
 
 __pycache__/
 *.py[cod]

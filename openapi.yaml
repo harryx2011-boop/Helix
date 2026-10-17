@@ -4438,6 +4438,9 @@ components:
         changeRatio: { type: number, description: 'Changed tokens over the larger side, 0 to 1.' }
         coarse: { type: boolean, description: Present and true when the changed region is one delete and one insert. }
         truncated: { type: boolean, description: Present and true when `ops` and `text` were dropped for size. }
+        summary:
+          type: string
+          description: 'A plain account built by fixed rules: the counts, then up to three changed passages in page order (`Removed: "..."`, `Added: "..."`). A webhook with `inline` off gets the counts line only.'
         text:
           type: string
           description: 'Line diffs use `+`/`-` prefixes; word and character diffs are inline: `[-old-]{+new+}`.'
@@ -4459,6 +4462,7 @@ components:
       properties:
         granularity: { type: string, enum: [json] }
         changeRatio: { type: number, description: 'Changed fields over the total fields seen across both sides, 0 to 1.' }
+        summary: { type: string, description: 'The changed, added and removed field paths, e.g. `Changed: price. Added: stock.`' }
         fields:
           type: array
           items:

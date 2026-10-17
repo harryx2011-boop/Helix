@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Log } from '../core/logger.js';
-import { boundedDiff, diffJson, diffText, type Diff, type JsonDiff } from './diff.js';
+import { boundedDiff, diffJson, diffText, summarizeDiff, type Diff, type JsonDiff } from './diff.js';
 import { normalizeForComparison } from './sensitivity.js';
 import type { CheckRecord, MonitorEvent, MonitorRecord, MonitorStore, SnapshotRecord } from './store.js';
 import { evaluateTrigger, type TriggerReason } from './triggers.js';
@@ -74,18 +74,21 @@ function wants(monitor: MonitorRecord, event: MonitorEvent): boolean {
 
 function diffForPayload(diff: Diff | JsonDiff, inline: boolean): Record<string, unknown> {
   if (diff.granularity === 'json') {
-    return { granularity: 'json', fields: diff.fields, changeRatio: diff.changeRatio };
+    return { granularity: 'json', fields: diff.fields, changeRatio: diff.changeRatio, summary: diff.summary };
   }
-  const summary = {
+  const counts = {
     granularity: diff.granularity,
     added: diff.added,
     removed: diff.removed,
     changeRatio: diff.changeRatio,
     ...(diff.coarse ? { coarse: true } : {}),
   };
-  if (!inline) return summary;
+  // Inline off withholds the page text, and the summary quotes it, so that
+  // payload gets the summary's counts line only.
+  if (!inline) return { ...counts, summary: summarizeDiff({ ...diff, ops: [] }) };
   const bounded = boundedDiff(diff, MAX_DIFF_BYTES);
-  return bounded.truncated ? { ...summary, truncated: true } : { ...summary, text: bounded.text, ops: bounded.ops };
+  const withSummary = { ...counts, summary: diff.summary };
+  return bounded.truncated ? { ...withSummary, truncated: true } : { ...withSummary, text: bounded.text, ops: bounded.ops };
 }
 
 export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promise<CheckOutcome> {
@@ -148,13 +151,15 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
       triggerReason?: TriggerReason | undefined;
     },
   ): Promise<CheckOutcome> => {
+    // Summarized from the full diff, before a size bound drops its passages.
+    const diff = input.diff ? { ...input.diff, summary: summarizeDiff(input.diff) } : null;
     const check = await deps.store.recordCheck({
       monitorId: monitor.id,
       snapshotId: input.snapshot?.id ?? previous?.id ?? null,
       checkedAt,
       changed: input.changed,
       reason: input.reason,
-      diff: input.diff ? (input.diff.granularity === 'json' ? input.diff : boundedDiff(input.diff, MAX_DIFF_BYTES)) : null,
+      diff: diff ? (diff.granularity === 'json' ? diff : boundedDiff(diff, MAX_DIFF_BYTES)) : null,
       error: null,
     });
     await deps.store.pruneChecks(monitor.id, deps.retention.keepChecks, deps.retention.maxAgeDays);
@@ -191,7 +196,7 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
         checkedAt: checkedAt.toISOString(),
         changed: input.changed,
         reason: input.triggerReason ?? input.reason,
-        diff: input.diff ? diffForPayload(input.diff, monitor.diff.inline) : null,
+        diff: diff ? diffForPayload(diff, monitor.diff.inline) : null,
         snapshot: current
           ? { id: current.id, contentHash: current.contentHash, snapshotUrl: snapshotUrl(basePath, monitor.id, current.id) }
           : null,

@@ -84,6 +84,11 @@ describe('runCheck', () => {
     const [delivery] = store.deliveries;
     expect(delivery?.eventType).toBe('changed');
     expect(delivery?.payload['diff']).toMatchObject({ granularity: 'word', added: 1, removed: 1, text: expect.any(String) });
+
+    // The plain summary rides with the stored diff and the webhook alike.
+    const summary = ['1 word added, 1 removed.', 'Removed: "$29/month"', 'Added: "$34/month"'].join('\n');
+    expect((outcome.check.diff as Diff | null)?.summary).toBe(summary);
+    expect(delivery?.payload['diff']).toMatchObject({ summary });
     const [older, newer] = store.snapshots;
     expect(delivery?.payload['snapshot']).toMatchObject({ snapshotUrl: `/v1/monitor/${monitor.id}/snapshots/${newer!.id}` });
     expect(delivery?.payload['previousSnapshot']).toMatchObject({ snapshotUrl: `/v1/monitor/${monitor.id}/snapshots/${older!.id}` });
@@ -99,7 +104,14 @@ describe('runCheck', () => {
     await check(store, monitor.id, fetchPage);
     await check(store, monitor.id, fetchPage);
     const payload = store.deliveries[0]?.payload as { diff: Record<string, unknown> };
-    expect(payload.diff).toEqual({ granularity: 'line', added: 1, removed: 1, changeRatio: 1 });
+    // Counts only: the summary's quoted passages are diff text, which inline off withholds.
+    expect(payload.diff).toEqual({
+      granularity: 'line',
+      added: 1,
+      removed: 1,
+      changeRatio: 1,
+      summary: '1 line added, 1 removed.',
+    });
   });
 
   it('reports a field-level JSON diff naming the changed field, not unchanged siblings', async () => {
@@ -121,8 +133,11 @@ describe('runCheck', () => {
     expect(diff.granularity).toBe('json');
     expect(diff.fields).toEqual([{ path: 'price', before: 29, after: 34 }]);
 
+    expect(diff.summary).toBe('Changed: price.');
+
     const payload = store.deliveries[0]?.payload as { diff: JsonDiff };
     expect(payload.diff.fields).toEqual([{ path: 'price', before: 29, after: 34 }]);
+    expect(payload.diff.summary).toBe('Changed: price.');
   });
 
   it('falls back to the text diff when JSON extraction fails', async () => {

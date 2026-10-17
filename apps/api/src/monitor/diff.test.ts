@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedDiff, diffJson, diffText, tokenize } from './diff.js';
+import { boundedDiff, diffJson, diffText, summarizeDiff, tokenize } from './diff.js';
 
 describe('tokenize', () => {
   it('keeps whitespace tokens at word granularity so the text re-joins verbatim', () => {
@@ -213,3 +213,68 @@ describe('diffJson', () => {
   });
 });
 
+
+describe('summarizeDiff', () => {
+  it('says plainly when nothing changed', () => {
+    expect(summarizeDiff(diffText('same text', 'same text', 'word'))).toBe('No change.');
+    expect(summarizeDiff(diffJson({ a: 1 }, { a: 1 }))).toBe('No change.');
+  });
+
+  it('gives the counts, then what was removed and added, in page order', () => {
+    const diff = diffText('Standard plan $29/month', 'Standard plan $35/month', 'word');
+    expect(summarizeDiff(diff)).toBe(
+      ['1 word added, 1 removed.', 'Removed: "$29/month"', 'Added: "$35/month"'].join('\n'),
+    );
+  });
+
+  it('uses the diff granularity for the unit and its plural', () => {
+    const diff = diffText('one\ntwo', 'one\nthree\nfour', 'line');
+    expect(summarizeDiff(diff).split('\n')[0]).toBe('2 lines added, 1 removed.');
+  });
+
+  it('shows at most three changed passages', () => {
+    const diff = diffText('a1 b c2 d e3 f g4 h i5', 'a9 b c9 d e9 f g9 h i9', 'word');
+    const passages = summarizeDiff(diff)
+      .split('\n')
+      .filter((line) => line.startsWith('Added:') || line.startsWith('Removed:'));
+    expect(passages).toHaveLength(3);
+  });
+
+  it('clips a long passage', () => {
+    const diff = diffText('intro', `intro ${'word '.repeat(60)}`, 'word');
+    const added = summarizeDiff(diff).split('\n').find((line) => line.startsWith('Added:'));
+    expect(added?.length).toBeLessThanOrEqual(100);
+    expect(added).toMatch(/…"$/);
+  });
+
+  it('never cuts a character in half, so the summary stays valid JSON for Postgres', () => {
+    // An emoji is two UTF-16 units; one straddling the cut used to leave a
+    // lone surrogate, which a jsonb column rejects along with the whole row.
+    const diff = diffText('intro', `intro ${'x'.repeat(78)}😀 tail words here`, 'word');
+    const added = summarizeDiff(diff).split('\n').find((line) => line.startsWith('Added:'));
+    expect(added).toBeDefined();
+    // encodeURIComponent throws URIError on a lone surrogate.
+    expect(() => encodeURIComponent(added!)).not.toThrow();
+  });
+
+  it('hedges the counts of a coarse diff, which are an upper bound', () => {
+    const diff = { ...diffText('a b c', 'a x c', 'word'), coarse: true as const };
+    expect(summarizeDiff(diff).split('\n')[0]).toBe('Up to 1 word added, 1 removed.');
+  });
+
+  it('gives only the counts when the passages were dropped for size', () => {
+    const diff = boundedDiff(diffText('a b c', 'a x c', 'word'), 1);
+    expect(summarizeDiff(diff)).toBe('1 word added, 1 removed.');
+  });
+
+  it('names the JSON fields that changed, were added and were removed', () => {
+    const diff = diffJson({ price: 29, sku: 'A1' }, { price: 35, stock: 4 });
+    expect(summarizeDiff(diff)).toBe('Changed: price. Added: stock. Removed: sku.');
+  });
+
+  it('lists at most five JSON fields per kind and counts the rest', () => {
+    const before = Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`f${i}`, 0]));
+    const after = Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`f${i}`, 1]));
+    expect(summarizeDiff(diffJson(before, after))).toBe('Changed: f0, f1, f2, f3, f4 and 3 more.');
+  });
+});

@@ -39,6 +39,8 @@ export interface Diff {
   coarse?: true;
   /** Set on a stored or delivered copy whose `ops` and `text` were dropped for size. */
   truncated?: true;
+  /** `summarizeDiff` of this change, set once a check records it. */
+  summary?: string;
 }
 
 /**
@@ -327,6 +329,8 @@ export interface JsonDiff {
   fields: JsonFieldChange[];
   /** Changed fields over the total fields seen across both sides, 0 when identical. */
   changeRatio: number;
+  /** `summarizeDiff` of this change, set once a check records it. */
+  summary?: string;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -381,3 +385,88 @@ export function diffJson(before: unknown, after: unknown): JsonDiff {
   };
 }
 
+
+/** Changed passages a summary quotes, in page order. */
+const SUMMARY_PASSAGES = 3;
+/** Characters of one quoted passage before it is clipped. */
+const SUMMARY_PASSAGE_CHARS = 80;
+/** JSON field paths named per kind before the rest are only counted. */
+const SUMMARY_FIELDS = 5;
+
+/**
+ * A short plain-language account of a change, for a person reading a monitor
+ * history or a webhook.
+ *
+ * Built by fixed rules from the diff alone, so the same change always reads
+ * the same and costs nothing to produce. It reports what the diff already
+ * holds: the counts, then the first few passages that changed.
+ */
+export function summarizeDiff(diff: Diff | JsonDiff): string {
+  return diff.granularity === 'json' ? summarizeJsonDiff(diff) : summarizeTextDiff(diff);
+}
+
+function summarizeTextDiff(diff: Diff): string {
+  if (diff.added === 0 && diff.removed === 0) return 'No change.';
+
+  const unit = diff.added === 1 ? diff.granularity : `${diff.granularity}s`;
+  // A coarse diff's counts are an upper bound, so the summary says so.
+  const hedge = diff.coarse ? 'Up to ' : '';
+  const lines = [`${hedge}${diff.added} ${unit} added, ${diff.removed} removed.`];
+
+  for (const passage of changedPassages(diff.ops).slice(0, SUMMARY_PASSAGES)) {
+    const label = passage.op === 'insert' ? 'Added' : 'Removed';
+    lines.push(`${label}: "${clip(passage.text)}"`);
+  }
+  return lines.join('\n');
+}
+
+/** Adjacent inserts (or deletes) merged into one passage, blank ones dropped. */
+function changedPassages(ops: DiffOp[]): DiffOp[] {
+  const passages: DiffOp[] = [];
+  for (const op of ops) {
+    if (op.op === 'equal') continue;
+    const last = passages.at(-1);
+    if (last && last.op === op.op) last.text += op.text;
+    else passages.push({ op: op.op, text: op.text });
+  }
+  return passages
+    .map((passage) => ({ op: passage.op, text: passage.text.replace(/\s+/g, ' ').trim() }))
+    .filter((passage) => passage.text.length > 0);
+}
+
+/** Clipped by code point: a cut through a surrogate pair is a string jsonb rejects. */
+function clip(text: string): string {
+  const characters = Array.from(text);
+  if (characters.length <= SUMMARY_PASSAGE_CHARS) return text;
+  return `${characters.slice(0, SUMMARY_PASSAGE_CHARS - 1).join('')}…`;
+}
+
+function summarizeJsonDiff(diff: JsonDiff): string {
+  if (diff.fields.length === 0) return 'No change.';
+
+  const changed: string[] = [];
+  const added: string[] = [];
+  const removed: string[] = [];
+  for (const field of diff.fields) {
+    const had = Object.hasOwn(field, 'before');
+    const has = Object.hasOwn(field, 'after');
+    if (had && has) changed.push(field.path);
+    else if (has) added.push(field.path);
+    else removed.push(field.path);
+  }
+
+  return [
+    fieldSentence('Changed', changed),
+    fieldSentence('Added', added),
+    fieldSentence('Removed', removed),
+  ]
+    .filter((sentence) => sentence !== '')
+    .join(' ');
+}
+
+function fieldSentence(label: string, paths: string[]): string {
+  if (paths.length === 0) return '';
+  const named = paths.slice(0, SUMMARY_FIELDS).join(', ');
+  const rest = paths.length - SUMMARY_FIELDS;
+  return rest > 0 ? `${label}: ${named} and ${rest} more.` : `${label}: ${named}.`;
+}

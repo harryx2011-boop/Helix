@@ -61,11 +61,18 @@ The full stack runs locally and nothing local needs any of this.
       docs.python.org reached 1 page where the first run reached 3. Fix: store each page's
       links in `crawl_state` (a migration, both runners) and expand from the stored links
       when the page answers 304.
-- [ ] Cap the per-host state in `core/host-gate.ts`'s shared `PolitenessController`, as
-      `TierMemory` caps its map. One entry per host ever asked, never evicted, for the life
-      of the process.
-- [ ] Move `mapWithLimit` from `routes/search.ts` to `core/`: `/extract` and `/enrich`
-      import it from a route file.
+- [x] Cap the per-host state in `core/host-gate.ts`'s shared `PolitenessController`. Done
+      2026-10-17: `maxHosts` option (oldest idle host dropped; never one with a request in
+      flight or a backoff running), 2,000 for the route gate, unset for a crawl.
+- [x] Move `mapWithLimit` from `routes/search.ts` to `core/map-with-limit.ts`. Done 2026-10-17.
+- [ ] Delete the two test monitors from the 2026-10-17 live check (`f202e5a3-175a-468c-b164-b1abf0d30421`
+      on httpbin.org/uuid, `febd7b2c-765b-4c4f-8968-0819061262a2` on random.org; both scheduled
+      yearly). The MCP has no delete tool: `DELETE /v1/monitor/{id}` with a key, or the
+      playground.
+- [ ] `helix-ensure.js` starts the dev API without `HELIX_STATIC_DIR`, so the dev API serves no
+      `/app` and the VS Code extension's panel only works against the desktop app (or a dev API
+      started with `HELIX_STATIC_DIR=D:/Helix/apps/dashboard/out` after
+      `HELIX_HOSTED=0 pnpm --filter @helix/dashboard build`). Decide whether the hook should set it.
 - [ ] Delete `components/shell/top-nav.tsx` — zero importers, holds the last stray
       `rounded-md` in the tree.
 

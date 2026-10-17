@@ -107,6 +107,10 @@ Still-failing walls (airbnb, g2, zillow, indeed) are the target for the full-Chr
 
 ## Goal 3 — VSIX (Phase 6), then Web Monitoring change summaries (Phase 5)
 
+**DONE 2026-10-17.** `apps/vscode` (`harry.helix` 0.1.0) and `summarizeDiff`, checked end to end in an
+isolated VS Code. Detail: `context.md` "VS Code extension and monitor change summaries (2026-10-17)".
+The desktop app needs a rebuild before its own API frames in VS Code. Superseded prompt follows.
+
 ```
 Build the Helix VS Code extension (SUITE-PLAN Phase 6), then the monitor change summaries (Phase 5),
 in D:\Helix. Read the shared rules in docs/next-session.md, then SUITE-PLAN.md Phases 5 and 6.

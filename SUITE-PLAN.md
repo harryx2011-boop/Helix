@@ -162,12 +162,16 @@ Seam: `routes/mine.ts`.
 
 ### Phase 5: Web Monitoring that says what changed
 
+**Status 2026-10-17: built, deterministic only (Harry's call: no model summary).** `summarizeDiff()` in `monitor/diff.ts`, attached by `checker.ts` to the stored diff and the webhook payload (counts only when `inline` is off), `summary` in `openapi.yaml`. Surfaced in the VS Code extension's Monitors view, since the dashboard has no history view. Detail: `context.md` "VS Code extension and monitor change summaries (2026-10-17)".
+
 Checks already store a structured diff (`monitor/checker.ts:74-88`, `diff.ts:24-41`) but no prose summary.
 Add a deterministic `summarizeDiff(diff): string` in `monitor/diff.ts` (changed sections, first changed lines,
 JSON field names), attach it at `checker.ts:157`, add `summary` to `MonitorDiff` and `MonitorJsonDiff`
 (`openapi.yaml:4268`). An optional model summary runs only when a change fires.
 
 ### Phase 6: VS Code extension (`apps/vscode`)
+
+**Status 2026-10-17: built (`harry.helix` 0.1.0).** Webview panel on `/app` with a key handoff, status-bar health, a Monitors view, the framing change in `static/serve.ts`, one `desktop-apps.mjs` row. Checked end to end in an isolated VS Code 1.137. The desktop app itself still sends the old headers until its next build ships. Detail: `context.md` "VS Code extension and monitor change summaries (2026-10-17)".
 
 Own version line, like `packages/sdk-ts`. A webview hosts an iframe of `http://127.0.0.1:<port>/app` from
 the running API (desktop 7410 or dev 7400). Needed:

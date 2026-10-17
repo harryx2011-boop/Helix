@@ -49,8 +49,11 @@ const POLL_MS = 50;
  * for a caller sitting in front of the request, who would wait out the ceiling
  * and have it proceed anyway. A `Retry-After` the host actually sent is still
  * honoured, because that is the host speaking rather than this side guessing.
+ *
+ * Capped at 2,000 hosts, as `TierMemory` is: this controller lives as long as
+ * the process, and one entry per host ever asked would otherwise only grow.
  */
-const ROUTE_POLITENESS = { blockBackoffMs: 0 } as const;
+const ROUTE_POLITENESS = { blockBackoffMs: 0, maxHosts: 2_000 } as const;
 
 export interface HostGateOptions {
   politeness?: PolitenessController | undefined;

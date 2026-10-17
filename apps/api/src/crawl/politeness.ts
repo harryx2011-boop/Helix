@@ -30,6 +30,12 @@ export interface PolitenessOptions {
   latencyDegradationFactor?: number | undefined;
   /** Pause after a block verdict, before this host is touched again. */
   blockBackoffMs?: number | undefined;
+  /**
+   * Hosts remembered before the oldest idle one is forgotten. Unset keeps
+   * every host, which suits a crawl's controller (it lives for one job); the
+   * instance-wide route gate lives as long as the process and sets one.
+   */
+  maxHosts?: number | undefined;
 }
 
 interface HostState {
@@ -89,6 +95,7 @@ interface ResolvedOptions {
   latencyDegradationFactor: number;
   blockBackoffMs: number;
   fixedDelayMs: number | undefined;
+  maxHosts: number | undefined;
 }
 
 export class PolitenessController {
@@ -115,12 +122,31 @@ export class PolitenessController {
         options.latencyDegradationFactor ?? DEFAULTS.latencyDegradationFactor,
       blockBackoffMs: options.blockBackoffMs ?? DEFAULTS.blockBackoffMs,
       fixedDelayMs: options.fixedDelayMs,
+      maxHosts: options.maxHosts,
     };
+  }
+
+  /**
+   * Make room for one more host by dropping the oldest idle one. A host with
+   * a request in flight or a backoff running is kept: forgetting it would lose
+   * a held slot or a wait the host asked for. With nothing idle the map grows.
+   */
+  #evictIdleHost(now: number): void {
+    const max = this.#options.maxHosts;
+    if (max === undefined || this.#hosts.size < max) return;
+    // Map keeps insertion order, so the first idle key is the oldest.
+    for (const [host, state] of this.#hosts) {
+      if (state.inFlight === 0 && state.backoffUntil <= now) {
+        this.#hosts.delete(host);
+        return;
+      }
+    }
   }
 
   #stateFor(host: string): HostState {
     let state = this.#hosts.get(host);
     if (!state) {
+      this.#evictIdleHost(Date.now());
       state = {
         concurrency: this.#options.initialConcurrency,
         inFlight: 0,

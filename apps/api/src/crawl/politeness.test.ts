@@ -284,3 +284,37 @@ describe('PolitenessController — clamps', () => {
     expect(controller.tryAcquire('a.com').allowed).toBe(false);
   });
 });
+
+describe('PolitenessController host cap', () => {
+  it('forgets the oldest idle host once the cap is reached', () => {
+    const controller = new PolitenessController({ maxHosts: 2 });
+    controller.tryAcquire('a.com');
+    controller.release('a.com', { latencyMs: 10, statusCode: 200 });
+    controller.tryAcquire('b.com');
+    controller.release('b.com', { latencyMs: 10, statusCode: 200 });
+
+    controller.tryAcquire('c.com');
+
+    expect(controller.stats().hosts).toBe(2);
+  });
+
+  it('never forgets a host with a request in flight or a backoff running', () => {
+    const controller = new PolitenessController({ maxHosts: 2 });
+    controller.tryAcquire('busy.com');
+    controller.tryAcquire('backoff.com');
+    controller.release('backoff.com', { latencyMs: 10, statusCode: 429, retryAfterSeconds: 60 });
+
+    controller.tryAcquire('new.com');
+
+    // Nothing idle to drop, so the map grows rather than lose a held slot or a stated wait.
+    expect(controller.stats().hosts).toBe(3);
+    expect(controller.inFlightFor('busy.com')).toBe(1);
+    expect(controller.tryAcquire('backoff.com').allowed).toBe(false);
+  });
+
+  it('keeps every host when no cap is set, as a crawl does', () => {
+    const controller = new PolitenessController();
+    for (let i = 0; i < 50; i++) controller.tryAcquire(`h${i}.com`);
+    expect(controller.stats().hosts).toBe(50);
+  });
+});

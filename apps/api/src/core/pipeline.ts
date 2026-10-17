@@ -93,6 +93,12 @@ export interface PipelineSuccess {
   /** Validators from the response, so a later crawl can ask "has this changed?". */
   etag?: string | undefined;
   lastModified?: string | undefined;
+  /**
+   * The host answered a conditional request with 304: the page is as the caller
+   * already has it. `content` is empty, which is the answer, not a failure — the
+   * caller keeps what it stored.
+   */
+  notModified?: boolean | undefined;
   timingMs: number;
 }
 
@@ -344,9 +350,16 @@ async function walkLadder(
 
   const explicit = options.tier && options.tier !== 'auto' ? (options.tier as Tier) : undefined;
   // An explicit tier is both floor and ceiling: the caller asked for that tier.
-  // Absent one, the ceiling stops below the opt-in tier, so evidence can walk
-  // the ladder up to chromium but never into camoufox on its own.
-  const maxTier: Tier = explicit ?? DEFAULT_MAX_TIER;
+  //
+  // Absent one, the ceiling is chromium unless camoufox is actually there. A
+  // camoufox an operator has enabled AND that answered the startup probe is a
+  // tier this instance can really run, and the sites that beat the render tier
+  // are exactly what it is for — leaving it reachable only by naming it meant
+  // the walls stayed walls unless the caller already knew to ask. It still
+  // never *starts* a request: `minimumViableTier` is bounded by chromium, so
+  // camoufox is only ever reached on evidence from the tier below it.
+  const camoufoxReady = deps.browserPool?.camoufoxReady?.() === true;
+  const maxTier: Tier = explicit ?? (camoufoxReady ? 'camoufox' : DEFAULT_MAX_TIER);
   let tier: Tier = explicit ?? minimumViableTier(capabilities);
   const learned = explicit ? undefined : deps.tierMemory?.floor(options.url);
   const startsFromMemory =
@@ -429,6 +442,34 @@ async function walkLadder(
         // A service being down is worth retrying once it is back; a DNS failure
         // for a typo is not. Only the recoverable ones invite another attempt.
         escalationAvailable: transportReason === 'service_unavailable' || transportReason === 'timeout',
+        timingMs: Date.now() - started,
+      };
+    }
+
+    // A 304 is the answer to a conditional request, not a thin page. It is
+    // settled here, before extraction and before the escalation decision,
+    // because both would read the empty body as a failure: extraction has
+    // nothing to parse, and no higher tier can conjure a body the host
+    // deliberately withheld. Classified as `empty` it made every unchanged page
+    // of an incremental crawl a fetch failure.
+    if (attempt.facts.statusCode === 304) {
+      return {
+        success: true,
+        content: { markdown: '', text: '', links: [], extractorUsed: 'none', contentHash: '' },
+        tier,
+        tiersAttempted,
+        escalations,
+        ...(attempt.profileUsed ? { profileUsed: attempt.profileUsed } : {}),
+        ...(attempt.engineUsed ? { engineUsed: attempt.engineUsed } : {}),
+        ...(attempt.warnings && attempt.warnings.length > 0 ? { warnings: attempt.warnings } : {}),
+        statusCode: 304,
+        finalUrl: attempt.finalUrl,
+        ...(attempt.setCookies?.length ? { setCookies: attempt.setCookies } : {}),
+        // A 304 may repeat the validators or omit them; the caller keeps the
+        // ones it already stored either way.
+        etag: attempt.facts.headers['etag'],
+        lastModified: attempt.facts.headers['last-modified'],
+        notModified: true,
         timingMs: Date.now() - started,
       };
     }

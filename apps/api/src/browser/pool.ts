@@ -155,6 +155,12 @@ export interface BrowserPoolOptions {
   lightpandaUrl?: string | undefined;
   /** Engine the render tier uses when a request does not name one. */
   defaultEngine?: RenderEngine | undefined;
+  /**
+   * Playwright channel for the chromium engine: `chromium` for the full
+   * browser, empty for Playwright's default (the headless shell, when one is
+   * installed). Ignored for firefox and webkit, which have their own channels.
+   */
+  browserChannel?: string | undefined;
   camoufoxEnabled?: boolean | undefined;
   /** Playwright-protocol endpoint of a running Camoufox. */
   camoufoxUrl?: string | undefined;
@@ -455,6 +461,22 @@ export class BrowserPool {
   #waiters: (() => void)[] = [];
   #started = false;
   #closing = false;
+  /**
+   * Connections to browsers this process did not launch, keyed by endpoint.
+   *
+   * Lightpanda, camoufox and a remote CDP endpoint were connected to and
+   * disconnected from once per render. A connect is a WebSocket handshake plus
+   * a target discovery round trip to a service that is often not on this
+   * machine, and paying it per page made the cheap tiers the slow ones. The
+   * connection is the expensive part and it is shared; a context is still
+   * created and closed per render, which is what keeps renders isolated.
+   *
+   * Held as the in-flight promise, not the resolved browser, so two renders
+   * arriving together share one connect instead of racing to make two.
+   */
+  readonly #connections = new Map<string, Promise<Browser>>();
+  /** Set by the boot probe: camoufox is enabled and answered. */
+  #camoufoxReady = false;
 
   constructor(options: BrowserPoolOptions) {
     this.#options = options;
@@ -491,18 +513,70 @@ export class BrowserPool {
       Array.from({ length: this.#options.size }, () => this.#launch(this.defaultEngine)),
     );
 
+    // Probed once, here, rather than per request: the answer decides whether
+    // the ladder has a rung above chromium at all, and a per-request probe
+    // would pay a connect on every page to learn something that changes only
+    // when the operator restarts their camoufox. A camoufox started later is
+    // picked up at the next API restart, which is the trade the probe makes.
+    if (this.#options.camoufoxEnabled) await this.#probeCamoufox();
+
     this.#logger?.info(
-      { size: this.#browsers.length, engine: this.defaultEngine },
+      {
+        size: this.#browsers.length,
+        engine: this.defaultEngine,
+        camoufox: this.#options.camoufoxEnabled ? this.#camoufoxReady : 'off',
+      },
       'browser pool ready',
     );
   }
 
+  /**
+   * Connect to camoufox once at boot to find out whether it is really there.
+   *
+   * The connection is kept, so the probe is not a cost paid twice: the first
+   * render that reaches the tier reuses it.
+   */
+  async #probeCamoufox(): Promise<void> {
+    const endpoint = this.#options.camoufoxUrl ?? 'ws://localhost:9223';
+    try {
+      await this.#connection(`camoufox:${endpoint}`, async () => {
+        const { firefox } = await import('playwright');
+        return firefox.connect(endpoint, { timeout: 5_000 });
+      });
+      this.#camoufoxReady = true;
+    } catch (error) {
+      // Enabled but unreachable is an ordinary state, not a boot failure: the
+      // operator runs that process themselves. The ladder simply stops at
+      // chromium, exactly as it did before the tier was enabled.
+      this.#camoufoxReady = false;
+      this.#logger?.info(
+        { endpoint, error: error instanceof Error ? error.message : String(error) },
+        'camoufox is enabled but did not answer; the ladder stops at chromium',
+      );
+    }
+  }
+
+  /**
+   * Whether evidence may walk the ladder into camoufox on its own.
+   *
+   * Both halves are needed: an operator who enabled the tier, and a process
+   * that answered. Enabled-but-absent would otherwise spend a failed connect
+   * at the top of every hard page.
+   */
+  camoufoxReady(): boolean {
+    return this.#camoufoxReady;
+  }
+
   async #launch(engine: RenderEngine): Promise<PooledBrowser> {
     const args = launchArgsFor(engine);
+    // Only chromium: `channel` names a Chrome-family build, and passing one to
+    // firefox or webkit is an error rather than a no-op.
+    const channel = engine === 'chromium' ? this.#options.browserChannel : undefined;
     let browser: Browser;
     try {
       browser = await browserTypeFor(engine).launch({
         ...(args.length > 0 ? { args } : {}),
+        ...(channel ? { channel } : {}),
       });
     } catch (error) {
       // The container ships Chromium only unless it was built with
@@ -826,17 +900,19 @@ export class BrowserPool {
    * there is no layout for a viewport to change; the route says so in a warning.
    */
   async #renderLightpanda(options: RenderOptions, started: number, deadline: number): Promise<RenderResult> {
+    const endpoint = this.#options.lightpandaUrl ?? 'http://localhost:9222';
     try {
-      const browser = await chromium.connectOverCDP(
-        this.#options.lightpandaUrl ?? 'http://localhost:9222',
-        { timeout: 5_000 },
+      const browser = await this.#connection(`lightpanda:${endpoint}`, () =>
+        chromium.connectOverCDP(endpoint, { timeout: 5_000 }),
       );
 
-      try {
-        const context = await browser.newContext({
-          ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
-        });
+      const context = await browser.newContext({
+        ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
+      });
 
+      // The context is what has to go now that the connection outlives the
+      // render: closing the browser used to collect it on any path out.
+      try {
         if (!options.allowPrivate) {
           // Request interception over CDP is what enforces the guard for every
           // hop and subresource. A build that lacks it declines the tier rather
@@ -864,11 +940,9 @@ export class BrowserPool {
         const finalUrl = page.url();
         const status = response?.status();
 
-        await context.close().catch(() => undefined);
-
         return { html, status, headers: {}, finalUrl, timingMs: Date.now() - started };
       } finally {
-        await browser.close().catch(() => undefined);
+        await context.close().catch(() => undefined);
       }
     } catch (error) {
       return {
@@ -903,18 +977,19 @@ export class BrowserPool {
     started: number,
     deadline: number,
   ): Promise<RenderResult> {
+    const endpoint = this.#options.camoufoxUrl ?? 'ws://localhost:9223';
     try {
-      const { firefox } = await import('playwright');
-      const browser = await firefox.connect(this.#options.camoufoxUrl ?? 'ws://localhost:9223', {
-        timeout: 5_000,
+      const browser = await this.#connection(`camoufox:${endpoint}`, async () => {
+        const { firefox } = await import('playwright');
+        return firefox.connect(endpoint, { timeout: 5_000 });
+      });
+
+      const context = await browser.newContext({
+        ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
+        ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
       });
 
       try {
-        const context = await browser.newContext({
-          ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
-          ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
-        });
-
         if (!options.allowPrivate) {
           // Same rule as every other tier: no guard, no fetch. Camoufox patches
           // Firefox's internals, so its routing support is a property of the
@@ -930,11 +1005,10 @@ export class BrowserPool {
         const page = await context.newPage();
         abortClosesPage(page, options.signal);
         const result = await drivePage(page, options, deadline);
-        await context.close().catch(() => undefined);
 
-        return { ...result, engineUsed: 'firefox', timingMs: Date.now() - started };
+        return { ...result, engineUsed: 'firefox' as const, timingMs: Date.now() - started };
       } finally {
-        await browser.close().catch(() => undefined);
+        await context.close().catch(() => undefined);
       }
     } catch (error) {
       return {
@@ -984,20 +1058,22 @@ export class BrowserPool {
 
     let timer: NodeJS.Timeout | undefined;
     try {
-      const browser = await chromium.connectOverCDP(endpoint, { timeout: 10_000 });
+      const browser = await this.#connection(`remote:${endpoint}`, () =>
+        chromium.connectOverCDP(endpoint, { timeout: 10_000 }),
+      );
+
+      const resolved = resolveProfileForEngine(options.profile, engine, this.#logger);
+      const profile = resolved.profile;
+      warnings.push(...resolved.warnings);
+
+      const context = await browser.newContext({
+        ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
+        ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
+        ...profileContextOptions(profile),
+        ...(options.mobile ? MOBILE_CONTEXT : {}),
+      });
 
       try {
-        const resolved = resolveProfileForEngine(options.profile, engine, this.#logger);
-        const profile = resolved.profile;
-        warnings.push(...resolved.warnings);
-
-        const context = await browser.newContext({
-          ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
-          ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
-          ...profileContextOptions(profile),
-          ...(options.mobile ? MOBILE_CONTEXT : {}),
-        });
-
         await addIdentityScript(context, profile, engine);
 
         if (!options.allowPrivate) {
@@ -1022,7 +1098,6 @@ export class BrowserPool {
         });
 
         const result = await Promise.race([drivePage(page, options, deadline), expired]);
-        await context.close().catch(() => undefined);
 
         return {
           ...result,
@@ -1032,7 +1107,10 @@ export class BrowserPool {
           timingMs: Date.now() - started,
         };
       } finally {
-        await browser.close().catch(() => undefined);
+        // Closing the context is what ends the render here: the connection is
+        // shared with the next one, and a leaked context would keep the remote
+        // browser's memory for the rest of the process's life.
+        await context.close().catch(() => undefined);
       }
     } catch (error) {
       return {
@@ -1073,12 +1151,58 @@ export class BrowserPool {
     };
   }
 
+  /**
+   * The connection to an external browser, made once and kept.
+   *
+   * Reconnects on its own when the endpoint went away: a service restarted
+   * between renders is the ordinary case for something an operator runs
+   * alongside Helix, and failing the render because the cached handle is stale
+   * would make the cache worse than no cache.
+   */
+  async #connection(key: string, connect: () => Promise<Browser>): Promise<Browser> {
+    const existing = this.#connections.get(key);
+    if (existing) {
+      try {
+        const browser = await existing;
+        if (browser.isConnected()) return browser;
+      } catch {
+        // A connect that failed is not cached as a failure: fall through and
+        // try again, so one unreachable moment does not disable the tier.
+      }
+      this.#connections.delete(key);
+    }
+
+    const pending = connect();
+    this.#connections.set(key, pending);
+
+    try {
+      const browser = await pending;
+      // Dropped the moment the far side goes, rather than discovered by the
+      // next render: Playwright reports the close asynchronously, so a handle
+      // can be stale before anything asks it.
+      browser.on('disconnected', () => {
+        if (this.#connections.get(key) === pending) this.#connections.delete(key);
+      });
+      return browser;
+    } catch (error) {
+      this.#connections.delete(key);
+      throw error;
+    }
+  }
+
   async close(): Promise<void> {
     this.#closing = true;
     // Parked callers are woken before the browsers go: one still waiting on a
     // slot that will never free would hold shutdown open indefinitely.
     for (const wake of this.#waiters.splice(0)) wake();
-    await Promise.all(this.#browsers.map((b) => b.browser.close().catch(() => undefined)));
+    const connections = [...this.#connections.values()];
+    this.#connections.clear();
+    await Promise.all([
+      ...this.#browsers.map((b) => b.browser.close().catch(() => undefined)),
+      // Closing a connection to a browser this process did not launch leaves
+      // the browser running, which is the point: the operator owns it.
+      ...connections.map((pending) => pending.then((b) => b.close()).catch(() => undefined)),
+    ]);
     this.#browsers = [];
     this.#started = false;
   }

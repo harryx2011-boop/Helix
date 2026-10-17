@@ -76,6 +76,16 @@ const ConfigSchema = z.object({
   lightpandaUrl: z.string().default('http://localhost:9222'),
   /** Which browser drives the render tier when a request does not name one. */
   browserEngine: z.enum(['chromium', 'firefox', 'webkit']).default('chromium'),
+  /**
+   * Playwright channel for the chromium engine.
+   *
+   * `chromium` is the full browser; empty selects Playwright's default, which
+   * is the headless shell when one is installed. The full build is what the
+   * walled sites measure differently: the shell announces itself in ways a
+   * hardened page reads, and it has no new-headless mode. Reversing
+   * DESKTOP-PLAN D14 (recorded there as D17), the desktop app now ships it.
+   */
+  browserChannel: z.string().default('chromium'),
   camoufoxEnabled: bool(false),
   camoufoxUrl: z.string().default('ws://localhost:9223'),
   /**
@@ -182,6 +192,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     lightpandaEnabled: env.HELIX_LIGHTPANDA_ENABLED,
     lightpandaUrl: env.HELIX_LIGHTPANDA_URL,
     browserEngine: env.HELIX_BROWSER_ENGINE,
+    browserChannel: env.HELIX_BROWSER_CHANNEL,
     camoufoxEnabled: env.HELIX_CAMOUFOX_ENABLED,
     camoufoxUrl: env.HELIX_CAMOUFOX_URL,
     remoteCdpUrl: env.HELIX_REMOTE_CDP_URL || undefined,

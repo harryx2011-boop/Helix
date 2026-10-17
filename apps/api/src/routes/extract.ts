@@ -6,6 +6,8 @@ import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 import { checkUrl, type HostResolver } from '../core/url-guard.js';
 import { tierMemory } from '../core/tier-memory.js';
 import { cookieJar } from '../core/cookie-jar.js';
+import { hostGate } from '../core/host-gate.js';
+import { mapWithLimit } from './search.js';
 
 /**
  * POST /v1/extract — the same shape across a set of URLs, as a table.
@@ -74,6 +76,38 @@ interface DroppedField {
   field: string;
   reason: string;
 }
+
+/**
+ * URLs read at once.
+ *
+ * Four, not `MAX_URLS`: each one is a page fetch plus a model call, and the
+ * per-host gate paces same-host URLs anyway. Twenty-five at once would mostly
+ * queue inside the browser pool while making the provider's rate limit the next
+ * thing to fail.
+ */
+const URL_CONCURRENCY = 4;
+
+/**
+ * What one URL produced. Returned rather than pushed, because the rows must read
+ * in the caller's order no matter which URL finished first.
+ */
+type UrlOutcome =
+  | {
+      kind: 'row';
+      row: Record<string, unknown>;
+      dropped: DroppedField[];
+      warnings: string[];
+      blocksKept: number;
+      blocksTotal: number;
+      tokensInput: number;
+      tokensOutput: number;
+      modelUsed: string | undefined;
+    }
+  | { kind: 'warnings'; warnings: string[] }
+  /** A schema the provider refused: the same answer for every URL, so it ends the request. */
+  | { kind: 'schema-error'; error: StructuredError }
+  /** Aborted, or never started because the request was already over. */
+  | { kind: 'skipped' };
 
 /**
  * Fields the source actually supports, per `include_sources`.
@@ -165,25 +199,47 @@ export async function registerExtract(app: FastifyInstance, deps: ExtractRouteDe
     reply.raw.on('close', onClose);
 
     try {
-      for (const url of body.urls) {
-        if (controller.signal.aborted) break;
-        const page = await runPipeline(
-          {
-            url,
-            formats: ['markdown'],
-            ...(body.tier ? { tier: body.tier } : {}),
-            timeout: body.timeout,
-            onlyMainContent: true,
-            ...(deps.proxyUrl ? { proxy: deps.proxyUrl } : {}),
-            allowPrivate: deps.allowPrivateUrls,
-            signal: controller.signal,
-          },
-          { ...deps, tierMemory, cookieJar },
+      // One pass over the URLs, several at a time. Serial was n round trips of
+      // fetch-then-model for URLs that have nothing to do with each other: 25
+      // pages at 3 s each is a 75 s wall. `mapWithLimit` preserves order, so
+      // rows, warnings and `dropped` still read in the order the caller listed —
+      // the concurrency is not visible in the answer.
+      const outcomes = await mapWithLimit(body.urls, URL_CONCURRENCY, async (url): Promise<UrlOutcome> => {
+        if (controller.signal.aborted) return { kind: 'skipped' };
+
+        const page = await hostGate.run(
+          url,
+          () =>
+            runPipeline(
+              {
+                url,
+                formats: ['markdown'],
+                ...(body.tier ? { tier: body.tier } : {}),
+                timeout: body.timeout,
+                onlyMainContent: true,
+                ...(deps.proxyUrl ? { proxy: deps.proxyUrl } : {}),
+                allowPrivate: deps.allowPrivateUrls,
+                signal: controller.signal,
+              },
+              { ...deps, tierMemory, cookieJar },
+            ),
+          // Several URLs on one host is the case this route makes common, so the
+          // host's own answer has to feed the pacing: a 429 or a challenge on the
+          // third URL should slow the fourth, not be rediscovered 20 times.
+          (result) => ({
+            statusCode: result.statusCode,
+            blocked: !result.success && (result.reason === 'blocked' || result.reason === 'challenge'),
+            ...(result.success ? {} : { retryAfterSeconds: result.retryAfterSeconds }),
+          }),
         );
 
         if (!page.success) {
-          warnings.push(`${url}: ${page.reason}${page.detail ? ` — ${page.detail}` : ''}`);
-          continue;
+          // A page the caller's own disconnect killed is not a page that failed.
+          if (page.reason === 'aborted') return { kind: 'skipped' };
+          return {
+            kind: 'warnings',
+            warnings: [`${url}: ${page.reason}${page.detail ? ` — ${page.detail}` : ''}`],
+          };
         }
 
         try {
@@ -199,49 +255,77 @@ export async function registerExtract(app: FastifyInstance, deps: ExtractRouteDe
           });
 
           const split = splitByGrounding(url, structured.data, structured.sources);
-          if (split.dropped.length > 0) dropped.push(...split.dropped);
 
-          rows.push({
-            ...(body.allowUngrounded ? structured.data : split.kept),
-            _source: {
-              url,
-              spans: structured.sources,
-              // Said per row: a page whose blocks were clipped answered from part
-              // of itself, and the values alone cannot show that.
-              blocksKept: structured.blocksKept,
-              blocksTotal: structured.blocksTotal,
+          return {
+            kind: 'row',
+            row: {
+              ...(body.allowUngrounded ? structured.data : split.kept),
+              _source: {
+                url,
+                spans: structured.sources,
+                // Said per row: a page whose blocks were clipped answered from part
+                // of itself, and the values alone cannot show that.
+                blocksKept: structured.blocksKept,
+                blocksTotal: structured.blocksTotal,
+              },
             },
-          });
-
-          if (structured.sources.length === 0) {
-            warnings.push(`${url}: the extractor returned no source spans, so no field could be verified.`);
-          }
-
-          blocksKept += structured.blocksKept;
-          blocksTotal += structured.blocksTotal;
-          tokensInput += structured.tokensInput;
-          tokensOutput += structured.tokensOutput;
-          modelUsed ??= structured.modelUsed;
+            dropped: split.dropped,
+            warnings:
+              structured.sources.length === 0
+                ? [`${url}: the extractor returned no source spans, so no field could be verified.`]
+                : [],
+            blocksKept: structured.blocksKept,
+            blocksTotal: structured.blocksTotal,
+            tokensInput: structured.tokensInput,
+            tokensOutput: structured.tokensOutput,
+            modelUsed: structured.modelUsed,
+          };
         } catch (error) {
           // A bad schema is the caller's to fix and will fail identically on every
-          // URL, so it stops the request rather than repeating n times.
+          // URL, so it stops the request rather than repeating n times. The abort
+          // is what stops it: URLs already in flight end as `skipped`, and no
+          // queued one starts.
           if (error instanceof StructuredError && error.status === 400) {
-            return reply.code(400).send({
-              error: error.field ? 'invalid_request' : 'invalid_schema',
-              message: error.message,
-              field: error.field ?? 'schema',
-              requestId: request.id,
-            });
+            controller.abort();
+            return { kind: 'schema-error', error };
           }
           const err = error as { name?: string };
-          // The caller disconnecting mid-run is not a per-URL extraction
-          // failure worth reporting in `warnings` — the loop above already
-          // stops issuing new calls once `controller.signal` is aborted.
-          if (err.name === 'AbortError') break;
-          warnings.push(
-            `${url}: extraction failed — ${error instanceof Error ? error.message : String(error)}`,
-          );
+          // The caller disconnecting mid-run is not a per-URL extraction failure
+          // worth reporting in `warnings`.
+          if (err.name === 'AbortError') return { kind: 'skipped' };
+          return {
+            kind: 'warnings',
+            warnings: [
+              `${url}: extraction failed — ${error instanceof Error ? error.message : String(error)}`,
+            ],
+          };
         }
+      });
+
+      // Folded in the caller's order, so a concurrent run answers exactly as the
+      // serial one did.
+      for (const outcome of outcomes) {
+        if (outcome.kind === 'schema-error') {
+          const { error } = outcome;
+          return reply.code(400).send({
+            error: error.field ? 'invalid_request' : 'invalid_schema',
+            message: error.message,
+            field: error.field ?? 'schema',
+            requestId: request.id,
+          });
+        }
+        if (outcome.kind === 'skipped') continue;
+
+        warnings.push(...outcome.warnings);
+        if (outcome.kind === 'warnings') continue;
+
+        rows.push(outcome.row);
+        dropped.push(...outcome.dropped);
+        blocksKept += outcome.blocksKept;
+        blocksTotal += outcome.blocksTotal;
+        tokensInput += outcome.tokensInput;
+        tokensOutput += outcome.tokensOutput;
+        modelUsed ??= outcome.modelUsed;
       }
 
       return reply.code(200).send({

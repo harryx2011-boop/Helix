@@ -20,6 +20,8 @@ const db = vi.hoisted(() => {
     type: undefined as string | undefined,
     /** Queued task rows resume() finds, as the crawl route leaves the seed. */
     queued: [] as { url: string; depth: number; site: string }[],
+    /** `crawl_state` rows an incremental run loads before it fetches anything. */
+    crawlState: [] as Record<string, unknown>[],
   };
   const query = vi.fn(async (text: string, values: unknown[] = []) => {
     state.calls.push({ text, values });
@@ -35,6 +37,7 @@ const db = vi.hoisted(() => {
     }
     // The outcome write lands: zero rows here reads as a cancellation mid-finish.
     if (text.includes('rejections = $6')) return { rows: [], rowCount: 1 };
+    if (text.includes('FROM crawl_state')) return { rows: state.crawlState, rowCount: state.crawlState.length };
     if (text.includes('SELECT url, depth, site FROM job_tasks')) return { rows: state.queued, rowCount: state.queued.length };
     if (text.includes('count(*)::int AS n FROM job_tasks')) return { rows: [{ n: state.leftover }], rowCount: 1 };
     if (text.includes('FROM job_tasks WHERE job_id')) return { rows: [], rowCount: 0 };
@@ -163,6 +166,7 @@ beforeEach(() => {
   db.state.leftover = 0;
   db.state.type = undefined;
   db.state.queued = [];
+  db.state.crawlState = [];
   estimateCrawl.mockClear();
   discover.mockClear();
   discover.mockResolvedValue([]);
@@ -175,6 +179,65 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+});
+
+describe('CrawlWorker conditional re-fetches', () => {
+  const notModified = () => ({
+    success: true as const,
+    content: { markdown: '', text: '', links: [] as string[], extractorUsed: 'none', contentHash: '' },
+    tier: 'tls' as const,
+    tiersAttempted: ['tls'] as const,
+    escalations: [] as { from: string; to: string; reason: string }[],
+    statusCode: 304,
+    notModified: true,
+    timingMs: 3,
+  });
+
+  const stored = {
+    url: 'https://example.com/',
+    content_hash: 'hash1',
+    etag: '"v1"',
+    last_modified: new Date('2026-08-01T12:00:00Z'),
+    status_code: 200,
+    last_seen_at: new Date('2026-08-01T12:00:00Z'),
+    unchanged_streak: 2,
+  };
+
+  it('counts a 304 as unchanged instead of a failed fetch', async () => {
+    db.state.request = baseRequest({ incremental: true });
+    db.state.crawlState = [stored];
+    runPipeline.mockResolvedValueOnce(notModified());
+
+    const worker = buildWorker();
+    await worker.runOnce();
+
+    const failures = db.state.calls.filter((c) => c.text.includes('fetch_failures'));
+    expect(failures).toEqual([]);
+
+    const outcome = db.state.calls.find((c) => c.text.includes('rejections = $6'));
+    const result = JSON.parse(String(outcome?.values[4])) as Record<string, number>;
+    expect(result['pagesUnchanged']).toBe(1);
+
+    // And no empty document written over the one already stored: a 304 body is
+    // absent, not blank.
+    expect(db.state.calls.filter((c) => c.text.includes('INSERT INTO documents'))).toEqual([]);
+  });
+
+  it('keeps the stored validators when a 304 repeats none of them', async () => {
+    // A 304 may send no ETag at all. Writing the empty body's hash and a null
+    // etag would leave the next run with nothing to ask with, so the saving
+    // would last exactly one crawl.
+    db.state.request = baseRequest({ incremental: true });
+    db.state.crawlState = [stored];
+    runPipeline.mockResolvedValueOnce(notModified());
+
+    const worker = buildWorker();
+    await worker.runOnce();
+
+    const visit = db.state.calls.find((c) => c.text.includes('INSERT INTO crawl_state'));
+    expect(visit?.values[2]).toBe('hash1');
+    expect(visit?.values[3]).toBe('"v1"');
+  });
 });
 
 describe('CrawlWorker destination wiring', () => {

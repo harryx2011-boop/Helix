@@ -826,3 +826,114 @@ describe('runPipeline resource blocking', () => {
     expect(vi.mocked(browserPool.render).mock.calls[0]?.[0]).toMatchObject({ pdf: true });
   });
 });
+
+describe('runPipeline camoufox as the last rung', () => {
+  /**
+   * Extracts what the html actually holds, so a challenge page reads as empty
+   * and the article reads as content. A fixed return would make every tier look
+   * identical to the classifier.
+   */
+  function extractByHtml(): ExtractClient {
+    return {
+      extract: vi.fn(async ({ html }: { html: string }) => {
+        const text = html.includes('<article>') ? ARTICLE_TEXT : '';
+        return {
+          markdown: text,
+          text,
+          title: 'Test',
+          language: 'en',
+          links: [],
+          extractorUsed: 'trafilatura',
+          contentHash: 'abc123',
+        };
+      }),
+      health: vi.fn(async () => true),
+    } as unknown as ExtractClient;
+  }
+
+  /** Serves the challenge to chromium and the article to camoufox. */
+  function poolWithCamoufox(ready: boolean): BrowserPool {
+    return {
+      render: vi.fn(async (opts: { engine: string }) => ({
+        html: opts.engine === 'camoufox' ? ARTICLE : CLOUDFLARE_CHALLENGE,
+        status: 200,
+        headers: {},
+        finalUrl: 'https://example.com',
+        timingMs: 500,
+      })),
+      camoufoxReady: () => ready,
+      stats: () => ({ browsers: 1, activeContexts: 0, pagesServed: 1 }),
+      close: vi.fn(async () => undefined),
+      start: vi.fn(async () => undefined),
+    } as unknown as BrowserPool;
+  }
+
+  it('walks into camoufox when the probe found it and chromium was blocked', async () => {
+    // The sites camoufox exists for are the ones chromium loses, and they were
+    // unreachable unless the caller already knew to name the tier.
+    const browserPool = poolWithCamoufox(true);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'] },
+      deps({
+        fetchClient: fetchClientReturning([{ status: 200, body: CLOUDFLARE_CHALLENGE }]),
+        extractClient: extractByHtml(),
+        browserPool,
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tier).toBe('camoufox');
+    expect(result.tiersAttempted).toContain('camoufox');
+  });
+
+  it('stops at chromium when camoufox did not answer the probe', async () => {
+    const browserPool = poolWithCamoufox(false);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'] },
+      deps({
+        fetchClient: fetchClientReturning([{ status: 200, body: CLOUDFLARE_CHALLENGE }]),
+        extractClient: extractByHtml(),
+        browserPool,
+      }),
+    );
+
+    expect(result.tiersAttempted).not.toContain('camoufox');
+    // And the failure still names the wall rather than a missing tier.
+    if (!result.success) expect(result.reason).toBe('challenge');
+  });
+});
+
+describe('runPipeline conditional requests', () => {
+  it('answers a 304 as an unchanged success rather than an empty failure', async () => {
+    // A conditional re-fetch is the only mechanism that avoids the download, and
+    // a 304 carries no body by definition. Scored as `empty`, it made every
+    // unchanged page in an incremental crawl a fetch failure — so the feature
+    // that exists to save work was recording the saving as damage.
+    const extractClient = extractClientReturning(ARTICLE_TEXT);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], headers: { 'if-none-match': '"v1"' } },
+      deps({ fetchClient: fetchClientReturning([{ status: 304, body: '' }]), extractClient }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.notModified).toBe(true);
+    expect(result.statusCode).toBe(304);
+    // Nothing to extract, so the extract hop must not be paid for either.
+    expect(extractClient.extract).not.toHaveBeenCalled();
+  });
+
+  it('does not escalate a 304, since a higher tier cannot produce a body either', async () => {
+    const browserPool = browserPoolReturning(ARTICLE);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'] },
+      deps({ fetchClient: fetchClientReturning([{ status: 304, body: '' }]), browserPool }),
+    );
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tiersAttempted).toEqual(['tls']);
+    expect(browserPool.render).not.toHaveBeenCalled();
+  });
+});

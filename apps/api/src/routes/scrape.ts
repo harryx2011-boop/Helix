@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { runPipeline } from '../core/pipeline.js';
+import { hostGate } from '../core/host-gate.js';
 import type { FetchClient } from '../fetch/client.js';
 import { StructuredError, type ExtractClient } from '../extract/client.js';
 import { sanitizeHtml } from '../extract/sanitize.js';
@@ -269,33 +270,45 @@ export async function registerScrape(
       warnings.push('mobile: the lightpanda tier has no layout engine, so the phone viewport was not applied.');
     }
 
-    const result = await runPipeline(
-      {
-        url: body.url,
-        formats: body.formats,
-        tier,
-        onlyMainContent: body.onlyMainContent,
-        includeSelectors: body.includeSelectors,
-        excludeSelectors: body.excludeSelectors,
-        extractor: body.extractor,
-        waitFor: body.waitFor,
-        timeout: body.timeout,
-        headers: body.headers,
-        profile: body.profile,
-        proxy: proxy.url,
-        actions: body.actions,
-        mobile: body.mobile,
-        ...(body.engine ? { renderEngine: body.engine } : {}),
-        allowPrivate: deps.allowPrivateUrls,
-      },
-      {
-        fetchClient: deps.fetchClient,
-        extractClient: deps.extractClient,
-        browserPool: deps.browserPool,
-        logger: request.log,
-        tierMemory,
-        cookieJar,
-      },
+    // Paced with every other call this instance makes to the same host. A single
+    // scrape used to be exempt, which made the crawl's politeness easy to walk
+    // around: an agent calling /scrape in a loop is a crawl the host cannot tell
+    // apart from one.
+    const pipelineOptions = {
+      url: body.url,
+      formats: body.formats,
+      tier,
+      onlyMainContent: body.onlyMainContent,
+      includeSelectors: body.includeSelectors,
+      excludeSelectors: body.excludeSelectors,
+      extractor: body.extractor,
+      waitFor: body.waitFor,
+      timeout: body.timeout,
+      headers: body.headers,
+      profile: body.profile,
+      proxy: proxy.url,
+      actions: body.actions,
+      mobile: body.mobile,
+      ...(body.engine ? { renderEngine: body.engine } : {}),
+      allowPrivate: deps.allowPrivateUrls,
+    };
+
+    const result = await hostGate.run(
+      body.url,
+      () =>
+        runPipeline(pipelineOptions, {
+          fetchClient: deps.fetchClient,
+          extractClient: deps.extractClient,
+          browserPool: deps.browserPool,
+          logger: request.log,
+          tierMemory,
+          cookieJar,
+        }),
+      (value) => ({
+        statusCode: value.statusCode,
+        blocked: !value.success && (value.reason === 'blocked' || value.reason === 'challenge'),
+        ...(value.success ? {} : { retryAfterSeconds: value.retryAfterSeconds }),
+      }),
     );
 
     // A failure is reported inside a 200 so the caller can see which tiers and

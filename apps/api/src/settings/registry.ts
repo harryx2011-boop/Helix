@@ -280,6 +280,18 @@ export const SETTINGS: readonly SettingDef[] = [
     warning:
       'Every page rendered and every header sent, credentials included, passes through that endpoint, and the private-address guard then covers the remote host network rather than this one. Set it only to a browser service you control or trust with the traffic. The URL itself often carries a token, so treat it as a secret.',
   },
+  {
+    key: 'searxngUrl',
+    env: 'SEARXNG_URL',
+    effect: 'restart',
+    schema: z
+      .string()
+      .url()
+      .max(2_000)
+      .refine((value) => /^https?:\/\//i.test(value), 'must be an http(s) URL'),
+    description:
+      'SearXNG instance that answers search, image search and enrich. Nothing is bundled: run your own and point this at it.',
+  },
 ] as const;
 
 const BY_KEY = new Map(SETTINGS.map((s) => [s.key, s]));

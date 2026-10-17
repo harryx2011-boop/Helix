@@ -603,15 +603,27 @@ export class CrawlWorker {
             return;
           }
 
+          // A 304 is the host answering the conditional request: unchanged,
+          // stated outright. Comparing content hashes would disagree, because
+          // the body it compares against was never sent.
           const contentUnchanged =
-            request.incremental && isUnchanged(known, result.content.contentHash);
+            request.incremental &&
+            (result.notModified === true || isUnchanged(known, result.content.contentHash));
 
           if (request.incremental) {
             await recordVisit({
               url: item.url,
-              contentHash: result.content.contentHash,
-              etag: result.etag,
-              lastModified: result.lastModified,
+              // A 304 may repeat its validators or omit them entirely. Writing
+              // the empty body's hash and a null etag would leave the next run
+              // with nothing to ask with, so the download this just avoided
+              // would be paid for on every later crawl.
+              contentHash: result.notModified
+                ? (known?.contentHash ?? result.content.contentHash)
+                : result.content.contentHash,
+              etag: result.notModified ? (result.etag ?? known?.etag ?? undefined) : result.etag,
+              lastModified: result.notModified
+                ? (result.lastModified ?? known?.lastModified?.toUTCString())
+                : result.lastModified,
               statusCode: result.statusCode,
               unchanged: contentUnchanged,
             });

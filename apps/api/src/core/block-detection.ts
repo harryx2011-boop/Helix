@@ -233,6 +233,25 @@ const SIGNALS: Signal[] = [
       bodyIncludes(r, 'turnstile'),
   },
   {
+    // The wall with no vendor marker: reddit's "Prove your humanity", Google's
+    // "enable JavaScript and cookies", a press-and-hold gate. Scored as an
+    // empty success before this fired, which is worse than a failure — a crawl
+    // recorded the page as read and moved on. The phrases are full clauses
+    // rather than single words, and the interstitial gate still applies, so a
+    // page writing *about* verification is content.
+    name: 'human-verification',
+    weight: 0.8,
+    reason: 'challenge',
+    test: (r) =>
+      bodyIncludes(r, 'prove your humanity') ||
+      bodyIncludes(r, 'verify you are human') ||
+      bodyIncludes(r, 'verify that you are human') ||
+      bodyIncludes(r, 'verifying you are human') ||
+      bodyIncludes(r, 'are you a robot') ||
+      bodyIncludes(r, 'enable javascript and cookies to continue') ||
+      bodyIncludes(r, 'whoa there, pardner'),
+  },
+  {
     name: 'access-denied-phrasing',
     weight: 0.5,
     reason: 'blocked',

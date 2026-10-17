@@ -97,6 +97,45 @@ describe('detectBlock', () => {
     expect(verdict.detectedBy).toContain('cloudflare-challenge');
   });
 
+  it('flags a human-verification interstitial that returns HTTP 200', () => {
+    // Reddit's wall: 200, a short page, no vendor marker. Scored as an empty
+    // success before this signal existed, which is the worst answer available —
+    // the crawl believed it had read the page.
+    const verdict = detectBlock(
+      facts({
+        statusCode: 200,
+        body: '<html><body><h1>Prove your humanity</h1><p>Press and hold to continue.</p></body></html>',
+      }),
+    );
+
+    expect(verdict.blocked).toBe(true);
+    expect(verdict.reason).toBe('challenge');
+    expect(verdict.detectedBy).toContain('human-verification');
+  });
+
+  it('flags a page demanding JavaScript and cookies before it will continue', () => {
+    const verdict = detectBlock(
+      facts({ body: '<html><body>Enable JavaScript and cookies to continue</body></html>' }),
+    );
+
+    expect(verdict.blocked).toBe(true);
+    expect(verdict.detectedBy).toContain('human-verification');
+  });
+
+  it('does not flag an article that discusses human verification', () => {
+    // The same phrase in prose on a real page is content, not a wall. The
+    // interstitial gate is what separates them.
+    const prose = 'How CAPTCHAs prove your humanity, and why that is a problem. '.repeat(40);
+    const verdict = detectBlock(
+      facts({
+        body: `<html><body><article>${prose}</article></body></html>`,
+        extractedText: prose,
+      }),
+    );
+
+    expect(verdict.blocked).toBe(false);
+  });
+
   it('names every signal that fired, for debuggability', () => {
     const verdict = detectBlock(
       facts({

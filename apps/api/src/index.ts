@@ -145,6 +145,7 @@ const browserPool = new BrowserPool({
   lightpandaEnabled: config.lightpandaEnabled,
   lightpandaUrl: config.lightpandaUrl,
   defaultEngine: config.browserEngine,
+  browserChannel: config.browserChannel,
   camoufoxEnabled: config.camoufoxEnabled,
   camoufoxUrl: config.camoufoxUrl,
   ...(config.remoteCdpUrl ? { remoteCdpUrl: config.remoteCdpUrl } : {}),

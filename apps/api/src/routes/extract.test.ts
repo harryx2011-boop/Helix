@@ -295,3 +295,92 @@ describe('POST /extract', () => {
     expect(response.json().field).toBe('urls');
   });
 });
+
+describe('POST /extract concurrency', () => {
+  /** Hosts, not paths: the per-host gate paces one host and these tests are about the route. */
+  const URLS = [
+    'https://one.example/a',
+    'https://two.example/b',
+    'https://three.example/c',
+    'https://four.example/d',
+  ];
+
+  /** Finishes the first call last, so completion order cannot be the input order. */
+  function reorderingExtractClient(): ExtractClient {
+    let call = 0;
+    const base = extractClient();
+    return {
+      ...base,
+      structured: vi.fn(async (input: { content: string }) => {
+        const delay = 40 - call * 10;
+        call++;
+        await new Promise((resolve) => setTimeout(resolve, Math.max(0, delay)));
+        return (base.structured as unknown as (i: unknown) => Promise<unknown>)(input);
+      }),
+    } as unknown as ExtractClient;
+  }
+
+  it('returns rows in the order the caller listed, whatever order they finished in', async () => {
+    const instance = await build({ extractClient: reorderingExtractClient() });
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: '/extract',
+      payload: { urls: URLS, prompt: 'the plan and its monthly price' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.data.map((row: { _source: { url: string } }) => row._source.url)).toEqual(URLS);
+  });
+
+  it('reads several urls at once instead of one after another', async () => {
+    let active = 0;
+    let peak = 0;
+    const fetchClient = {
+      fetch: vi.fn(async () => {
+        active++;
+        peak = Math.max(peak, active);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        active--;
+        return {
+          success: true,
+          status: 200,
+          headers: { 'content-type': 'text/html' },
+          body: PAGE,
+          timingMs: 5,
+        };
+      }),
+      health: vi.fn(async () => true),
+    } as unknown as FetchClient;
+
+    const instance = await build({ fetchClient });
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: '/extract',
+      payload: { urls: URLS, prompt: 'the plan and its monthly price' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(peak).toBeGreaterThan(1);
+  });
+
+  it('still ends the whole request on a schema the provider refused', async () => {
+    // The point of stopping: the same 400 would arrive for all four URLs, and
+    // the caller has one schema to fix.
+    const client = extractClient({
+      error: new StructuredError(400, 'schema.properties: unsupported type', 'schema.properties'),
+    });
+    const instance = await build({ extractClient: client });
+
+    const response = await instance.inject({
+      method: 'POST',
+      url: '/extract',
+      payload: { urls: URLS, schema: { type: 'object' } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('schema.properties');
+  });
+});

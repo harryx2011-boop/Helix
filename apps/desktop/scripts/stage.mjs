@@ -197,15 +197,18 @@ const steps = {
     const cli = join(repo, 'node_modules', 'playwright', 'cli.js')
     assertExists(cli, 'playwright CLI')
     mkdirSync(out, { recursive: true })
-    // The API launches Playwright headless only, which uses the headless shell; the full Chromium is ~450 MB unused.
-    run(process.execPath, [cli, 'install', 'chromium-headless-shell'], {
+    // The full Chromium, about 450 MB, not the headless shell (D17 reverses D14).
+    // The shell has no new-headless mode and announces itself in ways a hardened
+    // page reads, which is most of why the walled sites in bench-scrape still
+    // failed; the installer carrying it is the price of the tier working.
+    run(process.execPath, [cli, 'install', 'chromium'], {
       cwd: repo,
       env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: out },
     })
     // .links records this dev checkout's playwright path for browser GC; the installed app has no use for it.
     rmSync(join(out, '.links'), { recursive: true, force: true })
     const dirs = readdirSync(out)
-    for (const prefix of ['chromium_headless_shell-']) {
+    for (const prefix of ['chromium-']) {
       if (!dirs.some((d) => d.startsWith(prefix) && /-\d+$/.test(d))) throw new StageError(`${prefix}<rev> missing in ${out}`)
     }
     return `${dirs.join(', ')}; ${mb(dirSize(out))}`

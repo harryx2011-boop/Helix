@@ -398,6 +398,8 @@ export class CrawlWorker {
     let pathCapped = 0;
     /** Results discarded because this worker no longer held the task row. */
     let notOwned = 0;
+    /** 304 pages whose links could not be followed, because a 304 has no body. */
+    let linksNotFollowed = 0;
     /** Recorded pages by the tier that served them. */
     const tierBreakdown: Record<string, number> = {};
     /** Wall time of pages a render tier served, cheaper tiers tried first included. */
@@ -605,10 +607,12 @@ export class CrawlWorker {
 
           // A 304 is the host answering the conditional request: unchanged,
           // stated outright. Comparing content hashes would disagree, because
-          // the body it compares against was never sent.
+          // the body it compares against was never sent. Not gated on
+          // `incremental`: a caller's own If-None-Match gets a 304 too, and its
+          // empty body is not a document.
           const contentUnchanged =
-            request.incremental &&
-            (result.notModified === true || isUnchanged(known, result.content.contentHash));
+            result.notModified === true ||
+            (request.incremental && isUnchanged(known, result.content.contentHash));
 
           if (request.incremental) {
             await recordVisit({
@@ -746,6 +750,14 @@ export class CrawlWorker {
             unchanged++;
           }
 
+          // A 304 carries no body and so no links: the pages below this one are
+          // not reached through it. Counted so the result says so, instead of
+          // a clean "unchanged" hiding a crawl that stopped here.
+          // ponytail: the real fix follows the previous run's links, which
+          // needs them stored in crawl_state (a migration; TODO.md).
+          const belowDepthLimit = request.maxDepth === undefined || item.depth < request.maxDepth;
+          if (held && result.notModified && belowDepthLimit) linksNotFollowed++;
+
           // Expand the frontier from what this page linked to.
           for (const link of result.content.links) {
             frontier.add(link, item.depth + 1);
@@ -813,6 +825,11 @@ export class CrawlWorker {
     if (notOwned > 0) {
       warnings.push(`${pages(notOwned)} fetched and discarded because the task was no longer held by this worker.`);
     }
+    if (linksNotFollowed > 0) {
+      warnings.push(
+        `${pages(linksNotFollowed)} answered with 304 (not modified) and no body. A 304 page has no links to follow, so pages reachable only through one were not crawled.`,
+      );
+    }
     const lost = completed === 0 && unresolved > 0;
 
     const { rowCount } = await getPool().query(
@@ -828,6 +845,7 @@ export class CrawlWorker {
         JSON.stringify({
           pagesFetched: completed,
           pagesUnchanged: unchanged,
+          ...(linksNotFollowed > 0 ? { pagesLinksNotFollowed: linksNotFollowed } : {}),
           tierBreakdown,
           browserSeconds: Math.round(browserMs / 100) / 10,
           // Named even at zero when the caller asked for the filter, so an

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SETTINGS, isEditable, settingDef } from './registry.js';
+import { loadConfig } from '../config.js';
 
 describe('settings registry — crawl policy knobs', () => {
   it('exposes the adaptive concurrency floor and ceiling as a pair', () => {
@@ -40,6 +41,15 @@ describe('settings registry — crawl policy knobs', () => {
     // no business being reachable from an HTTP surface.
     expect(isEditable('databaseUrl')).toBe(false);
     expect(isEditable('crawlSessionProxyUrl')).toBe(false);
+  });
+
+  it('names only keys the config has, so a stored value can take effect', () => {
+    // A stored override is written onto `config[key]` at boot. A key the
+    // schema does not declare is written and then read by nothing.
+    const config = loadConfig({});
+    for (const setting of SETTINGS) {
+      expect(Object.hasOwn(config, setting.key), setting.key).toBe(true);
+    }
   });
 
   it('gives every guarded setting a warning', () => {

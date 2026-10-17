@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { runPipeline } from '../core/pipeline.js';
-import { hostGate } from '../core/host-gate.js';
+import { gateOutcome, hostGate } from '../core/host-gate.js';
 import type { FetchClient } from '../fetch/client.js';
 import { StructuredError, type ExtractClient } from '../extract/client.js';
 import { sanitizeHtml } from '../extract/sanitize.js';
@@ -295,8 +295,10 @@ export async function registerScrape(
 
     const result = await hostGate.run(
       body.url,
-      () =>
-        runPipeline(pipelineOptions, {
+      // The wait for the host's turn is spent from the caller's timeout, not
+      // added to it: a 30 s scrape must answer within 30 s.
+      (waitedMs) =>
+        runPipeline({ ...pipelineOptions, timeout: Math.max(1, body.timeout - waitedMs) }, {
           fetchClient: deps.fetchClient,
           extractClient: deps.extractClient,
           browserPool: deps.browserPool,
@@ -304,11 +306,7 @@ export async function registerScrape(
           tierMemory,
           cookieJar,
         }),
-      (value) => ({
-        statusCode: value.statusCode,
-        blocked: !value.success && (value.reason === 'blocked' || value.reason === 'challenge'),
-        ...(value.success ? {} : { retryAfterSeconds: value.retryAfterSeconds }),
-      }),
+      gateOutcome,
     );
 
     // A failure is reported inside a 200 so the caller can see which tiers and

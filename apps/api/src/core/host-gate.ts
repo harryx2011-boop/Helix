@@ -3,6 +3,7 @@ import {
   type RequestOutcome,
 } from "../crawl/politeness.js";
 import { siteOf } from "../crawl/url.js";
+import type { PipelineResult } from "./pipeline.js";
 
 /**
  * Per-host pacing for the single-page routes.
@@ -28,6 +29,11 @@ import { siteOf } from "../crawl/url.js";
  * explicitly named is the wrong trade for a single-user tool. Make it a hard
  * limit (refuse with 429 past the wait) if Helix ever serves more than its
  * operator.
+ *
+ * The cost of that trade, stated: a host that sent `Retry-After` longer than
+ * this ceiling is asked again at once, for as long as its backoff lasts, while
+ * a shorter one is waited out. Sitting through the ceiling first would not
+ * change that, only make every call to the host 10 s slower.
  */
 const DEFAULT_MAX_WAIT_MS = 10_000;
 
@@ -67,25 +73,33 @@ export class HostGate {
    * `outcomeOf` reads the status and block verdict out of whatever `fn`
    * returns; without it the call counts as a plain success, which is right for
    * a caller that has no response to report.
+   *
+   * `signal` ends the wait early: a caller that has gone away should not keep
+   * a queue position, and its request should never start.
+   *
+   * `fn` is told how long it waited, so a caller with a timeout can spend
+   * only what is left of it rather than adding the wait on top.
    */
   async run<T>(
     url: string,
-    fn: () => Promise<T>,
+    fn: (waitedMs: number) => Promise<T>,
     outcomeOf?: (
       value: T,
     ) => Pick<RequestOutcome, "statusCode" | "blocked" | "retryAfterSeconds">,
+    signal?: AbortSignal,
   ): Promise<T> {
     const host = siteOf(url);
     // An unparseable URL has no host to pace. The route's own guard rejects it
     // moments later; pacing it under the key "undefined" would only group
     // unrelated failures together.
-    if (!host) return fn();
+    if (!host) return fn(0);
 
-    const acquired = await this.#acquire(host);
+    const queued = Date.now();
+    const acquired = await this.#acquire(host, signal);
     const started = Date.now();
 
     try {
-      const value = await fn();
+      const value = await fn(started - queued);
       if (acquired) {
         this.#politeness.release(host, {
           latencyMs: Date.now() - started,
@@ -94,35 +108,75 @@ export class HostGate {
       }
       return value;
     } catch (error) {
-      // A throw here is this instance failing, not the host rate-limiting us,
-      // so the slot is returned without a verdict: nothing was learned about
-      // how fast the host wants to be asked.
+      // Scored as a server error: a throw may be this instance failing, but it
+      // may as well be the host dropping the connection, and scoring it as a
+      // success would ramp a flapping endpoint up instead of down.
       if (acquired)
-        this.#politeness.release(host, { latencyMs: Date.now() - started });
+        this.#politeness.release(host, {
+          latencyMs: Date.now() - started,
+          statusCode: 500,
+        });
       throw error;
     }
   }
 
   /** True when a slot was taken and must be released; false when the wait ran out. */
-  async #acquire(host: string): Promise<boolean> {
+  async #acquire(host: string, signal?: AbortSignal): Promise<boolean> {
     const deadline = Date.now() + this.#maxWaitMs;
 
     for (;;) {
+      signal?.throwIfAborted();
       const { allowed, waitMs } = this.#politeness.tryAcquire(host);
       if (allowed) return true;
 
+      // A wait longer than the ceiling (a stated Retry-After, usually) ends in
+      // going ahead anyway, so sitting through the ceiling first protects nothing.
       const remaining = deadline - Date.now();
-      if (remaining <= 0) return false;
+      if (remaining <= 0 || waitMs > remaining) return false;
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, Math.min(waitMs || POLL_MS, remaining)),
-      );
+      await sleep(waitMs || POLL_MS, signal);
     }
   }
 
   stats(): ReturnType<PolitenessController["stats"]> {
     return this.#politeness.stats();
   }
+}
+
+/**
+ * What a pipeline result tells the gate about the host.
+ *
+ * A failure with no status (a timeout, a dead host, DNS) is scored as a server
+ * error: left without a status it would take the controller's success path
+ * and ramp a host that is not answering up. A request the caller abandoned
+ * says nothing about the host, so it keeps no status.
+ */
+export function gateOutcome(
+  result: PipelineResult,
+): Pick<RequestOutcome, "statusCode" | "blocked" | "retryAfterSeconds"> {
+  if (result.success) return { statusCode: result.statusCode };
+
+  const noResponse = result.statusCode === undefined && result.reason !== "aborted";
+  return {
+    statusCode: noResponse ? 500 : result.statusCode,
+    blocked: result.reason === "blocked" || result.reason === "challenge",
+    retryAfterSeconds: result.retryAfterSeconds,
+  };
+}
+
+/** Waits `ms`, or rejects with the signal's reason as soon as it aborts. */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const onAbort = (): void => {
+      clearTimeout(timer);
+      reject(signal?.reason);
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 /**

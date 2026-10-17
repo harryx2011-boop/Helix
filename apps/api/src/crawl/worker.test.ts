@@ -223,6 +223,48 @@ describe('CrawlWorker conditional re-fetches', () => {
     expect(db.state.calls.filter((c) => c.text.includes('INSERT INTO documents'))).toEqual([]);
   });
 
+  it('says so when a 304 page could not lead the crawl to the pages below it', async () => {
+    // A 304 has no body, so no links: the frontier cannot expand past it. A
+    // clean "unchanged" alone would hide that the pages below were never asked for.
+    db.state.request = baseRequest({ incremental: true });
+    db.state.crawlState = [stored];
+    runPipeline.mockResolvedValueOnce(notModified());
+
+    const worker = buildWorker();
+    await worker.runOnce();
+
+    const outcome = db.state.calls.find((c) => c.text.includes('rejections = $6'));
+    const result = JSON.parse(String(outcome?.values[4])) as Record<string, number>;
+    expect(result['pagesLinksNotFollowed']).toBe(1);
+    const warnings = JSON.parse(String(outcome?.values[7])) as string[];
+    expect(warnings.join(' ')).toMatch(/304/);
+  });
+
+  it('does not count a 304 page at the depth limit, whose links would not be followed anyway', async () => {
+    db.state.request = baseRequest({ incremental: true, maxDepth: 0 });
+    db.state.crawlState = [stored];
+    runPipeline.mockResolvedValueOnce(notModified());
+
+    const worker = buildWorker();
+    await worker.runOnce();
+
+    const outcome = db.state.calls.find((c) => c.text.includes('rejections = $6'));
+    const result = JSON.parse(String(outcome?.values[4])) as Record<string, number>;
+    expect(result['pagesLinksNotFollowed'] ?? 0).toBe(0);
+  });
+
+  it('writes no empty document for a 304 on a crawl that is not incremental', async () => {
+    // The caller can send their own If-None-Match in `headers`; the 304 that
+    // answers it has no body to store, incremental or not.
+    db.state.request = baseRequest();
+    runPipeline.mockResolvedValueOnce(notModified());
+
+    const worker = buildWorker();
+    await worker.runOnce();
+
+    expect(db.state.calls.filter((c) => c.text.includes('INSERT INTO documents'))).toEqual([]);
+  });
+
   it('keeps the stored validators when a 304 repeats none of them', async () => {
     // A 304 may send no ETag at all. Writing the empty body's hash and a null
     // etag would leave the next run with nothing to ask with, so the saving

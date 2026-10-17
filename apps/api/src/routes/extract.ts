@@ -6,7 +6,7 @@ import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 import { checkUrl, type HostResolver } from '../core/url-guard.js';
 import { tierMemory } from '../core/tier-memory.js';
 import { cookieJar } from '../core/cookie-jar.js';
-import { hostGate } from '../core/host-gate.js';
+import { gateOutcome, hostGate } from '../core/host-gate.js';
 import { mapWithLimit } from './search.js';
 
 /**
@@ -209,13 +209,14 @@ export async function registerExtract(app: FastifyInstance, deps: ExtractRouteDe
 
         const page = await hostGate.run(
           url,
-          () =>
+          // The wait for the host's turn is spent from the caller's timeout.
+          (waitedMs) =>
             runPipeline(
               {
                 url,
                 formats: ['markdown'],
                 ...(body.tier ? { tier: body.tier } : {}),
-                timeout: body.timeout,
+                timeout: Math.max(1, body.timeout - waitedMs),
                 onlyMainContent: true,
                 ...(deps.proxyUrl ? { proxy: deps.proxyUrl } : {}),
                 allowPrivate: deps.allowPrivateUrls,
@@ -226,13 +227,15 @@ export async function registerExtract(app: FastifyInstance, deps: ExtractRouteDe
           // Several URLs on one host is the case this route makes common, so the
           // host's own answer has to feed the pacing: a 429 or a challenge on the
           // third URL should slow the fourth, not be rediscovered 20 times.
-          (result) => ({
-            statusCode: result.statusCode,
-            blocked: !result.success && (result.reason === 'blocked' || result.reason === 'challenge'),
-            ...(result.success ? {} : { retryAfterSeconds: result.retryAfterSeconds }),
-          }),
-        );
+          gateOutcome,
+          controller.signal,
+        ).catch((error: unknown) => {
+          // Aborted while waiting for the host's turn: the caller left first.
+          if (controller.signal.aborted) return undefined;
+          throw error;
+        });
 
+        if (!page) return { kind: 'skipped' };
         if (!page.success) {
           // A page the caller's own disconnect killed is not a page that failed.
           if (page.reason === 'aborted') return { kind: 'skipped' };
@@ -345,6 +348,10 @@ export async function registerExtract(app: FastifyInstance, deps: ExtractRouteDe
       });
     } finally {
       reply.raw.off('close', onClose);
+      // A throw from one URL ends the request while its siblings are still in
+      // flight; without this they hold contexts and gate slots to their own
+      // timeout. On the normal path every URL is done and this is a no-op.
+      controller.abort();
     }
   });
 }

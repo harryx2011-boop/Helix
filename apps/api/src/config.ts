@@ -112,6 +112,8 @@ const ConfigSchema = z.object({
 
   /** `auto` picks SearXNG, then Serper, then SerpAPI, whichever has credentials. */
   searchProvider: z.enum(['auto', 'searxng', 'serper', 'serpapi', 'none']).default('auto'),
+  /** The operator's own SearXNG instance; editable from the settings screen. */
+  searxngUrl: z.string().optional(),
   searchMaxResults: int(50),
   searchScrapeConcurrency: int(5),
   /** Provider-hit cache lifetime for identical queries; 0 disables it. */
@@ -203,6 +205,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     proxyUrl: env.HELIX_PROXY_URL || undefined,
     allowPrivateUrls: env.HELIX_ALLOW_PRIVATE_URLS,
     searchProvider: env.HELIX_SEARCH_PROVIDER,
+    searxngUrl: env.SEARXNG_URL || undefined,
     searchMaxResults: env.HELIX_SEARCH_MAX_RESULTS,
     searchScrapeConcurrency: env.HELIX_SEARCH_SCRAPE_CONCURRENCY,
     searchCacheTtlMs: env.HELIX_SEARCH_CACHE_TTL_MS,

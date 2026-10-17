@@ -477,6 +477,8 @@ export class BrowserPool {
   readonly #connections = new Map<string, Promise<Browser>>();
   /** Set by the boot probe: camoufox is enabled and answered. */
   #camoufoxReady = false;
+  /** Connections already carrying a readiness handler, so none gets two. */
+  readonly #camoufoxWatched = new WeakSet<Browser>();
 
   constructor(options: BrowserPoolOptions) {
     this.#options = options;
@@ -513,20 +515,30 @@ export class BrowserPool {
       Array.from({ length: this.#options.size }, () => this.#launch(this.defaultEngine)),
     );
 
-    // Probed once, here, rather than per request: the answer decides whether
-    // the ladder has a rung above chromium at all, and a per-request probe
-    // would pay a connect on every page to learn something that changes only
-    // when the operator restarts their camoufox. A camoufox started later is
-    // picked up at the next API restart, which is the trade the probe makes.
-    if (this.#options.camoufoxEnabled) await this.#probeCamoufox();
-
     this.#logger?.info(
-      {
-        size: this.#browsers.length,
-        engine: this.defaultEngine,
-        camoufox: this.#options.camoufoxEnabled ? this.#camoufoxReady : 'off',
-      },
+      { size: this.#browsers.length, engine: this.defaultEngine },
       'browser pool ready',
+    );
+  }
+
+  /**
+   * Find out which operator-run tiers are really there. Called once at boot.
+   *
+   * Once, rather than per request: the answer decides whether the ladder has a
+   * rung above chromium at all, and a per-request probe would pay a connect on
+   * every page to learn something that changes only when the operator restarts
+   * their camoufox. A camoufox started later is picked up at the next API
+   * restart, which is the trade the probe makes.
+   *
+   * Separate from `start()` because `start()` is lazy (the first local render
+   * calls it) and never runs at all on a remote-CDP instance, so a probe inside
+   * it left the tier unreachable on every instance until something else ran.
+   */
+  async probeExternalTiers(): Promise<void> {
+    if (this.#options.camoufoxEnabled) await this.#probeCamoufox();
+    this.#logger?.info(
+      { camoufox: this.#options.camoufoxEnabled ? this.#camoufoxReady : 'off' },
+      'external browser tiers probed',
     );
   }
 
@@ -539,11 +551,11 @@ export class BrowserPool {
   async #probeCamoufox(): Promise<void> {
     const endpoint = this.#options.camoufoxUrl ?? 'ws://localhost:9223';
     try {
-      await this.#connection(`camoufox:${endpoint}`, async () => {
+      const browser = await this.#connection(`camoufox:${endpoint}`, async () => {
         const { firefox } = await import('playwright');
         return firefox.connect(endpoint, { timeout: 5_000 });
       });
-      this.#camoufoxReady = true;
+      this.#trackCamoufox(browser);
     } catch (error) {
       // Enabled but unreachable is an ordinary state, not a boot failure: the
       // operator runs that process themselves. The ladder simply stops at
@@ -554,6 +566,23 @@ export class BrowserPool {
         'camoufox is enabled but did not answer; the ladder stops at chromium',
       );
     }
+  }
+
+  /**
+   * Readiness follows the live connection, whoever made it.
+   *
+   * A camoufox that dies would otherwise stay on the ladder, turning every
+   * hard page into a 5 s failed connect whose error also hides the real
+   * `challenge` verdict from the rung below. And one that comes back, reached
+   * again by an explicit `tier: 'camoufox'` render, is on the ladder again.
+   */
+  #trackCamoufox(browser: Browser): void {
+    this.#camoufoxReady = true;
+    if (this.#camoufoxWatched.has(browser)) return;
+    this.#camoufoxWatched.add(browser);
+    browser.on('disconnected', () => {
+      this.#camoufoxReady = false;
+    });
   }
 
   /**
@@ -983,6 +1012,7 @@ export class BrowserPool {
         const { firefox } = await import('playwright');
         return firefox.connect(endpoint, { timeout: 5_000 });
       });
+      this.#trackCamoufox(browser);
 
       const context = await browser.newContext({
         ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
@@ -1160,8 +1190,10 @@ export class BrowserPool {
    * would make the cache worse than no cache.
    */
   async #connection(key: string, connect: () => Promise<Browser>): Promise<Browser> {
-    const existing = this.#connections.get(key);
-    if (existing) {
+    for (;;) {
+      if (this.#closing) throw new Error('browser pool is closing');
+      const existing = this.#connections.get(key);
+      if (!existing) break;
       try {
         const browser = await existing;
         if (browser.isConnected()) return browser;
@@ -1169,7 +1201,11 @@ export class BrowserPool {
         // A connect that failed is not cached as a failure: fall through and
         // try again, so one unreachable moment does not disable the tier.
       }
-      this.#connections.delete(key);
+      // Another caller may already have replaced the stale entry while this
+      // one waited. Deleting theirs would start a second connect and leave the
+      // first live, untracked and never closed, so drop only the entry found
+      // and look again.
+      if (this.#connections.get(key) === existing) this.#connections.delete(key);
     }
 
     const pending = connect();
@@ -1177,6 +1213,12 @@ export class BrowserPool {
 
     try {
       const browser = await pending;
+      // close() ran while this connect was in flight and has already swept
+      // the map, so nothing else would ever close this one.
+      if (this.#closing) {
+        await browser.close().catch(() => undefined);
+        throw new Error('browser pool is closing');
+      }
       // Dropped the moment the far side goes, rather than discovered by the
       // next render: Playwright reports the close asynchronously, so a handle
       // can be stale before anything asks it.

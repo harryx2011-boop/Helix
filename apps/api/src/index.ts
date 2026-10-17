@@ -151,6 +151,9 @@ const browserPool = new BrowserPool({
   ...(config.remoteCdpUrl ? { remoteCdpUrl: config.remoteCdpUrl } : {}),
   logger: app.log,
 });
+// Not awaited: an unreachable camoufox costs a 5 s connect timeout, and boot
+// should not wait on a tier that only the hardest pages ever reach.
+void browserPool.probeExternalTiers();
 
 const sessions = new SessionRegistry({
   lease: (options) => browserPool.lease(options),
@@ -160,7 +163,13 @@ const sessions = new SessionRegistry({
   logger: app.log,
 });
 
-const searchProvider = createSearchProvider(config.searchProvider, process.env, app.log);
+// The SearXNG URL comes from config, where a value stored from the settings
+// screen lands; the env alone would ignore it.
+const searchProvider = createSearchProvider(
+  config.searchProvider,
+  { ...process.env, SEARXNG_URL: config.searxngUrl },
+  app.log,
+);
 
 const providerEncryptionKey = deriveEncryptionKey(config.encryptionKey, config.bootstrapKey);
 const instanceHasLocalBaseUrl = Boolean(process.env['OPENAI_COMPATIBLE_BASE_URL']);
@@ -325,6 +334,7 @@ await app.register(
       camoufoxEnabled: config.camoufoxEnabled,
       remoteCdpConfigured: Boolean(config.remoteCdpUrl),
       detectLocal,
+      searxngUrl: config.searxngUrl,
     });
     await registerStatus(instance);
     await registerScrape(instance, {
@@ -478,6 +488,7 @@ const settingsEnvValues: Record<string, unknown> = {
   browserEngine: config.browserEngine,
   camoufoxEnabled: config.camoufoxEnabled,
   remoteCdpUrl: config.remoteCdpUrl,
+  searxngUrl: config.searxngUrl,
 };
 
 await registerSettings(app, {

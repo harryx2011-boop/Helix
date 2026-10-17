@@ -283,6 +283,15 @@ describe('provider reporting', () => {
     },
   );
 
+  it('reports search as configured from a SearXNG URL set in settings, not only the env', async () => {
+    app = await build(deps({ searxngUrl: 'http://searx.internal:8888' }));
+
+    const response = await app.inject({ method: 'GET', url: '/v1/health' });
+
+    expect(response.json().providers.search).toEqual({ configured: true });
+    expect(response.body).not.toContain('searx.internal');
+  });
+
   it('reports search as unconfigured when no provider is set', async () => {
     app = await build(deps());
 

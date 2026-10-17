@@ -78,3 +78,15 @@ describe('int()', () => {
     expect(loadConfig({ ...base, HELIX_PORT: '' }).port).toBe(7400);
   });
 });
+
+describe('searxngUrl', () => {
+  it('reads SEARXNG_URL, so the settings row and the env var set one value', () => {
+    expect(loadConfig({ ...base, SEARXNG_URL: 'http://searx.local:8888' }).searxngUrl).toBe(
+      'http://searx.local:8888',
+    );
+  });
+
+  it('is unset when the variable is empty', () => {
+    expect(loadConfig({ ...base, SEARXNG_URL: '' }).searxngUrl).toBeUndefined();
+  });
+});

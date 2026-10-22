@@ -68,7 +68,7 @@ export function Footer() {
       <div className="mx-auto max-w-container border-x-0 sm:border-x sm:border-m-border-faint">
         <div className="relative h-12 border-y border-m-border-faint">
           <GridCells density={6} fade="none" className="absolute inset-0" />
-          <span className="relative flex h-full items-center pl-4 font-mono text-[11px] uppercase tracking-wide text-m-ink/48">
+          <span className="relative flex h-full items-center pl-4 font-mono text-[11px] uppercase tracking-wide text-m-ink/60">
             FOOTER
           </span>
         </div>
@@ -81,11 +81,11 @@ export function Footer() {
             <AsciiNoise cols={140} rows={4} seed={61} className="absolute left-0 top-0 opacity-40" />
           </div>
           <div className="min-w-0 border-b border-m-border-faint p-8 lg:border-b-0 lg:border-r">
-            <Logo className="h-10 w-auto text-m-ink/56" />
+            <Logo className="h-10 w-auto text-m-ink/64" />
             <p className="mt-6 text-[20px] leading-tight tracking-tight text-m-ink/88">
               A frontier utility hub you run yourself.
             </p>
-            <p className="mt-3 font-mono text-[12px] text-m-ink/56">
+            <p className="mt-3 font-mono text-[12px] text-m-ink/64">
               Apache-2.0 · self-hosted · bring your own keys
             </p>
             <div className="mt-8 hidden min-w-0 overflow-hidden sm:block">
@@ -102,7 +102,7 @@ export function Footer() {
                   i < COLUMNS.length - 1 && 'border-b sm:border-b-0 sm:border-r lg:border-b-0 lg:border-r',
                 )}
               >
-                <h3 className="relative px-6 py-3 font-mono text-[12px] uppercase tracking-wide text-m-ink/48">{col.title}</h3>
+                <h3 className="relative px-6 py-3 font-mono text-[12px] uppercase tracking-wide text-m-ink/60">{col.title}</h3>
                 <ul className="divide-y divide-m-border-faint border-t border-m-border-faint">
                   {col.links.map((link) => (
                     <li key={link.label}>
@@ -121,19 +121,26 @@ export function Footer() {
         </div>
 
         <div className="flex flex-col items-start justify-between gap-3 border-t border-m-border-faint px-6 py-5 sm:flex-row sm:items-center">
-          <p className="font-mono text-[12px] text-m-ink/56">
-            © 2026 Helix ·{' '}
+          <p className="font-mono text-[12px] text-m-ink/64">
+            © 2026 ElixirLabs ·{' '}
             <Link href="/terms" className="transition-colors duration-150 ease-out hover:text-m-ink">
               Terms
             </Link>{' '}
             ·{' '}
             <Link href="/privacy" className="transition-colors duration-150 ease-out hover:text-m-ink">
               Privacy
-            </Link>
+            </Link>{' '}
+            ·{' '}
+            <a
+              href="mailto:harryx2011@gmail.com"
+              className="transition-colors duration-150 ease-out hover:text-m-ink"
+            >
+              harryx2011@gmail.com
+            </a>
           </p>
           <Link
             href={GITHUB_URL}
-            className="flex items-center gap-2 font-mono text-[12px] text-m-ink/56 transition-colors duration-150 ease-out hover:text-m-ink"
+            className="flex items-center gap-2 font-mono text-[12px] text-m-ink/64 transition-colors duration-150 ease-out hover:text-m-ink"
           >
             <span>[ v{pkg.version} ]</span>
             <GithubMark className="h-[14px] w-[14px]" />

@@ -15,11 +15,12 @@ export default function PrivacyPage() {
           <h1 className="text-[36px] font-normal leading-[1.05] tracking-tighter lg:text-[48px]">
             Privacy.
           </h1>
+          <p className="mt-4 font-mono text-[12px] text-m-ink/64">Last updated: October 22, 2026</p>
         </div>
       </div>
 
       <article className="prose-helix mx-auto mt-14 max-w-[720px] animate-fade-up [animation-delay:60ms] space-y-8">
-        <p className="text-[14px] italic leading-relaxed text-m-ink/56">
+        <p className="text-[14px] italic leading-relaxed text-m-ink/64">
           This is a template. It has not been reviewed by a lawyer. Treat it as a starting point, not legal advice,
           and have it reviewed before relying on it for anything.
         </p>
@@ -63,7 +64,16 @@ export default function PrivacyPage() {
         </Section>
 
         <Section title="Contact">
-          <p>Questions about this policy: [contact email].</p>
+          <p>
+            Questions about this policy:{' '}
+            <a
+              href="mailto:harryx2011@gmail.com"
+              className="text-violet underline decoration-violet-40 underline-offset-4 hover:decoration-violet"
+            >
+              harryx2011@gmail.com
+            </a>
+            .
+          </p>
         </Section>
       </article>
     </div>

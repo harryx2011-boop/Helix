@@ -54,7 +54,7 @@ export function MeterPanel({ rows, label, size = 'pill', className }: MeterPanel
       aria-hidden="true"
       className={cn('select-none overflow-hidden rounded-panel border border-m-border-muted bg-m-bg', className)}
     >
-      <div className="flex items-center gap-2 border-b border-m-border-faint px-3 py-2 font-mono text-[11px] text-m-ink/48">
+      <div className="flex items-center gap-2 border-b border-m-border-faint px-3 py-2 font-mono text-[11px] text-m-ink/60">
         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-m-ink/24" />
         {label && <span className="truncate">{label}</span>}
         <span className="ml-auto shrink-0">example, not live data</span>
@@ -98,7 +98,7 @@ export function MeterPanel({ rows, label, size = 'pill', className }: MeterPanel
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="w-[56px] shrink-0 text-right font-mono text-[11px] tabular-nums text-m-ink/56">{readout}</span>
+              <span className="w-[56px] shrink-0 text-right font-mono text-[11px] tabular-nums text-m-ink/64">{readout}</span>
             </div>
           );
         })}

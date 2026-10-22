@@ -34,11 +34,11 @@ function TraceTable() {
     <div className="overflow-hidden rounded-panel border border-m-border-muted bg-m-bg">
       <div className="flex items-center gap-2 border-b border-m-border-faint px-3 py-2">
         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-m-ink/24" aria-hidden />
-        <span className="truncate font-mono text-[11px] text-m-ink/48">GET example.com/pricing · sample trace</span>
+        <span className="truncate font-mono text-[11px] text-m-ink/60">GET example.com/pricing · sample trace</span>
       </div>
       <table className="w-full font-mono text-[11px] tabular-nums">
         <thead>
-          <tr className="text-m-ink/48">
+          <tr className="text-m-ink/60">
             <th scope="col" className="px-3 py-1.5 text-left font-normal">tier</th>
             <th scope="col" className="px-2 py-1.5 text-left font-normal">status</th>
             <th scope="col" className="px-2 py-1.5 text-right font-normal">ms</th>
@@ -59,7 +59,7 @@ function TraceTable() {
       <div className="flex items-center gap-2 border-t border-m-border-faint px-3 py-2 font-mono text-[11px]">
         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-violet" aria-hidden />
         <span className="text-m-ink">FetchFailure</span>
-        <span className="truncate text-m-ink/48">signals: 2 · next: lightpanda</span>
+        <span className="truncate text-m-ink/60">signals: 2 · next: lightpanda</span>
       </div>
     </div>
   );
@@ -103,7 +103,7 @@ export function Performance() {
             href="/architecture"
             linkLabel="How the ladder decides"
           >
-            <MeterPanel label="resolved at tier · sample instance" rows={TIER_ROWS} />
+            <MeterPanel label="Illustrative example · resolved at tier" rows={TIER_ROWS} />
           </BentoCard>
 
           <BentoCard
@@ -114,7 +114,7 @@ export function Performance() {
             href="/scrape"
             linkLabel="What Scrape returns"
           >
-            <MeterPanel label="extraction ratio" rows={TOKEN_ROWS} size="thin" />
+            <MeterPanel label="Illustrative example · extraction ratio" rows={TOKEN_ROWS} size="thin" />
           </BentoCard>
 
           <BentoCard
@@ -136,7 +136,7 @@ export function Performance() {
             href="/crawl"
             linkLabel="How Crawl paces itself"
           >
-            <MeterPanel label="per-host concurrency · sample instance" rows={HOST_ROWS} />
+            <MeterPanel label="Illustrative example · per-host concurrency" rows={HOST_ROWS} />
           </BentoCard>
         </div>
       </div>

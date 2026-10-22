@@ -50,7 +50,7 @@ function InstanceUrlForm({ onSubmit }: { onSubmit: (url: string) => void }) {
         aria-invalid={invalid || undefined}
         aria-describedby={invalid ? 'instance-url-error' : undefined}
         placeholder="https://your-instance.example.com"
-        className="min-w-0 flex-1 rounded-card border border-m-border-muted bg-m-bg px-3.5 py-2.5 font-mono text-[13px] text-m-ink placeholder:text-m-ink/40 focus:border-violet-40 focus:outline-none aria-[invalid]:border-destructive"
+        className="min-w-0 flex-1 rounded-card border border-m-border-muted bg-m-bg px-3.5 py-2.5 font-mono text-[13px] text-m-ink placeholder:text-m-ink/60 focus:border-violet-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet aria-[invalid]:border-destructive"
       />
       <PillButton type="submit" variant="primary">
         Point status here
@@ -90,17 +90,17 @@ function ServiceRow({
           />
           <span className="truncate text-[14px] font-medium text-m-ink">{serviceLabel(service)}</span>
           {status?.latencyMs !== undefined && (
-            <span className="shrink-0 font-mono text-[11px] text-m-ink/48">{status.latencyMs}ms</span>
+            <span className="shrink-0 font-mono text-[11px] text-m-ink/60">{status.latencyMs}ms</span>
           )}
         </div>
-        <span className="shrink-0 font-mono text-[12px] tabular-nums text-m-ink/56">
+        <span className="shrink-0 font-mono text-[12px] tabular-nums text-m-ink/64">
           {uptime === null ? '—' : `${uptime.toFixed(2)}%`}
         </span>
       </div>
       {history && (
         <div>
           <HistoryBars days={history.days} reduced={reduced} />
-          <div className="mt-1.5 flex justify-between font-mono text-[10px] text-m-ink/40">
+          <div className="mt-1.5 flex justify-between font-mono text-[10px] text-m-ink/60">
             <span>90 days ago</span>
             <span>Today</span>
           </div>
@@ -190,7 +190,7 @@ export function StatusView() {
     );
   }
 
-  const overall = health ? overallCopy(health.status) : { title: 'Checking every service', tone: 'text-m-ink/40' };
+  const overall = health ? overallCopy(health.status) : { title: 'Checking every service', tone: 'text-m-ink/60' };
   const Icon = !health ? Loader2 : health.status === 'ok' ? CircleCheck : health.status === 'degraded' ? CircleAlert : CircleX;
 
   return (
@@ -200,7 +200,7 @@ export function StatusView() {
         <div className="relative">
           <Icon className={cn('mx-auto h-12 w-12', overall.tone, !health && 'animate-spin motion-reduce:animate-none')} strokeWidth={1.5} aria-hidden />
           <h1 className="mt-4 text-[30px] font-normal leading-tight tracking-tight lg:text-[36px]">{overall.title}</h1>
-          <p className="mt-2 font-mono text-[12px] text-m-ink/48">
+          <p className="mt-2 font-mono text-[12px] text-m-ink/60">
             {lastUpdated ? `Last updated on ${formatLastUpdated(lastUpdated)}` : 'Connecting…'}
           </p>
         </div>
@@ -210,7 +210,7 @@ export function StatusView() {
         <a href="#status" className="rounded-pill bg-m-ink/[0.039] px-3.5 py-1.5 text-m-ink/72 hover:bg-m-ink/[0.059]">
           Status
         </a>
-        <a href="#incidents" className="rounded-pill px-3.5 py-1.5 text-m-ink/56 hover:bg-m-ink/[0.039]">
+        <a href="#incidents" className="rounded-pill px-3.5 py-1.5 text-m-ink/64 hover:bg-m-ink/[0.039]">
           Incidents
         </a>
       </nav>
@@ -249,7 +249,7 @@ export function StatusView() {
       <section id="incidents" className="mx-auto mt-12 max-w-[720px] scroll-mt-24">
         <h2 className="text-[18px] font-medium text-m-ink">Previous incidents</h2>
         {incidents.length === 0 ? (
-          <p className="mt-3 rounded-panel border border-m-border-muted bg-m-surface px-5 py-6 text-[14px] text-m-ink/56 shadow-card-sm">
+          <p className="mt-3 rounded-panel border border-m-border-muted bg-m-surface px-5 py-6 text-[14px] text-m-ink/64 shadow-card-sm">
             No incidents in the last 90 days.
           </p>
         ) : (

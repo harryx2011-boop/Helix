@@ -624,3 +624,4 @@ dispatches through an `OPERATIONS` dict plus Fastify `inject()` rather than re-i
 each operation. `search/providers.ts:415` is a clean `SearchProvider` seam with a
 three-way factory. `apps/api/src/index.ts:16` — one `registerX(app)` per route module, pure
 composition with no conditional logic.
+- **Sitemap and robots (2026-10-17):** `apps/dashboard/app/sitemap.ts` already listed the public marketing and docs pages; added `app/robots.ts` (allow `/`, disallow `/api/` and `/app/`, names `${SITE_URL}/sitemap.xml`). Live https://helixapi-dev.vercel.app/robots.txt returned 404 before.

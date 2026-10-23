@@ -122,13 +122,13 @@ export function Footer() {
 
         <div className="flex flex-col items-start justify-between gap-3 border-t border-m-border-faint px-6 py-5 sm:flex-row sm:items-center">
           <p className="font-mono text-[12px] text-m-ink/64">
-            © 2026 ElixirLabs ·{' '}
-            <Link href="/terms" className="transition-colors duration-150 ease-out hover:text-m-ink">
-              Terms
-            </Link>{' '}
-            ·{' '}
+            Helix ·{' '}
             <Link href="/privacy" className="transition-colors duration-150 ease-out hover:text-m-ink">
               Privacy
+            </Link>{' '}
+            ·{' '}
+            <Link href="/terms" className="transition-colors duration-150 ease-out hover:text-m-ink">
+              Terms
             </Link>{' '}
             ·{' '}
             <a

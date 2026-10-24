@@ -202,6 +202,8 @@ export class WebhookDispatcher {
         signal: AbortSignal.timeout(this.#requestTimeoutMs),
       });
       statusCode = response.status;
+      // Drained so the socket goes back to the pool; the body is never read.
+      await response.body?.cancel().catch(() => undefined);
       if (!response.ok) {
         const location = response.headers.get('location');
         error =

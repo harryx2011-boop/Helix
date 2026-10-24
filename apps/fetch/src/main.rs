@@ -65,7 +65,8 @@ fn default_true() -> bool {
 /// Loopback, link-local, private-range, multicast or reserved.
 fn is_private_v4(ip: Ipv4Addr) -> bool {
     let [a, b, _, _] = ip.octets();
-    ip.is_unspecified()
+    // 0.0.0.0/8 is "this network" as a whole, not only the unspecified address.
+    a == 0
         || ip.is_loopback()
         || ip.is_private()
         || ip.is_link_local()

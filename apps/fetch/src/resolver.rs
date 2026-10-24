@@ -51,6 +51,12 @@ mod tests {
     }
 
     #[test]
+    fn public_only_refuses_all_of_0_0_0_0_slash_8() {
+        let this_network: SocketAddr = "0.1.2.3:0".parse().unwrap();
+        assert!(public_only(vec![this_network]).is_err());
+    }
+
+    #[test]
     fn public_only_refuses_v6_forms_that_carry_a_private_address() {
         for text in ["[::7f00:1]:0", "[fec0::1]:0", "[2002:7f00:1::]:0", "[2002:a9fe:a9fe::1]:0"] {
             let addr: SocketAddr = text.parse().unwrap();

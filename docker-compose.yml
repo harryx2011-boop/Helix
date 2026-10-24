@@ -88,6 +88,8 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-helix}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-helix}
       HELIX_SERVICE_TOKEN: ${HELIX_SERVICE_TOKEN:-}
       HELIX_INTERNAL_ADMIN_TOKEN: ${HELIX_INTERNAL_ADMIN_TOKEN:-}
+      # The admin routes answer on loopback or this host only; empty would override the default.
+      HELIX_PUBLIC_URL: ${HELIX_PUBLIC_URL:-http://localhost:7400}
       HELIX_FETCH_URL: http://fetch:7401
       HELIX_EXTRACT_URL: http://extract:7402
       HELIX_RESPECT_ROBOTS: ${HELIX_RESPECT_ROBOTS:-true}

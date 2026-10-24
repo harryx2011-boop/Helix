@@ -1,7 +1,7 @@
 'use client';
 
 import { resolveBaseUrl } from '@/lib/api';
-import { getApiKey } from '@/lib/auth';
+import { getAdminToken } from '@/lib/instance-settings';
 
 /**
  * API keys, called straight from the browser against the instance.
@@ -11,8 +11,9 @@ import { getApiKey } from '@/lib/auth';
  * instance already owns the whole key lifecycle at `/v1/keys`; this is the
  * client for it.
  *
- * Authenticated with an existing key, not the admin token: minting a key needs
- * a key. The first one comes from HELIX_BOOTSTRAP_KEY on the instance.
+ * Authenticated with the instance's admin token, not an API key: one operator
+ * owns an instance, and only that operator manages its keys. The desktop app
+ * supplies the token; a self-hosted instance takes it from the settings page.
  */
 
 export interface InstanceKey {
@@ -45,9 +46,9 @@ export class KeysError extends Error {
 }
 
 async function call(path: string, init: RequestInit = {}): Promise<unknown> {
-  const token = getApiKey();
+  const token = getAdminToken();
   if (!token) {
-    throw new KeysError('No API key saved. Paste your instance’s bootstrap key to manage keys.', 401);
+    throw new KeysError('No admin token saved. Save the instance’s admin token on the settings page to manage keys.', 401);
   }
 
   let response: Response;
@@ -66,7 +67,7 @@ async function call(path: string, init: RequestInit = {}): Promise<unknown> {
   if (!response.ok) {
     const message =
       response.status === 401
-        ? 'That API key was rejected. Check the key saved for this instance.'
+        ? 'The admin token was rejected. Check HELIX_INTERNAL_ADMIN_TOKEN on the instance.'
         : (body?.message ?? `Request failed with status ${response.status}`);
     throw new KeysError(message, response.status);
   }

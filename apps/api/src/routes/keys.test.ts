@@ -5,9 +5,11 @@ import { createHash } from 'node:crypto';
 /**
  * Key management contract, wired behind the real auth hook rather than a stub.
  *
- * The gate is what makes this route safe, so the tests drive it through
- * `registerAuth` with a fake key store: a route tested with auth mocked away
- * passes just as happily when the gate is deleted.
+ * One operator owns a Helix instance, and only the operator's admin token
+ * manages its API keys. An API key, however valid, cannot mint, list or
+ * revoke keys. The tests drive the routes through `registerAuth` with a fake
+ * key store: a route tested with auth mocked away passes just as happily when
+ * the gate is deleted.
  */
 
 interface KeyRow {
@@ -76,7 +78,12 @@ import { createApiKey, hashKey, verifyApiKey } from '../core/api-keys.js';
 
 let app: FastifyInstance;
 
-async function build(): Promise<FastifyInstance> {
+const ADMIN = 'admin-token-for-key-tests';
+
+// A default parameter would fire on an explicit `undefined`, quietly turning
+// the disabled-instance case back into an enabled one.
+async function build(...args: [] | [adminToken: string | undefined]): Promise<FastifyInstance> {
+  const adminToken = args.length === 0 ? ADMIN : args[0];
   const built = Fastify();
   registerAuth(built, {
     verifyApiKey,
@@ -86,7 +93,7 @@ async function build(): Promise<FastifyInstance> {
   });
   await built.register(
     async (instance) => {
-      await registerKeys(instance);
+      await registerKeys(instance, { adminToken });
     },
     { prefix: '/v1' },
   );
@@ -100,7 +107,8 @@ async function seedKey(name = 'seed'): Promise<{ key: string; id: string }> {
   return { key: created.key, id: created.id };
 }
 
-const auth = (key: string) => ({ authorization: `Bearer ${key}` });
+const bearer = (token: string) => ({ authorization: `Bearer ${token}` });
+const admin = bearer(ADMIN);
 
 beforeEach(() => {
   db.state.rows = [];
@@ -112,47 +120,63 @@ afterEach(async () => {
   vi.clearAllMocks();
 });
 
-describe('POST /v1/keys', () => {
-  it('refuses to mint a key for a caller with no credential', async () => {
+describe('only the admin token manages keys', () => {
+  it('registers nothing when no admin token is configured', async () => {
+    app = await build(undefined);
+    const { key } = await seedKey();
+
+    const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'new' }, headers: bearer(key) });
+
+    expect([401, 404]).toContain(response.statusCode);
+    expect(db.state.rows).toHaveLength(1);
+  });
+
+  it('refuses a caller with no credential', async () => {
     app = await build();
     await seedKey();
 
     const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'new' } });
 
     expect(response.statusCode).toBe(401);
-    // The gate must stop the write, not merely colour the response.
     expect(db.state.rows).toHaveLength(1);
   });
 
-  it('refuses a credential that was revoked', async () => {
+  it.each([
+    ['POST', '/v1/keys'],
+    ['GET', '/v1/keys'],
+    ['DELETE', '/v1/keys/id-1'],
+    ['POST', '/v1/%6Beys'],
+  ])('refuses a valid API key on %s %s', async (method, url) => {
     app = await build();
-    const { key, id } = await seedKey();
-    db.state.rows.find((r) => r.id === id)!.revoked_at = new Date();
+    const { key } = await seedKey();
 
-    const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'new' }, headers: auth(key) });
+    const response = await app.inject({ method: method as 'GET', url, payload: { name: 'new' }, headers: bearer(key) });
 
     expect(response.statusCode).toBe(401);
+    expect(db.state.rows).toHaveLength(1);
+    expect(db.state.rows[0]!.revoked_at).toBeNull();
   });
 
-  it('refuses a well-formed credential that was never issued', async () => {
+  it('refuses the admin token on a foreign host name', async () => {
     app = await build();
-    await seedKey();
 
     const response = await app.inject({
       method: 'POST',
       url: '/v1/keys',
       payload: { name: 'new' },
-      headers: auth('helix-AAAAAAAAAAAAAAAA'),
+      headers: { ...admin, host: 'rebind.example:7410' },
     });
 
-    expect(response.statusCode).toBe(401);
+    expect(response.statusCode).toBe(403);
+    expect(db.state.rows).toHaveLength(0);
   });
+});
 
-  it('mints a key for a valid credential and returns the plaintext exactly once', async () => {
+describe('POST /v1/keys', () => {
+  it('mints a key for the admin token and returns the plaintext exactly once', async () => {
     app = await build();
-    const { key } = await seedKey();
 
-    const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'ci' }, headers: auth(key) });
+    const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'ci' }, headers: admin });
 
     expect(response.statusCode).toBe(201);
     const body = response.json();
@@ -161,15 +185,14 @@ describe('POST /v1/keys', () => {
     expect(body.keyPrefix).toBe(body.key.slice(0, 10));
     expect(body.rateLimit).toBe(1000);
 
-    const listed = await app.inject({ method: 'GET', url: '/v1/keys', headers: auth(key) });
+    const listed = await app.inject({ method: 'GET', url: '/v1/keys', headers: admin });
     expect(JSON.stringify(listed.json())).not.toContain(body.key);
   });
 
   it('stores only a hash, never the plaintext', async () => {
     app = await build();
-    const { key } = await seedKey();
 
-    const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'ci' }, headers: auth(key) });
+    const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'ci' }, headers: admin });
     const plaintext = response.json().key;
 
     const stored = db.state.rows.find((r) => r.name === 'ci')!;
@@ -179,24 +202,22 @@ describe('POST /v1/keys', () => {
 
   it('rejects an empty name rather than creating an unidentifiable key', async () => {
     app = await build();
-    const { key } = await seedKey();
 
-    const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: '' }, headers: auth(key) });
+    const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: '' }, headers: admin });
 
     expect(response.statusCode).toBe(400);
     expect(response.json().error).toBe('invalid_request');
-    expect(db.state.rows).toHaveLength(1);
+    expect(db.state.rows).toHaveLength(0);
   });
 
   it('rejects a rate limit above the cap', async () => {
     app = await build();
-    const { key } = await seedKey();
 
     const response = await app.inject({
       method: 'POST',
       url: '/v1/keys',
       payload: { name: 'huge', rateLimit: 1_000_001 },
-      headers: auth(key),
+      headers: admin,
     });
 
     expect(response.statusCode).toBe(400);
@@ -205,31 +226,20 @@ describe('POST /v1/keys', () => {
 
   it('defaults the rate limit rather than leaving a key unbounded', async () => {
     app = await build();
-    const { key } = await seedKey();
 
-    const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'd' }, headers: auth(key) });
+    const response = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'd' }, headers: admin });
 
     expect(response.json().rateLimit).toBe(1000);
   });
 });
 
 describe('GET /v1/keys', () => {
-  it('refuses an unauthenticated listing', async () => {
-    app = await build();
-    await seedKey();
-
-    const response = await app.inject({ method: 'GET', url: '/v1/keys' });
-
-    expect(response.statusCode).toBe(401);
-  });
-
   it('never returns key material for any listed key', async () => {
     app = await build();
-    const { key } = await seedKey();
-    const minted = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'x' }, headers: auth(key) });
+    const minted = await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'x' }, headers: admin });
     const plaintext = minted.json().key;
 
-    const response = await app.inject({ method: 'GET', url: '/v1/keys', headers: auth(key) });
+    const response = await app.inject({ method: 'GET', url: '/v1/keys', headers: admin });
 
     expect(response.statusCode).toBe(200);
     const raw = response.body;
@@ -242,60 +252,34 @@ describe('GET /v1/keys', () => {
     }
   });
 
-  /**
-   * There is no ownership model on `api_keys` — the schema has no owner column
-   * and the route has no filter — so any valid key sees every key on the
-   * instance. That is the designed self-host behaviour, not an oversight, and
-   * this pins it: if an owner scope is ever added, this test must be the
-   * thing that fails and forces the decision to be explicit.
-   */
-  it('shows every key on the instance to any valid caller, the flat self-host model', async () => {
+  it('shows every key on the instance to its one operator', async () => {
     app = await build();
-    const a = await seedKey('owner-a');
-    await seedKey('owner-b');
+    await seedKey('a');
+    await seedKey('b');
 
-    const response = await app.inject({ method: 'GET', url: '/v1/keys', headers: auth(a.key) });
+    const response = await app.inject({ method: 'GET', url: '/v1/keys', headers: admin });
 
-    expect(response.json().keys.map((k: { name: string }) => k.name).sort()).toEqual(['owner-a', 'owner-b']);
+    expect(response.json().keys.map((k: { name: string }) => k.name).sort()).toEqual(['a', 'b']);
   });
 });
 
 describe('DELETE /v1/keys/:id', () => {
-  it('refuses an unauthenticated revocation', async () => {
+  it('revokes a key and makes it unusable', async () => {
     app = await build();
-    const target = await seedKey();
+    const minted = (await app.inject({ method: 'POST', url: '/v1/keys', payload: { name: 'victim' }, headers: admin })).json();
 
-    const response = await app.inject({ method: 'DELETE', url: `/v1/keys/${target.id}` });
+    const revoked = await app.inject({ method: 'DELETE', url: `/v1/keys/${minted.id}`, headers: admin });
 
-    expect(response.statusCode).toBe(401);
-    expect(db.state.rows.find((r) => r.id === target.id)!.revoked_at).toBeNull();
-  });
-
-  it('revokes a key and makes it unusable for the next request', async () => {
-    app = await build();
-    const caller = await seedKey('caller');
-    const victimKey = await app.inject({
-      method: 'POST',
-      url: '/v1/keys',
-      payload: { name: 'victim' },
-      headers: auth(caller.key),
-    });
-    const victim = victimKey.json();
-
-    const revoked = await app.inject({ method: 'DELETE', url: `/v1/keys/${victim.id}`, headers: auth(caller.key) });
     expect(revoked.statusCode).toBe(204);
-
-    const afterwards = await app.inject({ method: 'GET', url: '/v1/keys', headers: auth(victim.key) });
-    expect(afterwards.statusCode).toBe(401);
+    expect(await verifyApiKey(minted.key)).toBeUndefined();
   });
 
   it('answers 404 for a second revocation rather than reporting success twice', async () => {
     app = await build();
-    const caller = await seedKey('caller');
     const target = await seedKey('target');
 
-    await app.inject({ method: 'DELETE', url: `/v1/keys/${target.id}`, headers: auth(caller.key) });
-    const again = await app.inject({ method: 'DELETE', url: `/v1/keys/${target.id}`, headers: auth(caller.key) });
+    await app.inject({ method: 'DELETE', url: `/v1/keys/${target.id}`, headers: admin });
+    const again = await app.inject({ method: 'DELETE', url: `/v1/keys/${target.id}`, headers: admin });
 
     expect(again.statusCode).toBe(404);
     expect(again.json().error).toBe('not_found');
@@ -303,61 +287,9 @@ describe('DELETE /v1/keys/:id', () => {
 
   it('answers 404 for an id that does not exist', async () => {
     app = await build();
-    const caller = await seedKey();
 
-    const response = await app.inject({ method: 'DELETE', url: '/v1/keys/id-999', headers: auth(caller.key) });
+    const response = await app.inject({ method: 'DELETE', url: '/v1/keys/id-999', headers: admin });
 
     expect(response.statusCode).toBe(404);
-  });
-
-  /**
-   * Any valid key can revoke any other key, including the one it is not. On a
-   * flat self-host instance every key is an operator credential, so this is the
-   * intended reach; it is pinned because it is the assumption a hosted
-   * deployment would have to break, and it must break loudly.
-   */
-  it('lets one key revoke another, the flat self-host model', async () => {
-    app = await build();
-    const a = await seedKey('owner-a');
-    const b = await seedKey('owner-b');
-
-    const response = await app.inject({ method: 'DELETE', url: `/v1/keys/${b.id}`, headers: auth(a.key) });
-
-    expect(response.statusCode).toBe(204);
-    expect(db.state.rows.find((r) => r.id === b.id)!.revoked_at).not.toBeNull();
-  });
-
-  it('does not let a revoked key revoke anything', async () => {
-    app = await build();
-    const a = await seedKey('owner-a');
-    const b = await seedKey('owner-b');
-    db.state.rows.find((r) => r.id === a.id)!.revoked_at = new Date();
-
-    const response = await app.inject({ method: 'DELETE', url: `/v1/keys/${b.id}`, headers: auth(a.key) });
-
-    expect(response.statusCode).toBe(401);
-    expect(db.state.rows.find((r) => r.id === b.id)!.revoked_at).toBeNull();
-  });
-});
-
-/**
- * Listing and revoking have no owner predicate: one operator owns every key
- * on the instance, so both routes are always registered.
- */
-describe('registration', () => {
-  it('serves both routes, since every key belongs to the same operator', async () => {
-    app = await build();
-    const { key } = await seedKey();
-    const other = await seedKey('other');
-
-    const list = await app.inject({ method: 'GET', url: '/v1/keys', headers: auth(key) });
-    const revoke = await app.inject({
-      method: 'DELETE',
-      url: `/v1/keys/${other.id}`,
-      headers: auth(key),
-    });
-
-    expect(list.statusCode).toBe(200);
-    expect(revoke.statusCode).toBe(204);
   });
 });

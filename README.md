@@ -58,6 +58,15 @@ curl -X POST localhost:7400/v1/scrape \
   -d '{"url": "https://example.com"}'
 ```
 
+### Who holds which credential
+
+A Helix instance has one owner, the operator who runs it.
+
+- **API keys** (`helix-...`) let callers use the API: scrape, crawl, extract, search and the rest. Hand them to projects and agents; each has its own rate limit and can be revoked. An API key cannot manage keys or change settings.
+- **The admin token** (`HELIX_INTERNAL_ADMIN_TOKEN`) belongs to the operator alone. Only it can mint, list or revoke API keys (`/v1/keys`) and read or change instance settings (`/settings`). These routes answer only on a loopback host or the host of `HELIX_PUBLIC_URL`. With no admin token set they are not registered, and `HELIX_BOOTSTRAP_KEY` supplies the one key the instance accepts.
+
+Jobs, crawls and batches are not partitioned between API keys: anyone holding a valid key and a job id can read that job. Do not share one instance between parties who must not see each other's results; run one instance per owner.
+
 ## Design commitments
 
 These are load-bearing, not aspirations. Each one exists because its absence is a documented failure in a product people use today.

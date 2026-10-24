@@ -2405,10 +2405,10 @@ paths:
       tags: [Keys]
       summary: Mint an API key
       description: |
-        The plaintext key is returned exactly once and cannot be recovered later —
-        only its hash is stored. On the hosted multi-tenant deployment the key store
-        has no owner column to filter by, so listing and revoking are withheld
-        there; minting is not.
+        Requires the instance's admin token (HELIX_INTERNAL_ADMIN_TOKEN), not an API
+        key: one operator owns an instance and manages its keys. Absent when no admin
+        token is set. The plaintext key is returned exactly once and cannot be
+        recovered later; only its hash is stored.
       operationId: createKey
       requestBody:
         required: true
@@ -2439,11 +2439,10 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
     get:
       tags: [Keys]
-      summary: List this instance's API keys (self-host only)
+      summary: List this instance's API keys
       description: |
-        Instance-wide with no owner predicate, so it is **withheld on the hosted
-        multi-tenant deployment** — there, one tenant could otherwise read another
-        tenant's credentials. Never returns plaintext keys, only their prefixes.
+        Requires the instance's admin token, not an API key. Never returns plaintext
+        keys, only their prefixes.
       operationId: listKeys
       responses:
         '200':
@@ -2473,10 +2472,10 @@ paths:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
     delete:
       tags: [Keys]
-      summary: Revoke an API key (self-host only)
+      summary: Revoke an API key
       description: |
-        Withheld on the hosted multi-tenant deployment for the same reason as the
-        list route. Revoking an already-revoked or unknown key answers 404.
+        Requires the instance's admin token, not an API key. Revoking an
+        already-revoked or unknown key answers 404.
       operationId: revokeKey
       responses:
         '200':

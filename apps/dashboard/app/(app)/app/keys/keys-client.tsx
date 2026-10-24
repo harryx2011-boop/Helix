@@ -288,8 +288,9 @@ export function KeysClient() {
             </p>
           ) : keys.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">
-              No keys yet. Save your instance&rsquo;s <code className="font-mono text-xs">HELIX_BOOTSTRAP_KEY</code>{' '}
-              on the settings page, then create keys here.
+              No keys yet. Save your instance&rsquo;s admin token (
+              <code className="font-mono text-xs">HELIX_INTERNAL_ADMIN_TOKEN</code>) on the settings page, then create
+              keys here.
             </p>
           ) : (
             <Table>

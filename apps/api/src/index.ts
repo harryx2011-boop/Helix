@@ -366,7 +366,7 @@ await app.register(
       allowPrivateUrls: config.allowPrivateUrls,
       encryptionKey: providerEncryptionKey,
     });
-    await registerKeys(instance);
+    await registerKeys(instance, { adminToken: config.internalAdminToken, publicUrl: config.publicUrl });
     await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured, detectLocal });
     await registerMap(instance, {
       fetchClient,

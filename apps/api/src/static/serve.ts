@@ -48,7 +48,9 @@ export const UI_FRAME_ANCESTORS = "frame-ancestors 'self' vscode-webview: vscode
  * (thumbnails, another instance), and a connect-src allow-list would break that.
  */
 export const UI_CONTENT_SECURITY_POLICY = [
-  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+  // blob: carries the dictation mic's AudioWorklet (lib/voice-core/react/capture.ts),
+  // built from the page's own source; only script already on the page can mint one.
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

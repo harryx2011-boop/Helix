@@ -182,7 +182,8 @@ describe('framing the UI from VS Code', () => {
   // script from anywhere else, evaluate strings, embed plugins or rebase links.
   it('restricts where a UI page may load script from', async () => {
     const csp = String((await framed.inject({ method: 'GET', url: '/app' })).headers['content-security-policy']);
-    expect(csp).toContain("script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'");
+    // blob: is the dictation mic's AudioWorklet, which the page builds from its own source.
+    expect(csp).toContain("script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("base-uri 'self'");
     expect(csp).toContain("form-action 'self'");

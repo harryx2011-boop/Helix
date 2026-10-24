@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import type { NextConfig } from 'next';
+import { securityHeaders } from './security-headers';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const hosted = process.env.HELIX_HOSTED === '1';
@@ -34,6 +35,8 @@ const nextConfig: NextConfig = {
   images: hosted ? {} : { unoptimized: true },
   outputFileTracingRoot: resolve(currentDir, '..', '..'),
   env: { NEXT_PUBLIC_HELIX_HOSTED: hosted ? '1' : '0', NEXT_PUBLIC_HELIX_WEBSITE: website ? '1' : '0' },
+  // `headers()` only runs with server output; the static export has none.
+  ...(hosted ? { headers: async () => [{ source: '/:path*', headers: securityHeaders }] } : {}),
   ...(website
     ? { redirects: async () => APP_ROUTES.map((source) => ({ source, destination: '/download', permanent: false })) }
     : {}),

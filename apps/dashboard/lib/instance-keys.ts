@@ -63,12 +63,16 @@ async function call(path: string, init: RequestInit = {}): Promise<unknown> {
 
   if (response.status === 204) return null;
 
-  const body = (await response.json().catch(() => null)) as { message?: string } | null;
+  const body = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
   if (!response.ok) {
+    // The key routes' own 404 names a key (`not_found`); any other 404 means they are not registered.
+    const routesMissing = response.status === 404 && body?.error !== 'not_found';
     const message =
       response.status === 401
         ? 'The admin token was rejected. Check HELIX_INTERNAL_ADMIN_TOKEN on the instance.'
-        : (body?.message ?? `Request failed with status ${response.status}`);
+        : routesMissing
+          ? 'Key management is off on this instance: it has no admin token. Set HELIX_INTERNAL_ADMIN_TOKEN and restart it.'
+          : (body?.message ?? `Request failed with status ${response.status}`);
     throw new KeysError(message, response.status);
   }
   return body;

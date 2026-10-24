@@ -34,4 +34,12 @@ describe('instance key calls', () => {
     await expect(listInstanceKeys()).rejects.toBeInstanceOf(KeysError);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  // An instance with no admin token does not register the key routes at all.
+  it('explain a 404 as key management being off on the instance', async () => {
+    fakeWindow({ 'helix.adminToken': 'admin-stored' });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ message: 'Route GET:/v1/keys not found' }), { status: 404 })));
+
+    await expect(listInstanceKeys()).rejects.toThrow(/HELIX_INTERNAL_ADMIN_TOKEN/);
+  });
 });

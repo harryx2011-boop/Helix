@@ -318,6 +318,19 @@ describe('POST /v1/crawl', () => {
     });
   });
 
+  // The name becomes part of the vector store's URL path.
+  it.each([
+    { type: 'qdrant', collection: '../../collections' },
+    { type: 'qdrant', collection: 'docs/points/delete' },
+    { type: 'qdrant', collection: 'docs?wait=false' },
+    { type: 'qdrant', namespace: 'a'.repeat(65) },
+  ])('rejects the destination name in %o', async (destination) => {
+    const app = await buildApp();
+    const response = await app.inject({ method: 'POST', url: '/v1/crawl', payload: { url: 'https://example.com', destination } });
+
+    expect(response.statusCode).toBe(400);
+  });
+
   it('rejects a destination with an unsupported type', async () => {
     const app = await buildApp();
     const response = await app.inject({

@@ -360,3 +360,30 @@ describe('local runtime detection', () => {
     expect(JSON.stringify(llm)).not.toContain('11434');
   });
 });
+
+describe('probe cache', () => {
+  // The route is open, so each request must not fan out to live probes of
+  // every dependency: a burst of anonymous requests would multiply into them.
+  it('answers a burst of requests from one round of probes', async () => {
+    const d = deps();
+    app = await build(d);
+
+    await Promise.all([1, 2, 3].map(() => app.inject({ method: 'GET', url: '/v1/health' })));
+    await app.inject({ method: 'GET', url: '/v1/health' });
+
+    expect(d.fetchClient.health).toHaveBeenCalledTimes(1);
+    expect(d.extractClient.health).toHaveBeenCalledTimes(1);
+  });
+
+  it('probes again once the cache has expired', async () => {
+    let now = 0;
+    const d = deps({ now: () => now });
+    app = await build(d);
+
+    await app.inject({ method: 'GET', url: '/v1/health' });
+    now = 10_000;
+    await app.inject({ method: 'GET', url: '/v1/health' });
+
+    expect(d.fetchClient.health).toHaveBeenCalledTimes(2);
+  });
+});

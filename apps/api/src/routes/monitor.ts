@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { webhookTargetProblem } from '../core/webhook-target.js';
+import { checkProxyUrl, checkUrl, type HostResolver } from '../core/url-guard.js';
 import { snapshotUrl, type CheckOutcome } from '../monitor/checker.js';
 import { assertMinimumInterval, nextRun, normalizeSchedule, ScheduleError } from '../monitor/schedule.js';
 import type { MonitorScheduler } from '../monitor/scheduler.js';
@@ -130,6 +131,10 @@ export interface MonitorRouteDeps {
   store: MonitorStore;
   scheduler: MonitorScheduler<CheckOutcome>;
   minIntervalSeconds: number;
+  /** `HELIX_ALLOW_PRIVATE_URLS`: let monitors watch loopback and private-range addresses. */
+  allowPrivateUrls?: boolean | undefined;
+  /** DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver. */
+  resolveHost?: HostResolver | undefined;
 }
 
 function invalid(reply: FastifyReply, request: FastifyRequest, message: string, field?: string | undefined) {
@@ -301,10 +306,25 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
     return webhook;
   };
 
+  const guard = { allowPrivate: deps.allowPrivateUrls, resolve: deps.resolveHost };
+
+  /** A caller's proxy is a host every check connects to, so it meets the egress rules once, here. */
+  const proxyProblem = async (scrape: z.infer<typeof ScrapeOptionsSchema> | undefined): Promise<string | undefined> => {
+    if (!scrape?.proxy) return undefined;
+    const verdict = await checkProxyUrl(scrape.proxy.url, guard);
+    return verdict.ok ? undefined : verdict.reason;
+  };
+
   app.post('/monitor', async (request, reply) => {
     const parsed = CreateSchema.safeParse(request.body);
     if (!parsed.success) return zodInvalid(reply, request, parsed.error);
     const body = parsed.data;
+
+    const urlVerdict = await checkUrl(body.url, guard);
+    if (!urlVerdict.ok) return invalid(reply, request, `url: ${urlVerdict.reason}`, 'url');
+
+    const badProxy = await proxyProblem(body.scrapeOptions);
+    if (badProxy) return invalid(reply, request, `scrapeOptions.proxy.url: ${badProxy}`, 'scrapeOptions.proxy.url');
 
     const schedule = resolveSchedule(body.schedule, reply, request);
     if (!schedule) return reply;
@@ -371,6 +391,9 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
     const parsed = PatchSchema.safeParse(request.body ?? {});
     if (!parsed.success) return zodInvalid(reply, request, parsed.error);
     const body = parsed.data;
+
+    const badProxy = await proxyProblem(body.scrapeOptions);
+    if (badProxy) return invalid(reply, request, `scrapeOptions.proxy.url: ${badProxy}`, 'scrapeOptions.proxy.url');
 
     const patch: Parameters<MonitorStore['update']>[1] = {};
 

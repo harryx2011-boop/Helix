@@ -142,6 +142,21 @@ describe('the private-address guard holds on every engine', () => {
     }, 90_000);
   }
 
+  // A public-looking name that resolves to a private address is refused by
+  // the guard itself (blocked by client), not by a failed lookup in the browser.
+  it('refuses a name that resolves to a private address', async () => {
+    const port = new URL(origin).port;
+    const browsers = pool({
+      lookup: async (host) => (host === 'rebind.helix-test' ? [{ address: '127.0.0.1', family: 4 }] : []),
+    });
+    try {
+      const result = await browsers.render({ url: `http://rebind.helix-test:${port}/`, timeout: 20_000 });
+      expect(result.error ?? '').toMatch(/BLOCKED_BY_CLIENT/i);
+    } finally {
+      await browsers.close();
+    }
+  }, 90_000);
+
   it('lets the operator opt in, which proves the guard was what blocked it', async () => {
     const browsers = pool();
     try {

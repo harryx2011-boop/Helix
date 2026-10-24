@@ -1,6 +1,7 @@
 import { XMLParser } from 'fast-xml-parser';
 import type { Log } from '../core/logger.js';
 import { isPrivateHost } from '../core/url-guard.js';
+import { pinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 
 /**
  * Sitemap discovery.
@@ -42,13 +43,13 @@ const asArray = <T>(value: T | T[] | undefined): T[] =>
 export class SitemapFetcher {
   readonly #userAgent: string;
   readonly #logger: Log | undefined;
-  readonly #fetchImpl: typeof fetch;
+  readonly #fetchImpl: PinnedFetch;
   readonly #parser = new XMLParser({
     ignoreAttributes: true,
     trimValues: true,
   });
 
-  constructor(userAgent: string, logger?: Log, fetchImpl: typeof fetch = fetch) {
+  constructor(userAgent: string, logger?: Log, fetchImpl: PinnedFetch = pinnedFetch) {
     this.#userAgent = userAgent;
     this.#logger = logger;
     this.#fetchImpl = fetchImpl;

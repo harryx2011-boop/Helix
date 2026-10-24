@@ -115,10 +115,13 @@ const WebhookObjectSchema = z
 // headers, an event filter and metadata. Both normalise to the object.
 export const WebhookSchema = z.union([WebhookUrlSchema.transform((url) => ({ url })), WebhookObjectSchema]);
 
+// The name becomes a path segment in the vector store's URL, so it is a plain identifier.
+const CollectionNameSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, 'letters, digits, _ and - only, at most 64');
+
 export const DestinationSchema = z.object({
   type: z.enum(['qdrant', 'pgvector']),
-  collection: z.string().optional(),
-  namespace: z.string().optional(),
+  collection: CollectionNameSchema.optional(),
+  namespace: CollectionNameSchema.optional(),
   upsertMode: z.enum(['update-in-place', 'append']).default('update-in-place'),
 });
 
@@ -296,8 +299,8 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
     }
 
     // Resume: the seed and the queued rows already exist, so this re-opens the
-    // job rather than creating one. Ownership is checked against the calling
-    // key for the same reason GET /crawl/{id} checks it.
+    // job rather than creating one. Jobs are not partitioned between keys: one
+    // operator owns the instance, so any valid key may resume any crawl.
     if (parsed.data.resume) {
       const jobId = parsed.data.resume;
       const { rows } = await getPool().query<{

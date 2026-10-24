@@ -17,6 +17,7 @@ export const apiSpec: ChildFactory = (ctx) => {
     HELIX_CORS_ORIGINS: origin,
     HELIX_BOOTSTRAP_KEY: ctx.secrets.apiKey,
     HELIX_INTERNAL_ADMIN_TOKEN: ctx.secrets.adminToken,
+    HELIX_SERVICE_TOKEN: ctx.serviceToken,
     HELIX_LOG_LEVEL: 'info',
   }
   if (!ctx.dev || ctx.exists(ui)) env.HELIX_STATIC_DIR = ui

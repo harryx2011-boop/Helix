@@ -65,6 +65,19 @@ function fakeFetch(status: number | Error): typeof fetch & { calls: { url: strin
 }
 
 describe('WebhookDispatcher', () => {
+  // An unread body holds its socket open until the stream is collected.
+  it('drains the response body so the connection is released', async () => {
+    const db = fakeDb([row()]);
+    let cancelled = false;
+    const body = new ReadableStream({ cancel: () => void (cancelled = true) });
+    const fetchFn = vi.fn(async () => new Response(body, { status: 200 })) as unknown as typeof fetch;
+    const dispatcher = new WebhookDispatcher({ db, fetch: fetchFn, resolve });
+
+    await dispatcher.runOnce();
+
+    expect(cancelled).toBe(true);
+  });
+
   it('posts the payload with event headers and marks a 2xx delivered', async () => {
     const db = fakeDb([row()]);
     const fetchFn = fakeFetch(200);

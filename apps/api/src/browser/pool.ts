@@ -8,7 +8,7 @@ import {
   type BrowserIdentity,
   type BrowserProfile,
 } from './profiles.js';
-import { isPrivateHost } from '../core/url-guard.js';
+import { assertPublicUrl, isPrivateHost, type Lookup } from '../core/url-guard.js';
 import { capture, type ScreenshotOptions, type ScreenshotResult } from './screenshot.js';
 import {
   browserTypeFor,
@@ -167,6 +167,8 @@ export interface BrowserPoolOptions {
   /** CDP endpoint of a remote browser the render tier connects to instead of launching locally. */
   remoteCdpUrl?: string | undefined;
   logger?: Log | undefined;
+  /** DNS lookup the private-address guard uses. Injected by tests; defaults to the system resolver. */
+  lookup?: Lookup | undefined;
 }
 
 /**
@@ -220,9 +222,10 @@ function isAdHost(hostname: string): boolean {
  *
  * The route already checked the URL the caller sent, including what its name
  * resolves to. This covers what the check cannot: redirects, and fetches the
- * page itself makes once it runs. It is a literal check (no DNS per request),
- * so a public name that resolves privately at render time is the one case it
- * does not close.
+ * page itself makes once it runs. Each host name is resolved once per context
+ * and refused when any answer is private. The browser does its own lookup
+ * after this one, so a name that changes its answer between the two is not
+ * covered here.
  *
  * Both filters share one handler deliberately. Playwright runs `route`
  * handlers most-recently-registered first and stops at the one that answers,
@@ -231,12 +234,24 @@ function isAdHost(hostname: string): boolean {
  */
 async function blockRequests(
   context: BrowserContext,
-  options: { blockPrivate: boolean; blockAds: boolean; blockResources?: boolean },
+  options: { blockPrivate: boolean; blockAds: boolean; blockResources?: boolean; lookup?: Lookup | undefined },
 ): Promise<void> {
   if (!options.blockPrivate && !options.blockAds && !options.blockResources) return;
+  const verdicts = new Map<string, Promise<boolean>>();
+  const resolvesPrivate = (url: URL): Promise<boolean> => {
+    let verdict = verdicts.get(url.hostname);
+    if (!verdict) {
+      verdict = assertPublicUrl(url.href, options.lookup).then(
+        () => false,
+        () => true,
+      );
+      verdicts.set(url.hostname, verdict);
+    }
+    return verdict;
+  };
   await context.route(
     () => true,
-    (route) => {
+    async (route) => {
       let url: URL;
       try {
         url = new URL(route.request().url());
@@ -245,7 +260,9 @@ async function blockRequests(
       }
       const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
       if (!isHttp) return route.continue();
-      if (options.blockPrivate && isPrivateHost(url)) return route.abort('blockedbyclient');
+      if (options.blockPrivate && (isPrivateHost(url) || (await resolvesPrivate(url)))) {
+        return route.abort('blockedbyclient');
+      }
       if (options.blockAds && isAdHost(url.hostname)) return route.abort('blockedbyclient');
       if (options.blockResources && HEAVY_RESOURCES.has(route.request().resourceType())) {
         return route.abort('blockedbyclient');
@@ -871,6 +888,7 @@ export class BrowserPool {
         blockPrivate: !options.allowPrivate,
         blockAds: options.blockAds === true,
         blockResources: wantsResourceBlocking(options),
+        lookup: this.#options.lookup,
       });
 
       page = await context.newPage();
@@ -947,7 +965,7 @@ export class BrowserPool {
           // hop and subresource. A build that lacks it declines the tier rather
           // than fetching unguarded.
           try {
-            await blockRequests(context, { blockPrivate: true, blockAds: false });
+            await blockRequests(context, { blockPrivate: true, blockAds: false, lookup: this.#options.lookup });
           } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);
             throw new Error(`lightpanda tier cannot enforce the private-address guard (${detail})`);
@@ -1025,7 +1043,7 @@ export class BrowserPool {
           // Firefox's internals, so its routing support is a property of the
           // build in front of us rather than something to assume.
           try {
-            await blockRequests(context, { blockPrivate: true, blockAds: false });
+            await blockRequests(context, { blockPrivate: true, blockAds: false, lookup: this.#options.lookup });
           } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);
             throw new Error(`camoufox tier cannot enforce the private-address guard (${detail})`);
@@ -1108,7 +1126,7 @@ export class BrowserPool {
 
         if (!options.allowPrivate) {
           try {
-            await blockRequests(context, { blockPrivate: true, blockAds: false });
+            await blockRequests(context, { blockPrivate: true, blockAds: false, lookup: this.#options.lookup });
           } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);
             throw new Error(

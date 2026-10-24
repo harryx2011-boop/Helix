@@ -4,6 +4,7 @@ import { ExtractHttpError, type ExtractClient } from '../extract/client.js';
 import { classifyFile } from '../parse/file-type.js';
 import { fetchRemote, readMultipart, RequestError, type FileInput } from './parse.js';
 import { defaultLookup, HostNotAllowedError, type Lookup } from '../parse/remote.js';
+import { createPinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 
 /**
  * Whether a PDF needs OCR, without converting it.
@@ -22,7 +23,7 @@ export interface PdfAssessRouteDeps {
   extractClient: ExtractClient;
   maxUploadBytes: number;
   userAgent: string;
-  fetchImpl?: typeof fetch | undefined;
+  fetchImpl?: PinnedFetch | undefined;
   lookup?: Lookup | undefined;
 }
 
@@ -51,8 +52,9 @@ function tooLargeBody(request: FastifyRequest, maxBytes: number): Record<string,
 }
 
 export async function registerPdfAssess(app: FastifyInstance, deps: PdfAssessRouteDeps): Promise<void> {
-  const fetchImpl = deps.fetchImpl ?? fetch;
   const lookup = deps.lookup ?? defaultLookup;
+  // Pinned: the address the lookup checked is the address connected to.
+  const fetchImpl = deps.fetchImpl ?? createPinnedFetch({ lookup });
   const bodyLimit = deps.maxUploadBytes + MAX_UPLOAD_HEADROOM;
 
   await app.register(async (scope) => {

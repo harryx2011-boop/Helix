@@ -1,5 +1,6 @@
 import type { Log } from '../core/logger.js';
 import type { Tier } from '../core/escalation.js';
+import { withServiceToken } from '../core/service-token.js';
 
 /**
  * Client for helix-fetch (tiers 0 and 1).
@@ -37,10 +38,12 @@ export interface FetchResult {
 export class FetchClient {
   readonly #baseUrl: string;
   readonly #logger: Log | undefined;
+  readonly #serviceToken: string | undefined;
 
-  constructor(baseUrl: string, logger?: Log) {
+  constructor(baseUrl: string, logger?: Log, serviceToken?: string) {
     this.#baseUrl = baseUrl.replace(/\/$/, '');
     this.#logger = logger;
+    this.#serviceToken = serviceToken;
   }
 
   async fetch(options: FetchOptions): Promise<FetchResult> {
@@ -54,7 +57,7 @@ export class FetchClient {
     try {
       const response = await fetch(`${this.#baseUrl}/fetch`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: withServiceToken(this.#serviceToken, { 'content-type': 'application/json' }),
         body: JSON.stringify({
           url: options.url,
           impersonate: options.impersonate,

@@ -149,14 +149,14 @@ export class QdrantSink implements VectorSink {
   }
 
   async ensureCollection(collection: string, dimensions: number): Promise<void> {
-    const existing = await fetch(`${this.#url}/collections/${collection}`, {
+    const existing = await fetch(`${this.#url}/collections/${encodeURIComponent(collection)}`, {
       headers: this.#headers(),
       signal: AbortSignal.timeout(10_000),
     });
 
     if (existing.ok) return;
 
-    const created = await fetch(`${this.#url}/collections/${collection}`, {
+    const created = await fetch(`${this.#url}/collections/${encodeURIComponent(collection)}`, {
       method: 'PUT',
       headers: this.#headers(),
       body: JSON.stringify({
@@ -194,7 +194,7 @@ export class QdrantSink implements VectorSink {
     }));
 
     const response = await fetch(
-      `${this.#url}/collections/${request.collection}/points?wait=true`,
+      `${this.#url}/collections/${encodeURIComponent(request.collection)}/points?wait=true`,
       {
         method: 'PUT',
         headers: this.#headers(),
@@ -219,7 +219,7 @@ export class QdrantSink implements VectorSink {
   }
 
   async #scrollOne(collection: string, filter: unknown): Promise<Record<string, unknown> | undefined> {
-    const response = await fetch(`${this.#url}/collections/${collection}/points/scroll`, {
+    const response = await fetch(`${this.#url}/collections/${encodeURIComponent(collection)}/points/scroll`, {
       method: 'POST',
       headers: this.#headers(),
       body: JSON.stringify({ filter, limit: 1, with_payload: [MODEL_KEY], with_vector: false }),
@@ -235,7 +235,7 @@ export class QdrantSink implements VectorSink {
   }
 
   async models(collection: string, model: string): Promise<CollectionModels> {
-    const info = await fetch(`${this.#url}/collections/${collection}`, {
+    const info = await fetch(`${this.#url}/collections/${encodeURIComponent(collection)}`, {
       headers: this.#headers(),
       signal: AbortSignal.timeout(10_000),
     });
@@ -262,7 +262,7 @@ export class QdrantSink implements VectorSink {
   }
 
   async query(request: QueryRequest): Promise<QueryHit[]> {
-    const response = await fetch(`${this.#url}/collections/${request.collection}/points/query`, {
+    const response = await fetch(`${this.#url}/collections/${encodeURIComponent(request.collection)}/points/query`, {
       method: 'POST',
       headers: this.#headers(),
       body: JSON.stringify({

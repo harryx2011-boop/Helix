@@ -58,3 +58,6 @@ apps/desktop/release/
 apps/desktop/resources/
 !apps/desktop/build/
 apps/api/data/
+
+# native Windows SearXNG install (venv, source, logs)
+.searxng-native/

@@ -91,8 +91,12 @@ function isPrivateV6(ip: string): boolean {
   const isZero = (from: number, to: number): boolean => g.slice(from, to).every((x) => x === 0);
   const first = g[0] ?? 0;
 
-  // :: and ::1
-  if (isZero(0, 7) && ((g[7] ?? 0) === 0 || g[7] === 1)) return true;
+  // ::/96: :: and ::1, and the deprecated v4-compatible form (::7f00:1), which is never a public address.
+  if (isZero(0, 6)) return true;
+  // 2002::/16 (6to4) embeds a v4 address in groups 1 and 2.
+  if (first === 0x2002) return isPrivateV4(v4FromGroups(g[1] ?? 0, g[2] ?? 0));
+  // fec0::/10, deprecated site-local.
+  if ((first & 0xffc0) === 0xfec0) return true;
   // ::ffff:a.b.c.d (IPv4-mapped) and 64:ff9b::/96 (NAT64) carry a v4 address.
   if (isZero(0, 5) && g[5] === 0xffff) return isPrivateV4(v4FromGroups(g[6] ?? 0, g[7] ?? 0));
   if (first === 0x64 && g[1] === 0xff9b && isZero(2, 6)) return isPrivateV4(v4FromGroups(g[6] ?? 0, g[7] ?? 0));
@@ -151,7 +155,88 @@ export async function checkUrl(raw: string, options: UrlGuardOptions = {}): Prom
     return { ok: false, reason: 'only http and https URLs are fetched.' };
   }
 
-  if (options.allowPrivate) return { ok: true };
+  return checkHost(url, options);
+}
+
+const PROXY_SCHEMES = new Set(['http:', 'https:', 'socks5:', 'socks5h:']);
+
+/**
+ * A caller-supplied proxy is a host this instance connects to and hands the
+ * request to, so it meets the same address rules as the target URL.
+ */
+export async function checkProxyUrl(raw: string, options: UrlGuardOptions = {}): Promise<UrlVerdict> {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return { ok: false, reason: 'is not a valid URL.' };
+  }
+
+  if (!PROXY_SCHEMES.has(url.protocol)) {
+    return { ok: false, reason: 'only http, https and socks5 proxies are used.' };
+  }
+
+  // A socks5 URL has an opaque host that the URL parser leaves as written;
+  // re-reading it as http normalises numeric spellings such as 0x7f000001.
+  let host: URL;
+  try {
+    host = new URL(`http://${url.host}`);
+  } catch {
+    return { ok: false, reason: 'is not a valid URL.' };
+  }
+  return checkHost(host, options);
+}
+
+export type PinnedProxy = { ok: true; url: string } | { ok: false; reason: string };
+
+/**
+ * A caller's proxy URL with its host replaced by the address the guard checked.
+ *
+ * The fetch service and the browser resolve the proxy host themselves; handing
+ * them the checked address leaves no second lookup to answer differently. An
+ * https proxy keeps its name, since its certificate is issued to the name.
+ * A name that does not resolve is refused rather than left to a later lookup.
+ */
+export async function pinProxyUrl(raw: string, options: UrlGuardOptions = {}): Promise<PinnedProxy> {
+  let answers: string[] | undefined;
+  const resolve: HostResolver = async (hostname) => {
+    answers ??= await (options.resolve ?? defaultResolver)(hostname);
+    return answers;
+  };
+  const verdict = await checkProxyUrl(raw, { ...options, resolve });
+  if (!verdict.ok) return verdict;
+
+  const url = new URL(raw);
+  if (url.protocol === 'https:') return { ok: true, url: raw };
+  const host = bareHostname(new URL(`http://${url.host}`).hostname);
+
+  let address = host;
+  if (isIP(host) === 0) {
+    let resolved: string[];
+    try {
+      resolved = await resolve(host);
+    } catch {
+      resolved = [];
+    }
+    address = resolved[0] ?? '';
+    if (!address) return { ok: false, reason: `"${host}" did not resolve.` };
+    // checkHost fails open on a lookup error, so the answer pinned here is checked here.
+    const blocked = resolved.find((a) => (options.allowPrivate ? isAlwaysBlocked(a) : isPrivateAddress(a)));
+    if (blocked) {
+      return { ok: false, reason: `"${host}" resolves to ${blocked}, which this instance does not use as a proxy.` };
+    }
+  }
+
+  url.hostname = isIP(address) === 6 ? `[${address}]` : address;
+  const pinned = url.href;
+  // The URL serialiser adds a root path the caller did not write; leave it off.
+  const addedSlash = !raw.endsWith('/') && pinned.endsWith('/') && url.pathname === '/';
+  return { ok: true, url: addedSlash ? pinned.slice(0, -1) : pinned };
+}
+
+/** The address rules shared by target and proxy URLs: literal host, then DNS. */
+async function checkHost(url: URL, options: UrlGuardOptions): Promise<UrlVerdict> {
+  if (options.allowPrivate) return checkAlwaysBlocked(url, options);
 
   const host = bareHostname(url.hostname);
   if (isPrivateHost(url)) {
@@ -217,6 +302,36 @@ const ALWAYS_BLOCKED: readonly [string, number, string][] = [
   ['169.254.0.0', 16, '169.254.0.0/16'],
   ['100.64.0.0', 10, '100.64.0.0/10'],
 ];
+
+/** Link-local or CGNAT, in v4 or v4-mapped v6 form, or v6 link-local (fe80::/10). */
+export function isAlwaysBlocked(address: string): boolean {
+  const family = isIP(address);
+  if (family === 4) return ALWAYS_BLOCKED.some(([base, bits]) => inV4Block(address, base, bits));
+  if (family !== 6) return false;
+  const g = expandV6(address);
+  if (!g) return true;
+  if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) return isAlwaysBlocked(v4FromGroups(g[6] ?? 0, g[7] ?? 0));
+  return ((g[0] ?? 0) & 0xffc0) === 0xfe80;
+}
+
+/** With private targets allowed, the literal host and its DNS answers still stay out of the always-blocked ranges. */
+async function checkAlwaysBlocked(url: URL, options: UrlGuardOptions): Promise<UrlVerdict> {
+  const host = bareHostname(url.hostname);
+  const refuse = (address: string): UrlVerdict => ({
+    ok: false,
+    reason: `"${host}" is or resolves to ${address}, a reserved range this instance never fetches.`,
+  });
+  if (isIP(host) !== 0) return isAlwaysBlocked(host) ? refuse(host) : { ok: true };
+
+  let addresses: string[];
+  try {
+    addresses = await (options.resolve ?? defaultResolver)(host);
+  } catch {
+    return { ok: true };
+  }
+  const blocked = addresses.find((address) => isAlwaysBlocked(address));
+  return blocked ? refuse(blocked) : { ok: true };
+}
 
 /** Names the reserved range when the URL's host sits in one, for a message that says which. */
 export function blockedRange(raw: string): string | undefined {

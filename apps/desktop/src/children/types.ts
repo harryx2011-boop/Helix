@@ -19,6 +19,8 @@ export interface ChildContext {
   runtimeDir: string
   execPath: string
   secrets: Secrets
+  /** Fresh per launch: the API sends it to fetch and extract, which refuse calls without it. */
+  serviceToken: string
   ports: Ports
   exists: (p: string) => boolean
 }

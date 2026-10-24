@@ -5,6 +5,8 @@ import { fetchUrl, normaliseUrl } from '../crawl/url.js';
 import type { CrawlJobRequest } from '../crawl/worker.js';
 import { ScrapeOptionsSchema, WebhookSchema, TIERS, EXTRACTORS, CRAWL_FORMATS } from './crawl.js';
 import { cancelJob, fetchJobView } from './jobs.js';
+import { checkUrl, type HostResolver } from '../core/url-guard.js';
+import { mapWithLimit } from '../core/map-with-limit.js';
 
 /**
  * Batch scrape: many URLs in, one job to poll.
@@ -31,6 +33,23 @@ export const DEFAULT_BATCH_LIMITS: BatchLimits = { maxUrls: 10_000 };
 
 export interface BatchRouteDeps {
   limits?: Partial<BatchLimits> | undefined;
+  /** `HELIX_ALLOW_PRIVATE_URLS`: let a batch fetch loopback and private-range addresses. */
+  allowPrivateUrls?: boolean | undefined;
+  /** DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver. */
+  resolveHost?: HostResolver | undefined;
+}
+
+/** The first URL whose host fails the egress check, checking each host once. */
+async function firstUnsafeUrl(urls: string[], deps: BatchRouteDeps): Promise<{ url: string; reason: string } | undefined> {
+  const oneUrlPerHost = new Map<string, string>();
+  for (const url of urls) {
+    const host = new URL(url).host;
+    if (!oneUrlPerHost.has(host)) oneUrlPerHost.set(host, url);
+  }
+  const guard = { allowPrivate: deps.allowPrivateUrls, resolve: deps.resolveHost };
+  const verdicts = await mapWithLimit([...oneUrlPerHost.values()], 16, async (url) => ({ url, verdict: await checkUrl(url, guard) }));
+  const unsafe = verdicts.find((entry) => !entry.verdict.ok);
+  return unsafe && !unsafe.verdict.ok ? { url: unsafe.url, reason: unsafe.verdict.reason } : undefined;
 }
 
 const HttpUrlSchema = z
@@ -159,6 +178,17 @@ export async function registerBatch(app: FastifyInstance, deps: BatchRouteDeps =
         message: 'urls: no valid http(s) URL in the batch',
         field: 'urls',
         invalidURLs: invalid,
+        requestId: request.id,
+      });
+    }
+
+    // Every URL is the caller's choice of what this instance connects to.
+    const unsafe = await firstUnsafeUrl(valid, deps);
+    if (unsafe) {
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: `urls: ${unsafe.url} ${unsafe.reason}`,
+        field: 'urls',
         requestId: request.id,
       });
     }

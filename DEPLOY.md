@@ -110,12 +110,11 @@ Dockerfile: `apps/api/Dockerfile`.
 | `DATABASE_URL` | the Supabase Session-pooler string from step 1 |
 | `HELIX_BOOTSTRAP_KEY` | the first API key; without it every request is rejected |
 | `HELIX_ENCRYPTION_KEY` | 32 bytes hex/base64. Set it explicitly in production so rotating the bootstrap key does not invalidate stored provider keys |
-| `HELIX_INTERNAL_ADMIN_TOKEN` | gates `/settings` and `/internal/*`. Unset means neither router is registered |
+| `HELIX_INTERNAL_ADMIN_TOKEN` | the operator's credential: gates `/settings`, `/internal/*` and API key management (`/v1/keys`), on a loopback host or the `HELIX_PUBLIC_URL` host only. Unset means none of these routes is registered |
 | `HELIX_EXTRACT_URL` | the step-4 deployment |
 | `HELIX_FETCH_URL` | optional; the Rust tier. Unset degrades to the other tiers |
 | `HELIX_CORS_ORIGINS` | must include `https://helixapi-dev.vercel.app` |
 | `HELIX_PUBLIC_URL` | the API's own public URL; live-view links are built from it |
-| `HELIX_MULTI_TENANT` | **set to `1` for the hosted deployment.** Scopes jobs to the API key that created them and withholds the instance-wide key and usage routes. Unset means the single-operator model, where every key on the instance can read and revoke every other — correct for self-host, a cross-tenant hole when several people share one instance |
 
 Boot log should show every migration `skipped` (schema.sql seeded them) or,
 on a project that skipped step 2, all eight `applied` — then run

@@ -3,6 +3,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import sharp from 'sharp';
 import { composeSheet, dHash, fetchImageBytes, hamming } from './visual.js';
+import { createPinnedFetch } from '../core/pinned-fetch.js';
 
 async function gradient(flip: boolean): Promise<Buffer> {
   const raw = Buffer.alloc(64 * 48);
@@ -48,11 +49,24 @@ describe('fetchImageBytes', () => {
     await new Promise<void>((r) => server!.listen(0, '127.0.0.1', r));
     return `http://127.0.0.1:${(server.address() as AddressInfo).port}/x`;
   }
-  const open = { guard: async () => ({ ok: true as const }) };
+  const pass = async () => ({ ok: true as const });
+  // The test server is on loopback, so both the check and the connection are opened up.
+  const open = { guard: pass, fetchImpl: createPinnedFetch({ blocked: () => false }) };
 
   it('refuses a private address by default', async () => {
     const url = await serve((_q, s) => s.end('x'));
     expect(await fetchImageBytes(url, AbortSignal.timeout(2000))).toBeUndefined();
+  });
+
+  // The connection checks its own DNS answer, so a check that passed earlier is not the last word.
+  it('refuses a private address at connect time even when the URL check passed', async () => {
+    let hit = false;
+    const url = await serve((_q, s) => {
+      hit = true;
+      s.writeHead(200, { 'content-type': 'image/png' }).end('x');
+    });
+    expect(await fetchImageBytes(url, AbortSignal.timeout(2000), { guard: pass })).toBeUndefined();
+    expect(hit).toBe(false);
   });
 
   it('returns image bytes, and nothing for a non-image type or an oversized body', async () => {

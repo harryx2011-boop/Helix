@@ -61,6 +61,7 @@ import { MonitorScheduler } from './monitor/scheduler.js';
 import { WebhookDispatcher as MonitorWebhookDispatcher } from './monitor/webhooks.js';
 import { includeSelectorsFor, runCheck, type FetchOutcome } from './monitor/checker.js';
 import { runPipeline } from './core/pipeline.js';
+import { pinProxyUrl } from './core/url-guard.js';
 import type { MonitorRecord } from './monitor/store.js';
 import { tierMemory } from './core/tier-memory.js';
 import { cookieJar } from './core/cookie-jar.js';
@@ -135,8 +136,8 @@ try {
   app.log.debug({ error }, 'no stored settings to load');
 }
 
-const fetchClient = new FetchClient(config.fetchUrl, app.log);
-const extractClient = new ExtractClient(config.extractUrl, app.log);
+const fetchClient = new FetchClient(config.fetchUrl, app.log, config.serviceToken);
+const extractClient = new ExtractClient(config.extractUrl, app.log, config.serviceToken);
 
 const browserPool = new BrowserPool({
   size: config.browserPoolSize,
@@ -218,6 +219,13 @@ const monitorRetention = {
 /** A monitor check is a markdown-only scrape through the same ladder as /scrape. */
 const fetchMonitorPage = async (monitor: MonitorRecord): Promise<FetchOutcome> => {
   const options = monitor.scrapeOptions;
+  // The stored proxy is re-checked and pinned on every check: its name may resolve elsewhere by now.
+  let proxy = options.proxy?.url;
+  if (proxy) {
+    const pinned = await pinProxyUrl(proxy, { allowPrivate: config.allowPrivateUrls });
+    if (!pinned.ok) return { ok: false, reason: 'unsafe_url', detail: `proxy: ${pinned.reason}` };
+    proxy = pinned.url;
+  }
   const result = await runPipeline(
     {
       url: monitor.url,
@@ -231,7 +239,7 @@ const fetchMonitorPage = async (monitor: MonitorRecord): Promise<FetchOutcome> =
       timeout: options.timeout ?? 30_000,
       headers: options.headers,
       profile: options.profile,
-      proxy: options.proxy?.url,
+      proxy,
     },
     { fetchClient, extractClient, browserPool, logger: app.log, tierMemory, cookieJar },
   );
@@ -366,7 +374,7 @@ await app.register(
       allowPrivateUrls: config.allowPrivateUrls,
       encryptionKey: providerEncryptionKey,
     });
-    await registerKeys(instance);
+    await registerKeys(instance, { adminToken: config.internalAdminToken, publicUrl: config.publicUrl });
     await registerProviders(instance, { encryptionKey: providerEncryptionKey, instanceConfigured, detectLocal });
     await registerMap(instance, {
       fetchClient,
@@ -387,7 +395,7 @@ await app.register(
         respectRobots: config.respectRobots,
       },
     });
-    await registerBatch(instance);
+    await registerBatch(instance, { allowPrivateUrls: config.allowPrivateUrls });
     await registerJobs(instance);
     await registerJobLadder(instance);
     await registerJobCost(instance);
@@ -412,6 +420,7 @@ await app.register(
       store: monitorStore,
       scheduler: monitorScheduler,
       minIntervalSeconds: config.monitorMinIntervalSeconds,
+      allowPrivateUrls: config.allowPrivateUrls,
     });
     await registerInteract(instance, { sessions, extractClient, publicUrl: config.publicUrl });
     await registerAgent(instance, { extractClient, encryptionKey: providerEncryptionKey });
@@ -449,7 +458,7 @@ await app.register(
   { prefix: '/v1' },
 );
 
-await registerInternal(app, { adminToken: config.internalAdminToken });
+await registerInternal(app, { adminToken: config.internalAdminToken, publicUrl: config.publicUrl });
 
 // The environment supplies the defaults; a stored override replaces one. Kept
 // beside `config` so the settings screen can show what it overrode.
@@ -496,6 +505,7 @@ await registerSettings(app, {
   envValues: settingsEnvValues,
   live: { browserPool, sessions },
   encryptionKey: providerEncryptionKey,
+  publicUrl: config.publicUrl,
 });
 
 // Tools are generated from openapi.yaml for the routes registered above; the

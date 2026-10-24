@@ -1,6 +1,7 @@
 import robotsParser from 'robots-parser';
 import type { Log } from '../core/logger.js';
 import { isPrivateHost } from '../core/url-guard.js';
+import { pinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 
 /**
  * robots.txt, per RFC 9309.
@@ -41,9 +42,9 @@ export class RobotsCache {
   readonly #cache = new Map<string, CacheEntry>();
   readonly #userAgent: string;
   readonly #logger: Log | undefined;
-  readonly #fetchImpl: typeof fetch;
+  readonly #fetchImpl: PinnedFetch;
 
-  constructor(userAgent: string, logger?: Log, fetchImpl: typeof fetch = fetch) {
+  constructor(userAgent: string, logger?: Log, fetchImpl: PinnedFetch = pinnedFetch) {
     this.#userAgent = userAgent;
     this.#logger = logger;
     this.#fetchImpl = fetchImpl;

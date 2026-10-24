@@ -14,6 +14,10 @@
 //! in one place and stay testable without a network.
 
 mod profile;
+mod resolver;
+mod service_auth;
+
+use resolver::PublicOnlyResolver;
 
 use axum::{
     routing::{get, post},
@@ -61,7 +65,8 @@ fn default_true() -> bool {
 /// Loopback, link-local, private-range, multicast or reserved.
 fn is_private_v4(ip: Ipv4Addr) -> bool {
     let [a, b, _, _] = ip.octets();
-    ip.is_unspecified()
+    // 0.0.0.0/8 is "this network" as a whole, not only the unspecified address.
+    a == 0
         || ip.is_loopback()
         || ip.is_private()
         || ip.is_link_local()
@@ -84,11 +89,19 @@ fn is_private_v6(ip: Ipv6Addr) -> bool {
             ((segments[6] as u32) << 16) | segments[7] as u32,
         ));
     }
-    ip.is_unspecified()
-        || ip.is_loopback()
+    // 2002::/16 (6to4) embeds a v4 address in groups 1 and 2.
+    if segments[0] == 0x2002 {
+        return is_private_v4(Ipv4Addr::from(
+            ((segments[1] as u32) << 16) | segments[2] as u32,
+        ));
+    }
+    // ::/96 covers ::, ::1 and the deprecated v4-compatible form (::7f00:1);
+    // fec0::/10 is deprecated site-local.
+    segments[..6] == [0, 0, 0, 0, 0, 0]
         || ip.is_multicast()
         || (segments[0] & 0xfe00) == 0xfc00
         || (segments[0] & 0xffc0) == 0xfe80
+        || (segments[0] & 0xffc0) == 0xfec0
 }
 
 fn is_private_ip(ip: IpAddr) -> bool {
@@ -215,6 +228,12 @@ fn client_for(req: &FetchRequest) -> anyhow::Result<(wreq::Client, Option<String
 
     if let Some(proxy) = &req.proxy {
         builder = builder.proxy(wreq::Proxy::all(proxy)?);
+    }
+
+    // Through a proxy the proxy resolves the target, and the proxy host itself
+    // was checked by the core (the operator's, or a caller's under the URL guard).
+    if !req.allow_private && req.proxy.is_none() {
+        builder = builder.dns_resolver(PublicOnlyResolver);
     }
 
     if !req.allow_private {
@@ -385,8 +404,11 @@ async fn main() -> anyhow::Result<()> {
     profile::load_all()?;
 
     let app = Router::new()
-        .route("/health", get(health))
-        .route("/fetch", post(fetch));
+        .route(
+            "/fetch",
+            post(fetch).route_layer(axum::middleware::from_fn(service_auth::require)),
+        )
+        .route("/health", get(health));
 
     let port: u16 = std::env::var("HELIX_FETCH_PORT")
         .unwrap_or_else(|_| "7401".into())

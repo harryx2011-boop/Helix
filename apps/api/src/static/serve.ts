@@ -36,6 +36,27 @@ function safeDecode(path: string): string | undefined {
  */
 export const UI_FRAME_ANCESTORS = "frame-ancestors 'self' vscode-webview: vscode-file:";
 
+/**
+ * The UI's content policy. The renderer holds the API key and admin token, so
+ * script may come only from this origin, with no string evaluation (WebAssembly
+ * stays allowed for the syntax highlighter), and plugins, base rewrites and
+ * foreign form targets are refused.
+ *
+ * ponytail: 'unsafe-inline' stays because the static export inlines its
+ * bootstrap scripts; hashing them at export time would close inline injection too.
+ * There is no default-src: images and API calls may point at other hosts
+ * (thumbnails, another instance), and a connect-src allow-list would break that.
+ */
+export const UI_CONTENT_SECURITY_POLICY = [
+  // blob: carries the dictation mic's AudioWorklet (lib/voice-core/react/capture.ts),
+  // built from the page's own source; only script already on the page can mint one.
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  UI_FRAME_ANCESTORS,
+].join('; ');
+
 /** A path the UI may answer without a key: anything outside the API's prefixes. */
 export const isUiPath = (path: string): boolean => !isApiPath(path);
 
@@ -79,7 +100,7 @@ export async function registerStatic(app: FastifyInstance, options: StaticOption
 
       // X-Frame-Options has no allow-list, so it gives way to the CSP form.
       reply.removeHeader('x-frame-options');
-      reply.header('content-security-policy', UI_FRAME_ANCESTORS);
+      reply.header('content-security-policy', UI_CONTENT_SECURITY_POLICY);
 
       for (const candidate of candidatesFor(path)) {
         if (await isFile(root, candidate)) return reply.sendFile(candidate);

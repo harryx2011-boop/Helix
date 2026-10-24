@@ -723,7 +723,9 @@ def scan_ooxml(data: bytes) -> ScanResult:
         if part not in names:
             continue
         if archive.getinfo(part).file_size > _OOXML_MAX_PART_BYTES:
-            result.warnings.append(f"{part} is larger than {_OOXML_MAX_PART_BYTES} bytes and was not read")
+            result.warnings.append(
+                f"{part} is larger than {_OOXML_MAX_PART_BYTES} bytes and was not read"
+            )
             continue
         try:
             body = archive.read(part)

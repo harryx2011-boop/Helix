@@ -26,5 +26,7 @@ async def require_service_token(
     if expected and request.url.path not in OPEN_PATHS:
         presented = request.headers.get(HEADER, "")
         if not hmac.compare_digest(presented.encode(), expected.encode()):
-            return JSONResponse(status_code=401, content={"detail": "missing or invalid service token"})
+            return JSONResponse(
+                status_code=401, content={"detail": "missing or invalid service token"}
+            )
     return await call_next(request)

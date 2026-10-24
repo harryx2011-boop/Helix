@@ -25,7 +25,9 @@ def _docx(entries: dict[str, bytes]) -> bytes:
     return buffer.getvalue()
 
 
-def test_scrub_refuses_an_archive_whose_entries_inflate_past_the_total(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_scrub_refuses_an_archive_that_inflates_past_the_total(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(m, "_OOXML_MAX_TOTAL_BYTES", 10_000)
     data = _docx({"word/media/big.bin": b"\x00" * 50_000})
     with pytest.raises(m.MetadataError):
@@ -39,7 +41,9 @@ def test_scan_refuses_an_archive_with_too_many_entries(monkeypatch: pytest.Monke
         m.scan_ooxml(data)
 
 
-def test_scan_skips_a_property_part_larger_than_the_part_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_scan_skips_a_property_part_larger_than_the_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(m, "_OOXML_MAX_PART_BYTES", 100)
     data = _docx({"docProps/core.xml": "<cp:coreProperties>" + "x" * 500 + "</cp:coreProperties>"})
     result = m.scan_ooxml(data)

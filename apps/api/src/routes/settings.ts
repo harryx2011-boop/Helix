@@ -13,8 +13,8 @@ import { deriveEncryptionKey } from '../providers/crypto.js';
  * Mounted outside `/v1` and gated by the same admin token as `/internal`,
  * because these are the instance's own controls rather than a caller's: an API
  * key must never be able to widen the instance's network reach or rotate the
- * key protecting everyone's stored credentials. With no admin token set â€” the
- * self-host default â€” the routes are not registered at all.
+ * key protecting everyone's stored credentials. With no admin token set — the
+ * self-host default — the routes are not registered at all.
  */
 
 const UpdateSchema = z.object({
@@ -156,7 +156,7 @@ function registerSettingsRoutes(app: FastifyInstance, deps: SettingsRouteDeps): 
       const result = await rotateEncryptionKey(deps.encryptionKey, newKey);
       // The process still holds the old key in memory. Until HELIX_ENCRYPTION_KEY
       // is updated and the instance restarted, it can no longer read what it
-      // just re-encrypted â€” so say so rather than reporting a clean success.
+      // just re-encrypted — so say so rather than reporting a clean success.
       return reply.send({
         success: true,
         ...result,

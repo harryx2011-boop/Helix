@@ -632,3 +632,7 @@ each operation. `search/providers.ts:415` is a clean `SearchProvider` seam with 
 three-way factory. `apps/api/src/index.ts:16` — one `registerX(app)` per route module, pure
 composition with no conditional logic.
 - **Sitemap and robots (2026-10-17):** `apps/dashboard/app/sitemap.ts` already listed the public marketing and docs pages; added `app/robots.ts` (allow `/`, disallow `/api/` and `/app/`, names `${SITE_URL}/sitemap.xml`). Live https://helixapi-dev.vercel.app/robots.txt returned 404 before.
+
+## Task Manager names (2026-10-24, branch `fix/process-names`)
+
+`Helix.exe` already reports `Helix` and the Fastify API runs inside it (ELECTRON_RUN_AS_NODE). `helix-extract.exe` now carries `apps/extract/version-info.txt` (FileDescription `Helix Extract`, `version=` in `helix-extract.spec`) and `helix-fetch.exe` embeds `Helix Fetch` through `apps/fetch/build.rs` (winresource, version from Cargo.toml). `voice-core.exe` is named in the `D:\voice-core` repo (`Voice Core`). Not covered: the Playwright `chrome-headless-shell.exe` and the dev-mode `pythonw`/`node` processes show their own names. Names only: no appId or path changed.

@@ -44,6 +44,10 @@ thiserror = "2"
 tokio-test = "0.4"
 flate2 = "1"
 
+[build-dependencies]
+# Embeds the Windows version resource so Task Manager shows the product name, not the file name.
+winresource = "0.1"
+
 [profile.release]
 opt-level = 3
 lto = true

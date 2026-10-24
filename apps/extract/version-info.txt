@@ -1,0 +1,28 @@
+# UTF-8
+# Windows version resource for PyInstaller (EXE(version=...)). Task Manager reads FileDescription.
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(2, 3, 2, 0),
+    prodvers=(2, 3, 2, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable('040904B0', [
+        StringStruct('CompanyName', 'harryx2011-boop'),
+        StringStruct('FileDescription', 'Helix Extract'),
+        StringStruct('FileVersion', '2.3.2'),
+        StringStruct('InternalName', 'Helix Extract'),
+        StringStruct('OriginalFilename', 'helix-extract.exe'),
+        StringStruct('ProductName', 'Helix'),
+        StringStruct('ProductVersion', '2.3.2')
+      ])
+    ]),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)

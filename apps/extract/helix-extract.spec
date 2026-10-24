@@ -72,6 +72,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
+    version=SPECPATH + "/version-info.txt",
     disable_windowed_traceback=False,
 )
 coll = COLLECT(

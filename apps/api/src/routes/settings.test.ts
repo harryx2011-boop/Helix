@@ -102,6 +102,61 @@ describe('settings auth', () => {
   });
 });
 
+describe('the admin gate cannot be routed around', () => {
+  // The router decodes and normalises the path before matching, so any
+  // spelling that reaches a settings handler must meet the gate first.
+  it.each(['/%73ettings', '/%73ettings/', '/settings/', '/%53ettings', '/Settings', '//settings', '/settings//'])(
+    'never serves %s without the admin token',
+    async (url) => {
+      const { app } = await buildApp();
+      const response = await app.inject({ method: 'GET', url });
+
+      expect(response.statusCode).not.toBe(200);
+      expect([401, 404]).toContain(response.statusCode);
+    },
+  );
+
+  it('gates an encoded write path before its handler runs', async () => {
+    const { app } = await buildApp();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/%73ettings/encryption-key/rotate',
+      payload: { newKey: 'x'.repeat(64), confirm: 'rotate-encryption-key' },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(db.state.calls).toHaveLength(0);
+  });
+
+  it('refuses a request addressed to a host name that is not this instance', async () => {
+    const { app } = await buildApp();
+    const response = await app.inject({ method: 'GET', url: '/settings', headers: { ...auth, host: 'rebind.example:7410' } });
+
+    expect(response.statusCode).toBe(403);
+  });
+
+  it.each(['localhost:7410', '127.0.0.1:7410', '[::1]:7410', 'LOCALHOST'])('accepts the loopback host %s', async (host) => {
+    const { app } = await buildApp();
+    const response = await app.inject({ method: 'GET', url: '/settings', headers: { ...auth, host } });
+
+    expect(response.statusCode).toBe(200);
+  });
+
+  it('accepts the host name of the configured public URL', async () => {
+    const app = Fastify();
+    await registerSettings(app, {
+      adminToken: TOKEN,
+      publicUrl: 'https://helix.example.com',
+      envValues: {},
+      live: targets(),
+      encryptionKey: Buffer.alloc(32, 7),
+    });
+    const response = await app.inject({ method: 'GET', url: '/settings', headers: { ...auth, host: 'helix.example.com' } });
+
+    expect(response.statusCode).toBe(200);
+  });
+});
+
 describe('the API-key auth hook', () => {
   /**
    * `/settings` is listed in `registerAuth`'s `open` prefixes so the admin-token

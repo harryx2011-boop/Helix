@@ -449,7 +449,7 @@ await app.register(
   { prefix: '/v1' },
 );
 
-await registerInternal(app, { adminToken: config.internalAdminToken });
+await registerInternal(app, { adminToken: config.internalAdminToken, publicUrl: config.publicUrl });
 
 // The environment supplies the defaults; a stored override replaces one. Kept
 // beside `config` so the settings screen can show what it overrode.
@@ -496,6 +496,7 @@ await registerSettings(app, {
   envValues: settingsEnvValues,
   live: { browserPool, sessions },
   encryptionKey: providerEncryptionKey,
+  publicUrl: config.publicUrl,
 });
 
 // Tools are generated from openapi.yaml for the routes registered above; the

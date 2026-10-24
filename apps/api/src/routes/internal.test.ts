@@ -111,6 +111,29 @@ describe('internal routes are off unless an admin token is configured', () => {
 });
 
 describe('the shared-secret gate', () => {
+  it.each(['/%69nternal/keys', '/%49nternal/keys', '/internal/keys/'])('gates the encoded or variant path %s', async (url) => {
+    app = await build();
+
+    const response = await app.inject({ method: 'POST', url, payload: { key: KEY, name: 'n' } });
+
+    expect([401, 404]).toContain(response.statusCode);
+    expect(db.state.rows).toHaveLength(0);
+  });
+
+  it('refuses a request addressed to a foreign host name', async () => {
+    app = await build();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/internal/keys',
+      headers: { ...auth, host: 'rebind.example' },
+      payload: { key: KEY, name: 'n' },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(db.state.rows).toHaveLength(0);
+  });
+
   it('refuses an import with no Authorization header', async () => {
     app = await build();
 

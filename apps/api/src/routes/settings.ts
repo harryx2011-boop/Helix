@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { safeEqual } from '../core/api-keys.js';
+import { adminGate } from '../core/admin-gate.js';
 import { settingDef } from '../settings/registry.js';
 import { clearOverride, listSettings, writeOverride } from '../settings/store.js';
 import { applyLive, type LiveTargets } from '../settings/apply.js';
@@ -13,8 +13,8 @@ import { deriveEncryptionKey } from '../providers/crypto.js';
  * Mounted outside `/v1` and gated by the same admin token as `/internal`,
  * because these are the instance's own controls rather than a caller's: an API
  * key must never be able to widen the instance's network reach or rotate the
- * key protecting everyone's stored credentials. With no admin token set — the
- * self-host default — the routes are not registered at all.
+ * key protecting everyone's stored credentials. With no admin token set â€” the
+ * self-host default â€” the routes are not registered at all.
  */
 
 const UpdateSchema = z.object({
@@ -34,25 +34,27 @@ export interface SettingsRouteDeps {
   envValues: Record<string, unknown>;
   live: LiveTargets;
   encryptionKey: Buffer;
+  /** The instance's public URL; the admin gate accepts its host name beside loopback. */
+  publicUrl?: string | undefined;
 }
 
 export async function registerSettings(app: FastifyInstance, deps: SettingsRouteDeps): Promise<void> {
   if (!deps.adminToken) return;
-  const expected = deps.adminToken;
+  const token = deps.adminToken;
 
-  app.addHook('onRequest', async (request, reply) => {
-    if (!request.url.startsWith('/settings')) return;
-    const presented = request.headers.authorization?.replace(/^Bearer\s+/i, '') ?? '';
-    if (!presented || !safeEqual(presented, expected)) {
-      return reply.code(401).send({
-        error: 'unauthorized',
-        message: 'Missing or invalid admin token.',
-        requestId: request.id,
-      });
-    }
-  });
+  // Encapsulated: the gate covers exactly the routes registered in here, as
+  // the router matched them, not as the raw URL spelled them.
+  await app.register(
+    async (scope) => {
+      scope.addHook('onRequest', adminGate({ token, publicUrl: deps.publicUrl }));
+      registerSettingsRoutes(scope, deps);
+    },
+    { prefix: '/settings' },
+  );
+}
 
-  app.get('/settings', async (request, reply) => {
+function registerSettingsRoutes(app: FastifyInstance, deps: SettingsRouteDeps): void {
+  app.get('/', async (request, reply) => {
     return reply.send({
       success: true,
       settings: await listSettings(deps.envValues),
@@ -60,7 +62,7 @@ export async function registerSettings(app: FastifyInstance, deps: SettingsRoute
     });
   });
 
-  app.put('/settings/:key', async (request, reply) => {
+  app.put('/:key', async (request, reply) => {
     const key = (request.params as { key: string }).key;
     const def = settingDef(key);
     if (!def) {
@@ -109,7 +111,7 @@ export async function registerSettings(app: FastifyInstance, deps: SettingsRoute
     });
   });
 
-  app.delete('/settings/:key', async (request, reply) => {
+  app.delete('/:key', async (request, reply) => {
     const key = (request.params as { key: string }).key;
     const def = settingDef(key);
     if (!def) {
@@ -126,7 +128,7 @@ export async function registerSettings(app: FastifyInstance, deps: SettingsRoute
     return reply.send({ success: true, key, cleared, applied, restartRequired: cleared && !applied });
   });
 
-  app.post('/settings/encryption-key/rotate', async (request, reply) => {
+  app.post('/encryption-key/rotate', async (request, reply) => {
     const parsed = RotateSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(409).send({
@@ -154,7 +156,7 @@ export async function registerSettings(app: FastifyInstance, deps: SettingsRoute
       const result = await rotateEncryptionKey(deps.encryptionKey, newKey);
       // The process still holds the old key in memory. Until HELIX_ENCRYPTION_KEY
       // is updated and the instance restarted, it can no longer read what it
-      // just re-encrypted — so say so rather than reporting a clean success.
+      // just re-encrypted â€” so say so rather than reporting a clean success.
       return reply.send({
         success: true,
         ...result,

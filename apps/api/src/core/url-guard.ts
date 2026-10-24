@@ -212,12 +212,19 @@ export async function pinProxyUrl(raw: string, options: UrlGuardOptions = {}): P
 
   let address = host;
   if (isIP(host) === 0) {
+    let resolved: string[];
     try {
-      address = (await resolve(host))[0] ?? '';
+      resolved = await resolve(host);
     } catch {
-      address = '';
+      resolved = [];
     }
+    address = resolved[0] ?? '';
     if (!address) return { ok: false, reason: `"${host}" did not resolve.` };
+    // checkHost fails open on a lookup error, so the answer pinned here is checked here.
+    const blocked = resolved.find((a) => (options.allowPrivate ? isAlwaysBlocked(a) : isPrivateAddress(a)));
+    if (blocked) {
+      return { ok: false, reason: `"${host}" resolves to ${blocked}, which this instance does not use as a proxy.` };
+    }
   }
 
   url.hostname = isIP(address) === 6 ? `[${address}]` : address;

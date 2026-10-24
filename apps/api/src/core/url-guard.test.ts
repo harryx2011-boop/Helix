@@ -32,6 +32,44 @@ describe('pinProxyUrl', () => {
     });
     expect(calls).toBe(1);
   });
+
+  const failsOnceThenLinkLocal = () => {
+    let calls = 0;
+    return async () => {
+      if (calls++ === 0) throw new Error('EAI_AGAIN');
+      return ['169.254.169.254'];
+    };
+  };
+
+  it('refuses a proxy whose first lookup fails and whose second answers a private address', async () => {
+    const pinned = await pinProxyUrl('http://proxy.example:3128', { resolve: failsOnceThenLinkLocal() });
+    expect(pinned.ok).toBe(false);
+  });
+
+  it('keeps link-local out of a pin even where private targets are allowed', async () => {
+    const pinned = await pinProxyUrl('http://proxy.example:3128', {
+      allowPrivate: true,
+      resolve: failsOnceThenLinkLocal(),
+    });
+    expect(pinned.ok).toBe(false);
+  });
+
+  it('refuses a proxy whose lookup always fails', async () => {
+    const pinned = await pinProxyUrl('http://proxy.example:3128', {
+      resolve: async () => {
+        throw new Error('ENOTFOUND');
+      },
+    });
+    expect(pinned.ok).toBe(false);
+  });
+
+  it('pins a loopback answer when private targets are allowed', async () => {
+    const pinned = await pinProxyUrl('http://proxy.example:3128', {
+      allowPrivate: true,
+      resolve: async () => ['127.0.0.1'],
+    });
+    expect(pinned).toEqual({ ok: true, url: 'http://127.0.0.1:3128' });
+  });
 });
 
 describe('isPrivateAddress', () => {

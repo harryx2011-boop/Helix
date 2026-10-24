@@ -693,17 +693,37 @@ def _tracked_findings(names: list[str]) -> list[Finding]:
     ]
 
 
-def scan_ooxml(data: bytes) -> ScanResult:
+# A small upload can declare gigabytes of entries. Read sizes are bounded by
+# what each entry declares, so checking the declared sizes bounds the inflate.
+_OOXML_MAX_ENTRIES = 10_000
+_OOXML_MAX_TOTAL_BYTES = 256 * 1024 * 1024
+_OOXML_MAX_PART_BYTES = 4 * 1024 * 1024
+
+
+def _open_ooxml(data: bytes) -> zipfile.ZipFile:
     try:
         archive = zipfile.ZipFile(io.BytesIO(data))
     except (zipfile.BadZipFile, OSError) as exc:
         raise MetadataError("ooxml", exc) from exc
+    infos = archive.infolist()
+    if len(infos) > _OOXML_MAX_ENTRIES:
+        raise MetadataError("ooxml", f"the archive has more than {_OOXML_MAX_ENTRIES} entries")
+    if sum(info.file_size for info in infos) > _OOXML_MAX_TOTAL_BYTES:
+        raise MetadataError("ooxml", f"the archive inflates past {_OOXML_MAX_TOTAL_BYTES} bytes")
+    return archive
+
+
+def scan_ooxml(data: bytes) -> ScanResult:
+    archive = _open_ooxml(data)
 
     names = archive.namelist()
     result = ScanResult(file_type=_ooxml_kind(names))
 
     for part in _OOXML_PROP_PARTS:
         if part not in names:
+            continue
+        if archive.getinfo(part).file_size > _OOXML_MAX_PART_BYTES:
+            result.warnings.append(f"{part} is larger than {_OOXML_MAX_PART_BYTES} bytes and was not read")
             continue
         try:
             body = archive.read(part)
@@ -750,10 +770,7 @@ def scrub_ooxml(data: bytes) -> ScrubResult:
     metadata, and keeping it would leak what the scrub just removed.
     """
     scanned = scan_ooxml(data)
-    try:
-        source = zipfile.ZipFile(io.BytesIO(data))
-    except (zipfile.BadZipFile, OSError) as exc:
-        raise MetadataError("ooxml", exc) from exc
+    source = _open_ooxml(data)
 
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as target:

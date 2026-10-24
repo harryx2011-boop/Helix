@@ -9,6 +9,7 @@ import {
 } from './deliveries.js';
 import { signPayload } from './signature.js';
 import { resolvedTargetProblem, type Resolver } from './target.js';
+import { pinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 
 /**
  * Delivers queued webhooks.
@@ -81,7 +82,7 @@ export interface DeliveryOutcome {
 
 export class WebhookDispatcher {
   readonly #db: Queryable;
-  readonly #fetch: typeof fetch;
+  readonly #fetch: PinnedFetch;
   readonly #secret: string | undefined;
   readonly #maxAttempts: number;
   readonly #batchSize: number;
@@ -97,7 +98,8 @@ export class WebhookDispatcher {
 
   constructor(deps: DispatcherDeps) {
     this.#db = deps.db;
-    this.#fetch = deps.fetch ?? fetch;
+    // Pinned: the target checked before the send is the address the send reaches.
+    this.#fetch = deps.fetch ?? pinnedFetch;
     this.#secret = deps.secret;
     this.#maxAttempts = deps.maxAttempts ?? WEBHOOK_MAX_ATTEMPTS;
     this.#batchSize = deps.batchSize ?? 20;

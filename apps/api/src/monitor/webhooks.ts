@@ -2,6 +2,7 @@ import type { Log } from '../core/logger.js';
 import { retryDelayMs, WEBHOOK_MAX_ATTEMPTS } from '../webhooks/deliveries.js';
 import { signPayload } from '../webhooks/signature.js';
 import { assertPublicTarget, BlockedTargetError } from '../core/webhook-target.js';
+import { pinnedFetch } from '../core/pinned-fetch.js';
 import type { DeliveryRecord, MonitorStore } from './store.js';
 
 /**
@@ -32,7 +33,8 @@ export type FetchLike = (url: string, init: { method: string; headers: Record<st
  */
 export const postWebhook: FetchLike = async (url, init) => {
   await assertPublicTarget(url);
-  const response = await fetch(url, { ...init, redirect: 'manual' });
+  // Pinned, so the address checked above is the address the send reaches.
+  const response = await pinnedFetch(url, { ...init, redirect: 'manual' });
   await response.body?.cancel().catch(() => undefined);
   return { status: response.status };
 };

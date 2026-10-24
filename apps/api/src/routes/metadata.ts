@@ -10,6 +10,7 @@ import type { FailureReason } from '../core/block-detection.js';
 import { classifyFile, CONTENT_TYPE_FOR, type FileType } from '../parse/file-type.js';
 import { contentHash } from '../parse/cache.js';
 import { assertPublicUrl, defaultLookup, HostNotAllowedError, type Lookup } from '../parse/remote.js';
+import { createPinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 
 /**
  * POST /v1/metadata — what a file discloses, and /v1/metadata/scrub — a copy without it.
@@ -51,7 +52,7 @@ export interface MetadataRouteDeps {
   maxUploadBytes: number;
   userAgent: string;
   /** Injectable for tests; defaults to global fetch. */
-  fetchImpl?: typeof fetch | undefined;
+  fetchImpl?: PinnedFetch | undefined;
   /** Injectable for tests; defaults to the system resolver. */
   lookup?: Lookup | undefined;
   /** Files held in memory at once before the route answers 503. */
@@ -196,7 +197,7 @@ function classifyRemoteError(error: unknown): Failure {
 
 async function fetchRemote(
   url: string,
-  deps: { fetchImpl: typeof fetch; lookup: Lookup; userAgent: string; timeoutMs: number; maxBytes: number },
+  deps: { fetchImpl: PinnedFetch; lookup: Lookup; userAgent: string; timeoutMs: number; maxBytes: number },
 ): Promise<{ ok: true; file: FileInput } | { ok: false; failure: Failure } | { ok: false; tooLarge: true }> {
   const deadline = Date.now() + deps.timeoutMs;
   let current = new URL(url);
@@ -317,8 +318,9 @@ function byRisk(a: MetadataFinding, b: MetadataFinding): number {
 }
 
 export async function registerMetadata(app: FastifyInstance, deps: MetadataRouteDeps): Promise<void> {
-  const fetchImpl = deps.fetchImpl ?? fetch;
   const lookup = deps.lookup ?? defaultLookup;
+  // Pinned: the address the lookup checked is the address connected to.
+  const fetchImpl = deps.fetchImpl ?? createPinnedFetch({ lookup });
   const maxInFlight = deps.maxInFlight ?? DEFAULT_MAX_IN_FLIGHT;
   // Multipart framing adds headers and boundaries on top of the file itself.
   const bodyLimit = deps.maxUploadBytes + 64 * 1024;

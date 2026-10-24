@@ -5,6 +5,7 @@ import type { FailureReason } from '../core/block-detection.js';
 import { classifyFile, CONTENT_TYPE_FOR, type FileType } from '../parse/file-type.js';
 import { contentHash, ParseCache } from '../parse/cache.js';
 import { assertPublicUrl, defaultLookup, HostNotAllowedError, type Lookup } from '../parse/remote.js';
+import { createPinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 import { rejectFabricationKeywords } from './scrape.js';
 import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 
@@ -54,7 +55,7 @@ export interface ParseRouteDeps {
   maxUploadBytes: number;
   userAgent: string;
   /** Injectable for tests; defaults to global fetch. */
-  fetchImpl?: typeof fetch | undefined;
+  fetchImpl?: PinnedFetch | undefined;
   /** Injectable for tests; defaults to the system resolver. */
   lookup?: Lookup | undefined;
   /** Parses held in memory at once before the route answers 503. */
@@ -230,7 +231,7 @@ function classifyRemoteError(error: unknown): ParseFailure {
 export async function fetchRemote(
   url: string,
   deps: {
-    fetchImpl: typeof fetch;
+    fetchImpl: PinnedFetch;
     lookup: Lookup;
     userAgent: string;
     timeoutMs: number;
@@ -422,8 +423,9 @@ function saturatedBody(request: FastifyRequest, maxInFlight: number): Record<str
 }
 
 export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps): Promise<void> {
-  const fetchImpl = deps.fetchImpl ?? fetch;
   const lookup = deps.lookup ?? defaultLookup;
+  // Pinned: the address the lookup checked is the address connected to.
+  const fetchImpl = deps.fetchImpl ?? createPinnedFetch({ lookup });
   const cache = deps.cache ?? new ParseCache<DocumentResult>();
   const maxInFlight = deps.maxInFlight ?? DEFAULT_MAX_IN_FLIGHT;
   // Multipart framing adds headers and boundaries on top of the file itself.

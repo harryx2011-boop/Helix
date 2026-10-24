@@ -53,15 +53,25 @@ function store(file: string, secrets: Secrets, cipher: Cipher): void {
  */
 export function loadOrCreateSecrets(file: string, cipher: Cipher, log: (m: string) => void, rand: Random = randomBytes, now = Date.now): Secrets {
   if (fs.existsSync(file)) {
+    let read: { stored: CredentialFile; secrets: Secrets } | undefined
     try {
       const stored = JSON.parse(fs.readFileSync(file, 'utf8')) as CredentialFile
-      const secrets = decode(stored, cipher)
-      if (stored.enc === 'plain' && cipher.available()) store(file, secrets, cipher)
-      return secrets
+      read = { stored, secrets: decode(stored, cipher) }
     } catch (e) {
       const aside = `${file}.unreadable-${now()}`
       fs.renameSync(file, aside)
       log(`credentials: could not read ${file} (${String(e)}); moved to ${aside} and generated new ones`)
+    }
+    if (read) {
+      // Outside the read: a failed re-encrypt must not move a readable file aside.
+      if (read.stored.enc === 'plain' && cipher.available()) {
+        try {
+          store(file, read.secrets, cipher)
+        } catch (e) {
+          log(`credentials: could not re-encrypt ${file} (${String(e)}); kept as it was`)
+        }
+      }
+      return read.secrets
     }
   }
   const secrets = generateSecrets(rand)

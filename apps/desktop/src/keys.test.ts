@@ -56,6 +56,21 @@ describe('secrets', () => {
     expect(logs.join()).toContain('unavailable')
   })
 
+  it('keeps a readable plain file and its secrets when re-encrypting it fails', () => {
+    const old = { apiKey: `helix-${'a'.repeat(32)}`, adminToken: 'b'.repeat(64) }
+    const b64 = (v: string) => Buffer.from(v, 'utf8').toString('base64')
+    fs.writeFileSync(file, JSON.stringify({ v: 1, enc: 'plain', apiKey: b64(old.apiKey), adminToken: b64(old.adminToken) }))
+    const failing: Cipher = {
+      ...cipher(),
+      encrypt: () => {
+        throw new Error('encrypt failed')
+      },
+    }
+
+    expect(loadOrCreateSecrets(file, failing, () => {}, rand, () => 123)).toEqual(old)
+    expect(fs.existsSync(`${file}.unreadable-123`)).toBe(false)
+  })
+
   it('re-encrypts a file an older build stored without encryption', () => {
     const old = { apiKey: `helix-${'a'.repeat(32)}`, adminToken: 'b'.repeat(64) }
     const b64 = (v: string) => Buffer.from(v, 'utf8').toString('base64')

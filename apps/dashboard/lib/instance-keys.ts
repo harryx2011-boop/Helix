@@ -65,8 +65,8 @@ async function call(path: string, init: RequestInit = {}): Promise<unknown> {
 
   const body = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
   if (!response.ok) {
-    // The key routes' own 404 names a key (`not_found`); any other 404 means they are not registered.
-    const routesMissing = response.status === 404 && body?.error !== 'not_found';
+    // Unregistered key routes answer the framework's "Route <method>:<url> not found"; any other 404 is not that.
+    const routesMissing = response.status === 404 && /^Route .+ not found$/.test(body?.message ?? '');
     const message =
       response.status === 401
         ? 'The admin token was rejected. Check HELIX_INTERNAL_ADMIN_TOKEN on the instance.'

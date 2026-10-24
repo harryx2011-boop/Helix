@@ -42,4 +42,11 @@ describe('instance key calls', () => {
 
     await expect(listInstanceKeys()).rejects.toThrow(/HELIX_INTERNAL_ADMIN_TOKEN/);
   });
+
+  it('does not call any other 404 key management being off', async () => {
+    fakeWindow({ 'helix.adminToken': 'admin-stored' });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>proxy</html>', { status: 404 })));
+
+    await expect(listInstanceKeys()).rejects.toThrow('Request failed with status 404');
+  });
 });

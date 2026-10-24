@@ -49,6 +49,8 @@ const ConfigSchema = z.object({
   dataDir: z.string().default(join(process.cwd(), 'data')),
   fetchUrl: z.string().default('http://localhost:7401'),
   extractUrl: z.string().default('http://localhost:7402'),
+  /** Shared secret sent to the fetch and extract services; each refuses calls without it when set. */
+  serviceToken: z.string().optional(),
 
   respectRobots: bool(true),
   userAgent: z.string().default('HelixBot/0.1'),
@@ -176,6 +178,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dataDir: env.HELIX_DATA_DIR || undefined,
     fetchUrl: env.HELIX_FETCH_URL,
     extractUrl: env.HELIX_EXTRACT_URL,
+    serviceToken: env.HELIX_SERVICE_TOKEN || undefined,
     respectRobots: env.HELIX_RESPECT_ROBOTS,
     userAgent: env.HELIX_USER_AGENT,
     politeness: env.HELIX_DEFAULT_POLITENESS,

@@ -26,6 +26,7 @@ from . import (
     metadata,
     runtime,
     schema_gen,
+    service_auth,
 )
 from .schema_compiler import SchemaError
 from . import __version__
@@ -36,6 +37,7 @@ app = FastAPI(
     version=__version__,
     description="Internal service. Not exposed publicly.",
 )
+app.middleware("http")(service_auth.require_service_token)
 
 runtime.embeddings_runtime.activate()
 

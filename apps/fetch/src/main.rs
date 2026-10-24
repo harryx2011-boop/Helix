@@ -15,6 +15,7 @@
 
 mod profile;
 mod resolver;
+mod service_auth;
 
 use resolver::PublicOnlyResolver;
 
@@ -394,8 +395,11 @@ async fn main() -> anyhow::Result<()> {
     profile::load_all()?;
 
     let app = Router::new()
-        .route("/health", get(health))
-        .route("/fetch", post(fetch));
+        .route(
+            "/fetch",
+            post(fetch).route_layer(axum::middleware::from_fn(service_auth::require)),
+        )
+        .route("/health", get(health));
 
     let port: u16 = std::env::var("HELIX_FETCH_PORT")
         .unwrap_or_else(|_| "7401".into())

@@ -13,7 +13,7 @@ export const fetchSpec: ChildFactory = (ctx) => {
     label: 'Starting browser engine',
     command,
     args: [],
-    env: { HELIX_FETCH_PORT: String(ctx.ports.fetch), HELIX_FETCH_HOST: '127.0.0.1' },
+    env: { HELIX_FETCH_PORT: String(ctx.ports.fetch), HELIX_FETCH_HOST: '127.0.0.1', HELIX_SERVICE_TOKEN: ctx.serviceToken },
     cwd,
     port: ctx.ports.fetch,
     healthUrl: `${loopback(ctx.ports.fetch)}/health`,

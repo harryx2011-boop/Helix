@@ -8,7 +8,7 @@ export const extractSpec: ChildFactory = (ctx) => {
     name: 'extract',
     title: 'Extract',
     label: 'Starting extract',
-    env: { HELIX_RUNTIME_DIR: ctx.runtimeDir },
+    env: { HELIX_RUNTIME_DIR: ctx.runtimeDir, HELIX_SERVICE_TOKEN: ctx.serviceToken },
     port: ctx.ports.extract,
     healthUrl: `${loopback(ctx.ports.extract)}/health`,
     isUp: (status: number) => status === 200,

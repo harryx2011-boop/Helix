@@ -15,6 +15,7 @@ function ctx(over: Partial<ChildContext> = {}): ChildContext {
     runtimeDir: 'C:/Users/u/AppData/Roaming/Helix/runtime',
     execPath: 'C:/Program Files/Helix/Helix.exe',
     secrets: { apiKey: `helix-${'a'.repeat(32)}`, adminToken: 'b'.repeat(64) },
+    serviceToken: 'c'.repeat(64),
     ports: DESKTOP_PORTS,
     exists: () => true,
     ...over,
@@ -53,6 +54,7 @@ describe('api spec', () => {
       HELIX_CORS_ORIGINS: 'http://127.0.0.1:7410',
       HELIX_BOOTSTRAP_KEY: `helix-${'a'.repeat(32)}`,
       HELIX_INTERNAL_ADMIN_TOKEN: 'b'.repeat(64),
+      HELIX_SERVICE_TOKEN: 'c'.repeat(64),
       PLAYWRIGHT_BROWSERS_PATH: path.join(R, 'browsers'),
       HELIX_LOG_LEVEL: 'info',
     })
@@ -84,7 +86,7 @@ describe('extract spec', () => {
     const s = spec('extract', ctx())
     expect(s.command).toBe(path.join(R, 'extract', 'helix-extract.exe'))
     expect(s.args).toEqual(['--port', '7412', '--host', '127.0.0.1'])
-    expect(s.env).toEqual({ HELIX_RUNTIME_DIR: 'C:/Users/u/AppData/Roaming/Helix/runtime' })
+    expect(s.env).toEqual({ HELIX_RUNTIME_DIR: 'C:/Users/u/AppData/Roaming/Helix/runtime', HELIX_SERVICE_TOKEN: 'c'.repeat(64) })
     expect(s.healthUrl).toBe('http://127.0.0.1:7412/health')
   })
 
@@ -105,7 +107,7 @@ describe('fetch spec', () => {
     const s = spec('fetch', ctx())
     expect(s.command).toBe(path.join(R, 'fetch', 'helix-fetch.exe'))
     expect(s.cwd).toBe(path.join(R, 'fetch'))
-    expect(s.env).toEqual({ HELIX_FETCH_PORT: '7411', HELIX_FETCH_HOST: '127.0.0.1' })
+    expect(s.env).toEqual({ HELIX_FETCH_PORT: '7411', HELIX_FETCH_HOST: '127.0.0.1', HELIX_SERVICE_TOKEN: 'c'.repeat(64) })
     expect(s.healthUrl).toBe('http://127.0.0.1:7411/health')
   })
 

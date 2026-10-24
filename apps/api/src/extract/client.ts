@@ -1,4 +1,5 @@
 import { redactSecrets, type Log } from '../core/logger.js';
+import { withServiceToken } from '../core/service-token.js';
 
 /**
  * Client for helix-extract.
@@ -273,16 +274,18 @@ async function detailOf(response: Response): Promise<string> {
 export class ExtractClient {
   readonly #baseUrl: string;
   readonly #logger: Log | undefined;
+  readonly #serviceToken: string | undefined;
 
-  constructor(baseUrl: string, logger?: Log) {
+  constructor(baseUrl: string, logger?: Log, serviceToken?: string) {
     this.#baseUrl = baseUrl.replace(/\/$/, '');
     this.#logger = logger;
+    this.#serviceToken = serviceToken;
   }
 
   async extract(options: ExtractOptions): Promise<ExtractResult> {
     const response = await fetch(`${this.#baseUrl}/extract`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: withServiceToken(this.#serviceToken, { 'content-type': 'application/json' }),
       body: JSON.stringify({
         html: options.html,
         url: options.url,
@@ -330,7 +333,7 @@ export class ExtractClient {
     // copies of a 25 MB upload for the whole parse.
     const response = await fetch(`${this.#baseUrl}/document?${query.toString()}`, {
       method: 'POST',
-      headers: { 'content-type': options.contentType },
+      headers: withServiceToken(this.#serviceToken, { 'content-type': options.contentType }),
       body: options.data as Uint8Array<ArrayBuffer>,
       // OCR over a long scan is the slowest thing Helix does; the default is generous on purpose.
       signal: withCallerSignal(options.timeoutMs ?? 300_000, options.signal),
@@ -363,7 +366,7 @@ export class ExtractClient {
   async assessPdf(options: { data: Buffer; timeoutMs?: number | undefined }): Promise<PdfAssessment> {
     const response = await fetch(`${this.#baseUrl}/assess`, {
       method: 'POST',
-      headers: { 'content-type': 'application/pdf' },
+      headers: withServiceToken(this.#serviceToken, { 'content-type': 'application/pdf' }),
       body: options.data as Uint8Array<ArrayBuffer>,
       signal: AbortSignal.timeout(options.timeoutMs ?? 30_000),
     });
@@ -394,7 +397,7 @@ export class ExtractClient {
   async metadataScan(options: MetadataOptions): Promise<MetadataScanResult> {
     const response = await fetch(`${this.#baseUrl}/metadata/scan`, {
       method: 'POST',
-      headers: { 'content-type': options.contentType },
+      headers: withServiceToken(this.#serviceToken, { 'content-type': options.contentType }),
       body: options.data as Uint8Array<ArrayBuffer>,
       signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
     });
@@ -422,7 +425,7 @@ export class ExtractClient {
   async metadataScrub(options: MetadataOptions): Promise<MetadataScrubResult> {
     const response = await fetch(`${this.#baseUrl}/metadata/scrub`, {
       method: 'POST',
-      headers: { 'content-type': options.contentType },
+      headers: withServiceToken(this.#serviceToken, { 'content-type': options.contentType }),
       body: options.data as Uint8Array<ArrayBuffer>,
       signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
     });
@@ -474,7 +477,7 @@ export class ExtractClient {
   async structured(options: StructuredOptions): Promise<StructuredResult> {
     const response = await fetch(`${this.#baseUrl}/structured`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: withServiceToken(this.#serviceToken, { 'content-type': 'application/json' }),
       body: JSON.stringify({
         content: options.content,
         schema: options.schema ?? {},
@@ -532,7 +535,7 @@ export class ExtractClient {
   async schema(options: SchemaOptions): Promise<SchemaResult> {
     const response = await fetch(`${this.#baseUrl}/schema`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: withServiceToken(this.#serviceToken, { 'content-type': 'application/json' }),
       body: JSON.stringify({
         prompt: options.prompt,
         urls: options.urls ?? [],
@@ -585,7 +588,7 @@ export class ExtractClient {
   async chunk(options: ChunkOptions): Promise<ChunkResult> {
     const response = await fetch(`${this.#baseUrl}/chunk`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: withServiceToken(this.#serviceToken, { 'content-type': 'application/json' }),
       body: JSON.stringify({
         text: options.text,
         url: options.url,
@@ -643,7 +646,7 @@ export class ExtractClient {
   async embedQuery(text: string): Promise<QueryEmbedding> {
     const response = await fetch(`${this.#baseUrl}/chunk`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: withServiceToken(this.#serviceToken, { 'content-type': 'application/json' }),
       body: JSON.stringify({ text, url: 'query:', strategy: 'fixed', max_tokens: 4096, overlap: 0, embed: true }),
       signal: AbortSignal.timeout(180_000),
     });

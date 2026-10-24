@@ -38,7 +38,7 @@ Plus an MCP server, so agents can call it directly.
 ## Quick start
 
 ```bash
-cp .env.example .env      # add your LLM key, or use a local model
+cp .env.example .env      # set POSTGRES_PASSWORD; add your LLM key, or use a local model
 docker compose up
 ```
 

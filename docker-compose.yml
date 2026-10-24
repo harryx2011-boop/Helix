@@ -13,10 +13,13 @@ services:
     image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-helix}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-helix}
+      # No default: the database never runs with a known password.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-helix}
     ports:
-      - "${POSTGRES_PORT:-7432}:5432"
+      # Loopback only: the API reaches it over the compose network, and a
+      # server or VM should not publish its database on every interface.
+      - "127.0.0.1:${POSTGRES_PORT:-7432}:5432"
     volumes:
       - helix-pgdata:/var/lib/postgresql/data
       - ./apps/api/migrations:/docker-entrypoint-initdb.d:ro
@@ -33,6 +36,7 @@ services:
       context: ./apps/fetch
     environment:
       HELIX_FETCH_PORT: 7401
+      HELIX_SERVICE_TOKEN: ${HELIX_SERVICE_TOKEN:-}
       RUST_LOG: ${RUST_LOG:-info}
     healthcheck:
       test: ["CMD", "/usr/local/bin/helix-fetch", "--healthcheck"]
@@ -47,6 +51,7 @@ services:
       context: ./apps/extract
     environment:
       HELIX_EXTRACT_PORT: 7402
+      HELIX_SERVICE_TOKEN: ${HELIX_SERVICE_TOKEN:-}
       HELIX_LLM_PROVIDER: ${HELIX_LLM_PROVIDER:-openai}
       HELIX_LLM_MODEL: ${HELIX_LLM_MODEL:-gpt-4o-mini}
       HELIX_EMBEDDING_PROVIDER: ${HELIX_EMBEDDING_PROVIDER:-local}
@@ -80,7 +85,9 @@ services:
       HELIX_PORT: 7400
       HELIX_LOG_LEVEL: ${HELIX_LOG_LEVEL:-info}
       HELIX_BOOTSTRAP_KEY: ${HELIX_BOOTSTRAP_KEY:-}
-      DATABASE_URL: postgres://${POSTGRES_USER:-helix}:${POSTGRES_PASSWORD:-helix}@postgres:5432/${POSTGRES_DB:-helix}
+      DATABASE_URL: postgres://${POSTGRES_USER:-helix}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-helix}
+      HELIX_SERVICE_TOKEN: ${HELIX_SERVICE_TOKEN:-}
+      HELIX_INTERNAL_ADMIN_TOKEN: ${HELIX_INTERNAL_ADMIN_TOKEN:-}
       HELIX_FETCH_URL: http://fetch:7401
       HELIX_EXTRACT_URL: http://extract:7402
       HELIX_RESPECT_ROBOTS: ${HELIX_RESPECT_ROBOTS:-true}
@@ -111,7 +118,6 @@ services:
       HELIX_MONITOR_CONCURRENCY: ${HELIX_MONITOR_CONCURRENCY:-2}
       HELIX_MONITOR_RETAIN_SNAPSHOTS: ${HELIX_MONITOR_RETAIN_SNAPSHOTS:-30}
       HELIX_MONITOR_RETAIN_DAYS: ${HELIX_MONITOR_RETAIN_DAYS:-90}
-      HELIX_WEBHOOK_SECRET: ${HELIX_WEBHOOK_SECRET:-}
       # The dashboard runs on its own origin (3400) and calls the API here.
       HELIX_CORS_ORIGINS: ${HELIX_CORS_ORIGINS:-http://localhost:3400,http://127.0.0.1:3400}
     ports:

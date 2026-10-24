@@ -135,8 +135,8 @@ try {
   app.log.debug({ error }, 'no stored settings to load');
 }
 
-const fetchClient = new FetchClient(config.fetchUrl, app.log);
-const extractClient = new ExtractClient(config.extractUrl, app.log);
+const fetchClient = new FetchClient(config.fetchUrl, app.log, config.serviceToken);
+const extractClient = new ExtractClient(config.extractUrl, app.log, config.serviceToken);
 
 const browserPool = new BrowserPool({
   size: config.browserPoolSize,

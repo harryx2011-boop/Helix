@@ -90,3 +90,13 @@ describe('searxngUrl', () => {
     expect(loadConfig({ ...base, SEARXNG_URL: '' }).searxngUrl).toBeUndefined();
   });
 });
+
+describe('serviceToken', () => {
+  it('reads HELIX_SERVICE_TOKEN', () => {
+    expect(loadConfig({ ...base, HELIX_SERVICE_TOKEN: 'svc' }).serviceToken).toBe('svc');
+  });
+
+  it('is unset when the variable is empty', () => {
+    expect(loadConfig({ ...base, HELIX_SERVICE_TOKEN: '' }).serviceToken).toBeUndefined();
+  });
+});

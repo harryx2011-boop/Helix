@@ -40,7 +40,11 @@ async function buildApp(limits?: { maxUrls?: number }, options: { caller?: strin
     request.apiKey = { id: caller } as ApiKey;
   });
   await app.register(
-    async (instance) => registerBatch(instance, { limits }),
+    async (instance) =>
+      registerBatch(instance, {
+        limits,
+        resolveHost: async (host) => (host.endsWith('.rebind.test') ? ['127.0.0.1'] : ['93.184.216.34']),
+      }),
     { prefix: '/v1' },
   );
   await app.ready();
@@ -64,6 +68,24 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+});
+
+describe('POST /v1/batch/scrape egress check', () => {
+  it.each(['http://127.0.0.1:7410/settings', 'http://169.254.169.254/', 'http://app.rebind.test:7410/settings'])(
+    'refuses %s before any job is created',
+    async (url) => {
+      const app = await buildApp();
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/batch/scrape',
+        payload: { urls: ['https://a.example/x', url] },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().field).toBe('urls');
+      expect(db.state.calls.some((c) => c.text.includes('INSERT INTO jobs'))).toBe(false);
+    },
+  );
 });
 
 describe('POST /v1/batch/scrape', () => {

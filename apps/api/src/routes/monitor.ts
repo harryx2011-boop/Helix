@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { webhookTargetProblem } from '../core/webhook-target.js';
-import { checkProxyUrl, type HostResolver } from '../core/url-guard.js';
+import { checkProxyUrl, checkUrl, type HostResolver } from '../core/url-guard.js';
 import { snapshotUrl, type CheckOutcome } from '../monitor/checker.js';
 import { assertMinimumInterval, nextRun, normalizeSchedule, ScheduleError } from '../monitor/schedule.js';
 import type { MonitorScheduler } from '../monitor/scheduler.js';
@@ -319,6 +319,9 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
     const parsed = CreateSchema.safeParse(request.body);
     if (!parsed.success) return zodInvalid(reply, request, parsed.error);
     const body = parsed.data;
+
+    const urlVerdict = await checkUrl(body.url, guard);
+    if (!urlVerdict.ok) return invalid(reply, request, `url: ${urlVerdict.reason}`, 'url');
 
     const badProxy = await proxyProblem(body.scrapeOptions);
     if (badProxy) return invalid(reply, request, `scrapeOptions.proxy.url: ${badProxy}`, 'scrapeOptions.proxy.url');

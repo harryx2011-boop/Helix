@@ -66,6 +66,17 @@ describe('monitor egress checks', () => {
     },
   );
 
+  it.each(['http://127.0.0.1:7410/settings', 'http://169.254.169.254/', 'http://app.rebind.test:7410/settings'])(
+    'refuses to watch %s',
+    async (url) => {
+      const response = await create({ url, schedule: '0 * * * *' });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().field).toBe('url');
+      expect(await store.list(null)).toHaveLength(0);
+    },
+  );
+
   it('refuses a private caller proxy on patch', async () => {
     const created = await create({ url: 'https://example.com', schedule: '0 * * * *' });
     const id = created.json().id as string;

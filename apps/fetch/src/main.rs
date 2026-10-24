@@ -14,6 +14,9 @@
 //! in one place and stay testable without a network.
 
 mod profile;
+mod resolver;
+
+use resolver::PublicOnlyResolver;
 
 use axum::{
     routing::{get, post},
@@ -215,6 +218,12 @@ fn client_for(req: &FetchRequest) -> anyhow::Result<(wreq::Client, Option<String
 
     if let Some(proxy) = &req.proxy {
         builder = builder.proxy(wreq::Proxy::all(proxy)?);
+    }
+
+    // Through a proxy the proxy resolves the target, and the proxy host itself
+    // was checked by the core (the operator's, or a caller's under the URL guard).
+    if !req.allow_private && req.proxy.is_none() {
+        builder = builder.dns_resolver(PublicOnlyResolver);
     }
 
     if !req.allow_private {

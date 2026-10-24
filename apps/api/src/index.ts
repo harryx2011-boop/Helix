@@ -387,7 +387,7 @@ await app.register(
         respectRobots: config.respectRobots,
       },
     });
-    await registerBatch(instance);
+    await registerBatch(instance, { allowPrivateUrls: config.allowPrivateUrls });
     await registerJobs(instance);
     await registerJobLadder(instance);
     await registerJobCost(instance);

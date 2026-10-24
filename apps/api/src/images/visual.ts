@@ -1,5 +1,6 @@
 import sharp, { type OverlayOptions } from 'sharp';
 import { checkUrl, type UrlVerdict } from '../core/url-guard.js';
+import { pinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 
 /**
  * Pixels for the image sheet: bytes of a search hit's thumbnail, a perceptual
@@ -25,6 +26,8 @@ export const NEAR_DUPLICATE_BITS = 6;
 
 export interface FetchImageOptions {
   guard?: ((url: string) => Promise<UrlVerdict>) | undefined;
+  /** Defaults to the pinned fetch, so the address checked is the address connected to. */
+  fetchImpl?: PinnedFetch | undefined;
 }
 
 export type ImageFetcher = (url: string, signal: AbortSignal) => Promise<Buffer | undefined>;
@@ -49,11 +52,12 @@ export async function fetchImageBytes(
   options: FetchImageOptions = {},
 ): Promise<Buffer | undefined> {
   const guard = options.guard ?? ((u: string) => checkUrl(u));
+  const fetchImpl = options.fetchImpl ?? pinnedFetch;
   try {
     let target = url;
     for (let hop = 0; hop <= MAX_HOPS; hop++) {
       if (!(await guard(target)).ok) return undefined;
-      const response = await fetch(target, { redirect: 'manual', signal, headers: { accept: 'image/*' } });
+      const response = await fetchImpl(target, { redirect: 'manual', signal, headers: { accept: 'image/*' } });
       const location = response.headers.get('location');
       if (response.status >= 300 && response.status < 400 && location) {
         target = new URL(location, target).href;

@@ -4,7 +4,7 @@ import { runPipeline } from '../core/pipeline.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
-import { checkUrl, type HostResolver } from '../core/url-guard.js';
+import { checkProxyUrl, checkUrl, type HostResolver } from '../core/url-guard.js';
 
 /**
  * Screenshot-only fast path.
@@ -107,6 +107,19 @@ export async function registerScreenshot(app: FastifyInstance, deps: ScreenshotR
         field: 'url',
         requestId: request.id,
       });
+    }
+
+    // A caller's proxy is a host this instance connects to; the operator's is trusted.
+    if (body.proxy !== undefined) {
+      const proxyVerdict = await checkProxyUrl(body.proxy, { allowPrivate: deps.allowPrivateUrls, resolve: deps.resolveHost });
+      if (!proxyVerdict.ok) {
+        return reply.code(400).send({
+          error: 'invalid_request',
+          message: `proxy: ${proxyVerdict.reason}`,
+          field: 'proxy',
+          requestId: request.id,
+        });
+      }
     }
 
     const result = await runPipeline(

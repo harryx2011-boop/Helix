@@ -6,7 +6,7 @@ import type { FetchClient } from '../fetch/client.js';
 import { StructuredError, type ExtractClient } from '../extract/client.js';
 import { sanitizeHtml } from '../extract/sanitize.js';
 import type { BrowserPool } from '../browser/pool.js';
-import { checkUrl, type HostResolver } from '../core/url-guard.js';
+import { checkProxyUrl, checkUrl, type HostResolver } from '../core/url-guard.js';
 import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 import { tierMemory } from '../core/tier-memory.js';
 import { cookieJar } from '../core/cookie-jar.js';
@@ -245,6 +245,16 @@ export async function registerScrape(
         field: 'proxy',
         requestId: request.id,
       });
+    }
+
+    // A caller's proxy is a host this instance connects to; the operator's is trusted.
+    const proxyVerdict =
+      typeof body.proxy === 'object'
+        ? await checkProxyUrl(body.proxy.url, { allowPrivate: deps.allowPrivateUrls, resolve: deps.resolveHost })
+        : { ok: true as const };
+    if (!proxyVerdict.ok) {
+      const message = `proxy.url: ${proxyVerdict.reason}`;
+      return reply.code(400).send({ error: 'invalid_request', message, field: 'proxy.url', requestId: request.id });
     }
 
     // Actions change the page they run on, so their result is never replayed.

@@ -412,6 +412,7 @@ await app.register(
       store: monitorStore,
       scheduler: monitorScheduler,
       minIntervalSeconds: config.monitorMinIntervalSeconds,
+      allowPrivateUrls: config.allowPrivateUrls,
     });
     await registerInteract(instance, { sessions, extractClient, publicUrl: config.publicUrl });
     await registerAgent(instance, { extractClient, encryptionKey: providerEncryptionKey });

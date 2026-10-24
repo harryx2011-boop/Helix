@@ -94,6 +94,22 @@ describe('POST /screenshot', () => {
     expect(response.json().field).toBe('url');
   });
 
+  it.each(['http://169.254.169.254', 'http://127.0.0.1:7402', 'file:///etc/passwd'])(
+    'rejects the caller proxy %s',
+    async (proxy) => {
+      const instance = await build();
+
+      const response = await instance.inject({
+        method: 'POST',
+        url: '/screenshot',
+        payload: { url: 'https://example.com', proxy },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().field).toBe('proxy');
+    },
+  );
+
   it('returns the screenshot as a data URI on success', async () => {
     const instance = await build();
 

@@ -35,7 +35,12 @@ beforeEach(async () => {
   });
   await app.register(
     async (instance) => {
-      await registerMonitor(instance, { store, scheduler, minIntervalSeconds: 3600 });
+      await registerMonitor(instance, {
+        store,
+        scheduler,
+        minIntervalSeconds: 3600,
+        resolveHost: async (host) => (host.endsWith('.rebind.test') ? ['127.0.0.1'] : ['93.184.216.34']),
+      });
     },
     { prefix: '/v1' },
   );
@@ -48,6 +53,33 @@ afterEach(async () => {
 
 const create = (body: Record<string, unknown>) =>
   app.inject({ method: 'POST', url: '/v1/monitor', payload: body });
+
+describe('monitor egress checks', () => {
+  it.each(['http://169.254.169.254', 'http://127.0.0.1:7402', 'http://proxy.rebind.test:3128', 'file:///etc/passwd'])(
+    'refuses the caller proxy %s on create',
+    async (proxyUrl) => {
+      const response = await create({ url: 'https://example.com', schedule: '0 * * * *', scrapeOptions: { proxy: { url: proxyUrl } } });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().field).toBe('scrapeOptions.proxy.url');
+      expect(await store.list(null)).toHaveLength(0);
+    },
+  );
+
+  it('refuses a private caller proxy on patch', async () => {
+    const created = await create({ url: 'https://example.com', schedule: '0 * * * *' });
+    const id = created.json().id as string;
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/v1/monitor/${id}`,
+      payload: { scrapeOptions: { proxy: { url: 'http://169.254.169.254' } } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().field).toBe('scrapeOptions.proxy.url');
+  });
+});
 
 describe('POST /v1/monitor', () => {
   it('creates a monitor from the spec-shaped request', async () => {

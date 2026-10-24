@@ -343,6 +343,35 @@ describe('POST /scrape proxy and mobile', () => {
     expect(res.json().message).toContain('HELIX_PROXY_URL');
   });
 
+  // A caller's proxy is a host this instance connects to, so it meets the
+  // same egress rules as the target URL.
+  it.each([
+    'http://169.254.169.254',
+    'http://127.0.0.1:7402',
+    'http://localhost:7401',
+    'socks5://10.0.0.5:1080',
+    'socks5://0x7f000001:1080',
+    'file:///etc/passwd',
+    'ftp://proxy.example.com',
+    'not a url',
+  ])('refuses the caller proxy %s before any tier is called', async (proxyUrl) => {
+    const { app, deps } = await build();
+    const res = await post(app, { url: 'https://example.com', proxy: { url: proxyUrl } });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: 'invalid_request', field: 'proxy.url' });
+    expect(deps.fetchClient.fetch).not.toHaveBeenCalled();
+    expect(deps.browserPool?.render).not.toHaveBeenCalled();
+  });
+
+  it('refuses a caller proxy whose name resolves to a private address', async () => {
+    const { app, deps } = await build({
+      resolveHost: async (host) => (host === 'proxy.rebind.example' ? ['169.254.169.254'] : ['93.184.216.34']),
+    });
+    const res = await post(app, { url: 'https://example.com', proxy: { url: 'http://proxy.rebind.example:3128' } });
+    expect(res.statusCode).toBe(400);
+    expect(deps.fetchClient.fetch).not.toHaveBeenCalled();
+  });
+
   it('passes a caller-supplied proxy through', async () => {
     const { app, deps } = await build();
     await post(app, { url: 'https://example.com', proxy: { url: 'http://user:pass@mine:3128', geo: 'DE' } });

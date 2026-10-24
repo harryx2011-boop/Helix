@@ -151,6 +151,40 @@ export async function checkUrl(raw: string, options: UrlGuardOptions = {}): Prom
     return { ok: false, reason: 'only http and https URLs are fetched.' };
   }
 
+  return checkHost(url, options);
+}
+
+const PROXY_SCHEMES = new Set(['http:', 'https:', 'socks5:', 'socks5h:']);
+
+/**
+ * A caller-supplied proxy is a host this instance connects to and hands the
+ * request to, so it meets the same address rules as the target URL.
+ */
+export async function checkProxyUrl(raw: string, options: UrlGuardOptions = {}): Promise<UrlVerdict> {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return { ok: false, reason: 'is not a valid URL.' };
+  }
+
+  if (!PROXY_SCHEMES.has(url.protocol)) {
+    return { ok: false, reason: 'only http, https and socks5 proxies are used.' };
+  }
+
+  // A socks5 URL has an opaque host that the URL parser leaves as written;
+  // re-reading it as http normalises numeric spellings such as 0x7f000001.
+  let host: URL;
+  try {
+    host = new URL(`http://${url.host}`);
+  } catch {
+    return { ok: false, reason: 'is not a valid URL.' };
+  }
+  return checkHost(host, options);
+}
+
+/** The address rules shared by target and proxy URLs: literal host, then DNS. */
+async function checkHost(url: URL, options: UrlGuardOptions): Promise<UrlVerdict> {
   if (options.allowPrivate) return { ok: true };
 
   const host = bareHostname(url.hostname);

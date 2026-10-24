@@ -33,19 +33,31 @@ function decode(file: CredentialFile, cipher: Cipher): Secrets {
 }
 
 function encode(secrets: Secrets, cipher: Cipher): CredentialFile {
-  const secure = cipher.available()
-  const write = (v: string) => (secure ? cipher.encrypt(v) : Buffer.from(v, 'utf8')).toString('base64')
-  return { v: 1, enc: secure ? 'safeStorage' : 'plain', apiKey: write(secrets.apiKey), adminToken: write(secrets.adminToken) }
+  const write = (v: string) => cipher.encrypt(v).toString('base64')
+  return { v: 1, enc: 'safeStorage', apiKey: write(secrets.apiKey), adminToken: write(secrets.adminToken) }
+}
+
+function store(file: string, secrets: Secrets, cipher: Cipher): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.writeFileSync(file, JSON.stringify(encode(secrets, cipher)), { mode: 0o600 })
 }
 
 /**
  * Reads the stored key and admin token, or makes and stores them on first run.
  * An unreadable file is moved aside, never overwritten, so the old secrets stay recoverable.
+ *
+ * Secrets are written only under OS encryption: a base64 file is the secret in
+ * the clear, and a file mode does not protect it on Windows. Without encryption
+ * they live for this launch only. A plain file from an older build is still
+ * read, and re-encrypted as soon as encryption is available.
  */
 export function loadOrCreateSecrets(file: string, cipher: Cipher, log: (m: string) => void, rand: Random = randomBytes, now = Date.now): Secrets {
   if (fs.existsSync(file)) {
     try {
-      return decode(JSON.parse(fs.readFileSync(file, 'utf8')) as CredentialFile, cipher)
+      const stored = JSON.parse(fs.readFileSync(file, 'utf8')) as CredentialFile
+      const secrets = decode(stored, cipher)
+      if (stored.enc === 'plain' && cipher.available()) store(file, secrets, cipher)
+      return secrets
     } catch (e) {
       const aside = `${file}.unreadable-${now()}`
       fs.renameSync(file, aside)
@@ -53,9 +65,10 @@ export function loadOrCreateSecrets(file: string, cipher: Cipher, log: (m: strin
     }
   }
   const secrets = generateSecrets(rand)
-  const stored = encode(secrets, cipher)
-  if (stored.enc === 'plain') log('credentials: OS encryption unavailable, stored without it')
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, JSON.stringify(stored), { mode: 0o600 })
+  if (!cipher.available()) {
+    log('credentials: OS encryption unavailable, so they are kept for this launch only and not written to disk')
+    return secrets
+  }
+  store(file, secrets, cipher)
   return secrets
 }

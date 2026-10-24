@@ -175,7 +175,18 @@ describe('framing the UI from VS Code', () => {
     const res = await framed.inject({ method: 'GET', url: '/app' });
     expect(res.statusCode).toBe(200);
     expect(res.headers['x-frame-options']).toBeUndefined();
-    expect(res.headers['content-security-policy']).toBe("frame-ancestors 'self' vscode-webview: vscode-file:");
+    expect(res.headers['content-security-policy']).toContain("frame-ancestors 'self' vscode-webview: vscode-file:");
+  });
+
+  // The renderer holds the API key and admin token, so a page must not load
+  // script from anywhere else, evaluate strings, embed plugins or rebase links.
+  it('restricts where a UI page may load script from', async () => {
+    const csp = String((await framed.inject({ method: 'GET', url: '/app' })).headers['content-security-policy']);
+    expect(csp).toContain("script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'");
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("base-uri 'self'");
+    expect(csp).toContain("form-action 'self'");
+    expect(csp).not.toContain(" 'unsafe-eval'");
   });
 
   it('keeps the API itself unframeable', async () => {

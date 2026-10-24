@@ -296,8 +296,8 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
     }
 
     // Resume: the seed and the queued rows already exist, so this re-opens the
-    // job rather than creating one. Ownership is checked against the calling
-    // key for the same reason GET /crawl/{id} checks it.
+    // job rather than creating one. Jobs are not partitioned between keys: one
+    // operator owns the instance, so any valid key may resume any crawl.
     if (parsed.data.resume) {
       const jobId = parsed.data.resume;
       const { rows } = await getPool().query<{

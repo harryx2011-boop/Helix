@@ -96,7 +96,8 @@ export async function listLocalProviderModels(
 
   let response: Response;
   try {
-    response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    // Never followed: a redirect would take the call to a host nobody checked.
+    response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), redirect: 'manual' });
   } catch {
     return { ok: false, reason: 'unreachable', message: `Could not reach ${provider} at ${baseUrl}.` };
   }

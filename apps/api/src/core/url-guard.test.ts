@@ -95,6 +95,28 @@ describe('checkUrl', () => {
     expect(await checkUrl('http://10.0.0.1/', { allowPrivate: true })).toEqual({ ok: true });
     expect((await checkUrl('file:///etc/passwd', { allowPrivate: true })).ok).toBe(false);
   });
+
+  // Link-local carries the cloud metadata endpoint and CGNAT is the carrier's
+  // space: neither is a private target anyone opted in to.
+  it.each(['http://169.254.169.254/', 'http://100.64.0.1/', 'http://[::ffff:169.254.169.254]/', 'http://[fe80::1]/'])(
+    'refuses the always-blocked address %s even when private targets are allowed',
+    async (url) => {
+      expect((await checkUrl(url, { allowPrivate: true })).ok).toBe(false);
+    },
+  );
+
+  it('refuses a name resolving to an always-blocked address even when private targets are allowed', async () => {
+    const verdict = await checkUrl('http://ollama.lan:11434/', {
+      allowPrivate: true,
+      resolve: async () => ['169.254.169.254'],
+    });
+    expect(verdict.ok).toBe(false);
+  });
+
+  it('still allows a name resolving to the LAN when private targets are allowed', async () => {
+    const verdict = await checkUrl('http://ollama.lan:11434/', { allowPrivate: true, resolve: async () => ['192.168.1.20'] });
+    expect(verdict).toEqual({ ok: true });
+  });
 });
 
 const resolving = (addresses: Record<string, string[]>) => async (hostname: string) => {

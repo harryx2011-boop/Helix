@@ -152,7 +152,8 @@ export async function verifyLocalProvider(provider: LocalProvider, baseUrl: stri
   const url = provider === 'ollama' ? ollamaTagsUrl(baseUrl) : openAiModelsUrl(baseUrl);
   let response: Response;
   try {
-    response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    // Never followed: a redirect would take the call to a host nobody checked.
+    response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), redirect: 'manual' });
   } catch {
     return { verdict: 'unverifiable', message: `Could not reach the runtime at ${baseUrl}.` };
   }

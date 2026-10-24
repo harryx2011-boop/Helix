@@ -173,6 +173,26 @@ describe('verifyProvider', () => {
     expect(result.verdict).toBe('unverifiable');
   });
 
+  it('does not follow a redirect from a local runtime', async () => {
+    globalThis.fetch = vi.fn(async (_url: unknown, init?: RequestInit) =>
+      init?.redirect === 'manual'
+        ? new Response(null, { status: 302, headers: { location: 'http://169.254.169.254/' } })
+        : new Response(JSON.stringify({ models: [] }), { status: 200 }),
+    ) as unknown as typeof fetch;
+
+    const result = await verifyProvider('ollama', { baseUrl: 'http://127.0.0.1:11434' });
+    expect(result.verdict).not.toBe('valid');
+  });
+
+  it('refuses a local runtime URL in the link-local range', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ models: [] }), { status: 200 }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const result = await verifyProvider('ollama', { baseUrl: 'http://169.254.169.254' });
+    expect(result.verdict).toBe('invalid');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('answers unverifiable when there is no credential to check at all', async () => {
     expect((await verifyProvider('anthropic', {})).verdict).toBe('unverifiable');
     expect((await verifyProvider('ollama', {})).verdict).toBe('unverifiable');

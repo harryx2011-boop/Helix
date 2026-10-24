@@ -130,6 +130,29 @@ describe('listLocalProviderModels', () => {
     expect(result.reason).toBe('invalid_base_url');
   });
 
+  it('does not follow a redirect, so a runtime cannot bounce the call to another host', async () => {
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) =>
+      init?.redirect === 'manual'
+        ? new Response(null, { status: 302, headers: { location: 'http://169.254.169.254/' } })
+        : jsonResponse({ models: [{ name: 'followed' }] }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const result = await listLocalProviderModels('ollama', 'http://127.0.0.1:11434/v1');
+
+    expect(result.ok).toBe(false);
+  });
+
+  it('refuses a base URL in the link-local range', async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ models: [] }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const result = await listLocalProviderModels('ollama', 'http://169.254.169.254/v1');
+
+    expect(result.ok).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('allows a loopback base URL — a local runtime is legitimately private', async () => {
     const fetchMock = vi.fn(async () => jsonResponse({ models: [] }));
     globalThis.fetch = fetchMock as unknown as typeof fetch;

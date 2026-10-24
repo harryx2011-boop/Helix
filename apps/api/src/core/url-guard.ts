@@ -185,7 +185,7 @@ export async function checkProxyUrl(raw: string, options: UrlGuardOptions = {}):
 
 /** The address rules shared by target and proxy URLs: literal host, then DNS. */
 async function checkHost(url: URL, options: UrlGuardOptions): Promise<UrlVerdict> {
-  if (options.allowPrivate) return { ok: true };
+  if (options.allowPrivate) return checkAlwaysBlocked(url, options);
 
   const host = bareHostname(url.hostname);
   if (isPrivateHost(url)) {
@@ -251,6 +251,36 @@ const ALWAYS_BLOCKED: readonly [string, number, string][] = [
   ['169.254.0.0', 16, '169.254.0.0/16'],
   ['100.64.0.0', 10, '100.64.0.0/10'],
 ];
+
+/** Link-local or CGNAT, in v4 or v4-mapped v6 form, or v6 link-local (fe80::/10). */
+export function isAlwaysBlocked(address: string): boolean {
+  const family = isIP(address);
+  if (family === 4) return ALWAYS_BLOCKED.some(([base, bits]) => inV4Block(address, base, bits));
+  if (family !== 6) return false;
+  const g = expandV6(address);
+  if (!g) return true;
+  if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) return isAlwaysBlocked(v4FromGroups(g[6] ?? 0, g[7] ?? 0));
+  return ((g[0] ?? 0) & 0xffc0) === 0xfe80;
+}
+
+/** With private targets allowed, the literal host and its DNS answers still stay out of the always-blocked ranges. */
+async function checkAlwaysBlocked(url: URL, options: UrlGuardOptions): Promise<UrlVerdict> {
+  const host = bareHostname(url.hostname);
+  const refuse = (address: string): UrlVerdict => ({
+    ok: false,
+    reason: `"${host}" is or resolves to ${address}, a reserved range this instance never fetches.`,
+  });
+  if (isIP(host) !== 0) return isAlwaysBlocked(host) ? refuse(host) : { ok: true };
+
+  let addresses: string[];
+  try {
+    addresses = await (options.resolve ?? defaultResolver)(host);
+  } catch {
+    return { ok: true };
+  }
+  const blocked = addresses.find((address) => isAlwaysBlocked(address));
+  return blocked ? refuse(blocked) : { ok: true };
+}
 
 /** Names the reserved range when the URL's host sits in one, for a message that says which. */
 export function blockedRange(raw: string): string | undefined {

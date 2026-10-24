@@ -45,6 +45,19 @@ describe('isPrivateAddress', () => {
   );
 });
 
+describe('IPv6 forms that carry or name a non-public address', () => {
+  it.each(['::7f00:1', '::a9fe:a9fe', 'fec0::1', 'feff::1', '2002:7f00:1::', '2002:a9fe:a9fe::1', '2002:c0a8:101::'])(
+    'treats %s as private',
+    (address) => {
+      expect(isPrivateAddress(address)).toBe(true);
+    },
+  );
+
+  it.each(['2002:5db8:d822::1', '2606:4700::1111'])('still treats %s as public', (address) => {
+    expect(isPrivateAddress(address)).toBe(false);
+  });
+});
+
 describe('isPrivateHost', () => {
   it.each(['http://localhost/', 'http://LOCALHOST./', 'http://api.localhost:7400/', 'http://[::1]/', 'http://10.1.1.1/'])(
     'flags %s',

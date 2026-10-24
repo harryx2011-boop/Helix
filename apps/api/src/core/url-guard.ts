@@ -91,8 +91,12 @@ function isPrivateV6(ip: string): boolean {
   const isZero = (from: number, to: number): boolean => g.slice(from, to).every((x) => x === 0);
   const first = g[0] ?? 0;
 
-  // :: and ::1
-  if (isZero(0, 7) && ((g[7] ?? 0) === 0 || g[7] === 1)) return true;
+  // ::/96: :: and ::1, and the deprecated v4-compatible form (::7f00:1), which is never a public address.
+  if (isZero(0, 6)) return true;
+  // 2002::/16 (6to4) embeds a v4 address in groups 1 and 2.
+  if (first === 0x2002) return isPrivateV4(v4FromGroups(g[1] ?? 0, g[2] ?? 0));
+  // fec0::/10, deprecated site-local.
+  if ((first & 0xffc0) === 0xfec0) return true;
   // ::ffff:a.b.c.d (IPv4-mapped) and 64:ff9b::/96 (NAT64) carry a v4 address.
   if (isZero(0, 5) && g[5] === 0xffff) return isPrivateV4(v4FromGroups(g[6] ?? 0, g[7] ?? 0));
   if (first === 0x64 && g[1] === 0xff9b && isZero(2, 6)) return isPrivateV4(v4FromGroups(g[6] ?? 0, g[7] ?? 0));

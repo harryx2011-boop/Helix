@@ -50,6 +50,16 @@ mod tests {
         assert!(public_only(vec![]).is_err());
     }
 
+    #[test]
+    fn public_only_refuses_v6_forms_that_carry_a_private_address() {
+        for text in ["[::7f00:1]:0", "[fec0::1]:0", "[2002:7f00:1::]:0", "[2002:a9fe:a9fe::1]:0"] {
+            let addr: SocketAddr = text.parse().unwrap();
+            assert!(public_only(vec![addr]).is_err(), "{text} passed");
+        }
+        let public: SocketAddr = "[2002:5db8:d822::1]:0".parse().unwrap();
+        assert!(public_only(vec![public]).is_ok());
+    }
+
     #[tokio::test]
     async fn resolver_refuses_a_name_that_resolves_to_loopback() {
         let result = PublicOnlyResolver.resolve(Name::from("localhost")).await;

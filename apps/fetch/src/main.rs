@@ -88,11 +88,19 @@ fn is_private_v6(ip: Ipv6Addr) -> bool {
             ((segments[6] as u32) << 16) | segments[7] as u32,
         ));
     }
-    ip.is_unspecified()
-        || ip.is_loopback()
+    // 2002::/16 (6to4) embeds a v4 address in groups 1 and 2.
+    if segments[0] == 0x2002 {
+        return is_private_v4(Ipv4Addr::from(
+            ((segments[1] as u32) << 16) | segments[2] as u32,
+        ));
+    }
+    // ::/96 covers ::, ::1 and the deprecated v4-compatible form (::7f00:1);
+    // fec0::/10 is deprecated site-local.
+    segments[..6] == [0, 0, 0, 0, 0, 0]
         || ip.is_multicast()
         || (segments[0] & 0xfe00) == 0xfc00
         || (segments[0] & 0xffc0) == 0xfe80
+        || (segments[0] & 0xffc0) == 0xfec0
 }
 
 fn is_private_ip(ip: IpAddr) -> bool {

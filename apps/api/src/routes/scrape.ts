@@ -6,7 +6,7 @@ import type { FetchClient } from '../fetch/client.js';
 import { StructuredError, type ExtractClient } from '../extract/client.js';
 import { sanitizeHtml } from '../extract/sanitize.js';
 import type { BrowserPool } from '../browser/pool.js';
-import { checkProxyUrl, checkUrl, type HostResolver } from '../core/url-guard.js';
+import { checkUrl, pinProxyUrl, type HostResolver } from '../core/url-guard.js';
 import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 import { tierMemory } from '../core/tier-memory.js';
 import { cookieJar } from '../core/cookie-jar.js';
@@ -250,8 +250,8 @@ export async function registerScrape(
     // A caller's proxy is a host this instance connects to; the operator's is trusted.
     const proxyVerdict =
       typeof body.proxy === 'object'
-        ? await checkProxyUrl(body.proxy.url, { allowPrivate: deps.allowPrivateUrls, resolve: deps.resolveHost })
-        : { ok: true as const };
+        ? await pinProxyUrl(body.proxy.url, { allowPrivate: deps.allowPrivateUrls, resolve: deps.resolveHost })
+        : { ok: true as const, url: proxy.url };
     if (!proxyVerdict.ok) {
       const message = `proxy.url: ${proxyVerdict.reason}`;
       return reply.code(400).send({ error: 'invalid_request', message, field: 'proxy.url', requestId: request.id });
@@ -296,7 +296,7 @@ export async function registerScrape(
       timeout: body.timeout,
       headers: body.headers,
       profile: body.profile,
-      proxy: proxy.url,
+      proxy: proxyVerdict.url,
       actions: body.actions,
       mobile: body.mobile,
       ...(body.engine ? { renderEngine: body.engine } : {}),

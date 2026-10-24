@@ -6,7 +6,33 @@ import {
   isPrivateAddress,
   isPrivateHost,
   isPublicAddress,
+  pinProxyUrl,
 } from './url-guard.js';
+
+describe('pinProxyUrl', () => {
+  it('keeps an https proxy on its name, which its certificate is issued to', async () => {
+    expect(await pinProxyUrl('https://proxy.example:443', { resolve: async () => ['93.184.216.34'] })).toEqual({
+      ok: true,
+      url: 'https://proxy.example:443',
+    });
+  });
+
+  it('brackets an IPv6 answer and keeps the credentials', async () => {
+    const pinned = await pinProxyUrl('http://u:p@proxy.example:3128', { resolve: async () => ['2606:4700::1111'] });
+    expect(pinned).toEqual({ ok: true, url: 'http://u:p@[2606:4700::1111]:3128' });
+  });
+
+  it('resolves the name once for both the check and the pin', async () => {
+    let calls = 0;
+    await pinProxyUrl('http://proxy.example:3128', {
+      resolve: async () => {
+        calls++;
+        return ['93.184.216.34'];
+      },
+    });
+    expect(calls).toBe(1);
+  });
+});
 
 describe('isPrivateAddress', () => {
   it.each([

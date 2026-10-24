@@ -375,7 +375,31 @@ describe('POST /scrape proxy and mobile', () => {
   it('passes a caller-supplied proxy through', async () => {
     const { app, deps } = await build();
     await post(app, { url: 'https://example.com', proxy: { url: 'http://user:pass@mine:3128', geo: 'DE' } });
-    expect(deps.fetchClient.fetch).toHaveBeenCalledWith(expect.objectContaining({ proxy: 'http://user:pass@mine:3128' }));
+    // Pinned to the address the guard checked, so a second lookup cannot swap in another.
+    expect(deps.fetchClient.fetch).toHaveBeenCalledWith(
+      expect.objectContaining({ proxy: 'http://user:pass@93.184.216.34:3128' }),
+    );
+  });
+
+  it('pins a socks5 caller proxy to the checked address and keeps an IP literal as given', async () => {
+    const { app, deps } = await build();
+    await post(app, { url: 'https://example.com', proxy: { url: 'socks5://mine:1080' } });
+    expect(deps.fetchClient.fetch).toHaveBeenLastCalledWith(expect.objectContaining({ proxy: 'socks5://93.184.216.34:1080' }));
+
+    await post(app, { url: 'https://example.com', proxy: { url: 'http://203.0.113.7:3128' } });
+    expect(deps.fetchClient.fetch).toHaveBeenLastCalledWith(expect.objectContaining({ proxy: 'http://203.0.113.7:3128' }));
+  });
+
+  it('refuses a caller proxy whose name does not resolve', async () => {
+    const { app, deps } = await build({
+      resolveHost: async (host) => {
+        if (host === 'nowhere.invalid') throw new Error('ENOTFOUND');
+        return ['93.184.216.34'];
+      },
+    });
+    const res = await post(app, { url: 'https://example.com', proxy: { url: 'http://nowhere.invalid:3128' } });
+    expect(res.statusCode).toBe(400);
+    expect(deps.fetchClient.fetch).not.toHaveBeenCalled();
   });
 
   it('forces a browser for mobile and renders with the phone viewport', async () => {

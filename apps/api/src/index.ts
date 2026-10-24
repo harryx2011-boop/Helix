@@ -61,6 +61,7 @@ import { MonitorScheduler } from './monitor/scheduler.js';
 import { WebhookDispatcher as MonitorWebhookDispatcher } from './monitor/webhooks.js';
 import { includeSelectorsFor, runCheck, type FetchOutcome } from './monitor/checker.js';
 import { runPipeline } from './core/pipeline.js';
+import { pinProxyUrl } from './core/url-guard.js';
 import type { MonitorRecord } from './monitor/store.js';
 import { tierMemory } from './core/tier-memory.js';
 import { cookieJar } from './core/cookie-jar.js';
@@ -218,6 +219,13 @@ const monitorRetention = {
 /** A monitor check is a markdown-only scrape through the same ladder as /scrape. */
 const fetchMonitorPage = async (monitor: MonitorRecord): Promise<FetchOutcome> => {
   const options = monitor.scrapeOptions;
+  // The stored proxy is re-checked and pinned on every check: its name may resolve elsewhere by now.
+  let proxy = options.proxy?.url;
+  if (proxy) {
+    const pinned = await pinProxyUrl(proxy, { allowPrivate: config.allowPrivateUrls });
+    if (!pinned.ok) return { ok: false, reason: 'unsafe_url', detail: `proxy: ${pinned.reason}` };
+    proxy = pinned.url;
+  }
   const result = await runPipeline(
     {
       url: monitor.url,
@@ -231,7 +239,7 @@ const fetchMonitorPage = async (monitor: MonitorRecord): Promise<FetchOutcome> =
       timeout: options.timeout ?? 30_000,
       headers: options.headers,
       profile: options.profile,
-      proxy: options.proxy?.url,
+      proxy,
     },
     { fetchClient, extractClient, browserPool, logger: app.log, tierMemory, cookieJar },
   );

@@ -187,6 +187,46 @@ export async function checkProxyUrl(raw: string, options: UrlGuardOptions = {}):
   return checkHost(host, options);
 }
 
+export type PinnedProxy = { ok: true; url: string } | { ok: false; reason: string };
+
+/**
+ * A caller's proxy URL with its host replaced by the address the guard checked.
+ *
+ * The fetch service and the browser resolve the proxy host themselves; handing
+ * them the checked address leaves no second lookup to answer differently. An
+ * https proxy keeps its name, since its certificate is issued to the name.
+ * A name that does not resolve is refused rather than left to a later lookup.
+ */
+export async function pinProxyUrl(raw: string, options: UrlGuardOptions = {}): Promise<PinnedProxy> {
+  let answers: string[] | undefined;
+  const resolve: HostResolver = async (hostname) => {
+    answers ??= await (options.resolve ?? defaultResolver)(hostname);
+    return answers;
+  };
+  const verdict = await checkProxyUrl(raw, { ...options, resolve });
+  if (!verdict.ok) return verdict;
+
+  const url = new URL(raw);
+  if (url.protocol === 'https:') return { ok: true, url: raw };
+  const host = bareHostname(new URL(`http://${url.host}`).hostname);
+
+  let address = host;
+  if (isIP(host) === 0) {
+    try {
+      address = (await resolve(host))[0] ?? '';
+    } catch {
+      address = '';
+    }
+    if (!address) return { ok: false, reason: `"${host}" did not resolve.` };
+  }
+
+  url.hostname = isIP(address) === 6 ? `[${address}]` : address;
+  const pinned = url.href;
+  // The URL serialiser adds a root path the caller did not write; leave it off.
+  const addedSlash = !raw.endsWith('/') && pinned.endsWith('/') && url.pathname === '/';
+  return { ok: true, url: addedSlash ? pinned.slice(0, -1) : pinned };
+}
+
 /** The address rules shared by target and proxy URLs: literal host, then DNS. */
 async function checkHost(url: URL, options: UrlGuardOptions): Promise<UrlVerdict> {
   if (options.allowPrivate) return checkAlwaysBlocked(url, options);

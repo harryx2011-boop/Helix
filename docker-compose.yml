@@ -31,15 +31,13 @@ services:
       start_period: 5s
     restart: unless-stopped
 
-  fetch:
+  scrape:
     build:
-      context: ./apps/fetch
+      context: ./apps/scrape
     environment:
-      HELIX_FETCH_PORT: 7401
       HELIX_SERVICE_TOKEN: ${HELIX_SERVICE_TOKEN:-}
-      RUST_LOG: ${RUST_LOG:-info}
     healthcheck:
-      test: ["CMD", "/usr/local/bin/helix-fetch", "--healthcheck"]
+      test: ["CMD", "python", "-m", "helix_scrape", "--healthcheck", "--port", "7403"]
       interval: 2s
       timeout: 3s
       retries: 30
@@ -90,7 +88,7 @@ services:
       HELIX_INTERNAL_ADMIN_TOKEN: ${HELIX_INTERNAL_ADMIN_TOKEN:-}
       # The admin routes answer on loopback or this host only; empty would override the default.
       HELIX_PUBLIC_URL: ${HELIX_PUBLIC_URL:-http://localhost:7400}
-      HELIX_FETCH_URL: http://fetch:7401
+      HELIX_FETCH_URL: http://scrape:7403
       HELIX_EXTRACT_URL: http://extract:7402
       HELIX_RESPECT_ROBOTS: ${HELIX_RESPECT_ROBOTS:-true}
       HELIX_USER_AGENT: ${HELIX_USER_AGENT:-HelixBot/0.1}
@@ -126,7 +124,7 @@ services:
       - "${HELIX_PORT:-7400}:7400"
     depends_on:
       postgres: { condition: service_healthy }
-      fetch:    { condition: service_healthy }
+      scrape:   { condition: service_healthy }
       extract:  { condition: service_healthy }
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:7400/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]

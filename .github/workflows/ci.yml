@@ -42,20 +42,22 @@ jobs:
       # Includes the check that src/client.ts is still what openapi.yaml generates.
       - run: pnpm --filter @helix/sdk test
 
-  fetch:
-    name: fetch (Rust)
+  scrape:
+    name: scrape (Python)
     runs-on: ubuntu-latest
     defaults:
-      run: { working-directory: apps/fetch }
+      run: { working-directory: apps/scrape }
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with: { components: clippy, rustfmt }
-      - uses: Swatinem/rust-cache@v2
-        with: { workspaces: apps/fetch }
-      - run: cargo fmt --check
-      - run: cargo clippy -- -D warnings
-      - run: cargo test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy helix_scrape
+      - run: pytest
 
   extract:
     name: extract (Python)

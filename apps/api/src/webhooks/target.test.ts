@@ -74,7 +74,8 @@ describe('webhookTargetProblem', () => {
 
   it('rejects the deployment network', () => {
     // The fetch and extract services, the API itself, the database.
-    expect(webhookTargetProblem('http://localhost:7401/')).toBeDefined();
+    expect(webhookTargetProblem('http://localhost:7403/')).toBeDefined();
+    expect(webhookTargetProblem('http://scrape:7403/')).toBeDefined();
     expect(webhookTargetProblem('http://127.0.0.1:7400/v1/internal/keys')).toBeDefined();
     expect(webhookTargetProblem('http://helix-extract:7402/')).toBeDefined();
     expect(webhookTargetProblem('http://postgres:5432/')).toBeDefined();

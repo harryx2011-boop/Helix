@@ -52,7 +52,7 @@ describe('webhookTargetProblem', () => {
 describe('assertPublicTarget', () => {
   it('resolves the name and refuses when any answer is private', async () => {
     await expect(assertPublicTarget('https://hooks.example.com/', async () => ['93.184.216.34'])).resolves.toBeUndefined();
-    await expect(assertPublicTarget('https://helix-fetch:7401/', async () => ['10.0.0.7'])).rejects.toBeInstanceOf(BlockedTargetError);
+    await expect(assertPublicTarget('https://scrape:7403/', async () => ['10.0.0.7'])).rejects.toBeInstanceOf(BlockedTargetError);
     await expect(assertPublicTarget('https://rebind.example/', async () => ['93.184.216.34', '127.0.0.1'])).rejects.toThrow(
       'private address',
     );

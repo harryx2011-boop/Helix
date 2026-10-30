@@ -3,7 +3,7 @@ import type { Tier } from '../core/escalation.js';
 import { withServiceToken } from '../core/service-token.js';
 
 /**
- * Client for helix-fetch (tiers 0 and 1).
+ * Client for helix-scrape's /fetch (tiers 0 and 1).
  *
  * This service reports what happened at the transport layer and applies no
  * policy of its own. Block classification lives in the core, so the rules stay
@@ -75,7 +75,7 @@ export class FetchClient {
           success: false,
           headers: {},
           timingMs: Date.now() - started,
-          error: `helix-fetch returned HTTP ${response.status}`,
+          error: `helix-scrape returned HTTP ${response.status}`,
         };
       }
 
@@ -102,7 +102,7 @@ export class FetchClient {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'fetch service unreachable';
-      this.#logger?.warn({ error, url: options.url }, 'helix-fetch call failed');
+      this.#logger?.warn({ error, url: options.url }, 'helix-scrape call failed');
       return {
         success: false,
         headers: {},

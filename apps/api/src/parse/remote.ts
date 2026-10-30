@@ -4,7 +4,7 @@ import { BlockList, isIP } from 'node:net';
 /**
  * Where `/parse` is allowed to fetch from.
  *
- * The url path fetches from inside the gateway, next to helix-fetch,
+ * The url path fetches from inside the gateway, next to helix-scrape,
  * helix-extract, Postgres and the browser tier. A key holder must not be able
  * to point it at any of those, so the host is resolved and every address it
  * yields is checked against the non-public ranges before a connection opens,

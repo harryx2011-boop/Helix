@@ -47,7 +47,7 @@ const ConfigSchema = z.object({
   db: z.enum(['pg', 'pglite']),
   databaseUrl: z.string().optional(),
   dataDir: z.string().default(join(process.cwd(), 'data')),
-  fetchUrl: z.string().default('http://localhost:7401'),
+  fetchUrl: z.string().default('http://localhost:7403'),
   extractUrl: z.string().default('http://localhost:7402'),
   /** Shared secret sent to the fetch and extract services; each refuses calls without it when set. */
   serviceToken: z.string().optional(),

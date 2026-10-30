@@ -15,9 +15,10 @@ import type { Log } from '../core/logger.js';
  * different fingerprints has been handed a stronger signal than the
  * fingerprints were hiding. So: rotate on failure, never on schedule.
  *
- * COHERENCE IS THE INVARIANT. `apps/fetch/src/profile.rs` refuses to start on a
- * profile whose user-agent contradicts its HTTP/2 settings, because detection
- * needs only one layer to disagree. The same rule applies one level up: a
+ * COHERENCE IS THE INVARIANT. helix-scrape sends only whole curl_cffi targets
+ * and never a user-agent that contradicts the TLS and HTTP/2 settings under it
+ * (an Edge name sends a Chrome identity and says so), because detection needs
+ * only one layer to disagree. The same rule applies one level up: a
  * session pins ONE profile id for its whole life and hands that id to every
  * tier it is used on. It never re-picks a profile per request, and it never
  * composes an identity out of parts — a Chrome UA over a Firefox TLS

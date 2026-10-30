@@ -276,7 +276,7 @@ describe('POST /v1/parse — host policy', () => {
     const app = await build({ fetchImpl });
     for (const url of [
       'http://127.0.0.1:7402/health',
-      'http://localhost:7401/',
+      'http://localhost:7403/',
       'http://10.0.0.5/a.pdf',
       'http://169.254.169.254/latest/meta-data/',
       'http://[::1]:7432/',

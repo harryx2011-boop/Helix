@@ -363,7 +363,7 @@ describe('runInteractActions', () => {
       abort: async (code: string) => void outcomes.push(`abort:${code}`),
     };
     await handler(fakeRoute, { url: () => 'https://example.com/app.js' });
-    await handler(fakeRoute, { url: () => 'http://localhost:7401/health' });
+    await handler(fakeRoute, { url: () => 'http://localhost:7403/health' });
     await handler(fakeRoute, { url: () => 'http://intranet.corp/secrets' });
     await handler(fakeRoute, { url: () => 'data:text/plain,hi' });
     expect(outcomes).toEqual(['continue', 'abort:blockedbyclient', 'abort:blockedbyclient', 'continue']);

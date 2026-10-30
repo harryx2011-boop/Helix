@@ -51,7 +51,7 @@ export function classifyTransportError(message: string): FailureReason {
     m.includes('unreachable') ||
     m.includes('service') ||
     m.includes('not configured') ||
-    m.includes('helix-fetch') ||
+    m.includes('helix-scrape') ||
     m.includes('helix-extract')
   ) {
     return 'service_unavailable';

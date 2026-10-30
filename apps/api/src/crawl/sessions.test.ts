@@ -92,8 +92,8 @@ describe('SessionPool — identity coherence', () => {
       pool.release(pool.acquire(), { statusCode: 200 });
     }
 
-    // Re-picking a profile per request is the incoherence apps/fetch refuses to
-    // start on, one level up: the TLS identity would stop matching the UA the
+    // Re-picking a profile per request is the incoherence helix-scrape refuses,
+    // one level up: the TLS identity would stop matching the UA the
     // same session presented a moment ago.
     expect(session.profileId).toBe(pinned);
   });

@@ -237,7 +237,7 @@ async function attemptTier(
   hostIsWalled = false,
 ): Promise<TierAttempt> {
   if (tier === 'plain' || tier === 'tls') {
-    // The identity is the caller's profile; with none, helix-fetch's default,
+    // The identity is the caller's profile; with none, helix-scrape's default,
     // which is fixed per tier.
     const identity = { url: options.url, proxy: options.proxy, tier, profile: options.profile };
     const callerCookie = Object.keys(options.headers ?? {}).some((h) => h.toLowerCase() === 'cookie');

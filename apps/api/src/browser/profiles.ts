@@ -8,7 +8,7 @@ import type { Log } from '../core/logger.js';
  * Browser identity profiles, JS layer.
  *
  * The transport layer is not here: TLS and HTTP/2 emulation belong to
- * helix-fetch, which delegates them to `wreq-util`'s presets. What the browser
+ * helix-scrape, which delegates them to curl_cffi's targets. What the browser
  * tier owns is everything a page can read about the machine it thinks it is
  * running on — WebGL strings, core count, memory, timezone, screen, fonts.
  *

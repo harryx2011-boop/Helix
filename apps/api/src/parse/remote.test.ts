@@ -61,7 +61,7 @@ describe('assertPublicUrl', () => {
       'http://127.0.0.1:7402/health',
       'http://[::1]:7432/',
       'http://169.254.169.254/latest/meta-data/',
-      'http://localhost:7401/',
+      'http://localhost:7403/',
       'http://api.localhost/',
       'http://[::ffff:10.0.0.5]/',
     ]) {

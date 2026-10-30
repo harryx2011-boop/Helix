@@ -225,7 +225,7 @@ describe('assertPublicUrl', () => {
     for (const url of [
       'http://localhost:7402/health',
       'http://api.localhost/',
-      'http://127.0.0.1:7401/',
+      'http://127.0.0.1:7403/',
       'http://127.8.8.8/',
       'http://0.0.0.0/',
       'http://169.254.169.254/latest/meta-data/',

@@ -153,7 +153,7 @@ describe('classifyTransportError', () => {
     // The bug this exists to prevent: a fetch service being down was reported as
     // a Cloudflare challenge, sending operators to chase an anti-bot problem
     // that did not exist.
-    for (const msg of ['fetch failed', 'connect ECONNREFUSED 127.0.0.1:7401', 'helix-fetch unreachable']) {
+    for (const msg of ['fetch failed', 'connect ECONNREFUSED 127.0.0.1:7403', 'helix-scrape returned HTTP 502']) {
       expect(classifyTransportError(msg)).toBe('service_unavailable');
     }
   });

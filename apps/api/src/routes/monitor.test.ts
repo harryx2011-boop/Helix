@@ -244,7 +244,7 @@ describe('POST /v1/monitor', () => {
   it('refuses webhooks aimed inside the deployment', async () => {
     for (const url of [
       'http://127.0.0.1:7400/internal/keys',
-      'http://localhost:7401/',
+      'http://localhost:7403/',
       'http://10.0.0.5:9200/',
       'http://169.254.169.254/latest/meta-data/',
       'http://[::1]:7400/',

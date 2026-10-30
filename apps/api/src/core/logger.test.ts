@@ -60,7 +60,7 @@ describe('redactSecrets', () => {
   });
 
   it('leaves a hyphenated service name alone, which shares the helix- prefix', () => {
-    expect(redactSecrets('helix-fetch returned 502')).toBe('helix-fetch returned 502');
+    expect(redactSecrets('helix-scrape returned 502')).toBe('helix-scrape returned 502');
     expect(redactSecrets('helix-extract-worker restarted')).toBe('helix-extract-worker restarted');
   });
 

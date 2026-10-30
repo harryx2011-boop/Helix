@@ -13,7 +13,7 @@ import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
  * POST /v1/parse — documents by upload or URL, same envelope as /scrape.
  *
  * Two inputs, one pipeline. A multipart `file` goes straight to helix-extract;
- * a `url` is fetched here first (binary-safe: helix-fetch decodes bodies as
+ * a `url` is fetched here first (binary-safe: helix-scrape decodes bodies as
  * text, which destroys a PDF). Either way the bytes are classified, hashed,
  * and parsed once per distinct file. The gateway enforces the upload ceiling
  * before a byte leaves the process, refuses remote hosts that are not public,

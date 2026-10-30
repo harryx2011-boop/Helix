@@ -52,7 +52,7 @@ export function launchArgsFor(engine: RenderEngine): string[] {
  * Whether an identity can be presented on this engine at all.
  *
  * The transport layer already refuses to assemble an identity piecemeal (see
- * the coherence validator in apps/fetch); the same rule has to hold here. A
+ * `apps/scrape/helix_scrape/profiles.py`); the same rule has to hold here. A
  * Chrome profile on Firefox contradicts itself in the one place detection looks
  * first — `navigator.userAgent` says Chrome while the JS engine answers like
  * Gecko, and no amount of getter patching reconciles the two. That is strictly

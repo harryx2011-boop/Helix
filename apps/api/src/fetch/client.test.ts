@@ -6,7 +6,7 @@ afterEach(() => {
 });
 
 describe('FetchClient', () => {
-  it('maps every Set-Cookie line helix-fetch returns', async () => {
+  it('maps every Set-Cookie line helix-scrape returns', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
@@ -22,7 +22,7 @@ describe('FetchClient', () => {
       ),
     );
 
-    const result = await new FetchClient('http://127.0.0.1:7401').fetch({ url: 'https://example.com', impersonate: true });
+    const result = await new FetchClient('http://127.0.0.1:7403').fetch({ url: 'https://example.com', impersonate: true });
     expect(result.setCookies).toEqual(['a=1; Path=/', 'b=2; Path=/']);
   });
 });

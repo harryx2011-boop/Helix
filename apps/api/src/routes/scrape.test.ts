@@ -348,7 +348,7 @@ describe('POST /scrape proxy and mobile', () => {
   it.each([
     'http://169.254.169.254',
     'http://127.0.0.1:7402',
-    'http://localhost:7401',
+    'http://localhost:7403',
     'socks5://10.0.0.5:1080',
     'socks5://0x7f000001:1080',
     'file:///etc/passwd',

@@ -232,7 +232,7 @@ describe('POST /v1/crawl', () => {
   it('rejects a webhook that points at the deployment network', async () => {
     const app = await buildApp();
     for (const url of [
-      'http://localhost:7401/',
+      'http://localhost:7403/',
       'http://127.0.0.1:7400/v1/internal/keys',
       'http://helix-extract:7402/',
       'http://169.254.169.254/latest/meta-data/',

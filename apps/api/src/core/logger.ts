@@ -43,7 +43,7 @@ export function redactSecrets(text: string): string {
     // Hugging Face and Groq, which prefix with an underscore rather than a dash.
     .replace(/\b(?:hf|gsk)_[A-Za-z0-9]{16,}/g, '[redacted]')
     // This instance's own keys. The alphanumeric run is what separates a key
-    // from a service name: `helix-extract` and `helix-fetch` are not secrets.
+    // from a service name: `helix-extract` and `helix-scrape` are not secrets.
     .replace(/\bhelix-[A-Za-z0-9]{16,}\b/g, '[redacted]')
     // Anything naming itself a key or token, followed by its value.
     .replace(/\b(api[_-]?key|token|bearer)\b(\s*[:=]\s*|\s+)[A-Za-z0-9._*-]{8,}/gi, '$1$2[redacted]')

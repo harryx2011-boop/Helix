@@ -4,7 +4,7 @@
  * Five tiers, cheapest first:
  *
  *   plain       ~5ms     raw HTTP, no TLS mimicry
- *   tls        ~50ms     coherent JA4 + HTTP/2 settings (helix-fetch)
+ *   tls        ~50ms     coherent JA4 + HTTP/2 settings (helix-scrape)
  *   lightpanda ~25ms     JS execution, no layout or canvas
  *   chromium   ~2-5s     full render, screenshots, actions
  *   camoufox   ~3-6s     hardened Firefox, for sites the render tier still loses

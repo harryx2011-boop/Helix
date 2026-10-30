@@ -9,14 +9,15 @@
  *   the machine. That is the layer `apps/api/src/browser/profiles.ts` applies.
  * - It does **not** record the transport layer. TLS and HTTP/2 fingerprints are
  *   not observable from inside a browser; they are facts about a handshake only
- *   the server sees. Helix gets those from `wreq-util`'s emulation presets, so
- *   the `tls` and `http2` blocks here are carried for documentation and for the
- *   Rust coherence validator, not replayed.
+ *   the server sees. Helix gets those from curl_cffi's impersonation targets
+ *   (helix-scrape), so the `tls` and `http2` blocks here are carried for
+ *   documentation, not replayed.
  *
- * Because of that split, `--id` must name an identity `apps/fetch` actually
- * resolves (see `available()` in apps/fetch/src/profile.rs). Recording Chrome
- * 152's JS surface under a name the transport tier falls back from would
- * produce exactly the contradiction profiles exist to prevent.
+ * Because of that split, `--id` must name an identity helix-scrape presents
+ * exactly (a curl_cffi target in apps/scrape/helix_scrape/profiles.py).
+ * Recording a version's JS surface under a name the transport tier sends as a
+ * nearer target would produce exactly the contradiction profiles exist to
+ * prevent.
  *
  * Usage:
  *   node tools/capture/capture.mjs --id chrome-137
@@ -66,7 +67,7 @@ function parseArgs(argv) {
 
 const HELP = `Record a real browser's JS surface into a profile definition.
 
-  --id <name>        Required. Must be an identity apps/fetch resolves, e.g. chrome-137.
+  --id <name>        Required. Must be an identity helix-scrape presents exactly, e.g. chrome-136.
   --browser <name>   chromium | firefox | webkit. Default chromium.
   --channel <name>   Playwright browser channel, e.g. chrome, msedge. Use a real
                      installed browser rather than Playwright's bundled build.
@@ -95,10 +96,10 @@ async function main() {
 
   if (!RESOLVABLE.has(args.id) && !args.force) {
     console.error(
-      `--id ${args.id} is not an identity apps/fetch resolves, so the transport layer would\n` +
-        `fall back to chrome-137 while this JS layer claimed otherwise. Pick one of:\n  ` +
+      `--id ${args.id} is not an identity helix-scrape presents exactly, so the transport layer\n` +
+        `would send a nearer version while this JS layer claimed otherwise. Pick one of:\n  ` +
         [...RESOLVABLE].join('\n  ') +
-        `\n\nPass --force only if you are adding the name to available() in the same change.`,
+        `\n\nPass --force only if you are adding the target to helix_scrape/profiles.py in the same change.`,
     );
     process.exit(2);
   }
@@ -180,9 +181,8 @@ async function main() {
       'looks for.',
       '',
       'The tls and http2 blocks are NOT recordings — the transport layer is not',
-      'observable from inside a browser. Helix presents wreq-util emulation for',
-      'this identity; these values document what that is expected to be and give',
-      "the Rust validator something to check the user-agent against.",
+      'observable from inside a browser. Helix presents a curl_cffi target for',
+      'this identity; these values document what that is expected to be.',
     ],
     id: args.id,
     browser: detectedBrowser,
@@ -191,7 +191,7 @@ async function main() {
     capturedAt: new Date().toISOString(),
     verified: true,
     tls: {
-      $comment: 'Documentation only. The handshake actually sent is wreq-util’s.',
+      $comment: 'Documentation only. The handshake actually sent is curl_cffi’s.',
       ja4: 'unset_transport_owned_by_wreq_util',
       cipherSuites: ['TLS_AES_128_GCM_SHA256', 'TLS_AES_256_GCM_SHA384', 'TLS_CHACHA20_POLY1305_SHA256'],
       extensions: [

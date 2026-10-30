@@ -17,22 +17,24 @@ layer `apps/api/src/browser/profiles.ts` injects into every Playwright context.
 
 **The transport layer — not recorded, and not recordable.** TLS and HTTP/2
 fingerprints are facts about a handshake that only the *server* observes; no API
-inside a browser exposes them. Helix gets these from `wreq-util`'s emulation
-presets in `apps/fetch`, which are maintained upstream against real captures.
-The `tls` and `http2` blocks in a written definition exist to document what that
-identity is expected to be and to give the Rust coherence validator something to
-check the user-agent against. They are never replayed.
+inside a browser exposes them. Helix gets these from curl_cffi's impersonation
+targets in helix-scrape (`apps/scrape`), which are maintained upstream against
+real captures. The `tls` and `http2` blocks in a written definition document
+what that identity is expected to be. They are never replayed.
 
 ## Why `--id` is constrained
 
-`--id` must name an identity `apps/fetch` actually resolves — see `available()`
-in `apps/fetch/src/profile.rs`. The tool refuses anything else.
+`--id` must name an identity helix-scrape presents exactly — a curl_cffi target
+in `apps/scrape/helix_scrape/profiles.py` (`RESOLVABLE` in `identity.mjs`; a test
+keeps the two equal). The tool refuses anything else.
 
-This is not bureaucracy. `resolve()` falls back to `chrome-137` for a name it
-does not know, and it does so quietly. A definition called `chrome-149-macos`
-therefore ships a Chrome 149 JS surface behind a Chrome 137 handshake, which is
-precisely the contradiction the profile system exists to prevent. That bug was
-already in the repo when this tool was written.
+This is not bureaucracy. helix-scrape sends any other name as the nearest target
+(Edge names as Chrome), and the response's `profile_used` is the only trace. A
+definition called `chrome-149` would ship a Chrome 149 JS surface behind a Chrome
+150 handshake, which is precisely the contradiction the profile system exists to
+prevent. The Rust service had the same trap: it fell back to `chrome-137`
+quietly, and a `chrome-149-macos` definition was in the repo when this tool was
+written.
 
 ## Why a headless capture is refused
 
@@ -53,13 +55,14 @@ from an actual Chrome install rather than Playwright's bundled build; use
 
 ## Matching the version you record to the identity you claim
 
-`apps/fetch` presents Chrome 131-149, Edge 127-148 and Safari 17.5-26.4. Record
+helix-scrape presents the Chrome, Safari and iOS Safari versions in `RESOLVABLE`
+(for recent Chrome: 131, 133, 136, 142, 145, 146, 150, 151, 152; no Edge). Record
 against a browser whose version is one of them, or the definition pairs one
 version's user-agent with another's handshake — the contradiction the whole
 profile system exists to prevent. The tool warns when they disagree.
 
 Playwright usually keeps more than one Chromium build, and the older one is
-often a version `wreq-util` carries even when the newest is not:
+often a version curl_cffi carries even when the newest is not:
 
 ```powershell
 Get-ChildItem "$env:LOCALAPPDATA\ms-playwright" -Filter chrome.exe -Recurse |

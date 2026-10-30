@@ -7,55 +7,47 @@
  * looks authoritative and is not.
  */
 
-/** Identities apps/fetch can actually present. Mirrors `available()` in apps/fetch/src/profile.rs. */
+/**
+ * Identities helix-scrape presents exactly: each is a curl_cffi target in
+ * `apps/scrape/helix_scrape/profiles.py`. Any other name is sent as the nearest
+ * target, and Edge names are sent as Chrome, so none of those can be recorded.
+ */
 export const RESOLVABLE = [
-  'chrome-149',
-  'chrome-148',
-  'chrome-147',
+  'chrome-152',
+  'chrome-151',
+  'chrome-150',
   'chrome-146',
   'chrome-145',
-  'chrome-144',
-  'chrome-143',
   'chrome-142',
-  'chrome-141',
-  'chrome-140',
-  'chrome-139',
-  'chrome-138',
-  'chrome-137',
   'chrome-136',
-  'chrome-135',
-  'chrome-134',
   'chrome-133',
-  'chrome-132',
   'chrome-131',
-  'edge-148',
-  'edge-147',
-  'edge-146',
-  'edge-145',
-  'edge-144',
-  'edge-143',
-  'edge-142',
-  'edge-141',
-  'edge-137',
-  'edge-136',
-  'edge-135',
-  'edge-134',
-  'edge-131',
-  'edge-127',
-  'safari-26-4',
-  'safari-26-3',
-  'safari-26-2',
-  'safari-26-1',
+  'chrome-124',
+  'chrome-123',
+  'chrome-120',
+  'chrome-119',
+  'chrome-116',
+  'chrome-110',
+  'chrome-107',
+  'chrome-104',
+  'chrome-101',
+  'chrome-100',
+  'chrome-99',
+  'safari-27',
   'safari-26',
-  'safari-18-5',
-  'safari-18-3-1',
-  'safari-17-5',
-  'safari-ios-26-2',
+  'safari-18-4',
+  'safari-18',
+  'safari-17',
+  'safari-15-5',
+  'safari-15-3',
+  'safari-ios-27',
   'safari-ios-26',
-  'safari-ios-18-1-1',
+  'safari-ios-18-4',
+  'safari-ios-18',
+  'safari-ios-17-2',
 ];
 
-/** HTTP/2 header table size the Rust validator requires per engine. */
+/** HTTP/2 header table size each engine sends (the old Rust validator's table). */
 export const HEADER_TABLE_SIZE = { chrome: 65536, edge: 65536, firefox: 65536, safari: 4096 };
 
 /**

@@ -131,18 +131,26 @@ describe('versionMismatch', () => {
 });
 
 describe('the resolvable identity list', () => {
-  it('matches what apps/fetch advertises, or a capture names a profile it falls back from', () => {
-    // Mirrors available() in apps/fetch/src/profile.rs. Read from the Rust
-    // source rather than duplicated here: a frozen copy is what lets the two
-    // drift, and a name this list carries that resolve() does not know would
-    // recreate the chrome-149-macos bug one level up.
-    const rs = readFileSync(new URL('../../apps/fetch/src/profile.rs', import.meta.url), 'utf8');
-    const body = rs.slice(rs.indexOf('pub fn available()'));
-    const block = body.slice(body.indexOf('&['), body.indexOf(']', body.indexOf('&[')));
-    const fromRust = [...block.matchAll(/"([a-z0-9-]+)"/g)].map((m) => m[1]);
+  it('lists exactly the versions helix-scrape presents without substituting a nearer one', () => {
+    // Read from helix-scrape's source rather than duplicated here: a frozen copy
+    // is what lets the two drift. A name off these tables is sent as the nearest
+    // target, so a capture recorded against it would pair one version's
+    // user-agent with another version's handshake.
+    const py = readFileSync(new URL('../../apps/scrape/helix_scrape/profiles.py', import.meta.url), 'utf8');
+    const keys = (table) => {
+      const body = py.slice(py.indexOf(`${table}: dict[float, str] = {`));
+      return [...body.slice(0, body.indexOf('}')).matchAll(/([\d.]+):\s*"/g)].map((m) => m[1]);
+    };
+    // 26.01 (Safari 26.0.1) has no Helix name: resolve() reads one decimal place.
+    const safari = (v) => (v.includes('.') && !/\.0+$/.test(v) ? v.replace('.', '-') : v.replace(/\.0+$/, ''));
+    const fromPython = [
+      ...keys('_CHROME').map((v) => `chrome-${v}`),
+      ...keys('_SAFARI').filter((v) => v !== '26.01').map((v) => `safari-${safari(v)}`),
+      ...keys('_SAFARI_IOS').map((v) => `safari-ios-${safari(v)}`),
+    ];
 
-    expect(fromRust.length).toBeGreaterThan(0);
-    expect(RESOLVABLE).toEqual(fromRust);
+    expect(fromPython.length).toBeGreaterThan(20);
+    expect([...RESOLVABLE].sort()).toEqual(fromPython.sort());
   });
 
   it('carries an HTTP/2 table size for every engine it can record', () => {

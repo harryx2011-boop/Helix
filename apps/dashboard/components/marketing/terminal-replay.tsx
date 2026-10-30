@@ -18,7 +18,7 @@ const TRANSCRIPT: TranscriptLine[] = [
   { text: '$ docker compose up' },
   { text: '◇  postgres        starting', health: true },
   { text: '◆  postgres        healthy        1.2s', health: true },
-  { text: '◆  helix-fetch     healthy        0.8s', health: true },
+  { text: '◆  helix-scrape    healthy        0.8s', health: true },
   { text: '◆  helix-extract   healthy        2.1s', health: true },
   { text: '◆  helix-api       healthy        0.6s', health: true },
   { text: '   dashboard  → http://localhost:3400' },

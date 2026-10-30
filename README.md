@@ -86,7 +86,7 @@ These are load-bearing, not aspirations. Each one exists because its absence is 
 Three runtimes, each the right tool for its layer, behind one HTTP surface.
 
 ```
-client / MCP  ──►  helix-api (TypeScript)  ──►  helix-fetch   (Rust)    TLS identity, proxy egress
+client / MCP  ──►  helix-api (TypeScript)  ──►  helix-scrape  (Python)  TLS identity, proxy egress
                    routes, jobs, browser        helix-extract (Python)  parsing, LLM, embeddings
                    pool, orchestration          postgres + pgvector     jobs, results, vectors
 ```

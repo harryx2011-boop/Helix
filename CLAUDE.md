@@ -30,7 +30,7 @@ Standing facts (deployment, verified runtime recipes, known gotchas, dead decisi
 
 - `apps/dashboard` — one Next.js app: marketing and docs (light), `/app` (dark), `/checks` in `app/(tools)` (light, desktop-only). No accounts, no sign-in: Clerk, Supabase, onboarding and `app/api/**` left in `DESKTOP-PLAN.md` Phase 2b. The website keeps marketing; `/app` ships only in the Electron download. **Port 3400.** `HELIX_HOSTED=1` selects the website build (Vercel, server output, `/app` redirected to `/download`); default is the self-host static export.
 - `apps/api` — Fastify, Playwright pool, jobs. **Port 7400.** Routes mount under a `/v1` prefix; `/settings*` and `/internal/keys` mount outside it, on the admin-token boundary.
-- `apps/fetch` — Rust, TLS identity. **Port 7401.**
+- `apps/scrape` — Python (Scrapling), fetch and TLS identity; replaced the Rust `apps/fetch` in v3. **Port 7403** (desktop 7413).
 - `apps/extract` — Python, parsing/LLM/embeddings. **Port 7402.**
 - Postgres **7432**. `packages/` — profiles, schema, sdk-ts, cli (`@helix/cli`).
 

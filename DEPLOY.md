@@ -112,7 +112,7 @@ Dockerfile: `apps/api/Dockerfile`.
 | `HELIX_ENCRYPTION_KEY` | 32 bytes hex/base64. Set it explicitly in production so rotating the bootstrap key does not invalidate stored provider keys |
 | `HELIX_INTERNAL_ADMIN_TOKEN` | the operator's credential: gates `/settings`, `/internal/*` and API key management (`/v1/keys`), on a loopback host or the `HELIX_PUBLIC_URL` host only. Unset means none of these routes is registered |
 | `HELIX_EXTRACT_URL` | the step-4 deployment |
-| `HELIX_FETCH_URL` | optional; the Rust tier. Unset degrades to the other tiers |
+| `HELIX_FETCH_URL` | optional; helix-scrape (the plain and TLS tiers). Unset degrades to the other tiers |
 | `HELIX_CORS_ORIGINS` | must include `https://helixapi-dev.vercel.app` |
 | `HELIX_PUBLIC_URL` | the API's own public URL; live-view links are built from it |
 

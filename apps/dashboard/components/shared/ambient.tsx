@@ -486,7 +486,7 @@ const FRAGMENTS: { text: string; tone: Fragment['tone'] }[] = [
   { text: '"estimate": true', tone: 'key' },
   { text: 'POST /v1/scrape', tone: 'punct' },
   { text: '"formats": ["markdown", "json"]', tone: 'string' },
-  { text: 'helix-fetch  healthy  0.8s', tone: 'ok' },
+  { text: 'helix-scrape  healthy  0.8s', tone: 'ok' },
   { text: '"ocrUsed": false', tone: 'key' },
   { text: '"fromCache": true', tone: 'string' },
   { text: 'Authorization: Bearer helix-…', tone: 'punct' },

@@ -34,7 +34,7 @@ const CURL_EXAMPLE = `$ curl -X POST localhost:7400/v1/scrape \\
 const ENV_CORE = `HELIX_PORT=7400
 HELIX_BOOTSTRAP_KEY=            # openssl rand -hex 32
 DATABASE_URL=postgres://helix:helix@localhost:7432/helix
-HELIX_FETCH_URL=http://localhost:7401
+HELIX_FETCH_URL=http://localhost:7403
 HELIX_EXTRACT_URL=http://localhost:7402`;
 
 const ENV_LLM = `HELIX_LLM_PROVIDER=openai

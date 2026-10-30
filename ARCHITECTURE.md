@@ -37,8 +37,8 @@ Three runtimes, each chosen because it is genuinely the best tool for its layer,
               internal HTTP   internal HTTP   Postgres
                         │          │              │
             ┌───────────▼──┐  ┌────▼─────────┐  ┌─▼──────────────┐
-            │ helix-fetch  │  │ helix-extract│  │ jobs · results │
-            │    Rust      │  │   Python     │  │ keys · monitors│
+            │ helix-scrape │  │ helix-extract│  │ jobs · results │
+            │   Python     │  │   Python     │  │ keys · monitors│
             │              │  │              │  │ pgvector       │
             │ TLS identity │  │ trafilatura  │  └────────────────┘
             │ HTTP/2 finger│  │ pdf-inspector│
@@ -48,6 +48,8 @@ Three runtimes, each chosen because it is genuinely the best tool for its layer,
 
 **Why three.** TypeScript owns orchestration because Playwright and the job/HTTP layer live there most comfortably. Python owns extraction because trafilatura, Docling and the embedding stack have no real equivalent elsewhere. Rust owns the fetch tier because TLS and HTTP/2 fingerprint control needs a client that exposes the handshake, and because it is the one layer where per-request overhead is on the hot path for every single page.
 
+*v3.0.0: the fetch tier is now Python (`helix-scrape`, built on Scrapling and curl_cffi), which exposes the same handshake control; Helix runs two runtimes. See `docs/adr/0001-scrapling.md`.*
+
 **The cost.** Three toolchains to build, ship and debug. Mitigated by: one monorepo, one compose file, one `make dev`, and a hard rule that cross-service contracts are typed and generated rather than hand-written.
 
 ### Services
@@ -55,7 +57,7 @@ Three runtimes, each chosen because it is genuinely the best tool for its layer,
 | Service | Runtime | Owns |
 |---|---|---|
 | `helix-api` | TypeScript / Node | HTTP + MCP surface, auth, job scheduling, crawl frontier, browser pool, escalation policy, response assembly |
-| `helix-fetch` | Rust | Plain and TLS-impersonating fetch, profile application, proxy egress, block-page signal capture |
+| `helix-scrape` | Python (Scrapling, curl_cffi) | Plain and TLS-impersonating fetch, profile application, proxy egress, block-page signal capture. Replaced the Rust `helix-fetch` in v3.0.0 (`docs/adr/0001-scrapling.md`) |
 | `helix-extract` | Python / FastAPI | HTML→markdown, PDF and Office parsing, LLM structured extraction, chunking, embedding |
 | `postgres` | Postgres 16 + pgvector | Jobs, results, API keys, monitors, crawl state, vectors |
 
@@ -74,7 +76,7 @@ Four tiers, cheapest first. Each escalation is a decision made on evidence, neve
   tier 3  Chromium              ~2-5s   full render, screenshots, actions
 ```
 
-Tiers 0 and 1 live in `helix-fetch`; tiers 2 and 3 in the `helix-api` browser pool.
+Tiers 0 and 1 live in `helix-scrape`; tiers 2 and 3 in the `helix-api` browser pool.
 
 ### Escalation triggers
 
@@ -237,7 +239,7 @@ For a BYOK tool, resources are the honest unit — "about 340 pages, roughly 12 
 helix/
 ├─ apps/
 │  ├─ api/            TypeScript — HTTP + MCP, orchestration, browser pool
-│  ├─ fetch/          Rust — TLS-impersonating fetch, profiles, proxy egress
+│  ├─ scrape/         Python — TLS-impersonating fetch, profiles, proxy egress
 │  └─ extract/        Python — extraction, parsing, LLM, chunking, embedding
 ├─ packages/
 │  ├─ schema/         OpenAPI spec + generated types for all three runtimes
@@ -281,7 +283,7 @@ M1 is the walking skeleton that proves the three-runtime shape. Everything after
 
 **Stealth is validated only locally.** CreepJS, Sannysoft and browserleaks detect fingerprint incoherence; they do not tell you whether Cloudflare or DataDome would let you through. The local suite will find real bugs and cannot confirm the ladder works in production. Revisit once there is something worth testing against a live target.
 
-**Three runtimes is real overhead.** Justified per layer, but it triples toolchain surface and CI time. If the Rust tier proves marginal against curl_cffi in Python, collapsing it is a legitimate simplification rather than a defeat.
+**Three runtimes is real overhead.** Justified per layer, but it triples toolchain surface and CI time. If the Rust tier proves marginal against curl_cffi in Python, collapsing it is a legitimate simplification rather than a defeat. *(Done in v3.0.0: the fetch tier moved to Python as `helix-scrape`, `docs/adr/0001-scrapling.md`.)*
 
 **Anti-bot is an arms race with no finish line.** Firecrawl closed its fingerprinting issue as "not planned" because this is genuinely hard and genuinely endless. BYO-proxy and BYO-browser reduce exposure by making Helix not the only party in the fight.
 

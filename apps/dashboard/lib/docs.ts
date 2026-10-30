@@ -119,7 +119,7 @@ export const DOCS: DocPage[] = [
               rows: [
                 ['The app window', 'What you see: the Playground, the Agent and Settings.', 'Not applicable'],
                 ['The engine', 'Takes your requests, keeps your results and settings in a database, and hands work to the other parts. It also serves the app window.', '127.0.0.1, port 7410'],
-                ['The page reader', 'Fetches pages over your own connection.', '127.0.0.1, port 7411'],
+                ['The page reader', 'Fetches pages over your own connection.', '127.0.0.1, port 7413'],
                 ['The document reader', 'Reads PDF, Word, PowerPoint and Excel files, and prepares text for searching by meaning.', '127.0.0.1, port 7412'],
                 ['A built-in browser', 'Opens pages that need a real browser, such as ones that build themselves with scripts. It ships inside Helix.', 'Not applicable'],
               ],
@@ -414,7 +414,7 @@ export const DOCS: DocPage[] = [
             p: 'Select Show log to open the log, or find the logs in %APPDATA%\\Helix\\logs. Quit Helix and open it again first, since a part that was still shutting down can block the next start.',
           },
           {
-            p: 'Helix uses ports 7410, 7411 and 7412 on your PC. If another program is using one, that part cannot start. Close the other program and open Helix again.',
+            p: 'Helix uses ports 7410, 7412 and 7413 on your PC. If another program is using one, that part cannot start. Close the other program and open Helix again.',
           },
         ],
       },

@@ -53,7 +53,7 @@ async function until(fn, ms, what) {
   }
 }
 
-for (const p of [7410, 7411, 7412, 9000, debugPort]) {
+for (const p of [7410, 7412, 7413, 9000, debugPort]) {
   if (await portTaken(p)) throw new Error(`port ${p} is in use; close the running Helix or voice-core first`)
 }
 if (!fs.existsSync(exe)) throw new Error(`${exe} is missing: pnpm --filter @helix/desktop package (or electron-builder --dir)`)

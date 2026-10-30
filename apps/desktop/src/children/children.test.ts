@@ -25,10 +25,10 @@ function ctx(over: Partial<ChildContext> = {}): ChildContext {
 const spec = (name: string, c: ChildContext) => children.map((f) => f(c)).find((s) => s.name === name)!
 
 describe('child registry', () => {
-  it('lists api, extract and fetch in boot-status order with distinct ports', () => {
+  it('lists api, extract and scrape in boot-status order with distinct ports', () => {
     const specs = children.map((f) => f(ctx()))
-    expect(specs.map((s) => s.name)).toEqual(['api', 'extract', 'fetch'])
-    expect(specs.map((s) => s.port)).toEqual([7410, 7412, 7411])
+    expect(specs.map((s) => s.name)).toEqual(['api', 'extract', 'scrape'])
+    expect(specs.map((s) => s.port)).toEqual([7410, 7412, 7413])
     expect(specs.map((s) => s.label)).toEqual(['Starting database', 'Starting extract', 'Starting browser engine'])
   })
 })
@@ -48,7 +48,7 @@ describe('api spec', () => {
       HELIX_PORT: '7410',
       HELIX_HOST: '127.0.0.1',
       HELIX_STATIC_DIR: path.join(R, 'ui'),
-      HELIX_FETCH_URL: 'http://127.0.0.1:7411',
+      HELIX_FETCH_URL: 'http://127.0.0.1:7413',
       HELIX_EXTRACT_URL: 'http://127.0.0.1:7412',
       HELIX_PUBLIC_URL: 'http://127.0.0.1:7410',
       HELIX_CORS_ORIGINS: 'http://127.0.0.1:7410',
@@ -102,19 +102,21 @@ describe('extract spec', () => {
   })
 })
 
-describe('fetch spec', () => {
-  it('sets HELIX_FETCH_PORT and runs beside its profiles when installed', () => {
-    const s = spec('fetch', ctx())
-    expect(s.command).toBe(path.join(R, 'fetch', 'helix-fetch.exe'))
-    expect(s.cwd).toBe(path.join(R, 'fetch'))
-    expect(s.env).toEqual({ HELIX_FETCH_PORT: '7411', HELIX_FETCH_HOST: '127.0.0.1', HELIX_SERVICE_TOKEN: 'c'.repeat(64) })
-    expect(s.healthUrl).toBe('http://127.0.0.1:7411/health')
+describe('scrape spec', () => {
+  it('runs the one-folder exe on loopback when installed', () => {
+    const s = spec('scrape', ctx())
+    expect(s.command).toBe(path.join(R, 'scrape', 'helix-scrape.exe'))
+    expect(s.args).toEqual(['--port', '7413', '--host', '127.0.0.1'])
+    expect(s.cwd).toBe(path.join(R, 'scrape'))
+    expect(s.env).toEqual({ HELIX_SERVICE_TOKEN: 'c'.repeat(64) })
+    expect(s.healthUrl).toBe('http://127.0.0.1:7413/health')
   })
 
-  it('uses the release build with cwd apps/fetch in dev', () => {
-    const s = spec('fetch', ctx({ dev: true }))
-    expect(s.command).toBe(path.join(REPO, 'apps', 'fetch', 'target', 'release', 'helix-fetch.exe'))
-    expect(s.cwd).toBe(path.join(REPO, 'apps', 'fetch'))
+  it('uses pythonw -m helix_scrape from apps/scrape in dev', () => {
+    const s = spec('scrape', ctx({ dev: true }))
+    expect(s.command).toBe(path.join(REPO, 'apps', 'scrape', '.venv', 'Scripts', 'pythonw.exe'))
+    expect(s.args).toEqual(['-m', 'helix_scrape', '--port', '7413', '--host', '127.0.0.1'])
+    expect(s.cwd).toBe(path.join(REPO, 'apps', 'scrape'))
   })
 })
 

@@ -1,5 +1,5 @@
 // Builds every runtime piece and copies it into apps/desktop/resources for electron-builder's extraResources.
-// Usage: node scripts/stage.mjs [--skip api,ui,extract,fetch,voice,browsers] [--skip <step>]...
+// Usage: node scripts/stage.mjs [--skip api,ui,extract,scrape,voice,browsers] [--skip <step>]...
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
@@ -166,15 +166,17 @@ const steps = {
     return mb(dirSize(out))
   },
 
-  fetch() {
-    const exe = join(repo, 'apps', 'fetch', 'target', 'release', 'helix-fetch.exe')
-    assertExists(exe, 'helix-fetch release build (cargo build --release in apps/fetch)')
-    const out = join(res, 'fetch')
+  scrape() {
+    const app = join(repo, 'apps', 'scrape')
+    const script = join(app, 'build-exe.ps1')
+    assertExists(script, 'scrape build script')
+    run('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script], { cwd: app })
+    const built = join(app, 'dist', 'helix-scrape')
+    assertExists(join(built, 'helix-scrape.exe'), 'scrape exe')
+    const out = join(res, 'scrape')
     fresh(out)
-    cpSync(exe, join(out, 'helix-fetch.exe'))
-    const profiles = join(repo, 'packages', 'profiles', 'definitions')
-    if (existsSync(profiles)) cpSync(profiles, join(out, 'profiles'), { recursive: true })
-    assertExists(join(out, 'helix-fetch.exe'), 'staged fetch exe')
+    cpSync(built, out, { recursive: true })
+    assertExists(join(out, 'helix-scrape.exe'), 'staged scrape exe')
     return mb(dirSize(out))
   },
 

@@ -19,8 +19,8 @@ extraResources:
     to: ui
   - from: resources/extract
     to: extract
-  - from: resources/fetch
-    to: fetch
+  - from: resources/scrape
+    to: scrape
   - from: resources/browsers
     to: browsers
   - from: resources/voice-core

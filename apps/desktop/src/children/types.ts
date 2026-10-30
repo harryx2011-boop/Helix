@@ -2,7 +2,7 @@ export type Env = Record<string, string>
 
 export interface Ports {
   api: number
-  fetch: number
+  scrape: number
   extract: number
 }
 
@@ -19,7 +19,7 @@ export interface ChildContext {
   runtimeDir: string
   execPath: string
   secrets: Secrets
-  /** Fresh per launch: the API sends it to fetch and extract, which refuse calls without it. */
+  /** Fresh per launch: the API sends it to scrape and extract, which refuse calls without it. */
   serviceToken: string
   ports: Ports
   exists: (p: string) => boolean
@@ -41,7 +41,7 @@ export interface ChildSpec {
 
 export type ChildFactory = (ctx: ChildContext) => ChildSpec
 
-export const DESKTOP_PORTS: Ports = { api: 7410, fetch: 7411, extract: 7412 }
+export const DESKTOP_PORTS: Ports = { api: 7410, extract: 7412, scrape: 7413 }
 
 export const loopback = (port: number): string => `http://127.0.0.1:${port}`
 

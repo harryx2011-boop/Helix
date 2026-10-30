@@ -1,6 +1,6 @@
 import { apiSpec } from './api'
 import { extractSpec } from './extract'
-import { fetchSpec } from './fetch'
+import { scrapeSpec } from './scrape'
 import type { ChildFactory } from './types'
 
-export const children: ChildFactory[] = [apiSpec, extractSpec, fetchSpec]
+export const children: ChildFactory[] = [apiSpec, extractSpec, scrapeSpec]

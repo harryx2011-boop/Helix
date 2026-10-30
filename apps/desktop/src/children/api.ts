@@ -11,7 +11,7 @@ export const apiSpec: ChildFactory = (ctx) => {
     HELIX_DATA_DIR: ctx.dataDir,
     HELIX_PORT: String(ctx.ports.api),
     HELIX_HOST: '127.0.0.1',
-    HELIX_FETCH_URL: loopback(ctx.ports.fetch),
+    HELIX_FETCH_URL: loopback(ctx.ports.scrape),
     HELIX_EXTRACT_URL: loopback(ctx.ports.extract),
     HELIX_PUBLIC_URL: origin,
     HELIX_CORS_ORIGINS: origin,

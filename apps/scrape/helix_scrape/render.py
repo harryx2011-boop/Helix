@@ -114,8 +114,30 @@ def _cookie(cookie: CookieIn, url: str) -> dict[str, Any]:
     return out
 
 
-def _session_options(req: RenderRequest, guard: GuardProxy | None) -> dict[str, Any]:
+class _LastDocument:
+    """Headers of the last main-frame document the page loaded.
+
+    Scrapling's response pairs the first response's headers with the last one's status;
+    after a redirect or a solved challenge that would report the 403's `cf-mitigated`
+    beside a 200. These are the headers of the page that is returned.
+    """
+
+    def __init__(self) -> None:
+        self.headers: dict[str, str] | None = None
+
+    async def setup(self, page: Any) -> None:
+        def on_response(response: Any) -> None:
+            if response.request.resource_type == "document" and response.frame == page.main_frame:
+                self.headers = {str(k).lower(): str(v) for k, v in dict(response.headers).items()}
+
+        page.on("response", on_response)
+
+
+def _session_options(
+    req: RenderRequest, guard: GuardProxy | None, last: _LastDocument
+) -> dict[str, Any]:
     return {
+        "page_setup": last.setup,
         "executable_path": chromium_path(),
         "headless": True,
         "retries": 1,
@@ -175,7 +197,8 @@ async def _browse(req: RenderRequest, guard: GuardProxy | None, started: float) 
     def elapsed() -> int:
         return int((time.monotonic() - started) * 1000)
 
-    async with _session_class()(**_session_options(req, guard)) as session:
+    last = _LastDocument()
+    async with _session_class()(**_session_options(req, guard, last)) as session:
         page = await session.fetch(req.url)
 
     final_url = str(page.url)
@@ -196,7 +219,9 @@ async def _browse(req: RenderRequest, guard: GuardProxy | None, started: float) 
     return RenderResponse(
         success=True,
         status=int(page.status),
-        headers={str(k).lower(): str(v) for k, v in dict(page.headers).items()},
+        headers=last.headers
+        if last.headers is not None
+        else {str(k).lower(): str(v) for k, v in dict(page.headers).items()},
         body=body,
         final_url=final_url,
         cookies=[dict(c) for c in page.cookies or ()],

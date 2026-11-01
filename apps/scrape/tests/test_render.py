@@ -40,8 +40,13 @@ class _Recorder:
     delay_s = 0.0
     error: Exception | None = None
 
+    # Document responses the fake page emits, in order (redirects and a solved challenge
+    # load more than one).
+    documents: ClassVar[list[dict[str, str]]] = []
+
     def __init__(self, **kwargs: Any) -> None:
         _Recorder.opened.append(kwargs)
+        self._kwargs = kwargs
 
     async def __aenter__(self) -> _Recorder:
         return self
@@ -54,7 +59,33 @@ class _Recorder:
             await asyncio.sleep(self.delay_s)
         if self.error:
             raise self.error
+        setup = self._kwargs.get("page_setup")
+        if setup is not None:
+            fake = _FakeBrowserPage()
+            await setup(fake)
+            for headers in self.documents:
+                fake.emit("response", _FakeResponse(fake.main_frame, headers))
         return self.page
+
+
+class _FakeResponse:
+    def __init__(self, frame: object, headers: dict[str, str]) -> None:
+        self.frame = frame
+        self.headers = headers
+        self.request = type("R", (), {"resource_type": "document"})()
+
+
+class _FakeBrowserPage:
+    def __init__(self) -> None:
+        self.main_frame = object()
+        self._handlers: dict[str, list[Any]] = {}
+
+    def on(self, event: str, handler: Any) -> None:
+        self._handlers.setdefault(event, []).append(handler)
+
+    def emit(self, event: str, payload: object) -> None:
+        for handler in self._handlers.get(event, []):
+            handler(payload)
 
 
 @pytest.fixture
@@ -63,6 +94,7 @@ def recorder(monkeypatch: pytest.MonkeyPatch) -> Iterator[type[_Recorder]]:
     _Recorder.page = _Page()
     _Recorder.delay_s = 0.0
     _Recorder.error = None
+    _Recorder.documents = []
     monkeypatch.setattr(render_module, "_session_class", lambda: _Recorder)
 
     async def public(host: str, port: int) -> list[str]:
@@ -200,6 +232,20 @@ async def test_a_rendered_page_comes_back_in_the_fetch_shape(recorder: type[_Rec
     assert result.body == "<html><body>rendered</body></html>"
     assert result.final_url == "https://example.com/"
     assert result.headers["content-type"] == "text/html"
+
+
+async def test_headers_come_from_the_page_that_was_returned(recorder: type[_Recorder]) -> None:
+    # Scrapling reports the first response's headers with the last one's status: after a
+    # solved challenge that pairs the 403's cf-mitigated header with a 200, which the API
+    # then reads as a challenge.
+    recorder.page = _Page(headers={"cf-mitigated": "challenge", "content-type": "text/html"})
+    recorder.documents = [
+        {"cf-mitigated": "challenge", "content-type": "text/html"},
+        {"content-type": "text/html; charset=utf-8", "etag": "abc"},
+    ]
+    result = await render(RenderRequest(url="https://example.com/", solve_cloudflare=True))
+    assert "cf-mitigated" not in result.headers
+    assert result.headers["etag"] == "abc"
 
 
 # --- deadline and errors ---------------------------------------------------------------

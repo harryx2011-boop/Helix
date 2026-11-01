@@ -500,6 +500,11 @@ export class BrowserPool {
     return this.#options.defaultEngine ?? 'chromium';
   }
 
+  /** Whether the render tier drives a remote browser over CDP instead of launching one. */
+  get remoteBrowser(): boolean {
+    return Boolean(this.#options.remoteCdpUrl);
+  }
+
   async start(): Promise<void> {
     if (this.#started) return;
     this.#started = true;

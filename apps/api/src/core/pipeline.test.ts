@@ -70,6 +70,8 @@ function browserPoolReturning(html: string): BrowserPool {
       timingMs: 500,
     })),
     stats: () => ({ browsers: 1, activeContexts: 0, pagesServed: 1 }),
+    defaultEngine: 'chromium',
+    remoteBrowser: false,
     close: vi.fn(async () => undefined),
     start: vi.fn(async () => undefined),
   } as unknown as BrowserPool;
@@ -863,6 +865,68 @@ describe('runPipeline browser tier routing', () => {
     );
     expect(browserPool.render).toHaveBeenCalledTimes(1);
     expect(fetchClient.render).not.toHaveBeenCalled();
+  });
+
+  it('sends a request that names a profile to the Playwright pool, which applies it', async () => {
+    const browserPool = Object.assign(browserPoolReturning(ARTICLE), {
+      render: vi.fn(async () => ({ html: ARTICLE, status: 200, headers: {}, finalUrl: 'https://example.com', timingMs: 5, profileUsed: 'chrome-148' })),
+    }) as unknown as BrowserPool;
+    const fetchClient = fetchClientReturning([{ status: 200, body: ARTICLE }]);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'browser', profile: 'chrome-148' },
+      deps({ fetchClient, browserPool }),
+    );
+    expect(vi.mocked(browserPool.render).mock.calls[0]?.[0]).toMatchObject({ profile: 'chrome-148' });
+    expect(fetchClient.render).not.toHaveBeenCalled();
+    expect(result.success && result.profileUsed).toBe('chrome-148');
+  });
+
+  it.each([
+    ['a remote CDP browser', { remoteBrowser: true }],
+    ['a non-Chromium default engine', { defaultEngine: 'firefox' }],
+  ])('follows the operator to the Playwright pool when they set %s', async (_name, setting) => {
+    const browserPool = Object.assign(browserPoolReturning(ARTICLE), setting) as unknown as BrowserPool;
+    const fetchClient = fetchClientReturning([{ status: 200, body: ARTICLE }]);
+    await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'browser' },
+      deps({ fetchClient, browserPool }),
+    );
+    expect(browserPool.render).toHaveBeenCalledTimes(1);
+    expect(fetchClient.render).not.toHaveBeenCalled();
+  });
+
+  it('says so when stealth and solveCloudflare cannot apply on the Playwright pool', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown', 'screenshot'], tier: 'browser', stealth: true, solveCloudflare: true },
+      deps({ browserPool: browserPoolReturning(ARTICLE) }),
+    );
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.warnings?.join(' ')).toMatch(/stealth/);
+    expect(result.warnings?.join(' ')).toMatch(/solveCloudflare/);
+  });
+
+  it('says so when an explicit fetch tier leaves stealth unused', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'tls', stealth: true },
+      deps({}),
+    );
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.warnings?.join(' ')).toMatch(/stealth/);
+    expect(result.warnings?.join(' ')).not.toMatch(/solveCloudflare/);
+    expect(result.warnings).toContain(
+      "stealth was not applied: it needs helix-scrape's browser, and the request pinned the tls tier.",
+    );
+  });
+
+  it('does not warn when the ladder stopped below the browser on its own', async () => {
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], stealth: true, solveCloudflare: true },
+      deps({}),
+    );
+    expect(result.success && result.tier).toBe('tls');
+    expect(result.success && result.warnings).toBeUndefined();
   });
 
   it('passes stealth and solveCloudflare to the browser only', async () => {

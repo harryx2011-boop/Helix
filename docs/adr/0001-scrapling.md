@@ -71,7 +71,12 @@ Chromium with a Cloudflare solver, adaptive selectors, spiders and network captu
   disclaimer: respect each site's terms of service and robots.txt.
 - **Ladder `plain, tls, browser`.** The browser rung calls helix-scrape `/render`, unless the
   request needs what only Playwright gives (screenshot, PDF, actions, a phone or custom viewport,
-  dark mode, a non-Chromium engine); then it renders on the API's Playwright pool. That choice is
+  dark mode, a non-Chromium engine); then it renders on the API's Playwright pool. A named
+  `profile` also goes to the pool, which applies it (the patched browser presents its own
+  identity), and so does every render when the operator set `remoteCdpUrl` or a non-Chromium
+  `browserEngine` (review fix, 2026-11-01). Crawl sessions pin a profile, so a crawl's browser
+  rung renders on the pool. `stealth` or `solveCloudflare` that cannot apply (pool render, or an
+  explicit `plain`/`tls` tier) is reported in `warnings`. That choice is
   a capability of the rung, not a tier. `chromium` is accepted as the old name of `browser`;
   `lightpanda` and `camoufox` are removed and run as `browser` with a warning, not a 400.
 - **The private-address guard for the browser is a loopback proxy** (`helix_scrape/guard_proxy.py`).

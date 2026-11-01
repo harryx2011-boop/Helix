@@ -246,10 +246,12 @@ interface TierAttempt {
  * Whether the browser tier must run on the Playwright pool rather than
  * helix-scrape's browser: anything Scrapling's fetch cannot produce or honour
  * (an image, a PDF, scripted actions, a phone or custom viewport, dark mode, a
- * non-Chromium engine). Routing these to the pool keeps every option honoured
- * instead of silently dropped.
+ * non-Chromium engine), a caller's identity profile (the pool applies it; the
+ * patched browser presents its own), and an operator who pointed the render
+ * tier at a remote CDP browser or another default engine. Routing these to the
+ * pool keeps every option honoured instead of silently dropped.
  */
-export function needsPlaywright(options: PipelineOptions): boolean {
+export function needsPlaywright(options: PipelineOptions, pool?: BrowserPool): boolean {
   return (
     options.formats.includes('screenshot') ||
     options.formats.includes('pdf') ||
@@ -257,8 +259,19 @@ export function needsPlaywright(options: PipelineOptions): boolean {
     options.mobile === true ||
     options.viewport !== undefined ||
     options.darkMode === true ||
-    (options.renderEngine !== undefined && options.renderEngine !== 'chromium')
+    (options.renderEngine !== undefined && options.renderEngine !== 'chromium') ||
+    Boolean(options.profile) ||
+    (pool !== undefined && (pool.remoteBrowser || pool.defaultEngine !== 'chromium'))
   );
+}
+
+/** Browser-only options this request set that the tier serving it cannot apply, as warnings. */
+function unappliedBrowserOptions(options: PipelineOptions, servedBy: string): string[] {
+  const names = [
+    ...(options.stealth ? ['stealth'] : []),
+    ...(options.solveCloudflare ? ['solveCloudflare'] : []),
+  ];
+  return names.map((name) => `${name} was not applied: it needs helix-scrape's browser, and ${servedBy}.`);
 }
 
 async function attemptTier(
@@ -298,7 +311,7 @@ async function attemptTier(
     };
   }
 
-  if (!needsPlaywright(options)) {
+  if (!needsPlaywright(options, deps.browserPool)) {
     const rendered = await deps.fetchClient.render({
       url: options.url,
       proxy: options.proxy,
@@ -364,7 +377,10 @@ async function attemptTier(
     // whether the identity they asked for was actually applied.
     profileUsed: rendered.profileUsed,
     engineUsed: rendered.engineUsed,
-    warnings: rendered.warnings,
+    warnings: [
+      ...unappliedBrowserOptions(options, 'this render ran on the Playwright pool'),
+      ...(rendered.warnings ?? []),
+    ],
     transportError: rendered.error,
   };
 }
@@ -401,6 +417,9 @@ async function walkLadder(
 
   const requested = normalizeTier(options.tier ?? 'auto');
   const tierWarnings = requested.warning ? [requested.warning] : [];
+  if (requested.tier === 'plain' || requested.tier === 'tls') {
+    tierWarnings.push(...unappliedBrowserOptions(options, `the request pinned the ${requested.tier} tier`));
+  }
   // An explicit tier is both floor and ceiling: the caller asked for that tier.
   const explicit = requested.tier !== 'auto' ? requested.tier : undefined;
   const maxTier: Tier = explicit ?? DEFAULT_MAX_TIER;

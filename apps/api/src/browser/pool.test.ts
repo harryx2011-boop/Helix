@@ -219,6 +219,14 @@ describe('engine selection', () => {
   }, 120_000);
 });
 
+describe('remote browser', () => {
+  // The pipeline reads this to keep an operator's remote browser in charge of the render tier.
+  it('says whether the render tier drives a remote CDP browser', () => {
+    expect(pool().remoteBrowser).toBe(false);
+    expect(pool({ remoteCdpUrl: 'ws://browser.internal:9222' }).remoteBrowser).toBe(true);
+  });
+});
+
 describe('identity coherence', () => {
   it('drops a chrome identity on firefox rather than presenting a contradiction', async () => {
     const browsers = pool({ defaultEngine: 'firefox' });

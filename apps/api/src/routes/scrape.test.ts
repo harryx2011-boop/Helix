@@ -64,6 +64,8 @@ function browserPool(html = ARTICLE): BrowserPool {
       timingMs: 500,
     })),
     stats: () => ({ browsers: 1, activeContexts: 0, pagesServed: 1, engines: ['chromium' as const] }),
+    defaultEngine: 'chromium',
+    remoteBrowser: false,
     close: vi.fn(async () => undefined),
     start: vi.fn(async () => undefined),
   } as unknown as BrowserPool;

@@ -385,6 +385,26 @@ describe('POST /v1/crawl', () => {
     expect(db.state.calls).toHaveLength(0);
   });
 
+  it.each(['chromium', 'lightpanda', 'camoufox'])(
+    'estimates an old %s tier at the browser rate it now runs on',
+    async (tier) => {
+      discoverUrls.mockResolvedValue({
+        links: Array.from({ length: 8 }, (_, i) => ({ url: `https://example.com/${i}` })),
+        truncated: false,
+      });
+      const app = await buildApp();
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/crawl',
+        payload: { url: 'https://example.com', estimate: true, limit: 8, maxConcurrency: 1, scrapeOptions: { tier } },
+      });
+
+      expect(response.statusCode).toBe(200);
+      // 8 pages at 3 s each through one browser, not the 0.5 s fallback.
+      expect(response.json()).toMatchObject({ tierBreakdown: { browser: 8 }, estimatedSeconds: 24 });
+    },
+  );
+
   // openapi.yaml has always declared these as the closed Format enum. Validating
   // as a bare string accepted a name nothing serves, then dropped it per page,
   // which reads as the format silently not working.

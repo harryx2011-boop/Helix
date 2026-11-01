@@ -1,3 +1,4 @@
+import { normalizeTier } from '../core/escalation.js';
 import { discoverUrls, type MapRouteDeps } from '../routes/map.js';
 import type { CrawlJobRequest } from './worker.js';
 
@@ -40,7 +41,9 @@ export async function estimateCrawl(body: CrawlJobRequest, deps: EstimateDeps): 
     // the estimate assumes the cheap path and says so. An estimate that
     // silently assumed the expensive path would be useless in the other
     // direction.
-    const assumedTier = body.tier === 'auto' ? 'tls' : body.tier;
+    // Old names (`chromium`, `lightpanda`, `camoufox`) run as `browser`, so cost as it.
+    const tier = normalizeTier(body.tier).tier;
+    const assumedTier = tier === 'auto' ? 'tls' : tier;
     const perPageSeconds = TIER_SECONDS[assumedTier] ?? 0.5;
 
     const concurrency = body.maxConcurrency ?? 4;

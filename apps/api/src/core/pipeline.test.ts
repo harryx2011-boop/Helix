@@ -773,16 +773,6 @@ describe('runPipeline cookies', () => {
 });
 
 describe('runPipeline resource blocking', () => {
-  const shellThenArticle = () =>
-    ({
-      extract: vi.fn(async ({ html }: { html: string }) =>
-        html === SPA_SHELL
-          ? { markdown: '', text: '', links: [], extractorUsed: 'trafilatura', contentHash: 'empty' }
-          : { markdown: ARTICLE_TEXT, text: ARTICLE_TEXT, links: [], extractorUsed: 'trafilatura', contentHash: 'abc' },
-      ),
-      health: vi.fn(async () => true),
-    }) as unknown as ExtractClient;
-
   it('tells the browser a pdf is wanted, so nothing it needs is blocked', async () => {
     const browserPool = browserPoolReturning(ARTICLE);
     await runPipeline({ url: 'https://example.com', formats: ['markdown', 'pdf'] }, deps({ browserPool }));

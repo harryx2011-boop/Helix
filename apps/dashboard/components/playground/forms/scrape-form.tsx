@@ -25,8 +25,7 @@ const TIER_OPTIONS: { value: Tier; label: string }[] = [
   { value: 'auto', label: 'Auto (escalate on evidence)' },
   { value: 'plain', label: 'Plain' },
   { value: 'tls', label: 'TLS impersonation' },
-  { value: 'lightpanda', label: 'Lightpanda' },
-  { value: 'chromium', label: 'Chromium' },
+  { value: 'browser', label: 'Browser' },
 ];
 
 const EXTRACTOR_OPTIONS: { value: Extractor; label: string }[] = [

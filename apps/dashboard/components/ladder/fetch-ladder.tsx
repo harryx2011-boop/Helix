@@ -1,21 +1,17 @@
 import { Check, X } from '@/components/icons/lucide';
 import { cn } from '@/lib/utils';
-import type { Tier } from '@/lib/api';
+import type { ResultTier } from '@/lib/api';
 
-const TIER_ORDER: Tier[] = ['plain', 'tls', 'lightpanda', 'chromium'];
+/** Every rung in ladder order: v3's three, with the retired v2 rungs where they stood. */
+const LADDER: ResultTier[] = ['plain', 'tls', 'lightpanda', 'chromium', 'camoufox', 'browser'];
 
-const TIER_LABEL: Record<Tier, string> = {
-  auto: 'auto',
-  plain: 'plain',
-  tls: 'tls',
-  lightpanda: 'lightpanda',
-  chromium: 'chromium',
-};
+/** Shown only when a result stored before v3 walked them. */
+const RETIRED = new Set<ResultTier>(['lightpanda', 'chromium', 'camoufox']);
 
 interface FetchLadderProps {
-  tiersAttempted: Tier[];
+  tiersAttempted: ResultTier[];
   /** The tier that produced the returned result, or undefined on total failure. */
-  resolvedTier?: Tier | undefined;
+  resolvedTier?: ResultTier | undefined;
 }
 
 /**
@@ -25,12 +21,13 @@ interface FetchLadderProps {
  */
 export function FetchLadder({ tiersAttempted, resolvedTier }: FetchLadderProps) {
   const attemptedSet = new Set(tiersAttempted);
+  const rungs = LADDER.filter((tier) => !RETIRED.has(tier) || attemptedSet.has(tier) || tier === resolvedTier);
   const highestAttempted = tiersAttempted.length > 0 ? tiersAttempted[tiersAttempted.length - 1] : undefined;
-  const highestIndex = highestAttempted ? TIER_ORDER.indexOf(highestAttempted) : -1;
+  const highestIndex = highestAttempted ? rungs.indexOf(highestAttempted) : -1;
 
   return (
     <div className="flex items-center gap-1" role="list" aria-label="Fetch tier ladder">
-      {TIER_ORDER.map((tier, index) => {
+      {rungs.map((tier, index) => {
         const attempted = attemptedSet.has(tier);
         const resolved = tier === resolvedTier;
         const skipped = !attempted && index <= highestIndex;
@@ -49,9 +46,9 @@ export function FetchLadder({ tiersAttempted, resolvedTier }: FetchLadderProps) 
             >
               {resolved && <Check className="h-3 w-3" />}
               {attempted && !resolved && <X className="h-3 w-3 opacity-50" />}
-              {TIER_LABEL[tier]}
+              {tier}
             </div>
-            {index < TIER_ORDER.length - 1 && (
+            {index < rungs.length - 1 && (
               <span className="text-muted-foreground/40" aria-hidden>
                 &rarr;
               </span>

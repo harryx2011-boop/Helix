@@ -9,7 +9,11 @@
 /** Every format `/scrape` serves today (openapi.yaml `Format`). */
 export type Format = 'markdown' | 'html' | 'rawHtml' | 'text' | 'links' | 'screenshot' | 'json' | 'chunks';
 
-export type Tier = 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium';
+/** A tier a request asks for: the v3 ladder is plain, tls, browser (openapi.yaml `Tier`). */
+export type Tier = 'auto' | 'plain' | 'tls' | 'browser';
+
+/** A tier a result reports. Results stored before v3 can name the retired rungs. */
+export type ResultTier = Exclude<Tier, 'auto'> | 'lightpanda' | 'chromium' | 'camoufox';
 
 export type Extractor = 'trafilatura' | 'readability' | 'auto';
 
@@ -451,8 +455,8 @@ export interface DocumentMetadata {
   contentType?: string;
   fetchedAt?: string;
   contentHash?: string;
-  tier?: Tier;
-  tiersAttempted?: Tier[];
+  tier?: ResultTier;
+  tiersAttempted?: ResultTier[];
   profile?: string;
   extractor?: string;
   mobile?: boolean;
@@ -500,8 +504,8 @@ export interface FetchFailure {
   detail?: string;
   statusCode?: number;
   detectedBy?: string[];
-  tier?: Tier;
-  tiersAttempted?: Tier[];
+  tier?: ResultTier;
+  tiersAttempted?: ResultTier[];
   profile?: string;
   escalationAvailable?: boolean;
 }

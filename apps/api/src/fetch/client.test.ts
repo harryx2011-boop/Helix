@@ -80,6 +80,39 @@ describe('FetchClient', () => {
     expect(result.cookies?.[0]?.name).toBe('cf_clearance');
   });
 
+  it("sends a caller's profile as an identity and reads back the one applied", async () => {
+    let sent: Record<string, unknown> = {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init: RequestInit) => {
+        sent = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return Response.json({ success: true, status: 200, headers: {}, body: '<html></html>', profile_used: 'chrome-148', timing_ms: 9 });
+      }),
+    );
+
+    const result = await new FetchClient('http://127.0.0.1:7403').render({
+      url: 'https://example.com',
+      identity: {
+        id: 'chrome-148',
+        userAgent: 'UA',
+        acceptLanguage: 'en-US',
+        timezone: 'America/New_York',
+        screen: { width: 1920, height: 1080 },
+        initScript: '(() => {})()',
+      },
+    });
+
+    expect(sent['identity']).toEqual({
+      id: 'chrome-148',
+      user_agent: 'UA',
+      accept_language: 'en-US',
+      timezone: 'America/New_York',
+      screen: { width: 1920, height: 1080 },
+      init_script: '(() => {})()',
+    });
+    expect(result.profileUsed).toBe('chrome-148');
+  });
+
   it('reports an unreachable helix-scrape as a service problem, not a page problem', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed'); }));
     const result = await new FetchClient('http://127.0.0.1:7403').render({ url: 'https://example.com' });

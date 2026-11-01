@@ -16,7 +16,8 @@ import type { TierMemory } from './tier-memory.js';
 import type { CookieJar } from './cookie-jar.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient, ExtractResult } from '../extract/client.js';
-import type { BrowserPool } from '../browser/pool.js';
+import { resolveProfileForEngine, type BrowserPool } from '../browser/pool.js';
+import { renderIdentity } from '../browser/profiles.js';
 import type { RenderEngine } from '../browser/engines.js';
 import type { ScreenshotOptions, ScreenshotResult } from '../browser/screenshot.js';
 
@@ -246,10 +247,10 @@ interface TierAttempt {
  * Whether the browser tier must run on the Playwright pool rather than
  * helix-scrape's browser: anything Scrapling's fetch cannot produce or honour
  * (an image, a PDF, scripted actions, a phone or custom viewport, dark mode, a
- * non-Chromium engine), a caller's identity profile (the pool applies it; the
- * patched browser presents its own), and an operator who pointed the render
- * tier at a remote CDP browser or another default engine. Routing these to the
- * pool keeps every option honoured instead of silently dropped.
+ * non-Chromium engine), and an operator who pointed the render tier at a remote
+ * CDP browser or another default engine. Routing these to the pool keeps every
+ * option honoured instead of silently dropped. A caller's profile is not one of
+ * them: `/render` applies it as the pool does (`renderIdentity`).
  */
 export function needsPlaywright(options: PipelineOptions, pool?: BrowserPool): boolean {
   return (
@@ -260,7 +261,6 @@ export function needsPlaywright(options: PipelineOptions, pool?: BrowserPool): b
     options.viewport !== undefined ||
     options.darkMode === true ||
     (options.renderEngine !== undefined && options.renderEngine !== 'chromium') ||
-    Boolean(options.profile) ||
     (pool !== undefined && (pool.remoteBrowser || pool.defaultEngine !== 'chromium'))
   );
 }
@@ -312,6 +312,8 @@ async function attemptTier(
   }
 
   if (!needsPlaywright(options, deps.browserPool)) {
+    // helix-scrape's browser is Chromium: a profile of another family is dropped, as on the pool.
+    const resolved = resolveProfileForEngine(options.profile, 'chromium', deps.logger);
     const rendered = await deps.fetchClient.render({
       url: options.url,
       proxy: options.proxy,
@@ -325,11 +327,14 @@ async function attemptTier(
       // wall can read the missing loads as a tell, so walled hosts get them all.
       disableResources: !hostIsWalled,
       allowPrivate: options.allowPrivate,
+      identity: resolved.profile && renderIdentity(resolved.profile),
       signal: options.signal,
     });
     return {
       facts: { statusCode: rendered.status ?? 0, headers: rendered.headers, body: rendered.body ?? '' },
       finalUrl: rendered.finalUrl,
+      profileUsed: rendered.profileUsed,
+      ...(resolved.warnings.length > 0 ? { warnings: resolved.warnings } : {}),
       transportError: rendered.success ? undefined : (rendered.error ?? 'helix-scrape render failed'),
     };
   }

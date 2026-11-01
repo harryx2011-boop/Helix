@@ -259,6 +259,33 @@ export function userAgentOverride(
   };
 }
 
+/** A profile as helix-scrape's browser applies it: the wire form of `/render`'s `identity`. */
+export interface RenderIdentity {
+  id: string;
+  userAgent?: string | undefined;
+  acceptLanguage?: string | undefined;
+  timezone?: string | undefined;
+  screen?: { width: number; height: number } | undefined;
+  /** The same keyed script the pool runs, so the canvas seed never leaves as a plain value. */
+  initScript: string;
+}
+
+/**
+ * What the pool applies for a profile, for helix-scrape's browser to apply instead.
+ * The script's Chromium half is left out: that browser is a full Chromium, which has
+ * `window.chrome` and its plugins already, and every extra patch is one more tell.
+ */
+export function renderIdentity(profile: BrowserProfile): RenderIdentity {
+  return {
+    id: profile.id,
+    userAgent: profile.headers?.userAgent,
+    acceptLanguage: profile.headers?.acceptLanguage,
+    timezone: profile.js.timezone,
+    screen: profile.js.screen && { width: profile.js.screen.width, height: profile.js.screen.height },
+    initScript: fingerprintScript(profile, false),
+  };
+}
+
 /**
  * The init script a context runs before any page code.
  *

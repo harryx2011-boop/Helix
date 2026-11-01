@@ -857,18 +857,44 @@ describe('runPipeline browser tier routing', () => {
     expect(fetchClient.render).not.toHaveBeenCalled();
   });
 
-  it('sends a request that names a profile to the Playwright pool, which applies it', async () => {
-    const browserPool = Object.assign(browserPoolReturning(ARTICLE), {
-      render: vi.fn(async () => ({ html: ARTICLE, status: 200, headers: {}, finalUrl: 'https://example.com', timingMs: 5, profileUsed: 'chrome-148' })),
-    }) as unknown as BrowserPool;
-    const fetchClient = fetchClientReturning([{ status: 200, body: ARTICLE }]);
+  it("sends a request that names a profile to helix-scrape's browser, with the profile's identity", async () => {
+    const browserPool = browserPoolReturning(ARTICLE);
+    const fetchClient = fetchClientReturning([{ status: 200, body: ARTICLE }], ARTICLE);
+    vi.mocked(fetchClient.render).mockResolvedValue({
+      success: true,
+      status: 200,
+      headers: {},
+      body: ARTICLE,
+      finalUrl: 'https://example.com',
+      profileUsed: 'chrome-148',
+      timingMs: 5,
+    });
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'], tier: 'browser', profile: 'chrome-148' },
       deps({ fetchClient, browserPool }),
     );
-    expect(vi.mocked(browserPool.render).mock.calls[0]?.[0]).toMatchObject({ profile: 'chrome-148' });
-    expect(fetchClient.render).not.toHaveBeenCalled();
+    expect(browserPool.render).not.toHaveBeenCalled();
+    const identity = vi.mocked(fetchClient.render).mock.calls[0]?.[0].identity;
+    expect(identity).toMatchObject({
+      id: 'chrome-148',
+      userAgent: expect.stringContaining('Chrome/148.0.0.0') as unknown as string,
+      acceptLanguage: 'en-US',
+      timezone: 'America/New_York',
+      screen: { width: 1920, height: 1080 },
+    });
+    // The keyed fingerprint script the pool runs, so the canvas seed is the same secret.
+    expect(identity?.initScript).toContain('"webglRenderer":"ANGLE (NVIDIA');
     expect(result.success && result.profileUsed).toBe('chrome-148');
+  });
+
+  it('sends no identity for a profile name with no definition', async () => {
+    const fetchClient = fetchClientReturning([{ status: 200, body: ARTICLE }], ARTICLE);
+    await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'browser', profile: 'chrome150' },
+      deps({ fetchClient, browserPool: browserPoolReturning(ARTICLE) }),
+    );
+    expect(fetchClient.render).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetchClient.render).mock.calls[0]?.[0].identity).toBeUndefined();
   });
 
   it.each([

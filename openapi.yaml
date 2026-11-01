@@ -2714,10 +2714,10 @@ components:
         Three tiers: `plain` (raw HTTP), `tls` (a browser TLS and HTTP/2
         fingerprint) and `browser` (a full render on a patched Chromium). A
         request that needs a screenshot, a PDF, actions, a phone or custom
-        viewport, dark mode, a non-Chromium `engine` or a `profile` renders on
-        Helix's Playwright browsers instead, as does every render on an
-        instance whose operator set a remote CDP browser or a non-Chromium
-        default engine; it is still the `browser` tier. `stealth` and
+        viewport, dark mode or a non-Chromium `engine` renders on Helix's
+        Playwright browsers instead, as does every render on an instance whose
+        operator set a remote CDP browser or a non-Chromium default engine; it
+        is still the `browser` tier. A `profile` applies on either browser. `stealth` and
         `solveCloudflare` apply only on the patched Chromium; where they cannot,
         the response says so in `warnings`.
 

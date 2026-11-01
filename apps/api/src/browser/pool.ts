@@ -446,7 +446,7 @@ async function drivePage(
  * see `profileMatchesEngine`. The caller is told, because a silently ignored
  * identity is the kind of thing an operator only discovers from a block.
  */
-function resolveProfileForEngine(
+export function resolveProfileForEngine(
   id: string | undefined,
   engine: RenderEngine,
   logger: Log | undefined,

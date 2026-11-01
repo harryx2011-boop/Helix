@@ -1,6 +1,7 @@
 import type { Log } from '../core/logger.js';
 import type { Tier } from '../core/escalation.js';
 import { withServiceToken } from '../core/service-token.js';
+import type { RenderIdentity } from '../browser/profiles.js';
 
 /**
  * Client for helix-scrape: /fetch (tiers plain and tls) and /render (the
@@ -52,6 +53,8 @@ export interface RenderOptions {
   /** Skip fonts, images, media and stylesheets. */
   disableResources?: boolean | undefined;
   allowPrivate?: boolean | undefined;
+  /** A caller's profile, resolved by the API (`renderIdentity`). Omit for the browser's own. */
+  identity?: RenderIdentity | undefined;
   signal?: AbortSignal | undefined;
 }
 
@@ -75,6 +78,8 @@ export interface RenderResult {
   finalUrl?: string | undefined;
   /** The browser's jar after the render, `cf_clearance` included. */
   cookies?: BrowserCookie[] | undefined;
+  /** The profile actually presented. Absent when none was sent or it could not be applied. */
+  profileUsed?: string | undefined;
   timingMs: number;
   error?: string | undefined;
 }
@@ -176,6 +181,14 @@ export class FetchClient {
           proxy: options.proxy,
           headers: options.headers,
           allow_private: options.allowPrivate ?? false,
+          identity: options.identity && {
+            id: options.identity.id,
+            user_agent: options.identity.userAgent,
+            accept_language: options.identity.acceptLanguage,
+            timezone: options.identity.timezone,
+            screen: options.identity.screen,
+            init_script: options.identity.initScript,
+          },
         }),
         signal,
       });
@@ -189,6 +202,7 @@ export class FetchClient {
         body?: string;
         final_url?: string;
         cookies?: BrowserCookie[];
+        profile_used?: string | null;
         timing_ms?: number;
         error?: string;
       };
@@ -199,6 +213,7 @@ export class FetchClient {
         body: body.body,
         finalUrl: body.final_url,
         cookies: body.cookies,
+        profileUsed: body.profile_used ?? undefined,
         timingMs: body.timing_ms ?? Date.now() - started,
         error: body.error,
       };

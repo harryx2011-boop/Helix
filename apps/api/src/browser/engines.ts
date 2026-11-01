@@ -42,7 +42,19 @@ const CHROMIUM_ARGS: readonly string[] = [
   '--disable-renderer-backgrounding',
   // Playwright's --enable-automation otherwise sets navigator.webdriver to true.
   '--disable-blink-features=AutomationControlled',
+  // WebRTC's STUN is UDP, which no HTTP proxy carries: unlocked, a page reaches loopback
+  // and the LAN around the guard proxy, and shows the real address behind a caller's proxy.
+  // Both spellings, measured: the headless shell honours only the forced value, the full
+  // Chromium build only the plain policy switch.
+  '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+  '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
 ];
+
+/**
+ * Firefox's equivalent of the lock above. Measured: Playwright's Firefox sent no STUN
+ * packet without it either; the pref keeps it that way if a build turns WebRTC on.
+ */
+export const FIREFOX_PREFS: Readonly<Record<string, boolean>> = { 'media.peerconnection.ice.proxy_only': true };
 
 export function launchArgsFor(engine: RenderEngine): string[] {
   return engine === 'chromium' ? [...CHROMIUM_ARGS] : [];

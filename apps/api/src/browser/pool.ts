@@ -8,10 +8,12 @@ import {
   type BrowserIdentity,
   type BrowserProfile,
 } from './profiles.js';
-import { assertPublicUrl, isPrivateHost, type Lookup } from '../core/url-guard.js';
+import { assertPublicUrl, isAlwaysBlocked, isPrivateAddress, isPrivateHost, type Lookup } from '../core/url-guard.js';
+import { authorityOf, startGuardProxy, type Connect, type GuardProxy } from './guard-proxy.js';
 import { capture, type ScreenshotOptions, type ScreenshotResult } from './screenshot.js';
 import {
   browserTypeFor,
+  FIREFOX_PREFS,
   launchArgsFor,
   profileMatchesEngine,
   supportsMobileEmulation,
@@ -156,7 +158,11 @@ export interface BrowserPoolOptions {
   logger?: Log | undefined;
   /** DNS lookup the private-address guard uses. Injected by tests; defaults to the system resolver. */
   lookup?: Lookup | undefined;
+  /** Opens the guard proxy's connection to an address it checked. Injected by tests. */
+  connect?: Connect | undefined;
 }
+
+const REDIRECTED_PRIVATE = 'request failed: redirected to a private or local address, which this instance does not fetch';
 
 /**
  * Abort every request bound for a loopback, link-local or private address.
@@ -208,11 +214,12 @@ function isAdHost(hostname: string): boolean {
  * optionally every ad and consent-dialog host.
  *
  * The route already checked the URL the caller sent, including what its name
- * resolves to. This covers what the check cannot: redirects, and fetches the
- * page itself makes once it runs. Each host name is resolved once per context
- * and refused when any answer is private. The browser does its own lookup
- * after this one, so a name that changes its answer between the two is not
- * covered here.
+ * resolves to. This covers fetches the page itself makes once it runs; each host
+ * name is resolved once per context and refused when any answer is private. A
+ * route never sees a redirect hop or a WebSocket, and the browser would do its
+ * own lookup after this one, so the guard proxy (`guard-proxy.ts`) is what holds
+ * locally: it sees every connection and connects to the address it checked.
+ * This route stays as the first answer, and is the only guard on a remote browser.
  *
  * Both filters share one handler deliberately. Playwright runs `route`
  * handlers most-recently-registered first and stops at the one that answers,
@@ -260,6 +267,33 @@ async function blockRequests(
 }
 
 const HEAVY_RESOURCES = new Set(['image', 'font', 'media']);
+
+/**
+ * host:port of every main-frame navigation, redirect hops included. A hop the guard proxy
+ * refused shows up as its 403 page or a tunnel error, so this is how a render tells that
+ * the page itself, not an image on it, was the thing refused.
+ */
+function mainFrameHops(page: Page): Set<string> {
+  const hops = new Set<string>();
+  page.on('request', (request) => {
+    try {
+      if (request.isNavigationRequest() && request.frame() === page.mainFrame()) hops.add(authorityOf(request.url()));
+    } catch {
+      // A service worker's request has no frame; it is not a navigation either.
+    }
+  });
+  return hops;
+}
+
+function refusedOnPath(guard: GuardProxy | undefined, hops: Set<string>): boolean {
+  return guard !== undefined && [...hops].some((hop) => guard.refused.has(hop));
+}
+
+/** A caller's proxy as given, else the guard proxy, else none (private targets allowed with no guard). */
+function proxyOption(proxy: string | undefined, guard: GuardProxy | undefined): { proxy?: { server: string } } {
+  if (proxy) return { proxy: { server: proxy } };
+  return guard ? { proxy: { server: guard.url } } : {};
+}
 
 /** Images and fonts are what a screenshot or a PDF is made of. */
 function wantsResourceBlocking(options: RenderOptions): boolean {
@@ -536,6 +570,7 @@ export class BrowserPool {
       browser = await browserTypeFor(engine).launch({
         ...(args.length > 0 ? { args } : {}),
         ...(channel ? { channel } : {}),
+        ...(engine === 'firefox' ? { firefoxUserPrefs: FIREFOX_PREFS } : {}),
       });
     } catch (error) {
       // The container ships Chromium only unless it was built with
@@ -654,19 +689,36 @@ export class BrowserPool {
     this.#releaseWaiter();
   }
 
+  /**
+   * The guard proxy for one context. None when the caller brought a proxy: resolving the
+   * target is then that proxy's job, as in the fetch service, and the proxy's own address
+   * was checked and pinned before it got here (`pinProxyUrl`).
+   */
+  async #guardFor(proxy: string | undefined, allowPrivate: boolean | undefined): Promise<GuardProxy | undefined> {
+    if (proxy) return undefined;
+    return startGuardProxy({
+      lookup: this.#options.lookup,
+      // The operator's opt-in covers loopback and the LAN, never link-local or CGNAT.
+      blocked: allowPrivate ? isAlwaysBlocked : isPrivateAddress,
+      connect: this.#options.connect,
+    });
+  }
+
   async lease(options: LeaseOptions = {}): Promise<PageLease> {
     if (!this.#started) await this.start();
 
     const engine = options.engine ?? this.defaultEngine;
     const pooled = await this.#acquire(engine);
     pooled.activeContexts++;
+    let guard: GuardProxy | undefined;
 
     try {
       const { profile } = resolveProfileForEngine(options.profile, engine, this.#logger);
       const identity = pooled.identity;
+      guard = await this.#guardFor(options.proxy, false);
       const context = await pooled.browser.newContext({
         ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
-        ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
+        ...proxyOption(options.proxy, guard),
         ...profileContextOptions(profile, identity && headfulUserAgent(identity.userAgent)),
         ...(options.viewport ? { viewport: options.viewport } : {}),
       });
@@ -682,6 +734,7 @@ export class BrowserPool {
           if (closed) return;
           closed = true;
           await context.close().catch(() => undefined);
+          await guard?.close();
           pooled.pagesServed++;
           pooled.activeContexts--;
           this.#releaseWaiter();
@@ -689,6 +742,7 @@ export class BrowserPool {
         },
       };
     } catch (error) {
+      await guard?.close();
       pooled.activeContexts--;
       this.#releaseWaiter();
       throw error;
@@ -736,6 +790,8 @@ export class BrowserPool {
     let context: BrowserContext | undefined;
     let page: Page | undefined;
     let timer: NodeJS.Timeout | undefined;
+    let guard: GuardProxy | undefined;
+    let hops = new Set<string>();
 
     try {
       // A fresh context per request: separate cookies, storage and cache
@@ -744,9 +800,10 @@ export class BrowserPool {
       const profile = resolved.profile;
       warnings.push(...resolved.warnings);
       const identity = pooled.identity;
+      guard = await this.#guardFor(options.proxy, options.allowPrivate);
       context = await pooled.browser.newContext({
         ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
-        ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
+        ...proxyOption(options.proxy, guard),
         // A mobile viewport is the caller's explicit request; it wins over the
         // profile's desktop screen.
         ...profileContextOptions(profile, identity && headfulUserAgent(identity.userAgent)),
@@ -773,6 +830,7 @@ export class BrowserPool {
       });
 
       page = await context.newPage();
+      hops = mainFrameHops(page);
       abortClosesPage(page, options.signal);
       if (identity) await presentIdentity(context, page, identity, profile, mobileApplied);
 
@@ -785,6 +843,8 @@ export class BrowserPool {
 
       const result = await Promise.race([drivePage(page, options, deadline), expired]);
 
+      // The page shown is the guard's own refusal; never hand it back as the site's.
+      if (refusedOnPath(guard, hops)) throw new Error(REDIRECTED_PRIVATE);
       pooled.pagesServed++;
 
       return {
@@ -803,15 +863,18 @@ export class BrowserPool {
         timingMs: Date.now() - started,
         error: options.signal?.aborted
           ? abortMessage(options.signal)
-          : error instanceof Error
-            ? error.message
-            : 'render failed',
+          : refusedOnPath(guard, hops)
+            ? REDIRECTED_PRIVATE
+            : error instanceof Error
+              ? error.message
+              : 'render failed',
       };
     } finally {
       if (timer) clearTimeout(timer);
       // Closing the context aborts whatever step the deadline interrupted. See
       // abortClosesPage for why it is never page.close().
       await settleWithin(context?.close().catch(() => undefined) ?? Promise.resolve(), Math.max(0, deadline - Date.now()));
+      await guard?.close();
       pooled.activeContexts--;
       this.#releaseWaiter();
       void this.#maybeRecycle(pooled);

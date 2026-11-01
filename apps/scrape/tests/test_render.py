@@ -43,6 +43,10 @@ class _Recorder:
     # Document responses the fake page emits, in order (redirects and a solved challenge
     # load more than one).
     documents: ClassVar[list[dict[str, str]]] = []
+    # Main-frame navigations the fake page emits as requests (the first URL, then hops).
+    navigations: ClassVar[list[str]] = []
+    # host:port the fake browser opens through the guard proxy (CONNECT), page or not.
+    connects: ClassVar[list[str]] = []
 
     def __init__(self, **kwargs: Any) -> None:
         _Recorder.opened.append(kwargs)
@@ -57,15 +61,39 @@ class _Recorder:
     async def fetch(self, url: str) -> _Page:
         if self.delay_s:
             await asyncio.sleep(self.delay_s)
-        if self.error:
-            raise self.error
+        fake = _FakeBrowserPage()
         setup = self._kwargs.get("page_setup")
         if setup is not None:
-            fake = _FakeBrowserPage()
             await setup(fake)
-            for headers in self.documents:
-                fake.emit("response", _FakeResponse(fake.main_frame, headers))
+        for target in self.navigations:
+            fake.emit("request", _FakeRequest(fake.main_frame, target))
+        for authority in self.connects:
+            await _connect_through(self._kwargs["proxy"], authority)
+        if self.error:
+            raise self.error
+        for headers in self.documents:
+            fake.emit("response", _FakeResponse(fake.main_frame, headers))
         return self.page
+
+
+async def _connect_through(proxy: str, authority: str) -> None:
+    host, _, port = proxy.removeprefix("http://").rpartition(":")
+    reader, writer = await asyncio.open_connection(host, int(port))
+    writer.write(f"CONNECT {authority} HTTP/1.1\r\nHost: {authority}\r\n\r\n".encode())
+    await writer.drain()
+    await reader.read()
+    writer.close()
+
+
+class _FakeRequest:
+    resource_type = "document"
+
+    def __init__(self, frame: object, url: str) -> None:
+        self.frame = frame
+        self.url = url
+
+    def is_navigation_request(self) -> bool:
+        return True
 
 
 class _FakeResponse:
@@ -95,6 +123,8 @@ def recorder(monkeypatch: pytest.MonkeyPatch) -> Iterator[type[_Recorder]]:
     _Recorder.delay_s = 0.0
     _Recorder.error = None
     _Recorder.documents = []
+    _Recorder.navigations = []
+    _Recorder.connects = []
     monkeypatch.setattr(render_module, "_session_class", lambda: _Recorder)
 
     async def public(host: str, port: int) -> list[str]:
@@ -148,6 +178,47 @@ async def test_a_page_that_ends_on_a_refused_host_is_a_failure(
     assert result.body is None
 
 
+_TUNNEL_FAILED = RuntimeError(
+    "Page.goto: net::ERR_TUNNEL_CONNECTION_FAILED at https://example.com/"
+)
+
+
+async def test_a_refused_subresource_does_not_explain_an_unrelated_tunnel_failure(
+    recorder: type[_Recorder],
+) -> None:
+    recorder.navigations = ["https://example.com/"]
+    recorder.connects = ["localhost:443"]  # an image or script the guard refused
+    recorder.error = _TUNNEL_FAILED
+    result = await render(RenderRequest(url="https://example.com/"))
+    assert result.error == "connection failed: net::ERR_TUNNEL_CONNECTION_FAILED"
+
+
+async def test_a_main_frame_redirect_the_guard_refused_is_named(
+    recorder: type[_Recorder],
+) -> None:
+    recorder.navigations = ["https://example.com/", "https://localhost/admin"]
+    recorder.connects = ["localhost:443"]
+    recorder.error = _TUNNEL_FAILED
+    result = await render(RenderRequest(url="https://example.com/"))
+    assert result.error == "request failed: redirected to a private or local address"
+
+
+async def test_an_unresolved_subresource_does_not_explain_an_unrelated_tunnel_failure(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def lookup(host: str, port: int) -> list[str]:
+        if host == "cdn.invalid":
+            raise ConnectionError("name did not resolve")
+        return ["93.184.215.14"]
+
+    monkeypatch.setattr(render_module, "LOOKUP", lookup)
+    recorder.navigations = ["https://example.com/"]
+    recorder.connects = ["cdn.invalid:443"]
+    recorder.error = _TUNNEL_FAILED
+    result = await render(RenderRequest(url="https://example.com/"))
+    assert result.error == "connection failed: net::ERR_TUNNEL_CONNECTION_FAILED"
+
+
 async def test_a_caller_proxy_is_used_as_given(recorder: type[_Recorder]) -> None:
     await render(RenderRequest(url="https://example.com/", proxy="http://proxy.example:8080"))
     assert recorder.opened[0]["proxy"] == "http://proxy.example:8080"
@@ -167,8 +238,26 @@ async def test_without_stealth_the_extra_masking_is_off(recorder: type[_Recorder
     opened = recorder.opened[0]
     assert opened["solve_cloudflare"] is False
     assert opened["hide_canvas"] is False
-    assert opened["block_webrtc"] is False
     assert opened["google_search"] is False
+
+
+async def test_webrtc_cannot_go_around_the_guard(recorder: type[_Recorder]) -> None:
+    # WebRTC sends STUN over UDP, which no HTTP proxy carries: without the lock a page
+    # reaches loopback and LAN addresses the guard never sees.
+    await render(RenderRequest(url="https://example.com/"))
+    assert recorder.opened[0]["block_webrtc"] is True
+
+
+async def test_webrtc_cannot_leak_the_real_address_behind_a_caller_proxy(
+    recorder: type[_Recorder],
+) -> None:
+    await render(RenderRequest(url="https://example.com/", proxy="http://proxy.example:8080"))
+    assert recorder.opened[0]["block_webrtc"] is True
+
+
+async def test_webrtc_is_left_alone_with_no_guard_and_no_proxy(recorder: type[_Recorder]) -> None:
+    await render(RenderRequest(url="http://127.0.0.1:9/", allow_private=True))
+    assert recorder.opened[0]["block_webrtc"] is False
 
 
 async def test_stealth_turns_on_the_extra_masking_but_not_the_solver(

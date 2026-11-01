@@ -120,17 +120,31 @@ class _LastDocument:
     Scrapling's response pairs the first response's headers with the last one's status;
     after a redirect or a solved challenge that would report the 403's `cf-mitigated`
     beside a 200. These are the headers of the page that is returned.
+
+    Also keeps the host:port of every main-frame navigation (the first URL and each redirect
+    hop), so a failed render blames the guard only for a refusal on the page's own path.
     """
 
     def __init__(self) -> None:
         self.headers: dict[str, str] | None = None
+        self.navigated: set[str] = set()
 
     async def setup(self, page: Any) -> None:
+        def on_request(request: Any) -> None:
+            if request.is_navigation_request() and request.frame == page.main_frame:
+                self.navigated.add(_authority(str(request.url)))
+
         def on_response(response: Any) -> None:
             if response.request.resource_type == "document" and response.frame == page.main_frame:
                 self.headers = {str(k).lower(): str(v) for k, v in dict(response.headers).items()}
 
+        page.on("request", on_request)
         page.on("response", on_response)
+
+
+def _authority(url: str) -> str:
+    parts = urlsplit(url)
+    return f"{parts.hostname}:{parts.port or (443 if parts.scheme == 'https' else 80)}"
 
 
 def _session_options(
@@ -147,7 +161,9 @@ def _session_options(
         "network_idle": req.network_idle,
         "solve_cloudflare": req.solve_cloudflare,
         "hide_canvas": req.stealth,
-        "block_webrtc": req.stealth,
+        # WebRTC's STUN is UDP, which no HTTP proxy carries: unlocked, a page reaches
+        # loopback and LAN around the guard and shows the real address behind a proxy.
+        "block_webrtc": req.stealth or guard is not None or bool(req.proxy),
         "google_search": req.stealth,
         "block_ads": req.block_ads,
         "disable_resources": req.disable_resources,
@@ -165,14 +181,18 @@ def _scrub(text: str) -> str:
     return _FORBIDDEN.sub("-", text)
 
 
-def _describe(error: BaseException, req: RenderRequest, guard: GuardProxy | None) -> str:
+def _describe(
+    error: BaseException, req: RenderRequest, guard: GuardProxy | None, last: _LastDocument
+) -> str:
     text = str(error).split("\n", 1)[0].strip()
     code = re.search(r"net::ERR_[A-Z_]+", text)
     name = code.group(0) if code else ""
     if guard and name in ("net::ERR_TUNNEL_CONNECTION_FAILED", "net::ERR_PROXY_CONNECTION_FAILED"):
-        if guard.refused:
+        # Only the page's own path explains a failed navigation; a refused image does not.
+        path = last.navigated | {_authority(req.url)}
+        if path.intersection(guard.refused):
             return _REDIRECTED_PRIVATE
-        if guard.unresolved:
+        if path.intersection(guard.unresolved):
             return "connection failed: dns error: name did not resolve"
     if isinstance(error, TimeoutError) or re.search(r"Timeout \d+ms exceeded", text):
         return f"timeout after {req.timeout_ms}ms"
@@ -193,11 +213,12 @@ def _ended_somewhere_refused(final_url: str, req: RenderRequest, guard: GuardPro
     return f"{parts.hostname}:{port}" in guard.refused
 
 
-async def _browse(req: RenderRequest, guard: GuardProxy | None, started: float) -> RenderResponse:
+async def _browse(
+    req: RenderRequest, guard: GuardProxy | None, last: _LastDocument, started: float
+) -> RenderResponse:
     def elapsed() -> int:
         return int((time.monotonic() - started) * 1000)
 
-    last = _LastDocument()
     async with _session_class()(**_session_options(req, guard, last)) as session:
         page = await session.fetch(req.url)
 
@@ -232,18 +253,21 @@ async def _browse(req: RenderRequest, guard: GuardProxy | None, started: float) 
 async def _render_in_loop(req: RenderRequest, started: float) -> RenderResponse:
     remaining_s = req.timeout_ms / 1000 - (time.monotonic() - started)
     guard = None if req.allow_private or req.proxy else GuardProxy(lookup=LOOKUP)
+    last = _LastDocument()
     async with contextlib.AsyncExitStack() as stack:
         if guard:
             await stack.enter_async_context(guard)
         try:
-            return await asyncio.wait_for(_browse(req, guard, started), max(remaining_s, 0.001))
+            return await asyncio.wait_for(
+                _browse(req, guard, last, started), max(remaining_s, 0.001)
+            )
         except TimeoutError:
             error = f"timeout after {req.timeout_ms}ms"
             if req.solve_cloudflare:
                 error += " (the Cloudflare challenge was not solved in time)"
             return RenderResponse.failure(error, int((time.monotonic() - started) * 1000))
         except Exception as error:
-            failed = RenderResponse.failure(_describe(error, req, guard), 0)
+            failed = RenderResponse.failure(_describe(error, req, guard, last), 0)
             failed.timing_ms = int((time.monotonic() - started) * 1000)
             return failed
     raise AssertionError("unreachable")  # pragma: no cover

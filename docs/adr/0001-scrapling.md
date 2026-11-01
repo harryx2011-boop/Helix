@@ -80,7 +80,9 @@ Chromium with a Cloudflare solver, adaptive selectors, spiders and network captu
   goes through the proxy, which resolves once, refuses a private answer and connects to the
   checked addresses, as `/fetch` does per hop. The page host is checked before a browser starts
   and the final URL after. With a caller proxy the target is resolved by that proxy, as on
-  `/fetch`, and only the literal checks apply. The API's Playwright pool still guards with a
+  `/fetch`, and only the literal checks apply. WebRTC's UDP (STUN) goes around any HTTP proxy,
+  so the WebRTC lock (`disable_non_proxied_udp`) is on whenever the guard or a caller proxy is,
+  not only with `stealth` (review fix, 2026-11-01). The API's Playwright pool still guards with a
   route, so it has the redirect gap this proxy closes; that is open (not changed in Phase 2).
 - **One browser per render**, closed after it, capped by `HELIX_SCRAPE_MAX_RENDERS` (default 2).
   Each render runs in a worker thread with its own Proactor loop: uvicorn runs a Selector loop on

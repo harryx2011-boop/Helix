@@ -12,6 +12,7 @@ import http.server
 import threading
 import time
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar
@@ -47,6 +48,10 @@ class _Recorder:
     navigations: ClassVar[list[str]] = []
     # host:port the fake browser opens through the guard proxy (CONNECT), page or not.
     connects: ClassVar[list[str]] = []
+    # Sessions fetching at once, and the most there ever were.
+    active = 0
+    peak = 0
+    _lock = threading.Lock()
 
     def __init__(self, **kwargs: Any) -> None:
         _Recorder.opened.append(kwargs)
@@ -59,8 +64,15 @@ class _Recorder:
         return None
 
     async def fetch(self, url: str) -> _Page:
-        if self.delay_s:
-            await asyncio.sleep(self.delay_s)
+        with _Recorder._lock:
+            _Recorder.active += 1
+            _Recorder.peak = max(_Recorder.peak, _Recorder.active)
+        try:
+            if self.delay_s:
+                await asyncio.sleep(self.delay_s)
+        finally:
+            with _Recorder._lock:
+                _Recorder.active -= 1
         fake = _FakeBrowserPage()
         setup = self._kwargs.get("page_setup")
         if setup is not None:
@@ -125,6 +137,8 @@ def recorder(monkeypatch: pytest.MonkeyPatch) -> Iterator[type[_Recorder]]:
     _Recorder.documents = []
     _Recorder.navigations = []
     _Recorder.connects = []
+    _Recorder.active = 0
+    _Recorder.peak = 0
     monkeypatch.setattr(render_module, "_session_class", lambda: _Recorder)
 
     async def public(host: str, port: int) -> list[str]:
@@ -335,6 +349,54 @@ async def test_headers_come_from_the_page_that_was_returned(recorder: type[_Reco
     result = await render(RenderRequest(url="https://example.com/", solve_cloudflare=True))
     assert "cf-mitigated" not in result.headers
     assert result.headers["etag"] == "abc"
+
+
+# --- browser slots ---------------------------------------------------------------------
+
+
+async def test_renders_waiting_for_a_browser_hold_no_worker_thread(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # /fetch resolves names on the default executor (loop.getaddrinfo); renders queued for a
+    # browser must not use up its threads while they wait.
+    monkeypatch.setenv("HELIX_SCRAPE_MAX_RENDERS", "2")
+    loop = asyncio.get_running_loop()
+    loop.set_default_executor(ThreadPoolExecutor(max_workers=3))
+    recorder.delay_s = 1.0
+    renders = [
+        asyncio.create_task(render(RenderRequest(url="https://example.com/"))) for _ in range(4)
+    ]
+    await asyncio.sleep(0.2)
+    try:
+        assert await asyncio.wait_for(asyncio.to_thread(lambda: "resolved"), 0.5) == "resolved"
+    finally:
+        await asyncio.gather(*renders)
+
+
+async def test_no_more_browsers_run_than_the_cap(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HELIX_SCRAPE_MAX_RENDERS", "2")
+    recorder.delay_s = 0.3
+    results = await asyncio.gather(
+        *(render(RenderRequest(url="https://example.com/")) for _ in range(5))
+    )
+    assert all(r.success for r in results)
+    assert recorder.peak == 2
+
+
+async def test_a_render_that_never_gets_a_browser_times_out(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HELIX_SCRAPE_MAX_RENDERS", "2")
+    recorder.delay_s = 2.0
+    busy = [
+        asyncio.create_task(render(RenderRequest(url="https://example.com/"))) for _ in range(2)
+    ]
+    await asyncio.sleep(0.2)
+    result = await render(RenderRequest(url="https://example.com/", timeout_ms=300))
+    await asyncio.gather(*busy)
+    assert result.error == "timeout after 300ms (waiting for a free browser)"
 
 
 # --- deadline and errors ---------------------------------------------------------------

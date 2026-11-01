@@ -25,8 +25,8 @@ import contextlib
 import os
 import re
 import sys
-import threading
 import time
+import weakref
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -59,7 +59,20 @@ def _max_renders() -> int:
 
 
 # A browser is a few hundred MB and a busy CPU; a crawl must not open dozens at once.
-_slots = threading.BoundedSemaphore(_max_renders())
+# Renders wait for a slot on the event loop, not in a worker thread: the default executor
+# also resolves names for /fetch (loop.getaddrinfo), and queued renders must not fill it.
+# One gate per loop (the service has one; each test has its own).
+_slots: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Semaphore] = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def _slot_gate() -> asyncio.Semaphore:
+    loop = asyncio.get_running_loop()
+    gate = _slots.get(loop)
+    if gate is None:
+        gate = _slots[loop] = asyncio.Semaphore(_max_renders())
+    return gate
 
 
 def _session_class() -> Any:
@@ -276,17 +289,8 @@ async def _render_in_loop(req: RenderRequest, started: float) -> RenderResponse:
 def _render_in_thread(req: RenderRequest, started: float) -> RenderResponse:
     """A browser needs subprocess pipes, which the Selector loop uvicorn runs on Windows
     lacks (curl_cffi needs that loop), so each render gets a Proactor loop of its own."""
-    remaining_s = req.timeout_ms / 1000 - (time.monotonic() - started)
-    if not _slots.acquire(timeout=max(remaining_s, 0)):
-        return RenderResponse.failure(
-            f"timeout after {req.timeout_ms}ms (waiting for a free browser)",
-            int((time.monotonic() - started) * 1000),
-        )
-    try:
-        factory = asyncio.ProactorEventLoop if sys.platform == "win32" else None
-        return asyncio.run(_render_in_loop(req, started), loop_factory=factory)
-    finally:
-        _slots.release()
+    factory = asyncio.ProactorEventLoop if sys.platform == "win32" else None
+    return asyncio.run(_render_in_loop(req, started), loop_factory=factory)
 
 
 async def render(req: RenderRequest) -> RenderResponse:
@@ -313,10 +317,21 @@ async def render(req: RenderRequest) -> RenderResponse:
             except ConnectionError as error:
                 return RenderResponse.failure(f"connection failed: {error}", elapsed())
 
+    def remaining_s() -> float:
+        return req.timeout_ms / 1000 - (time.monotonic() - started)
+
+    gate = _slot_gate()
     try:
-        return await asyncio.wait_for(
-            asyncio.to_thread(_render_in_thread, req, started),
-            req.timeout_ms / 1000 + _CLOSE_GRACE_S,
+        await asyncio.wait_for(gate.acquire(), max(remaining_s(), 0.001))
+    except TimeoutError:
+        return RenderResponse.failure(
+            f"timeout after {req.timeout_ms}ms (waiting for a free browser)", elapsed()
         )
+    # The slot is freed when the thread ends, not when the caller stops waiting: a browser
+    # past its deadline still counts until it has closed.
+    work = asyncio.ensure_future(asyncio.to_thread(_render_in_thread, req, started))
+    work.add_done_callback(lambda _: gate.release())
+    try:
+        return await asyncio.wait_for(asyncio.shield(work), remaining_s() + _CLOSE_GRACE_S)
     except TimeoutError:
         return RenderResponse.failure(f"timeout after {req.timeout_ms}ms", elapsed())

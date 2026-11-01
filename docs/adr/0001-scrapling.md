@@ -59,3 +59,35 @@ Chromium with a Cloudflare solver, adaptive selectors, spiders and network captu
 - The solver's 2 minute worst case needs a hard request deadline and a clear `challenge` failure.
 - Chromium 1248 is what `ms-playwright` has today; staging must pin the build Helix ships.
 - Scrapling 0.5 is young; the pin is exact and upgrades are deliberate.
+
+## Phase 2 decisions (2026-11-01)
+
+- **No `DynamicFetcher`, so the plan's "plain browser by default, stealthy only when asked" is
+  replaced by this:** the `browser` rung always runs `AsyncStealthySession` (the patched Chromium;
+  there is no unpatched one to fall back to). What stays opt-in is what a site would notice:
+  `stealth: true` adds canvas noise, a WebRTC lock and a search-engine referer, and
+  `solveCloudflare: true` runs the solver. Neither is on by default and `stealth` never solves a
+  challenge. robots.txt checks and per-host pacing are unchanged. Docs carry Scrapling's
+  disclaimer: respect each site's terms of service and robots.txt.
+- **Ladder `plain, tls, browser`.** The browser rung calls helix-scrape `/render`, unless the
+  request needs what only Playwright gives (screenshot, PDF, actions, a phone or custom viewport,
+  dark mode, a non-Chromium engine); then it renders on the API's Playwright pool. That choice is
+  a capability of the rung, not a tier. `chromium` is accepted as the old name of `browser`;
+  `lightpanda` and `camoufox` are removed and run as `browser` with a warning, not a 400.
+- **The private-address guard for the browser is a loopback proxy** (`helix_scrape/guard_proxy.py`).
+  Measured: a Playwright page route does not see redirect hops (Chromium followed a 302 to
+  `localhost` and served it while the route saw only the first URL). Every browser connection
+  goes through the proxy, which resolves once, refuses a private answer and connects to the
+  checked addresses, as `/fetch` does per hop. The page host is checked before a browser starts
+  and the final URL after. With a caller proxy the target is resolved by that proxy, as on
+  `/fetch`, and only the literal checks apply. The API's Playwright pool still guards with a
+  route, so it has the redirect gap this proxy closes; that is open (not changed in Phase 2).
+- **One browser per render**, closed after it, capped by `HELIX_SCRAPE_MAX_RENDERS` (default 2).
+  Each render runs in a worker thread with its own Proactor loop: uvicorn runs a Selector loop on
+  Windows (curl_cffi needs it) and that loop cannot start a subprocess. Measured: about 1.6 s for
+  example.com through the browser, 2.0 s for a script-built page.
+- **Hard deadline:** the whole render, the solver included, ends at the request timeout; an
+  unsolved challenge fails as `timeout after <ms>ms (the Cloudflare challenge was not solved in
+  time)`.
+- **Headers come from the last main-frame document.** Scrapling pairs the first response's
+  headers with the last one's status, which after a solve reported `cf-mitigated` beside a 200.

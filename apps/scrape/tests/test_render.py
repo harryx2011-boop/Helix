@@ -20,7 +20,7 @@ from typing import Any, ClassVar
 import pytest
 
 from helix_scrape import render as render_module
-from helix_scrape.models import RenderRequest
+from helix_scrape.models import RenderIdentity, RenderRequest, Screen
 from helix_scrape.render import chromium_path, render
 
 
@@ -351,6 +351,56 @@ async def test_headers_come_from_the_page_that_was_returned(recorder: type[_Reco
     assert result.headers["etag"] == "abc"
 
 
+# --- a caller's profile ----------------------------------------------------------------
+
+
+def _profile() -> RenderIdentity:
+    return RenderIdentity(
+        id="chrome-137",
+        user_agent="UA-137",
+        accept_language="en-GB,en;q=0.9",
+        timezone="Europe/London",
+        init_script="window.__helix = 1;",
+    )
+
+
+async def test_a_profile_identity_reaches_the_browser_and_is_reported(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    presented: list[str] = []
+
+    async def present(page: object, identity: RenderIdentity) -> object:
+        presented.append(identity.id)
+        return object()
+
+    monkeypatch.setattr(render_module, "present", present)
+    result = await render(RenderRequest(url="https://example.com/", identity=_profile()))
+    assert result.success
+    assert result.profile_used == "chrome-137"
+    assert presented == ["chrome-137"]
+    options = recorder.opened[0]
+    assert options["useragent"] == "UA-137"
+    assert options["locale"] == "en-GB"
+    assert options["timezone_id"] == "Europe/London"
+
+
+async def test_without_a_profile_no_identity_is_claimed(recorder: type[_Recorder]) -> None:
+    result = await render(RenderRequest(url="https://example.com/"))
+    assert result.profile_used is None
+    assert "useragent" not in recorder.opened[0]
+
+
+async def test_a_profile_that_could_not_be_presented_is_not_reported(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def present(page: object, identity: RenderIdentity) -> object:
+        raise RuntimeError("no CDP session")
+
+    monkeypatch.setattr(render_module, "present", present)
+    result = await render(RenderRequest(url="https://example.com/", identity=_profile()))
+    assert result.profile_used is None
+
+
 # --- browser slots ---------------------------------------------------------------------
 
 
@@ -555,3 +605,74 @@ async def test_browser_renders_what_the_script_builds(site: int) -> None:
     )
     assert result.success, result.error
     assert result.body is not None and "made by script" in result.body
+
+
+class _Probe(http.server.BaseHTTPRequestHandler):
+    seen: ClassVar[dict[str, str]] = {}
+
+    def log_message(self, *args: object) -> None:
+        pass
+
+    def do_GET(self) -> None:
+        _Probe.seen = {k.lower(): v for k, v in self.headers.items()}
+        body = (
+            b"<html><body><pre id=out></pre><script>"
+            b"const d = navigator.userAgentData;"
+            b"document.getElementById('out').textContent = JSON.stringify({"
+            b"ua: navigator.userAgent,"
+            b"brands: d ? d.brands.map(b => b.brand + '/' + b.version) : null,"
+            b"tz: Intl.DateTimeFormat().resolvedOptions().timeZone, screen: screen.width,"
+            b"marker: window.__helix || null});"
+            b"</script></body></html>"
+        )
+        self.send_response(200)
+        self.send_header("content-type", "text/html")
+        self.send_header("content-length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
+@browser
+async def test_browser_presents_the_profile_to_the_server_and_the_page() -> None:
+    import json
+    import re
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Probe)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    ua = (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+    )
+    try:
+        result = await render(
+            RenderRequest(
+                url=f"http://127.0.0.1:{server.server_address[1]}/probe",
+                allow_private=True,
+                timeout_ms=20_000,
+                identity=RenderIdentity(
+                    id="chrome-137",
+                    user_agent=ua,
+                    accept_language="en-GB,en-US;q=0.9,en;q=0.8",
+                    timezone="Europe/London",
+                    screen=Screen(width=1728, height=1117),
+                    init_script="window.__helix = 'set';",
+                ),
+            )
+        )
+    finally:
+        server.shutdown()
+    assert result.success, result.error
+    assert result.profile_used == "chrome-137"
+    sent = _Probe.seen
+    assert sent["user-agent"] == ua
+    assert sent["accept-language"] == "en-GB,en-US;q=0.9,en;q=0.8"
+    assert 'v="137"' in sent["sec-ch-ua"]
+    assert sent["sec-ch-ua-platform"] == '"macOS"'
+    match = re.search(r"<pre id=\"?out\"?>(.*?)</pre>", result.body or "", re.S)
+    assert match, (result.body or "")[:300]
+    page = json.loads(match.group(1).replace("&quot;", '"'))
+    assert page["ua"] == ua
+    assert all(b.endswith("/137") or b.startswith("Not") for b in page["brands"])
+    assert page["tz"] == "Europe/London"
+    assert page["screen"] == 1728
+    assert page["marker"] == "set"

@@ -33,6 +33,7 @@ from urllib.parse import urlsplit
 from helix_scrape.fetcher import _is_literal, _parse, max_body_bytes
 from helix_scrape.guard import is_private_host, lookup_public
 from helix_scrape.guard_proxy import GuardProxy, Lookup
+from helix_scrape.identity import present, session_options
 from helix_scrape.models import CookieIn, RenderRequest, RenderResponse
 
 # Replaced by tests; the guard resolves through it.
@@ -140,6 +141,9 @@ class _LastDocument:
     def __init__(self) -> None:
         self.headers: dict[str, str] | None = None
         self.navigated: set[str] = set()
+        # The caller's profile, once presented, and the CDP session that holds its override.
+        self.profile_used: str | None = None
+        self.identity_session: Any = None
 
     async def setup(self, page: Any) -> None:
         def on_request(request: Any) -> None:
@@ -159,11 +163,28 @@ def _authority(url: str) -> str:
     return f"{parts.hostname}:{parts.port or (443 if parts.scheme == 'https' else 80)}"
 
 
+def _page_setup(req: RenderRequest, last: _LastDocument) -> Any:
+    async def setup(page: Any) -> None:
+        await last.setup(page)
+        if req.identity is None:
+            return
+        try:
+            last.identity_session = await present(page, req.identity)
+        except Exception:
+            # The browser's own identity goes out instead; `profile_used` stays absent, as the
+            # pool reports a profile it could not apply.
+            return
+        last.profile_used = req.identity.id
+
+    return setup
+
+
 def _session_options(
     req: RenderRequest, guard: GuardProxy | None, last: _LastDocument
 ) -> dict[str, Any]:
     return {
-        "page_setup": last.setup,
+        **(session_options(req.identity) if req.identity else {}),
+        "page_setup": _page_setup(req, last),
         "executable_path": chromium_path(),
         "headless": True,
         "retries": 1,
@@ -258,6 +279,7 @@ async def _browse(
         body=body,
         final_url=final_url,
         cookies=[dict(c) for c in page.cookies or ()],
+        profile_used=last.profile_used,
         timing_ms=elapsed(),
     )
 

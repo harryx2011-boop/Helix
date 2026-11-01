@@ -75,7 +75,8 @@ async def test_render_refuses_a_private_page_with_http_200(client: httpx.AsyncCl
     assert res.status_code == 200
     body = res.json()
     assert set(body) == {
-        "success", "status", "headers", "body", "final_url", "cookies", "timing_ms", "error",
+        "success", "status", "headers", "body", "final_url", "cookies", "profile_used",
+        "timing_ms", "error",
     }  # fmt: skip
     assert body["success"] is False
     assert "private or local address" in body["error"]

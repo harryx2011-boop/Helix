@@ -61,6 +61,27 @@ class CookieIn(BaseModel):
     http_only: bool | None = None
 
 
+class Screen(BaseModel):
+    width: int = Field(gt=0)
+    height: int = Field(gt=0)
+
+
+class RenderIdentity(BaseModel):
+    """A caller's profile, resolved by the API: what the browser presents instead of its own.
+
+    The API owns the definitions and the keyed fingerprint script; this service applies them.
+    """
+
+    # Reported back as `profile_used` once applied.
+    id: str
+    user_agent: str | None = None
+    accept_language: str | None = None
+    timezone: str | None = None
+    screen: Screen | None = None
+    # Runs before any page script (canvas seed, WebGL, hardware values). Written by the API.
+    init_script: str | None = None
+
+
 class RenderRequest(BaseModel):
     url: str
     # Supplied by the operator or caller. Helix ships no proxy pool.
@@ -82,6 +103,8 @@ class RenderRequest(BaseModel):
     disable_resources: bool = False
     cookies: list[CookieIn] = Field(default_factory=list)
     allow_private: bool = False
+    # A caller's profile. Omit for the browser's own identity.
+    identity: RenderIdentity | None = None
 
 
 class RenderResponse(BaseModel):
@@ -94,6 +117,8 @@ class RenderResponse(BaseModel):
     # The browser's cookie jar after the render (Playwright cookie objects), cf_clearance
     # included, so the API can keep a host session.
     cookies: list[dict[str, Any]] = Field(default_factory=list)
+    # The profile actually presented. Absent when none was asked for or it could not be.
+    profile_used: str | None = None
     timing_ms: int = 0
     error: str | None = None
 

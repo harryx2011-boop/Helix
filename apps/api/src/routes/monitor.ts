@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { webhookTargetProblem } from '../core/webhook-target.js';
+import { REQUEST_TIERS } from '../core/escalation.js';
 import { checkProxyUrl, checkUrl, type HostResolver } from '../core/url-guard.js';
 import { snapshotUrl, type CheckOutcome } from '../monitor/checker.js';
 import { assertMinimumInterval, nextRun, normalizeSchedule, ScheduleError } from '../monitor/schedule.js';
@@ -50,7 +51,7 @@ const ScheduleSchema = z.union([
 
 const ScrapeOptionsSchema = z.object({
   formats: z.array(z.literal('markdown')).optional(),
-  tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox']).optional(),
+  tier: z.enum(REQUEST_TIERS).optional(),
   onlyMainContent: z.boolean().optional(),
   includeSelectors: z.array(z.string()).optional(),
   excludeSelectors: z.array(z.string()).optional(),

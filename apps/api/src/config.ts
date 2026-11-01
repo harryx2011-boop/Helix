@@ -74,8 +74,6 @@ const ConfigSchema = z.object({
   browserMaxContexts: positiveInt(20),
   /** Recycle a browser process after this many pages, to bound memory growth. */
   browserRecycleAfter: int(250),
-  lightpandaEnabled: bool(false),
-  lightpandaUrl: z.string().default('http://localhost:9222'),
   /** Which browser drives the render tier when a request does not name one. */
   browserEngine: z.enum(['chromium', 'firefox', 'webkit']).default('chromium'),
   /**
@@ -88,8 +86,6 @@ const ConfigSchema = z.object({
    * DESKTOP-PLAN D14 (recorded there as D17), the desktop app now ships it.
    */
   browserChannel: z.string().default('chromium'),
-  camoufoxEnabled: bool(false),
-  camoufoxUrl: z.string().default('ws://localhost:9223'),
   /**
    * A remote browser the render tier connects to instead of launching locally.
    * Unset means launch locally, which is the only arrangement where the pages
@@ -194,12 +190,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     browserPoolSize: env.HELIX_BROWSER_POOL_SIZE,
     browserMaxContexts: env.HELIX_BROWSER_MAX_CONTEXTS,
     browserRecycleAfter: env.HELIX_BROWSER_RECYCLE_AFTER,
-    lightpandaEnabled: env.HELIX_LIGHTPANDA_ENABLED,
-    lightpandaUrl: env.HELIX_LIGHTPANDA_URL,
     browserEngine: env.HELIX_BROWSER_ENGINE,
     browserChannel: env.HELIX_BROWSER_CHANNEL,
-    camoufoxEnabled: env.HELIX_CAMOUFOX_ENABLED,
-    camoufoxUrl: env.HELIX_CAMOUFOX_URL,
     remoteCdpUrl: env.HELIX_REMOTE_CDP_URL || undefined,
     publicUrl: env.HELIX_PUBLIC_URL,
     interactMaxSessions: env.HELIX_INTERACT_MAX_SESSIONS,

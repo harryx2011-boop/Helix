@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { runPipeline } from '../core/pipeline.js';
+import { REQUEST_TIERS } from '../core/escalation.js';
 import type { ProviderResult, SearchHit, SearchProvider, SearchSource } from '../search/providers.js';
 import { SearchCache } from '../search/cache.js';
 import type { FetchClient } from '../fetch/client.js';
@@ -21,7 +22,7 @@ const SOURCES = ['web', 'news', 'images'] as const;
 
 const ScrapeOptionsSchema = z.object({
   formats: z.array(z.enum(FORMATS)).min(1).default(['markdown']),
-  tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox']).default('auto'),
+  tier: z.enum(REQUEST_TIERS).default('auto'),
   onlyMainContent: z.boolean().default(true),
   includeSelectors: z.array(z.string()).default([]),
   excludeSelectors: z.array(z.string()).default([]),

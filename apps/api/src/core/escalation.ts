@@ -1,13 +1,16 @@
 /**
  * Fetch-tier escalation.
  *
- * Five tiers, cheapest first:
+ * Three tiers, cheapest first:
  *
  *   plain       ~5ms     raw HTTP, no TLS mimicry
- *   tls        ~50ms     coherent JA4 + HTTP/2 settings (helix-scrape)
- *   lightpanda ~25ms     JS execution, no layout or canvas
- *   chromium   ~2-5s     full render, screenshots, actions
- *   camoufox   ~3-6s     hardened Firefox, for sites the render tier still loses
+ *   tls        ~50ms     coherent JA4 + HTTP/2 settings (helix-scrape /fetch)
+ *   browser   ~2-5s      full render: helix-scrape's patched Chromium (/render),
+ *                        or the Playwright pool when the request needs a
+ *                        screenshot, actions or a phone layout
+ *
+ * v3 dropped lightpanda and camoufox; their names, and `chromium` (the old
+ * name of the browser rung), are still accepted and mapped by `normalizeTier`.
  *
  * The rule that matters: escalate on EVIDENCE, never on a guess about the
  * framework a site uses. Next.js, Nuxt and SvelteKit routinely server-render
@@ -18,25 +21,34 @@
 
 import { detectBlock, type ResponseFacts } from './block-detection.js';
 
-export type Tier = 'plain' | 'tls' | 'lightpanda' | 'chromium' | 'camoufox';
+export type Tier = 'plain' | 'tls' | 'browser';
 
-export const TIER_ORDER: readonly Tier[] = [
-  'plain',
-  'tls',
-  'lightpanda',
-  'chromium',
-  'camoufox',
-] as const;
+export const TIER_ORDER: readonly Tier[] = ['plain', 'tls', 'browser'] as const;
+
+/** Tier names a request may carry: the ladder, `auto`, and the names v3 retired. */
+export const REQUEST_TIERS = ['auto', 'plain', 'tls', 'browser', 'lightpanda', 'chromium', 'camoufox'] as const;
+export type RequestTier = (typeof REQUEST_TIERS)[number];
 
 /**
- * The ceiling when a caller does not set one.
+ * A request's tier on the v3 ladder.
  *
- * Camoufox sits above it deliberately. It is off by default, needs a separate
- * process an operator opted into, and costs more than the tier below it — so it
- * is reached by asking for it, never by walking up the ladder. `maxTier` opts
- * a request in.
+ * Old names keep working (stored monitors and crawls carry them): `chromium`
+ * is the same rung under its old name; `lightpanda` and `camoufox` are gone,
+ * so they get the browser rung and a warning instead of a 400.
  */
-export const DEFAULT_MAX_TIER: Tier = 'chromium';
+export function normalizeTier(tier: RequestTier): { tier: Tier | 'auto'; warning?: string } {
+  if (tier === 'chromium') return { tier: 'browser' };
+  if (tier === 'lightpanda' || tier === 'camoufox') {
+    return {
+      tier: 'browser',
+      warning: `tier: the ${tier} tier was removed in v3; the request ran on the browser tier.`,
+    };
+  }
+  return { tier };
+}
+
+/** The ceiling when a caller does not set one: the top of the ladder. */
+export const DEFAULT_MAX_TIER: Tier = 'browser';
 
 export interface Capabilities {
   screenshot?: boolean;
@@ -47,8 +59,6 @@ export interface Capabilities {
   waitFor?: number;
   /** The request must leave through a proxy. */
   proxy?: boolean;
-  /** Tiers this instance cannot run (a disabled lightpanda or camoufox). */
-  unavailable?: readonly Tier[];
 }
 
 export interface EscalationDecision {
@@ -57,25 +67,15 @@ export interface EscalationDecision {
   reason: string;
 }
 
-/**
- * Lightpanda has no layout engine, so anything visual must skip it. It is also
- * skipped when a proxy is required: the pool cannot confirm that a proxy handed
- * over CDP is honoured there, and a fetch that quietly leaves from the
- * instance's own address is worse than one tier fewer.
- */
+/** Anything visual or script-dependent needs the browser rung. */
 export function tierSupports(tier: Tier, caps: Capabilities): boolean {
-  if (caps.unavailable?.includes(tier)) return false;
-
-  const needsRealBrowser =
-    caps.screenshot || caps.actions || caps.visualLayout || caps.pdfRender;
-  if (needsRealBrowser) return tier === 'chromium' || tier === 'camoufox';
-
-  if (caps.proxy && tier === 'lightpanda') return false;
-
-  const needsJs = caps.waitFor !== undefined && caps.waitFor > 0;
-  if (needsJs) return tier === 'lightpanda' || tier === 'chromium' || tier === 'camoufox';
-
-  return true;
+  const needsBrowser =
+    caps.screenshot ||
+    caps.actions ||
+    caps.visualLayout ||
+    caps.pdfRender ||
+    (caps.waitFor !== undefined && caps.waitFor > 0);
+  return needsBrowser ? tier === 'browser' : true;
 }
 
 /**
@@ -87,14 +87,9 @@ export function tierSupports(tier: Tier, caps: Capabilities): boolean {
  * as an explicit tier.
  */
 export function minimumViableTier(caps: Capabilities): Tier {
-  // Bounded by the default ceiling, so a capability requirement can never
-  // *start* a request at the opt-in tier: camoufox supports everything chromium
-  // does, and picking the lowest viable tier without this bound would still
-  // never choose it — but the bound is stated rather than relied upon.
   for (const tier of TIER_ORDER) {
     if (tier === 'plain') continue;
     if (tierSupports(tier, caps)) return tier;
-    if (tier === DEFAULT_MAX_TIER) break;
   }
   return DEFAULT_MAX_TIER;
 }

@@ -3,7 +3,8 @@ import type { Tier } from '../core/escalation.js';
 import { withServiceToken } from '../core/service-token.js';
 
 /**
- * Client for helix-scrape's /fetch (tiers 0 and 1).
+ * Client for helix-scrape: /fetch (tiers plain and tls) and /render (the
+ * browser tier on Scrapling's patched Chromium).
  *
  * This service reports what happened at the transport layer and applies no
  * policy of its own. Block classification lives in the core, so the rules stay
@@ -31,6 +32,49 @@ export interface FetchResult {
   setCookies?: string[] | undefined;
   body?: string | undefined;
   profileUsed?: string | undefined;
+  timingMs: number;
+  error?: string | undefined;
+}
+
+export interface RenderOptions {
+  url: string;
+  proxy?: string | undefined;
+  headers?: Record<string, string> | undefined;
+  /** The whole render, Cloudflare solving included, ends by this deadline. */
+  timeoutMs?: number | undefined;
+  /** Extra wait after the page settles. */
+  waitMs?: number | undefined;
+  /** Canvas noise, WebRTC lock and a search referer on top of the patched browser. */
+  stealth?: boolean | undefined;
+  /** Opt-in: click through a Cloudflare challenge. Slow. */
+  solveCloudflare?: boolean | undefined;
+  blockAds?: boolean | undefined;
+  /** Skip fonts, images, media and stylesheets. */
+  disableResources?: boolean | undefined;
+  allowPrivate?: boolean | undefined;
+  signal?: AbortSignal | undefined;
+}
+
+/** A cookie as the browser holds it (Playwright's shape). */
+export interface BrowserCookie {
+  name: string;
+  value: string;
+  domain?: string;
+  path?: string;
+  expires?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: string;
+}
+
+export interface RenderResult {
+  success: boolean;
+  status?: number | undefined;
+  headers: Record<string, string>;
+  body?: string | undefined;
+  finalUrl?: string | undefined;
+  /** The browser's jar after the render, `cf_clearance` included. */
+  cookies?: BrowserCookie[] | undefined;
   timingMs: number;
   error?: string | undefined;
 }
@@ -109,6 +153,59 @@ export class FetchClient {
         timingMs: Date.now() - started,
         error: message,
       };
+    }
+  }
+
+  async render(options: RenderOptions): Promise<RenderResult> {
+    const started = Date.now();
+    const timeoutMs = options.timeoutMs ?? 30_000;
+    const timeout = AbortSignal.timeout(timeoutMs + 5_000);
+    const signal = options.signal ? AbortSignal.any([timeout, options.signal]) : timeout;
+    try {
+      const response = await fetch(`${this.#baseUrl}/render`, {
+        method: 'POST',
+        headers: withServiceToken(this.#serviceToken, { 'content-type': 'application/json' }),
+        body: JSON.stringify({
+          url: options.url,
+          timeout_ms: timeoutMs,
+          wait_ms: options.waitMs,
+          stealth: options.stealth,
+          solve_cloudflare: options.solveCloudflare,
+          block_ads: options.blockAds,
+          disable_resources: options.disableResources,
+          proxy: options.proxy,
+          headers: options.headers,
+          allow_private: options.allowPrivate ?? false,
+        }),
+        signal,
+      });
+      if (!response.ok) {
+        return { success: false, headers: {}, timingMs: Date.now() - started, error: `helix-scrape returned HTTP ${response.status}` };
+      }
+      const body = (await response.json()) as {
+        success: boolean;
+        status?: number;
+        headers?: Record<string, string>;
+        body?: string;
+        final_url?: string;
+        cookies?: BrowserCookie[];
+        timing_ms?: number;
+        error?: string;
+      };
+      return {
+        success: body.success,
+        status: body.status,
+        headers: body.headers ?? {},
+        body: body.body,
+        finalUrl: body.final_url,
+        cookies: body.cookies,
+        timingMs: body.timing_ms ?? Date.now() - started,
+        error: body.error,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'helix-scrape unreachable';
+      this.#logger?.warn({ error, url: options.url }, 'helix-scrape render failed');
+      return { success: false, headers: {}, timingMs: Date.now() - started, error: message };
     }
   }
 

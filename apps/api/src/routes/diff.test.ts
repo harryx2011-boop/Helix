@@ -8,6 +8,7 @@ import type { BrowserPool } from '../browser/pool.js';
 function fetchClientReturning(body: string): FetchClient {
   return {
     fetch: vi.fn(async () => ({ success: true, status: 200, headers: {}, body, timingMs: 10 })),
+    render: vi.fn(async () => ({ success: true, status: 200, headers: {}, body, timingMs: 100 })),
     health: vi.fn(async () => true),
   } as unknown as FetchClient;
 }
@@ -118,6 +119,13 @@ describe('POST /diff', () => {
         body: url.endsWith('/a') ? '<html><body>version one</body></html>' : '<html><body>version two</body></html>',
         timingMs: 10,
       })),
+      render: vi.fn(async ({ url }: { url: string }) => ({
+        success: true,
+        status: 200,
+        headers: {},
+        body: url.endsWith('/a') ? '<html><body>version one</body></html>' : '<html><body>version two</body></html>',
+        timingMs: 100,
+      })),
       health: vi.fn(async () => true),
     } as unknown as FetchClient;
     const extractClient: ExtractClient = {
@@ -185,6 +193,7 @@ describe('POST /diff', () => {
   it('reports a typed fetch failure on a url side as a 400 naming the side', async () => {
     const fetchClient: FetchClient = {
       fetch: vi.fn(async () => ({ success: false, error: 'ECONNREFUSED', headers: {}, timingMs: 5 })),
+      render: vi.fn(async () => ({ success: false, error: 'ECONNREFUSED', headers: {}, timingMs: 5 })),
       health: vi.fn(async () => true),
     } as unknown as FetchClient;
     const browserPool: BrowserPool = {

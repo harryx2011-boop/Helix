@@ -78,7 +78,7 @@ export function profileMatchesEngine(profile: BrowserProfile, engine: RenderEngi
  * Firefox accepts `isMobile` and silently does nothing with it: measured, the
  * viewport narrows but `ontouchstart` never appears, so a page branching on
  * touch still serves its desktop layout. Reporting that as a phone render would
- * repeat exactly the lie the lightpanda `mobile` warning exists to prevent.
+ * repeat exactly the lie the plain and tls `mobile` warning exists to prevent.
  */
 export function supportsMobileEmulation(engine: RenderEngine): boolean {
   return engine !== 'firefox';

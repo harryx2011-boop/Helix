@@ -17,10 +17,6 @@ export interface ServiceCheckDeps {
   fetchClient: FetchClient;
   extractClient: ExtractClient;
   browserPool?: BrowserPool;
-  /** Present only when the instance runs Lightpanda as a distinct render tier. */
-  lightpandaEnabled?: boolean;
-  /** Present only when the instance offers the Camoufox tier. */
-  camoufoxEnabled?: boolean;
   /** True when the render tier connects to a remote browser instead of launching one. */
   remoteCdpConfigured?: boolean;
 }
@@ -96,20 +92,6 @@ export async function runServiceChecks(deps: ServiceCheckDeps): Promise<Record<s
       detail: `${stats.browsers} browsers, ${stats.activeContexts} active contexts, ${stats.pagesServed} pages served (engine: ${engines})`,
       latencyMs: Date.now() - started,
     };
-  }
-
-  // `stats()` does not distinguish the Lightpanda tier from Chromium — it is a
-  // separate CDP endpoint the pool connects to per-render, not a pooled
-  // resource with its own counters. The only signal available here is whether
-  // the instance has it enabled, so that is what a `lightpanda` entry reports.
-  if (deps.lightpandaEnabled) {
-    services['lightpanda'] = { status: 'ok', detail: 'enabled', latencyMs: 0 };
-  }
-
-  // Same caveat as lightpanda: both are endpoints connected to per-render, so
-  // "enabled" is the only fact available without spending a connection here.
-  if (deps.camoufoxEnabled) {
-    services['camoufox'] = { status: 'ok', detail: 'enabled', latencyMs: 0 };
   }
 
   if (deps.remoteCdpConfigured) {

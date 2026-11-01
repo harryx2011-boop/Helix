@@ -750,11 +750,11 @@ describe('CrawlWorker — what a job cost, and what it was projected to cost', (
 
   it('counts recorded pages by tier and the time a render tier took', async () => {
     db.state.request = baseRequest();
-    runPipeline.mockResolvedValueOnce({ ...pipelineSuccess(), tier: 'chromium', tiersAttempted: ['plain', 'chromium'], timingMs: 2_340 });
+    runPipeline.mockResolvedValueOnce({ ...pipelineSuccess(), tier: 'browser', tiersAttempted: ['plain', 'browser'], timingMs: 2_340 });
 
     await buildWorker().runOnce();
 
-    expect(outcome()).toMatchObject({ pagesFetched: 1, tierBreakdown: { chromium: 1 }, browserSeconds: 2.3 });
+    expect(outcome()).toMatchObject({ pagesFetched: 1, tierBreakdown: { browser: 1 }, browserSeconds: 2.3 });
   });
 
   it('keeps each page climb with the page', async () => {

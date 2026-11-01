@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { runPipeline, type PipelineDeps } from '../core/pipeline.js';
+import { REQUEST_TIERS } from '../core/escalation.js';
 import { StructuredError, type ExtractClient } from '../extract/client.js';
 import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 import { checkUrl, type HostResolver } from '../core/url-guard.js';
@@ -48,7 +49,7 @@ const ExtractRequestSchema = z
      * exists to not return.
      */
     allowUngrounded: z.boolean().default(false),
-    tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox']).optional(),
+    tier: z.enum(REQUEST_TIERS).optional(),
     timeout: z.number().int().min(1_000).max(300_000).default(60_000),
   })
   .superRefine((body, ctx) => {

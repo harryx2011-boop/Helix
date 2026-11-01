@@ -9,8 +9,6 @@ export interface HealthDeps {
   fetchClient: FetchClient;
   extractClient: ExtractClient;
   browserPool?: BrowserPool;
-  lightpandaEnabled?: boolean;
-  camoufoxEnabled?: boolean;
   remoteCdpConfigured?: boolean;
   detectLocal?: DetectLocal;
   /** From config, which a stored setting can set when the env does not. */

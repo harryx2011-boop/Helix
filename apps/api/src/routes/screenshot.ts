@@ -49,7 +49,8 @@ const ScreenshotRequestSchema = z
     blockAds: z.boolean().default(false),
     mobile: z.boolean().default(false),
     proxy: z.string().optional(),
-    tier: z.enum(['auto', 'chromium', 'camoufox']).default('auto'),
+    /** `chromium` and `camoufox` are v2 names, run as `browser`. */
+    tier: z.enum(['auto', 'browser', 'chromium', 'camoufox']).default('auto'),
     waitFor: z.number().int().min(0).max(30_000).optional(),
     timeout: z.number().int().min(1_000).max(300_000).default(30_000),
     actions: z.array(z.unknown()).max(50).optional(),
@@ -206,7 +207,7 @@ export async function registerScreenshot(app: FastifyInstance, deps: ScreenshotR
           tiersAttempted: result.tiersAttempted,
           profile: result.profileUsed,
           engine: result.engineUsed,
-          mobile: body.mobile && result.tier === 'chromium' && result.engineUsed !== 'firefox',
+          mobile: body.mobile && result.tier === 'browser' && result.engineUsed !== 'firefox',
           timingMs: result.timingMs,
         },
       },

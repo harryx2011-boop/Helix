@@ -10,6 +10,7 @@ const ARTICLE = `<html><head><script>track()</script><!-- note --></head><body o
 
 function fetchClientReturning(body: string, status = 200): FetchClient {
   return {
+    render: vi.fn(async () => ({ success: true, status, headers: {}, body, finalUrl: 'https://example.com/', timingMs: 500 })),
     fetch: vi.fn(async () => ({
       success: true,
       status,
@@ -407,8 +408,8 @@ describe('POST /scrape proxy and mobile', () => {
     const res = await post(app, { url: 'https://example.com', mobile: true });
     expect(res.statusCode).toBe(200);
     expect(deps.fetchClient.fetch).not.toHaveBeenCalled();
-    expect(deps.browserPool?.render).toHaveBeenCalledWith(expect.objectContaining({ mobile: true, engine: 'chromium' }));
-    expect(res.json().data.metadata).toMatchObject({ tier: 'chromium', mobile: true });
+    expect(deps.browserPool?.render).toHaveBeenCalledWith(expect.objectContaining({ mobile: true }));
+    expect(res.json().data.metadata).toMatchObject({ tier: 'browser', mobile: true });
   });
 
   it('warns when mobile is combined with a tier that has no viewport', async () => {
@@ -418,12 +419,12 @@ describe('POST /scrape proxy and mobile', () => {
     expect(res.json().data.metadata.mobile).toBe(false);
   });
 
-  it('warns when mobile is combined with lightpanda and does not report a phone viewport', async () => {
+  it('runs a removed lightpanda tier as browser, with the phone viewport and a warning', async () => {
     const { app } = await build();
     const res = await post(app, { url: 'https://example.com', mobile: true, tier: 'lightpanda' });
     expect(res.statusCode).toBe(200);
-    expect(res.json().warnings[0]).toContain('lightpanda');
-    expect(res.json().data.metadata).toMatchObject({ tier: 'lightpanda', mobile: false });
+    expect(res.json().warnings.join(' ')).toMatch(/lightpanda tier was removed/);
+    expect(res.json().data.metadata).toMatchObject({ tier: 'browser', mobile: true });
   });
 });
 
@@ -432,14 +433,12 @@ describe('POST /scrape engine and tier selection', () => {
     const { app, deps } = await build();
     const res = await post(app, { url: 'https://example.com', tier: 'chromium', engine: 'firefox' });
     expect(res.statusCode).toBe(200);
-    expect(deps.browserPool?.render).toHaveBeenCalledWith(
-      expect.objectContaining({ engine: 'chromium', renderEngine: 'firefox' }),
-    );
+    expect(deps.browserPool?.render).toHaveBeenCalledWith(expect.objectContaining({ renderEngine: 'firefox' }));
   });
 
   it('leaves the engine to the instance default when the request omits it', async () => {
     const { app, deps } = await build();
-    await post(app, { url: 'https://example.com', tier: 'chromium' });
+    await post(app, { url: 'https://example.com', formats: ['markdown', 'screenshot'], tier: 'chromium' });
     const call = (deps.browserPool?.render as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {
       renderEngine?: string;
     };
@@ -453,26 +452,36 @@ describe('POST /scrape engine and tier selection', () => {
     expect(res.json()).toMatchObject({ error: 'invalid_request', field: 'engine' });
   });
 
-  it('accepts camoufox as an explicit tier', async () => {
+  it('runs a removed camoufox tier as browser and says so, rather than refusing it', async () => {
     const { app, deps } = await build();
     const res = await post(app, { url: 'https://example.com', tier: 'camoufox' });
     expect(res.statusCode).toBe(200);
-    expect(deps.browserPool?.render).toHaveBeenCalledWith(expect.objectContaining({ engine: 'camoufox' }));
+    expect(deps.fetchClient.render).toHaveBeenCalledTimes(1);
+    expect(res.json().data.metadata).toMatchObject({ tier: 'browser' });
+    expect(res.json().warnings.join(' ')).toMatch(/camoufox tier was removed/);
   });
 
-  it('never reaches camoufox on its own when the tier is auto', async () => {
-    // The ladder escalates on evidence up to chromium; the opt-in tier is
-    // reached by naming it, never by a block.
+  it('says so on a failure too', async () => {
     const challenge = '<html><body><div class="cf-browser-verification">Checking your browser before accessing</div></body></html>';
-    const { app, deps } = await build({
-      fetchClient: fetchClientReturning(challenge),
-      browserPool: browserPool(challenge),
-    });
-    await post(app, { url: 'https://example.com', tier: 'auto' });
-    const engines = (deps.browserPool?.render as ReturnType<typeof vi.fn>).mock.calls.map(
-      (call) => (call[0] as { engine?: string }).engine,
-    );
-    expect(engines).not.toContain('camoufox');
+    const { app } = await build({ fetchClient: fetchClientReturning(challenge, 403) });
+    const res = await post(app, { url: 'https://example.com', tier: 'camoufox' });
+    expect(res.json().success).toBe(false);
+    expect(res.json().warnings.join(' ')).toMatch(/camoufox tier was removed/);
+  });
+
+  it('passes stealth and solveCloudflare to the browser tier', async () => {
+    const { app, deps } = await build();
+    const res = await post(app, { url: 'https://example.com', tier: 'browser', stealth: true, solveCloudflare: true });
+    expect(res.statusCode).toBe(200);
+    expect(deps.fetchClient.render).toHaveBeenCalledWith(expect.objectContaining({ stealth: true, solveCloudflare: true }));
+  });
+
+  it('leaves stealth and the solver off unless asked', async () => {
+    const { app, deps } = await build();
+    await post(app, { url: 'https://example.com', tier: 'browser' });
+    const call = vi.mocked(deps.fetchClient.render).mock.calls[0]?.[0];
+    expect(call?.stealth).toBeFalsy();
+    expect(call?.solveCloudflare).toBeFalsy();
   });
 
   it('reports the engine that rendered in the metadata', async () => {

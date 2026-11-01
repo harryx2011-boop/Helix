@@ -1,12 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * The shared connection to an external browser (camoufox here; lightpanda and
- * a remote CDP endpoint go through the same `#connection`).
+ * The shared connection to a remote CDP browser (`#connection`).
  *
- * Driven through the public ways in, `probeExternalTiers()` and `render()`,
- * with a fake `firefox.connect` that counts connects and lets a test drop a
- * connection.
+ * Driven through `render()`, with a fake `chromium.connectOverCDP` that
+ * counts connects and lets a test drop a connection.
  */
 
 interface FakeBrowser {
@@ -57,58 +55,34 @@ vi.mock('playwright', () => {
     throw new Error('not used in this test');
   };
   return {
-    chromium: { launch: unused, connectOverCDP: unused },
-    firefox: { launch: unused, connect },
+    chromium: { launch: unused, connectOverCDP: connect },
+    firefox: { launch: unused },
     webkit: { launch: unused },
   };
 });
 
 const { BrowserPool } = await import('./pool.js');
 
-const camoufoxPool = () =>
+const remotePool = () =>
   new BrowserPool({
     size: 0,
     maxContexts: 1,
     recycleAfter: 100,
-    camoufoxEnabled: true,
-    camoufoxUrl: 'ws://camoufox.test:9223',
+    remoteCdpUrl: 'ws://remote.test:9222',
   });
+
+const remoteRender = { url: 'https://example.com/', timeout: 2_000, allowPrivate: true };
 
 afterEach(() => {
   fake.connects = 0;
   fake.browsers = [];
 });
 
-describe('the external-tier probe', () => {
-  it('runs on its own, without start(), so a remote-CDP instance still learns about camoufox', async () => {
-    const pool = camoufoxPool();
-    await pool.probeExternalTiers();
-    expect(pool.camoufoxReady()).toBe(true);
-    expect(fake.connects).toBe(1);
-    await pool.close();
-  });
-
-  it('stops offering camoufox once its connection drops', async () => {
-    const pool = camoufoxPool();
-    await pool.probeExternalTiers();
-    expect(pool.camoufoxReady()).toBe(true);
-
-    const [browser] = fake.browsers;
-    browser!.connected = false;
-    for (const handler of browser!.onDisconnect) handler();
-
-    expect(pool.camoufoxReady()).toBe(false);
-    await pool.close();
-  });
-});
-
-const camoufoxRender = { url: 'https://example.com/', engine: 'camoufox' as const, timeout: 2_000 };
-
 describe('the shared connection', () => {
-  it('serves two camoufox renders over one connect', async () => {
-    const pool = camoufoxPool();
-    const first = await pool.render(camoufoxRender);
-    const second = await pool.render(camoufoxRender);
+  it('serves two renders over one connect', async () => {
+    const pool = remotePool();
+    const first = await pool.render(remoteRender);
+    const second = await pool.render(remoteRender);
 
     expect(first.error).toBeUndefined();
     expect(second.error).toBeUndefined();
@@ -116,31 +90,29 @@ describe('the shared connection', () => {
     await pool.close();
   });
 
-  it('offers camoufox again once a render has reconnected to it', async () => {
-    const pool = camoufoxPool();
-    await pool.probeExternalTiers();
+  it('reconnects once a connection has dropped', async () => {
+    const pool = remotePool();
+    await pool.render(remoteRender);
     const [dropped] = fake.browsers;
     dropped!.connected = false;
     for (const handler of dropped!.onDisconnect) handler();
-    expect(pool.camoufoxReady()).toBe(false);
 
-    await pool.render(camoufoxRender);
+    await pool.render(remoteRender);
 
     expect(fake.connects).toBe(2);
-    expect(pool.camoufoxReady()).toBe(true);
     await pool.close();
   });
 
   it('reconnects once when two callers find the same stale connection', async () => {
-    const pool = camoufoxPool();
-    await pool.probeExternalTiers();
+    const pool = remotePool();
+    await pool.render(remoteRender);
     expect(fake.connects).toBe(1);
 
     // Stale without the event having fired yet: Playwright reports the close
     // asynchronously, so both callers see the dead handle.
     fake.browsers[0]!.connected = false;
 
-    await Promise.all([pool.probeExternalTiers(), pool.probeExternalTiers()]);
+    await Promise.all([pool.render(remoteRender), pool.render(remoteRender)]);
 
     // One reconnect shared by both. A second would leave a live connection
     // that nothing tracks and close() never closes.
@@ -149,12 +121,12 @@ describe('the shared connection', () => {
   });
 
   it('opens nothing once the pool is closing', async () => {
-    const pool = camoufoxPool();
+    const pool = remotePool();
     await pool.close();
 
-    await pool.probeExternalTiers();
+    const result = await pool.render(remoteRender);
 
+    expect(result.error).toBeDefined();
     expect(fake.connects).toBe(0);
-    expect(pool.camoufoxReady()).toBe(false);
   });
 });

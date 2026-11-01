@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { getPool } from '../db/pool.js';
+import { REQUEST_TIERS } from '../core/escalation.js';
 import { compilePathPattern, fetchUrl, normaliseUrl } from '../crawl/url.js';
 import type { CrawlJobRequest } from '../crawl/worker.js';
 import { WEBHOOK_EVENTS } from '../webhooks/deliveries.js';
@@ -52,7 +53,7 @@ export interface CrawlRouteDeps extends MapRouteDeps {
  */
 export const CRAWL_FORMATS = ['markdown', 'html', 'rawHtml', 'text', 'links', 'screenshot', 'json', 'chunks'] as const;
 
-export const TIERS = ['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox'] as const;
+export const TIERS = REQUEST_TIERS;
 export const EXTRACTORS = ['trafilatura', 'readability', 'auto'] as const;
 
 /**

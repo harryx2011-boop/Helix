@@ -31,13 +31,6 @@ import {
  * 13% to 85% RAM after ~30 crawls and never recover without a restart.
  */
 
-/**
- * `chromium` here names the heavy render tier, not necessarily Chrome: which
- * browser drives it is the `renderEngine` option. `camoufox` is a hardened
- * Firefox reached over its own endpoint, one rung above.
- */
-export type Engine = 'chromium' | 'lightpanda' | 'camoufox';
-
 /** A current phone-class viewport. Device scale stays at 1 so screenshots stay small. */
 const MOBILE_CONTEXT = {
   viewport: { width: 390, height: 844 },
@@ -47,8 +40,7 @@ const MOBILE_CONTEXT = {
 
 export interface RenderOptions {
   url: string;
-  engine?: Engine | undefined;
-  /** Which browser drives the chromium tier. Ignored by the lightpanda and camoufox tiers. */
+  /** Which browser drives the render. The pool's default when unset. */
   renderEngine?: RenderEngine | undefined;
   waitFor?: number | undefined;
   timeout?: number | undefined;
@@ -151,8 +143,6 @@ export interface BrowserPoolOptions {
   maxContexts: number;
   /** Recycle a browser after this many pages. */
   recycleAfter: number;
-  lightpandaEnabled?: boolean | undefined;
-  lightpandaUrl?: string | undefined;
   /** Engine the render tier uses when a request does not name one. */
   defaultEngine?: RenderEngine | undefined;
   /**
@@ -161,9 +151,6 @@ export interface BrowserPoolOptions {
    * installed). Ignored for firefox and webkit, which have their own channels.
    */
   browserChannel?: string | undefined;
-  camoufoxEnabled?: boolean | undefined;
-  /** Playwright-protocol endpoint of a running Camoufox. */
-  camoufoxUrl?: string | undefined;
   /** CDP endpoint of a remote browser the render tier connects to instead of launching locally. */
   remoteCdpUrl?: string | undefined;
   logger?: Log | undefined;
@@ -481,7 +468,7 @@ export class BrowserPool {
   /**
    * Connections to browsers this process did not launch, keyed by endpoint.
    *
-   * Lightpanda, camoufox and a remote CDP endpoint were connected to and
+   * A remote CDP endpoint was connected to and
    * disconnected from once per render. A connect is a WebSocket handshake plus
    * a target discovery round trip to a service that is often not on this
    * machine, and paying it per page made the cheap tiers the slow ones. The
@@ -492,10 +479,6 @@ export class BrowserPool {
    * arriving together share one connect instead of racing to make two.
    */
   readonly #connections = new Map<string, Promise<Browser>>();
-  /** Set by the boot probe: camoufox is enabled and answered. */
-  #camoufoxReady = false;
-  /** Connections already carrying a readiness handler, so none gets two. */
-  readonly #camoufoxWatched = new WeakSet<Browser>();
 
   constructor(options: BrowserPoolOptions) {
     this.#options = options;
@@ -536,81 +519,6 @@ export class BrowserPool {
       { size: this.#browsers.length, engine: this.defaultEngine },
       'browser pool ready',
     );
-  }
-
-  /**
-   * Find out which operator-run tiers are really there. Called once at boot.
-   *
-   * Once, rather than per request: the answer decides whether the ladder has a
-   * rung above chromium at all, and a per-request probe would pay a connect on
-   * every page to learn something that changes only when the operator restarts
-   * their camoufox. A camoufox started later is picked up at the next API
-   * restart, which is the trade the probe makes.
-   *
-   * Separate from `start()` because `start()` is lazy (the first local render
-   * calls it) and never runs at all on a remote-CDP instance, so a probe inside
-   * it left the tier unreachable on every instance until something else ran.
-   */
-  async probeExternalTiers(): Promise<void> {
-    if (this.#options.camoufoxEnabled) await this.#probeCamoufox();
-    this.#logger?.info(
-      { camoufox: this.#options.camoufoxEnabled ? this.#camoufoxReady : 'off' },
-      'external browser tiers probed',
-    );
-  }
-
-  /**
-   * Connect to camoufox once at boot to find out whether it is really there.
-   *
-   * The connection is kept, so the probe is not a cost paid twice: the first
-   * render that reaches the tier reuses it.
-   */
-  async #probeCamoufox(): Promise<void> {
-    const endpoint = this.#options.camoufoxUrl ?? 'ws://localhost:9223';
-    try {
-      const browser = await this.#connection(`camoufox:${endpoint}`, async () => {
-        const { firefox } = await import('playwright');
-        return firefox.connect(endpoint, { timeout: 5_000 });
-      });
-      this.#trackCamoufox(browser);
-    } catch (error) {
-      // Enabled but unreachable is an ordinary state, not a boot failure: the
-      // operator runs that process themselves. The ladder simply stops at
-      // chromium, exactly as it did before the tier was enabled.
-      this.#camoufoxReady = false;
-      this.#logger?.info(
-        { endpoint, error: error instanceof Error ? error.message : String(error) },
-        'camoufox is enabled but did not answer; the ladder stops at chromium',
-      );
-    }
-  }
-
-  /**
-   * Readiness follows the live connection, whoever made it.
-   *
-   * A camoufox that dies would otherwise stay on the ladder, turning every
-   * hard page into a 5 s failed connect whose error also hides the real
-   * `challenge` verdict from the rung below. And one that comes back, reached
-   * again by an explicit `tier: 'camoufox'` render, is on the ladder again.
-   */
-  #trackCamoufox(browser: Browser): void {
-    this.#camoufoxReady = true;
-    if (this.#camoufoxWatched.has(browser)) return;
-    this.#camoufoxWatched.add(browser);
-    browser.on('disconnected', () => {
-      this.#camoufoxReady = false;
-    });
-  }
-
-  /**
-   * Whether evidence may walk the ladder into camoufox on its own.
-   *
-   * Both halves are needed: an operator who enabled the tier, and a process
-   * that answered. Enabled-but-absent would otherwise spend a failed connect
-   * at the top of every hard page.
-   */
-  camoufoxReady(): boolean {
-    return this.#camoufoxReady;
   }
 
   async #launch(engine: RenderEngine): Promise<PooledBrowser> {
@@ -794,38 +702,6 @@ export class BrowserPool {
       return { headers: {}, timingMs: 0, error: abortMessage(options.signal) };
     }
 
-    if (options.engine === 'lightpanda') {
-      if (!this.#options.lightpandaEnabled) {
-        return {
-          headers: {},
-          timingMs: Date.now() - started,
-          error: 'lightpanda tier requested but not enabled',
-        };
-      }
-      if (options.proxy) {
-        // A per-context proxy travels over CDP, and whether Lightpanda honours
-        // it is not observable from here. Declining is the only answer that
-        // cannot leave from the instance's own address.
-        return {
-          headers: {},
-          timingMs: Date.now() - started,
-          error: 'lightpanda tier does not route through a proxy; use the chromium tier',
-        };
-      }
-      return this.#renderLightpanda(options, started, deadline);
-    }
-
-    if (options.engine === 'camoufox') {
-      if (!this.#options.camoufoxEnabled) {
-        return {
-          headers: {},
-          timingMs: Date.now() - started,
-          error: 'camoufox tier requested but not enabled',
-        };
-      }
-      return this.#renderCamoufox(options, started, deadline);
-    }
-
     const engine = options.renderEngine ?? this.defaultEngine;
     const warnings: string[] = [];
 
@@ -938,140 +814,6 @@ export class BrowserPool {
   }
 
   /**
-   * Lightpanda over CDP.
-   *
-   * Roughly 11x faster and 9x lighter than Chromium because it skips layout,
-   * compositing and font rendering — which is also why anything visual must not
-   * be routed here. The escalation policy already refuses to send screenshot,
-   * canvas or proxied work to this tier, and `mobile` is not applied because
-   * there is no layout for a viewport to change; the route says so in a warning.
-   */
-  async #renderLightpanda(options: RenderOptions, started: number, deadline: number): Promise<RenderResult> {
-    const endpoint = this.#options.lightpandaUrl ?? 'http://localhost:9222';
-    try {
-      const browser = await this.#connection(`lightpanda:${endpoint}`, () =>
-        chromium.connectOverCDP(endpoint, { timeout: 5_000 }),
-      );
-
-      const context = await browser.newContext({
-        ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
-      });
-
-      // The context is what has to go now that the connection outlives the
-      // render: closing the browser used to collect it on any path out.
-      try {
-        if (!options.allowPrivate) {
-          // Request interception over CDP is what enforces the guard for every
-          // hop and subresource. A build that lacks it declines the tier rather
-          // than fetching unguarded.
-          try {
-            await blockRequests(context, { blockPrivate: true, blockAds: false, lookup: this.#options.lookup });
-          } catch (error) {
-            const detail = error instanceof Error ? error.message : String(error);
-            throw new Error(`lightpanda tier cannot enforce the private-address guard (${detail})`);
-          }
-        }
-
-        const page = await context.newPage();
-        abortClosesPage(page, options.signal);
-        const response = await page.goto(options.url, {
-          timeout: Math.max(1, deadline - Date.now()),
-          waitUntil: 'domcontentloaded',
-        });
-
-        if (options.waitFor && options.waitFor > 0) {
-          await page.waitForTimeout(Math.min(options.waitFor, 10_000, Math.max(0, deadline - Date.now())));
-        }
-
-        const html = await page.content();
-        const finalUrl = page.url();
-        const status = response?.status();
-
-        return { html, status, headers: {}, finalUrl, timingMs: Date.now() - started };
-      } finally {
-        await context.close().catch(() => undefined);
-      }
-    } catch (error) {
-      return {
-        headers: {},
-        timingMs: Date.now() - started,
-        error: options.signal?.aborted
-          ? abortMessage(options.signal)
-          : error instanceof Error
-            ? error.message
-            : 'lightpanda unreachable',
-      };
-    }
-  }
-
-  /**
-   * Camoufox — a hardened Firefox, one rung above the render tier.
-   *
-   * Connected to over a configured endpoint rather than bundled. Camoufox is a
-   * patched Firefox shipping as a per-platform binary of a few hundred
-   * megabytes; vendoring three of them would multiply the image size for a tier
-   * that is off by default and that most instances never reach. This repo has
-   * already refused a heavy native dependency on the same reasoning (MILESTONES
-   * M3). An operator who wants the tier runs the binary and points the instance
-   * at it, exactly as lightpanda works.
-   *
-   * It speaks the Playwright protocol rather than CDP, so it is `connect`, not
-   * `connectOverCDP`. That is also what makes the guard below enforceable: the
-   * routing API is the real one, not a CDP approximation of it.
-   */
-  async #renderCamoufox(
-    options: RenderOptions,
-    started: number,
-    deadline: number,
-  ): Promise<RenderResult> {
-    const endpoint = this.#options.camoufoxUrl ?? 'ws://localhost:9223';
-    try {
-      const browser = await this.#connection(`camoufox:${endpoint}`, async () => {
-        const { firefox } = await import('playwright');
-        return firefox.connect(endpoint, { timeout: 5_000 });
-      });
-      this.#trackCamoufox(browser);
-
-      const context = await browser.newContext({
-        ...(options.headers ? { extraHTTPHeaders: options.headers } : {}),
-        ...(options.proxy ? { proxy: { server: options.proxy } } : {}),
-      });
-
-      try {
-        if (!options.allowPrivate) {
-          // Same rule as every other tier: no guard, no fetch. Camoufox patches
-          // Firefox's internals, so its routing support is a property of the
-          // build in front of us rather than something to assume.
-          try {
-            await blockRequests(context, { blockPrivate: true, blockAds: false, lookup: this.#options.lookup });
-          } catch (error) {
-            const detail = error instanceof Error ? error.message : String(error);
-            throw new Error(`camoufox tier cannot enforce the private-address guard (${detail})`);
-          }
-        }
-
-        const page = await context.newPage();
-        abortClosesPage(page, options.signal);
-        const result = await drivePage(page, options, deadline);
-
-        return { ...result, engineUsed: 'firefox' as const, timingMs: Date.now() - started };
-      } finally {
-        await context.close().catch(() => undefined);
-      }
-    } catch (error) {
-      return {
-        headers: {},
-        timingMs: Date.now() - started,
-        error: options.signal?.aborted
-          ? abortMessage(options.signal)
-          : error instanceof Error
-            ? error.message
-            : 'camoufox unreachable',
-      };
-    }
-  }
-
-  /**
    * A remote browser over CDP, so a small instance can burst without hosting
    * the browsers itself.
    *
@@ -1175,14 +917,6 @@ export class BrowserPool {
     } finally {
       if (timer) clearTimeout(timer);
     }
-  }
-
-  /** Engines this instance will refuse, so the ladder can step over them. */
-  disabledEngines(): Engine[] {
-    return [
-      ...(this.#options.lightpandaEnabled ? [] : (['lightpanda'] as const)),
-      ...(this.#options.camoufoxEnabled ? [] : (['camoufox'] as const)),
-    ];
   }
 
   stats(): {

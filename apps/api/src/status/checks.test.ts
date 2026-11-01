@@ -58,14 +58,12 @@ describe('service checks', () => {
     expect(services['lightpanda']).toBeUndefined();
   });
 
-  it('reports camoufox and the remote browser once enabled', async () => {
+  it('reports the remote browser once configured', async () => {
     const services = await runServiceChecks({
       fetchClient,
       extractClient,
-      camoufoxEnabled: true,
       remoteCdpConfigured: true,
     });
-    expect(services['camoufox']).toMatchObject({ status: 'ok', detail: 'enabled' });
     expect(services['remoteBrowser']?.status).toBe('ok');
   });
 
@@ -97,8 +95,6 @@ describe('service checks', () => {
       fetchClient,
       extractClient,
       browserPool: browserPool(['chromium']),
-      lightpandaEnabled: true,
-      camoufoxEnabled: true,
       remoteCdpConfigured: true,
     });
     for (const [name, status] of Object.entries(services)) {

@@ -143,18 +143,11 @@ const browserPool = new BrowserPool({
   size: config.browserPoolSize,
   maxContexts: config.browserMaxContexts,
   recycleAfter: config.browserRecycleAfter,
-  lightpandaEnabled: config.lightpandaEnabled,
-  lightpandaUrl: config.lightpandaUrl,
   defaultEngine: config.browserEngine,
   browserChannel: config.browserChannel,
-  camoufoxEnabled: config.camoufoxEnabled,
-  camoufoxUrl: config.camoufoxUrl,
   ...(config.remoteCdpUrl ? { remoteCdpUrl: config.remoteCdpUrl } : {}),
   logger: app.log,
 });
-// Not awaited: an unreachable camoufox costs a 5 s connect timeout, and boot
-// should not wait on a tier that only the hardest pages ever reach.
-void browserPool.probeExternalTiers();
 
 const sessions = new SessionRegistry({
   lease: (options) => browserPool.lease(options),
@@ -290,8 +283,6 @@ const statusSampler = new StatusSampler({
   fetchClient,
   extractClient,
   browserPool,
-  lightpandaEnabled: config.lightpandaEnabled,
-  camoufoxEnabled: config.camoufoxEnabled,
   remoteCdpConfigured: Boolean(config.remoteCdpUrl),
   logger: app.log,
 });
@@ -338,8 +329,6 @@ await app.register(
       fetchClient,
       extractClient,
       browserPool,
-      lightpandaEnabled: config.lightpandaEnabled,
-      camoufoxEnabled: config.camoufoxEnabled,
       remoteCdpConfigured: Boolean(config.remoteCdpUrl),
       detectLocal,
       searxngUrl: config.searxngUrl,
@@ -493,9 +482,7 @@ const settingsEnvValues: Record<string, unknown> = {
   logLevel: config.logLevel,
   corsOrigins: config.corsOrigins,
   allowPrivateUrls: config.allowPrivateUrls,
-  lightpandaEnabled: config.lightpandaEnabled,
   browserEngine: config.browserEngine,
-  camoufoxEnabled: config.camoufoxEnabled,
   remoteCdpUrl: config.remoteCdpUrl,
   searxngUrl: config.searxngUrl,
 };

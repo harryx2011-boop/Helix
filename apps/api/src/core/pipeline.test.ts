@@ -14,11 +14,21 @@ const CLOUDFLARE_CHALLENGE = `<html><head><title>Just a moment...</title></head>
 
 const SPA_SHELL = `<html><body><div id="root"></div><script src="/bundle.js"></script></body></html>`;
 
+/** `rendered` is what helix-scrape's browser tier (/render) answers with. */
 function fetchClientReturning(
   responses: { status: number; body: string; headers?: Record<string, string> }[],
+  rendered: string = ARTICLE,
 ): FetchClient {
   let call = 0;
   return {
+    render: vi.fn(async () => ({
+      success: true,
+      status: 200,
+      headers: {},
+      body: rendered,
+      finalUrl: 'https://example.com',
+      timingMs: 500,
+    })),
     fetch: vi.fn(async () => {
       const r = responses[Math.min(call, responses.length - 1)];
       call++;
@@ -88,9 +98,10 @@ describe('runPipeline', () => {
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'] },
       deps({
-        fetchClient: fetchClientReturning([
-          { status: 200, body: CLOUDFLARE_CHALLENGE, headers: { 'cf-mitigated': 'challenge' } },
-        ]),
+        fetchClient: fetchClientReturning(
+          [{ status: 200, body: CLOUDFLARE_CHALLENGE, headers: { 'cf-mitigated': 'challenge' } }],
+          CLOUDFLARE_CHALLENGE,
+        ),
         extractClient: extractClientReturning('Checking your browser'),
         browserPool: browserPoolReturning(CLOUDFLARE_CHALLENGE),
       }),
@@ -139,8 +150,8 @@ describe('runPipeline', () => {
 
     expect(result.success).toBe(true);
     if (!result.success) return;
-    expect(result.tiersAttempted).toEqual(['tls', 'lightpanda']);
-    expect(result.tier).toBe('lightpanda');
+    expect(result.tiersAttempted).toEqual(['tls', 'browser']);
+    expect(result.tier).toBe('browser');
   });
 
   it('reaches a browser tier when no cheaper tier can produce content', async () => {
@@ -175,8 +186,7 @@ describe('runPipeline', () => {
 
     expect(result.success).toBe(true);
     if (!result.success) return;
-    expect(browserPool.render).toHaveBeenCalled();
-    expect(result.tiersAttempted).toContain('lightpanda');
+    expect(result.tiersAttempted).toContain('browser');
   });
 
   it('does not escalate for server-rendered pages that merely look like SPAs', async () => {
@@ -200,7 +210,7 @@ describe('runPipeline', () => {
     expect(browserPool.render).not.toHaveBeenCalled();
   });
 
-  it('starts at chromium when a screenshot is requested', async () => {
+  it('starts at browser when a screenshot is requested', async () => {
     // Capability requirements are known up front; walking the ladder first would
     // waste two round trips on tiers that cannot produce an image.
     const browserPool = browserPoolReturning(ARTICLE);
@@ -213,7 +223,7 @@ describe('runPipeline', () => {
 
     expect(result.success).toBe(true);
     if (!result.success) return;
-    expect(result.tier).toBe('chromium');
+    expect(result.tier).toBe('browser');
     expect(fetchClient.fetch).not.toHaveBeenCalled();
   });
 
@@ -237,9 +247,8 @@ describe('runPipeline', () => {
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'] },
       deps({
-        fetchClient: fetchClientReturning([{ status: 403, body: 'Access denied' }]),
+        fetchClient: fetchClientReturning([{ status: 403, body: 'Access denied' }], 'Access denied'),
         extractClient: extractClientReturning(''),
-        browserPool: browserPoolReturning('Access denied'),
       }),
     );
 
@@ -324,12 +333,12 @@ describe('runPipeline with skipExtraction', () => {
 });
 
 describe('runPipeline with a proxy', () => {
-  it('never routes a proxied request through lightpanda', async () => {
-    const browserPool = browserPoolReturning(ARTICLE);
+  it('renders a proxied request through the same proxy', async () => {
+    const fetchClient = fetchClientReturning([{ status: 200, body: SPA_SHELL }], ARTICLE);
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'], proxy: 'http://proxy.local:8080' },
       deps({
-        fetchClient: fetchClientReturning([{ status: 200, body: SPA_SHELL }]),
+        fetchClient,
         extractClient: {
           extract: vi.fn(async ({ html }: { html: string }) =>
             html === SPA_SHELL
@@ -338,16 +347,12 @@ describe('runPipeline with a proxy', () => {
           ),
           health: vi.fn(async () => true),
         } as unknown as ExtractClient,
-        browserPool,
       }),
     );
 
     expect(result.success).toBe(true);
-    expect(result.tiersAttempted).not.toContain('lightpanda');
-    expect(result.tiersAttempted).toContain('chromium');
-    expect(browserPool.render).toHaveBeenCalledWith(
-      expect.objectContaining({ engine: 'chromium', proxy: 'http://proxy.local:8080' }),
-    );
+    expect(result.tiersAttempted).toContain('browser');
+    expect(fetchClient.render).toHaveBeenCalledWith(expect.objectContaining({ proxy: 'http://proxy.local:8080' }));
   });
 });
 
@@ -452,8 +457,8 @@ describe('runPipeline � empty extraction on a server-rendered page', () => {
 
     expect(result.success).toBe(true);
     if (!result.success) return;
-    expect(result.tiersAttempted).toEqual(['tls', 'lightpanda']);
-    expect(result.tier).toBe('lightpanda');
+    expect(result.tiersAttempted).toEqual(['tls', 'browser']);
+    expect(result.tier).toBe('browser');
     expect(result.content.markdown).toContain('Real article text');
   });
 
@@ -475,7 +480,7 @@ describe('runPipeline � empty extraction on a server-rendered page', () => {
     expect(result.success).toBe(true);
     if (!result.success) return;
     expect(result.escalations).toHaveLength(1);
-    expect(result.escalations[0]).toMatchObject({ from: 'tls', to: 'lightpanda' });
+    expect(result.escalations[0]).toMatchObject({ from: 'tls', to: 'browser' });
     expect(result.escalations[0]?.reason).toEqual(expect.any(String));
     expect(result.escalations[0]?.reason.length).toBeGreaterThan(0);
   });
@@ -497,19 +502,17 @@ describe('runPipeline � empty extraction on a server-rendered page', () => {
   });
 
   it('returns the empty page as-is once the ladder is spent', async () => {
-    const browserPool = browserPoolReturning(BOILERPLATE);
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'] },
       deps({
-        fetchClient: fetchClientReturning([{ status: 200, body: BOILERPLATE }]),
+        fetchClient: fetchClientReturning([{ status: 200, body: BOILERPLATE }], BOILERPLATE),
         extractClient: extractEmptyOnBoilerplate(),
-        browserPool,
       }),
     );
 
     expect(result.success).toBe(true);
     if (!result.success) return;
-    expect(result.tiersAttempted).toEqual(['tls', 'lightpanda', 'chromium']);
+    expect(result.tiersAttempted).toEqual(['tls', 'browser']);
     expect(result.content.markdown).toBe('');
   });
 
@@ -571,6 +574,7 @@ describe('runPipeline ladder costs', () => {
         await new Promise((r) => setTimeout(r, ms));
         return { success: true, status: 200, headers: {}, body, timingMs: ms };
       }),
+      render: vi.fn(async () => ({ success: true, status: 200, headers: {}, body: ARTICLE, timingMs: 5 })),
       health: vi.fn(async () => true),
     }) as unknown as FetchClient;
 
@@ -591,22 +595,6 @@ describe('runPipeline ladder costs', () => {
     expect(browserPool.render).not.toHaveBeenCalled();
   });
 
-  it('skips a browser tier the pool has not enabled', async () => {
-    const browserPool = Object.assign(browserPoolReturning(ARTICLE), { disabledEngines: () => ['lightpanda'] });
-    const result = await runPipeline(
-      { url: 'https://example.com', formats: ['markdown'] },
-      deps({
-        fetchClient: fetchClientReturning([{ status: 200, body: SPA_SHELL }]),
-        extractClient: extractEmptyOnShell(),
-        browserPool,
-      }),
-    );
-
-    expect(result.success).toBe(true);
-    if (!result.success) return;
-    expect(result.tiersAttempted).toEqual(['tls', 'chromium']);
-  });
-
   it('does not send a recognised block page to the extractor', async () => {
     const challenge = '<html><head><title>Just a moment...</title></head><body>cf</body></html>';
     const extractClient = extractEmptyOnShell();
@@ -624,61 +612,55 @@ describe('runPipeline ladder costs', () => {
   });
 
   it('waits out a short Retry-After before the next tier', async () => {
-    const browserPool = browserPoolReturning(ARTICLE);
+    const fetchClient = fetchClientReturning([{ status: 429, body: 'Too many requests', headers: { 'retry-after': '1' } }]);
     const started = Date.now();
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'], timeout: 30_000 },
-      deps({
-        fetchClient: fetchClientReturning([{ status: 429, body: 'Too many requests', headers: { 'retry-after': '1' } }]),
-        browserPool,
-      }),
+      deps({ fetchClient }),
     );
 
     expect(result.success).toBe(true);
-    expect(browserPool.render).toHaveBeenCalled();
+    expect(fetchClient.render).toHaveBeenCalled();
     expect(Date.now() - started).toBeGreaterThanOrEqual(950);
   });
 
   it('stops instead of climbing when Retry-After outlasts the budget', async () => {
-    const browserPool = browserPoolReturning(ARTICLE);
+    const fetchClient = fetchClientReturning([{ status: 429, body: 'Too many requests', headers: { 'retry-after': '120' } }]);
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'], timeout: 30_000 },
-      deps({
-        fetchClient: fetchClientReturning([{ status: 429, body: 'Too many requests', headers: { 'retry-after': '120' } }]),
-        browserPool,
-      }),
+      deps({ fetchClient }),
     );
 
     expect(result.success).toBe(false);
     if (result.success) return;
     expect(result.retryAfterSeconds).toBe(120);
     expect(result.tiersAttempted).toEqual(['tls']);
-    expect(browserPool.render).not.toHaveBeenCalled();
+    expect(fetchClient.render).not.toHaveBeenCalled();
   });
 
   it('gives a later tier only what is left of one shared timeout', async () => {
-    const browserPool = browserPoolReturning(ARTICLE);
+    const fetchClient = slowFetch(300, SPA_SHELL);
     await runPipeline(
       { url: 'https://example.com', formats: ['markdown'], timeout: 1_000 },
-      deps({ fetchClient: slowFetch(300, SPA_SHELL), extractClient: extractEmptyOnShell(), browserPool }),
+      deps({ fetchClient, extractClient: extractEmptyOnShell() }),
     );
 
-    const [{ timeout }] = vi.mocked(browserPool.render).mock.calls[0] as [{ timeout: number }];
-    expect(timeout).toBeLessThanOrEqual(710);
-    expect(timeout).toBeGreaterThan(0);
+    const [{ timeoutMs }] = vi.mocked(fetchClient.render).mock.calls[0] as [{ timeoutMs: number }];
+    expect(timeoutMs).toBeLessThanOrEqual(710);
+    expect(timeoutMs).toBeGreaterThan(0);
   });
 
   it('fails with timeout once the shared budget is spent, without starting another tier', async () => {
-    const browserPool = browserPoolReturning(ARTICLE);
+    const fetchClient = slowFetch(300, SPA_SHELL);
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'], timeout: 200 },
-      deps({ fetchClient: slowFetch(300, SPA_SHELL), extractClient: extractEmptyOnShell(), browserPool }),
+      deps({ fetchClient, extractClient: extractEmptyOnShell() }),
     );
 
     expect(result.success).toBe(false);
     if (result.success) return;
     expect(result.reason).toBe('timeout');
-    expect(browserPool.render).not.toHaveBeenCalled();
+    expect(fetchClient.render).not.toHaveBeenCalled();
   });
 });
 
@@ -689,10 +671,10 @@ describe('runPipeline tier memory', () => {
     const fetchClient = fetchClientReturning([{ status: 403, body: challenge, headers: { 'cf-mitigated': 'challenge' } }]);
     const browserPool = browserPoolReturning(ARTICLE);
     const first = await runPipeline({ url: 'https://walled.test/a', formats: ['markdown'] }, deps({ fetchClient, browserPool, tierMemory }));
-    expect(first.success && first.tier).toBe('lightpanda');
+    expect(first.success && first.tier).toBe('browser');
 
     const second = await runPipeline({ url: 'https://walled.test/b', formats: ['markdown'] }, deps({ fetchClient, browserPool, tierMemory }));
-    expect(second.tiersAttempted).toEqual(['lightpanda']);
+    expect(second.tiersAttempted).toEqual(['browser']);
     expect(fetchClient.fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -715,11 +697,11 @@ describe('runPipeline tier memory', () => {
 
   it('forgets the floor when a visit started there fails', async () => {
     const tierMemory = new TierMemory();
-    tierMemory.learn('https://walled.test/', 'chromium');
+    tierMemory.learn('https://walled.test/', 'browser');
     const blocked = '<html><head><title>Just a moment...</title></head><body>cf</body></html>';
     const result = await runPipeline(
       { url: 'https://walled.test/c', formats: ['markdown'] },
-      deps({ browserPool: Object.assign(browserPoolReturning(blocked), {}), tierMemory, extractClient: extractClientReturning('') }),
+      deps({ fetchClient: fetchClientReturning([{ status: 200, body: blocked }], blocked), tierMemory, extractClient: extractClientReturning('') }),
     );
     expect(result.success).toBe(false);
     expect(tierMemory.floor('https://walled.test/')).toBeUndefined();
@@ -728,13 +710,13 @@ describe('runPipeline tier memory', () => {
 
 describe('runPipeline tier budget', () => {
   it('answers with a timeout when a tier ignores its budget', async () => {
-    const browserPool = Object.assign(browserPoolReturning(ARTICLE), {
+    const fetchClient = Object.assign(fetchClientReturning([{ status: 200, body: ARTICLE }]), {
       render: vi.fn(() => new Promise(() => undefined)),
-    }) as unknown as BrowserPool;
+    }) as unknown as FetchClient;
     const started = Date.now();
     const result = await runPipeline(
-      { url: 'https://example.com', formats: ['markdown'], tier: 'chromium', timeout: 300 },
-      deps({ browserPool }),
+      { url: 'https://example.com', formats: ['markdown'], tier: 'browser', timeout: 300 },
+      deps({ fetchClient }),
     );
 
     expect(Date.now() - started).toBeLessThan(2_500);
@@ -799,108 +781,10 @@ describe('runPipeline resource blocking', () => {
       health: vi.fn(async () => true),
     }) as unknown as ExtractClient;
 
-  it('asks the browser to skip images, fonts and media on a host that has not blocked', async () => {
-    const browserPool = browserPoolReturning(ARTICLE);
-    await runPipeline(
-      { url: 'https://example.com', formats: ['markdown'] },
-      deps({ fetchClient: fetchClientReturning([{ status: 200, body: SPA_SHELL }]), extractClient: shellThenArticle(), browserPool }),
-    );
-    expect(vi.mocked(browserPool.render).mock.calls[0]?.[0]).toMatchObject({ blockResources: true });
-  });
-
-  it('loads everything once the host has blocked, since a bot wall reads missing assets as a tell', async () => {
-    const browserPool = browserPoolReturning(ARTICLE);
-    await runPipeline(
-      { url: 'https://example.com', formats: ['markdown'] },
-      deps({
-        fetchClient: fetchClientReturning([{ status: 403, body: 'Access denied', headers: { 'cf-mitigated': 'challenge' } }]),
-        browserPool,
-      }),
-    );
-    expect(vi.mocked(browserPool.render).mock.calls[0]?.[0]).toMatchObject({ blockResources: false });
-  });
-
   it('tells the browser a pdf is wanted, so nothing it needs is blocked', async () => {
     const browserPool = browserPoolReturning(ARTICLE);
     await runPipeline({ url: 'https://example.com', formats: ['markdown', 'pdf'] }, deps({ browserPool }));
     expect(vi.mocked(browserPool.render).mock.calls[0]?.[0]).toMatchObject({ pdf: true });
-  });
-});
-
-describe('runPipeline camoufox as the last rung', () => {
-  /**
-   * Extracts what the html actually holds, so a challenge page reads as empty
-   * and the article reads as content. A fixed return would make every tier look
-   * identical to the classifier.
-   */
-  function extractByHtml(): ExtractClient {
-    return {
-      extract: vi.fn(async ({ html }: { html: string }) => {
-        const text = html.includes('<article>') ? ARTICLE_TEXT : '';
-        return {
-          markdown: text,
-          text,
-          title: 'Test',
-          language: 'en',
-          links: [],
-          extractorUsed: 'trafilatura',
-          contentHash: 'abc123',
-        };
-      }),
-      health: vi.fn(async () => true),
-    } as unknown as ExtractClient;
-  }
-
-  /** Serves the challenge to chromium and the article to camoufox. */
-  function poolWithCamoufox(ready: boolean): BrowserPool {
-    return {
-      render: vi.fn(async (opts: { engine: string }) => ({
-        html: opts.engine === 'camoufox' ? ARTICLE : CLOUDFLARE_CHALLENGE,
-        status: 200,
-        headers: {},
-        finalUrl: 'https://example.com',
-        timingMs: 500,
-      })),
-      camoufoxReady: () => ready,
-      stats: () => ({ browsers: 1, activeContexts: 0, pagesServed: 1 }),
-      close: vi.fn(async () => undefined),
-      start: vi.fn(async () => undefined),
-    } as unknown as BrowserPool;
-  }
-
-  it('walks into camoufox when the probe found it and chromium was blocked', async () => {
-    // The sites camoufox exists for are the ones chromium loses, and they were
-    // unreachable unless the caller already knew to name the tier.
-    const browserPool = poolWithCamoufox(true);
-    const result = await runPipeline(
-      { url: 'https://example.com', formats: ['markdown'] },
-      deps({
-        fetchClient: fetchClientReturning([{ status: 200, body: CLOUDFLARE_CHALLENGE }]),
-        extractClient: extractByHtml(),
-        browserPool,
-      }),
-    );
-
-    expect(result.success).toBe(true);
-    if (!result.success) return;
-    expect(result.tier).toBe('camoufox');
-    expect(result.tiersAttempted).toContain('camoufox');
-  });
-
-  it('stops at chromium when camoufox did not answer the probe', async () => {
-    const browserPool = poolWithCamoufox(false);
-    const result = await runPipeline(
-      { url: 'https://example.com', formats: ['markdown'] },
-      deps({
-        fetchClient: fetchClientReturning([{ status: 200, body: CLOUDFLARE_CHALLENGE }]),
-        extractClient: extractByHtml(),
-        browserPool,
-      }),
-    );
-
-    expect(result.tiersAttempted).not.toContain('camoufox');
-    // And the failure still names the wall rather than a missing tier.
-    if (!result.success) expect(result.reason).toBe('challenge');
   });
 });
 
@@ -935,5 +819,91 @@ describe('runPipeline conditional requests', () => {
     if (!result.success) return;
     expect(result.tiersAttempted).toEqual(['tls']);
     expect(browserPool.render).not.toHaveBeenCalled();
+  });
+});
+
+describe('runPipeline browser tier routing', () => {
+  const shellThenArticle = () =>
+    ({
+      extract: vi.fn(async ({ html }: { html: string }) =>
+        html === SPA_SHELL
+          ? { markdown: '', text: '', links: [], extractorUsed: 'trafilatura', contentHash: 'empty' }
+          : { markdown: ARTICLE_TEXT, text: ARTICLE_TEXT, links: [], extractorUsed: 'trafilatura', contentHash: 'abc' },
+      ),
+      health: vi.fn(async () => true),
+    }) as unknown as ExtractClient;
+
+  it("renders a page on helix-scrape's browser, not the Playwright pool", async () => {
+    const browserPool = browserPoolReturning(ARTICLE);
+    const fetchClient = fetchClientReturning([{ status: 200, body: SPA_SHELL }], ARTICLE);
+    const result = await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'] },
+      deps({ fetchClient, extractClient: shellThenArticle(), browserPool }),
+    );
+    expect(result.success && result.tier).toBe('browser');
+    expect(result.tiersAttempted).toEqual(['tls', 'browser']);
+    expect(fetchClient.render).toHaveBeenCalledTimes(1);
+    expect(browserPool.render).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a screenshot', { formats: ['markdown', 'screenshot'] }],
+    ['a pdf', { formats: ['pdf'] }],
+    ['actions', { actions: [{ type: 'click', selector: 'a' }] }],
+    ['a phone layout', { mobile: true }],
+    ['an explicit viewport', { viewport: { width: 400, height: 800 } }],
+    ['dark mode', { darkMode: true }],
+    ['a non-Chromium engine', { renderEngine: 'firefox' as const }],
+  ])('sends %s to the Playwright pool', async (_name, extra) => {
+    const browserPool = browserPoolReturning(ARTICLE);
+    const fetchClient = fetchClientReturning([{ status: 200, body: ARTICLE }]);
+    await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], tier: 'browser', ...extra },
+      deps({ fetchClient, browserPool }),
+    );
+    expect(browserPool.render).toHaveBeenCalledTimes(1);
+    expect(fetchClient.render).not.toHaveBeenCalled();
+  });
+
+  it('passes stealth and solveCloudflare to the browser only', async () => {
+    const fetchClient = fetchClientReturning(
+      [{ status: 403, body: CLOUDFLARE_CHALLENGE, headers: { 'cf-mitigated': 'challenge' } }],
+      ARTICLE,
+    );
+    await runPipeline(
+      { url: 'https://example.com', formats: ['markdown'], stealth: true, solveCloudflare: true },
+      deps({ fetchClient }),
+    );
+    expect(vi.mocked(fetchClient.render).mock.calls[0]?.[0]).toMatchObject({ stealth: true, solveCloudflare: true });
+    expect(vi.mocked(fetchClient.fetch).mock.calls[0]?.[0]).not.toHaveProperty('solveCloudflare');
+  });
+
+  it('asks the browser to skip heavy resources only on a host that has not blocked', async () => {
+    const open = fetchClientReturning([{ status: 200, body: SPA_SHELL }], ARTICLE);
+    await runPipeline({ url: 'https://example.com', formats: ['markdown'] }, deps({ fetchClient: open, extractClient: shellThenArticle() }));
+    expect(vi.mocked(open.render).mock.calls[0]?.[0]).toMatchObject({ disableResources: true });
+
+    const walled = fetchClientReturning([{ status: 403, body: 'Access denied', headers: { 'cf-mitigated': 'challenge' } }], ARTICLE);
+    await runPipeline({ url: 'https://example.com', formats: ['markdown'] }, deps({ fetchClient: walled }));
+    expect(vi.mocked(walled.render).mock.calls[0]?.[0]).toMatchObject({ disableResources: false });
+  });
+
+  it('maps a removed tier name to browser and says so', async () => {
+    const fetchClient = fetchClientReturning([{ status: 200, body: ARTICLE }], ARTICLE);
+    const result = await runPipeline({ url: 'https://example.com', formats: ['markdown'], tier: 'camoufox' }, deps({ fetchClient }));
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.tier).toBe('browser');
+    expect(result.warnings?.join(' ')).toMatch(/camoufox tier was removed/);
+  });
+
+  it('reports a browser failure in the transport-error shape', async () => {
+    const fetchClient = Object.assign(fetchClientReturning([{ status: 200, body: ARTICLE }]), {
+      render: vi.fn(async () => ({ success: false, headers: {}, timingMs: 5, error: 'request failed: redirected to a private or local address' })),
+    }) as unknown as FetchClient;
+    const result = await runPipeline({ url: 'https://example.com', formats: ['markdown'], tier: 'browser' }, deps({ fetchClient }));
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.detail).toContain('redirected to a private or local address');
   });
 });

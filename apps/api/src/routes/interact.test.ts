@@ -332,7 +332,7 @@ describe('POST /v1/interact', () => {
         reason: 'timeout',
         actionIndex: 1,
         actionType: 'click',
-        tier: 'chromium',
+        tier: 'browser',
         escalationAvailable: false,
         url: 'https://example.com',
       },

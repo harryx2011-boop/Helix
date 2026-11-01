@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { getPool } from '../db/pool.js';
 import { runPipeline, type PipelineDeps } from '../core/pipeline.js';
+import type { RequestTier } from '../core/escalation.js';
 import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 import { compilePathPatterns, matchesAny, type PathMatcher } from './url.js';
 import { PersistentFrontier } from './persistent-frontier.js';
@@ -65,7 +66,8 @@ export interface CrawlJobRequest {
   } | undefined;
   ignoreQueryParameters: boolean;
   formats: string[];
-  tier: 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium' | 'camoufox';
+  /** Old names (`chromium`, `lightpanda`, `camoufox`) run as `browser`. */
+  tier: RequestTier;
   extractor: 'trafilatura' | 'readability' | 'auto';
   onlyMainContent: boolean;
   webhook?: WebhookConfig | undefined;
@@ -118,7 +120,7 @@ function isAbort(error: unknown): boolean {
   return typeof named?.message === 'string' && /abort/i.test(named.message);
 }
 
-const RENDER_TIERS = new Set(['chromium', 'camoufox']);
+const RENDER_TIERS = new Set(['browser']);
 
 function pages(count: number): string {
   return count === 1 ? '1 page was' : `${count} pages were`;

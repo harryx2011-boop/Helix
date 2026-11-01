@@ -2,10 +2,12 @@ import type { Log } from './logger.js';
 import {
   DEFAULT_MAX_TIER,
   minimumViableTier,
+  normalizeTier,
   shouldEscalate,
   TIER_ORDER,
   tierSupports,
   type Capabilities,
+  type RequestTier,
   type Tier,
 } from './escalation.js';
 import { classifyTransportError, detectBlock, type FailureReason, type ResponseFacts } from './block-detection.js';
@@ -32,7 +34,8 @@ import type { ScreenshotOptions, ScreenshotResult } from '../browser/screenshot.
 export interface PipelineOptions {
   url: string;
   formats: string[];
-  tier?: Tier | 'auto' | undefined;
+  /** Old names (`chromium`, `lightpanda`, `camoufox`) are mapped to `browser`. */
+  tier?: RequestTier | undefined;
   onlyMainContent?: boolean | undefined;
   includeSelectors?: string[] | undefined;
   excludeSelectors?: string[] | undefined;
@@ -50,6 +53,10 @@ export interface PipelineOptions {
   viewport?: { width: number; height: number; deviceScaleFactor?: number | undefined } | undefined;
   /** Abort requests to known ad, tracker and consent-dialog hosts. */
   blockAds?: boolean | undefined;
+  /** Browser tier: canvas noise, WebRTC lock and a search referer on the patched browser. */
+  stealth?: boolean | undefined;
+  /** Browser tier: click through a Cloudflare challenge. Opt-in; slow. */
+  solveCloudflare?: boolean | undefined;
   /** Emulate `prefers-color-scheme: dark`. */
   darkMode?: boolean | undefined;
   /** Which browser drives the render tier. The pool's default when unset. */
@@ -185,6 +192,12 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
+/** The `warnings` field of a success: request-level notes first, then the tier's own. */
+function withWarnings(request: string[], tier: string[] | undefined): { warnings?: string[] } {
+  const all = [...request, ...(tier ?? [])];
+  return all.length > 0 ? { warnings: all } : {};
+}
+
 /** How long past its budget a tier may run before the ladder stops waiting for it. */
 const TIER_OVERRUN_GRACE_MS = 1_000;
 
@@ -229,6 +242,25 @@ interface TierAttempt {
   setCookies?: string[] | undefined;
 }
 
+/**
+ * Whether the browser tier must run on the Playwright pool rather than
+ * helix-scrape's browser: anything Scrapling's fetch cannot produce or honour
+ * (an image, a PDF, scripted actions, a phone or custom viewport, dark mode, a
+ * non-Chromium engine). Routing these to the pool keeps every option honoured
+ * instead of silently dropped.
+ */
+export function needsPlaywright(options: PipelineOptions): boolean {
+  return (
+    options.formats.includes('screenshot') ||
+    options.formats.includes('pdf') ||
+    (options.actions?.length ?? 0) > 0 ||
+    options.mobile === true ||
+    options.viewport !== undefined ||
+    options.darkMode === true ||
+    (options.renderEngine !== undefined && options.renderEngine !== 'chromium')
+  );
+}
+
 async function attemptTier(
   tier: Tier,
   options: PipelineOptions,
@@ -266,6 +298,29 @@ async function attemptTier(
     };
   }
 
+  if (!needsPlaywright(options)) {
+    const rendered = await deps.fetchClient.render({
+      url: options.url,
+      proxy: options.proxy,
+      headers: options.headers,
+      timeoutMs: options.timeout,
+      waitMs: options.waitFor,
+      stealth: options.stealth,
+      solveCloudflare: options.solveCloudflare,
+      blockAds: options.blockAds,
+      // Skipping images, fonts and media saves most of a render's transfer; a bot
+      // wall can read the missing loads as a tell, so walled hosts get them all.
+      disableResources: !hostIsWalled,
+      allowPrivate: options.allowPrivate,
+      signal: options.signal,
+    });
+    return {
+      facts: { statusCode: rendered.status ?? 0, headers: rendered.headers, body: rendered.body ?? '' },
+      finalUrl: rendered.finalUrl,
+      transportError: rendered.success ? undefined : (rendered.error ?? 'helix-scrape render failed'),
+    };
+  }
+
   if (!deps.browserPool) {
     return {
       facts: { statusCode: 0, headers: {}, body: '' },
@@ -275,7 +330,6 @@ async function attemptTier(
 
   const rendered = await deps.browserPool.render({
     url: options.url,
-    engine: tier === 'lightpanda' ? 'lightpanda' : tier === 'camoufox' ? 'camoufox' : 'chromium',
     renderEngine: options.renderEngine,
     waitFor: options.waitFor,
     timeout: options.timeout,
@@ -340,26 +394,16 @@ async function walkLadder(
   const started = Date.now();
   // One budget for the whole ladder: a 30 s request used to take up to 4 x 30 s.
   const deadline = options.timeout !== undefined ? started + options.timeout : undefined;
-  const capabilities: Capabilities = {
-    ...capabilitiesFor(options),
-    unavailable: deps.browserPool?.disabledEngines?.() ?? [],
-  };
+  const capabilities: Capabilities = capabilitiesFor(options);
   const wantsExtractedText = options.formats.some((f) => EXTRACTED_TEXT_FORMATS.has(f));
   const tiersAttempted: Tier[] = [];
   const escalations: Escalation[] = [];
 
-  const explicit = options.tier && options.tier !== 'auto' ? (options.tier as Tier) : undefined;
+  const requested = normalizeTier(options.tier ?? 'auto');
+  const tierWarnings = requested.warning ? [requested.warning] : [];
   // An explicit tier is both floor and ceiling: the caller asked for that tier.
-  //
-  // Absent one, the ceiling is chromium unless camoufox is actually there. A
-  // camoufox an operator has enabled AND that answered the startup probe is a
-  // tier this instance can really run, and the sites that beat the render tier
-  // are exactly what it is for — leaving it reachable only by naming it meant
-  // the walls stayed walls unless the caller already knew to ask. It still
-  // never *starts* a request: `minimumViableTier` is bounded by chromium, so
-  // camoufox is only ever reached on evidence from the tier below it.
-  const camoufoxReady = deps.browserPool?.camoufoxReady?.() === true;
-  const maxTier: Tier = explicit ?? (camoufoxReady ? 'camoufox' : DEFAULT_MAX_TIER);
+  const explicit = requested.tier !== 'auto' ? requested.tier : undefined;
+  const maxTier: Tier = explicit ?? DEFAULT_MAX_TIER;
   let tier: Tier = explicit ?? minimumViableTier(capabilities);
   const learned = explicit ? undefined : deps.tierMemory?.floor(options.url);
   const startsFromMemory =
@@ -461,7 +505,7 @@ async function walkLadder(
         escalations,
         ...(attempt.profileUsed ? { profileUsed: attempt.profileUsed } : {}),
         ...(attempt.engineUsed ? { engineUsed: attempt.engineUsed } : {}),
-        ...(attempt.warnings && attempt.warnings.length > 0 ? { warnings: attempt.warnings } : {}),
+        ...withWarnings(tierWarnings, attempt.warnings),
         statusCode: 304,
         finalUrl: attempt.finalUrl,
         ...(attempt.setCookies?.length ? { setCookies: attempt.setCookies } : {}),
@@ -534,7 +578,7 @@ async function walkLadder(
           screenshotResult: attempt.screenshotResult,
           profileUsed: attempt.profileUsed,
           engineUsed: attempt.engineUsed,
-          ...(attempt.warnings && attempt.warnings.length > 0 ? { warnings: attempt.warnings } : {}),
+          ...withWarnings(tierWarnings, attempt.warnings),
           statusCode: attempt.facts.statusCode,
           finalUrl: attempt.finalUrl,
           ...(attempt.setCookies?.length ? { setCookies: attempt.setCookies } : {}),

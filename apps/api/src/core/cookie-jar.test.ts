@@ -29,7 +29,7 @@ describe('CookieJar', () => {
     jar.store(ID, ['cf_clearance=abc']);
     expect(jar.header({ ...ID, profile: 'chrome-148' })).toBeUndefined();
     expect(jar.header({ ...ID, proxy: 'http://p:1' })).toBeUndefined();
-    expect(jar.header({ ...ID, tier: 'chromium' })).toBeUndefined();
+    expect(jar.header({ ...ID, tier: 'browser' })).toBeUndefined();
     expect(jar.header({ ...ID, url: 'https://example.com/' })).toBeUndefined();
   });
 

@@ -9,9 +9,7 @@ export interface EstimateDeps extends MapRouteDeps {
 const TIER_SECONDS: Record<string, number> = {
   plain: 0.3,
   tls: 0.4,
-  lightpanda: 0.6,
-  chromium: 3.0,
-  camoufox: 4.0,
+  browser: 3.0,
 };
 
 /** Characters per token, near enough for an estimate. */

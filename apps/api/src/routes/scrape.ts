@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { runPipeline } from '../core/pipeline.js';
+import { normalizeTier, REQUEST_TIERS } from '../core/escalation.js';
 import { gateOutcome, hostGate } from '../core/host-gate.js';
 import type { FetchClient } from '../fetch/client.js';
 import { StructuredError, type ExtractClient } from '../extract/client.js';
@@ -66,7 +67,12 @@ const ChunkSchema = z.object({
 const ScrapeRequestSchema = z.object({
   url: z.string().url(),
   formats: z.array(z.enum(FORMATS)).min(1).default(['markdown']),
-  tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox']).default('auto'),
+  /** `lightpanda`, `chromium` and `camoufox` are v2 names, run as `browser`. */
+  tier: z.enum(REQUEST_TIERS).default('auto'),
+  /** Browser tier: canvas noise, a WebRTC lock and a search referer. Respect the site's terms and robots.txt. */
+  stealth: z.boolean().default(false),
+  /** Browser tier: click through a Cloudflare challenge. Opt-in, slow; bounded by `timeout`. */
+  solveCloudflare: z.boolean().default(false),
   /** Which browser drives the render tier. The instance default when unset. */
   engine: z.enum(['chromium', 'firefox', 'webkit']).optional(),
   onlyMainContent: z.boolean().default(true),
@@ -270,14 +276,13 @@ export async function registerScrape(
     // A phone layout only exists in a browser. Forcing the tier here keeps the
     // caller's `tier: "auto"` honest instead of returning the desktop HTML with
     // `mobile: true` quietly ignored.
-    const tier = body.mobile && body.tier === 'auto' ? 'chromium' : body.tier;
+    const requested = normalizeTier(body.tier);
+    const tier = body.mobile && requested.tier === 'auto' ? 'browser' : requested.tier;
 
-    const warnings: string[] = [];
+    const warnings: string[] = requested.warning ? [requested.warning] : [];
 
     if (body.mobile && (tier === 'plain' || tier === 'tls')) {
       warnings.push(`mobile: the ${tier} tier has no viewport, so the page was fetched as-is.`);
-    } else if (body.mobile && tier === 'lightpanda') {
-      warnings.push('mobile: the lightpanda tier has no layout engine, so the phone viewport was not applied.');
     }
 
     // Paced with every other call this instance makes to the same host. A single
@@ -299,6 +304,8 @@ export async function registerScrape(
       proxy: proxyVerdict.url,
       actions: body.actions,
       mobile: body.mobile,
+      stealth: body.stealth,
+      solveCloudflare: body.solveCloudflare,
       ...(body.engine ? { renderEngine: body.engine } : {}),
       allowPrivate: deps.allowPrivateUrls,
     };
@@ -437,7 +444,7 @@ export async function registerScrape(
       engine: result.engineUsed,
       // True only when a phone viewport was actually applied. Firefox takes the
       // option without emulating touch, so it does not count as applied.
-      mobile: body.mobile && result.tier === 'chromium' && result.engineUsed !== 'firefox',
+      mobile: body.mobile && result.tier === 'browser' && result.engineUsed !== 'firefox',
       timingMs: result.timingMs,
       fromCache: false,
       favicon: content.favicon,

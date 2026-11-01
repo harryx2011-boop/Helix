@@ -287,47 +287,6 @@ describe('mobile emulation', () => {
   }, 120_000);
 });
 
-describe('optional tiers refuse clearly when they are off', () => {
-  it('refuses camoufox when the operator has not enabled it', async () => {
-    const browsers = pool();
-    try {
-      const result = await browsers.render({ url: 'https://example.com/', engine: 'camoufox' });
-      expect(result.error).toBe('camoufox tier requested but not enabled');
-      // Refused before anything is dialled, exactly as lightpanda refuses.
-      expect(result.html).toBeUndefined();
-    } finally {
-      await browsers.close();
-    }
-  });
-
-  it('refuses lightpanda when it is off, unchanged', async () => {
-    const browsers = pool();
-    try {
-      const result = await browsers.render({ url: 'https://example.com/', engine: 'lightpanda' });
-      expect(result.error).toBe('lightpanda tier requested but not enabled');
-    } finally {
-      await browsers.close();
-    }
-  });
-
-  it('reports the endpoint being unreachable rather than falling back to a local browser', async () => {
-    // A silent fallback would answer with a browser the operator did not ask
-    // for, which is the opposite of what an anti-detect tier is for.
-    const browsers = pool({ camoufoxEnabled: true, camoufoxUrl: 'ws://127.0.0.1:1/' });
-    try {
-      const result = await browsers.render({
-        url: 'https://example.com/',
-        engine: 'camoufox',
-        timeout: 8_000,
-      });
-      expect(result.error).toBeTruthy();
-      expect(result.html).toBeUndefined();
-    } finally {
-      await browsers.close();
-    }
-  }, 30_000);
-});
-
 describe('the remote browser backend', () => {
   it('refuses a non-chromium engine, because CDP cannot drive one', async () => {
     const browsers = pool({ remoteCdpUrl: 'http://127.0.0.1:1', defaultEngine: 'firefox' });

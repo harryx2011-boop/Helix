@@ -1,6 +1,7 @@
 import type { Pool } from '../db/pool.js';
 import { transaction } from '../db/pool.js';
 import type { Diff, Granularity, JsonDiff } from './diff.js';
+import type { RequestTier } from '../core/escalation.js';
 import type { Schedule } from './schedule.js';
 import type { Sensitivity } from './sensitivity.js';
 import type { TriggerOptions } from './triggers.js';
@@ -17,7 +18,7 @@ import type { TriggerOptions } from './triggers.js';
 export type MonitorStatus = 'active' | 'paused' | 'error';
 
 export interface MonitorScrapeOptions {
-  tier?: 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium' | 'camoufox' | undefined;
+  tier?: RequestTier | undefined;
   onlyMainContent?: boolean | undefined;
   includeSelectors?: string[] | undefined;
   excludeSelectors?: string[] | undefined;

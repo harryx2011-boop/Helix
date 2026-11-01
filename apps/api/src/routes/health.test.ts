@@ -184,22 +184,6 @@ describe('optional tiers appear only when enabled', () => {
     expect(services.browser.detail).toContain('chromium');
   });
 
-  it('reports lightpanda as enabled when the tier is on', async () => {
-    app = await build(deps({ lightpandaEnabled: true }));
-
-    const services = (await app.inject({ method: 'GET', url: '/v1/health' })).json().services;
-
-    expect(services.lightpanda).toEqual({ status: 'ok', detail: 'enabled', latencyMs: 0 });
-  });
-
-  it('reports camoufox as enabled when the tier is on', async () => {
-    app = await build(deps({ camoufoxEnabled: true }));
-
-    const services = (await app.inject({ method: 'GET', url: '/v1/health' })).json().services;
-
-    expect(services.camoufox).toEqual({ status: 'ok', detail: 'enabled', latencyMs: 0 });
-  });
-
   it('reports a remote browser when the render tier connects out', async () => {
     app = await build(deps({ remoteCdpConfigured: true }));
 
@@ -210,7 +194,7 @@ describe('optional tiers appear only when enabled', () => {
 
   it('does not let an enabled optional tier change the overall status', async () => {
     pool.checkHealth.mockResolvedValue({ status: 'unhealthy', latencyMs: 0 });
-    app = await build(deps({ lightpandaEnabled: true, camoufoxEnabled: true }));
+    app = await build(deps({ remoteCdpConfigured: true }));
 
     expect((await app.inject({ method: 'GET', url: '/v1/health' })).json().status).toBe('unhealthy');
   });
@@ -319,7 +303,7 @@ describe('provider reporting', () => {
       SERPAPI_KEY: 'serpapi-IIIIIIIIIIII',
     };
     for (const [k, v] of Object.entries(secrets)) process.env[k] = v;
-    app = await build(deps({ browserPool: browserPool(), lightpandaEnabled: true, camoufoxEnabled: true }));
+    app = await build(deps({ browserPool: browserPool(), remoteCdpConfigured: true }));
 
     const response = await app.inject({ method: 'GET', url: '/v1/health' });
 

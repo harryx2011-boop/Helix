@@ -247,7 +247,7 @@ describe('guarded settings', () => {
       method: 'PUT',
       url: '/settings/allowPrivateUrls',
       headers: auth,
-      payload: { value: true, confirm: 'lightpandaEnabled' },
+      payload: { value: true, confirm: 'remoteCdpUrl' },
     });
 
     expect(response.statusCode).toBe(409);
@@ -266,17 +266,16 @@ describe('guarded settings', () => {
     expect(response.json()).toMatchObject({ error: 'confirmation_required', confirm: 'remoteCdpUrl' });
   });
 
-  it('guards the camoufox tier the same way lightpanda is guarded', async () => {
+  it.each(['lightpandaEnabled', 'camoufoxEnabled'])('no longer offers %s, a tier v3 removed', async (key) => {
     const { app } = await buildApp();
     const response = await app.inject({
       method: 'PUT',
-      url: '/settings/camoufoxEnabled',
+      url: `/settings/${key}`,
       headers: auth,
-      payload: { value: true },
+      payload: { value: true, confirm: key },
     });
 
-    expect(response.statusCode).toBe(409);
-    expect(response.json()).toMatchObject({ error: 'confirmation_required', confirm: 'camoufoxEnabled' });
+    expect(response.statusCode).toBe(404);
   });
 
   it('accepts the change when the confirmation names the setting', async () => {

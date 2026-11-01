@@ -248,28 +248,11 @@ export const SETTINGS: readonly SettingDef[] = [
       'Turning this on makes every API key a door to this instance network and its cloud metadata. Enable it only on an instance that scrapes its own intranet and trusts every key it issues.',
   },
   {
-    key: 'lightpandaEnabled',
-    env: 'HELIX_LIGHTPANDA_ENABLED',
-    effect: 'guarded',
-    schema: z.boolean(),
-    description: 'Use a Lightpanda CDP endpoint for the light browser tier.',
-    warning: 'Helix drives whatever answers on the configured CDP URL. Point it only at a runtime you control.',
-  },
-  {
     key: 'browserEngine',
     env: 'HELIX_BROWSER_ENGINE',
     effect: 'restart',
     schema: z.enum(['chromium', 'firefox', 'webkit']),
     description: 'Browser that drives the render tier when a request does not name one.',
-  },
-  {
-    key: 'camoufoxEnabled',
-    env: 'HELIX_CAMOUFOX_ENABLED',
-    effect: 'guarded',
-    schema: z.boolean(),
-    description: 'Offer the Camoufox tier, a hardened Firefox reached over a configured endpoint.',
-    warning:
-      'Helix drives whatever answers on the configured Camoufox URL, and the tier is only reachable when a request asks for it. Point it only at a runtime you control.',
   },
   {
     key: 'remoteCdpUrl',

@@ -19,7 +19,7 @@ interface LadderRow {
   glyph: '●' | '○' | '▸' | '·' | null;
 }
 
-const TIERS = ['plain', 'tls', 'lightpanda', 'chromium'] as const;
+const TIERS = ['plain', 'tls', 'browser'] as const;
 
 // One entry per frame: [rows for each tier, reason line]
 const FRAMES: { rows: LadderRow[]; reason: string }[] = [
@@ -27,8 +27,7 @@ const FRAMES: { rows: LadderRow[]; reason: string }[] = [
     rows: [
       { label: 'plain', glyph: '▸', status: 'trying...' },
       { label: 'tls', glyph: '·', status: null },
-      { label: 'lightpanda', glyph: '·', status: null },
-      { label: 'chromium', glyph: '·', status: null },
+      { label: 'browser', glyph: '·', status: null },
     ],
     reason: '',
   },
@@ -36,8 +35,7 @@ const FRAMES: { rows: LadderRow[]; reason: string }[] = [
     rows: [
       { label: 'plain', glyph: '●', status: '403 5ms' },
       { label: 'tls', glyph: '▸', status: 'trying...' },
-      { label: 'lightpanda', glyph: '·', status: null },
-      { label: 'chromium', glyph: '·', status: null },
+      { label: 'browser', glyph: '·', status: null },
     ],
     reason: 'blocked (cloudflare-mitigated) → escalating',
   },
@@ -45,8 +43,7 @@ const FRAMES: { rows: LadderRow[]; reason: string }[] = [
     rows: [
       { label: 'plain', glyph: '●', status: '403 5ms' },
       { label: 'tls', glyph: '●', status: '403 51ms' },
-      { label: 'lightpanda', glyph: '▸', status: 'trying...' },
-      { label: 'chromium', glyph: '·', status: null },
+      { label: 'browser', glyph: '▸', status: 'trying...' },
     ],
     reason: 'blocked (challenge-platform) → escalating',
   },
@@ -54,17 +51,15 @@ const FRAMES: { rows: LadderRow[]; reason: string }[] = [
     rows: [
       { label: 'plain', glyph: '●', status: '403 5ms' },
       { label: 'tls', glyph: '●', status: '403 51ms' },
-      { label: 'lightpanda', glyph: '○', status: '200 24ms' },
-      { label: 'chromium', glyph: null, status: '—' },
+      { label: 'browser', glyph: '○', status: '200 2.1s' },
     ],
-    reason: 'content present → done, chromium skipped',
+    reason: 'content present → done',
   },
   {
     rows: [
       { label: 'plain', glyph: '●', status: '403 5ms' },
       { label: 'tls', glyph: '●', status: '403 51ms' },
-      { label: 'lightpanda', glyph: '●', status: '200 24ms' },
-      { label: 'chromium', glyph: '○', status: 'skipped' },
+      { label: 'browser', glyph: '●', status: '200 2.1s' },
     ],
     reason: '',
   },
@@ -102,7 +97,7 @@ export function LadderExplainer({ playKey, className }: LadderExplainerProps) {
     <div className={cn('min-w-0 max-w-full font-mono text-[12px]', className)}>
       <p className="mb-2 tracking-wide text-m-ink/48">[ EXPLAINER ]</p>
       <div className="w-full max-w-full min-w-0 overflow-x-auto">
-        <div className="grid grid-cols-4 gap-px overflow-hidden rounded-card border border-m-border-muted bg-m-border-muted">
+        <div className="grid grid-cols-3 gap-px overflow-hidden rounded-card border border-m-border-muted bg-m-border-muted">
           {TIERS.map((tier, i) => {
             const row = frame.rows[i] ?? { label: tier, status: null, glyph: null };
             return (
@@ -111,8 +106,8 @@ export function LadderExplainer({ playKey, className }: LadderExplainerProps) {
                 <p
                   className={cn(
                     'mt-1 flex flex-wrap items-baseline gap-x-1 gap-y-0.5 break-words text-[10px] sm:text-[12px]',
-                    settled && row.glyph === '●' && tier !== 'lightpanda' && 'text-m-ink/32 line-through',
-                    settled && row.label === 'lightpanda' && 'text-m-ink',
+                    settled && row.glyph === '●' && tier !== 'browser' && 'text-m-ink/32 line-through',
+                    settled && row.label === 'browser' && 'text-m-ink',
                     !settled && 'text-m-ink/72',
                   )}
                 >

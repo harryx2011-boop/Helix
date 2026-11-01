@@ -108,8 +108,14 @@ describe('scrape spec', () => {
     expect(s.command).toBe(path.join(R, 'scrape', 'helix-scrape.exe'))
     expect(s.args).toEqual(['--port', '7413', '--host', '127.0.0.1'])
     expect(s.cwd).toBe(path.join(R, 'scrape'))
-    expect(s.env).toEqual({ HELIX_SERVICE_TOKEN: 'c'.repeat(64) })
+    // The browser tier runs on the Chromium the installer stages for the API's Playwright.
+    expect(s.env).toEqual({ HELIX_SERVICE_TOKEN: 'c'.repeat(64), PLAYWRIGHT_BROWSERS_PATH: path.join(R, 'browsers') })
     expect(s.healthUrl).toBe('http://127.0.0.1:7413/health')
+  })
+
+  it('leaves the browsers path unset in dev when none is staged', () => {
+    const s = spec('scrape', ctx({ dev: true, exists: () => false }))
+    expect(s.env.PLAYWRIGHT_BROWSERS_PATH).toBeUndefined()
   })
 
   it('uses pythonw -m helix_scrape from apps/scrape in dev', () => {

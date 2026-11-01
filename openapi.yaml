@@ -144,7 +144,7 @@ paths:
                 summary: Force a browser and act on the page
                 value:
                   url: 'https://example.com/app'
-                  tier: chromium
+                  tier: browser
                   formats: [markdown, screenshot]
                   actions:
                     - { type: click, selector: '#accept-cookies' }
@@ -174,7 +174,7 @@ paths:
       description: |
         The same fetch ladder `/scrape` uses with `formats: [screenshot]` and
         nothing else in the response: no `markdown`, no `links`, no extraction
-        step. `screenshot` already forces the Chromium tier inside the
+        step. `screenshot` already forces the browser tier inside the
         pipeline, so this buys a caller a smaller response and a smaller
         request body, not a faster fetch.
 
@@ -1983,7 +1983,7 @@ paths:
                         description: Recorded pages by the tier that served them.
                       browserSeconds:
                         type: [number, 'null']
-                        description: Wall time of pages a render tier (chromium, camoufox) served, cheaper tiers tried first included.
+                        description: Wall time of pages the browser tier served, cheaper tiers tried first included.
                       tokens: { type: 'null' }
                       providerCost: { type: 'null' }
                   estimate:
@@ -2697,7 +2697,7 @@ components:
         `markdown` is clean prose. `html` is the page with scripts, styles,
         comments and inline handlers stripped; `rawHtml` is untouched. `json`
         requires `jsonOptions.schema` and returns schema-conforming data.
-        `screenshot` forces the Chromium tier. `chunks` returns split text with
+        `screenshot` forces the browser tier. `chunks` returns split text with
         stable anchors for citation.
       enum: [markdown, html, rawHtml, text, links, screenshot, json, chunks]
 
@@ -2711,12 +2711,16 @@ components:
         Framework detection alone never triggers escalation: server-rendered React
         and Vue frequently need no browser at all.
 
-        `camoufox` is a hardened Firefox above `chromium`, for sites the render
-        tier still loses. It is never reached by escalation: automatic climbing
-        stops at `chromium`, so the tier applies only when you name it here. It
-        must also be enabled on the instance, and a request for it otherwise
-        fails rather than quietly falling back.
-      enum: [auto, plain, tls, lightpanda, chromium, camoufox]
+        Three tiers: `plain` (raw HTTP), `tls` (a browser TLS and HTTP/2
+        fingerprint) and `browser` (a full render on a patched Chromium). A
+        request that needs a screenshot, a PDF, actions, a phone or custom
+        viewport, dark mode or a non-Chromium `engine` renders on Helix's
+        Playwright browsers instead; it is still the `browser` tier.
+
+        `chromium` is the v2 name of `browser` and still accepted.
+        `lightpanda` and `camoufox` were removed in v3: a request naming one
+        runs on `browser` and gets a warning, not an error.
+      enum: [auto, plain, tls, browser, lightpanda, chromium, camoufox]
       default: auto
 
     Engine:
@@ -2724,8 +2728,8 @@ components:
       description: |
         Which browser drives the render tier. Defaults to the instance's
         configured engine (Chromium unless the operator changed it), and is
-        ignored by the `plain`, `tls` and `lightpanda` tiers, which run no
-        browser.
+        ignored by the `plain` and `tls` tiers, which run no browser. Naming
+        `firefox` or `webkit` renders on Helix's Playwright browsers.
 
         A `profile` is applied only on the engine family it describes: asking for
         a Chrome identity on `firefox` presents no identity at all and returns a
@@ -2778,8 +2782,8 @@ components:
           type: boolean
           default: false
           description: |
-            Render in a phone viewport (390x844, touch enabled). Forces the Chromium
-            tier when `tier` is `auto`. With `plain`, `tls` or `lightpanda` no
+            Render in a phone viewport (390x844, touch enabled). Forces the browser
+            tier when `tier` is `auto`. With `plain` or `tls` no
             viewport exists, so the page is fetched as-is, a warning says so, and
             `metadata.mobile` is `false`. The `firefox` engine narrows the viewport
             but does not emulate touch, so it is treated the same way.
@@ -2787,7 +2791,7 @@ components:
           type: array
           maxItems: 50
           items: { $ref: '#/components/schemas/Action' }
-          description: Steps to run before reading. Forces the Chromium tier.
+          description: Steps to run before reading. Forces the browser tier.
         headers:
           type: object
           additionalProperties: { type: string }
@@ -2800,10 +2804,6 @@ components:
             direct otherwise. `stealth` requires it and is a 400 `proxy_unavailable`
             when none is set. `none` goes direct regardless. An object is your own
             proxy for this one request. Helix ships no pool.
-
-            A proxied request never uses the `lightpanda` tier: `auto` skips it, and
-            asking for it explicitly is a failure rather than a fetch from the
-            instance's own address.
           oneOf:
             - type: string
               enum: [auto, stealth, none]
@@ -2825,6 +2825,24 @@ components:
           properties:
             url: { type: string, format: uri }
             maxAge: { type: integer, minimum: 0, maximum: 2592000000, default: 0, description: 'Accept a cached result up to this many milliseconds old; metadata.fromCache says when one was served. 0 always fetches.' }
+            stealth:
+              type: boolean
+              default: false
+              description: |
+                Browser tier only. The browser is always a patched Chromium;
+                `stealth` adds canvas noise, a WebRTC lock and a search-engine
+                referer. It never solves a challenge on its own (see
+                `solveCloudflare`), and robots.txt checks and per-host pacing
+                stay on. Respect each site's terms of service and robots.txt.
+            solveCloudflare:
+              type: boolean
+              default: false
+              description: |
+                Browser tier only. Click through a Cloudflare Turnstile or
+                interstitial before reading the page. Slow (often over a minute),
+                so raise `timeout`; the whole request still ends at `timeout`,
+                and an unsolved challenge fails as `timeout`. Respect each site's
+                terms of service and robots.txt.
         - $ref: '#/components/schemas/ScrapeOptions'
 
     Action:
@@ -3368,14 +3386,14 @@ components:
             formats:
               type: array
               items: { type: string }
-            tier: { type: string, enum: [auto, plain, tls, lightpanda, chromium, camoufox] }
+            tier: { type: string, enum: [auto, plain, tls, browser, lightpanda, chromium, camoufox] }
             extractor: { type: string, enum: [trafilatura, readability, auto] }
             onlyMainContent: { type: boolean }
         formats:
           type: array
           description: Top-level alias of `scrapeOptions.formats`.
           items: { type: string }
-        tier: { type: string, enum: [auto, plain, tls, lightpanda, chromium, camoufox] }
+        tier: { type: string, enum: [auto, plain, tls, browser, lightpanda, chromium, camoufox] }
         extractor: { type: string, enum: [trafilatura, readability, auto] }
         onlyMainContent: { type: boolean }
         maxConcurrency:
@@ -4642,7 +4660,7 @@ components:
             Keep fields the source does not support. They are listed in
             `dropped` either way; this only decides whether they also appear in
             `data`.
-        tier: { type: string, enum: [auto, plain, tls, lightpanda, chromium, camoufox] }
+        tier: { type: string, enum: [auto, plain, tls, browser, lightpanda, chromium, camoufox] }
         timeout: { type: integer, default: 60000, minimum: 1000, maximum: 300000 }
 
     ExtractedRowSource:
@@ -4799,12 +4817,12 @@ components:
         mobile:
           type: boolean
           default: false
-          description: Render in a phone viewport (390x844, touch enabled). Forces the Chromium tier when `tier` is `auto`.
+          description: Render in a phone viewport (390x844, touch enabled). Forces the browser tier when `tier` is `auto`.
         tier:
           type: string
-          enum: [auto, chromium, camoufox]
+          enum: [auto, browser, chromium, camoufox]
           default: auto
-          description: A screenshot always needs a real render; `plain`, `tls` and `lightpanda` have no layout engine, so they are not offered here.
+          description: A screenshot always needs a real render, so `plain` and `tls` are not offered here. `chromium` and `camoufox` are v2 names, run as `browser`.
         engine: { $ref: '#/components/schemas/Engine' }
         waitFor:
           type: integer
@@ -5004,7 +5022,7 @@ components:
           description: Recorded pages by the tier that served them.
         browserSeconds:
           type: number
-          description: Wall time of pages a render tier (chromium, camoufox) served, cheaper tiers tried first included.
+          description: Wall time of pages the browser tier served, cheaper tiers tried first included.
         pagesFiltered: { type: integer, description: Present when the crawl set a content filter. }
         pagesOverPathCap: { type: integer, description: Present when the crawl set `maxPagesPerPath`. }
         jsonExtracted: { type: integer, description: Present when the crawl requested structured extraction. }

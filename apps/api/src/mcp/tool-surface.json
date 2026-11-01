@@ -386,6 +386,8 @@
       "onlyMainContent",
       "profile",
       "proxy",
+      "solveCloudflare",
+      "stealth",
       "tier",
       "timeout",
       "url",

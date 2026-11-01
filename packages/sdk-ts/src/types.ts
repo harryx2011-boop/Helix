@@ -5,7 +5,12 @@ export type SearchFormat = 'markdown' | 'text' | 'rawHtml' | 'links' | 'screensh
 
 export type ParseFormat = 'markdown' | 'json';
 
-export type Tier = 'auto' | 'plain' | 'tls' | 'lightpanda' | 'chromium';
+/**
+ * The v3 ladder is plain, tls, browser. `chromium` is the v2 name of
+ * `browser`; `lightpanda` and `camoufox` were removed and run as `browser`
+ * with a warning.
+ */
+export type Tier = 'auto' | 'plain' | 'tls' | 'browser' | 'lightpanda' | 'chromium' | 'camoufox';
 
 export type Extractor = 'trafilatura' | 'readability' | 'auto';
 
@@ -90,6 +95,14 @@ export interface ScrapeOptions {
 
 export interface ScrapeRequest extends ScrapeOptions {
   url: string;
+  /**
+   * Browser tier only: canvas noise, a WebRTC lock and a search referer on top
+   * of the patched browser. Never solves a challenge on its own. Respect each
+   * site's terms of service and robots.txt.
+   */
+  stealth?: boolean;
+  /** Browser tier only: click through a Cloudflare challenge. Slow; bounded by `timeout`. */
+  solveCloudflare?: boolean;
 }
 
 export interface DocumentImage {
@@ -1075,7 +1088,7 @@ export interface ScreenshotRequest {
   blockAds?: boolean;
   mobile?: boolean;
   proxy?: string;
-  tier?: 'auto' | 'chromium' | 'camoufox';
+  tier?: 'auto' | 'browser' | 'chromium' | 'camoufox';
   waitFor?: number;
   timeout?: number;
   profile?: string;
@@ -1105,7 +1118,7 @@ export interface ExtractRequest {
   model?: string;
   /** Keep fields the source does not support. They are reported in `dropped` either way. */
   allowUngrounded?: boolean;
-  tier?: Tier | 'camoufox';
+  tier?: Tier;
   timeout?: number;
 }
 

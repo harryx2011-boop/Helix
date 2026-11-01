@@ -71,11 +71,11 @@ Chromium with a Cloudflare solver, adaptive selectors, spiders and network captu
   disclaimer: respect each site's terms of service and robots.txt.
 - **Ladder `plain, tls, browser`.** The browser rung calls helix-scrape `/render`, unless the
   request needs what only Playwright gives (screenshot, PDF, actions, a phone or custom viewport,
-  dark mode, a non-Chromium engine); then it renders on the API's Playwright pool. A named
-  `profile` also goes to the pool, which applies it (the patched browser presents its own
-  identity), and so does every render when the operator set `remoteCdpUrl` or a non-Chromium
-  `browserEngine` (review fix, 2026-11-01). Crawl sessions pin a profile, so a crawl's browser
-  rung renders on the pool. `stealth` or `solveCloudflare` that cannot apply (pool render, or an
+  dark mode, a non-Chromium engine); then it renders on the API's Playwright pool, and so does
+  every render when the operator set `remoteCdpUrl` or a non-Chromium `browserEngine` (review
+  fix, 2026-11-01). A named `profile` stays on `/render` (see "Profiles on `/render`" below; for
+  a few hours on 2026-11-01 it went to the pool, which took crawls off the guarded browser).
+  `stealth` or `solveCloudflare` that cannot apply (pool render, or an
   explicit `plain`/`tls` tier) is reported in `warnings`. That choice is
   a capability of the rung, not a tier. `chromium` is accepted as the old name of `browser`;
   `lightpanda` and `camoufox` are removed and run as `browser` with a warning, not a 400.
@@ -87,8 +87,8 @@ Chromium with a Cloudflare solver, adaptive selectors, spiders and network captu
   and the final URL after. With a caller proxy the target is resolved by that proxy, as on
   `/fetch`, and only the literal checks apply. WebRTC's UDP (STUN) goes around any HTTP proxy,
   so the WebRTC lock (`disable_non_proxied_udp`) is on whenever the guard or a caller proxy is,
-  not only with `stealth` (review fix, 2026-11-01). The API's Playwright pool still guards with a
-  route, so it has the redirect gap this proxy closes; that is open (not changed in Phase 2).
+  not only with `stealth` (review fix, 2026-11-01). The pool's gap is closed the same way (next
+  section).
 - **One browser per render**, closed after it, capped by `HELIX_SCRAPE_MAX_RENDERS` (default 2).
   Each render runs in a worker thread with its own Proactor loop: uvicorn runs a Selector loop on
   Windows (curl_cffi needs it) and that loop cannot start a subprocess. Measured: about 1.6 s for
@@ -98,3 +98,39 @@ Chromium with a Cloudflare solver, adaptive selectors, spiders and network captu
   time)`.
 - **Headers come from the last main-frame document.** Scrapling pairs the first response's
   headers with the last one's status, which after a solve reported `cf-mitigated` beside a 200.
+
+## Pool guard and profiles on `/render` (2026-11-01, Harry: "Do both")
+
+- **The API's Playwright pool guards through a loopback proxy too** (`apps/api/src/browser/guard-proxy.ts`,
+  the TS twin of `guard_proxy.py`). Measured before the fix, with real browsers: a 302 from a
+  public-looking page to a loopback listener was followed and served on Chromium, Firefox and
+  WebKit; an image redirected to the host's LAN address, and a WebSocket to loopback, reached
+  their listeners; Chromium sent STUN packets to loopback. Each local render and each interact
+  lease now gets its own proxy as the context's `proxy.server` (Playwright adds `<-loopback>`, so
+  loopback goes through it): CONNECT and absolute-URI HTTP, each host resolved once with the
+  pool's lookup, refused when any answer is blocked, connected to the checked address. That also
+  pins the name: the browser no longer does a lookup of its own after the guard's. A main-frame
+  hop the proxy refused is reported as `request failed: redirected to a private or local address,
+  ...`, never as the site's page; a refused subresource just fails to load.
+- **`allowPrivate`** (operator config only) keeps a proxy that refuses only link-local and CGNAT
+  (`isAlwaysBlocked`), the ranges no opt-in covers. **A caller proxy** is used as given and no
+  guard proxy runs: target resolution is that proxy's job, as in the fetch service, and the
+  proxy's own address was checked and pinned upstream (`pinProxyUrl`). The page route stays as
+  the first answer, and is still the only guard on a **remote CDP browser**, which cannot reach a
+  proxy on this host's loopback (its "private" is the remote's network; unchanged).
+- **WebRTC is locked at launch** on the pool's Chromium with both spellings, because each build
+  honours one (measured: the headless shell only `--force-webrtc-ip-handling-policy=<policy>`,
+  the full Chromium only `--webrtc-ip-handling-policy=<policy>`), and with
+  `media.peerconnection.ice.proxy_only` on Firefox. Firefox and WebKit sent no STUN even before.
+  The lock is per browser, so an `allowPrivate` render with no proxy has no non-proxied UDP
+  either.
+- **Profiles on `/render`.** The API resolves the profile (Chromium family only, as on the pool)
+  and sends an `identity`: id, UA, Accept-Language, timezone, screen and the pool's keyed
+  fingerprint script without its Chromium half (the patched browser is a full Chromium). helix-scrape
+  applies it as the pool does: the context's UA, locale (Scrapling turns it into `--lang` and
+  `--accept-lang`), timezone and screen; the script; and a CDP UA override whose client hints
+  are the browser's own brand list moved to the profile's version. The brand list is read on a
+  routed `https://identity.invalid/` page, because `navigator.userAgentData` does not exist on
+  `about:blank`. `profile_used` is reported only once the identity was applied. Measured: the
+  server saw the profile UA, its full Accept-Language and `sec-ch-ua` at the profile's version
+  and platform; the page saw the same brands, timezone, screen and script.

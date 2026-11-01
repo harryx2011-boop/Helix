@@ -354,6 +354,33 @@ async def test_headers_come_from_the_page_that_was_returned(recorder: type[_Reco
 # --- browser slots ---------------------------------------------------------------------
 
 
+def test_a_closed_loops_browser_gate_is_freed(monkeypatch: pytest.MonkeyPatch) -> None:
+    import gc
+    import weakref
+
+    monkeypatch.setenv("HELIX_SCRAPE_MAX_RENDERS", "1")
+
+    async def gate() -> asyncio.Semaphore:
+        # A wait binds the semaphore to its loop (`_loop`), the reference that kept it alive.
+        slots = render_module._slot_gate()
+        await slots.acquire()
+        waiter = asyncio.ensure_future(slots.acquire())
+        await asyncio.sleep(0)
+        slots.release()
+        await waiter
+        slots.release()
+        return slots
+
+    gates = []
+    for _ in range(3):
+        loop = asyncio.new_event_loop()
+        gates.append(weakref.ref(loop.run_until_complete(gate())))
+        loop.close()
+    del loop
+    gc.collect()
+    assert [g() for g in gates] == [None, None, None]
+
+
 async def test_renders_waiting_for_a_browser_hold_no_worker_thread(
     recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
 ) -> None:

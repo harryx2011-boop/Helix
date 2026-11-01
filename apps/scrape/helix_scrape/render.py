@@ -26,7 +26,6 @@ import os
 import re
 import sys
 import time
-import weakref
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -61,17 +60,17 @@ def _max_renders() -> int:
 # A browser is a few hundred MB and a busy CPU; a crawl must not open dozens at once.
 # Renders wait for a slot on the event loop, not in a worker thread: the default executor
 # also resolves names for /fetch (loop.getaddrinfo), and queued renders must not fill it.
-# One gate per loop (the service has one; each test has its own).
-_slots: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Semaphore] = (
-    weakref.WeakKeyDictionary()
-)
+# One gate per loop (the service has one; each test has its own), kept on the loop itself:
+# a semaphore that has waited points back at its loop, so a map keyed by loop never let go.
+_GATE = "_helix_render_gate"
 
 
 def _slot_gate() -> asyncio.Semaphore:
     loop = asyncio.get_running_loop()
-    gate = _slots.get(loop)
+    gate: asyncio.Semaphore | None = getattr(loop, _GATE, None)
     if gate is None:
-        gate = _slots[loop] = asyncio.Semaphore(_max_renders())
+        gate = asyncio.Semaphore(_max_renders())
+        setattr(loop, _GATE, gate)
     return gate
 
 

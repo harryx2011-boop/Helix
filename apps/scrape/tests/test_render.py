@@ -1,0 +1,333 @@
+"""/render: the browser rung on Scrapling's patched Chromium.
+
+Most tests swap the browser session for a recorder, so they check what is asked of the
+browser without launching one. The `browser` tests at the end drive the real Chromium and
+are skipped when none is installed.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import http.server
+import threading
+import time
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, ClassVar
+
+import pytest
+
+from helix_scrape import render as render_module
+from helix_scrape.models import RenderRequest
+from helix_scrape.render import chromium_path, render
+
+
+@dataclass
+class _Page:
+    status: int = 200
+    headers: dict[str, str] = field(default_factory=lambda: {"content-type": "text/html"})
+    html_content: str = "<html><body>rendered</body></html>"
+    url: str = "https://example.com/"
+    cookies: tuple[dict[str, Any], ...] = ()
+
+
+class _Recorder:
+    """Stands in for AsyncStealthySession and keeps the options it was opened with."""
+
+    opened: ClassVar[list[dict[str, Any]]] = []
+    page = _Page()
+    delay_s = 0.0
+    error: Exception | None = None
+
+    def __init__(self, **kwargs: Any) -> None:
+        _Recorder.opened.append(kwargs)
+
+    async def __aenter__(self) -> _Recorder:
+        return self
+
+    async def __aexit__(self, *_: object) -> None:
+        return None
+
+    async def fetch(self, url: str) -> _Page:
+        if self.delay_s:
+            await asyncio.sleep(self.delay_s)
+        if self.error:
+            raise self.error
+        return self.page
+
+
+@pytest.fixture
+def recorder(monkeypatch: pytest.MonkeyPatch) -> Iterator[type[_Recorder]]:
+    _Recorder.opened = []
+    _Recorder.page = _Page()
+    _Recorder.delay_s = 0.0
+    _Recorder.error = None
+    monkeypatch.setattr(render_module, "_session_class", lambda: _Recorder)
+
+    async def public(host: str, port: int) -> list[str]:
+        return ["93.184.215.14"]
+
+    monkeypatch.setattr(render_module, "LOOKUP", public)
+    yield _Recorder
+
+
+# --- the private-address guard -------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "url", ["http://127.0.0.1:8080/", "http://localhost/admin", "http://[::1]/", "http://10.1.2.3/"]
+)
+async def test_a_private_page_host_is_refused_before_a_browser_starts(
+    recorder: type[_Recorder], url: str
+) -> None:
+    result = await render(RenderRequest(url=url))
+    assert not result.success
+    assert result.error == "private or local address, which this instance does not fetch"
+    assert recorder.opened == []
+
+
+async def test_a_name_that_resolves_privately_is_refused_before_a_browser_starts(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def private(host: str, port: int) -> list[str]:
+        raise ValueError("resolves to a private or local address (192.168.0.4)")
+
+    monkeypatch.setattr(render_module, "LOOKUP", private)
+    result = await render(RenderRequest(url="https://intranet.example/"))
+    assert not result.success
+    assert result.error is not None and "private or local address" in result.error
+    assert recorder.opened == []
+
+
+async def test_every_browser_connection_goes_through_the_guard(recorder: type[_Recorder]) -> None:
+    await render(RenderRequest(url="https://example.com/"))
+    proxy = recorder.opened[0]["proxy"]
+    assert proxy.startswith("http://127.0.0.1:")
+
+
+async def test_a_page_that_ends_on_a_refused_host_is_a_failure(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    recorder.page = _Page(url="http://localhost:9/secret", html_content="<p>secret</p>")
+    result = await render(RenderRequest(url="https://example.com/"))
+    assert not result.success
+    assert result.error == "request failed: redirected to a private or local address"
+    assert result.body is None
+
+
+async def test_a_caller_proxy_is_used_as_given(recorder: type[_Recorder]) -> None:
+    await render(RenderRequest(url="https://example.com/", proxy="http://proxy.example:8080"))
+    assert recorder.opened[0]["proxy"] == "http://proxy.example:8080"
+
+
+async def test_allow_private_runs_without_the_guard(recorder: type[_Recorder]) -> None:
+    result = await render(RenderRequest(url="http://127.0.0.1:9/", allow_private=True))
+    assert result.success
+    assert recorder.opened[0].get("proxy") is None
+
+
+# --- options ---------------------------------------------------------------------------
+
+
+async def test_without_stealth_the_extra_masking_is_off(recorder: type[_Recorder]) -> None:
+    await render(RenderRequest(url="https://example.com/"))
+    opened = recorder.opened[0]
+    assert opened["solve_cloudflare"] is False
+    assert opened["hide_canvas"] is False
+    assert opened["block_webrtc"] is False
+    assert opened["google_search"] is False
+
+
+async def test_stealth_turns_on_the_extra_masking_but_not_the_solver(
+    recorder: type[_Recorder],
+) -> None:
+    await render(RenderRequest(url="https://example.com/", stealth=True))
+    opened = recorder.opened[0]
+    assert opened["hide_canvas"] is True
+    assert opened["block_webrtc"] is True
+    assert opened["google_search"] is True
+    assert opened["solve_cloudflare"] is False
+
+
+async def test_the_solver_runs_only_when_asked(recorder: type[_Recorder]) -> None:
+    await render(RenderRequest(url="https://example.com/", solve_cloudflare=True))
+    assert recorder.opened[0]["solve_cloudflare"] is True
+
+
+async def test_wait_and_resource_options_reach_the_browser(recorder: type[_Recorder]) -> None:
+    await render(
+        RenderRequest(
+            url="https://example.com/",
+            wait_ms=750,
+            wait_selector="#app li",
+            network_idle=True,
+            block_ads=True,
+            disable_resources=True,
+            headers={"Accept-Language": "de-DE"},
+            timeout_ms=12_000,
+        )
+    )
+    opened = recorder.opened[0]
+    assert opened["wait"] == 750
+    assert opened["wait_selector"] == "#app li"
+    assert opened["network_idle"] is True
+    assert opened["block_ads"] is True
+    assert opened["disable_resources"] is True
+    assert opened["extra_headers"] == {"Accept-Language": "de-DE"}
+    assert opened["timeout"] <= 12_000
+
+
+async def test_cookies_go_in_and_come_back_out(recorder: type[_Recorder]) -> None:
+    recorder.page = _Page(
+        cookies=({"name": "cf_clearance", "value": "abc", "domain": ".example.com", "path": "/"},)
+    )
+    result = await render(
+        RenderRequest(
+            url="https://example.com/",
+            cookies=[{"name": "session", "value": "s1"}],
+        )
+    )
+    sent = recorder.opened[0]["cookies"]
+    assert sent == [{"name": "session", "value": "s1", "url": "https://example.com/"}]
+    assert result.cookies[0]["name"] == "cf_clearance"
+
+
+async def test_a_rendered_page_comes_back_in_the_fetch_shape(recorder: type[_Recorder]) -> None:
+    result = await render(RenderRequest(url="https://example.com/"))
+    assert result.success
+    assert result.status == 200
+    assert result.body == "<html><body>rendered</body></html>"
+    assert result.final_url == "https://example.com/"
+    assert result.headers["content-type"] == "text/html"
+
+
+# --- deadline and errors ---------------------------------------------------------------
+
+
+async def test_the_deadline_is_hard_even_while_the_solver_runs(recorder: type[_Recorder]) -> None:
+    recorder.delay_s = 10
+    started = time.monotonic()
+    result = await render(
+        RenderRequest(url="https://example.com/", solve_cloudflare=True, timeout_ms=1_000)
+    )
+    assert time.monotonic() - started < 4
+    assert not result.success
+    assert result.error is not None
+    assert result.error.startswith("timeout after 1000ms")
+    assert "challenge" in result.error
+
+
+@pytest.mark.parametrize(
+    ("raised", "expected"),
+    [
+        ("Page.goto: Timeout 30000ms exceeded.\nCall log:", "timeout after 30000ms"),
+        ("Page.goto: net::ERR_NAME_NOT_RESOLVED at https://x.invalid/", "connection failed: dns"),
+        ("Page.goto: net::ERR_SSL_PROTOCOL_ERROR at https://x/", "connection failed: net::ERR_SSL"),
+    ],
+)
+async def test_browser_errors_keep_the_prefixes_the_api_classifies(
+    recorder: type[_Recorder], raised: str, expected: str
+) -> None:
+    recorder.error = RuntimeError(raised)
+    result = await render(RenderRequest(url="https://example.com/"))
+    assert result.error is not None
+    assert result.error.startswith(expected)
+
+
+async def test_error_text_never_trips_the_services_down_classifier(
+    recorder: type[_Recorder],
+) -> None:
+    recorder.error = RuntimeError("Page.goto: net::ERR_ADDRESS_UNREACHABLE (service fetch failed)")
+    result = await render(RenderRequest(url="https://example.com/"))
+    text = (result.error or "").lower()
+    assert result.error and not any(w in text for w in ("unreachable", "service", "fetch failed"))
+
+
+# --- finding Chromium ------------------------------------------------------------------
+
+
+def test_the_newest_staged_chromium_is_used(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for rev in ("1234", "1248", "999"):
+        exe = tmp_path / f"chromium-{rev}" / "chrome-win64" / "chrome.exe"
+        exe.parent.mkdir(parents=True)
+        exe.write_bytes(b"")
+    (tmp_path / "chromium_headless_shell-2000").mkdir()
+    monkeypatch.delenv("HELIX_CHROMIUM_PATH", raising=False)
+    monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str(tmp_path))
+    found = chromium_path()
+    assert found is not None
+    assert Path(found).parts[-3] == "chromium-1248"
+
+
+def test_an_explicit_chromium_path_wins(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HELIX_CHROMIUM_PATH", "C:/chrome/chrome.exe")
+    assert chromium_path() == "C:/chrome/chrome.exe"
+
+
+# --- the real browser ------------------------------------------------------------------
+
+browser = pytest.mark.skipif(chromium_path() is None, reason="no staged Chromium")
+
+
+class _Site(http.server.BaseHTTPRequestHandler):
+    hits: ClassVar[list[str]] = []
+    target = ""
+
+    def log_message(self, *args: object) -> None:
+        pass
+
+    def do_GET(self) -> None:
+        _Site.hits.append(self.path)
+        if self.path == "/hop":
+            self.send_response(302)
+            self.send_header("location", _Site.target)
+            self.end_headers()
+            return
+        body = (
+            b"<html><body><div id=app></div><script>"
+            b"document.getElementById('app').textContent='made by script'</script></body></html>"
+        )
+        self.send_response(200)
+        self.send_header("content-type", "text/html")
+        self.send_header("content-length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
+@pytest.fixture
+def site() -> Iterator[int]:
+    _Site.hits = []
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Site)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield server.server_address[1]
+    server.shutdown()
+
+
+@browser
+async def test_browser_a_redirect_to_a_private_address_is_never_requested(
+    site: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # public.test stands in for a public host that answers with a 302 to localhost.
+    async def lookup(host: str, port: int) -> list[str]:
+        if host == "public.test":
+            return ["127.0.0.1"]
+        raise ValueError("private or local address")
+
+    monkeypatch.setattr(render_module, "LOOKUP", lookup)
+    _Site.target = f"http://localhost:{site}/secret"
+    result = await render(RenderRequest(url=f"http://public.test:{site}/hop", timeout_ms=20_000))
+    assert not result.success
+    assert result.error == "request failed: redirected to a private or local address"
+    assert "/secret" not in _Site.hits
+
+
+@browser
+async def test_browser_renders_what_the_script_builds(site: int) -> None:
+    result = await render(
+        RenderRequest(url=f"http://127.0.0.1:{site}/page", allow_private=True, timeout_ms=20_000)
+    )
+    assert result.success, result.error
+    assert result.body is not None and "made by script" in result.body

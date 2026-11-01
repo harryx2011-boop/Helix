@@ -12,10 +12,8 @@ private address in).
 
 from __future__ import annotations
 
-import asyncio
 import ipaddress
 import os
-import socket
 import time
 from dataclasses import dataclass
 from urllib.parse import SplitResult, urljoin, urlsplit
@@ -24,7 +22,7 @@ from curl_cffi.const import CurlOpt
 from curl_cffi.requests import AsyncSession
 from curl_cffi.requests import exceptions as curl_errors
 
-from helix_scrape.guard import is_private_host, public_only
+from helix_scrape.guard import is_private_host, lookup_public
 from helix_scrape.models import FetchRequest, FetchResponse
 from helix_scrape.profiles import resolve, windows_headers
 
@@ -88,12 +86,7 @@ async def _pin(parts: SplitResult, req: FetchRequest) -> dict[int, list[str]] | 
         return None
     port = parts.port or (443 if parts.scheme == "https" else 80)
     try:
-        found = await asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM)
-    except socket.gaierror as error:
-        raise ConnectionError(f"dns error: {error}") from error
-    addresses = list(dict.fromkeys(str(info[4][0]) for info in found))
-    try:
-        public_only(addresses)
+        addresses = await lookup_public(host, port)
     except ValueError as error:
         raise ConnectionError(str(error)) from error
     return {CurlOpt.RESOLVE: [f"{host}:{port}:{','.join(addresses)}"]}

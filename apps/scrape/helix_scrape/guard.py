@@ -7,7 +7,9 @@ benchmarking, multicast and reserved ranges, and the IPv6 forms that carry an IP
 
 from __future__ import annotations
 
+import asyncio
 import ipaddress
+import socket
 
 _RFC1918 = [ipaddress.ip_network(n) for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")]
 
@@ -87,3 +89,16 @@ def public_only(addresses: list[str]) -> list[str]:
         if is_private_ip(address):
             raise ValueError(f"resolves to a private or local address ({address})")
     return addresses
+
+
+async def lookup_public(host: str, port: int) -> list[str]:
+    """Resolve `host` once and return its addresses, or ValueError when any answer is private.
+
+    The caller connects to exactly these addresses, so a second lookup cannot swap a private
+    one in (DNS rebinding).
+    """
+    try:
+        found = await asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    except socket.gaierror as error:
+        raise ConnectionError(f"dns error: {error}") from error
+    return public_only(list(dict.fromkeys(str(info[4][0]) for info in found)))

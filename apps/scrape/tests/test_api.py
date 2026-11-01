@@ -68,3 +68,21 @@ async def test_health_stays_open_with_a_token(
 
 async def test_a_malformed_body_is_a_422_not_a_crash(client: httpx.AsyncClient) -> None:
     assert (await client.post("/fetch", json={})).status_code == 422
+
+
+async def test_render_refuses_a_private_page_with_http_200(client: httpx.AsyncClient) -> None:
+    res = await client.post("/render", json={"url": "http://127.0.0.1:9/"})
+    assert res.status_code == 200
+    body = res.json()
+    assert set(body) == {
+        "success", "status", "headers", "body", "final_url", "cookies", "timing_ms", "error",
+    }  # fmt: skip
+    assert body["success"] is False
+    assert "private or local address" in body["error"]
+
+
+async def test_render_needs_the_token_when_one_is_set(
+    client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HELIX_SERVICE_TOKEN", "secret-token")
+    assert (await client.post("/render", json={"url": "not a url"})).status_code == 401

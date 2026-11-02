@@ -18,7 +18,7 @@ A self-hostable, BYOK frontier utility hub — scrape · parse · search · craw
 | Sub-surface contracts | `CHECKS-CONTRACT.md` |
 
 Standing facts (deployment, verified runtime recipes, known gotchas, dead decisions) are printed at session start from
-`C:/Users/harry/.claude/projects/e--Helix/memory/STANDING.md`. Trust it, but verify any claim about a file or flag still holding before acting on it.
+`C:/Users/harry/.claude/projects/d--Helix/memory/MEMORY.md`. Trust it, but verify any claim about a file or flag still holding before acting on it.
 
 ## Search
 
@@ -38,7 +38,7 @@ The Converter left Helix on 2026-09-25: file conversion is Sparky's (`D:\sparky\
 
 ## Hard constraints
 
-- **E: is exFAT.** No symlinks: pnpm needs `node-linker=hoisted` — never remove `.npmrc`. `readlink` returns EISDIR on a regular file here, which is fatal to webpack, so **any `next build` on E: dies**. To build, robocopy to C: and build there. Dev server is webpack only — Turbopack panics in this hoisted exFAT monorepo; do not retry without moving to NTFS.
+- **D: is NTFS** (the repo moved off exFAT E:). `readlink` on a regular file returns EINVAL here, re-tested 2026-11-01; the old EISDIR build failure was exFAT-only. Keep `.npmrc` `node-linker=hoisted`. The dev server stays webpack only: Turbopack panicked in this hoisted monorepo and has not been retried on NTFS.
 - **Writes to this drive can silently fail.** A heredoc that reports success, and even verifies on an immediate re-read, may leave nothing on disk — observed on this repo root 2026-09-10. After writing any file here, verify by reading the content back in a later, separate command, not by trusting the write's own exit code.
 - **pnpm is not on the bash PATH** — use `corepack pnpm`.
 - **`supabase/schema.sql` is generated** — run `node supabase/build-schema.mjs` after any migration. Reseeding and any destructive DB action on the shared Supabase project needs owner approval.
@@ -52,9 +52,6 @@ SemVer; currently **2.3.2** in the root `package.json` — the one source of tru
 
 ## Working rules
 
-- **Parallelize by default.** Independent reads, greps, edits, and subagent dispatches go out in one message. Serialize only on real data dependencies.
-- **Surgical edits.** Fix the broken section; never regenerate untouched code. Every changed line traces to the request.
-- **Stage by name** (`git add path/to/file`, not `-A`), commit to `main`, **no AI co-author trailer**.
 - **Typecheck is TS 7 native (2026-10-03).** `pnpm -r typecheck` runs the root devDependency `typescript-native` (alias of `typescript@^7`, the Go port) as `node ../../node_modules/typescript-native/bin/tsc`; the dashboard passes `--noUncheckedSideEffectImports false`. `typescript` stays 5.9 for `next build`, typescript-eslint and the `build` emits: TS 7 has no stable programmatic API until 7.1, so revisit then. Median of 7 runs of `pnpm -r typecheck`: cold 8954 ms before, 2177 ms after; warm 3706 ms before, 1186 ms after; both green. The hoisted linker links the higher version to the root `node_modules/.bin/tsc`, so a bare `tsc` is TS 7 here: the `build` scripts in `apps/api`, `packages/cli` and `packages/sdk-ts` call `node ../../node_modules/typescript/bin/tsc` to keep emitting with 5.9.
 - Tokens: marketing and `/checks` = the Firecrawl-structured light violet `--m-*` theme under `data-surface="marketing"`; app = `DESIGN.md` dark. Fonts Geist + Geist Mono; radii pill/6px/8px; weights 400/450/500 only.
 

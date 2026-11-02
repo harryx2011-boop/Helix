@@ -1,3 +1,4 @@
+Status: ACTIVE (Phase 1 partly built; Phases 3-6 not started).
 # Suite plan: audits and five features (2026-10-05)
 
 Status: **plan only** for the features. Harry chose "audits only, plan features" on 2026-10-05. Phase 1 is partly built (see its status block); Phases 3-6 are not started.
@@ -95,7 +96,7 @@ Baseline first: a throughput script over a fixed URL set (static pages, SPAs, bo
 p50/p95 latency, tier reached, bytes and success rate, built on `apps/api/scripts/smoke-live.mjs` and the
 `/jobs/{id}/ladder` data. "Multiple times faster" is judged against that baseline only.
 
-1. Fix the two ladder findings (`FOLLOWUPS-PLAN.md:78-80`):
+1. Fix the two ladder findings (`docs/plans/2026-09-26-followups-plan.md:78-80`):
    - example.com climbs to chromium: stop when two tiers return the same `contentHash`, or skip the 200-char
      floor (`escalation.ts:93`) when the HTML has no empty app root (`pipeline.ts:344`).
    - Disabled lightpanda: add `unavailable` tiers to `Capabilities`, filled from the pool's enabled engines,

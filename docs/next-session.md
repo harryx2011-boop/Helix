@@ -6,14 +6,14 @@ goal you are picking up. Do them in order unless Harry says otherwise.
 
 Shared rules for every goal:
 
-- Read `context.md` (top entries), `SUITE-PLAN.md`, the Helix entry in `~/.claude/BACKLOG.md`, and
+- Read `context.md` (top entries), `docs/plans/2026-10-05-suite-plan.md`, the Helix entry in `~/.claude/BACKLOG.md`, and
   memory `project_open_threads.md` first.
 - Run `node ~/.claude/hooks/helix-ensure.js`; confirm `helix_health` and `helix_search` answer.
 - Read every stray diff before touching the tree (other sessions share this checkout; the
   `graphify-out/`/`synapse-out/` churn is not yours; two stashes are Harry's to drop).
 - A failing test first for every code change. Claim a speedup only from `bench-scrape.mjs` output.
 - Stage by name. No Claude co-author trailer. Push `main` per batch.
-- Update `context.md`, `SUITE-PLAN.md` and the BACKLOG entry as items land.
+- Update `context.md`, `docs/plans/2026-10-05-suite-plan.md` and the BACKLOG entry as items land.
 - A new tool follows the seven-step checklist (openapi path, SDK `NOT_IN_SDK` row,
   `tool-surface.json`, `HELIX_MCP_TOOLS` in `helix-ensure.js`, `CORE_TOOLS` in `mcp-schema-size.mjs`,
   the character cap in `slim.test.ts`, tests).
@@ -33,7 +33,7 @@ Recommended first: its SearXNG image input already works on the dev stack (`Sear
 
 ```
 Build helix_image_sheet in D:\Helix (SUITE-PLAN Phase 3). Read the shared rules in
-docs/next-session.md first, then SUITE-PLAN.md Phase 3.
+docs/next-session.md first, then docs/plans/2026-10-05-suite-plan.md Phase 3.
 
 The tool: query in -> search images over several pages (SearxngProvider, categories=images) ->
 dedupe by perceptual hash -> filter by minimum size and aspect -> return a contact sheet (one PNG
@@ -81,7 +81,7 @@ at the time it was written):
 
 ```
 Finish Helix anti-bot Phase 1 in D:\Helix. Read the shared rules in docs/next-session.md, then
-SUITE-PLAN.md Phase 1 and context.md "2.3.0 — anti-bot pass 2".
+docs/plans/2026-10-05-suite-plan.md Phase 1 and context.md "2.3.0 — anti-bot pass 2".
 
 Build, each behind a failing test, each speedup proven by apps/api/scripts/bench-scrape.mjs:
 - Item 6: parallel /extract URL loop with mapWithLimit (routes/extract.ts, ~line 166 is still a
@@ -113,7 +113,7 @@ The desktop app needs a rebuild before its own API frames in VS Code. Superseded
 
 ```
 Build the Helix VS Code extension (SUITE-PLAN Phase 6), then the monitor change summaries (Phase 5),
-in D:\Helix. Read the shared rules in docs/next-session.md, then SUITE-PLAN.md Phases 5 and 6.
+in D:\Helix. Read the shared rules in docs/next-session.md, then docs/plans/2026-10-05-suite-plan.md Phases 5 and 6.
 
 Phase 6 (apps/vscode, own version line like packages/sdk-ts):
 - A webview hosts an iframe of http://127.0.0.1:<port>/app from the running API (desktop 7410 or dev
@@ -134,7 +134,7 @@ Phase 5 (monitor summaries, surfaced in the VSIX monitoring view):
 
 ```
 Build helix_data_miner (SUITE-PLAN Phase 4) in D:\Helix. Read the shared rules in
-docs/next-session.md, then SUITE-PLAN.md Phase 4.
+docs/next-session.md, then docs/plans/2026-10-05-suite-plan.md Phase 4.
 
 Input: a topic and a column list or prompt. Steps: agent/schema for columns -> search for candidates
 (enrich findCandidates, dedupeByUrl, screenSource) -> scrape with mapWithLimit -> extract with

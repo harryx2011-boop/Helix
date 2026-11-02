@@ -11,8 +11,13 @@ $spec = Join-Path $root 'helix-scrape.spec'
 if (-not (Test-Path $python)) { throw "No venv interpreter at $python" }
 
 # The venv is made by uv and has no pip; PyInstaller is a build tool, not a dependency.
+# Windows PowerShell turns a native command's stderr into a terminating error under 'Stop',
+# even with 2>$null, so the probe runs under 'Continue' and is judged by its exit code.
+$ErrorActionPreference = 'Continue'
 & $python -c "import PyInstaller" 2>$null
-if ($LASTEXITCODE -ne 0) {
+$probe = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
+if ($probe -ne 0) {
     & uv pip install --python $python pyinstaller
     if ($LASTEXITCODE -ne 0) { throw "Could not install PyInstaller into $python" }
 }

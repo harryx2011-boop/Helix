@@ -148,6 +148,67 @@ describe('detectBlock', () => {
   });
 });
 
+describe('detectBlock on a large page with little extracted text', () => {
+  // Found 2026-11-01. After helix-scrape solved Cloudflare on nopecha.com/demo, the
+  // real index (173 KB of HTML, 56 links, 742 chars of extracted text) was flagged
+  // as perimeterx + captcha-widget. The "evidence" was an inline SVG sprite id
+  // (`icon-perimeterx`, `icon-turnstile`) and nav links naming the vendors it demos.
+  // A challenge page is small; a large document is content however little text
+  // trafilatura recovers from it.
+  const nav = ['Arkose FunCAPTCHA', 'AWS WAF CAPTCHA', 'Cloudflare Turnstile', 'PerimeterX (HUMAN)']
+    .map((n) => `<li><a href="/demo/${n.split(' ')[0]?.toLowerCase()}">${n}</a></li>`)
+    .join('');
+  const sprite =
+    '<svg style="display:none"><symbol id="icon-perimeterx"></symbol><symbol id="icon-turnstile"></symbol></svg>';
+  const bundle = `<script>${'var x=1;'.repeat(20_000)}</script>`;
+  const shortText = 'NopeCHA Docs CAPTCHA Demo Cloudflare Turnstile PerimeterX (HUMAN) '.repeat(10);
+  const largeIndex = `<html><body><ul>${nav}</ul>${sprite}${bundle}</body></html>`;
+
+  it('passes a solved Cloudflare page that only names captcha vendors in links and icons', () => {
+    expect(largeIndex.length).toBeGreaterThan(100_000);
+    const verdict = detectBlock(facts({ body: largeIndex, extractedText: shortText }));
+    expect(verdict.blocked).toBe(false);
+    expect(verdict.detectedBy).toEqual([]);
+  });
+
+  it('still flags a Cloudflare challenge that is padded to a large body', () => {
+    // The interstitial's own state object is challenge-only evidence at any size.
+    const body = `<html><head><title>Just a moment...</title></head><body><script>window._cf_chl_opt={cvId:"3"};</script>${bundle}</body></html>`;
+    const verdict = detectBlock(facts({ body, extractedText: 'Just a moment...' }));
+    expect(verdict.blocked).toBe(true);
+    expect(verdict.detectedBy).toContain('cloudflare-challenge');
+  });
+
+  it('still flags a PerimeterX challenge element and a DataDome frame on a large body', () => {
+    for (const marker of [
+      '<div id="px-captcha"></div>',
+      '<iframe src="https://geo.captcha-delivery.com/captcha/?initialCid=x"></iframe>',
+    ]) {
+      const body = `<html><body>${marker}${bundle}</body></html>`;
+      const verdict = detectBlock(facts({ body, extractedText: 'Press and hold' }));
+      expect(verdict.blocked).toBe(true);
+      expect(verdict.reason).toBe('challenge');
+    }
+  });
+
+  it('still flags a small page whose only content is a live Turnstile widget', () => {
+    // The 1.9 KB body helix-scrape returned for nopecha.com/demo/turnstile.
+    const body =
+      '<html><head><title>NopeCHA - Turnstile Demo</title><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async></script></head>' +
+      '<body><div class="label">Cloudflare Turnstile</div><div id="example-container0"><input type="hidden" name="cf-turnstile-response" value=""></div></body></html>';
+    const verdict = detectBlock(facts({ body, extractedText: 'Cloudflare Turnstile More info' }));
+    expect(verdict.blocked).toBe(true);
+    expect(verdict.detectedBy).toContain('captcha-widget');
+  });
+
+  it('still flags an error status on a large body', () => {
+    const body = `<html><body><p>Access denied</p>${nav}${sprite}${bundle}</body></html>`;
+    const verdict = detectBlock(facts({ statusCode: 403, body, extractedText: shortText }));
+    expect(verdict.blocked).toBe(true);
+    expect(verdict.detectedBy).toContain('status-403');
+  });
+});
+
 describe('classifyTransportError', () => {
   it('names a down Helix service as service_unavailable, never a block', () => {
     // The bug this exists to prevent: a fetch service being down was reported as

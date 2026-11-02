@@ -1,4 +1,4 @@
-Status: ACTIVE (Phase 1 partly built; Phases 3-6 not started).
+Status: IN PROGRESS (Phase 1 partly built; Phases 3-6 not started).
 # Suite plan: audits and five features (2026-10-05)
 
 Status: **plan only** for the features. Harry chose "audits only, plan features" on 2026-10-05. Phase 1 is partly built (see its status block); Phases 3-6 are not started.

@@ -1,4 +1,4 @@
-Status: DONE (shipped as 1.6.0; later landing work is in context.md).
+Status: COMPLETED (shipped as 1.6.0; later landing work is in context.md).
 # Landing revamp 2 — Helix 1.6.0
 
 Decided 2026-09-03 via 12 questions plus four mid-turn asks. Supersedes the Helix section of `E:\landing-revamp-plan.md` where they conflict. Reference: firecrawl.dev (nav, playground prompt box, playground result view).

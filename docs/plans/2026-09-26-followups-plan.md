@@ -1,4 +1,4 @@
-Status: DONE (2026-09-26). Phases 0-4 committed; closing live smoke passed.
+Status: COMPLETED (2026-09-26). Phases 0-4 committed; closing live smoke passed.
 # Follow-ups plan: after the 2026-09-26 live smoke
 
 **Status: complete (2026-09-26).** Phases 0–4 are committed. The closing full live smoke (`smoke-live.mjs`, authenticated) passes 64, fails 0 and skips 2 (the SSE stream and the provider delete, both on purpose). It found three defects, all fixed in the closing commit: `/parse`, `/document` parse, `/agent/schema` and `/extract` read a false caller disconnect, and a replay of an unknown delivery answered 409 instead of 404. Two smoke expectations were stale.

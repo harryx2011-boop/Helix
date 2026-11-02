@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: IN PROGRESS
 
 ```
 Work in D:\Helix. Read first: context.md (top entries), docs/plans/README.md, docs/plans/ROADMAP.md, docs/plans/2026-10-05-suite-plan.md, docs/next-session.md, TODO.md.

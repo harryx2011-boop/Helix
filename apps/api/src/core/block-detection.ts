@@ -126,9 +126,10 @@ const bodyIncludes = (r: ScanFacts, needle: string): boolean =>
   r.interstitial && r.lower.includes(needle);
 
 // Identifiers only a challenge page carries (Cloudflare's interstitial state object,
-// PerimeterX's challenge element, DataDome's challenge frame). A vendor name or a
-// widget class can sit in a large page's icons and links; these cannot, so they
-// need only thin text, and a challenge padded with scripts is still caught.
+// PerimeterX's challenge element, DataDome's challenge frame, a captcha widget's
+// markup, the WAF integration scripts, a verification wall's phrase). A bare vendor
+// name can sit in a large page's icons and links; these cannot, so they need only
+// thin text, and a wall that ships a full template or inline CSS is still caught.
 const challengeIncludes = (r: ScanFacts, needle: string): boolean =>
   r.thin && r.lower.includes(needle);
 
@@ -207,7 +208,7 @@ const SIGNALS: Signal[] = [
     reason: 'challenge',
     // DataDome sets x-datadome on every response it lets through, so the header alone is not a block.
     test: (r) =>
-      (r.interstitial && hasHeader(r, 'x-datadome')) ||
+      (r.thin && hasHeader(r, 'x-datadome')) ||
       bodyIncludes(r, 'datadome') ||
       challengeIncludes(r, 'geo.captcha-delivery.com'),
   },
@@ -232,13 +233,13 @@ const SIGNALS: Signal[] = [
     weight: 0.9,
     reason: 'blocked',
     test: (r) =>
-      bodyIncludes(r, '_incapsula_') || bodyIncludes(r, 'incident id:'),
+      challengeIncludes(r, '_incapsula_') || bodyIncludes(r, 'incident id:'),
   },
   {
     name: 'aws-waf',
     weight: 0.85,
     reason: 'challenge',
-    test: (r) => bodyIncludes(r, 'awswafintegration') || bodyIncludes(r, 'aws-waf-token'),
+    test: (r) => challengeIncludes(r, 'awswafintegration') || challengeIncludes(r, 'aws-waf-token'),
   },
 
   // --- generic challenge markers --------------------------------------------
@@ -247,8 +248,10 @@ const SIGNALS: Signal[] = [
     weight: 0.8,
     reason: 'challenge',
     test: (r) =>
-      bodyIncludes(r, 'g-recaptcha') ||
-      bodyIncludes(r, 'h-captcha') ||
+      challengeIncludes(r, 'g-recaptcha') ||
+      challengeIncludes(r, 'h-captcha') ||
+      challengeIncludes(r, 'cf-turnstile') ||
+      challengeIncludes(r, 'challenges.cloudflare.com/turnstile') ||
       bodyIncludes(r, 'turnstile'),
   },
   {
@@ -262,13 +265,13 @@ const SIGNALS: Signal[] = [
     weight: 0.8,
     reason: 'challenge',
     test: (r) =>
-      bodyIncludes(r, 'prove your humanity') ||
-      bodyIncludes(r, 'verify you are human') ||
-      bodyIncludes(r, 'verify that you are human') ||
-      bodyIncludes(r, 'verifying you are human') ||
-      bodyIncludes(r, 'are you a robot') ||
-      bodyIncludes(r, 'enable javascript and cookies to continue') ||
-      bodyIncludes(r, 'whoa there, pardner'),
+      challengeIncludes(r, 'prove your humanity') ||
+      challengeIncludes(r, 'verify you are human') ||
+      challengeIncludes(r, 'verify that you are human') ||
+      challengeIncludes(r, 'verifying you are human') ||
+      challengeIncludes(r, 'are you a robot') ||
+      challengeIncludes(r, 'enable javascript and cookies to continue') ||
+      challengeIncludes(r, 'whoa there, pardner'),
   },
   {
     name: 'access-denied-phrasing',

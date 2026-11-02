@@ -191,6 +191,23 @@ describe('detectBlock on a large page with little extracted text', () => {
     }
   });
 
+  it.each([
+    ['a reCAPTCHA widget', '<div class="g-recaptcha" data-sitekey="x"></div>', {}, 200, 'captcha-widget'],
+    ['a Turnstile widget', '<div class="cf-turnstile" data-sitekey="x"></div><script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>', {}, 200, 'captcha-widget'],
+    ['a human-verification wall', '<h1>Prove your humanity</h1>', {}, 200, 'human-verification'],
+    ['a DataDome response', '<p>Please wait</p>', { 'x-datadome': 'protected' }, 200, 'datadome'],
+    ['an AWS WAF challenge', '<script>AwsWafIntegration.saveReferrer();</script>', {}, 202, 'aws-waf'],
+    ['an Imperva wall', '<iframe src="/_Incapsula_Resource?SWKMTFSR=1"></iframe>', {}, 200, 'imperva-incapsula'],
+  ])('still flags %s on a large body with little text', (_name, marker, headers, statusCode, signal) => {
+    // A wall that ships a full site template or inline CSS is still a wall. These
+    // markers are challenge-only, so the size cap must not hide them.
+    const body = `<html><body>${marker}${bundle}</body></html>`;
+    expect(body.length).toBeGreaterThan(100_000);
+    const verdict = detectBlock(facts({ statusCode, headers, body, extractedText: 'Please wait' }));
+    expect(verdict.blocked).toBe(true);
+    expect(verdict.detectedBy).toContain(signal);
+  });
+
   it('still flags a small page whose only content is a live Turnstile widget', () => {
     // The 1.9 KB body helix-scrape returned for nopecha.com/demo/turnstile.
     const body =

@@ -1,3 +1,9 @@
+/**
+ * Voices come from VoiceStudio (debpalash/VoiceStudio, AGPL-3.0), installed
+ * separately. Only its OpenAI-compatible HTTP API is used; none of its code is
+ * bundled. Its default port 3900 collides with cortex-web's dev server, so the
+ * base URL comes from VOICESTUDIO_URL.
+ */
 
 export const VOICESTUDIO_DEFAULT_URL = "http://127.0.0.1:3900";
 export const SPEECH_SAMPLE_RATE = 24000;

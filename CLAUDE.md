@@ -1,6 +1,6 @@
 # Helix
 
-A self-hostable, BYOK frontier utility hub — scrape · parse · search · crawl · interact · monitor — shipped as a Windows desktop app. Three runtimes behind one HTTP surface.
+A self-hostable, BYOK frontier utility hub — scrape · parse · search · crawl · interact · monitor — run on your own Windows PC and opened in your browser (a gated localhost app). Three runtimes behind one HTTP surface.
 
 **`context.md` is canonical.** Read it at session start; update it after features, schema changes, version bumps, and layout refactors. This file is the entry point only — it holds what is true across every turn, not rolling status. Per-version history lives in git log.
 
@@ -26,11 +26,20 @@ Standing facts (deployment, verified runtime recipes, known gotchas, dead decisi
 
 **Graphify first.** `graphify-out/` is the primary search path — locate the node, then read the narrow range it points at. Read/Grep/Glob are fallbacks, and falling back requires saying why. Regenerate the graph after structural changes (files added/renamed/moved, a refactor touching 3+ files); `--update`'s prune leaves ghost nodes, so check counts after.
 
+## The browser app (`apps/desktop`)
+
+Helix runs as a localhost browser app; the Electron shell is gone. `corepack pnpm --filter @helix/desktop web` (after `web:ui` once, or `web:dev` for a `next dev` UI) starts the API (7410), extract (7412) and scrape (7413) as before, then serves the UI and API on **127.0.0.1:3410** behind a gate (`apps/desktop/src/web/gate.ts`).
+
+- The gate refuses a wrong Host (DNS rebinding), a foreign Origin, cross-site fetch metadata and any request without the per-launch token. The token arrives once as `/?t=<token>` and becomes an HttpOnly SameSite=Strict cookie. Never bind another interface and never skip the gate.
+- The gate injects `window.helixDesktop` (API key, admin token, dictation) into HTML replies, as the Electron preload used to. Only a request that passed the gate gets it.
+- Data stays in `%APPDATA%\Helix\{data,runtime}`. The launcher reads the stored credentials read-only: the API key also derives the encryption key for provider keys in the database, so a new key would orphan them. Never rewrite or move `credentials.json`. The launcher's own logs and pid files go to `%APPDATA%\Helix\web\`.
+- Builds and installs go on C: (`C:/Builds/helix`) through the resource gateway, not on D:.
+
 ## Layout and ports
 
-- `apps/dashboard` — one Next.js app: marketing and docs (light), `/app` (dark), `/checks` in `app/(tools)` (light, desktop-only). No accounts, no sign-in: Clerk, Supabase, onboarding and `app/api/**` left in `DESKTOP-PLAN.md` Phase 2b. The website keeps marketing; `/app` ships only in the Electron download. **Port 3400.** `HELIX_HOSTED=1` selects the website build (Vercel, server output, `/app` redirected to `/download`); default is the self-host static export.
+- `apps/dashboard` — one Next.js app: marketing and docs (light), `/app` (dark), `/checks` in `app/(tools)` (light, local app only). No accounts, no sign-in: Clerk, Supabase, onboarding and `app/api/**` left in `DESKTOP-PLAN.md` Phase 2b. The website keeps marketing; `/app` ships only in the local browser app (`apps/desktop`). **Port 3400.** `HELIX_HOSTED=1` selects the website build (Vercel, server output, `/app` redirected to `/download`); default is the self-host static export.
 - `apps/api` — Fastify, Playwright pool, jobs. **Port 7400.** Routes mount under a `/v1` prefix; `/settings*` and `/internal/keys` mount outside it, on the admin-token boundary.
-- `apps/scrape` — Python (Scrapling), fetch and TLS identity; replaced the Rust `apps/fetch` in v3. **Port 7403** (desktop 7413).
+- `apps/scrape` — Python (Scrapling), fetch and TLS identity; replaced the Rust `apps/fetch` in v3. **Port 7403** (local app 7413).
 - `apps/extract` — Python, parsing/LLM/embeddings. **Port 7402.**
 - Postgres **7432**. `packages/` — profiles, schema, sdk-ts, cli (`@helix/cli`).
 

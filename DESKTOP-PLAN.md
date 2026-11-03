@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-25 · **Status:** Phases 0–7 all done; 2.0.0 released 2026-09-26 (Phases 3–7 in one overnight session); latest installer 2.1.0 (2026-09-26, see `context.md` status line). Decisions D1–D16 made.
 
+> **2026-11-03 update:** the desktop app is moving from Electron to a localhost browser app (`apps/desktop/src/web/`, branch `browser/helix`, not yet verified). Where this plan says "desktop app", "installer" or "Electron", read "local app"; the installer path is being removed. See `context.md`.
+
 Helix becomes a Windows desktop app. It keeps the core `/app` UI plus the API, extract and fetch services. The public website keeps its landing page, docs and marketing, and gates the app behind the desktop download. The desktop app needs no external database and opens no console windows.
 
 | Phase | Work | State |

@@ -2,7 +2,7 @@
 
 **A frontier utility hub.** Self-hostable and bring-your-own-key. Turn web pages and documents into clean, structured, LLM-ready data — using your own models, your own proxies, your own storage.
 
-> Status: v2.3.2. The API, the dashboard and the Windows desktop app are built. [ARCHITECTURE.md](ARCHITECTURE.md) and [openapi.yaml](openapi.yaml) are the design they follow.
+> Status: v2.3.2. The API, the dashboard and the local browser app for Windows are built. [ARCHITECTURE.md](ARCHITECTURE.md) and [openapi.yaml](openapi.yaml) are the design they follow.
 
 ---
 
@@ -57,6 +57,20 @@ curl -X POST localhost:7400/v1/scrape \
   -H 'Content-Type: application/json' \
   -d '{"url": "https://example.com"}'
 ```
+
+### Windows: the local browser app
+
+No Docker needed. This runs the API, the page reader and the document reader on your PC, with the Postgres-compatible database embedded, and opens the dashboard in your browser. It replaces the Electron installer.
+
+```bash
+corepack pnpm install --frozen-lockfile
+uv sync --directory apps/scrape
+uv sync --frozen --directory apps/extract
+corepack pnpm --filter @helix/desktop web:ui   # build the interface once
+corepack pnpm --filter @helix/desktop web      # start everything and open the link
+```
+
+Open the link the last command prints. It ends in a key that changes on every start; a bare `http://127.0.0.1:3410` is refused, and so is any request whose Host or Origin is not Helix's own, so a web page you visit cannot reach it. `web:dev` serves the interface from `next dev`, so a UI edit shows on refresh with no export step. Your data stays in `%APPDATA%Helix`, where the old installer kept it. Press Ctrl+C to stop.
 
 ### Who holds which credential
 

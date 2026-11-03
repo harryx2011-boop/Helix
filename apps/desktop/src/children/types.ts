@@ -22,6 +22,8 @@ export interface ChildContext {
   /** Fresh per launch: the API sends it to scrape and extract, which refuse calls without it. */
   serviceToken: string
   ports: Ports
+  /** The origin the browser sees, when a gate sits in front of the API; unset, the API's own. */
+  publicOrigin?: string
   exists: (p: string) => boolean
 }
 

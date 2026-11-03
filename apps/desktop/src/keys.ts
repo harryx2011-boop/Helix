@@ -9,7 +9,7 @@ export interface Cipher {
   decrypt(data: Buffer): string
 }
 
-interface CredentialFile {
+export interface CredentialFile {
   v: 1
   enc: 'safeStorage' | 'plain'
   apiKey: string
@@ -25,7 +25,7 @@ export function generateSecrets(rand: Random = randomBytes): Secrets {
 const KEY_SHAPE = /^helix-[0-9a-f]{32}$/
 const TOKEN_SHAPE = /^[0-9a-f]{64}$/
 
-function decode(file: CredentialFile, cipher: Cipher): Secrets {
+export function decode(file: CredentialFile, cipher: Cipher): Secrets {
   const read = (v: string) => (file.enc === 'safeStorage' ? cipher.decrypt(Buffer.from(v, 'base64')) : Buffer.from(v, 'base64').toString('utf8'))
   const secrets = { apiKey: read(file.apiKey), adminToken: read(file.adminToken) }
   if (!KEY_SHAPE.test(secrets.apiKey) || !TOKEN_SHAPE.test(secrets.adminToken)) throw new Error('credentials have the wrong shape')

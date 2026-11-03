@@ -33,30 +33,33 @@ export const DOCS: DocPage[] = [
     group: 'Get Started',
     title: 'Quickstart',
     intro:
-      'This guide takes you from download to your first result in a few minutes. By the end, Helix is installed on your PC and has read a web page for you.',
+      'This guide takes you from a fresh checkout to your first result. By the end, Helix runs on your PC, opens in your browser, and has read a web page for you.',
     sections: [
       {
         h: 'Before you begin',
         blocks: [
           {
             ul: [
-              'Windows 10 or 11, 64-bit. Helix is a Windows app.',
-              'An internet connection. The installer is about 250 MB.',
-              'Nothing else. You do not need an account, and you do not need an AI key to read pages.',
+              'Windows 10 or 11, 64-bit. Helix runs on Windows.',
+              'Git, Node.js 22 or newer (it includes corepack) and uv, the Python tool. You need an internet connection for the first setup.',
+              'No account, and no AI key to read pages. Helix serves its pages only to your own browser, on this PC.',
             ],
           },
         ],
       },
       {
-        h: 'Step 1: Install Helix',
+        h: 'Step 1: Set up Helix',
         blocks: [
           {
             ol: [
-              'Open the Download page and select Download for Windows.',
-              'Run Helix-Setup-<version>.exe. It installs Helix for your Windows user only, lets you choose the folder, and adds a desktop shortcut and a Start menu entry.',
-              'Windows may ask you to confirm before the installer runs, because the installer is not code-signed. See Help if you are unsure what to click.',
-              'Helix opens when the installer finishes.',
+              'Get the source: git clone https://github.com/harryx2011-boop/Helix, then open the folder in a terminal.',
+              'Install the packages: corepack pnpm install --frozen-lockfile',
+              'Install the page reader and the document reader: uv sync --directory apps/scrape, then uv sync --frozen --directory apps/extract',
+              'Build the interface once: corepack pnpm --filter @helix/desktop web:ui',
             ],
+          },
+          {
+            note: 'There is no installer any more. Helix used to be an Electron app; it is now a local web app that you start from a terminal.',
           },
         ],
       },
@@ -64,10 +67,10 @@ export const DOCS: DocPage[] = [
         h: 'Step 2: Let it start',
         blocks: [
           {
-            p: 'A small start-up window shows Helix getting ready. It starts three parts: the engine that runs your requests and keeps your data, the page reader and the document reader. The main window opens when all three are up.',
+            p: 'Run corepack pnpm --filter @helix/desktop web. The terminal shows Helix getting ready. It starts three parts: the engine that runs your requests and keeps your data, the page reader and the document reader. When all three are up, your browser opens Helix on 127.0.0.1:3410. The link in the terminal carries a one-time key for this run; use that link, because a plain address is refused.',
           },
           {
-            note: 'Closing the main window quits Helix. It does not keep running in the system tray.',
+            note: 'Press Ctrl+C in the terminal to quit Helix. Closing the browser tab leaves it running, and nothing runs in the system tray.',
           },
         ],
       },
@@ -99,7 +102,7 @@ export const DOCS: DocPage[] = [
     next: [
       { slug: 'how-it-works', why: 'shows what runs on your PC and what happens when you ask for a page.' },
       { slug: 'settings-and-models', why: 'lists every AI provider and setting.' },
-      { slug: 'help', why: 'covers the installer warning and what to do if something does not start.' },
+      { slug: 'help', why: 'covers what to do if something does not start.' },
     ],
   },
   {
@@ -245,7 +248,7 @@ export const DOCS: DocPage[] = [
             ol: [
               'Press the Windows key, type "environment variables" and open Edit environment variables for your account.',
               'Under User variables, select New and add the variable from the table with its value.',
-              'Quit Helix completely and open it again. Helix hands its own environment on to the parts it starts.',
+              'Quit Helix with Ctrl+C and start it again. Helix hands its own environment on to the parts it starts.',
             ],
           },
         ],
@@ -392,29 +395,21 @@ export const DOCS: DocPage[] = [
     intro: 'Common problems with a symptom, a likely cause and what to do. Start with the heading that matches what you see.',
     sections: [
       {
-        h: 'Windows warns before the installer runs',
+        h: 'The link says "Open Helix from the link the launcher printed"',
         blocks: [
           {
-            p: 'The installer is not code-signed, so Windows can show a "Windows protected your PC" message. If you downloaded it from the Download page or the releases page, select More info, then Run anyway.',
+            p: 'Helix refuses any request that does not carry the key for this run, so that a web page you visit cannot reach it. Copy the full link from the terminal, including the part after ?t=. Each time you start Helix the key changes, so an old bookmark stops working.',
           },
         ],
       },
       {
-        h: 'Helix quits as soon as it opens',
+        h: 'The terminal says a part stopped',
         blocks: [
           {
-            p: 'This can happen when you start Helix from a terminal inside some code editors. Those terminals set a variable (ELECTRON_RUN_AS_NODE) that stops apps like Helix from opening. Start Helix from the Start menu or the desktop shortcut instead, which are not affected.',
-          },
-        ],
-      },
-      {
-        h: 'The start-up window says a part stopped',
-        blocks: [
-          {
-            p: 'Select Show log to open the log, or find the logs in %APPDATA%\\Helix\\logs. Quit Helix and open it again first, since a part that was still shutting down can block the next start.',
+            p: 'The message names the log file. The logs are in %APPDATA%\\Helix\\web\\logs. Quit Helix and start it again first, since a part that was still shutting down can block the next start.',
           },
           {
-            p: 'Helix uses ports 7410, 7412 and 7413 on your PC. If another program is using one, that part cannot start. Close the other program and open Helix again.',
+            p: 'Helix uses ports 3410, 7410, 7412 and 7413 on your PC. If another program is using one, Helix cannot start. Close the other program and start Helix again.',
           },
         ],
       },
@@ -484,8 +479,8 @@ export const DOCS: DocPage[] = [
           {
             ul: [
               'Do I need an account? No.',
-              'Does Helix work on Mac or Linux? The app is Windows only. Developers can run Helix from source with the self-host guide.',
-              'How do I update? Helix checks for a new version when it opens, downloads it and installs it when you close the app. You can also run a newer installer over the old one.',
+              'Does Helix work on Mac or Linux? Helix is Windows only. Developers can run the services from source on other systems with the self-host guide.',
+              'How do I update? Run git pull in the Helix folder, then the install and build steps from the Quickstart again. Helix does not update itself.',
               'Where are my files? In %APPDATA%\\Helix. See Privacy and Data.',
             ],
           },

@@ -15,7 +15,10 @@
     "stage": "node scripts/stage.mjs",
     "package": "node scripts/build.mjs && node scripts/stage.mjs && electron-builder --win --x64",
     "test": "vitest run",
-    "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit"
+    "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit",
+    "web": "node scripts/build.mjs && node out/launch.js",
+    "web:ui": "node scripts/build-ui.mjs",
+    "web:dev": "node scripts/build.mjs && node out/launch.js --ui-dev"
   },
   "dependencies": {
     "electron-updater": "^6.8.9"

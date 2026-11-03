@@ -10,7 +10,12 @@ rmSync(out, { recursive: true, force: true })
 mkdirSync(out, { recursive: true })
 
 await build({
-  entryPoints: ['main', 'preload', 'splash-preload'].map((n) => join(desktop, 'src', `${n}.ts`)),
+  entryPoints: {
+    main: join(desktop, 'src', 'main.ts'),
+    preload: join(desktop, 'src', 'preload.ts'),
+    'splash-preload': join(desktop, 'src', 'splash-preload.ts'),
+    launch: join(desktop, 'src', 'web', 'launch.ts'),
+  },
   outdir: out,
   bundle: true,
   platform: 'node',

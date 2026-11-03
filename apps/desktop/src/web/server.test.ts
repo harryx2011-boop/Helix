@@ -1,5 +1,5 @@
 import http from 'node:http'
-import type { AddressInfo } from 'node:net'
+import type { AddressInfo, Socket } from 'node:net'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { COOKIE } from './gate'
 import { bridgeScript, createWebServer, portFor } from './server'
@@ -11,6 +11,8 @@ let upstream: http.Server
 let gate: http.Server
 let gatePort = 0
 let seen: http.IncomingHttpHeaders = {}
+const sockets = new Set<Socket>()
+const track = (s: http.Server) => s.on('connection', (c: Socket) => sockets.add(c))
 
 const listen = (s: http.Server) => new Promise<number>((r) => s.listen(0, '127.0.0.1', () => r((s.address() as AddressInfo).port)))
 
@@ -28,6 +30,7 @@ beforeEach(async () => {
   upstream.on('upgrade', (_req, socket) => {
     socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n')
   })
+  track(upstream)
   const upPort = await listen(upstream)
   gate = http.createServer()
   // The gate's port is only known after listen, so build it on a throwaway port first.
@@ -41,10 +44,13 @@ beforeEach(async () => {
     voice: async () => ({ baseUrl: 'http://127.0.0.1:9000', token: 'v' }),
     log: () => {},
   })
+  track(gate)
   await new Promise<void>((r) => gate.listen(gatePort, '127.0.0.1', r))
 })
 
 afterEach(async () => {
+  // Upgraded sockets leave the server's own tracking, so destroy every socket seen.
+  for (const s of sockets) s.destroy()
   await new Promise((r) => gate.close(r))
   await new Promise((r) => upstream.close(r))
 })

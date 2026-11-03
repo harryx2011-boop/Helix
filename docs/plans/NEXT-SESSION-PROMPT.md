@@ -3,7 +3,7 @@ Status: IN PROGRESS
 ```
 Work in D:\Helix. Read first: context.md (top entries), docs/plans/README.md, docs/plans/ROADMAP.md, docs/plans/2026-10-05-suite-plan.md, docs/next-session.md, TODO.md.
 
-State: version 2.3.2; main is ahead of tag v2.3.2, unreleased. Check git status first: other sessions share this checkout, and graphify-out/ churn is not yours. Branch v3-scrapling has unpushed work.
+State: version 2.3.2; main is ahead of tag v2.3.2, unreleased. Check git status first: other sessions share this checkout, and synapse-out/ churn is not yours. Branch v3-scrapling has unpushed work.
 
 Steps:
 1. Run node ~/.claude/hooks/helix-ensure.js; confirm helix_health and helix_search answer.

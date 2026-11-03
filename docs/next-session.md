@@ -10,7 +10,7 @@ Shared rules for every goal:
   memory `project_open_threads.md` first.
 - Run `node ~/.claude/hooks/helix-ensure.js`; confirm `helix_health` and `helix_search` answer.
 - Read every stray diff before touching the tree (other sessions share this checkout; the
-  `graphify-out/`/`synapse-out/` churn is not yours; two stashes are Harry's to drop).
+  `synapse-out/` churn is not yours; two stashes are Harry's to drop).
 - A failing test first for every code change. Claim a speedup only from `bench-scrape.mjs` output.
 - Stage by name. No Claude co-author trailer. Push `main` per batch.
 - Update `context.md`, `docs/plans/2026-10-05-suite-plan.md` and the BACKLOG entry as items land.

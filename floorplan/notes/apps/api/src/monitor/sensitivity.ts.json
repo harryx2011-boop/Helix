@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/sensitivity.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Sensitivity",
+      "line": 2,
+      "offset": 0,
+      "text": "Sensitivity: what counts as a change.\n\n`any` compares the extracted text verbatim. `significant` first strips the\nnoise most pages carry on every load — relative timestamps, clock times,\ndates, rotating tracking parameters — so a \"3 minutes ago\" ticking over does\nnot page anyone at 4am. These are heuristics, not judgement; a model-scored\nrelevance pass is deliberately not part of v1 (spec §7).",
+      "kind": "doc"
+    }
+  ]
+}

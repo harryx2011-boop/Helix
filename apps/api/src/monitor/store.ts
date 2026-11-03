@@ -5,14 +5,6 @@ import type { Schedule } from './schedule.js';
 import type { Sensitivity } from './sensitivity.js';
 import type { TriggerOptions } from './triggers.js';
 
-/**
- * Monitor persistence.
- *
- * One interface, two implementations: Postgres for the running service, and
- * an in-memory store so the scheduler, checker, dispatcher and routes can be
- * tested end to end without a database. The interface is the contract; the
- * SQL is a detail.
- */
 
 export type MonitorStatus = 'active' | 'paused' | 'error';
 
@@ -31,18 +23,9 @@ export interface MonitorScrapeOptions {
 
 export interface DiffOptions {
   granularity: Granularity;
-  /** Include the diff in the webhook body so no follow-up request is needed. */
   inline: boolean;
 }
 
-/**
- * When set, a check extracts structured JSON from the page (via helix-extract
- * `/structured`, the same path `/scrape`'s `jsonOptions` uses) and diffs the
- * two JSON objects field by field instead of diffing markdown text. The text
- * diff still runs first to decide whether the page changed at all; JSON
- * extraction only runs on a real change, so a quiet page never pays for a
- * model call.
- */
 export interface MonitorJsonOptions {
   schema: Record<string, unknown>;
   prompt?: string | undefined;
@@ -57,7 +40,6 @@ export interface MonitorWebhook {
   headers?: Record<string, string> | undefined;
   events: MonitorEvent[];
   metadata?: Record<string, unknown> | undefined;
-  /** Per-webhook HMAC secret. Falls back to the instance secret when unset. */
   secret?: string | undefined;
 }
 
@@ -77,7 +59,6 @@ export interface MonitorRecord {
   updatedAt: Date;
   lastCheckedAt: Date | null;
   nextCheckAt: Date | null;
-  /** When the current claim was taken; null once the check ends. */
   claimedAt: Date | null;
   lastChangeAt: Date | null;
   lastError: string | null;
@@ -108,11 +89,6 @@ export interface MonitorPatch {
   sensitivity?: Sensitivity;
   webhook?: MonitorWebhook | null;
   status?: MonitorStatus;
-  /**
-   * How a check ended. `ok` clears `error` back to `active`; `error` marks the
-   * monitor `error`. Neither touches a paused monitor: a pause that lands
-   * while a check is running must survive the check's final write.
-   */
   checkOutcome?: 'ok' | 'error';
   nextCheckAt?: Date | null;
   lastCheckedAt?: Date;
@@ -184,11 +160,6 @@ export interface CheckCounters {
   unchanged: boolean;
 }
 
-/**
- * Ceiling on `list`. Both stores apply it, so a caller cannot tell them apart by
- * how much they return; the route reports truncation rather than implying the
- * page is the whole set.
- */
 export const MONITOR_LIST_LIMIT = 500;
 
 export interface MonitorStore {
@@ -197,18 +168,8 @@ export interface MonitorStore {
   list(apiKeyId: string | null): Promise<MonitorRecord[]>;
   update(id: string, patch: MonitorPatch): Promise<MonitorRecord | undefined>;
   delete(id: string): Promise<boolean>;
-  /**
-   * Atomically take the active monitors due at `now`, clearing `nextCheckAt`
-   * so a second worker does not take them too. The caller must set the next
-   * time back when the check ends, whatever the outcome.
-   */
   claimDue(now: Date, limit: number): Promise<MonitorRecord[]>;
-  /**
-   * Claim one monitor for a check outside the schedule. Undefined when it is
-   * paused, missing, or already claimed by a running check.
-   */
   claim(id: string, now: Date): Promise<MonitorRecord | undefined>;
-  /** Monitors claimed before `before` and never released: a crash mid-check. */
   listStuck(before: Date): Promise<MonitorRecord[]>;
   bumpCounters(id: string, counters: CheckCounters): Promise<void>;
 
@@ -221,9 +182,7 @@ export interface MonitorStore {
   pruneChecks(monitorId: string, keep: number, maxAgeDays: number): Promise<number>;
   history(monitorId: string, options: { limit: number; before?: number | undefined }): Promise<CheckRecord[]>;
 
-  /** Returns undefined when the dedupe key already exists. */
   enqueueDelivery(input: NewDelivery): Promise<DeliveryRecord | undefined>;
-  /** Claimed rows are not due again until `now + leaseMs`, so a concurrent tick skips them. */
   claimDeliveries(now: Date, limit: number, leaseMs: number): Promise<DeliveryRecord[]>;
   markDelivered(id: number, responseStatus: number | null): Promise<void>;
   markRetry(id: number, attempts: number, nextRetryAt: Date, error: string, responseStatus: number | null): Promise<void>;
@@ -233,7 +192,6 @@ export interface MonitorStore {
   replayDelivery(monitorId: string, deliveryId: number): Promise<DeliveryRecord | undefined>;
 }
 
-// ---------------------------------------------------------------- memory
 
 export class MemoryMonitorStore implements MonitorStore {
   readonly monitors = new Map<string, MonitorRecord>();
@@ -381,7 +339,6 @@ export class MemoryMonitorStore implements MonitorStore {
     const doomed = new Set(
       mine.filter((s, index) => index >= keep || s.capturedAt.getTime() < cutoff).map((s) => s.id),
     );
-    // The newest snapshot always survives: it is the baseline for the next diff.
     if (mine[0]) doomed.delete(mine[0].id);
     for (let i = this.snapshots.length - 1; i >= 0; i -= 1) {
       if (doomed.has(this.snapshots[i]!.id)) this.snapshots.splice(i, 1);
@@ -499,7 +456,6 @@ export class MemoryMonitorStore implements MonitorStore {
   }
 }
 
-// ---------------------------------------------------------------- postgres
 
 interface MonitorRow {
   id: string;

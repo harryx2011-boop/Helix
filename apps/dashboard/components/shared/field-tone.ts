@@ -1,4 +1,3 @@
-/** Which surface a character field paints on. `app` swaps the marketing ink tokens for the dark surface's foreground and primary. */
 export type FieldTone = 'marketing' | 'app';
 
 export const FIELD_TONE: Record<FieldTone, { body: string; accent: string }> = {

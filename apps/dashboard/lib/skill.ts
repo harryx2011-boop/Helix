@@ -3,11 +3,6 @@ import { EXAMPLE_REQUEST } from './catalog';
 import { generateCode } from './codegen';
 import type { FailureReason } from './api';
 
-/**
- * SKILL.md generator (WEBSITE.md §9.3). Pure — no IO, no auth, no Supabase.
- * Callers (the onboarding API and the public agent-onboarding page) supply the
- * endpoint list, an optional key and the URLs.
- */
 
 const FAILURE_REASON_NOTES: Record<FailureReason, string> = {
   blocked: 'The target actively blocked the request (WAF, bot-detection). Retry with a higher tier or a different profile before giving up.',
@@ -33,7 +28,6 @@ export interface GenerateSkillOptions {
   mcpUrl: string;
 }
 
-/** One file: a preamble, then one section per selected endpoint (WEBSITE.md §9.3). */
 export function generateSkillMarkdown(opts: GenerateSkillOptions): string {
   const { endpoints, apiKey, baseUrl, mcpUrl } = opts;
   const parts: string[] = [preamble(baseUrl, apiKey)];
@@ -117,7 +111,6 @@ ${FAILURE_REASONS.map((reason) => `- \`${reason}\` — ${FAILURE_REASON_NOTES[re
 ${lifecycleNotes(endpoint)}${endpointNotes(endpoint)}`;
 }
 
-/** Endpoints that do not finish inline need their poll/cancel loop spelled out. */
 function lifecycleNotes(endpoint: EndpointDef): string {
   if (endpoint.id !== 'crawl') return '';
   return `
@@ -132,7 +125,6 @@ Lifecycle:
 `;
 }
 
-/** Parameter notes an agent needs to form a correct request. Only for endpoints whose contract is settled. */
 function requestNotes(endpoint: EndpointDef): string | undefined {
   switch (endpoint.id) {
     case 'scrape':
@@ -149,7 +141,6 @@ function requestNotes(endpoint: EndpointDef): string | undefined {
   }
 }
 
-/** Endpoint-specific follow-up calls an agent needs after the first request. */
 function usageNotes(endpoint: EndpointDef): string {
   switch (endpoint.id) {
     case 'monitor':
@@ -167,7 +158,6 @@ function usageNotes(endpoint: EndpointDef): string {
   }
 }
 
-/** Endpoint-specific mechanics an agent needs beyond the envelope. */
 function endpointNotes(endpoint: EndpointDef): string {
   if (endpoint.id !== 'interact') return '';
   return `

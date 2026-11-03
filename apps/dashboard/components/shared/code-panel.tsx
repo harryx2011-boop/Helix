@@ -4,10 +4,6 @@ import * as React from 'react';
 import { Check, Copy } from '@/components/icons/lucide';
 import { cn } from '@/lib/utils';
 
-/**
- * Browser-chrome (three dots + URL bar, light) and terminal-chrome (dark, `.dark` tokens)
- * variants sharing one 4-token syntax palette (WEBSITE.md §4.2, §4.5a). Strings are violet.
- */
 interface CodePanelProps {
   chrome: 'browser' | 'terminal';
   label?: string;
@@ -15,17 +11,9 @@ interface CodePanelProps {
   children: React.ReactNode;
   className?: string;
   copyText?: string;
-  /** Line-number gutter for output panels. Hidden below `sm`, where long lines wrap and the numbers would drift. */
   lines?: number;
 }
 
-/**
- * Explicit terminal/light flag for CodeToken, read via context rather than the
- * ambient `.dark` CSS class — the site's ThemeProvider toggles `.dark` on
- * `<html>` globally (dark-by-default operator console), so a `dark:` Tailwind
- * variant would leak into every light marketing panel too. Only this
- * CodePanel's own local wrapper decides terminal vs light for its children.
- */
 const CodePanelToneContext = React.createContext(false);
 
 export function CodePanel({ chrome, label, tabs, children, className, copyText, lines }: CodePanelProps) {
@@ -119,20 +107,12 @@ const TOKEN_CLASS_DARK: Record<'key' | 'string' | 'punct' | 'plain', string> = {
   plain: 'text-foreground',
 };
 
-/**
- * One syntax token in the shared 4-token palette (key / string / punctuation
- * / plain). Strings are always violet on light, `text-primary` on dark. Tone
- * comes from the nearest ancestor CodePanel via context, not the ambient
- * `.dark` class (see CodePanelToneContext above) — falls back to light when
- * used outside a CodePanel.
- */
 export function CodeToken({ kind, children }: { kind: keyof typeof TOKEN_CLASS_LIGHT; children: React.ReactNode }) {
   const isTerminal = React.useContext(CodePanelToneContext);
   const cls = isTerminal ? TOKEN_CLASS_DARK[kind] : TOKEN_CLASS_LIGHT[kind];
   return <span className={cls}>{children}</span>;
 }
 
-/** Plain pre-formatted code block, coloured by CSS class rather than a tokenizer — matches the reference's static highlighting. */
 export function CodeBlock({ children, dark }: { children: string; className?: string; dark?: boolean }) {
   return (
     <pre

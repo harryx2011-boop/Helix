@@ -1,0 +1,319 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/ambient.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "mulberry32",
+      "line": 7,
+      "offset": 0,
+      "text": "Ambient background primitives for the marketing surface (landing-revamp-plan\n\"Firecrawl-like ... code animations running in the background\"). All three\nshare the same contract: text spans not canvas, a single throttled ticker,\npaused off-screen, settled deterministic frame under reduced motion, and a\nseeded first paint so server and client agree.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 42,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 42,
+      "offset": null,
+      "text": "GridCells: hairline cell grid with slowly changing cell markers,",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 42,
+      "offset": null,
+      "text": "violet ✦ nodes at chosen intersections and mono bracket labels.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "Corner",
+      "line": 43,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "GridCellsProps.sparkles",
+      "line": 50,
+      "offset": 0,
+      "text": "Intersections (col, row) that carry a ✦ node.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "GridCellsProps.density",
+      "line": 51,
+      "offset": 0,
+      "text": "How many cells carry a marker at once.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "GridCellsProps.fade",
+      "line": 53,
+      "offset": 0,
+      "text": "Fade the grid toward the bottom (hero) or keep it flat (CTA).",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "GridCellsProps.clusters",
+      "line": 56,
+      "offset": 0,
+      "text": "Cells that carry a small pixel-square cluster, centred in the cell.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "GridCellsProps.crosshairs",
+      "line": 57,
+      "offset": 0,
+      "text": "Draw a small `+` crosshair at every grid intersection (lg+ only).",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "outerCol",
+      "line": 67,
+      "offset": 0,
+      "text": "Markers stay in the outer thirds so they never sit under centred copy.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 213,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": null,
+      "line": 213,
+      "offset": null,
+      "text": "PixelSquares: an n×n cluster of tiny squares, some on some off, one",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": null,
+      "line": 213,
+      "offset": null,
+      "text": "flipping at a time. Deterministic seeded first paint, throttled ticker,",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": null,
+      "line": 213,
+      "offset": null,
+      "text": "paused off-screen, static under reduced motion.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "PixelSquaresProps",
+      "line": 214,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "PixelSquaresProps.accent",
+      "line": 217,
+      "offset": 0,
+      "text": "Let one square in the cluster render in violet instead of ink grey.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "PixelSquaresProps.mode",
+      "line": 221,
+      "offset": 0,
+      "text": "'flip': one random cell toggles at a time (default). 'assemble': cells fill in a seeded order, hold, then clear and repeat.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": "assembleOrder",
+      "line": 229,
+      "offset": 0,
+      "text": "Deterministic shuffled fill order for 'assemble' mode (Fisher-Yates over a seeded rng).",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": null,
+      "line": 338,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": null,
+      "line": 338,
+      "offset": null,
+      "text": "AsciiHelix: a rotating double helix drawn with characters. Depth picks",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": null,
+      "line": 338,
+      "offset": null,
+      "text": "the glyph and the layer (back strand in ink, front strand in violet),",
+      "kind": "what"
+    },
+    {
+      "id": "n23",
+      "symbol": null,
+      "line": 338,
+      "offset": null,
+      "text": "rungs join the strands. Three <pre> layers per frame, no per-cell spans.",
+      "kind": "what"
+    },
+    {
+      "id": "n24",
+      "symbol": "STRAND_BACK",
+      "line": 339,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n25",
+      "symbol": "AsciiHelixProps.cols",
+      "line": 344,
+      "offset": 0,
+      "text": "Cells across the axis (strand swing + margin).",
+      "kind": "doc"
+    },
+    {
+      "id": "n26",
+      "symbol": "AsciiHelixProps.rows",
+      "line": 345,
+      "offset": 0,
+      "text": "Cells along the axis.",
+      "kind": "doc"
+    },
+    {
+      "id": "n27",
+      "symbol": "AsciiHelixProps.pitch",
+      "line": 347,
+      "offset": 0,
+      "text": "Cells per full turn.",
+      "kind": "doc"
+    },
+    {
+      "id": "n28",
+      "symbol": null,
+      "line": 433,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n29",
+      "symbol": null,
+      "line": 433,
+      "offset": null,
+      "text": "AmbientCode: fragments of real Helix wire format drifting in and out",
+      "kind": "what"
+    },
+    {
+      "id": "n30",
+      "symbol": null,
+      "line": 433,
+      "offset": null,
+      "text": "of a section's background, each scrambling from glyph noise to its",
+      "kind": "what"
+    },
+    {
+      "id": "n31",
+      "symbol": null,
+      "line": 433,
+      "offset": null,
+      "text": "settled text. Violet strings, green status, ink keys.",
+      "kind": "what"
+    },
+    {
+      "id": "n32",
+      "symbol": "Fragment",
+      "line": 434,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n33",
+      "symbol": null,
+      "line": 545,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n34",
+      "symbol": null,
+      "line": 545,
+      "offset": null,
+      "text": "CodeRain: a coarse grid of short wire-format tokens fading in and out,",
+      "kind": "what"
+    },
+    {
+      "id": "n35",
+      "symbol": null,
+      "line": 545,
+      "offset": null,
+      "text": "laid out as two <pre> layers (ink + violet-48) like AsciiHelix so the",
+      "kind": "what"
+    },
+    {
+      "id": "n36",
+      "symbol": null,
+      "line": 545,
+      "offset": null,
+      "text": "DOM cost stays two nodes regardless of grid size. Deterministic first",
+      "kind": "what"
+    },
+    {
+      "id": "n37",
+      "symbol": null,
+      "line": 545,
+      "offset": null,
+      "text": "paint, throttled ticker, paused off-screen, static under reduced motion.",
+      "kind": "what"
+    },
+    {
+      "id": "n38",
+      "symbol": "RAIN_TOKENS",
+      "line": 546,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n39",
+      "symbol": "CodeRainProps.density",
+      "line": 551,
+      "offset": 0,
+      "text": "Fraction of cells that carry a token at once (0-1).",
+      "kind": "doc"
+    }
+  ]
+}

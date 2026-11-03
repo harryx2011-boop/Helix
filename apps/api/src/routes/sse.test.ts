@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sseSink, socketSink } from './sse.js';
 
-/** `absorbs` writes fit without pressure; the next one is taken but returns false, as Node does. */
 function fakeTarget(absorbs: number) {
   const written: string[] = [];
   let drain: (() => void) | undefined;
@@ -66,7 +65,6 @@ describe('sseSink', () => {
   });
 });
 
-/** A socket whose queue the test controls, the way a slow reader's would grow. */
 function fakeSocket(initialBuffered = 0) {
   const sent: string[] = [];
   const socket = {
@@ -97,9 +95,7 @@ describe('socketSink', () => {
     sink.frame('newer');
     sink.frame('newest');
 
-    // Nothing goes out while the queue is over the cap.
     expect(parsed()).toEqual([]);
-    // Two frames were replaced rather than queued.
     expect(sink.dropped).toBe(2);
 
     socket.bufferedAmount = 0;

@@ -38,7 +38,6 @@ const fromCatalog = (e: EndpointDef): MenuRow => ({
   pill: e.status === 'coming' ? 'Coming' : undefined,
 });
 
-/** Human label per catalog group, in the order the nav lists them. */
 export const GROUP_LABEL: Record<TabGroup, string> = {
   DISCOVER: 'Discover',
   EXTRACT: 'Extract',
@@ -53,17 +52,12 @@ export interface MenuGroup {
   rows: MenuRow[];
 }
 
-/**
- * The API menu, derived from the catalog rather than hand-listed: a new
- * `product: true` endpoint appears here without touching this file.
- */
 export const API_GROUPS: readonly MenuGroup[] = TAB_GROUPS.map((group) => ({
   group,
   label: GROUP_LABEL[group],
   rows: PRODUCTS.filter((e) => e.group === group).map((e) => fromCatalog(e)),
 })).filter((g) => g.rows.length > 0);
 
-/** Flat order, for the mobile drawer and anything that cannot render columns. */
 export const ENDPOINT_ROWS: readonly MenuRow[] = [
   ...API_GROUPS.flatMap((g) => g.rows),
   {

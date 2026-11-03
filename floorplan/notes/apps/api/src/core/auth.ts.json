@@ -1,0 +1,95 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/auth.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "fastify.FastifyContextConfig.public",
+      "line": 12,
+      "offset": 0,
+      "text": "Serves the request without a key when it returns true for the request path.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "INTERNAL_TICKET_HEADER",
+      "line": 16,
+      "offset": 0,
+      "text": "Header carrying a one-time ticket on requests the server replays against itself.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "InternalTickets",
+      "line": 18,
+      "offset": 0,
+      "text": "A request the server makes against itself (an MCP tool call replayed through\n`app.inject`) has already been authenticated and charged on the way in. The\nouter handler issues a ticket bound to the verified key; the replay redeems\nit instead of hitting the key store and the limiter a second time. Tickets\nare unguessable, single-use, and revoked by the issuer once the replay ends.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "AuthDeps.open",
+      "line": 46,
+      "offset": 0,
+      "text": "URL prefixes served without a key.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "AuthDeps.usage",
+      "line": 47,
+      "offset": 0,
+      "text": "Records one row per response for the usage panel. Optional: a deployment\nwithout it (and every existing test) authenticates exactly as before.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "registerAuth",
+      "line": 50,
+      "offset": 0,
+      "text": "Auth and rate limiting for every route.\n\n`/v1/health` stays open by default: an unauthenticated liveness probe is what\norchestrators need, and it reveals only whether providers are configured,\nnever key material.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "registerAuth",
+      "line": 53,
+      "offset": 3,
+      "text": "The open list is a prefix match, so anything that makes a protected path\nstart with an open one is a bypass: `/v1/health/../keys` reads as open,\nand a normalising proxy in front turns that into a real request for\n`/v1/keys`. Fastify's matched route is the authority where it exists; the\nraw path is otherwise stripped of its query and refused outright when it\ncarries a traversal segment in any spelling.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "registerAuth",
+      "line": 58,
+      "offset": 8,
+      "text": "Only a matched route can carry the flag, so it never opens a path that\nrouted to an API handler. A catch-all that declines a path hands it on\nas if nothing had matched, so an unknown API path is judged as before.",
+      "kind": "why"
+    },
+    {
+      "id": "n9",
+      "symbol": "registerAuth",
+      "line": 98,
+      "offset": 48,
+      "text": "The key store being unreachable is our fault, not the caller's. Say so\nplainly rather than implying their credentials are wrong.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "registerAuth",
+      "line": 107,
+      "offset": 57,
+      "text": "Unknown and revoked are deliberately indistinguishable.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "registerAuth",
+      "line": 133,
+      "offset": 83,
+      "text": "onResponse, not onRequest: the status code is the point, and a 429 counted\nas a request is the only way the headroom figure means anything. Open\nroutes and unauthenticated rejections have no key to attribute and are\nskipped rather than bucketed under a placeholder.",
+      "kind": "what"
+    }
+  ]
+}

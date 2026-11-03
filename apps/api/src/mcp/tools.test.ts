@@ -196,9 +196,6 @@ describe('the real openapi.yaml', () => {
     expect(scrape.inputSchema['properties']).toHaveProperty('formats');
   });
 
-  // A gate entry whose path does not exist in the spec matches nothing and
-  // gates nothing. Batch cancel was listed as /batch/scrape/{jobId} while the
-  // spec says {id}, so the tool shipped without confirm.
   it('gates only paths the spec has, so batch cancel requires confirm', () => {
     const spec = loadSpec();
     const paths = Object.keys(spec.paths);
@@ -238,8 +235,6 @@ describe('/mcp over streamable HTTP', () => {
   }
 
   it('exposes only the allowlisted tools when one is configured', async () => {
-    // Every tool schema is loaded into the agent's context on connect; an
-    // operator who wants the core dozen must be able to say so.
     const app = Fastify();
     await app.register(async (i) => { i.post('/scrape', async () => ({})); i.get('/jobs/:id', async () => ({})); }, { prefix: '/v1' });
     await registerMcp(app, { spec: MINI_SPEC, only: ['helix_get_job', 'helix_nope'] });
@@ -265,7 +260,6 @@ describe('/mcp over streamable HTTP', () => {
 
       const ok = await client.callTool({ name: 'helix_scrape', arguments: { url: 'https://example.com' } });
       expect(ok.isError).toBeFalsy();
-      // One line: a pretty-printed envelope spends tokens on indentation.
       expect((ok.content as { text: string }[])[0]!.text).not.toContain('\n');
       expect(JSON.parse((ok.content as { text: string }[])[0]!.text)).toEqual({
         success: true,
@@ -412,9 +406,6 @@ describe('/mcp behind the auth hook', () => {
 });
 
 describe('confirm gate on irreversible operations', () => {
-  // A curl caller who sends DELETE chose that verb. A model inferred it from a
-  // description, and CallTool hands both to app.inject identically. The gate is
-  // at the MCP boundary because that is where the asymmetry is.
   const GATED_SPEC = parseSpec(`
 openapi: 3.1.0
 info: { title: Gated, version: 0.0.1 }
@@ -477,8 +468,6 @@ paths:
   });
 
   it('leaves an ordinary operation alone', () => {
-    // Gating /scrape would mean confirming a scrape. Most mutations here ARE
-    // the product; only the ones a caller cannot undo are listed.
     const tool = toolFor('helix_scrape');
     const props = tool.inputSchema['properties'] as Record<string, unknown>;
     expect(props['confirm']).toBeUndefined();
@@ -487,8 +476,6 @@ paths:
   });
 
   it('never puts confirm into the HTTP request', () => {
-    // It is an MCP-layer argument. The route has never heard of it, and a body
-    // carrying an unexpected field is a body the route rejects.
     const planned = planRequest(toolFor('helix_put_provider'), {
       provider: 'anthropic',
       apiKey: 'sk-ant-xxxxxxxx',
@@ -506,11 +493,6 @@ paths:
 });
 
 describe('confirm gate refuses a real dispatch', () => {
-  // The tests above cover the SCHEMA half. This one covers enforcement, which
-  // is the half that matters: a `required` entry in an inputSchema describes
-  // what a caller should send and checks nothing. Mutation testing on
-  // 2026-08-28 found exactly this gap — disabling the server-side branch left
-  // every schema assertion green.
   const GATED = parseSpec(`
 openapi: 3.1.0
 info: { title: Gated, version: 0.0.1 }

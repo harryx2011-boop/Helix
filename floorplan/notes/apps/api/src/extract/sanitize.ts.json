@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/extract/sanitize.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BLOCKED_ELEMENTS",
+      "line": 2,
+      "offset": 0,
+      "text": "The `html` format: the page's markup with everything that executes or styles\nremoved, so it can be stored or shown without carrying the page's scripts.\n\n`rawHtml` is the untouched alternative. This is deliberately a small,\npredictable pass rather than a full parser: it strips whole `script`,\n`style`, `noscript`, `iframe`, `object` and `embed` elements, HTML comments,\ninline event handlers and `javascript:` URLs. It does not try to make the\noutput safe to render inside another origin's DOM.\n\nThe element pass is a single left-to-right walk over tags. A regex with a\nlazy body and a backreference would rescan to end-of-input for every\nunclosed `<script>`, which is quadratic on a hostile page; this walk visits\neach character a bounded number of times whatever the input.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "BLOCKED_VOID_ELEMENTS",
+      "line": 4,
+      "offset": 0,
+      "text": "Void in HTML: the tag alone is removed, nothing after it is treated as content.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "TOKEN",
+      "line": 6,
+      "offset": 0,
+      "text": "A comment (unterminated ones run to end-of-input, as in a browser) or a tag.\n`[^<>]*` rather than `[^>]*` so a stray `<` never makes a tag scan past the\nnext tag start.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "EVENT_HANDLERS",
+      "line": 8,
+      "offset": 0,
+      "text": "`onclick=\"...\"`, `onload='...'`, `onerror=bare`. An unclosed quote runs to end-of-input, as in a browser.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "URL_ATTRIBUTES",
+      "line": 10,
+      "offset": 0,
+      "text": "`href=\"javascript:...\"` and friends. The attribute is kept; the value is emptied.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "STYLE_ATTRIBUTE",
+      "line": 13,
+      "offset": 0,
+      "text": "`style=\"background:url(javascript:...)\"`. Only the offending `url(...)` is emptied.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "normalizeForSchemeCheck",
+      "line": 18,
+      "offset": 0,
+      "text": "Undoes the ways a scheme can be hidden from a plain substring check: numeric\n(`&#106;`) and named (`&amp;`) HTML entities, and whitespace or control\ncharacters a browser ignores inside a URL (`java\\nscript:`). Run before\ntesting for a `javascript:` scheme, never before anything is rendered.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "stripBlockedElements",
+      "line": 64,
+      "offset": 33,
+      "text": "Dropped to end-of-input unless a matching close tag turns up, which is\nwhat a browser does with an unterminated script.",
+      "kind": "what"
+    }
+  ]
+}

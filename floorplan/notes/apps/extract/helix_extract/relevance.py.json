@@ -1,0 +1,103 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/relevance.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "LEAD_RESERVE_FRACTION",
+      "line": 42,
+      "offset": 0,
+      "text": "Share of the budget reserved for the document's opening blocks, filled in\ndocument order before ranking is consulted. A quarter is enough that a page's\nown lead survives any amount of salted text further down, and small enough\nthat a schema asking about something genuinely deep in the page still gets\nthree quarters of the window aimed at it by score.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "TOP_BAND_MAX_FRACTION",
+      "line": 44,
+      "offset": 0,
+      "text": "Ceiling on how much of the budget the highest-scoring band may hold. Real\ncontent and salted text occupy separate score ranges (0.56–1.44 against 2.6\nand up, measured 2026-08-28), so a page whose top band wants more than this\nis a page where one narrow kind of block is trying to be the whole payload.\nHalf leaves an ordinary page unaffected — its top band rarely fills even a\nquarter — while guaranteeing the rest of the document keeps half the window.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "TOP_BAND_RATIO",
+      "line": 46,
+      "offset": 0,
+      "text": "Blocks within this multiple of the top score count as one band for the cap\nabove. Wide enough that near-identical salted blocks group together rather\nthan each being treated as its own tier.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "STOPWORDS",
+      "line": 48,
+      "offset": 0,
+      "text": "Words too common to distinguish one block from another.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "Selection",
+      "line": 73,
+      "offset": 5,
+      "text": "The passages sent, in original order. Reported back as `sources` on request.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "Selection",
+      "line": 74,
+      "offset": 6,
+      "text": "0 when the page fit the budget and nothing was trimmed.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "schema_terms",
+      "line": 93,
+      "offset": 11,
+      "text": "fundingRound -> funding round",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "select",
+      "line": 236,
+      "offset": 28,
+      "text": "With no usable signal, the opening of the document is the best guess —\ntitles, summaries and lead paragraphs live there.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "select",
+      "line": 245,
+      "offset": 37,
+      "text": "A single block larger than the whole budget would otherwise return\nnothing at all, which reads as \"this page was empty\". Truncating the\nfirst block is a worse answer than a clean excerpt but a far better\none than silence.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": "select",
+      "line": 264,
+      "offset": 56,
+      "text": "The lead reserve, filled in document order and before ranking is\nconsulted. See the module docstring: score is attacker-steerable and\nposition is not, so this is what stops salted blocks taking every slot.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "select",
+      "line": 273,
+      "offset": 65,
+      "text": "The band cap. Blocks close to the top score are held to a share of the\nbudget, so a page cannot make one narrow kind of block the entire payload\nby repeating it. See TOP_BAND_MAX_FRACTION: the two populations sit in\nseparate score ranges, so this bites on salted text and not on a page\nthat genuinely answers the schema in several places.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "select",
+      "line": 293,
+      "offset": 85,
+      "text": "Every block individually over budget — take the highest-scoring one,\ntruncated. Returning nothing would look like an empty page.",
+      "kind": "what"
+    }
+  ]
+}

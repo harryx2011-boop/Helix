@@ -22,7 +22,6 @@ import {
   type MenuRow,
 } from './nav-menus';
 
-// The public website links to the download; a local or self-host build already has the app.
 const APP_CTA =
   process.env.NEXT_PUBLIC_HELIX_WEBSITE === '1'
     ? { href: '/download', label: 'Get the app' }
@@ -38,14 +37,9 @@ const topLinkClass =
   'flex items-center gap-1 rounded-card px-3 py-2 text-[14px] text-m-ink/72 transition-colors duration-150 ease-out hover:text-m-ink focus-visible:text-m-ink';
 
 export interface NavProps {
-  /** Formatted star count (`1.2K`) or `null` when the repo is private or the fetch failed. */
   stars?: string | null;
 }
 
-/**
- * WEBSITE.md §4.1, LANDING-REVAMP-2 "Nav". Sticky, blends with page bg, bottom
- * hairline. Three full-width panels under the bar; one open at a time.
- */
 export function Nav({ stars = null }: NavProps) {
   const [open, setOpen] = React.useState<MenuId | null>(null);
   const [mobileOpen, setMobileOpen] = React.useState(false);

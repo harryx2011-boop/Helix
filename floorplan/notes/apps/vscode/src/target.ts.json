@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/vscode/src/target.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "DESKTOP_PORT",
+      "line": 2,
+      "offset": 0,
+      "text": "Which Helix API the extension talks to.\n\nThe desktop app runs its API on 7410, the dev stack on 7400 (Harry's call,\n2026-10-17: desktop first, dev as the fallback). A `helix.port` setting\npins one port instead.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PROBE_TIMEOUT_MS",
+      "line": 5,
+      "offset": 0,
+      "text": "How long one health probe may take before the port counts as down.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ApiTarget.origin",
+      "line": 9,
+      "offset": 0,
+      "text": "`http://127.0.0.1:<port>`: what the panel frames and the monitors view calls.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ApiTarget.status",
+      "line": 10,
+      "offset": 0,
+      "text": "As `/v1/health` reported it: `ok`, `degraded` or `unhealthy`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "FetchLike",
+      "line": 14,
+      "offset": 0,
+      "text": "The slice of `fetch` this module uses, so tests can answer without a network.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "candidatePorts",
+      "line": 19,
+      "offset": 0,
+      "text": "The ports to try. A pinned value comes from settings, so anything that is\nnot a whole number in the port range is ignored rather than spliced into\na URL, a CSP and an iframe `src`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "findApi",
+      "line": 28,
+      "offset": 0,
+      "text": "The first port whose `/v1/health` answers as Helix, or null.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "probe",
+      "line": 40,
+      "offset": 4,
+      "text": "503 is Helix answering that a dependency is down: still the API to use.",
+      "kind": "what"
+    }
+  ]
+}

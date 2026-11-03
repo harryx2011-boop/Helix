@@ -1,16 +1,5 @@
 import type { Log } from '../core/logger.js';
 
-/**
- * Search backends.
- *
- * A search index is not something a scraping tool builds, so Helix brings none.
- * Three adapters ship: SearXNG (self-hostable, no key, the zero-dependency
- * default when SEARXNG_URL is set) and two BYOK SERP APIs, Serper and SerpAPI,
- * billed to the operator's own account.
- *
- * Serper is preferred over SerpAPI when both keys are present because at
- * comparable volume it runs roughly 10-25x cheaper for the same Google results.
- */
 
 export type SearchSource = 'web' | 'news' | 'images';
 
@@ -18,17 +7,12 @@ export interface SearchQuery {
   query: string;
   limit: number;
   sources: SearchSource[];
-  /** Two-letter UI language, e.g. `en`. */
   lang?: string | undefined;
-  /** Two-letter country, e.g. `us`. */
   country?: string | undefined;
-  /** Relative window, e.g. `24h`, `7d`; converted to `tbs` when `tbs` is absent. */
   freshness?: string | undefined;
-  /** Google-style time filter, e.g. `qdr:m`. Wins over `freshness`. */
   tbs?: string | undefined;
   includeDomains?: string[] | undefined;
   excludeDomains?: string[] | undefined;
-  /** 1-based result page; a backend without paging ignores it. */
   page?: number | undefined;
 }
 
@@ -41,22 +25,15 @@ export interface SearchHit {
   publishedAt?: string | undefined;
   imageUrl?: string | undefined;
   thumbnailUrl?: string | undefined;
-  /** Image results only; pixels, when the backend reports them. */
   width?: number | undefined;
   height?: number | undefined;
 }
 
-/** One requested source the backend could not answer. */
 export interface SourceFailure {
   source: SearchSource;
   message: string;
 }
 
-/**
- * What a backend call produced. A source that fails is reported, not hidden:
- * an operator problem (bad key, quota, a down instance) must reach the caller
- * as a failure rather than as "the web has no answer".
- */
 export interface ProviderResult {
   hits: SearchHit[];
   failures: SourceFailure[];
@@ -84,12 +61,10 @@ function describeError(error: unknown): string {
   return 'request failed';
 }
 
-/** Domain filters as Google search operators, which every backend passes through. */
 function applyOperators(query: SearchQuery): string {
   const parts = [query.query];
 
   if (query.includeDomains?.length) {
-    // One domain is a plain filter; several need an OR group.
     const clause = query.includeDomains.map((d) => `site:${d}`).join(' OR ');
     parts.push(query.includeDomains.length > 1 ? `(${clause})` : clause);
   }
@@ -101,7 +76,6 @@ function applyOperators(query: SearchQuery): string {
   return parts.join(' ');
 }
 
-/** Relative windows to Google's `tbs` parameter. */
 function freshnessToTbs(freshness: string | undefined): string | undefined {
   if (!freshness) return undefined;
 
@@ -112,15 +86,10 @@ function freshnessToTbs(freshness: string | undefined): string | undefined {
   return `qdr:${unit}${amount === '1' ? '' : amount}`;
 }
 
-/** The effective time filter: an explicit `tbs` wins over a relative `freshness`. */
 function resolveTbs(query: SearchQuery): string | undefined {
   return query.tbs?.trim() || freshnessToTbs(query.freshness);
 }
 
-/**
- * SearXNG only knows day / month / year, so a Google `tbs` window rounds up to
- * the smallest SearXNG range that still contains it.
- */
 function tbsToSearxngRange(tbs: string | undefined): 'day' | 'month' | 'year' | undefined {
   if (!tbs) return undefined;
   const match = /^qdr:([hdwmy])(\d*)$/.exec(tbs.trim().toLowerCase());
@@ -164,7 +133,6 @@ export class SerperProvider implements SearchProvider {
     const hits: SearchHit[] = [];
     const failures: SourceFailure[] = [];
 
-    // Each source is a separate endpoint, and the limit applies per source.
     for (const source of query.sources) {
       const body: Record<string, unknown> = {
         q: applyOperators(query),
@@ -226,7 +194,6 @@ export class SerperProvider implements SearchProvider {
           });
         });
       } catch (error) {
-        // One source failing should not lose the results from the others.
         this.#logger?.warn({ error, source }, 'serper request errored');
         failures.push({ source, message: `serper request for ${source} ${describeError(error)}` });
       }
@@ -331,12 +298,6 @@ export class SerpApiProvider implements SearchProvider {
   }
 }
 
-/**
- * SearXNG: a self-hosted metasearch engine, queried over its JSON API.
- *
- * The instance must list `json` under `search.formats` in its settings.yml;
- * a stock install answers JSON requests with 403 otherwise.
- */
 export class SearxngProvider implements SearchProvider {
   readonly name = 'searxng';
   readonly #baseUrl: string | undefined;
@@ -373,7 +334,6 @@ export class SearxngProvider implements SearchProvider {
       });
 
       if (query.lang) {
-        // SearXNG takes a locale rather than separate language and country.
         params.set(
           'language',
           query.country
@@ -443,10 +403,6 @@ export class SearxngProvider implements SearchProvider {
 
 export type SearchProviderName = 'auto' | 'searxng' | 'serper' | 'serpapi' | 'none';
 
-/**
- * `auto` picks the first backend with credentials: SearXNG (no key, no cost),
- * then Serper, then SerpAPI. Naming a backend explicitly skips the search.
- */
 export function createSearchProvider(
   name: string,
   env: NodeJS.ProcessEnv,

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/image-sheet.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ramp",
+      "line": 215,
+      "offset": 0,
+      "text": "A 64x48 PNG: a left-to-right or right-to-left ramp, optionally dimmed or noisy, so its dHash is known.",
+      "kind": "doc"
+    }
+  ]
+}

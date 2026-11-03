@@ -1,0 +1,111 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/pool.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "server",
+      "line": 7,
+      "offset": 0,
+      "text": "The pool tests that need a real browser.\n\nThe private-address guard is a security control, and whether an engine\nhonours `context.route` is a property of that engine, not something a mock\ncan answer. So the guard is tested by pointing a real browser of each engine\nat a real loopback server and asserting the server was never touched — an\nassertion that fails loudly if a future Playwright drops routing support on\none of them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PROBE_PAGE",
+      "line": 13,
+      "offset": 0,
+      "text": "What a page's own script reads about the browser, written into the DOM so `render` returns it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 64,
+      "offset": null,
+      "text": "What a JS challenge does: answer, then submit itself once the document is parsed.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 123,
+      "offset": null,
+      "text": "The render fails and, more importantly, nothing reached the server.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 132,
+      "offset": null,
+      "text": "A public-looking name that resolves to a private address is refused by\nthe guard itself (blocked by client), not by a failed lookup in the browser.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 180,
+      "offset": null,
+      "text": "Launching all three eagerly would cost seconds and hundreds of MB for\nengines most instances never ask for.",
+      "kind": "why"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 190,
+      "offset": null,
+      "text": "A context inherits the process it is opened in, so a firefox request\nneeds a firefox browser however idle the chromium one is.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 277,
+      "offset": null,
+      "text": "Refused before anything is dialled, exactly as lightpanda refuses.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 294,
+      "offset": null,
+      "text": "A silent fallback would answer with a browser the operator did not ask\nfor, which is the opposite of what an anti-detect tier is for.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": null,
+      "line": 326,
+      "offset": null,
+      "text": "Nothing was launched here: the remote path never touches the pool.",
+      "kind": "why"
+    },
+    {
+      "id": "n11",
+      "symbol": null,
+      "line": 351,
+      "offset": null,
+      "text": "A real PluginArray carries only its indexes and names as own keys.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 461,
+      "offset": null,
+      "text": "The status and headers describe the document returned, not the one goto answered.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": null,
+      "line": 470,
+      "offset": null,
+      "text": "A renderer stuck in script (a JS challenge's proof of work, here a bare\nloop) leaves page.close() waiting for minutes. The render must still\nanswer at its budget, and the browser must keep serving.",
+      "kind": "why"
+    }
+  ]
+}

@@ -1,17 +1,4 @@
-/**
- * URL normalisation.
- *
- * Dedup is only as good as the key it compares. `https://site.com/`,
- * `https://www.site.com`, and `https://site.com/?utm_source=x` are one page
- * wearing three hats, and a crawler that treats them as three fetches three
- * times and reports inflated coverage.
- *
- * Normalisation is deliberately conservative: it only removes things that
- * provably cannot change what a server returns. Query parameters are sorted,
- * not dropped, because `?page=2` matters even though `?utm_source` does not.
- */
 
-/** Parameters that identify a campaign or a session, never a document. */
 const TRACKING_PARAMS = new Set([
   'utm_source',
   'utm_medium',
@@ -33,9 +20,7 @@ const TRACKING_PARAMS = new Set([
 ]);
 
 export interface NormaliseOptions {
-  /** Drop the query string entirely. */
   ignoreQuery?: boolean;
-  /** Treat `www.` and the bare host as the same site. */
   ignoreWww?: boolean;
 }
 
@@ -49,8 +34,6 @@ export function normaliseUrl(input: string, options: NormaliseOptions = {}): str
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined;
 
-  // A fragment is resolved by the browser and never sent to the server, so two
-  // URLs differing only by fragment are the same fetch.
   url.hash = '';
 
   url.hostname = url.hostname.toLowerCase();
@@ -58,7 +41,6 @@ export function normaliseUrl(input: string, options: NormaliseOptions = {}): str
     url.hostname = url.hostname.slice(4);
   }
 
-  // Default ports carry no meaning.
   if (
     (url.protocol === 'http:' && url.port === '80') ||
     (url.protocol === 'https:' && url.port === '443')
@@ -71,16 +53,12 @@ export function normaliseUrl(input: string, options: NormaliseOptions = {}): str
   } else if (url.search) {
     const params = [...url.searchParams.entries()]
       .filter(([key]) => !TRACKING_PARAMS.has(key.toLowerCase()))
-      // Ordering is not significant to a server, but it is to string equality.
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
 
     url.search = '';
     for (const [key, value] of params) url.searchParams.append(key, value);
   }
 
-  // `/path/` and `/path` are the same document often enough, and different
-  // rarely enough, that collapsing the trailing slash is the right default.
-  // The root is left alone: `https://site.com/` is canonical.
   if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
     url.pathname = url.pathname.slice(0, -1);
   }
@@ -88,12 +66,6 @@ export function normaliseUrl(input: string, options: NormaliseOptions = {}): str
   return url.toString();
 }
 
-/**
- * The URL a crawl requests and records: parsed, fragment dropped, otherwise as
- * found. `normaliseUrl` is only the dedup key; fetching its slash-stripped form
- * makes a server that answers `/docs` without redirecting resolve every
- * relative link one directory too high.
- */
 export function fetchUrl(input: string): string | undefined {
   let url: URL;
   try {
@@ -106,16 +78,12 @@ export function fetchUrl(input: string): string | undefined {
   return url.toString();
 }
 
-/** The registrable domain, used to partition politeness per site. */
 export function siteOf(input: string): string | undefined {
   try {
     const { hostname } = new URL(input);
     const lower = hostname.toLowerCase();
     const host = lower.startsWith('www.') && lower.split('.').length > 2 ? lower.slice(4) : lower;
 
-    // A full public-suffix list is overkill here: politeness only needs a
-    // stable grouping key, and grouping by the last two labels is stable even
-    // where it is not strictly the registrable domain.
     const labels = host.split('.');
     if (labels.length <= 2) return host;
 
@@ -143,7 +111,6 @@ export function isSameOrigin(a: string, b: string): boolean {
   }
 }
 
-/** Depth below a base path, or undefined when the URL is outside it. */
 export function depthFrom(base: string, target: string): number | undefined {
   try {
     const basePath = new URL(base).pathname.replace(/\/$/, '');
@@ -164,35 +131,16 @@ export interface PathMatcher {
   test(pathname: string): boolean;
 }
 
-/** Longer than any path pattern a caller means; bounds the work a regex can do. */
 const MAX_PATTERN_LENGTH = 512;
 
-/**
- * A path pattern is a glob when it uses `*` or `?` and nothing that only a
- * regular expression would: anchors, groups, classes, escapes, alternation.
- * `/blog/*` is what the spec documents; `^/blog` keeps working for callers who
- * already send regular expressions.
- */
 export function isGlobPattern(pattern: string): boolean {
   return /[*?]/.test(pattern) && !/^\^|\$$|\.\*|[\\()|+[\]{}]/.test(pattern);
 }
 
-/**
- * A quantified group that itself repeats or alternates (`(a+)+`, `(a|aa)*`)
- * backtracks exponentially on a non-matching path. Patterns are matched inside
- * the API process against every discovered link, so one such pattern would
- * stall every request on the server.
- */
 function hasNestedQuantifier(pattern: string): boolean {
   return /\((?:[^()\\]|\\.)*[*+}|](?:[^()\\]|\\.)*\)[*+{]/.test(pattern);
 }
 
-/**
- * Wildcard match without a regular expression: `*` (or `**`) matches any run
- * of characters including `/`, `?` matches one character other than `/`.
- * Linear in the pattern for each position of the path, never exponential,
- * which is why globs are not compiled to `.*`.
- */
 function wildcardMatch(pattern: string, text: string): boolean {
   let p = 0;
   let t = 0;
@@ -221,12 +169,6 @@ function wildcardMatch(pattern: string, text: string): boolean {
   return p === pattern.length;
 }
 
-/**
- * Glob over the pathname. `/blog/*` means "everything under /blog", which is
- * what the include/exclude use reads as, so it also matches `/blog` itself:
- * the trailing slash is not significant after normalisation. A pattern
- * without a leading slash matches anywhere in the path.
- */
 export function globMatcher(pattern: string): PathMatcher {
   const anchored = pattern.startsWith('/') ? pattern : `*${pattern}`;
   const coversDirectory = /\/\*+$/.test(anchored);
@@ -241,10 +183,6 @@ export function globMatcher(pattern: string): PathMatcher {
   };
 }
 
-/**
- * Compile a path pattern, or undefined when it is a regular expression that
- * does not parse or could not be matched in bounded time.
- */
 export function compilePathPattern(pattern: string): PathMatcher | undefined {
   if (pattern.length > MAX_PATTERN_LENGTH) return undefined;
   if (isGlobPattern(pattern)) return globMatcher(pattern);
@@ -256,7 +194,6 @@ export function compilePathPattern(pattern: string): PathMatcher | undefined {
   }
 }
 
-/** Compile every pattern, dropping the ones that do not compile: an invalid pattern must not match everything by accident. */
 export function compilePathPatterns(patterns: string[]): PathMatcher[] {
   return patterns.flatMap((pattern) => compilePathPattern(pattern) ?? []);
 }

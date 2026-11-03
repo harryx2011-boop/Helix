@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/sitemap.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "sitemap",
+      "line": 11,
+      "offset": 0,
+      "text": "The public marketing and docs pages; the app itself is not on the website.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -10,8 +10,6 @@ import sys
 
 
 def _streams() -> None:
-    # A windowed exe starts with no stdout/stderr unless its parent redirects
-    # them, and tqdm, print and logging all crash writing to None.
     if sys.stdout is None:
         sys.stdout = open(os.devnull, "w")  # noqa: SIM115
     if sys.stderr is None:

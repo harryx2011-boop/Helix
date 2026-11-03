@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shell/api-key-provider.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ApiKeyProvider",
+      "line": 15,
+      "offset": 0,
+      "text": "Loads the key from localStorage after mount (SSR/export has no localStorage),\nso every consumer sees `null` until hydration resolves it — the key gate\nbelow reacts to that instead of racing it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ApiKeyProvider",
+      "line": 22,
+      "offset": 7,
+      "text": "Inside the VS Code extension the key arrives by message, and replaces\nwhatever this frame's storage held.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "useOptionalApiKey",
+      "line": 45,
+      "offset": 0,
+      "text": "Null outside the provider, e.g. `(tools)`, which mounts none.",
+      "kind": "doc"
+    }
+  ]
+}

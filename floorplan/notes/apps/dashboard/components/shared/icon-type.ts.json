@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/icon-type.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "GlyphIcon",
+      "line": 3,
+      "offset": 0,
+      "text": "What `IconTile` and the nav rows accept as a glyph.\n\nLucide ships no brand icons, so a row that must show a third-party mark\n(`GithubMark`) cannot be typed `LucideIcon`. Widening to any\ncomponent taking `className` covers both; `strokeWidth` is optional because\n`IconTile` passes it and a hand-drawn mark has no use for it.",
+      "kind": "doc"
+    }
+  ]
+}

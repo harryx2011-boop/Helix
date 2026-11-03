@@ -8,7 +8,6 @@ const here = dirname(fileURLToPath(import.meta.url))
 const desktop = join(here, '..')
 const repo = join(desktop, '..', '..')
 
-// The dashboard's app icon is the mark from public/logo.svg on its square tile; the wordmark in logo.svg is unreadable at 16 px.
 const source = join(repo, 'apps', 'dashboard', 'app', 'icon.svg')
 const svg = readFileSync(source)
 const icoSizes = [16, 24, 32, 48, 64, 128, 256]

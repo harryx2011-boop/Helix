@@ -10,9 +10,7 @@ export interface SegmentedItem<T extends string> {
   id: T;
   label: string;
   icon?: LucideIcon;
-  /** A real brand mark, shown instead of an icon. */
   brand?: BrandId;
-  /** Items sharing a group get one mono label above them. */
   group?: string;
 }
 
@@ -24,11 +22,6 @@ export interface SegmentedProps<T extends string> {
   className?: string;
 }
 
-/**
- * One grey track, the active tab lifted white, hairlines between the rest.
- * When items carry `group`, the labels sit above the track and the track
- * itself is painted by a pseudo-element so it stays continuous underneath.
- */
 export function Segmented<T extends string>({ items, value, onChange, className, ...rest }: SegmentedProps<T>) {
   const grouped = items.some((i) => i.group);
   const groups = grouped

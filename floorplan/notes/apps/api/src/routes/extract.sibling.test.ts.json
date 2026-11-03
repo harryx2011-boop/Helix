@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/extract.sibling.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 8,
+      "offset": null,
+      "text": "One URL that throws ends the request; the URLs still in flight beside it must\nbe told to stop, or they hold browser contexts and gate slots until their\nown timeout.",
+      "kind": "doc"
+    }
+  ]
+}

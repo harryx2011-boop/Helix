@@ -32,7 +32,6 @@ interface FrameLike {
   url: string
 }
 
-/** Our window's top document on our own origin; an iframe inside it never qualifies. */
 export function trustedSender(
   e: { sender: unknown; senderFrame: FrameLike | null | undefined },
   contents: { mainFrame: FrameLike },
@@ -63,7 +62,6 @@ export function createMainWindow(o: MainWindowOptions): BrowserWindow {
     },
   })
 
-  // Keys go only to a document served by our own API, never to a page a link wandered to.
   const onInfo = (e: Electron.IpcMainEvent) => {
     e.returnValue = !win.isDestroyed() && trustedSender(e, win.webContents, o.origin) ? o.info : null
   }

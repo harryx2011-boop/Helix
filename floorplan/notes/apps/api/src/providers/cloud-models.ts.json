@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/providers/cloud-models.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CloudProvider",
+      "line": 5,
+      "offset": 0,
+      "text": "Lists the models a cloud provider will actually serve this key, so a caller\ncan pick one instead of typing an id from memory.\n\nBefore this, the four cloud providers had a free-text model field and no\ndiscovery at all: a typo failed the same way a bad key did, at run time,\ninside an extraction rather than at the moment of the mistake.\n\nEach catalogue is fetched with the caller's own stored key. Failure is never\nfatal — every provider carries a small curated list of known-good models, and\nan unreachable or unauthorized catalogue falls back to it rather than\nreturning nothing. The curated entry is also what makes the picker useful\nbefore a key is saved.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CURATED_MODELS",
+      "line": 11,
+      "offset": 0,
+      "text": "Known-good models per provider, newest first.\n\nThis is a fallback and a starting point, not an allow-list: `listCloudModels`\nmerges the live catalogue over it, and a model absent here is still accepted\nby the free-text field. Kept short deliberately — a curated list that tries\nto mirror every provider's full catalogue is a list that silently rots.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "parseGemini",
+      "line": 60,
+      "offset": 0,
+      "text": "Gemini names models `models/gemini-2.5-pro` in its catalogue but takes the\nbare id everywhere else, and filters to those that can actually generate —\nan embedding model in a chat-model picker is a wrong answer that looks right.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "mergeModels",
+      "line": 90,
+      "offset": 0,
+      "text": "Curated first, live appended, deduped by name.\n\nCurated-first because those are the models most callers want and the live\ncatalogue is often alphabetical noise; dedupe by name so a curated entry that\nalso appears live is listed once, in its curated position.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "listCloudModels",
+      "line": 95,
+      "offset": 0,
+      "text": "The catalogue for one cloud provider. Never fails: an unreachable or\nunauthorized provider yields the curated list, since a picker that empties\nitself when the network hiccups is worse than one showing slightly stale\nnames the caller can still edit by hand.",
+      "kind": "doc"
+    }
+  ]
+}

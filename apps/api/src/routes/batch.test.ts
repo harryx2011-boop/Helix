@@ -1,11 +1,6 @@
 import Fastify from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * Batch route contract. Postgres is a fake: what matters here is the request
- * surface, that every URL is seeded rather than discovered, and that the job
- * request the worker will read cannot follow a link.
- */
 
 interface Call {
   text: string;
@@ -112,8 +107,6 @@ describe('POST /v1/batch/scrape', () => {
     expect(seededUrls()).toEqual(['https://a.example/x', 'https://b.example/y', 'https://c.example/z']);
   });
 
-  // The worker claims and completes rows by the frontier's normalised URL; a
-  // raw `https://example.com` row matched nothing and its page was dropped.
   it('seeds each URL in the form the frontier claims it by', async () => {
     const app = await buildApp();
     const response = await app.inject({
@@ -143,8 +136,6 @@ describe('POST /v1/batch/scrape', () => {
     });
 
     const stored = storedRequest();
-    // maxDepth 0 rejects every discovered link as too deep; skipping the sitemap
-    // stops the other source of URLs the caller did not ask for.
     expect(stored).toMatchObject({ maxDepth: 0, sitemap: 'skip', allowExternal: true, limit: 2 });
   });
 
@@ -171,7 +162,6 @@ describe('POST /v1/batch/scrape', () => {
     expect(storedRequest()).toMatchObject({ formats: ['html'], tier: 'chromium' });
   });
 
-  // Same closed set as /scrape and /crawl; openapi declares it as the Format enum.
   it('rejects a format outside the published set', async () => {
     const app = await buildApp();
     const response = await app.inject({
@@ -268,10 +258,6 @@ describe('GET /v1/batch/scrape/:id', () => {
   });
 });
 
-/**
- * `/batch/scrape/{id}` serves the same rows as `/jobs/{id}`: one operator owns
- * every key, so neither statement carries an owner predicate.
- */
 describe('batch job reads', () => {
   it('leaves both statements unscoped', async () => {
     const app = await buildApp();

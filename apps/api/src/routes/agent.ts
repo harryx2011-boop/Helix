@@ -3,22 +3,12 @@ import { z } from 'zod';
 import { ExtractHttpError, StructuredError, type ExtractClient } from '../extract/client.js';
 import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 
-/**
- * POST /v1/agent/schema — turns a plain-language data request into a JSON
- * Schema.
- *
- * The dashboard's Agent research preview lets someone describe what they want
- * scraped before committing to a full `scrapeOptions.jsonOptions.schema`. This
- * asks helix-extract to design that schema with the operator's own model, so
- * the result is paste-ready into `/scrape` or `/search`.
- */
 
 const HttpUrlSchema = z
   .string()
   .url()
   .refine((value) => /^https?:\/\//i.test(value), 'must be an http(s) URL');
 
-/** Providers helix-extract can route to. Naming one is the only way to reach a local runtime. */
 const PROVIDERS = [
   'anthropic',
   'openai',
@@ -41,7 +31,6 @@ const AgentSchemaRequestSchema = z.object({
 
 export interface AgentRouteDeps {
   extractClient: ExtractClient;
-  /** Decrypts the caller's stored provider keys, when present, so schema design can use them. */
   encryptionKey?: Buffer | undefined;
 }
 
@@ -100,8 +89,6 @@ export async function registerAgent(app: FastifyInstance, deps: AgentRouteDeps):
       });
     } catch (error) {
       if (error instanceof StructuredError) {
-        // helix-extract's /schema named a specific request field at fault
-        // (a 400), or has no provider configured (a 503, no `field`).
         if (error.field !== undefined || error.status === 400) {
           return reply.code(400).send({
             error: 'invalid_request',

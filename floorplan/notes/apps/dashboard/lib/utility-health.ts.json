@@ -1,0 +1,239 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/utility-health.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "DependencyId",
+      "line": 8,
+      "offset": 0,
+      "text": "Turns the two things the instance can tell us into one answer per tool.\n\n`/health` proves whether a tool's dependencies are up right now; the\n`request_usage` table records how its recent requests actually went. Neither\nalone answers \"is Scrape working\": a green dependency row says nothing about\na route that 500s, and a clean request log says nothing about a tool nobody\nhas called. So each row carries both, derived separately, and the copy says\nwhich is which.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "UtilityDependencies.hard",
+      "line": 18,
+      "offset": 0,
+      "text": "Down means the tool cannot answer at all.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "UtilityDependencies.soft",
+      "line": 19,
+      "offset": 0,
+      "text": "Down means one tier or one action is lost, not the tool.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "UtilityDependencies.config",
+      "line": 20,
+      "offset": 0,
+      "text": "Absent means the route answers 503 by design until an operator sets it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "UtilityDependencies.optional",
+      "line": 21,
+      "offset": 0,
+      "text": "Absent means one option of the tool is unavailable; the tool itself still runs.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "DEPENDENCIES",
+      "line": 24,
+      "offset": 0,
+      "text": "Keyed on `RunnableEndpoint` so a tool added to the catalog fails to compile\nhere until its dependencies are stated, rather than rendering as unverified.\n\nEach entry was read off the route's `Deps` interface and what `index.ts`\npasses to it. Postgres is on every row because every `/v1` request resolves\nits API key through `core/api-keys.ts` before the route runs.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "DEPENDENCIES.scrape",
+      "line": 25,
+      "offset": 0,
+      "text": "routes/scrape.ts: fetchClient, extractClient, browserPool?. The plain and\ntls tiers need no browser; jsonOptions goes through the LLM.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "DEPENDENCIES.parse",
+      "line": 26,
+      "offset": 0,
+      "text": "routes/parse.ts, metadata.ts: extractClient only.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "DEPENDENCIES.document",
+      "line": 28,
+      "offset": 0,
+      "text": "routes/document.ts forwards to parse, metadata and pdf-assess, so it needs\nwhat they need and nothing more; parse's `jsonOptions` is the one path that reaches a model.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "DEPENDENCIES.extract",
+      "line": 29,
+      "offset": 0,
+      "text": "routes/extract.ts: the scrape pipeline per URL, then the model. The model\nis the point of the endpoint rather than one option of it, but `llm` is not\na health-checked service here — it is the caller's provider — so it stays\n`optional` and the hard set covers what Helix itself must have running.",
+      "kind": "why"
+    },
+    {
+      "id": "n11",
+      "symbol": "DEPENDENCIES.screenshot",
+      "line": 30,
+      "offset": 0,
+      "text": "routes/screenshot.ts: the render tier is the whole endpoint, not a fallback.\n`extractClient` is in its Deps but the route passes `skipExtraction: true`,\nso it is never called — extract being down does not stop a screenshot.",
+      "kind": "why"
+    },
+    {
+      "id": "n12",
+      "symbol": "DEPENDENCIES.search",
+      "line": 31,
+      "offset": 0,
+      "text": "routes/search.ts: provider (config), fetchClient, extractClient, browserPool?.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "DEPENDENCIES.map",
+      "line": 32,
+      "offset": 0,
+      "text": "routes/map.ts: fetchClient, extractClient (link extraction). No browser.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "DEPENDENCIES.crawl",
+      "line": 33,
+      "offset": 0,
+      "text": "routes/crawl.ts extends MapRouteDeps; jobs live in Postgres. No browser.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "DEPENDENCIES.interact",
+      "line": 34,
+      "offset": 0,
+      "text": "routes/interact.ts: sessions (leased from the browser pool), extractClient for the extract action.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "DEPENDENCIES.monitor",
+      "line": 35,
+      "offset": 0,
+      "text": "index.ts fetchMonitorPage: runPipeline with fetch, extract, browserPool; the store is Postgres.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "UtilityOutcomes.recent",
+      "line": 47,
+      "offset": 0,
+      "text": "The last 7 UTC days, the window the success rate is quoted over.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "UtilityOutcomes.observedHours",
+      "line": 48,
+      "offset": 0,
+      "text": "Hours with at least one recorded request, across the whole window.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": "UtilityOutcomes.days",
+      "line": 50,
+      "offset": 0,
+      "text": "One bucket per UTC day, in the shape `HistoryBars` draws. `okPct` is good hours over observed hours.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "UtilityRow.reasons",
+      "line": 56,
+      "offset": 0,
+      "text": "Why the state is what it is, in the operator's terms. Empty when working.",
+      "kind": "doc"
+    },
+    {
+      "id": "n21",
+      "symbol": "UtilityRow.note",
+      "line": 57,
+      "offset": 0,
+      "text": "A missing option, e.g. no LLM for `jsonOptions`. Does not affect the state.",
+      "kind": "doc"
+    },
+    {
+      "id": "n22",
+      "symbol": "UtilityRow.outcomes",
+      "line": 58,
+      "offset": 0,
+      "text": "Null while outcomes are loading or unavailable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n23",
+      "symbol": "endpointFamily",
+      "line": 61,
+      "offset": 0,
+      "text": "`/v1/scrape` becomes `/scrape`, the family `normaliseEndpoint` records.",
+      "kind": "doc"
+    },
+    {
+      "id": "n24",
+      "symbol": "foldOutcomes",
+      "line": 65,
+      "offset": 0,
+      "text": "Sub-routes (`/crawl/:id`, `/monitor/:id`) belong to the tool that owns the family.",
+      "kind": "doc"
+    },
+    {
+      "id": "n25",
+      "symbol": "foldOutcomes",
+      "line": 106,
+      "offset": 41,
+      "text": "Two sub-routes sharing an hour count it twice here. Uptime is a ratio of\nthe same double-counting on both sides, so the percentage is unaffected.",
+      "kind": "what"
+    },
+    {
+      "id": "n26",
+      "symbol": "utcDay",
+      "line": 115,
+      "offset": 0,
+      "text": "YYYY-MM-DD for today plus `offset` days, in UTC, the calendar the buckets use.",
+      "kind": "doc"
+    },
+    {
+      "id": "n27",
+      "symbol": "successRate",
+      "line": 120,
+      "offset": 0,
+      "text": "2xx over 2xx + 5xx in the last 7 days. Client errors and throttling are the caller's outcome, not the tool's.",
+      "kind": "doc"
+    },
+    {
+      "id": "n28",
+      "symbol": "padDays",
+      "line": 130,
+      "offset": 0,
+      "text": "Days padded to a contiguous strip ending today (UTC), so a quiet day is a gap rather than a missing bar.",
+      "kind": "doc"
+    },
+    {
+      "id": "n29",
+      "symbol": "deriveUtility",
+      "line": 227,
+      "offset": 72,
+      "text": "Dependencies are up but no request has proven the route: ready, not working.",
+      "kind": "what"
+    }
+  ]
+}

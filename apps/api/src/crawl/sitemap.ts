@@ -3,23 +3,11 @@ import type { Log } from '../core/logger.js';
 import { isPrivateHost } from '../core/url-guard.js';
 import { pinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 
-/**
- * Sitemap discovery.
- *
- * Handles both `<urlset>` and the recursive `<sitemapindex>` case, with hard
- * caps on total URLs and recursion depth — a sitemap index can point at
- * thousands of children, and an unbounded walk is a denial of service against
- * yourself.
- *
- * `<lastmod>` is captured but treated as a hint. In the wild it is frequently
- * stale or simply fabricated, so it can inform incremental crawl decisions but
- * must never be the only evidence a page is unchanged.
- */
 
 const MAX_URLS = 100_000;
 const MAX_DEPTH = 3;
 const FETCH_TIMEOUT_MS = 20_000;
-const MAX_SITEMAP_BYTES = 50 * 1024 * 1024; // the 50MiB limit from the spec
+const MAX_SITEMAP_BYTES = 50 * 1024 * 1024;
 const MAX_REDIRECTS = 5;
 
 export interface SitemapEntry {
@@ -55,12 +43,6 @@ export class SitemapFetcher {
     this.#fetchImpl = fetchImpl;
   }
 
-  /**
-   * Fetch one sitemap, following index files to their children.
-   *
-   * `seen` guards against a sitemap index that points back at itself, directly
-   * or through a cycle.
-   */
   async fetch(
     sitemapUrl: string,
     limit = MAX_URLS,
@@ -72,9 +54,6 @@ export class SitemapFetcher {
 
     let xml: string;
     try {
-      // A sitemap URL is quoted from a remote robots.txt, so the host is the
-      // caller's choice twice over: once in the file and again in whatever it
-      // redirects to. Every hop is checked rather than the first alone.
       let current = new URL(sitemapUrl);
       let response: Response;
 
@@ -114,7 +93,6 @@ export class SitemapFetcher {
       return [];
     }
 
-    // A sitemap index: recurse into each child, spending the remaining budget.
     if (parsed.sitemapindex) {
       const children = asArray(parsed.sitemapindex.sitemap)
         .map((entry) => entry.loc)
@@ -142,10 +120,6 @@ export class SitemapFetcher {
     return [];
   }
 
-  /**
-   * Find a site's sitemaps: those declared in robots.txt, then the conventional
-   * path as a fallback.
-   */
   async discover(origin: string, declared: string[], limit = MAX_URLS): Promise<SitemapEntry[]> {
     const candidates = declared.length > 0 ? declared : [`${origin}/sitemap.xml`];
 
@@ -158,7 +132,6 @@ export class SitemapFetcher {
       collected.push(...(await this.fetch(candidate, remaining, 0, seen)));
     }
 
-    // A sitemap index can list the same URL through two children.
     const unique = new Map<string, SitemapEntry>();
     for (const entry of collected) {
       if (!unique.has(entry.url)) unique.set(entry.url, entry);

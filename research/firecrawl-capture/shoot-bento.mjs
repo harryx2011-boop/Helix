@@ -23,7 +23,6 @@ for (const vp of [{ name: '1440', width: 1440, height: 900 }, { name: '390', wid
     await page.waitForTimeout(600);
     await scrollThrough(page);
     const name = path === '/' ? 'home' : path.slice(1);
-    // meter-bearing section shots at settled state
     if (vp.name === '1440') {
       const target = path === '/' ? 'text=Cheapest tier wins' : '[class*="grid-cols-6"]';
       try {

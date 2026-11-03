@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/robots.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "RobotsCheckRequestSchema",
+      "line": 7,
+      "offset": 0,
+      "text": "Dry-run robots.txt check: whether a URL is allowed, without fetching it.\n\nShares `RobotsCache` with `/crawl` and `/map`, so the answer here is exactly\nwhat a crawl would decide — never a second opinion from a separate parser.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "RobotsRouteDeps.allowPrivateUrls",
+      "line": 14,
+      "offset": 0,
+      "text": "`HELIX_ALLOW_PRIVATE_URLS`: let callers fetch loopback, link-local and private-range addresses.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "RobotsRouteDeps.resolveHost",
+      "line": 15,
+      "offset": 0,
+      "text": "DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "registerRobots",
+      "line": 34,
+      "offset": 16,
+      "text": "The URL is the caller's choice of what this instance connects to. Without\nthis, an API key reaches cloud metadata, Postgres and the internal\nservices through the robots.txt fetch.",
+      "kind": "what"
+    }
+  ]
+}

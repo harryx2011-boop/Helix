@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/sse.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SseTarget",
+      "line": 2,
+      "offset": 0,
+      "text": "A server-sent-events writer that never lets a slow reader grow the\nprocess. Control events (session, closed, heartbeat) are small and always\nwritten. Frames are only useful fresh: while the socket is backed up, the\nnewest frame replaces whatever was waiting, and one write goes out on\n`drain`. A viewer that stops reading therefore costs one frame of memory,\nnot the whole session's worth.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SseSink.dropped",
+      "line": 12,
+      "offset": 0,
+      "text": "Frames dropped because the reader was behind.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SocketTarget",
+      "line": 52,
+      "offset": 0,
+      "text": "The same policy over a WebSocket.\n\nA socket has no `write()` return value to read backpressure from, so the\nqueue depth stands in: while more than one frame is still unsent, the newest\nframe replaces whatever was waiting. A viewer that stops reading costs one\nframe of memory here too, and gets the current frame rather than a backlog\nof stale ones when it catches up.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "OPEN",
+      "line": 58,
+      "offset": 0,
+      "text": "`WebSocket.OPEN`, without importing ws for one constant.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "MAX_BUFFERED_BYTES",
+      "line": 60,
+      "offset": 0,
+      "text": "A frame is ~30-60KB of base64 JPEG; one in flight is fine, a queue of them is not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "socketSink",
+      "line": 73,
+      "offset": 11,
+      "text": "A WebSocket needs no heartbeat comment to stay open, but the caller sends\none on the same interval; a ping frame keeps an idle proxy from closing.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "socketSink",
+      "line": 80,
+      "offset": 18,
+      "text": "A pending frame is now stale: the current one replaces it rather than\nbeing sent first, which would be two frames for one call.",
+      "kind": "what"
+    }
+  ]
+}

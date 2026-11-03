@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/forms/interact-form.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "InteractForm",
+      "line": 67,
+      "offset": 0,
+      "text": "Form for POST /v1/interact, built from the InteractRequest schema in openapi.yaml.",
+      "kind": "doc"
+    }
+  ]
+}

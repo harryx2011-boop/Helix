@@ -1,0 +1,175 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/extract.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HttpUrlSchema",
+      "line": 13,
+      "offset": 0,
+      "text": "POST /v1/extract — the same shape across a set of URLs, as a table.\n\n`/scrape` with `jsonOptions` already extracts one page. This exists for the\nother shape of the question: apply one schema to many pages and get rows\nback, with each field traceable to where it was read.\n\nTwo rules distinguish it from a model call with a schema attached:\n\n1. **Ungrounded fields are dropped, not guessed.** A value the model returned\nwithout a matching source span is removed and reported in `dropped`. The\nfailure this avoids is the expensive one: a plausible number nobody can\ncheck, returned with the same confidence as a real one.\n2. **A page that could not be read is a warning, not a failure.** Nineteen\ngood rows and one unreachable URL is a useful answer; a 502 is not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ExtractRequestSchema.instruction",
+      "line": 25,
+      "offset": 0,
+      "text": "Extra direction for the model, alongside the schema rather than instead of it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ExtractRequestSchema.allowUngrounded",
+      "line": 28,
+      "offset": 0,
+      "text": "Keep fields the source does not support, reporting them in `dropped`\nanyway. Off by default: an ungrounded value is the thing this endpoint\nexists to not return.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ExtractRouteDeps.encryptionKey",
+      "line": 47,
+      "offset": 0,
+      "text": "Decrypts the caller's stored provider keys, so extraction runs on their model.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "DroppedField",
+      "line": 50,
+      "offset": 0,
+      "text": "A field the model returned that nothing in the page supports.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "URL_CONCURRENCY",
+      "line": 56,
+      "offset": 0,
+      "text": "URLs read at once.\n\nFour, not `MAX_URLS`: each one is a page fetch plus a model call, and the\nper-host gate paces same-host URLs anyway. Twenty-five at once would mostly\nqueue inside the browser pool while making the provider's rate limit the next\nthing to fail.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "UrlOutcome",
+      "line": 58,
+      "offset": 0,
+      "text": "What one URL produced. Returned rather than pushed, because the rows must read\nin the caller's order no matter which URL finished first.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "UrlOutcome",
+      "line": 71,
+      "offset": 13,
+      "text": "A schema the provider refused: the same answer for every URL, so it ends the request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "UrlOutcome",
+      "line": 72,
+      "offset": 14,
+      "text": "Aborted, or never started because the request was already over.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "groundedFields",
+      "line": 74,
+      "offset": 0,
+      "text": "Fields the source actually supports, per `include_sources`.\n\nThe extractor reports spans as a list of records naming the field they\nground. A field absent from that list was produced by the model without\ntextual support — which is exactly the case worth refusing.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "splitByGrounding",
+      "line": 89,
+      "offset": 6,
+      "text": "An extractor that returned no spans at all cannot distinguish grounded\nfrom invented, so dropping everything would report a total failure where\nthe real answer is \"grounding is unavailable here\". Kept, and said so.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "registerExtract",
+      "line": 154,
+      "offset": 54,
+      "text": "One pass over the URLs, several at a time. Serial was n round trips of\nfetch-then-model for URLs that have nothing to do with each other: 25\npages at 3 s each is a 75 s wall. `mapWithLimit` preserves order, so\nrows, warnings and `dropped` still read in the order the caller listed —\nthe concurrency is not visible in the answer.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "registerExtract",
+      "line": 159,
+      "offset": 59,
+      "text": "The wait for the host's turn is spent from the caller's timeout.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "registerExtract",
+      "line": 173,
+      "offset": 73,
+      "text": "Several URLs on one host is the case this route makes common, so the\nhost's own answer has to feed the pacing: a 429 or a challenge on the\nthird URL should slow the fourth, not be rediscovered 20 times.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "registerExtract",
+      "line": 176,
+      "offset": 76,
+      "text": "Aborted while waiting for the host's turn: the caller left first.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "registerExtract",
+      "line": 182,
+      "offset": 82,
+      "text": "A page the caller's own disconnect killed is not a page that failed.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "registerExtract",
+      "line": 210,
+      "offset": 110,
+      "text": "Said per row: a page whose blocks were clipped answered from part\nof itself, and the values alone cannot show that.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "registerExtract",
+      "line": 226,
+      "offset": 126,
+      "text": "A bad schema is the caller's to fix and will fail identically on every\nURL, so it stops the request rather than repeating n times. The abort\nis what stops it: URLs already in flight end as `skipped`, and no\nqueued one starts.",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "registerExtract",
+      "line": 231,
+      "offset": 131,
+      "text": "The caller disconnecting mid-run is not a per-URL extraction failure\nworth reporting in `warnings`.",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": "registerExtract",
+      "line": 241,
+      "offset": 141,
+      "text": "Folded in the caller's order, so a concurrent run answers exactly as the\nserial one did.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "registerExtract",
+      "line": 282,
+      "offset": 182,
+      "text": "A throw from one URL ends the request while its siblings are still in\nflight; without this they hold contexts and gate slots to their own\ntimeout. On the normal path every URL is done and this is a no-op.",
+      "kind": "what"
+    }
+  ]
+}

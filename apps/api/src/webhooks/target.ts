@@ -1,18 +1,7 @@
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 
-/**
- * Where a webhook may point.
- *
- * The dispatcher POSTs from inside the deployment's own network, so a webhook
- * URL is a request the server makes on the caller's behalf. Left open, it
- * reaches the fetch and extract services, the database, cloud metadata
- * endpoints and the API's own internal routes. Targets are checked twice: the
- * literal URL when the job is accepted, and the resolved address just before
- * each send, since a public name can resolve to a private address later.
- */
 
-/** Set on every delivery by the dispatcher; a caller's copy is refused rather than silently dropped. */
 export const RESERVED_HEADERS = new Set([
   'content-type',
   'content-length',
@@ -26,7 +15,6 @@ export const RESERVED_HEADERS = new Set([
 ]);
 
 export const MAX_WEBHOOK_HEADERS = 16;
-/** Serialised size of the headers object and of `metadata`, each copied into every delivery row. */
 export const MAX_WEBHOOK_BYTES = 4_096;
 
 const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
@@ -51,13 +39,11 @@ function isPublicV4(octets: number[]): boolean {
   return true;
 }
 
-/** Eight 16-bit groups, or undefined when the text is not an IPv6 address. */
 function hextets(address: string): number[] | undefined {
   let text = address;
   const zone = text.indexOf('%');
   if (zone !== -1) text = text.slice(0, zone);
 
-  // A trailing dotted quad (`::ffff:10.0.0.1`) is two hextets.
   const lastColon = text.lastIndexOf(':');
   const tail = text.slice(lastColon + 1);
   if (tail.includes('.')) {
@@ -100,7 +86,6 @@ function isPublicV6(groups: number[]): boolean {
   return true;
 }
 
-/** Whether an IP literal is routable from the public internet. Unparseable input is not. */
 export function isPublicAddress(address: string): boolean {
   const version = isIP(address);
   if (version === 4) {
@@ -114,7 +99,6 @@ export function isPublicAddress(address: string): boolean {
   return false;
 }
 
-/** Why a webhook URL cannot be accepted, or undefined when it can. */
 export function webhookTargetProblem(url: string): string | undefined {
   let parsed: URL;
   try {
@@ -133,15 +117,12 @@ export function webhookTargetProblem(url: string): string | undefined {
     return isPublicAddress(host) ? undefined : 'must not point at a private or loopback address';
   }
   if (host === 'localhost' || host.endsWith('.localhost')) return 'must not point at localhost';
-  // A single label (`helix-extract`, `postgres`) resolves only inside the
-  // deployment's network; so do the reserved local suffixes.
   if (!host.includes('.') || host.endsWith('.local') || host.endsWith('.internal')) {
     return 'must be a public hostname';
   }
   return undefined;
 }
 
-/** Why a caller's headers cannot be accepted, or undefined when they can. */
 export function webhookHeadersProblem(headers: Record<string, string>): string | undefined {
   const entries = Object.entries(headers);
   if (entries.length > MAX_WEBHOOK_HEADERS) return `at most ${MAX_WEBHOOK_HEADERS} headers`;
@@ -163,11 +144,6 @@ export type Resolver = (hostname: string) => Promise<string[]>;
 export const defaultResolver: Resolver = async (hostname) =>
   (await lookup(hostname, { all: true })).map((entry) => entry.address);
 
-/**
- * The URL check again, this time against what the hostname resolves to right
- * now. A lookup failure is no verdict: the send itself will fail and be
- * retried like any other network error.
- */
 export async function resolvedTargetProblem(
   url: string,
   resolve: Resolver = defaultResolver,

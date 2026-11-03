@@ -5,12 +5,6 @@ import type { ServiceCheckDeps } from './checks.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient } from '../extract/client.js';
 
-/**
- * The sampler ticks once a minute. Without a re-entrancy guard, a tick whose
- * dependency check hangs never returns the pool connection, and every
- * subsequent interval stacks another check on top of it until the pool is
- * exhausted.
- */
 
 vi.mock('../db/pool.js', () => ({
   checkHealth: vi.fn(async () => ({ status: 'ok' as const, latencyMs: 1 })),
@@ -40,10 +34,6 @@ describe('StatusSampler', () => {
     const extractClient = { health: vi.fn(async () => true) } as unknown as ExtractClient;
 
     const deps: ServiceCheckDeps = { fetchClient, extractClient };
-    // A short interval keeps three ticks well inside the checks' own overall
-    // time bound, so the first tick is still genuinely in flight when the
-    // next two are due -- the guard under test is `#ticking`, not the checks
-    // timeout completing the hung check for us.
     const sampler = new StatusSampler({ pool: fakePool(), intervalMs: 500, ...deps });
 
     sampler.start();

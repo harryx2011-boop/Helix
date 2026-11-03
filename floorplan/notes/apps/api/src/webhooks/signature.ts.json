@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/webhooks/signature.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SIGNATURE_HEADER",
+      "line": 4,
+      "offset": 0,
+      "text": "Stripe-shaped signing: HMAC-SHA256 over `{timestamp}.{body}`, sent as\n`Helix-Signature: t=<unix>,v1=<hex>`. The timestamp inside the signed string\nis what stops a captured delivery from being replayed later.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "verifySignature",
+      "line": 17,
+      "offset": 0,
+      "text": "Constant-time check of a `Helix-Signature` header against the raw body.",
+      "kind": "doc"
+    }
+  ]
+}

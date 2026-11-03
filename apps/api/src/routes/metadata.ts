@@ -12,31 +12,8 @@ import { contentHash } from '../parse/cache.js';
 import { assertPublicUrl, defaultLookup, HostNotAllowedError, type Lookup } from '../parse/remote.js';
 import { createPinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 
-/**
- * POST /v1/metadata — what a file discloses, and /v1/metadata/scrub — a copy without it.
- *
- * The Metadata API is the read-and-remove half of document handling: `/parse`
- * answers what a file *says*, this answers what it *reveals* about the person
- * and machine that produced it. Same two inputs as `/parse` (a multipart
- * `file` or a JSON `url`), same intake rules — public hosts only, checked on
- * every redirect, and the operator's upload ceiling enforced before a byte
- * leaves the process.
- *
- * **The scrub answers with the file, not with a description of it.** A base64
- * envelope would hold two more copies of a 25 MB upload; the cleaned bytes are
- * the response body and the report rides in `X-Helix-Metadata-Report`. A caller
- * who wants only the report asks for the scan.
- *
- * **A scrub reports what survived.** Formats differ in what they can drop
- * without corrupting the file — a Word comments part is still pointed at by a
- * relationship, and pdfium re-emits DocInfo it cannot write. Those come back
- * under `retained`, never silently dropped from the report, because a caller
- * acting on "clean" when something remains is the one failure this endpoint
- * exists to prevent.
- */
 
 const OptionsSchema = z.object({
-  /** Remote fetch budget for the `url` path, in milliseconds. */
   timeout: z.number().int().min(1_000).max(300_000).default(30_000),
 });
 
@@ -44,18 +21,14 @@ const JsonRequestSchema = OptionsSchema.extend({ url: z.string().url() });
 
 type Options = z.infer<typeof OptionsSchema>;
 
-/** Ranked worst-first: a report a human reads is ordered by consequence. */
 const RISK_ORDER: Record<MetadataRisk, number> = { high: 0, medium: 1, low: 2 };
 
 export interface MetadataRouteDeps {
   extractClient: ExtractClient;
   maxUploadBytes: number;
   userAgent: string;
-  /** Injectable for tests; defaults to global fetch. */
   fetchImpl?: PinnedFetch | undefined;
-  /** Injectable for tests; defaults to the system resolver. */
   lookup?: Lookup | undefined;
-  /** Files held in memory at once before the route answers 503. */
   maxInFlight?: number | undefined;
 }
 
@@ -117,7 +90,6 @@ function saturatedBody(request: FastifyRequest, maxInFlight: number): Record<str
   };
 }
 
-// --- multipart --------------------------------------------------------------
 
 async function readMultipart(raw: Buffer, contentType: string): Promise<{ file: FileInput; options: unknown }> {
   let form: FormData;
@@ -152,7 +124,6 @@ async function readMultipart(raw: Buffer, contentType: string): Promise<{ file: 
   };
 }
 
-// --- remote fetch -----------------------------------------------------------
 
 function filenameFromUrl(url: string): string | undefined {
   try {
@@ -176,9 +147,6 @@ function filenameFromDisposition(header: string | null): string | undefined {
   return /filename="?([^";]+)"?/.exec(header)?.[1]?.trim() || undefined;
 }
 
-// The detail names the class of error and its code only. The underlying message
-// carries the resolved address and port, which would turn the response into a
-// probe of whatever the gateway can reach.
 function classifyRemoteError(error: unknown): Failure {
   const err = error as { name?: string; cause?: { code?: string } };
   const code = err.cause?.code ?? '';
@@ -203,9 +171,6 @@ async function fetchRemote(
   let current = new URL(url);
   let response: Response;
 
-  // Redirects are followed by hand so every hop is checked against the host
-  // policy: an allowed public host answering 302 to an internal address is the
-  // usual way around a check made only on the first URL.
   for (let hop = 0; ; hop += 1) {
     await assertPublicUrl(current, deps.lookup);
 
@@ -261,8 +226,6 @@ async function fetchRemote(
     return { ok: false, tooLarge: true };
   }
 
-  // Streamed so a server that lies about (or omits) content-length is still
-  // stopped at the ceiling rather than after the whole body is resident.
   const chunks: Buffer[] = [];
   let received = 0;
   if (response.body) {
@@ -290,7 +253,6 @@ async function fetchRemote(
   };
 }
 
-// --- shared intake ----------------------------------------------------------
 
 interface Intake {
   file: FileInput;
@@ -300,8 +262,6 @@ interface Intake {
 function extractFailure(error: unknown): Failure | RequestError {
   if (error instanceof ExtractHttpError) {
     if (error.status === 415) return { reason: 'unsupported_type', detail: error.detail };
-    // 422 is helix-extract's answer for bytes its reader could not open: a
-    // corrupt or mislabelled file, which retrying will not fix.
     if (error.status === 422) return { reason: 'unsupported_type', detail: error.detail };
     if (error.status === 400) return invalid(error.detail);
     return { reason: 'service_unavailable', detail: error.detail || `helix-extract answered HTTP ${error.status}` };
@@ -319,15 +279,10 @@ function byRisk(a: MetadataFinding, b: MetadataFinding): number {
 
 export async function registerMetadata(app: FastifyInstance, deps: MetadataRouteDeps): Promise<void> {
   const lookup = deps.lookup ?? defaultLookup;
-  // Pinned: the address the lookup checked is the address connected to.
   const fetchImpl = deps.fetchImpl ?? createPinnedFetch({ lookup });
   const maxInFlight = deps.maxInFlight ?? DEFAULT_MAX_IN_FLIGHT;
-  // Multipart framing adds headers and boundaries on top of the file itself.
   const bodyLimit = deps.maxUploadBytes + 64 * 1024;
 
-  // Each request holds its file in memory for as long as helix-extract takes,
-  // and the per-key rate limit counts requests, not bytes. This is the bound on
-  // resident uploads.
   let inFlight = 0;
 
   await app.register(async (scope) => {
@@ -337,8 +292,6 @@ export async function registerMetadata(app: FastifyInstance, deps: MetadataRoute
       (_request, body, done) => done(null, body),
     );
 
-    // Refuse before the body is buffered; the handler re-checks when it
-    // actually takes a slot.
     scope.addHook('preParsing', async (request, reply) => {
       if (inFlight >= maxInFlight) {
         void reply.header('retry-after', '1');
@@ -365,7 +318,6 @@ export async function registerMetadata(app: FastifyInstance, deps: MetadataRoute
       });
     });
 
-    /** Read the file from either input shape. Throws RequestError, or returns a typed failure to send. */
     async function intake(
       request: FastifyRequest,
       reply: FastifyReply,
@@ -377,8 +329,6 @@ export async function registerMetadata(app: FastifyInstance, deps: MetadataRoute
         const raw = request.body;
         if (!Buffer.isBuffer(raw)) throw invalid('multipart body was empty.', 'file');
         const read = await readMultipart(raw, contentType);
-        // The framed body is not needed again; only the file's own bytes stay
-        // resident for the request.
         (request as { body: unknown }).body = undefined;
         return { file: read.file, options: OptionsSchema.parse(read.options) };
       }
@@ -419,7 +369,6 @@ export async function registerMetadata(app: FastifyInstance, deps: MetadataRoute
       return { file: fetched.file, options };
     }
 
-    /** Classify the bytes, or send the typed failure that says why we could not. */
     function classify(file: FileInput, reply: FastifyReply): FileType | { sent: FastifyReply } {
       if (file.bytes.length === 0) {
         return {
@@ -593,8 +542,6 @@ export async function registerMetadata(app: FastifyInstance, deps: MetadataRoute
 
       const downloadName = scrubbedFilename(file.filename, classified);
 
-      // The cleaned file IS the body. The report rides in a header so a caller
-      // can stream the response straight to disk without unwrapping anything.
       return reply
         .code(200)
         .header('content-type', CONTENT_TYPE_FOR[classified])
@@ -607,13 +554,9 @@ export async function registerMetadata(app: FastifyInstance, deps: MetadataRoute
   });
 }
 
-/** `report.pdf` becomes `report.scrubbed.pdf`; a nameless upload gets one. */
 export function scrubbedFilename(filename: string | undefined, fileType: FileType): string {
   const fallback = `file.scrubbed.${fileType}`;
   if (!filename) return fallback;
-  // Quotes and control characters would break out of the Content-Disposition
-  // header; a path separator would make the name a directory traversal in a
-  // client that saves it verbatim.
   const safe = filename.replace(/[\r\n"\\/]/g, '_').trim();
   if (!safe) return fallback;
   const dot = safe.lastIndexOf('.');

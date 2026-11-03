@@ -2,7 +2,6 @@ import path from 'node:path'
 import { loopback, type ChildFactory } from './types'
 
 export const fetchSpec: ChildFactory = (ctx) => {
-  // In dev, cwd apps/fetch lets the binary find ../../packages/profiles/definitions; installed, it reads profiles/ beside itself.
   const cwd = ctx.dev ? path.join(ctx.repo, 'apps', 'fetch') : path.join(ctx.resources, 'fetch')
   const command = ctx.dev
     ? path.join(ctx.repo, 'apps', 'fetch', 'target', 'release', 'helix-fetch.exe')

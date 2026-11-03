@@ -1,23 +1,10 @@
 import { isIP } from 'node:net';
 import { lookup } from 'node:dns/promises';
 
-/**
- * Egress guard for caller-supplied URLs.
- *
- * An API key is a low-trust boundary for a scraper: keys are handed to many
- * users, and every one of them chooses what this instance fetches. Without a
- * check, `http://169.254.169.254/` returns the host's cloud credentials in
- * `rawHtml`, and internal services become reachable through the fetch tiers.
- *
- * Two layers: `checkUrl` runs once per request in the route (scheme, literal
- * address, DNS resolution), and `isPrivateHost` is the literal-only check the
- * fetch tiers apply to every redirect hop.
- */
 
 export type HostResolver = (hostname: string) => Promise<string[]>;
 
 export interface UrlGuardOptions {
-  /** Operator opt-in for instances that scrape their own intranet. */
   allowPrivate?: boolean | undefined;
   resolve?: HostResolver | undefined;
 }
@@ -55,13 +42,11 @@ function v4FromGroups(hi: number, lo: number): string {
   return `${hi >>> 8}.${hi & 0xff}.${lo >>> 8}.${lo & 0xff}`;
 }
 
-/** Eight 16-bit groups, or undefined when the literal does not parse. */
 function expandV6(ip: string): number[] | undefined {
   let text = ip;
   const zone = text.indexOf('%');
   if (zone !== -1) text = text.slice(0, zone);
 
-  // An embedded dotted-quad tail (::ffff:10.0.0.1) becomes two groups.
   const lastColon = text.lastIndexOf(':');
   const tail = text.slice(lastColon + 1);
   if (tail.includes('.')) {
@@ -91,25 +76,18 @@ function isPrivateV6(ip: string): boolean {
   const isZero = (from: number, to: number): boolean => g.slice(from, to).every((x) => x === 0);
   const first = g[0] ?? 0;
 
-  // ::/96: :: and ::1, and the deprecated v4-compatible form (::7f00:1), which is never a public address.
   if (isZero(0, 6)) return true;
-  // 2002::/16 (6to4) embeds a v4 address in groups 1 and 2.
   if (first === 0x2002) return isPrivateV4(v4FromGroups(g[1] ?? 0, g[2] ?? 0));
-  // fec0::/10, deprecated site-local.
   if ((first & 0xffc0) === 0xfec0) return true;
-  // ::ffff:a.b.c.d (IPv4-mapped) and 64:ff9b::/96 (NAT64) carry a v4 address.
   if (isZero(0, 5) && g[5] === 0xffff) return isPrivateV4(v4FromGroups(g[6] ?? 0, g[7] ?? 0));
   if (first === 0x64 && g[1] === 0xff9b && isZero(2, 6)) return isPrivateV4(v4FromGroups(g[6] ?? 0, g[7] ?? 0));
-  // fc00::/7 unique local, fe80::/10 link-local, ff00::/8 multicast.
   if ((first & 0xfe00) === 0xfc00) return true;
   if ((first & 0xffc0) === 0xfe80) return true;
   if ((first & 0xff00) === 0xff00) return true;
-  // 2001:db8::/32 is reserved for documentation and routes nowhere.
   if (first === 0x2001 && g[1] === 0x0db8) return true;
   return false;
 }
 
-/** Loopback, link-local, private-range, multicast or reserved. Unparseable input counts as private. */
 export function isPrivateAddress(ip: string): boolean {
   const family = isIP(ip);
   if (family === 4) return isPrivateV4(ip);
@@ -126,10 +104,6 @@ function isLocalName(hostname: string): boolean {
   return name === 'localhost' || name.endsWith('.localhost');
 }
 
-/**
- * The literal-only check: an address, or a name that is local by definition.
- * No DNS, so it is cheap enough to run on every redirect hop.
- */
 export function isPrivateHost(url: URL): boolean {
   const host = bareHostname(url.hostname);
   if (isLocalName(host)) return true;
@@ -142,7 +116,6 @@ const defaultResolver: HostResolver = async (hostname) => {
   return records.map((r) => r.address);
 };
 
-/** Scheme, literal host, then what the name resolves to. */
 export async function checkUrl(raw: string, options: UrlGuardOptions = {}): Promise<UrlVerdict> {
   let url: URL;
   try {
@@ -160,10 +133,6 @@ export async function checkUrl(raw: string, options: UrlGuardOptions = {}): Prom
 
 const PROXY_SCHEMES = new Set(['http:', 'https:', 'socks5:', 'socks5h:']);
 
-/**
- * A caller-supplied proxy is a host this instance connects to and hands the
- * request to, so it meets the same address rules as the target URL.
- */
 export async function checkProxyUrl(raw: string, options: UrlGuardOptions = {}): Promise<UrlVerdict> {
   let url: URL;
   try {
@@ -176,8 +145,6 @@ export async function checkProxyUrl(raw: string, options: UrlGuardOptions = {}):
     return { ok: false, reason: 'only http, https and socks5 proxies are used.' };
   }
 
-  // A socks5 URL has an opaque host that the URL parser leaves as written;
-  // re-reading it as http normalises numeric spellings such as 0x7f000001.
   let host: URL;
   try {
     host = new URL(`http://${url.host}`);
@@ -189,14 +156,6 @@ export async function checkProxyUrl(raw: string, options: UrlGuardOptions = {}):
 
 export type PinnedProxy = { ok: true; url: string } | { ok: false; reason: string };
 
-/**
- * A caller's proxy URL with its host replaced by the address the guard checked.
- *
- * The fetch service and the browser resolve the proxy host themselves; handing
- * them the checked address leaves no second lookup to answer differently. An
- * https proxy keeps its name, since its certificate is issued to the name.
- * A name that does not resolve is refused rather than left to a later lookup.
- */
 export async function pinProxyUrl(raw: string, options: UrlGuardOptions = {}): Promise<PinnedProxy> {
   let answers: string[] | undefined;
   const resolve: HostResolver = async (hostname) => {
@@ -220,7 +179,6 @@ export async function pinProxyUrl(raw: string, options: UrlGuardOptions = {}): P
     }
     address = resolved[0] ?? '';
     if (!address) return { ok: false, reason: `"${host}" did not resolve.` };
-    // checkHost fails open on a lookup error, so the answer pinned here is checked here.
     const blocked = resolved.find((a) => (options.allowPrivate ? isAlwaysBlocked(a) : isPrivateAddress(a)));
     if (blocked) {
       return { ok: false, reason: `"${host}" resolves to ${blocked}, which this instance does not use as a proxy.` };
@@ -229,12 +187,10 @@ export async function pinProxyUrl(raw: string, options: UrlGuardOptions = {}): P
 
   url.hostname = isIP(address) === 6 ? `[${address}]` : address;
   const pinned = url.href;
-  // The URL serialiser adds a root path the caller did not write; leave it off.
   const addedSlash = !raw.endsWith('/') && pinned.endsWith('/') && url.pathname === '/';
   return { ok: true, url: addedSlash ? pinned.slice(0, -1) : pinned };
 }
 
-/** The address rules shared by target and proxy URLs: literal host, then DNS. */
 async function checkHost(url: URL, options: UrlGuardOptions): Promise<UrlVerdict> {
   if (options.allowPrivate) return checkAlwaysBlocked(url, options);
 
@@ -249,8 +205,6 @@ async function checkHost(url: URL, options: UrlGuardOptions): Promise<UrlVerdict
   try {
     addresses = await (options.resolve ?? defaultResolver)(host);
   } catch {
-    // A name that does not resolve fails in the fetch tier with a typed `dns`
-    // reason, which says more than a 400 would.
     return { ok: true };
   }
 
@@ -265,14 +219,6 @@ async function checkHost(url: URL, options: UrlGuardOptions): Promise<UrlVerdict
   return { ok: true };
 }
 
-/**
- * The interact surface, over the same address rules.
- *
- * `checkUrl` answers a verdict a route turns into a 400; the browser actions
- * want a throw they can catch per navigation, and a resolver shaped like
- * `dns.lookup`'s `all` form. Both are the one blocklist above; a change to the
- * ranges reaches every caller.
- */
 
 export type Lookup = (hostname: string) => Promise<{ address: string; family: number }[]>;
 
@@ -285,25 +231,15 @@ export class UnsafeUrlError extends Error {
   }
 }
 
-/** True when the literal address is routable on the public internet. */
 export function isPublicAddress(address: string): boolean {
   return !isPrivateAddress(address);
 }
 
-/**
- * The ranges no caller reaches, even where private addresses are allowed.
- *
- * An operator who allows private addresses means loopback and their own LAN —
- * where a local model runtime lives. Link-local carries the cloud metadata
- * endpoint, and CGNAT is the provider's shared space, not the operator's
- * network. Neither is ever the intended target of that opt-in.
- */
 const ALWAYS_BLOCKED: readonly [string, number, string][] = [
   ['169.254.0.0', 16, '169.254.0.0/16'],
   ['100.64.0.0', 10, '100.64.0.0/10'],
 ];
 
-/** Link-local or CGNAT, in v4 or v4-mapped v6 form, or v6 link-local (fe80::/10). */
 export function isAlwaysBlocked(address: string): boolean {
   const family = isIP(address);
   if (family === 4) return ALWAYS_BLOCKED.some(([base, bits]) => inV4Block(address, base, bits));
@@ -314,7 +250,6 @@ export function isAlwaysBlocked(address: string): boolean {
   return ((g[0] ?? 0) & 0xffc0) === 0xfe80;
 }
 
-/** With private targets allowed, the literal host and its DNS answers still stay out of the always-blocked ranges. */
 async function checkAlwaysBlocked(url: URL, options: UrlGuardOptions): Promise<UrlVerdict> {
   const host = bareHostname(url.hostname);
   const refuse = (address: string): UrlVerdict => ({
@@ -333,7 +268,6 @@ async function checkAlwaysBlocked(url: URL, options: UrlGuardOptions): Promise<U
   return blocked ? refuse(blocked) : { ok: true };
 }
 
-/** Names the reserved range when the URL's host sits in one, for a message that says which. */
 export function blockedRange(raw: string): string | undefined {
   let host: string;
   try {
@@ -345,7 +279,6 @@ export function blockedRange(raw: string): string | undefined {
   return ALWAYS_BLOCKED.find(([base, bits]) => inV4Block(host, base, bits))?.[2];
 }
 
-/** Throws unless the URL is http(s) to a publicly routable address, name resolution included. */
 export async function assertPublicUrl(raw: string, lookupFn: Lookup = systemLookup): Promise<void> {
   let url: URL;
   try {

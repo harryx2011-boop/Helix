@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { FormFooter } from './form-footer';
 import { cn } from '@/lib/utils';
 
-/** Matches crawl-form's textarea: there is no ui/textarea component. */
 const TEXTAREA_CLASS =
   'flex w-full rounded-card border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 

@@ -3,10 +3,8 @@ import { HostGate, gateOutcome } from './host-gate.js';
 import type { PipelineFailure } from './pipeline.js';
 import { PolitenessController } from '../crawl/politeness.js';
 
-/** Resolves on the next macrotask, so queued work gets a chance to start. */
 const tick = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
 
-/** Longer than the gate's 50 ms poll, so a freed slot is actually taken up. */
 const poll = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 70));
 
 describe('HostGate', () => {
@@ -32,15 +30,12 @@ describe('HostGate', () => {
     await tick();
     expect(peak).toBe(2);
 
-    // One release per call, waiting out the gate's poll each time so the next
-    // queued call actually picks the freed slot up.
     for (let i = 0; i < calls.length; i++) {
       release.pop()?.();
       await poll();
     }
     await Promise.all(calls);
 
-    // Four requests ran, never more than two at once.
     expect(peak).toBe(2);
   });
 
@@ -65,7 +60,6 @@ describe('HostGate', () => {
     const calls = [busy('https://one.example/a'), busy('https://two.example/b')];
     await tick();
 
-    // One slot each, so both run: the limit is per host, not global.
     expect(peak).toBe(2);
 
     while (release.length > 0) {
@@ -118,7 +112,6 @@ describe('HostGate', () => {
     const politeness = new PolitenessController({ initialConcurrency: 1, maxConcurrency: 1 });
     const gate = new HostGate({ politeness, maxWaitMs: 30 });
 
-    // Hold the only slot without ever releasing it.
     politeness.tryAcquire('example.com');
 
     await expect(gate.run('https://example.com/page', async () => 'served')).resolves.toBe('served');
@@ -128,7 +121,6 @@ describe('HostGate', () => {
     const politeness = new PolitenessController();
     const gate = new HostGate({ politeness, maxWaitMs: 2_000 });
 
-    // A stated Retry-After of a minute: no amount of waiting inside the ceiling helps.
     politeness.tryAcquire('example.com');
     politeness.release('example.com', { latencyMs: 1, statusCode: 429, retryAfterSeconds: 60 });
 

@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/rate-limit.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 38,
+      "offset": null,
+      "text": "One second later, roughly one token is back.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 45,
+      "offset": null,
+      "text": "The behaviour this whole module exists to guarantee. An internal fault must\nnever become a client-visible 429 — the failure mode that takes comparable\nproducts down for every caller during a brief store outage.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 47,
+      "offset": null,
+      "text": "Simulate the store failing.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 62,
+      "offset": null,
+      "text": "A limiter that silently stops limiting is worse than one that fails loudly.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 70,
+      "offset": null,
+      "text": "Agents self-throttle from these. They must never contain `undefined`,\nwhich is exactly what a comparable product returns during a store outage.",
+      "kind": "why"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 86,
+      "offset": null,
+      "text": "A pruned key starts fresh.",
+      "kind": "what"
+    }
+  ]
+}

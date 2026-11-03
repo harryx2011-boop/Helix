@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/icon-tile.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "IconTile",
+      "line": 13,
+      "offset": 0,
+      "text": "A glyph set in a tinted square so it reads as a mark, not a bullet. Usually a\nLucide icon, which inherits the tile's violet via `currentColor`; a brand mark\ncarries its own colour and ignores the tint by design.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -5,7 +5,6 @@ export interface EstimateDeps extends MapRouteDeps {
   defaultModel: string;
 }
 
-/** Rough per-tier wall-clock, used only for projections. */
 const TIER_SECONDS: Record<string, number> = {
   plain: 0.3,
   tls: 0.4,
@@ -14,17 +13,9 @@ const TIER_SECONDS: Record<string, number> = {
   camoufox: 4.0,
 };
 
-/** Characters per token, near enough for an estimate. */
 const CHARS_PER_TOKEN = 4;
 const AVERAGE_PAGE_CHARS = 6_000;
 
-/**
- * What a crawl would cost before it runs.
- *
- * Shared by `estimate: true` on POST /crawl and by POST /crawl/estimate, which
- * exists because callers want the number without constructing a job body they
- * do not intend to submit.
- */
 export async function estimateCrawl(body: CrawlJobRequest, deps: EstimateDeps): Promise<Record<string, unknown>> {
     const { links, truncated } = await discoverUrls(
       body.url,
@@ -38,10 +29,6 @@ export async function estimateCrawl(body: CrawlJobRequest, deps: EstimateDeps): 
 
     const pages = Math.min(links.length, body.limit);
 
-    // Without running the ladder there is no way to know the tier split, so
-    // the estimate assumes the cheap path and says so. An estimate that
-    // silently assumed the expensive path would be useless in the other
-    // direction.
     const assumedTier = body.tier === 'auto' ? 'tls' : body.tier;
     const perPageSeconds = TIER_SECONDS[assumedTier] ?? 0.5;
 

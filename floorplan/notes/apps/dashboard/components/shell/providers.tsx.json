@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shell/providers.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Providers",
+      "line": 7,
+      "offset": 0,
+      "text": "Root providers. There are no accounts: the app gates itself with the instance's own API key.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/settings.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "UpdateSchema",
+      "line": 11,
+      "offset": 0,
+      "text": "Operator settings for a self-hosted instance.\n\nMounted outside `/v1` and gated by the same admin token as `/internal`,\nbecause these are the instance's own controls rather than a caller's: an API\nkey must never be able to widen the instance's network reach or rotate the\nkey protecting everyone's stored credentials. With no admin token set — the\nself-host default — the routes are not registered at all.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "UpdateSchema.confirm",
+      "line": 13,
+      "offset": 0,
+      "text": "Required for a `guarded` setting. Names the key, so a blanket `true` cannot slip one through.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SettingsRouteDeps.envValues",
+      "line": 23,
+      "offset": 0,
+      "text": "The values the environment supplied at boot, shown as the baseline behind each override.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "SettingsRouteDeps.publicUrl",
+      "line": 26,
+      "offset": 0,
+      "text": "The instance's public URL; the admin gate accepts its host name beside loopback.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "registerSettings",
+      "line": 33,
+      "offset": 4,
+      "text": "Encapsulated: the gate covers exactly the routes registered in here, as\nthe router matched them, not as the raw URL spelled them.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "registerSettingsRoutes",
+      "line": 108,
+      "offset": 66,
+      "text": "Reverting a live setting must take the environment's value now, not at\nthe next restart, or the screen and the running instance disagree. With\nno environment value to revert to, there is nothing to apply: calling\nthe setter would hand it `undefined` where it expects a real value.",
+      "kind": "why"
+    },
+    {
+      "id": "n7",
+      "symbol": "registerSettingsRoutes",
+      "line": 139,
+      "offset": 97,
+      "text": "The process still holds the old key in memory. Until HELIX_ENCRYPTION_KEY\nis updated and the instance restarted, it can no longer read what it\njust re-encrypted — so say so rather than reporting a clean success.",
+      "kind": "what"
+    }
+  ]
+}

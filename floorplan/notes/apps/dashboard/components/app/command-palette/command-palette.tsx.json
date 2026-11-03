@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/command-palette/command-palette.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CommandPalette",
+      "line": 68,
+      "offset": 6,
+      "text": "Someone typing in a form keeps their Ctrl+K; only the palette's own input may toggle it.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "CommandPalette",
+      "line": 80,
+      "offset": 18,
+      "text": "The portal lands outside the app layout's `dark` / `data-surface`\nwrapper, so both are repeated here: one for the hsl tokens, one so\nthe global reduced-motion rule reaches the rows inside.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "PaletteBody",
+      "line": 120,
+      "offset": 26,
+      "text": "One deadline for every live lookup: a section that has not answered by\nthen reports that, rather than a skeleton that never resolves.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": "PaletteBody",
+      "line": 135,
+      "offset": 41,
+      "text": "Deliberately not re-fetched as recent runs change under it: one fetch per open.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "PaletteBody",
+      "line": 268,
+      "offset": 174,
+      "text": "Sections that cannot list anything still get a row saying why, but only\nonce there is a query: on an empty palette that would be noise.",
+      "kind": "why"
+    }
+  ]
+}

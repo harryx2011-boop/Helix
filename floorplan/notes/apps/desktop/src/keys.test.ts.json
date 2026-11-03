@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/src/keys.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 50,
+      "offset": null,
+      "text": "A base64 file is the secret in the clear; on Windows a file mode does not protect it.",
+      "kind": "what"
+    }
+  ]
+}

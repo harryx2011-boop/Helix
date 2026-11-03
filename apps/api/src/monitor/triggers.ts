@@ -1,17 +1,10 @@
 import type { Diff } from './diff.js';
 
-/**
- * Triggers narrow which changes fire a webhook. Keyword triggers need no model
- * call: "tell me when 'Out of stock' disappears" is a string search on two
- * snapshots, and that is enough for most watches.
- */
 
 export interface TriggerOptions {
   keywordAppears?: string | undefined;
   keywordDisappears?: string | undefined;
-  /** Watch only this part of the page. Shorthand for `scrapeOptions.includeSelectors`. */
   selector?: string | undefined;
-  /** Ignore changes smaller than this fraction of the content (0–1). */
   minChangeRatio?: number | undefined;
 }
 
@@ -31,10 +24,6 @@ function includes(haystack: string | null, needle: string): boolean {
   return haystack !== null && haystack.toLowerCase().includes(needle.toLowerCase());
 }
 
-/**
- * Evaluate a change that has already passed the sensitivity filter. `before`
- * is null on the first check, when nothing can have appeared or disappeared.
- */
 export function evaluateTrigger(
   trigger: TriggerOptions,
   input: { before: string | null; after: string; diff: Diff },

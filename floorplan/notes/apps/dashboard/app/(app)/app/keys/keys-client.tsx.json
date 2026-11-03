@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(app)/app/keys/keys-client.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "useKeys",
+      "line": 33,
+      "offset": 2,
+      "text": "The instance owns the key store. When it cannot be reached there is\nnothing to list, and the only thing left worth offering is a locally\ngenerated key the operator can install on an instance themselves.",
+      "kind": "what"
+    }
+  ]
+}

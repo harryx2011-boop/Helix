@@ -9,16 +9,9 @@ export interface BentoCardProps {
   icon: LucideIcon;
   lead: string;
   body: string;
-  /**
-   * Six-column grid. `wide` / `narrow` alternate two per row (four / two
-   * columns). `hero` takes the full row with its visual beside the text;
-   * `third` is one of three equal cells in the row beneath it.
-   */
   span: BentoSpan;
-  /** Optional "Read more" line under the lead. Both or neither. */
   href?: string;
   linkLabel?: string;
-  /** Bottom slot: a meter panel, a log, or an evidence chip. */
   children?: React.ReactNode;
   className?: string;
 }
@@ -30,11 +23,6 @@ const SPAN_CLASS: Record<BentoSpan, string> = {
   third: 'border-b last:border-b-0 sm:col-span-2 sm:border-b-0 sm:[&:nth-child(n+3)]:border-l',
 };
 
-/**
- * One cell of a hairline bento. Text sits on top, the visual fills the
- * bottom; borders come from the cell itself so the grid needs no gap.
- * The parent grid must carry `data-reveal-group` or the cells stay hidden.
- */
 export function BentoCard({ icon, lead, body, span, href, linkLabel, children, className }: BentoCardProps) {
   const hero = span === 'hero';
   return (
@@ -66,7 +54,6 @@ export function BentoCard({ icon, lead, body, span, href, linkLabel, children, c
   );
 }
 
-/** The three-dot evidence chip used when a cell has no visual of its own. */
 export function EvidenceChip({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5">

@@ -1,0 +1,111 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/schedule.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ScheduleWindowInput",
+      "line": 4,
+      "offset": 0,
+      "text": "Monitor schedules.\n\nA schedule is a cron expression with a timezone. Callers may also write a\nplain interval (`15m`, `6h`, `1d`), which is turned into the equivalent cron\nso there is one representation in storage and one code path for \"when next\".\n\nAn optional business-hours `window` narrows the cron further: a day-of-week\nand hour range in the schedule's own timezone. The cron decides how often a\ncheck could run; the window decides which of those firings are allowed. A\ncandidate outside the window is skipped forward to the next one inside it --\nthe window restricts the cron, it never fires on its own and never widens\nwhat the cron already produces. A combination that never intersects (e.g. a\ncron that only fires on Sunday against a Monday-Friday window) is rejected\nat validation time, the same way an impossible cron is.\n\nThe operator sets the minimum interval for their instance. It is enforced by\ninspecting the next few firings rather than parsing cron fields, so a\npattern that is sparse most of the time but dense at one point still counts.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ScheduleWindowInput.days",
+      "line": 5,
+      "offset": 0,
+      "text": "0 = Sunday .. 6 = Saturday. Defaults to Monday-Friday.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ScheduleWindowInput.startHour",
+      "line": 6,
+      "offset": 0,
+      "text": "Hour the window opens, inclusive, 0-23.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ScheduleWindowInput.endHour",
+      "line": 7,
+      "offset": 0,
+      "text": "Hour the window closes, exclusive, 1-24.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "Schedule.every",
+      "line": 26,
+      "offset": 0,
+      "text": "How the caller wrote it, kept so the monitor echoes the same shape back.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "WINDOW_SEARCH_LIMIT",
+      "line": 41,
+      "offset": 0,
+      "text": "Candidates checked against the window before giving up and calling it unreachable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "everyToCron",
+      "line": 43,
+      "offset": 0,
+      "text": "`15m` maps to every 15 minutes; `6h` to on the hour every 6 hours; `1d` to midnight daily.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "withinWindow",
+      "line": 144,
+      "offset": 0,
+      "text": "Whether `at` falls inside the window, evaluated in the schedule's own timezone.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "withinWindow",
+      "line": 149,
+      "offset": 5,
+      "text": "Midnight renders as \"24\" under hour12: false in some environments.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "normalizeSchedule",
+      "line": 155,
+      "offset": 0,
+      "text": "Accepts the string form (`\"0 * * * *\"`) or the object form\n(`{ cron }`, `{ every }`, plus optional `timezone` and `window`).",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "nextRun",
+      "line": 204,
+      "offset": 0,
+      "text": "The next cron firing that also falls inside the schedule's window, if any.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "minimumGapSeconds",
+      "line": 229,
+      "offset": 0,
+      "text": "The shortest gap between consecutive firings among the next `sample` runs,\nin seconds. `null` when the pattern never fires again. Firings outside the\nwindow are skipped, so the measured gap is the real interval a caller with\na window sees, not the raw cron's.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "assertMinimumInterval",
+      "line": 249,
+      "offset": 0,
+      "text": "Throws when the schedule fires more often than the operator allows.",
+      "kind": "doc"
+    }
+  ]
+}

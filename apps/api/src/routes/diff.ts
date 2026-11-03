@@ -9,14 +9,6 @@ import { checkUrl, type HostResolver } from '../core/url-guard.js';
 import { tierMemory } from '../core/tier-memory.js';
 import { cookieJar } from '../core/cookie-jar.js';
 
-/**
- * One-shot diff, with no monitor and nothing stored.
- *
- * `/monitor` keeps a schedule and a baseline snapshot; this is for a caller
- * that already has two things to compare right now — two pages, or two texts
- * it read itself — and wants the same Myers diff `/monitor` uses, without
- * creating anything that outlives the request.
- */
 
 const MAX_DIFF_BYTES = 128 * 1024;
 

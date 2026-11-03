@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_document_endpoint.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "test_answers_422_for_a_corrupt_file_rather_than_500",
+      "line": 26,
+      "offset": 1,
+      "text": "A 500 would tell the gateway the service is down and worth retrying; a\ntruncated docx will fail the same way every time.",
+      "kind": "what"
+    }
+  ]
+}

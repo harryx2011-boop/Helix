@@ -10,11 +10,6 @@ import {
   versionMismatch,
 } from './identity.mjs';
 
-/**
- * These decide whether a recording is written and what identity it claims. A
- * wrong answer here produces a definition marked `verified: true` that describes
- * a browser nobody runs — worse than having no definition at all.
- */
 
 const CHROME_MAC =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36';
@@ -61,7 +56,6 @@ describe('platformFromSurface', () => {
 
   it('needs both a mobile UA and touch points before it says ios', () => {
     expect(platformFromSurface(surface({ userAgent: IOS, maxTouchPoints: 5 }))).toBe('ios');
-    // A Mac with a touchscreen-shaped report is still a Mac.
     expect(platformFromSurface(surface({ userAgent: CHROME_MAC, maxTouchPoints: 5 }))).toBe('macos');
   });
 });
@@ -70,7 +64,6 @@ describe('versionFromUserAgent', () => {
   it('reads each engine from the token that carries its own version', () => {
     expect(versionFromUserAgent(CHROME_MAC, 'chrome')).toBe('137');
     expect(versionFromUserAgent(EDGE, 'edge')).toBe('131');
-    // Safari/605 is the WebKit build; Version/18.5 is Safari's own.
     expect(versionFromUserAgent(SAFARI, 'safari')).toBe('18');
   });
 
@@ -132,10 +125,6 @@ describe('versionMismatch', () => {
 
 describe('the resolvable identity list', () => {
   it('matches what apps/fetch advertises, or a capture names a profile it falls back from', () => {
-    // Mirrors available() in apps/fetch/src/profile.rs. Read from the Rust
-    // source rather than duplicated here: a frozen copy is what lets the two
-    // drift, and a name this list carries that resolve() does not know would
-    // recreate the chrome-149-macos bug one level up.
     const rs = readFileSync(new URL('../../apps/fetch/src/profile.rs', import.meta.url), 'utf8');
     const body = rs.slice(rs.indexOf('pub fn available()'));
     const block = body.slice(body.indexOf('&['), body.indexOf(']', body.indexOf('&[')));
@@ -149,7 +138,6 @@ describe('the resolvable identity list', () => {
     for (const engine of ['chrome', 'edge', 'firefox', 'safari']) {
       expect(HEADER_TABLE_SIZE[engine]).toBeGreaterThan(0);
     }
-    // Safari is the one that differs, and getting it wrong is a single-field giveaway.
     expect(HEADER_TABLE_SIZE.safari).toBe(4096);
     expect(HEADER_TABLE_SIZE.chrome).toBe(65536);
   });

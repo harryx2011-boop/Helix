@@ -1,0 +1,343 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/pipeline.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PipelineOptions",
+      "line": 22,
+      "offset": 0,
+      "text": "The scrape pipeline.\n\nWalks the fetch ladder from the cheapest viable tier, escalating only on\nevidence, and returns either a document or a typed failure.\n\nThe invariant this file exists to hold: a bot-challenge page NEVER comes back\nas content. Whatever the upstream status said, if the classifier recognises an\ninterstitial the result is a failure carrying the reason and the tiers tried.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PipelineOptions.screenshotOptions",
+      "line": 37,
+      "offset": 0,
+      "text": "Format, quality, element selector and clip for the screenshot format.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "PipelineOptions.viewport",
+      "line": 38,
+      "offset": 0,
+      "text": "Explicit device size, overriding both the profile's screen and the phone preset.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "PipelineOptions.blockAds",
+      "line": 39,
+      "offset": 0,
+      "text": "Abort requests to known ad, tracker and consent-dialog hosts.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "PipelineOptions.darkMode",
+      "line": 40,
+      "offset": 0,
+      "text": "Emulate `prefers-color-scheme: dark`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "PipelineOptions.renderEngine",
+      "line": 41,
+      "offset": 0,
+      "text": "Which browser drives the render tier. The pool's default when unset.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "PipelineOptions.allowPrivate",
+      "line": 42,
+      "offset": 0,
+      "text": "Operator opt-in: fetch loopback, link-local and private-range addresses.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "PipelineOptions.signal",
+      "line": 43,
+      "offset": 0,
+      "text": "Cancels the read between and during tier attempts; the reason becomes the failure detail.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "PipelineOptions.skipExtraction",
+      "line": 44,
+      "offset": 0,
+      "text": "Skips `extractClient.extract`. Only safe when no format needs extracted\ntext (screenshot-only requests) — `detectBlock`/`shouldEscalate` still work\nwithout it, just without extracted-text as a corroborating signal.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "Escalation",
+      "line": 47,
+      "offset": 0,
+      "text": "One climb up the ladder, and the evidence that caused it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "PipelineSuccess.escalations",
+      "line": 58,
+      "offset": 0,
+      "text": "Empty when the first tier served the page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "PipelineSuccess.warnings",
+      "line": 61,
+      "offset": 0,
+      "text": "Options the tier could not honour, e.g. a profile that did not fit the engine.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "PipelineSuccess.screenshotResult",
+      "line": 64,
+      "offset": 0,
+      "text": "Format, byte count and any warning from the screenshot. Absent when none was taken.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "PipelineSuccess.setCookies",
+      "line": 65,
+      "offset": 0,
+      "text": "Every `Set-Cookie` the serving tier received, for a crawl session's jar.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "PipelineSuccess.etag",
+      "line": 66,
+      "offset": 0,
+      "text": "Validators from the response, so a later crawl can ask \"has this changed?\".",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": "PipelineSuccess.notModified",
+      "line": 68,
+      "offset": 0,
+      "text": "The host answered a conditional request with 304: the page is as the caller\nalready has it. `content` is empty, which is the answer, not a failure — the\ncaller keeps what it stored.",
+      "kind": "doc"
+    },
+    {
+      "id": "n17",
+      "symbol": "PipelineFailure.retryAfterSeconds",
+      "line": 84,
+      "offset": 0,
+      "text": "`Retry-After` as the host sent it, in seconds.\n\nSurfaced because it is the only backoff figure in the exchange the host\nactually stated. Everything else a crawler could use is a guess, and\nguessing shorter than asked is what earns the next block.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "PipelineDeps.tierMemory",
+      "line": 94,
+      "offset": 0,
+      "text": "Per-host floor learned from blocks; `auto` requests start there.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": "PipelineDeps.cookieJar",
+      "line": 95,
+      "offset": 0,
+      "text": "Cookies hosts set, replayed to the same identity on the fetch tiers.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "EXTRACTED_TEXT_FORMATS",
+      "line": 108,
+      "offset": 0,
+      "text": "Formats whose output is the extracted main content.",
+      "kind": "doc"
+    },
+    {
+      "id": "n21",
+      "symbol": "retryAfterSeconds",
+      "line": 110,
+      "offset": 0,
+      "text": "`Retry-After` in seconds, from either of the two forms the header takes.\n\nThe HTTP-date form is the one implementations forget; a host that sends it and\nis met with a one-second default backoff gets hammered through its own stated\ncooldown. Anything unparseable, negative, or beyond a day is dropped rather\nthan clamped — a nonsense value should fall back to our own backoff, not\nbecome a crawl that sleeps for a week.",
+      "kind": "doc"
+    },
+    {
+      "id": "n22",
+      "symbol": "MAX_RETRY_AFTER_WAIT_MS",
+      "line": 126,
+      "offset": 0,
+      "text": "The longest `Retry-After` the ladder waits out before its next tier; longer ends the request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n23",
+      "symbol": "TIER_OVERRUN_GRACE_MS",
+      "line": 135,
+      "offset": 0,
+      "text": "How long past its budget a tier may run before the ladder stops waiting for it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n24",
+      "symbol": "withinBudget",
+      "line": 137,
+      "offset": 0,
+      "text": "A tier that ignores its own timeout (a render stuck past navigation) must not\nhold the caller: past budget plus grace, the attempt counts as timed out. The\ntier keeps running in the background until its own cleanup ends it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n25",
+      "symbol": "attemptTier",
+      "line": 177,
+      "offset": 4,
+      "text": "The host has blocked this request or a recent one; render it with every asset.",
+      "kind": "doc"
+    },
+    {
+      "id": "n26",
+      "symbol": "attemptTier",
+      "line": 180,
+      "offset": 7,
+      "text": "The identity is the caller's profile; with none, helix-fetch's default,\nwhich is fixed per tier.",
+      "kind": "what"
+    },
+    {
+      "id": "n27",
+      "symbol": "attemptTier",
+      "line": 226,
+      "offset": 53,
+      "text": "Skipping images, fonts and media saves most of a render's transfer; a bot\nwall can read the missing loads as a tell, so walled hosts get them all.",
+      "kind": "what"
+    },
+    {
+      "id": "n28",
+      "symbol": "attemptTier",
+      "line": 245,
+      "offset": 72,
+      "text": "Reported the same way the fetch tiers report it, so a caller can tell\nwhether the identity they asked for was actually applied.",
+      "kind": "what"
+    },
+    {
+      "id": "n29",
+      "symbol": "walkLadder",
+      "line": 275,
+      "offset": 5,
+      "text": "One budget for the whole ladder: a 30 s request used to take up to 4 x 30 s.",
+      "kind": "what"
+    },
+    {
+      "id": "n30",
+      "symbol": "walkLadder",
+      "line": 285,
+      "offset": 15,
+      "text": "An explicit tier is both floor and ceiling: the caller asked for that tier.\n\nAbsent one, the ceiling is chromium unless camoufox is actually there. A\ncamoufox an operator has enabled AND that answered the startup probe is a\ntier this instance can really run, and the sites that beat the render tier\nare exactly what it is for — leaving it reachable only by naming it meant\nthe walls stayed walls unless the caller already knew to ask. It still\nnever *starts* a request: `minimumViableTier` is bounded by chromium, so\ncamoufox is only ever reached on evidence from the tier below it.",
+      "kind": "why"
+    },
+    {
+      "id": "n31",
+      "symbol": "walkLadder",
+      "line": 298,
+      "offset": 28,
+      "text": "Bounded by the ladder length; escalation only ever moves upward.",
+      "kind": "what"
+    },
+    {
+      "id": "n32",
+      "symbol": "walkLadder",
+      "line": 343,
+      "offset": 73,
+      "text": "A name that does not resolve fails the same way on every tier.",
+      "kind": "what"
+    },
+    {
+      "id": "n33",
+      "symbol": "walkLadder",
+      "line": 364,
+      "offset": 94,
+      "text": "A service being down is worth retrying once it is back; a DNS failure\nfor a typo is not. Only the recoverable ones invite another attempt.",
+      "kind": "what"
+    },
+    {
+      "id": "n34",
+      "symbol": "walkLadder",
+      "line": 369,
+      "offset": 99,
+      "text": "A 304 is the answer to a conditional request, not a thin page. It is\nsettled here, before extraction and before the escalation decision,\nbecause both would read the empty body as a failure: extraction has\nnothing to parse, and no higher tier can conjure a body the host\ndeliberately withheld. Classified as `empty` it made every unchanged page\nof an incremental crawl a fetch failure.",
+      "kind": "why"
+    },
+    {
+      "id": "n35",
+      "symbol": "walkLadder",
+      "line": 382,
+      "offset": 112,
+      "text": "A 304 may repeat the validators or omit them; the caller keeps the\nones it already stored either way.",
+      "kind": "what"
+    },
+    {
+      "id": "n36",
+      "symbol": "walkLadder",
+      "line": 389,
+      "offset": 119,
+      "text": "An error status makes the page interstitial-shaped whatever its text, so\nextraction could only add signals: a block found here skips the extract hop.",
+      "kind": "what"
+    },
+    {
+      "id": "n37",
+      "symbol": "walkLadder",
+      "line": 391,
+      "offset": 121,
+      "text": "Extract before deciding, so the classifier can use extracted length as a\ncorroborating signal and so a success needs no second fetch.",
+      "kind": "what"
+    },
+    {
+      "id": "n38",
+      "symbol": "walkLadder",
+      "line": 413,
+      "offset": 143,
+      "text": "Extraction also runs for metadata; an empty result only means an\nempty answer when a requested format is built from it.",
+      "kind": "what"
+    },
+    {
+      "id": "n39",
+      "symbol": "walkLadder",
+      "line": 432,
+      "offset": 162,
+      "text": "Resolved from the fetched body regardless of the caller's requested\nformats — like title/language, it is metadata, not opted-in content.",
+      "kind": "what"
+    },
+    {
+      "id": "n40",
+      "symbol": "walkLadder",
+      "line": 462,
+      "offset": 192,
+      "text": "Blocked, or nothing extractable. Escalate if the ladder allows.",
+      "kind": "what"
+    },
+    {
+      "id": "n41",
+      "symbol": "walkLadder",
+      "line": 469,
+      "offset": 199,
+      "text": "A host that states a cooldown gets it before the next tier hits it again;\none that asks for longer than the budget allows ends the request here.",
+      "kind": "what"
+    },
+    {
+      "id": "n42",
+      "symbol": "walkLadder",
+      "line": 497,
+      "offset": 227,
+      "text": "A different profile or proxy may still work even when the ladder is spent.",
+      "kind": "what"
+    }
+  ]
+}

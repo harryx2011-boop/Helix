@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "tools/capture/capture.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 3,
+      "offset": null,
+      "text": "Record a real browser's JS surface into a profile definition.\n\nWhat this does and does not cover matters, because the file it writes claims\nto be a recording:\n\n- It records the **JS layer** — what a page's own JavaScript can read about\nthe machine. That is the layer `apps/api/src/browser/profiles.ts` applies.\n- It does **not** record the transport layer. TLS and HTTP/2 fingerprints are\nnot observable from inside a browser; they are facts about a handshake only\nthe server sees. Helix gets those from `wreq-util`'s emulation presets, so\nthe `tls` and `http2` blocks here are carried for documentation and for the\nRust coherence validator, not replayed.\n\nBecause of that split, `--id` must name an identity `apps/fetch` actually\nresolves (see `available()` in apps/fetch/src/profile.rs). Recording Chrome\n152's JS surface under a name the transport tier falls back from would\nproduce exactly the contradiction profiles exist to prevent.\n\nUsage:\nnode tools/capture/capture.mjs --id chrome-137\nnode tools/capture/capture.mjs --id chrome-137 --channel chrome --headed\nnode tools/capture/capture.mjs --id safari-18-5 --browser webkit",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "main",
+      "line": 94,
+      "offset": 36,
+      "text": "`screen.width` reports the display, but a browser launched into a small\nwindow can report the window instead. Starting maximised, with no forced\nviewport below, is what makes the recorded geometry the real monitor's.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "main",
+      "line": 101,
+      "offset": 43,
+      "text": "A real origin, not about:blank: some APIs behave differently on an opaque\norigin, and a recording taken there would not describe normal browsing.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "main",
+      "line": 108,
+      "offset": 50,
+      "text": "A recording is only useful if it describes a browser a site would believe.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "main",
+      "line": 135,
+      "offset": 77,
+      "text": "A JS layer recorded from Chrome 151 stored under the chrome-137 identity is a\ncontradiction: the transport tier would present 137's fingerprint beside a 151\nuser-agent. Warned rather than refused, since the id is the caller's choice.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "main",
+      "line": 234,
+      "offset": 176,
+      "text": "Does not exist, which is the normal case.",
+      "kind": "what"
+    }
+  ]
+}

@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { FormFooter } from './form-footer';
 
-/** Every format the route serves (routes/scrape.ts FORMATS); nothing listed here is unshipped. */
 const FORMAT_OPTIONS: { value: Format; label: string }[] = [
   { value: 'markdown', label: 'Markdown' },
   { value: 'html', label: 'HTML (sanitised)' },

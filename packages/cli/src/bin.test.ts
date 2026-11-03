@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { main } from './bin.js';
 
-/* console.log/error calls in main() are noisy in test output; silence them
-   without hiding real assertion failures. */
 function quiet() {
   const log = vi.spyOn(console, 'log').mockImplementation(() => {});
   const error = vi.spyOn(console, 'error').mockImplementation(() => {});

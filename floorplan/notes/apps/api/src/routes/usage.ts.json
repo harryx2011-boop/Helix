@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/usage.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 6,
+      "offset": null,
+      "text": "Request usage for the calling key.\n\nScoped to `request.apiKey` and nothing else: a key id in the query would let\nany caller read any other caller's traffic, and there is no ownership model\nat this layer to check it against. The hosted dashboard aggregates across a\nprofile's keys by calling this with each of them — that fan-out belongs where\nthe profile is known, which is the dashboard, not here.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MIN_WINDOW",
+      "line": 6,
+      "offset": 0,
+      "text": "Hours. Bounded so a caller cannot ask for a scan of the whole table.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "registerUsage",
+      "line": 46,
+      "offset": 36,
+      "text": "The limiter is an in-process token bucket, so remaining headroom is\nonly knowable from the X-RateLimit-* headers on a live response, not\nfrom anything stored. Stating the window here keeps the dashboard from\npresenting a stored count as if it were current headroom.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "registerUsage",
+      "line": 50,
+      "offset": 40,
+      "text": "Usage across every key on this instance. Every key belongs to the one\noperator, so summing them crosses no boundary.",
+      "kind": "doc"
+    }
+  ]
+}

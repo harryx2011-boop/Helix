@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/forms/parse-form.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ParseFormProps.file",
+      "line": 27,
+      "offset": 0,
+      "text": "Owned by the playground so the prompt box's paperclip and this form share one file.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "jsonOptionsFrom",
+      "line": 34,
+      "offset": 0,
+      "text": "A JSON object becomes a schema; anything else is a prompt.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "jsonOptionsFrom",
+      "line": 44,
+      "offset": 10,
+      "text": "Not valid JSON: treat it as a prompt.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "ParseForm",
+      "line": 57,
+      "offset": 8,
+      "text": "The prompt box can clear the file too; without this the native input\nstill holds it and picking the same file again fires no change event.",
+      "kind": "what"
+    }
+  ]
+}

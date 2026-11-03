@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/hero.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Hero",
+      "line": 10,
+      "offset": 0,
+      "text": "WEBSITE.md §4.2. H1 + subhead + CTA pair + hero panel, over a hairline grid texture.",
+      "kind": "doc"
+    }
+  ]
+}

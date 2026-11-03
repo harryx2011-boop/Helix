@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/enrich/model-phase.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 5,
+      "offset": null,
+      "text": "The model phase: ask for the fields structure could not answer.\n\nThe request is shaped so that a hallucination is detectable rather than\nplausible. Every field must come back as an object carrying the value, the\nURL it was read from, and the passage that states it, quoted exactly. The\nmodel is told that a quote it cannot copy from the page will cause the field\nto be discarded - not because saying so prevents invention, but because a\nmodel that knows the check exists returns `null` more readily than one that\ndoes not, and `null` is the answer we want when there is no data.\n\nThe enforcement is not here. It is in `grounding.ts`, over the text this\nmodule fenced, after the model has answered.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PER_SOURCE_CHARS",
+      "line": 5,
+      "offset": 0,
+      "text": "Per-page share of the model budget, so one long page cannot crowd out every other source.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "buildSchema",
+      "line": 7,
+      "offset": 0,
+      "text": "The JSON Schema sent to helix-extract for the model phase.\n\nEach field is an object rather than a bare scalar. A bare scalar has nowhere\nto put the citation, and a citation returned in a parallel array cannot be\ntied back to its field without trusting index alignment.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "buildPrompt",
+      "line": 37,
+      "offset": 0,
+      "text": "The instruction sent alongside the fenced pages.\n\n`null` is presented as the correct answer rather than a failure, because the\ndefault behaviour of an instruction-tuned model asked for a company's founding\nyear is to produce one. Saying plainly that no answer is better than a guess\nis the cheapest available lever on that, and the grounding check is what makes\nit enforceable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "buildContent",
+      "line": 57,
+      "offset": 0,
+      "text": "The fenced page bundle sent as content.\n\nEach page is clipped to its own share of the budget before wrapping, so the\nclip never lands inside a fence, and every page is told how much of itself was\ndropped.",
+      "kind": "doc"
+    }
+  ]
+}

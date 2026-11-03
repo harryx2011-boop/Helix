@@ -185,7 +185,6 @@ describe('POST /v1/enrich field routing', () => {
     });
 
     expect(body.data.name).toMatchObject({ value: 'Acme Robotics', phase: 'metadata', confidence: 'high' });
-    // The whole point of routing: structure answered it, so no model call happened.
     expect(client.structured).not.toHaveBeenCalled();
     expect(body.usage).toBeUndefined();
   });
@@ -225,9 +224,6 @@ describe('POST /v1/enrich field routing', () => {
 
 describe('POST /v1/enrich never invents a value', () => {
   it('nulls a field the model hallucinated, and says why', async () => {
-    // The model returns a confident, plausible answer with a citation that is
-    // nowhere in the page it was fetched from. This is the failure the endpoint
-    // exists to catch.
     const client = extractClient({
       data: {
         headquarters: {
@@ -351,8 +347,6 @@ describe('POST /v1/enrich provider selection', () => {
   });
 
   it('names the caller sole local runtime, which auto-pick would otherwise skip', async () => {
-    // helix-extract auto-picks cloud providers only, so an Ollama-only caller
-    // gets "no provider configured" unless the runtime is named for them.
     const client = extractClient();
     const app = await build({
       fetchClient: fetchClient({ [ABOUT]: { html: ABOUT_HTML } }),
@@ -360,7 +354,6 @@ describe('POST /v1/enrich provider selection', () => {
     });
 
     await post(app, { subject: 'Acme', fields: [{ name: 'headquarters' }], urls: [ABOUT] });
-    // No stored keys in this harness, so nothing is named and auto-pick applies.
     expect(vi.mocked(client.structured).mock.calls[0]?.[0].provider).toBeUndefined();
   });
 });

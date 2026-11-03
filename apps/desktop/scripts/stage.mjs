@@ -1,5 +1,4 @@
 // Builds every runtime piece and copies it into apps/desktop/resources for electron-builder's extraResources.
-// Usage: node scripts/stage.mjs [--skip api,ui,extract,fetch,voice,browsers] [--skip <step>]...
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
@@ -23,7 +22,6 @@ function run(command, args, opts = {}) {
   if (r.status !== 0) throw new StageError(`${command} ${args.join(' ')} exited ${r.status}`)
 }
 
-// Calling the JS entry points through this node avoids the .cmd shims, which need a shell.
 function corepack(args, opts) {
   const cli = join(nodeDir, 'node_modules', 'corepack', 'dist', 'corepack.js')
   assertExists(cli, 'corepack')
@@ -52,7 +50,6 @@ function dirSize(dir) {
 
 const mb = (bytes) => `${(bytes / 1024 / 1024).toFixed(1)} MB`
 
-/** Exact resolved versions of apps/api's direct dependencies, read from pnpm-lock.yaml. */
 export function lockedVersions(lockText, importer = 'apps/api') {
   const lines = lockText.split(/\r?\n/)
   const versions = {}
@@ -72,7 +69,6 @@ export function lockedVersions(lockText, importer = 'apps/api') {
   return versions
 }
 
-/** The single version of a package in the lockfile's packages section, for externals that are not direct deps. */
 export function packageVersion(lockText, name) {
   const found = new Set()
   const escaped = name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')
@@ -95,7 +91,6 @@ const steps = {
     assertExists(join(dist, 'externals.json'), 'API externals list')
 
     fresh(out)
-    // dist/ also holds tsc output from `build`; the runtime needs only the single-file bundle.
     mkdirSync(join(out, 'dist'), { recursive: true })
     cpSync(join(dist, 'helix-api.js'), join(out, 'dist', 'helix-api.js'))
     cpSync(join(api, 'migrations'), join(out, 'migrations'), { recursive: true })
@@ -127,8 +122,6 @@ const steps = {
       JSON.stringify({ name: 'helix-api-runtime', version, private: true, type: 'module', dependencies }, null, 2),
     )
     npm(['install', '--omit=dev', '--no-audit', '--no-fund', '--no-package-lock'], { cwd: out })
-    // electron-builder drops every node_modules dir under extraResources, so the externals travel
-    // under a different source name and electron-builder.yml maps them back to api/node_modules.
     const modules = join(res, 'api_modules')
     fresh(modules)
     cpSync(join(out, 'node_modules'), modules, { recursive: true })
@@ -140,8 +133,6 @@ const steps = {
   ui() {
     const exportDir = join(repo, 'apps', 'dashboard', 'out')
     const hasApp = (dir) => existsSync(join(dir, 'app', 'index.html')) || existsSync(join(dir, 'app.html'))
-    // Always rebuilt: an export left over from a hosted or dev build would ship silently.
-    // Both set explicitly: .env.local would otherwise make the build hosted and bake localhost:7400 into the chunks.
     const env = { ...process.env, HELIX_HOSTED: '0', NEXT_PUBLIC_HELIX_API_URL: '' }
     for (const k of ['HELIX_TARGET', 'VERCEL']) delete env[k]
     corepack(['pnpm', '--filter', '@helix/dashboard', 'build'], { env })
@@ -179,7 +170,6 @@ const steps = {
   },
 
   voice() {
-    // voice-core is a sibling repo with its own build (uv + PyInstaller); HELIX_VOICE_CORE_SRC points elsewhere.
     const src = resolve(process.env.HELIX_VOICE_CORE_SRC ?? join(repo, '..', 'voice-core'))
     assertExists(join(src, 'package.json'), 'voice-core checkout')
     npm(['run', 'build:service'], { cwd: src })
@@ -197,15 +187,10 @@ const steps = {
     const cli = join(repo, 'node_modules', 'playwright', 'cli.js')
     assertExists(cli, 'playwright CLI')
     mkdirSync(out, { recursive: true })
-    // The full Chromium, about 450 MB, not the headless shell (D17 reverses D14).
-    // The shell has no new-headless mode and announces itself in ways a hardened
-    // page reads, which is most of why the walled sites in bench-scrape still
-    // failed; the installer carrying it is the price of the tier working.
     run(process.execPath, [cli, 'install', 'chromium'], {
       cwd: repo,
       env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: out },
     })
-    // .links records this dev checkout's playwright path for browser GC; the installed app has no use for it.
     rmSync(join(out, '.links'), { recursive: true, force: true })
     const dirs = readdirSync(out)
     for (const prefix of ['chromium-']) {

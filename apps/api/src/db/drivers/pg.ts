@@ -12,8 +12,6 @@ export const pgDriver: Driver = ({ connectionString }, logger) => {
   });
 
   pool.on('error', (error) => {
-    // An idle client erroring is not fatal — the pool replaces it. Logging it
-    // matters because a silent connection churn looks like random slowness.
     logger?.error({ error }, 'idle postgres client error');
   });
 

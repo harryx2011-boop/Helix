@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/mcp/tools.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 199,
+      "offset": null,
+      "text": "A gate entry whose path does not exist in the spec matches nothing and\ngates nothing. Batch cancel was listed as /batch/scrape/{jobId} while the\nspec says {id}, so the tool shipped without confirm.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 238,
+      "offset": null,
+      "text": "Every tool schema is loaded into the agent's context on connect; an\noperator who wants the core dozen must be able to say so.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 263,
+      "offset": null,
+      "text": "One line: a pretty-printed envelope spends tokens on indentation.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 409,
+      "offset": null,
+      "text": "A curl caller who sends DELETE chose that verb. A model inferred it from a\ndescription, and CallTool hands both to app.inject identically. The gate is\nat the MCP boundary because that is where the asymmetry is.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 471,
+      "offset": null,
+      "text": "Gating /scrape would mean confirming a scrape. Most mutations here ARE\nthe product; only the ones a caller cannot undo are listed.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 479,
+      "offset": null,
+      "text": "It is an MCP-layer argument. The route has never heard of it, and a body\ncarrying an unexpected field is a body the route rejects.",
+      "kind": "why"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 496,
+      "offset": null,
+      "text": "The tests above cover the SCHEMA half. This one covers enforcement, which\nis the half that matters: a `required` entry in an inputSchema describes\nwhat a caller should send and checks nothing. Mutation testing on\n2026-08-28 found exactly this gap — disabling the server-side branch left\nevery schema assertion green.",
+      "kind": "what"
+    }
+  ]
+}

@@ -2,24 +2,15 @@ import type { Log } from '../core/logger.js';
 import type { Tier } from '../core/escalation.js';
 import { withServiceToken } from '../core/service-token.js';
 
-/**
- * Client for helix-fetch (tiers 0 and 1).
- *
- * This service reports what happened at the transport layer and applies no
- * policy of its own. Block classification lives in the core, so the rules stay
- * in one place and are testable without a network.
- */
 
 export interface FetchOptions {
   url: string;
-  /** false selects tier 0 (plain); true selects tier 1 (TLS-impersonating). */
   impersonate: boolean;
   profile?: string | undefined;
   proxy?: string | undefined;
   headers?: Record<string, string> | undefined;
   timeoutMs?: number | undefined;
   signal?: AbortSignal | undefined;
-  /** Operator opt-in: follow redirects onto private addresses. */
   allowPrivate?: boolean | undefined;
 }
 
@@ -27,7 +18,6 @@ export interface FetchResult {
   success: boolean;
   status?: number | undefined;
   headers: Record<string, string>;
-  /** Every `Set-Cookie` line; `headers` keeps only one of them. */
   setCookies?: string[] | undefined;
   body?: string | undefined;
   profileUsed?: string | undefined;
@@ -49,8 +39,6 @@ export class FetchClient {
   async fetch(options: FetchOptions): Promise<FetchResult> {
     const started = Date.now();
     const timeoutMs = options.timeoutMs ?? 30_000;
-    // A little headroom over the inner timeout, so the service can report
-    // its own failure rather than being cut off mid-answer.
     const timeout = AbortSignal.timeout(timeoutMs + 5_000);
     const signal = options.signal ? AbortSignal.any([timeout, options.signal]) : timeout;
 
@@ -112,7 +100,6 @@ export class FetchClient {
     }
   }
 
-  /** Map a tier onto the impersonation flag this service understands. */
   static tierToImpersonate(tier: Tier): boolean {
     return tier === 'tls';
   }

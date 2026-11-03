@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/pages/capability-page.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HERO_MOTIF",
+      "line": 14,
+      "offset": 0,
+      "text": "Hero field per endpoint, chosen so neighbours in the nav never share one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MOCK_MODE",
+      "line": 34,
+      "offset": 0,
+      "text": "Per-endpoint mock animation: type = content composing, reveal = results listing.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "FeatureCardCopy.meters",
+      "line": 53,
+      "offset": 0,
+      "text": "When set, the cell renders an illustrative meter panel labelled by `evidence` instead of the evidence chip.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "CapabilityPageCopy.h1",
+      "line": 59,
+      "offset": 0,
+      "text": "Second line of the H1 renders in violet.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "CapabilityPageCopy.mock",
+      "line": 61,
+      "offset": 0,
+      "text": "Mock panel: browser-chrome or terminal-chrome, per WEBSITE.md §5's Mock column.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "CapabilityPageCopy.request",
+      "line": 67,
+      "offset": 0,
+      "text": "Verbatim request/response pair — from openapi.yaml for live endpoints, the spec for coming ones.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "CapabilityPage",
+      "line": 71,
+      "offset": 0,
+      "text": "The §5 capability-page template, six instances. Structure: eyebrow pill,\ntwo-line H1 (line 2 violet), subhead, CTA pair, device mock, feature grid,\nrequest/response block. The layout supplies nav/footer/agent-block.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "SPAN",
+      "line": 162,
+      "offset": 0,
+      "text": "Bento rhythm: wide / narrow, then narrow / wide.",
+      "kind": "doc"
+    }
+  ]
+}

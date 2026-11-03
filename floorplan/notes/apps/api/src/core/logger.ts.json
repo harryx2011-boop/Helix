@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/logger.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Log",
+      "line": 1,
+      "offset": 0,
+      "text": "The logging surface our modules actually use.\n\nStructurally compatible with both pino's `Logger` and Fastify's\n`FastifyBaseLogger`, which differ in ways that are irrelevant here. Depending\non this instead of either concrete type keeps the core free of a web-framework\nimport and lets tests pass a plain object.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "redactUrlToken",
+      "line": 9,
+      "offset": 0,
+      "text": "Request URLs go into the access log. The live-view token travels in the\nquery string, since a browser tab cannot send a header, so it is scrubbed\nbefore the URL is logged: a log line must never be enough to attach to a\nrunning session.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "redactSecrets",
+      "line": 13,
+      "offset": 0,
+      "text": "Scrub anything key-shaped from text that came from somewhere else.\n\nAn upstream error is quoted back to the caller so they can act on it, but a\nprovider's own message may echo the credential it rejected — OpenAI answers a\nbad key with `Incorrect API key provided: sk-inval************-000`. That echo\ntells the caller nothing they did not already know, and it has no business in\na response body or a log line.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "redactSecrets",
+      "line": 15,
+      "offset": 2,
+      "text": "Provider key prefixes, the partially-masked forms providers echo included.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "redactSecrets",
+      "line": 17,
+      "offset": 4,
+      "text": "Google and Gemini keys.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "redactSecrets",
+      "line": 18,
+      "offset": 5,
+      "text": "Hugging Face and Groq, which prefix with an underscore rather than a dash.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "redactSecrets",
+      "line": 19,
+      "offset": 6,
+      "text": "This instance's own keys. The alphanumeric run is what separates a key\nfrom a service name: `helix-extract` and `helix-fetch` are not secrets.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "redactSecrets",
+      "line": 20,
+      "offset": 7,
+      "text": "Anything naming itself a key or token, followed by its value.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "redactSecrets",
+      "line": 21,
+      "offset": 8,
+      "text": "A long hex run is masked only where the surrounding words claim it is a\nsecret. On shape alone it is as likely to be a request id or a content\ndigest, and masking those costs an operator the trail they trace by.",
+      "kind": "what"
+    }
+  ]
+}

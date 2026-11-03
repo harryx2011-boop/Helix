@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/mcp/slim.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "core",
+      "line": 13,
+      "offset": 0,
+      "text": "The tools an agent sees: the ones in tool-surface.json, in spec order.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "skeleton",
+      "line": 24,
+      "offset": 0,
+      "text": "What a call can contain: everything but prose and the spellings slim.ts normalises.",
+      "kind": "what"
+    }
+  ]
+}

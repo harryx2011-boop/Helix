@@ -30,9 +30,6 @@ interface KeyRow {
 
 function useKeys() {
   const [keys, setKeys] = React.useState<KeyRow[] | null>(null);
-  // The instance owns the key store. When it cannot be reached there is
-  // nothing to list, and the only thing left worth offering is a locally
-  // generated key the operator can install on an instance themselves.
   const [instanceReachable, setInstanceReachable] = React.useState(true);
   const [loading, setLoading] = React.useState(true);
 

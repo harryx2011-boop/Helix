@@ -1,0 +1,103 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/batch.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BatchLimits",
+      "line": 12,
+      "offset": 0,
+      "text": "Batch scrape: many URLs in, one job to poll.\n\nThis is `/scrape` run on the machinery `/crawl` already owns — the same job\ntable, worker, per-host politeness and result pagination. It adds no fetch,\nextract or browser behaviour of its own.\n\nA batch is a crawl whose frontier is supplied rather than discovered, which\nis expressed with the options the frontier already understands: `maxDepth: 0`\nrejects every link a page yields as too deep, and `allowExternal` lets the\nsupplied list span hosts. Nothing is followed, nothing is guessed.\n\nAsynchronous only. A synchronous form would be a second execution path for\nwork that already outlives a request timeout at any interesting size.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "BatchLimits.maxUrls",
+      "line": 13,
+      "offset": 0,
+      "text": "URLs one batch may carry. A caller-supplied list is not a runaway frontier, so this is generous.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "BatchRouteDeps.allowPrivateUrls",
+      "line": 20,
+      "offset": 0,
+      "text": "`HELIX_ALLOW_PRIVATE_URLS`: let a batch fetch loopback and private-range addresses.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "BatchRouteDeps.resolveHost",
+      "line": 21,
+      "offset": 0,
+      "text": "DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "firstUnsafeUrl",
+      "line": 24,
+      "offset": 0,
+      "text": "The first URL whose host fails the egress check, checking each host once.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "batchRequestSchema",
+      "line": 44,
+      "offset": 3,
+      "text": "Drop unparseable URLs and report them, instead of rejecting the whole batch.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "partitionUrls",
+      "line": 73,
+      "offset": 10,
+      "text": "Stored as the frontier's `url` (see FrontierItem): the worker claims and\ncompletes rows by that exact string, so a raw `https://example.com` row\nwas never matched and its page was dropped.",
+      "kind": "why"
+    },
+    {
+      "id": "n8",
+      "symbol": "partitionUrls",
+      "line": 74,
+      "offset": 11,
+      "text": "The frontier dedupes on the normalised key too, but doing it here keeps\n`total` honest in the 202 rather than reporting a count the job will\nnever reach.",
+      "kind": "why"
+    },
+    {
+      "id": "n9",
+      "symbol": "toBatchJobRequest",
+      "line": 83,
+      "offset": 0,
+      "text": "The job request the crawl worker reads.\n\n`maxDepth: 0` is what makes this a batch rather than a crawl: the worker\nstill calls `frontier.add` for every link it finds, and every one is rejected\nas too deep.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "toBatchJobRequest",
+      "line": 94,
+      "offset": 11,
+      "text": "A supplied list may span hosts; scope filtering would silently drop them.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "registerBatch",
+      "line": 151,
+      "offset": 40,
+      "text": "Every URL is the caller's choice of what this instance connects to.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "registerBatch",
+      "line": 180,
+      "offset": 69,
+      "text": "Every URL is a seed at depth 0. A crawl seeds one and discovers the rest;\nhere the caller has already done the discovering.",
+      "kind": "what"
+    }
+  ]
+}

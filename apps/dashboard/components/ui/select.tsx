@@ -36,8 +36,6 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        // A local runtime can list an open-ended number of installed models, so the
-        // viewport needs its own scroll or the list runs off a short screen.
         'relative z-50 max-h-[min(24rem,var(--radix-select-content-available-height))] min-w-[8rem] overflow-hidden rounded-card border border-border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-fade-in',
         position === 'popper' && 'translate-y-1',
         className,

@@ -5,10 +5,6 @@ import { RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CodePanel } from '@/components/shared/code-panel';
 
-/**
- * §4.5a: types the first-run transcript line by line on scroll-in, with
- * `◇/◆` health rows, then holds settled. Replay button re-runs it.
- */
 interface TranscriptLine {
   text: string;
   health?: boolean;

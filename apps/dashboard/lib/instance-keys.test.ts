@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KeysError, listInstanceKeys } from './instance-keys';
 
-/** Key management on the instance answers only to the admin token, never to an API key. */
 
 function fakeWindow(store: Record<string, string>): void {
   vi.stubGlobal('window', {
@@ -35,7 +34,6 @@ describe('instance key calls', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  // An instance with no admin token does not register the key routes at all.
   it('explain a 404 as key management being off on the instance', async () => {
     fakeWindow({ 'helix.adminToken': 'admin-stored' });
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ message: 'Route GET:/v1/keys not found' }), { status: 404 })));

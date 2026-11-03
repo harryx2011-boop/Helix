@@ -33,7 +33,6 @@ class TestExtract:
     def test_drops_navigation_and_footer_furniture(self) -> None:
         result = extract(ARTICLE, "https://example.com/post", only_main_content=True)
 
-        # Chrome around the content is exactly what onlyMainContent exists to remove.
         assert "Copyright 2026" not in result.markdown
         assert "Site name" not in result.markdown
 
@@ -41,7 +40,6 @@ class TestExtract:
         result = extract(ARTICLE, "https://example.com/post")
 
         assert "https://example.com/more" in result.links
-        # Relative hrefs must not survive as relative.
         assert not any(link.startswith("/") for link in result.links)
 
     def test_ignores_non_navigational_hrefs(self) -> None:
@@ -66,8 +64,6 @@ class TestExtract:
         assert result.links == ["https://example.com/doc"]
 
     def test_falls_back_to_the_whole_document_rather_than_returning_nothing(self) -> None:
-        # A page with no recognisable article region should still yield its text.
-        # Returning empty here is the worse failure.
         html = """<html><body><div>Some text that is not wrapped in any semantic
         article element at all, but is still the entire point of the page and
         must not be silently discarded by an over-eager extractor.</div></body></html>"""
@@ -98,8 +94,6 @@ class TestExtract:
         assert "An Article About Something" not in result.markdown
 
     def test_auto_recovers_when_the_precise_engine_finds_little(self) -> None:
-        # trafilatura favours precision and can strip an unusual layout to
-        # nothing; `auto` exists to notice that and try the other engine.
         awkward = """<html><body><div id="content"><div><span>Text held in nested
         spans without any semantic markup whatsoever, which precision-oriented
         extraction can discard entirely even though it is the whole page.</span>
@@ -115,8 +109,6 @@ class TestContentHash:
         assert content_hash("hello world") == content_hash("hello world")
 
     def test_ignores_whitespace_and_case_churn(self) -> None:
-        # Reformatting is not a content change. If it hashed differently, every
-        # incremental crawl would re-fetch pages that had not actually moved.
         assert content_hash("hello   world") == content_hash("hello world")
         assert content_hash("Hello World") == content_hash("hello world")
         assert content_hash("hello\n\nworld") == content_hash("hello world")

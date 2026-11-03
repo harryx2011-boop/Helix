@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/__main__.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "_streams",
+      "line": 13,
+      "offset": 1,
+      "text": "A windowed exe starts with no stdout/stderr unless its parent redirects\nthem, and tqdm, print and logging all crash writing to None.",
+      "kind": "what"
+    }
+  ]
+}

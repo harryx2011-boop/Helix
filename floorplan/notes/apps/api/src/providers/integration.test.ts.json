@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/providers/integration.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ENCRYPTION_KEY",
+      "line": 7,
+      "offset": 0,
+      "text": "End-to-end: a caller's stored provider key reaches the extract client on\n`/scrape`, `/parse` and `/agent/schema` — the actual point of this feature,\nas opposed to the route-contract tests for `/v1/providers` itself.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 258,
+      "offset": null,
+      "text": "No apiKey hook: this request is anonymous, as in the unit route tests.",
+      "kind": "what"
+    }
+  ]
+}

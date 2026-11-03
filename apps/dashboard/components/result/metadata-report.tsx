@@ -13,15 +13,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-/**
- * A metadata report a person can act on.
- *
- * The one design decision that matters here: **the risk bands are the
- * structure, not a column.** A flat table of forty tag/value pairs is
- * technically the same information and useless — the reader's question is
- * "does this file give away something I care about", and the answer has to be
- * legible before they read a single row.
- */
 
 const RISK_BADGE: Record<MetadataRisk, 'destructive' | 'warning' | 'secondary'> = {
   high: 'destructive',
@@ -140,7 +131,6 @@ export function MetadataScrubView({ result }: { result: MetadataScrubSuccess }) 
   const { report, blob, filename } = result;
   const { removed, retained, metadata } = report;
 
-  // Object URLs are per-blob and leak if the component remounts with a new one.
   const href = React.useMemo(() => URL.createObjectURL(blob), [blob]);
   React.useEffect(() => () => URL.revokeObjectURL(href), [href]);
 
@@ -180,11 +170,6 @@ export function MetadataScrubView({ result }: { result: MetadataScrubSuccess }) 
 
       <Warnings warnings={report.warnings ?? []} />
 
-      {/*
-        Retained comes first and is visually louder than removed. A reader who
-        stops at the first section must not walk away believing the file is
-        clean when something is still in it.
-      */}
       {retained.length > 0 && (
         <section className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold text-foreground">Still in the File</h3>

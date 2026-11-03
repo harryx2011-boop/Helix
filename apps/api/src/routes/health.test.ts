@@ -1,15 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * Health roll-up.
- *
- * `/health` is unauthenticated (index.ts lists it under `open`), so it is the
- * least-guarded route in a deployment and the one most likely to be scraped.
- * Two things are asserted: that the worst service check decides the overall
- * status and the HTTP code, and that a configured provider is reported as a
- * boolean and a model name with no key material anywhere in the body.
- */
 
 const pool = vi.hoisted(() => ({
   checkHealth: vi.fn(async () => ({ status: 'ok' as 'ok' | 'degraded' | 'unhealthy', latencyMs: 1 })),
@@ -102,7 +93,6 @@ describe('status roll-up', () => {
 
     const response = await app.inject({ method: 'GET', url: '/v1/health' });
 
-    // Degraded is still serving, so a load balancer must keep the instance in.
     expect(response.statusCode).toBe(200);
     expect(response.json().status).toBe('degraded');
   });
@@ -300,11 +290,6 @@ describe('provider reporting', () => {
     });
   });
 
-  /**
-   * The blanket check. Every provider entry is a boolean plus at most a model
-   * name, so no value from any credential variable may appear anywhere in the
-   * body — including under a key nobody thought to assert on individually.
-   */
   it('leaks no credential value anywhere in the response with every provider configured', async () => {
     const secrets: Record<string, string> = {
       OPENAI_API_KEY: 'sk-openai-AAAAAAAAAAAA',
@@ -340,7 +325,6 @@ describe('provider reporting', () => {
     const providers = (await app.inject({ method: 'GET', url: '/v1/health' })).json().providers;
 
     expect(Object.keys(providers).sort()).toEqual(['embedding', 'llm', 'proxy', 'search']);
-    // `detected` carries runtime names only, never an address or a model list.
     expect(Object.keys(providers.llm).sort()).toEqual(['configured', 'detected', 'model']);
     expect(Object.keys(providers.proxy)).toEqual(['configured']);
     expect(Object.keys(providers.search)).toEqual(['configured']);
@@ -362,8 +346,6 @@ describe('local runtime detection', () => {
 });
 
 describe('probe cache', () => {
-  // The route is open, so each request must not fan out to live probes of
-  // every dependency: a burst of anonymous requests would multiply into them.
   it('answers a burst of requests from one round of probes', async () => {
     const d = deps();
     app = await build(d);

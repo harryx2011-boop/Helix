@@ -1,0 +1,103 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/catalog.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "EndpointStatus",
+      "line": 5,
+      "offset": 0,
+      "text": "The single source of truth for the endpoint catalog across marketing, onboarding,\nthe app sidebar, the playground and SKILL.md generation (WEBSITE.md §11).\n\n`status` is flipped to 'live' by the endpoint's workflow, never by hand.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "EndpointDef.name",
+      "line": 10,
+      "offset": 0,
+      "text": "Proper-noun product name: \"Scrape\", never \"scrape\".",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "EndpointDef.productName",
+      "line": 11,
+      "offset": 0,
+      "text": "Footer / capability-page product name.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "EndpointDef.sidebarLabel",
+      "line": 12,
+      "offset": 0,
+      "text": "Sidebar label: the one-word action.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "EndpointDef.tagline",
+      "line": 13,
+      "offset": 0,
+      "text": "One line, used on cards, onboarding rows and the overview.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "EndpointDef.product",
+      "line": 20,
+      "offset": 0,
+      "text": "Whether it appears as a standalone product (Map is a capability inside Search/Crawl).",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "EndpointDef.runnable",
+      "line": 22,
+      "offset": 0,
+      "text": "Whether the playground can call it. False while an endpoint has a marketing\npage and a documented shape but no SDK method yet, so the tab is not offered\nrather than offered and failing.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "RunnableEndpointDef",
+      "line": 43,
+      "offset": 0,
+      "text": "An endpoint the SDK client can call, narrowed so callers index runnable-only maps.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "RUNNABLE",
+      "line": 45,
+      "offset": 0,
+      "text": "What the playground offers a tab for. See `EndpointDef.runnable`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "runnableById",
+      "line": 53,
+      "offset": 0,
+      "text": "`endpointById` for surfaces that can only render something callable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "orderBySelection",
+      "line": 57,
+      "offset": 0,
+      "text": "Selected endpoints first (in selection order), then the rest in catalog order.\nRunnable only: every caller renders a playground tab, and a tab the playground\ndoes not offer is a dead link.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "EXAMPLE_REQUEST",
+      "line": 63,
+      "offset": 0,
+      "text": "Example request bodies used by the hero curl builder, playground and SKILL.md.",
+      "kind": "doc"
+    }
+  ]
+}

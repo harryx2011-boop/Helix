@@ -1,18 +1,8 @@
-/**
- * Decide what kind of file a parse request carries.
- *
- * Content-type headers lie often enough (generic `application/octet-stream`
- * from object stores, `text/plain` from misconfigured CDNs) that the bytes get
- * the final word where they can: a PDF starts with `%PDF`, PNG and JPEG have
- * fixed signatures. Office files are all zip containers, so they fall back to
- * the declared type and then the filename extension.
- */
 
 export type FileType = 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'png' | 'jpg';
 
 export const FILE_TYPES: readonly FileType[] = ['pdf', 'docx', 'pptx', 'xlsx', 'png', 'jpg'];
 
-/** The content type helix-extract expects for each file kind. */
 export const CONTENT_TYPE_FOR: Record<FileType, string> = {
   pdf: 'application/pdf',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -69,7 +59,6 @@ export function extensionOf(filename: string | undefined): string | undefined {
 
 export interface Classification {
   fileType?: FileType | undefined;
-  /** Why it could not be classified, for the failure detail. */
   reason?: string | undefined;
 }
 
@@ -92,8 +81,6 @@ export function classifyFile(input: {
   }
 
   if (signature === 'zip') {
-    // Office containers: the bytes cannot tell docx from pptx; the declared
-    // type or the name has to.
     const office = [fromHeader, fromExtension].find((t) => t === 'docx' || t === 'pptx' || t === 'xlsx');
     if (office) return { fileType: office };
     return {
@@ -101,8 +88,6 @@ export function classifyFile(input: {
     };
   }
 
-  // Only now does the declared type get a say: a PDF served as text/html by a
-  // misconfigured server was already recognised from its bytes above.
   if (declared === 'text/html') return htmlPage;
 
   if (fromHeader) return { fileType: fromHeader };

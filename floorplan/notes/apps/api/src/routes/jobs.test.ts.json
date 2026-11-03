@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/jobs.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "JobRow",
+      "line": 5,
+      "offset": 0,
+      "text": "Job retrieval, pagination and cancellation.\n\nPostgres is a fake that understands enough of each statement to model the\nthings the route depends on: that cancellation is a conditional UPDATE which\nmatches nothing once a job has finished, and that a malformed id must never\nreach a uuid column at all.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "db",
+      "line": 67,
+      "offset": 12,
+      "text": "The owner predicate is read out of the statement rather than restated\nhere, both halves of it. Modelling the clause from memory would let the\nroute widen it — to `OR true`, say — while these tests still reported\nanother tenant's job as hidden.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "db",
+      "line": 100,
+      "offset": 45,
+      "text": "The cancellable statuses are read out of the statement rather than\nrestated here. Hardcoding them would make this fake enforce the\nguard itself, and the route could drop its WHERE clause unnoticed.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "db",
+      "line": 120,
+      "offset": 65,
+      "text": "Two probes share this statement: cancellation passes the type in $2 and\nthe key in $3, the errors route passes the key in $2 and no type.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "build",
+      "line": 198,
+      "offset": 0,
+      "text": "`caller` stands in for the auth hook, which has already resolved the key by\nthe time a route runs. Defaults to KEY_A.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 257,
+      "offset": null,
+      "text": "A malformed value reaching a uuid column is a 500 for what is a typo.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 372,
+      "offset": null,
+      "text": "`jobs.api_key_id` is populated by crawl and batch, but one operator owns\nevery key, so the read path must not filter on it.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/markdown-math.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CODE_SPAN_RE",
+      "line": 1,
+      "offset": 0,
+      "text": "Bridges LaTeX-style math delimiters onto what `remark-math` actually parses\n(`$...$` inline, `$$...$$` block) and guards the classic currency false\npositive: `remark-math`'s single-dollar rule has no \"not followed by a\ndigit\" exception, so \"costs $5 and $10\" tokenizes as inline math starting\nat the first `$`. A `$` immediately followed by a digit is escaped to a\nliteral `\\$` — real inline math essentially never opens on a bare digit\n(`$x$`, `$\\pi$`, `$n^2$`), so this costs nothing genuine while defusing\nplain-language prices, which scraped pricing pages are full of.\n\nRuns on the whole markdown string, but skips fenced and inline code spans\nso a `$5` inside a code sample is never rewritten.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MAX_DELIMITER_SPAN",
+      "line": 3,
+      "offset": 0,
+      "text": "A closer this far past its opener, or never found, is treated as unclosed rather than scanned to the end of a huge document.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "BLANK_LINE_RE",
+      "line": 5,
+      "offset": 0,
+      "text": "Linear replacement for `text.replace(/\\\\\\[([\\s\\S]*?)\\\\\\]/g, ...)`: a lazy\n`[\\s\\S]*?` against an *unclosed* opener degenerates to O(n^2), since the\nengine retries the lazy match from every opener with nothing ever closing it.\n\nA closer may sit at most MAX_DELIMITER_SPAN past its opener and never past a\nblank line (LaTeX math does not span a paragraph break). Bounding each search\nis not enough on its own: text packed with unclosed openers would still pay a\nfresh bounded scan per opener (~n/2 openers x 2000 chars). So the position of\nthe next closer and the next blank line are each found once and reused for\nevery opener until the cursor passes them; each is recomputed only from\nbeyond its previous hit, so the scanned ranges never overlap and the whole\npass is O(n) whatever the opener density.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "bridgeDelimiters",
+      "line": 9,
+      "offset": 2,
+      "text": "`cursor` is how much of `text` has been emitted; `scan` is how far openers\nhave been examined. An unmatched opener only advances `scan`, so it stays\nliteral text and costs no allocation.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "bridgeDelimiters",
+      "line": 11,
+      "offset": 4,
+      "text": "Cached lookahead: `Infinity` once nothing remains; recomputed only after\nthe scan position has moved beyond the cached position.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "bridgeDelimiters",
+      "line": 31,
+      "offset": 24,
+      "text": "No closer within the bound: the opener stays literal text.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "transformProse",
+      "line": 47,
+      "offset": 4,
+      "text": "mdast-util-math's block (\"flow\") math needs `$$` to open and close its\nown line, the same as a fenced code block; a one-line `$$...$$` is\notherwise left as plain text. Isolating it onto its own blank-delimited\nline makes it a valid flow construct instead.",
+      "kind": "why"
+    },
+    {
+      "id": "n8",
+      "symbol": "MAX_PREPROCESS_LENGTH",
+      "line": 51,
+      "offset": 0,
+      "text": "Above this, math preprocessing is skipped outright: a pathologically large blob gains little from LaTeX-delimiter bridging, and every guard here trades on the document being of ordinary size.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "preprocessMarkdownMath",
+      "line": 56,
+      "offset": 3,
+      "text": "split() with a capturing group interleaves matched separators back into\nthe array at odd indices; even indices are the plain-prose segments.",
+      "kind": "what"
+    }
+  ]
+}

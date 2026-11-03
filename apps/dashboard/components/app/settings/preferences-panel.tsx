@@ -12,7 +12,6 @@ import { usePreferences, type Preferences } from '@/lib/preferences';
 import type { Endpoint } from '@/lib/endpoints';
 import type { Format } from '@/lib/api';
 
-/** Mirrors FORMATS in apps/api/src/routes/scrape.ts; nothing the API will not accept. */
 const FORMATS: readonly { id: Format; label: string }[] = [
   { id: 'markdown', label: 'Markdown' },
   { id: 'html', label: 'HTML (cleaned)' },
@@ -62,10 +61,6 @@ export function PreferencesPanel() {
 
   const changeAppearance = (next: Preferences['appearance']): void => {
     setPreference('appearance', next);
-    // `system` resolves once here rather than subscribing: the /app surface is
-    // pinned dark by its own layout, so this only takes effect on marketing
-    // and self-host pages, and re-resolving on every OS change would fight a
-    // deliberate choice made on this screen.
     const resolved =
       next === 'system'
         ? window.matchMedia('(prefers-color-scheme: light)').matches

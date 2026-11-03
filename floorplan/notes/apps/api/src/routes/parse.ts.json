@@ -1,0 +1,191 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/parse.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "JsonOptionsSchema",
+      "line": 13,
+      "offset": 0,
+      "text": "POST /v1/parse — documents by upload or URL, same envelope as /scrape.\n\nTwo inputs, one pipeline. A multipart `file` goes straight to helix-extract;\na `url` is fetched here first (binary-safe: helix-fetch decodes bodies as\ntext, which destroys a PDF). Either way the bytes are classified, hashed,\nand parsed once per distinct file. The gateway enforces the upload ceiling\nbefore a byte leaves the process, refuses remote hosts that are not public,\nand caps how many parses it holds in memory at once.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "JsonOptionsSchema",
+      "line": 19,
+      "offset": 6,
+      "text": "`provider` is deliberately not accepted: the instance's HELIX_LLM_PROVIDER\napplies to every call, and silently dropping an override would be a lie.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "ParseOptionsSchema.timeout",
+      "line": 26,
+      "offset": 0,
+      "text": "Remote fetch budget for the `url` path, in milliseconds.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ParseRouteDeps.fetchImpl",
+      "line": 44,
+      "offset": 0,
+      "text": "Injectable for tests; defaults to global fetch.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "ParseRouteDeps.lookup",
+      "line": 45,
+      "offset": 0,
+      "text": "Injectable for tests; defaults to the system resolver.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "ParseRouteDeps.maxInFlight",
+      "line": 46,
+      "offset": 0,
+      "text": "Parses held in memory at once before the route answers 503.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "ParseRouteDeps.encryptionKey",
+      "line": 48,
+      "offset": 0,
+      "text": "Decrypts the caller's stored provider keys, when present, for `jsonOptions`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "parseFormats",
+      "line": 91,
+      "offset": 0,
+      "text": "--- multipart --------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "filenameFromUrl",
+      "line": 169,
+      "offset": 0,
+      "text": "--- remote fetch -----------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "classifyRemoteError",
+      "line": 193,
+      "offset": 0,
+      "text": "The failure detail names the class of error and the code only. The\nunderlying message carries the resolved address and port, which would turn\nthe response into a probe of whatever the gateway can reach.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "fetchRemote",
+      "line": 217,
+      "offset": 8,
+      "text": "Aborts the download when the caller disconnects, combined with the per-hop timeout above.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "fetchRemote",
+      "line": 224,
+      "offset": 15,
+      "text": "Redirects are followed by hand so every hop is checked against the host\npolicy: an allowed public host answering 302 to an internal address is the\nusual way around a check made only on the first URL.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "fetchRemote",
+      "line": 247,
+      "offset": 38,
+      "text": "`AbortSignal.any` loses which of the two signals actually fired, so\nthe caller's is checked directly rather than reporting a caller\ndisconnect as this hop's own download timeout.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "validateOptions",
+      "line": 321,
+      "offset": 0,
+      "text": "--- route ------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "documentFailure",
+      "line": 371,
+      "offset": 3,
+      "text": "422 is helix-extract's answer for bytes its parser could not open: a\ncorrupt or mislabelled file, which retrying will not fix.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "registerParse",
+      "line": 395,
+      "offset": 2,
+      "text": "Pinned: the address the lookup checked is the address connected to.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "registerParse",
+      "line": 398,
+      "offset": 5,
+      "text": "Multipart framing adds headers and boundaries on top of the file itself.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "registerParse",
+      "line": 400,
+      "offset": 7,
+      "text": "Each parse holds its file in memory for as long as helix-extract takes,\nand the per-key rate limit counts requests, not bytes. This is the bound\non resident uploads; the browser pool's maxContexts plays the same role\nfor /scrape.",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "registerParse",
+      "line": 409,
+      "offset": 16,
+      "text": "Refuse before the body is buffered; the handler re-checks when it\nactually takes a slot.",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": "registerParse",
+      "line": 422,
+      "offset": 29,
+      "text": "Fastify's own parser errors (malformed or empty JSON, a content type\nwith no parser) are the client's to fix, not ours to alarm on.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "registerParse",
+      "line": 474,
+      "offset": 81,
+      "text": "The framed body is not needed again; only the file's own bytes stay\nresident for the parse.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "registerParse",
+      "line": 550,
+      "offset": 157,
+      "text": "Office containers share a zip signature, so the parser is chosen from\nthe declared type or name; the same bytes can legitimately parse two ways.",
+      "kind": "what"
+    },
+    {
+      "id": "n23",
+      "symbol": "registerParse",
+      "line": 632,
+      "offset": 239,
+      "text": "The document parsed; the model step is the part that failed. Return\nwhat exists and say what is missing rather than discarding the parse.",
+      "kind": "what"
+    }
+  ]
+}

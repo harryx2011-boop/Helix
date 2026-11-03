@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/sse.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "fakeTarget",
+      "line": 4,
+      "offset": 0,
+      "text": "`absorbs` writes fit without pressure; the next one is taken but returns false, as Node does.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "fakeSocket",
+      "line": 68,
+      "offset": 0,
+      "text": "A socket whose queue the test controls, the way a slow reader's would grow.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 98,
+      "offset": null,
+      "text": "Nothing goes out while the queue is over the cap.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 99,
+      "offset": null,
+      "text": "Two frames were replaced rather than queued.",
+      "kind": "what"
+    }
+  ]
+}

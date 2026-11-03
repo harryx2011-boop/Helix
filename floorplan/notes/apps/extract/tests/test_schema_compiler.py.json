@@ -1,0 +1,95 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_schema_compiler.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TestValidation.test_rejects_keywords_that_induce_fabrication",
+      "line": 33,
+      "offset": 2,
+      "text": "A model told to return at least three items invents a third rather\nthan reporting that it found two. Vendors document this as a caveat\nand pass the request through anyway; refusing is more useful.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "TestValidation.test_rejects_a_schema_with_too_many_fields",
+      "line": 51,
+      "offset": 1,
+      "text": "Accuracy degrades measurably past roughly thirty fields, so this is a\nquality guard rather than a technical limit.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "TestOpenAI.test_requires_every_property_and_forbids_extras",
+      "line": 70,
+      "offset": 1,
+      "text": "Strict mode's own rules, which are stricter than JSON Schema's.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "TestOpenAI.test_makes_optional_fields_nullable_rather_than_absent",
+      "line": 76,
+      "offset": 1,
+      "text": "`price` was not required. Strict mode has no way to express that, so\nthe field becomes nullable — the model can still say \"not found\".",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "TestOpenAI.test_leaves_a_free_form_map_open",
+      "line": 82,
+      "offset": 1,
+      "text": "An object with no declared properties is a free-form map. Stamping\n`additionalProperties: false` on it forbids every key, which under\nstrict mode makes the field structurally unfillable — the schema\ndesigner returned an empty `properties` on every request until this\ncase was excluded.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "TestOpenAI.test_makes_an_enum_only_optional_field_nullable",
+      "line": 111,
+      "offset": 1,
+      "text": "`status` has no `type`, only `enum`. Without a null branch it stays\nrequired and non-nullable under strict mode, which forces the model\nto fabricate a value it never found.",
+      "kind": "why"
+    },
+    {
+      "id": "n7",
+      "symbol": "TestAnthropic.test_uses_auto_choice_with_a_strict_tool",
+      "line": 214,
+      "offset": 1,
+      "text": "A forced tool_choice (`{\"type\": \"tool\", ...}` or \"any\") is a 400 on\nClaude Fable 5.1; strict mode plus auto choice gets schema-valid\narguments without forcing the call.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "TestAnthropic.test_strictifies_the_input_schema",
+      "line": 226,
+      "offset": 1,
+      "text": "Same strict-mode compilation OpenAI gets: every property required,\noptional fields nullable, additionalProperties false.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "TestAnthropic.test_leaves_a_free_form_map_open",
+      "line": 234,
+      "offset": 1,
+      "text": "A property-less object is a free-form map; additionalProperties:\nfalse on it would make the field structurally unfillable.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "TestGemini.test_drops_keywords_gemini_does_not_understand",
+      "line": 278,
+      "offset": 1,
+      "text": "Gemini rejects the entire request for one unrecognised keyword, so\ndropping them is the difference between working and failing.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "TestCompileFor.test_routes_openai_compatible_providers_to_one_adapter",
+      "line": 298,
+      "offset": 4,
+      "text": "\"OpenAI-compatible\" is exactly the claim that this wire format works.",
+      "kind": "what"
+    }
+  ]
+}

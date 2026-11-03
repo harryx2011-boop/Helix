@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/voice-core/react/worklet.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MIC_WORKLET_NAME",
+      "line": 1,
+      "offset": 0,
+      "text": "Resamples the device rate to 16 kHz and posts 320-sample (20 ms) Int16 frames.\nCopied from Composer's public/worklets/mic-processor.js; inlined so a host app\nhas no asset to copy.",
+      "kind": "doc"
+    }
+  ]
+}

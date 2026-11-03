@@ -85,7 +85,6 @@ describe('runCheck', () => {
     expect(delivery?.eventType).toBe('changed');
     expect(delivery?.payload['diff']).toMatchObject({ granularity: 'word', added: 1, removed: 1, text: expect.any(String) });
 
-    // The plain summary rides with the stored diff and the webhook alike.
     const summary = ['1 word added, 1 removed.', 'Removed: "$29/month"', 'Added: "$34/month"'].join('\n');
     expect((outcome.check.diff as Diff | null)?.summary).toBe(summary);
     expect(delivery?.payload['diff']).toMatchObject({ summary });
@@ -104,7 +103,6 @@ describe('runCheck', () => {
     await check(store, monitor.id, fetchPage);
     await check(store, monitor.id, fetchPage);
     const payload = store.deliveries[0]?.payload as { diff: Record<string, unknown> };
-    // Counts only: the summary's quoted passages are diff text, which inline off withholds.
     expect(payload.diff).toEqual({
       granularity: 'line',
       added: 1,
@@ -221,7 +219,6 @@ describe('runCheck', () => {
     expect(record?.status).toBe('error');
     expect(record?.lastError).toBe('blocked: WAF');
 
-    // A later success clears the error state.
     await check(store, monitor.id, pages('fine now'));
     expect((await store.get(monitor.id))?.status).toBe('active');
     expect((await store.get(monitor.id))?.lastError).toBeNull();
@@ -234,7 +231,6 @@ describe('runCheck', () => {
 
     expect(store.snapshots).toHaveLength(RETENTION.keep);
     expect((await store.latestSnapshot(monitor.id))?.content).toBe('v5');
-    // History entries whose snapshot was pruned lose the pointer, not the row.
     expect(store.checks).toHaveLength(RETENTION.keepChecks);
     expect(store.checks[0]?.snapshotId).toBeNull();
     expect((await store.history(monitor.id, { limit: 1 }))[0]?.reason).toBe('changed');
@@ -301,7 +297,6 @@ describe('runCheck', () => {
     expect((await store.get(monitor.id))?.status).toBe('paused');
     expect((await store.get(monitor.id))?.nextCheckAt).toBeNull();
 
-    // A failure during a pause does not flip it to error either.
     await check(store, monitor.id, pages({ ok: false, reason: 'blocked' }));
     expect((await store.get(monitor.id))?.status).toBe('paused');
   });

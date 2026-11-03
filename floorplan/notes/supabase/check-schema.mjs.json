@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "supabase/check-schema.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 3,
+      "offset": null,
+      "text": "Fails when the generated schema files are older than the migrations they claim\nto contain.\n\nschema.sql is the fresh-project bootstrap, so drift is invisible until someone\nprovisions a new project and silently inherits whatever the missing migrations\nwould have done. That happened: 0006 revokes table-level grants on `profiles`,\nand while schema.sql lagged, a new project would have exposed the encrypted\ndashboard key columns to any signed-in user over PostgREST.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "idem",
+      "line": 44,
+      "offset": 0,
+      "text": "The re-runnable variant is derived from schema.sql, so it drifts the moment\nschema.sql does and the two have to be regenerated together.",
+      "kind": "what"
+    }
+  ]
+}

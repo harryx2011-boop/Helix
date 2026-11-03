@@ -15,7 +15,6 @@ describe('API key generation', () => {
   it('exposes a prefix that identifies without revealing', () => {
     const { key, prefix } = generateKey();
     expect(key.startsWith(prefix)).toBe(true);
-    // Short enough to be useless to an attacker, long enough to pick out of a list.
     expect(prefix.length).toBe(10);
     expect(prefix.length).toBeLessThan(key.length / 2);
   });
@@ -32,7 +31,6 @@ describe('API key generation', () => {
     const b = hashKey('helix-aaab');
     expect(a).not.toBe(b);
 
-    // Sanity-check the avalanche property rather than trusting SHA-256 blindly.
     const differing = [...a].filter((c, i) => c !== b[i]).length;
     expect(differing).toBeGreaterThan(a.length / 4);
   });
@@ -48,7 +46,6 @@ describe('safeEqual', () => {
   });
 
   it('rejects different lengths without throwing', () => {
-    // timingSafeEqual throws on length mismatch; the wrapper must absorb that.
     expect(safeEqual('short', 'muchlongerstring')).toBe(false);
   });
 
@@ -59,10 +56,6 @@ describe('safeEqual', () => {
 });
 
 describe('ensureBootstrapKey', () => {
-  /**
-   * The desktop app injects the bootstrap key from its bridge. A revoke from the
-   * Keys page that survived a restart would lock the app out for good.
-   */
   it('reactivates a revoked bootstrap key on the next boot', async () => {
     const { pgliteDriver } = await import('../db/drivers/pglite.js');
     const db = pgliteDriver({});
@@ -99,10 +92,6 @@ describe('ensureBootstrapKey', () => {
 });
 
 describe('listApiKeys', () => {
-  /**
-   * /usage/all runs one aggregate query per key this returns, so an unbounded
-   * list here is an unbounded fan-out there rather than merely a large response.
-   */
   it('asks the database for a bounded page', async () => {
     const queries: string[] = [];
     vi.doMock('../db/pool.js', () => ({

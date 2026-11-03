@@ -3,12 +3,6 @@
 import * as React from 'react';
 import type { Endpoint } from './endpoints';
 
-/**
- * The playground is stateless by design; this is the one thing it remembers,
- * per browser: which endpoint ran against which URL, and when. Never a
- * response body and never a key. Enough for the palette to jump back, and
- * for an async run, enough to look the job up again.
- */
 export interface RecentRun {
   endpoint: Endpoint;
   url: string;
@@ -45,7 +39,6 @@ function write(runs: readonly RecentRun[]): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(runs));
   } catch {
-    // Storage disabled: the run still happened, it just is not remembered.
   }
   snapshot = runs;
   for (const listener of listeners) listener();
@@ -79,7 +72,6 @@ export function clearRecentRuns(): void {
   write(EMPTY);
 }
 
-/** The URL (or search query) a playground request was about; undefined for a bare file upload. */
 export function subjectOf(body: Record<string, unknown> | FormData): string | undefined {
   const value = body instanceof FormData ? body.get('url') : (body.url ?? body.query);
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;

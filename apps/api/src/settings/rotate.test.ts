@@ -1,11 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encryptSecret, decryptSecret } from '../providers/crypto.js';
 
-/**
- * Rotation is the one operation here that can destroy data: a wrong old key
- * turns every stored provider key into bytes nobody can read. These tests hold
- * the line that a failed rotation writes nothing.
- */
 
 interface Row {
   api_key_id: string;
@@ -105,7 +100,6 @@ describe('rotateEncryptionKey', () => {
 
     await expect(rotateEncryptionKey(OLD, NEW)).rejects.toThrow(RotationError);
 
-    // The first row decrypts fine; nothing may be written because the second does not.
     expect(db.state.updates).toHaveLength(0);
   });
 

@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/nav.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "APP_CTA",
+      "line": 25,
+      "offset": 0,
+      "text": "The public website links to the download; a local or self-host build already has the app.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "NavProps.stars",
+      "line": 40,
+      "offset": 0,
+      "text": "Formatted star count (`1.2K`) or `null` when the repo is private or the fetch failed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "Nav",
+      "line": 43,
+      "offset": 0,
+      "text": "WEBSITE.md §4.1, LANDING-REVAMP-2 \"Nav\". Sticky, blends with page bg, bottom\nhairline. Three full-width panels under the bar; one open at a time.",
+      "kind": "doc"
+    }
+  ]
+}

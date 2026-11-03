@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/scripts/mcp-response-size.mjs",
+  "description": "Compares the text a model receives over MCP with the compact REST body for the same call.",
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "Usage: node apps/api/scripts/mcp-response-size.mjs [--url http://host:port]   (HELIX_API_KEY is the bearer)\nWithout --url it boots a scratch API on HELIX_SCRATCH_PORT; outbound calls use https://example.com.",
+      "kind": "what"
+    }
+  ]
+}

@@ -352,10 +352,6 @@ describe('HTTP error mapping', () => {
     });
   });
 
-  /* An AbortError from the caller's own signal is a deliberate cancellation,
-     not a network failure, and must not be indistinguishable from one: a
-     caller that retries on "network error" but not on "I cancelled this"
-     needs the real error identity to tell the two apart. */
   it('rethrows an AbortError from the caller signal unchanged, not wrapped as HelixApiError', async () => {
     const controller = new AbortController();
     const fetchImpl = vi.fn<typeof fetch>(async () => {

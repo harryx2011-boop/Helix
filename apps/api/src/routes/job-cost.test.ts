@@ -66,7 +66,6 @@ describe('GET /v1/jobs/{id}/cost', () => {
     });
   });
 
-  // A zero would say the job used no tokens; nobody measured them.
   it('answers null with a reason for every figure it did not measure', async () => {
     db.state.job = job({ usage: { pagesFetched: 3, pagesUnchanged: 0, tierBreakdown: { plain: 3 }, browserSeconds: 0 } });
 

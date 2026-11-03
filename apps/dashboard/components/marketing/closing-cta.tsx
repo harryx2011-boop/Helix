@@ -7,7 +7,6 @@ import { AsciiFluid } from '@/components/shared/ascii-fluid';
 import { FrameBand } from './section-frame';
 import { GITHUB_URL } from '@/lib/github-stars';
 
-/** Final section: repeats the hero's CTA pair over a cell grid, flanked by ASCII flame pillars. No stats, no logos. */
 export function ClosingCta() {
   return (
     <section className="relative min-h-[480px] overflow-hidden px-6 py-16 sm:px-10">

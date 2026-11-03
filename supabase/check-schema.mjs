@@ -1,14 +1,4 @@
 #!/usr/bin/env node
-/**
- * Fails when the generated schema files are older than the migrations they claim
- * to contain.
- *
- * schema.sql is the fresh-project bootstrap, so drift is invisible until someone
- * provisions a new project and silently inherits whatever the missing migrations
- * would have done. That happened: 0006 revokes table-level grants on `profiles`,
- * and while schema.sql lagged, a new project would have exposed the encrypted
- * dashboard key columns to any signed-in user over PostgREST.
- */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -51,8 +41,6 @@ if (missing.length || extra.length) {
   process.exit(1);
 }
 
-// The re-runnable variant is derived from schema.sql, so it drifts the moment
-// schema.sql does and the two have to be regenerated together.
 const idem = join(here, 'schema-idempotent.sql');
 if (!existsSync(idem)) {
   console.error('schema-idempotent.sql is missing. Run: node supabase/build-schema-idempotent.mjs');

@@ -9,21 +9,12 @@ declare module 'fastify' {
     apiKey?: ApiKey;
   }
   interface FastifyContextConfig {
-    /** Serves the request without a key when it returns true for the request path. */
     public?: (path: string) => boolean;
   }
 }
 
-/** Header carrying a one-time ticket on requests the server replays against itself. */
 export const INTERNAL_TICKET_HEADER = 'x-helix-internal-ticket';
 
-/**
- * A request the server makes against itself (an MCP tool call replayed through
- * `app.inject`) has already been authenticated and charged on the way in. The
- * outer handler issues a ticket bound to the verified key; the replay redeems
- * it instead of hitting the key store and the limiter a second time. Tickets
- * are unguessable, single-use, and revoked by the issuer once the replay ends.
- */
 export class InternalTickets {
   readonly #keys = new Map<string, ApiKey>();
 
@@ -52,41 +43,18 @@ export interface AuthDeps {
   verifyApiKey: (token: string) => Promise<ApiKey | undefined>;
   limiter: RateLimiter;
   tickets: InternalTickets;
-  /** URL prefixes served without a key. */
   open?: string[];
-  /**
-   * Records one row per response for the usage panel. Optional: a deployment
-   * without it (and every existing test) authenticates exactly as before.
-   */
   usage?: UsageRecorder;
 }
 
-/**
- * Auth and rate limiting for every route.
- *
- * `/v1/health` stays open by default: an unauthenticated liveness probe is what
- * orchestrators need, and it reveals only whether providers are configured,
- * never key material.
- */
 export function registerAuth(app: FastifyInstance, deps: AuthDeps): void {
   const open = deps.open ?? ['/v1/health'];
 
-  /**
-   * The open list is a prefix match, so anything that makes a protected path
-   * start with an open one is a bypass: `/v1/health/../keys` reads as open,
-   * and a normalising proxy in front turns that into a real request for
-   * `/v1/keys`. Fastify's matched route is the authority where it exists; the
-   * raw path is otherwise stripped of its query and refused outright when it
-   * carries a traversal segment in any spelling.
-   */
   const isOpen = (request: {
     url: string;
     routeOptions?: { url?: string | undefined; config?: { public?: (path: string) => boolean } };
   }): boolean => {
     const path = request.url.split(/[?#]/)[0] ?? '';
-    // Only a matched route can carry the flag, so it never opens a path that
-    // routed to an API handler. A catch-all that declines a path hands it on
-    // as if nothing had matched, so an unknown API path is judged as before.
     const isPublic = request.routeOptions?.config?.public;
     const matched = request.routeOptions?.url;
     if (typeof isPublic === 'function') {
@@ -127,8 +95,6 @@ export function registerAuth(app: FastifyInstance, deps: AuthDeps): void {
     try {
       apiKey = await deps.verifyApiKey(token);
     } catch (error) {
-      // The key store being unreachable is our fault, not the caller's. Say so
-      // plainly rather than implying their credentials are wrong.
       app.log.error({ error }, 'api key lookup failed');
       return reply.code(503).send({
         error: 'service_unavailable',
@@ -138,7 +104,6 @@ export function registerAuth(app: FastifyInstance, deps: AuthDeps): void {
     }
 
     if (!apiKey) {
-      // Unknown and revoked are deliberately indistinguishable.
       return reply.code(401).send({
         error: 'unauthorized',
         message: 'Invalid API key.',
@@ -165,10 +130,6 @@ export function registerAuth(app: FastifyInstance, deps: AuthDeps): void {
   if (!deps.usage) return;
   const usage = deps.usage;
 
-  // onResponse, not onRequest: the status code is the point, and a 429 counted
-  // as a request is the only way the headroom figure means anything. Open
-  // routes and unauthenticated rejections have no key to attribute and are
-  // skipped rather than bucketed under a placeholder.
   app.addHook('onResponse', async (request, reply) => {
     const apiKeyId = request.apiKey?.id;
     if (!apiKeyId) return;

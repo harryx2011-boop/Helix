@@ -1,19 +1,5 @@
 import type { JsonObject } from './spec.js';
 
-/**
- * The MCP manifest is read by a model, and every listed schema is paid for in
- * context each time a tool loads. openapi.yaml serves docs and SDK codegen
- * too, so its prose stays long; this module shrinks only what `tools/list`
- * advertises. No property, type, bound, enum value or `required` entry is
- * removed, and the HTTP route validates the call whatever the manifest says.
- *
- * Four moves: terse wording (lead sentence, bounded), structure trims that
- * change no meaning (OpenAPI-only `discriminator`, the default
- * `additionalProperties: true` and `default: false`, a one-member `allOf`),
- * shared sub-schemas hoisted into `$defs` so an option object repeated inside
- * one tool is written once, and an option repeated across tools documented
- * once (see `slimManifest`).
- */
 
 export interface Budget {
   tool: number;
@@ -21,31 +7,24 @@ export interface Budget {
   nested: number;
 }
 
-/* Characters of prose kept: tool summary plus lead sentence, a top-level option, an option nested inside one (none: names, types and enums say enough). */
 export const DEFAULT_BUDGET: Budget = { tool: 130, property: 36, nested: 0 };
 
 const isObject = (v: unknown): v is JsonObject => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 const REF_LENGTH = '{"$ref":"#/$defs/d00"}'.length;
 
-/* Below this a `$ref` costs readability and some clients' patience for no real saving. */
 const MIN_SHARED = 80;
 
-/* A repeated option loses its prose only when there is enough of it to be worth a pointer. */
 const MIN_PROSE = 40;
 
-/* A tool that lost this much prose to another tool says where it went. */
 const POINTER_PROSE = 150;
 
 const flatten = (text: string): string => text.replace(/\s+/g, ' ').trim();
 
-/* A semicolon ends a clause that stands alone; "e.g." and "i.e." do not end a sentence. */
 const SENTENCE = /.*?(?:(?<!\be\.g|\bi\.e)[.!?](?=\s|$)|;(?=\s))|.+$/g;
 
-/* A sentence that opens this way is complete only with its main clause. */
 const SUBORDINATE = /^(when|if|while|once|unless|with|after|before|because)\b/i;
 
-/** Whole sentences of `text` that fit `max`; empty when not even the first does. */
 function sentencesWithin(text: string, max: number): string {
   let out = '';
   for (const raw of text.match(SENTENCE) ?? [text]) {
@@ -56,11 +35,6 @@ function sentencesWithin(text: string, max: number): string {
   return out.replace(/;$/, '.');
 }
 
-/**
- * First paragraph, whitespace collapsed, whole sentences up to `max` (the lead
- * sentence may run to 1.7x). A lone sentence longer than that is cut at its
- * last clause boundary, or dropped: a fragment that ends mid-thought misleads.
- */
 export function brief(text: string, max: number): string {
   const first = flatten(text.split(/\n\s*\n/)[0] ?? '');
   if (first.length <= max) return first;
@@ -72,7 +46,6 @@ export function brief(text: string, max: number): string {
   return cut === undefined ? '' : `${first.slice(0, cut)}.`;
 }
 
-/** Summary line plus whole sentences of the first body paragraph, up to `max`; the `Returns:` tail is dropped. */
 export function briefTool(text: string, max: number): string {
   const [summary = '', body = ''] = text.split(/\n\s*\n/).filter((p) => !p.startsWith('Returns:'));
   const head = brief(summary, max).replace(/\.$/, '');
@@ -82,7 +55,6 @@ export function briefTool(text: string, max: number): string {
 
 const SUBSCHEMA_LISTS = ['oneOf', 'anyOf', 'allOf'] as const;
 
-/* Values, not schemas: a `description` key inside them is data. */
 const LITERAL_KEYS = new Set(['default', 'enum', 'const', 'example', 'examples', 'required']);
 
 function stripDescriptions(node: unknown): unknown {
@@ -162,7 +134,6 @@ function rewrite(node: JsonObject, replace: (n: JsonObject) => JsonObject | unde
   return out;
 }
 
-/** Hoist sub-schemas that occur twice or more into `$defs`, largest saving first. */
 export function hoistShared(schema: JsonObject): JsonObject {
   let root = schema;
   const defs: Record<string, JsonObject> = {};
@@ -213,13 +184,6 @@ export interface ManifestTool {
   inputSchema: JsonObject;
 }
 
-/**
- * Slim a whole tool list. An option that several tools take with the same
- * schema and wording (the scrape options on scrape, crawl, batch, monitor...)
- * is documented on the first tool that lists it; later tools keep its name,
- * types, bounds and enum values and drop the repeated prose, and their
- * description says where the prose lives.
- */
 export function slimManifest(tools: readonly ManifestTool[], budget: Budget = DEFAULT_BUDGET): ManifestTool[] {
   const documented = new Map<string, string>();
 

@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/metadata.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 115,
+      "offset": null,
+      "text": "Ordered by consequence, not by the order helix-extract happened to read them.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 246,
+      "offset": null,
+      "text": "Let the first request take the slot before the second arrives.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 346,
+      "offset": null,
+      "text": "A quote would end the filename token; a newline would inject a header.",
+      "kind": "what"
+    }
+  ]
+}

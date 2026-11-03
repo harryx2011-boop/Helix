@@ -17,15 +17,12 @@ describe('Frontier', () => {
     const frontier = base();
 
     expect(frontier.add('https://example.com/docs/a', 1)).toBe(true);
-    // Same document, three spellings.
     expect(frontier.add('https://example.com/docs/a/', 1)).toBe(false);
     expect(frontier.add('https://example.com/docs/a#top', 1)).toBe(false);
     expect(frontier.add('https://www.example.com/docs/a', 1)).toBe(false);
     expect(frontier.enqueued).toBe(1);
   });
 
-  // Fetching the slash-stripped key made docs.python.org serve `/3/tutorial`,
-  // and every relative link on it resolved one directory too high.
   it('dedupes on the normalised key but fetches the URL as found', () => {
     const frontier = base();
 
@@ -72,8 +69,6 @@ describe('Frontier', () => {
   });
 
   it('fetches the seed even when the path filters would not follow it', () => {
-    // The spec's own example: seed the site root, include /blog/*. The root is
-    // where the blog links live; filtering it out crawls nothing.
     const frontier = new Frontier({
       seedUrl: 'https://example.com',
       limit: 100,
@@ -90,7 +85,6 @@ describe('Frontier', () => {
     const filtered = base({ includePaths: ['/blog/*'] });
     expect(filtered.add('https://example.com/pricing', 0)).toBe(false);
 
-    // Off-site still wins: the seed exemption is about path filters only.
     const offSite = new Frontier({ seedUrl: 'https://example.com', limit: 10 });
     expect(offSite.add('https://elsewhere.com', 0)).toBe(false);
   });
@@ -103,12 +97,11 @@ describe('Frontier', () => {
     });
 
     expect(frontier.add('https://example.com/blog/', 0)).toBe(true);
-    expect(frontier.add('https://example.com/blog', 1)).toBe(false); // duplicate of the seed
+    expect(frontier.add('https://example.com/blog', 1)).toBe(false);
     expect(frontier.rejections()['duplicate']).toBe(1);
   });
 
   it('lets exclusion win over inclusion', () => {
-    // A URL matching both is excluded: the narrower statement is the intent.
     const frontier = base({ includePaths: ['^/docs'], excludePaths: ['^/docs/draft'] });
 
     expect(frontier.add('https://example.com/docs/draft/x', 1)).toBe(false);
@@ -140,7 +133,6 @@ describe('Frontier', () => {
     frontier.add('https://busy.com/a', 1);
     frontier.add('https://free.com/b', 1);
 
-    // Head-of-line blocking would leave a crawl idle behind one slow host.
     const item = frontier.next((site) => site === 'free.com');
     expect(item?.url).toContain('free.com');
   });
@@ -154,7 +146,6 @@ describe('Frontier', () => {
   });
 
   it('reports why URLs were turned away', () => {
-    // A silent cap reads as complete coverage. The counts make the gap visible.
     const frontier = base({ maxDepth: 1 });
     frontier.add('https://elsewhere.com/a', 1);
     frontier.add('https://example.com/docs/deep', 5);
@@ -167,9 +158,6 @@ describe('Frontier', () => {
   });
 
   it('uses a Bloom filter for large crawls without losing correctness on repeats', () => {
-    // Above the exact-set threshold, dedup becomes probabilistic. A URL just
-    // added must still always be recognised — false positives are the accepted
-    // failure mode, false negatives are not.
     const frontier = new Frontier({
       seedUrl: 'https://example.com/',
       limit: 100_000,

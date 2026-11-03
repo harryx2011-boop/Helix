@@ -2,15 +2,6 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 
-/**
- * Key management contract, wired behind the real auth hook rather than a stub.
- *
- * One operator owns a Helix instance, and only the operator's admin token
- * manages its API keys. An API key, however valid, cannot mint, list or
- * revoke keys. The tests drive the routes through `registerAuth` with a fake
- * key store: a route tested with auth mocked away passes just as happily when
- * the gate is deleted.
- */
 
 interface KeyRow {
   id: string;
@@ -43,9 +34,6 @@ const db = vi.hoisted(() => {
     }
     if (text.includes('FROM api_keys') && text.includes('key_hash = $1')) {
       const [hash] = values as [string];
-      // The revoked predicate is honoured only because the statement asks for
-      // it. Filtering unconditionally would let the lookup drop `revoked_at IS
-      // NULL` while these tests still reported revoked keys as rejected.
       const excludesRevoked = text.includes('revoked_at IS NULL');
       const found = state.rows.filter(
         (r) => r.key_hash === hash && (!excludesRevoked || r.revoked_at === null),
@@ -80,8 +68,6 @@ let app: FastifyInstance;
 
 const ADMIN = 'admin-token-for-key-tests';
 
-// A default parameter would fire on an explicit `undefined`, quietly turning
-// the disabled-instance case back into an enabled one.
 async function build(...args: [] | [adminToken: string | undefined]): Promise<FastifyInstance> {
   const adminToken = args.length === 0 ? ADMIN : args[0];
   const built = Fastify();
@@ -101,7 +87,6 @@ async function build(...args: [] | [adminToken: string | undefined]): Promise<Fa
   return built;
 }
 
-/** Seeds a usable credential the way the bootstrap path does, so auth has something real to resolve. */
 async function seedKey(name = 'seed'): Promise<{ key: string; id: string }> {
   const created = await createApiKey(name, 1000);
   return { key: created.key, id: created.id };

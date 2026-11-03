@@ -54,7 +54,6 @@ export function selectHarnesses(opts: Pick<InitOptions, 'all' | 'clients'>, home
   return detected;
 }
 
-/** The website no longer hosts the app, so --browser sends a person to the desktop download. */
 export function browserUrl(siteUrl: string): string {
   return `${siteUrl.replace(/\/$/, '')}/download`;
 }

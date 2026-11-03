@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/feature-copy.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FeatureId",
+      "line": 4,
+      "offset": 0,
+      "text": "Marketing copy for each thing Helix does, in plain words. One registry feeds the\nfeature pages, the home cards, the nav and the footer, so a name changes in one place.\nThe catalog (`lib/catalog.ts`) keeps the API names the signed-in app uses.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "FeatureCopy.name",
+      "line": 27,
+      "offset": 0,
+      "text": "Short plain label for the nav, footer and home cards.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "FeatureCopy.blurb",
+      "line": 28,
+      "offset": 0,
+      "text": "One sentence for a card.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "FeatureCopy.group",
+      "line": 30,
+      "offset": 0,
+      "text": "Nav column: what the person is trying to do.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "FeatureCopy.docs",
+      "line": 37,
+      "offset": 0,
+      "text": "The technical page for this feature.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "FeatureCopy.home",
+      "line": 38,
+      "offset": 0,
+      "text": "True when the home page lists it.",
+      "kind": "doc"
+    }
+  ]
+}

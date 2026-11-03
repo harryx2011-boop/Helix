@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/webhooks.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 91,
+      "offset": null,
+      "text": "Not due yet: nothing happens.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 94,
+      "offset": null,
+      "text": "Walk the whole schedule.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 136,
+      "offset": null,
+      "text": "A second replay of a now-pending row is refused.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 193,
+      "offset": null,
+      "text": "Rows not yet attempted must be leased past this whole batch.",
+      "kind": "why"
+    }
+  ]
+}

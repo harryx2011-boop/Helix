@@ -27,7 +27,6 @@ describe('MarkdownView', () => {
 
   it('highlights a fenced code block via the fence language tag, with a copy button', async () => {
     const { container } = render(<MarkdownView content={'```ts\nconst x = 1;\n```'} />);
-    // Immediate render: plain <pre><code> before the lazy highlighter resolves.
     expect(container.textContent).toContain('const x = 1;');
     expect(screen.getByLabelText('Copy code')).toBeTruthy();
     await waitFor(
@@ -36,7 +35,6 @@ describe('MarkdownView', () => {
       },
       { timeout: 20000 },
     );
-    // The lazy Shiki import can be slow on a loaded machine; the test budget must exceed the waitFor budget.
   }, 30000);
 
   it('falls back to plain text for an unknown fence language', () => {
@@ -101,13 +99,6 @@ describe('MarkdownView', () => {
     expect(container.textContent).toContain('x');
   });
 
-  // CommonMark's own backslash-escaping collapses `\\` to a single literal `\`
-  // in link-destination source before it ever reaches urlTransform, so the
-  // `\\evil.com` / `/\evil.com` bypass forms cannot be expressed through
-  // ordinary markdown link syntax at all — they are exercised directly against
-  // isSafeHref in lib/markdown-links.test.ts instead, which is where a raw
-  // href (e.g. from HTML, already stripped here since there is no rehype-raw)
-  // would actually reach the policy unmolested.
 
   it('allows http(s) and mailto links, with rel=noopener noreferrer on external links', () => {
     const { container } = render(<MarkdownView content={'[a](https://example.com) [b](mailto:x@example.com)'} />);

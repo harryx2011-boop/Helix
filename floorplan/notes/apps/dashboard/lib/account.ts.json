@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/account.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "UsageStatusClass",
+      "line": 2,
+      "offset": 0,
+      "text": "Per-endpoint usage shapes the health page reads.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "UsageEndpointDay.day",
+      "line": 6,
+      "offset": 0,
+      "text": "UTC calendar day, YYYY-MM-DD.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "UsageEndpointDay.observedHours",
+      "line": 8,
+      "offset": 0,
+      "text": "Hours in the day with at least one recorded request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "UsageEndpointDay.badHours",
+      "line": 9,
+      "offset": 0,
+      "text": "Observed hours in which at least one request answered 5xx.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "UsageEndpoint",
+      "line": 12,
+      "offset": 0,
+      "text": "Recorded outcomes for one route family (`/scrape`, `/crawl/:id`, ...), as the health page reads them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "UsageEndpoint.last24h",
+      "line": 16,
+      "offset": 0,
+      "text": "2xx and 5xx in the hourly buckets that start within the last 24 hours.",
+      "kind": "doc"
+    }
+  ]
+}

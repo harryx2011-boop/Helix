@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FetchClient } from '../fetch/client.js';
 import { ExtractClient } from '../extract/client.js';
 
-/** With a service token configured, the API sends it on every call to the fetch and extract services. */
 
 function stubFetch(body: unknown) {
   const mock = vi.fn(async () => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }));

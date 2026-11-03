@@ -90,8 +90,6 @@ def make_short_pdf(text: str, to_unicode_start: int | None = None) -> bytes:
 
 @pytest.fixture
 def marker_absent(monkeypatch: pytest.MonkeyPatch) -> None:
-    # A None entry in sys.modules makes every `from marker... import` raise
-    # ImportError, which is exactly what a base install without the extra sees.
     monkeypatch.setitem(sys.modules, "marker", None)
 
 
@@ -120,9 +118,6 @@ class TestLooksGarbled:
         assert not looks_garbled("The quick brown fox jumps over the lazy dog.")
 
     def test_accepts_non_latin_scripts(self) -> None:
-        # CJK text is the case that breaks naive heuristics: it is legitimate
-        # content with no Latin word shapes at all, and must not be mistaken for
-        # mojibake simply for being unfamiliar.
         assert not looks_garbled("这是一段完全正常的中文文本，应该被正确识别。" * 5)
         assert not looks_garbled("これは正常な日本語のテキストです。" * 5)
 
@@ -130,11 +125,9 @@ class TestLooksGarbled:
         assert looks_garbled("���������� ���� ��������")
 
     def test_flags_private_use_characters(self) -> None:
-        # A subsetted font with no ToUnicode table decodes into this range.
         assert looks_garbled("" * 10)
 
     def test_treats_empty_input_as_not_garbled(self) -> None:
-        # Nothing to judge. "Empty" is a separate condition from "wrong".
         assert not looks_garbled("")
 
 
@@ -148,8 +141,6 @@ class TestAssessPdf:
         assert assessment.chars_extracted > 0
 
     def test_flags_a_pdf_with_no_text_as_needing_ocr(self) -> None:
-        # This is the scanned-document case. Parsing anyway produces nothing,
-        # and reporting that as clean output is how empty results reach a RAG index.
         assessment = assess_pdf(make_empty_pdf())
 
         assert assessment.needs_ocr
@@ -185,20 +176,15 @@ class TestParse:
 
         assert "<!-- page 2 -->" in result.markdown
         assert "<!-- page 3 -->" not in result.markdown
-        # The page count still reports the true total, not the truncated one.
         assert result.pages == 5
 
     def test_reports_ocr_need_even_when_ocr_is_declined(self) -> None:
-        # `never` accepts a degraded answer, but the flags must still say what
-        # was found — otherwise empty output reads as a genuinely empty document.
         result = parse(make_empty_pdf(), "application/pdf", ocr="never")
 
         assert result.needs_ocr
         assert not result.ocr_applied
 
     def test_does_not_claim_ocr_ran_when_marker_is_absent(self) -> None:
-        # Marker ships in the `documents` extra. Without it, the honest answer is
-        # an empty result flagged as needing OCR — never the broken text layer.
         result = parse(make_empty_pdf(), "application/pdf", ocr="always")
 
         if result.parser_used == "none":
@@ -212,9 +198,6 @@ class TestParse:
 
 @pytest.mark.usefixtures("marker_absent")
 class TestShortPdfWithoutOcr:
-    # A one-line PDF falls under MIN_CHARS_PER_PAGE and so is flagged for OCR,
-    # but its text is real. With no OCR parser installed, that text is the best
-    # answer available and must not be thrown away.
 
     @pytest.mark.parametrize("ocr", ["auto", "always", "never"])
     def test_keeps_a_short_clean_text_layer(self, ocr: str) -> None:
@@ -251,7 +234,6 @@ class TestShortPdfWithoutOcr:
 
 
 class TestCorruptFiles:
-    # A zip signature followed by nothing is what a truncated upload looks like.
     ZIP_STUB = b"PK\x03\x04" + b"\x00" * 32
 
     @pytest.mark.parametrize(
@@ -267,7 +249,5 @@ class TestCorruptFiles:
             parse(self.ZIP_STUB, content_type)
 
     def test_reports_an_unopenable_pdf_when_ocr_is_declined(self) -> None:
-        # With OCR off the text-layer parser has to open the bytes itself, and
-        # a PDF header on garbage is a bad file, not a service outage.
         with pytest.raises(DocumentError, match="could not be parsed as pdf"):
             parse(b"%PDF-garbage", "application/pdf", ocr="never")

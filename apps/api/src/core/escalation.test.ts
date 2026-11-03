@@ -9,12 +9,6 @@ import {
 } from './escalation.js';
 import type { ResponseFacts } from './block-detection.js';
 
-/**
- * The camoufox tier is the expensive end of the ladder and runs in a process
- * the operator had to start. So the property under test is not that it works —
- * it is that nothing reaches it by accident. Evidence walks a request up to
- * chromium; only an explicit ceiling goes further.
- */
 
 const ARTICLE = `<html><body><article>${'Real sentences carrying real content. '.repeat(20)}</article></body></html>`;
 
@@ -89,7 +83,6 @@ describe('camoufox is opt-in, never inferred', () => {
   });
 
   it('still requires evidence once the ceiling allows it', () => {
-    // A ceiling is permission to go higher, not a reason to.
     const decision = shouldEscalate({
       currentTier: 'chromium',
       response: facts(),
@@ -103,9 +96,6 @@ describe('camoufox is opt-in, never inferred', () => {
 
 describe('camoufox capabilities', () => {
   it('can serve the visual work chromium serves, so a raised ceiling is usable', () => {
-    // Reached through the ceiling rather than as a floor: the tier below is
-    // still preferred, and this only confirms camoufox is not skipped as
-    // incapable once a request has been allowed to climb.
     for (const caps of [{ screenshot: true }, { actions: true }, { pdfRender: true }]) {
       const decision = shouldEscalate({
         currentTier: 'chromium',
@@ -119,8 +109,6 @@ describe('camoufox capabilities', () => {
 });
 
 describe('the lower ladder is unchanged', () => {
-  // Plain sends no User-Agent and a non-browser JA4; a WAF scores that as a bot
-  // before tls ever runs (npmjs answered plain with 403 cf-mitigated).
   it('starts an auto request at tls, never plain', () => {
     expect(minimumViableTier({})).toBe('tls');
   });
@@ -181,7 +169,6 @@ describe('an empty extraction on a server-rendered page', () => {
 });
 
 describe('a short page that is complete', () => {
-  // example.com as served 2026-10-06: one sentence, one external script.
   const EXAMPLE = `<!doctype html><html lang=en><head><meta charset=utf-8><title>Example Domain</title><style>body{font:16px/1.6 system-ui}</style></head><body><p>This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.</p><script src=/s.js></script></body></html>`;
   const EXAMPLE_TEXT =
     'This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.';

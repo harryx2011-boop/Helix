@@ -40,7 +40,6 @@ describe('runActions deadline', () => {
     const [, clickOptions] = (page.click as ReturnType<typeof vi.fn>).mock.calls[0] as [string, { timeout: number }];
     expect(waitOptions.timeout).toBeLessThanOrEqual(25);
     expect(clickOptions.timeout).toBeLessThanOrEqual(25);
-    // Never zero: Playwright reads 0 as "no timeout".
     expect(clickOptions.timeout).toBeGreaterThan(0);
   });
 

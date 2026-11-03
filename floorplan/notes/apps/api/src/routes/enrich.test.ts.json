@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/enrich.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 188,
+      "offset": null,
+      "text": "The whole point of routing: structure answered it, so no model call happened.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 227,
+      "offset": null,
+      "text": "The model returns a confident, plausible answer with a citation that is\nnowhere in the page it was fetched from. This is the failure the endpoint\nexists to catch.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 350,
+      "offset": null,
+      "text": "helix-extract auto-picks cloud providers only, so an Ollama-only caller\ngets \"no provider configured\" unless the runtime is named for them.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 357,
+      "offset": null,
+      "text": "No stored keys in this harness, so nothing is named and auto-pick applies.",
+      "kind": "what"
+    }
+  ]
+}

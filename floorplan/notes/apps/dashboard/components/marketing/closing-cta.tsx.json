@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/closing-cta.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ClosingCta",
+      "line": 10,
+      "offset": 0,
+      "text": "Final section: repeats the hero's CTA pair over a cell grid, flanked by ASCII flame pillars. No stats, no logos.",
+      "kind": "doc"
+    }
+  ]
+}

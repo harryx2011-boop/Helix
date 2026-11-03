@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/github-stars.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "fetchGithubStars",
+      "line": 4,
+      "offset": 0,
+      "text": "Star count for the nav button, fetched server-side and cached for an hour.\nReturns `null` on any failure (rate limit, private repo, offline build) and\nthe nav falls back to the word \"GitHub\"; a missing number is never an error.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,10 +1,3 @@
-/**
- * Webhook deliveries: what gets queued, and when it is retried.
- *
- * The queue is the `webhook_deliveries` table. Rows are at-least-once by
- * design, so every one carries a dedupe key and receivers are told to be
- * idempotent. Nothing here talks HTTP; the dispatcher does.
- */
 
 export const WEBHOOK_EVENTS = ['started', 'page', 'changed', 'completed', 'failed'] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
@@ -30,7 +23,6 @@ export interface WebhookPayload {
   metadata: Record<string, unknown> | null;
 }
 
-/** Whether the config subscribes to an event. No `events` list means all of them. */
 export function wantsEvent(config: WebhookConfig, event: WebhookEvent): boolean {
   if (!config.events || config.events.length === 0) return true;
   return config.events.includes(event);
@@ -39,17 +31,8 @@ export function wantsEvent(config: WebhookConfig, event: WebhookEvent): boolean 
 const BASE_DELAY_MS = 60_000;
 const MAX_DELAY_MS = 6 * 60 * 60 * 1000;
 
-/**
- * The one retry policy for every Helix webhook: crawl and job deliveries
- * (webhooks/dispatcher.ts) and monitor deliveries (monitor/webhooks.ts).
- */
 export const WEBHOOK_MAX_ATTEMPTS = 20;
 
-/**
- * Exponential backoff: one minute, doubling, capped at six hours. Twenty
- * attempts span roughly three days, which is the window a receiver that is
- * down for a weekend needs. Not three retries over twenty minutes.
- */
 export function retryDelayMs(attempt: number): number {
   const exponent = Math.max(0, attempt - 1);
   return Math.min(BASE_DELAY_MS * 2 ** exponent, MAX_DELAY_MS);
@@ -60,7 +43,6 @@ export interface EnqueueInput {
   event: WebhookEvent;
   jobId?: string | undefined;
   monitorId?: string | undefined;
-  /** Disambiguates events of the same type within one job, e.g. the page URL. */
   key?: string | undefined;
   data: unknown;
 }
@@ -70,11 +52,6 @@ export function dedupeKey(input: EnqueueInput): string {
   return [owner, input.event, input.key ?? '', input.config.url].join('|');
 }
 
-/**
- * Queue one delivery. Returns false when the config does not subscribe to the
- * event or the row already exists — the queue is at-least-once and a resumed
- * crawl may try to re-emit an event it already emitted.
- */
 export async function enqueueDelivery(db: Queryable, input: EnqueueInput): Promise<boolean> {
   if (!wantsEvent(input.config, input.event)) return false;
 
@@ -104,11 +81,6 @@ export async function enqueueDelivery(db: Queryable, input: EnqueueInput): Promi
   return (rowCount ?? 0) > 0;
 }
 
-/**
- * Drop delivered and dead rows older than the retention window. Dead letters
- * stay inspectable for as long as the results they refer to; after that the
- * table would only grow.
- */
 export async function purgeSettledDeliveries(db: Queryable, olderThanHours: number): Promise<number> {
   const { rowCount } = await db.query(
     `DELETE FROM webhook_deliveries

@@ -1,9 +1,5 @@
 import * as React from 'react';
 
-/**
- * Minimal JSON pretty-printer with token coloring: keys stay foreground,
- * strings take the primary token, punctuation and literals go muted.
- */
 export function SchemaJson({ value, className }: { value: unknown; className?: string }) {
   const text = React.useMemo(() => JSON.stringify(value, null, 2), [value]);
   const tokens = React.useMemo(() => tokenize(text), [text]);

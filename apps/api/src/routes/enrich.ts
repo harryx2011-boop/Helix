@@ -21,22 +21,9 @@ import { mapWithLimit } from '../core/map-with-limit.js';
 import { tierMemory } from '../core/tier-memory.js';
 import { cookieJar } from '../core/cookie-jar.js';
 
-/**
- * POST /v1/enrich - sparse identifier in, grounded columns out.
- *
- * The endpoint exists to be trustworthy rather than complete. Everything it
- * returns is tied to a passage in a page it fetched; everything it cannot tie is
- * `null` with the reason. That trade is deliberate and is the product: an
- * enrichment API that fabricates a plausible headquarters city is worse than one
- * that says it does not know, because the first cannot be checked at scale.
- */
 
 const FIELD_TYPES = ['string', 'number', 'boolean'] as const;
 
-/**
- * Providers a caller may name. Declared as an enum so an unknown name is a 400
- * from this route rather than a 503 from two services away.
- */
 const PROVIDERS = [
   'anthropic',
   'openai',
@@ -81,14 +68,11 @@ export interface EnrichRouteDeps {
   fetchClient: FetchClient;
   extractClient: ExtractClient;
   browserPool?: BrowserPool | undefined;
-  /** Used to find sources when the caller supplies no `urls`. Absent means the caller must supply them. */
   searchProvider?: SearchProvider | undefined;
   encryptionKey?: Buffer | undefined;
-  /** How many candidate pages are read at once. */
   concurrency?: number | undefined;
 }
 
-/** Candidate URLs for a subject: the caller list if given, otherwise a search. */
 async function findCandidates(
   body: EnrichRequestBody,
   deps: EnrichRouteDeps,
@@ -111,16 +95,6 @@ async function findCandidates(
   };
 }
 
-/**
- * The caller's local runtime, when that is the only thing they have configured.
- *
- * helix-extract auto-picks a provider from the caller's stored keys, but walks
- * cloud providers only: a local runtime is identified by a base URL rather than
- * a key and is reachable solely when named. So a caller whose one configured
- * provider is Ollama would get "no provider configured" while looking straight
- * at a running Ollama. Naming it for them is the fix; when they have configured
- * more than one, the choice is theirs and this stays out of it.
- */
 function soleLocalProvider(baseUrls: Record<string, string> | undefined): string | undefined {
   if (!baseUrls) return undefined;
   const configured = Object.keys(baseUrls).filter((name) => baseUrls[name]);
@@ -132,13 +106,6 @@ interface ReadOutcome {
   rejected?: RejectedSource | undefined;
 }
 
-/**
- * Read one candidate and decide whether it may be evidence.
- *
- * The URL guard runs before the fetch and the content guards after it, because
- * neither can be judged from the other: a safe URL can serve a parking page, and
- * a parking page on an unsafe URL must never be fetched at all.
- */
 async function readCandidate(
   url: string,
   body: EnrichRequestBody,
@@ -154,8 +121,6 @@ async function readCandidate(
   const result = await runPipeline(
     {
       url,
-      // rawHtml is what the metadata phase reads; without it every field would
-      // fall through to the model even when the page states it in JSON-LD.
       formats: ['markdown', 'rawHtml'],
       tier: 'auto',
       onlyMainContent: true,
@@ -166,8 +131,6 @@ async function readCandidate(
   );
 
   if (!result.success) {
-    // Not a content judgement: the page never arrived. Saying it fell below the
-    // content floor would report a fact about text that was never fetched.
     return {
       rejected: { url, reason: 'unreadable', detail: `the page could not be read: ${result.reason}` },
     };
@@ -278,11 +241,8 @@ export async function registerEnrich(app: FastifyInstance, deps: EnrichRouteDeps
         );
       }
 
-      // Phase one and two. Anything answered here costs no model call at all.
       const { answered, open } = routeStructural(fields, pages);
 
-      // The allowlist the model is checked against. Built from what the code
-      // fetched, keyed by the URL the code fetched it from.
       const sources = new Map(pages.map((page) => [page.url, page.text]));
 
       let modelFields = new Map<string, EnrichedField>();
@@ -314,8 +274,6 @@ export async function registerEnrich(app: FastifyInstance, deps: EnrichRouteDeps
             model: result.modelUsed,
           };
         } catch (error) {
-          // A model that cannot be reached leaves the open fields unanswered.
-          // Saying "not stated" there would be a lie about the pages.
           modelReason = 'model_unavailable';
           request.log.warn({ err: error }, 'enrich model phase failed');
         }
@@ -355,7 +313,6 @@ export async function registerEnrich(app: FastifyInstance, deps: EnrichRouteDeps
   });
 }
 
-/** Every field null for the same reason, when there was nothing to read. */
 function emptyOutcome(
   subject: string,
   fields: readonly FieldSpec[],
@@ -364,8 +321,6 @@ function emptyOutcome(
   detail: string,
 ) {
   const outcome = assemble(fields, new Map(), new Map(), [], rejected, reason);
-  // Same shape as the success path, down to `subject` and the `sources` object:
-  // a caller must never have to branch on which of the two they received.
   return {
     success: true,
     subject,

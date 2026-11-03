@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/banner.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Banner",
+      "line": 3,
+      "offset": 0,
+      "text": "WEBSITE.md §4.0. Full-width violet bar, pill corners, white text, underlined link.",
+      "kind": "doc"
+    }
+  ]
+}

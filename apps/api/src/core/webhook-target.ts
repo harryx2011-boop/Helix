@@ -1,16 +1,6 @@
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 
-/**
- * Where a webhook may be sent.
- *
- * A caller-supplied URL that the API then POSTs to, with caller-supplied
- * headers and body, is a request forged from inside the deployment. Only
- * public http(s) hosts qualify: loopback, private, link-local, carrier-grade
- * NAT, multicast and the cloud metadata address are refused, both as literals
- * when the monitor is created and again when the name is resolved at send
- * time.
- */
 
 export class BlockedTargetError extends Error {
   constructor(message: string) {
@@ -36,13 +26,11 @@ function isPublicIpv4(ip: string): boolean {
   return true;
 }
 
-/** Eight 16-bit groups, or null when the text is not an IPv6 address. */
 function ipv6Groups(ip: string): number[] | null {
   let text = ip;
   const zone = text.indexOf('%');
   if (zone >= 0) text = text.slice(0, zone);
 
-  // A trailing dotted quad (::ffff:10.0.0.1) becomes two groups.
   const lastColon = text.lastIndexOf(':');
   const tail = text.slice(lastColon + 1);
   if (tail.includes('.')) {
@@ -82,11 +70,6 @@ export function isPublicAddress(ip: string): boolean {
   return false;
 }
 
-/**
- * The reason a URL cannot be a webhook target on its face, or null when it
- * may be. Needs no network: scheme and literal address only. Names are
- * resolved and checked again at send time.
- */
 export function webhookTargetProblem(raw: string): string | null {
   let url: URL;
   try {
@@ -105,7 +88,6 @@ export type Resolve = (host: string) => Promise<string[]>;
 
 const resolveAll: Resolve = async (host) => (await lookup(host, { all: true })).map((entry) => entry.address);
 
-/** Resolve the host and refuse the send when any answer is a private address. */
 export async function assertPublicTarget(raw: string, resolve: Resolve = resolveAll): Promise<void> {
   const problem = webhookTargetProblem(raw);
   if (problem) throw new BlockedTargetError(`webhook url ${problem}`);

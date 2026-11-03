@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "research/firecrawl-capture/shoot-auth.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BASE",
+      "line": 5,
+      "offset": 0,
+      "text": "Unauthenticated captures of the auth surface (sign-in / sign-up) at desktop,\nwide and mobile, plus a reduced-motion pass so the static frame is reviewed too.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 27,
+      "offset": null,
+      "text": "Clerk mounts after hydration; the ambient tickers need a beat to advance past frame 0.",
+      "kind": "what"
+    }
+  ]
+}

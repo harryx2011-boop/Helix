@@ -1,19 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * `size` bounds the fleet, not just the boot sequence.
- *
- * `#acquire` picks the least-loaded browser below `maxContexts` and falls
- * through to `#launch` when every one of them is full. Nothing consults
- * `size` again after `start()` spent it, so saturation launches browsers
- * without a ceiling: at the shipped defaults (`size: 4`, `maxContexts: 20`)
- * the 81st concurrent render starts a fifth Chrome, the 101st a sixth, and so
- * on. The rate limiter defaults to 1000 req/min per key, so one caller stays
- * well inside its budget while the box runs out of memory — the exact failure
- * the file header says the design exists to prevent.
- *
- * A saturated pool must queue for a freed slot instead of launching.
- */
 
 const launches = vi.hoisted(() => ({
   count: 0,
@@ -73,8 +59,6 @@ describe('the fleet respects `size` under saturation', () => {
     await pool.start();
     expect(launches.count).toBe(1);
 
-    // Two leases fill the single browser. The third has nowhere to go: it must
-    // wait for one of them to close, not start a second Chrome.
     const first = await pool.lease();
     const second = await pool.lease();
 
@@ -107,9 +91,6 @@ describe('a recycle that replaces a browser wakes the queue', () => {
     const held = await pool.lease();
     const queued = pool.lease();
 
-    // The close frees the only slot and trips the recycle threshold at once.
-    // The freed slot belongs to a browser that is now retiring, so the parked
-    // caller is served by the replacement or by nothing at all.
     await held.close();
 
     const granted = await Promise.race([
@@ -135,9 +116,6 @@ describe('a recycle that replaces a browser wakes the queue', () => {
 
 describe('cleanup never outlives the budget', () => {
   it('returns although page.close() never settles, and still disposes the context', async () => {
-    // Chrome drops a Target.closeTarget that lands on a navigation commit, so
-    // page.close() waits for a detach that never comes: reddit's JS challenge
-    // held a 20 s render for 393 s. Disposing the context does not wait on it.
     launches.pageCloseHangs = true;
     const pool = new BrowserPool({ size: 1, maxContexts: 2, recycleAfter: 100 });
     await pool.start();

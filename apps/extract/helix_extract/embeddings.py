@@ -18,7 +18,6 @@ from . import runtime
 from .provider import CALL_TIMEOUT_SECONDS
 from .settings import settings
 
-# all-MiniLM-L6-v2, matching the pgvector column width in the schema.
 LOCAL_DIMENSIONS = 384
 
 
@@ -61,8 +60,6 @@ def _local_model():  # type: ignore[no-untyped-def]
 async def _embed_local(texts: list[str]) -> EmbeddingResult:
     model = _local_model()
 
-    # encode() is CPU-bound and synchronous; running it inline would block the
-    # event loop for the whole batch.
     vectors = await asyncio.to_thread(
         lambda: model.encode(texts, convert_to_numpy=True, show_progress_bar=False).tolist()
     )
@@ -87,8 +84,6 @@ async def _embed_openai(texts: list[str]) -> EmbeddingResult:
 
     client = AsyncOpenAI(api_key=key, base_url=url) if url else AsyncOpenAI(api_key=key)
 
-    # No client-level timeout is set above, so this is the only ceiling on a
-    # stalled connection — same reasoning as provider.py's own CALL_TIMEOUT_SECONDS.
     try:
         response = await asyncio.wait_for(
             client.embeddings.create(model=settings.helix_embedding_model, input=texts),

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/engines/engine-mark.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MARKED",
+      "line": 5,
+      "offset": 0,
+      "text": "`plain` and `tls` are Helix's own transports, not products, so they get a\nlucide glyph. Every other tier is a real browser and shows that browser's\nactual mark — a monogram would misname the engine a request is running on.\n\nThe Chromium mark is the monochrome-blue one, deliberately not Chrome's\nfour-colour logo: they are different products and the tier runs Chromium.",
+      "kind": "doc"
+    }
+  ]
+}

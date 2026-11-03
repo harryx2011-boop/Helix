@@ -12,13 +12,6 @@ import {
   type ImageFetcher,
 } from '../images/visual.js';
 
-/**
- * A contact sheet of image search results: several pages of the backend's
- * Images category, filtered by size and aspect, deduplicated, one JSON row per
- * image. By default nothing is downloaded, so the instance never connects to an
- * image host. `visualDedupe` and `render: "png"` fetch each image's thumbnail
- * (egress-guarded) to drop near-duplicates by perceptual hash and to draw one PNG.
- */
 
 const DomainSchema = z
   .string()
@@ -32,15 +25,11 @@ const ImageSheetRequestSchema = z
     pages: z.number().int().min(1).max(5).default(2),
     minWidth: z.number().int().min(1).optional(),
     minHeight: z.number().int().min(1).optional(),
-    /** Width over height; 1 is square, above 1 is landscape. */
     minAspect: z.number().positive().optional(),
     maxAspect: z.number().positive().optional(),
-    /** Exclude images the backend gave no pixel size for, instead of keeping them unfiltered. */
     dropUnsized: z.boolean().default(false),
     motionReference: z.boolean().default(false),
-    /** `json` returns rows only; `png` also draws a contact sheet. Default json. */
     render: z.enum(['json', 'png']).default('json'),
-    /** Fetch thumbnails and drop near-duplicates. Defaults to on when `render` is `png`. */
     visualDedupe: z.boolean().optional(),
     lang: z
       .string()
@@ -50,8 +39,6 @@ const ImageSheetRequestSchema = z
       .string()
       .regex(/^[a-z]{2}$/i, 'expected a two-letter country code')
       .optional(),
-    // Domain filters reach the backend only as `site:` operators; the rows are not
-    // post-filtered, so a backend that ignores operators drops them silently.
     includeDomains: z.array(DomainSchema).max(20).default([]),
     excludeDomains: z.array(DomainSchema).max(20).default([]),
   })
@@ -62,11 +49,8 @@ const ImageSheetRequestSchema = z
 
 export interface ImageSheetRouteDeps {
   provider: SearchProvider | undefined;
-  /** Operator ceiling on `limit`. */
   maxResults?: number | undefined;
-  /** Wall-clock budget for one call. */
   maxDurationMs?: number | undefined;
-  /** Test seam: how thumbnails are fetched. */
   fetchImage?: ImageFetcher | undefined;
 }
 
@@ -81,13 +65,10 @@ export interface ImageSheetEntry {
 
 const MOTION_TERMS = 'storyboard frame keyframe';
 const PAGE_CONCURRENCY = 3;
-/** What one backend call may return; the sheet's own `limit` is applied after filtering. */
 const PER_PAGE = 50;
-/** Wall-clock budget for fetching every thumbnail of one call. */
 const IMAGE_FETCH_BUDGET_MS = 20_000;
 const IMAGE_CONCURRENCY = 6;
 
-/** An http(s) URL without its fragment, host lowercased; anything else (a data: URI, a script URL) is undefined. */
 function webUrl(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
   try {
@@ -186,7 +167,6 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
 
     const visual = body.visualDedupe ?? body.render === 'png';
     const fetching = visual || body.render === 'png';
-    // With near-duplicates to drop, read past `limit` so the sheet can still fill.
     const take = fetching ? Math.min(body.limit * 2, maxResults * 2) : body.limit;
     const filtered = { size: 0, aspect: 0, duplicate: 0, nearDuplicate: 0, noImage: 0, unsized: 0 };
     let unsized = 0;
@@ -222,7 +202,6 @@ export async function registerImageSheet(app: FastifyInstance, deps: ImageSheetR
         filtered.unsized++;
         continue;
       } else {
-        // A backend that does not report pixels cannot be judged; keep the image and say so.
         unsized++;
       }
 

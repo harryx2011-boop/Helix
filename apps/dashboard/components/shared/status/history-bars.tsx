@@ -13,11 +13,6 @@ function barTone(okPct: number | null, emptyClassName: string): string {
   return 'bg-destructive';
 }
 
-/**
- * One bar per day over the last 90. The status tokens are shared by both
- * surfaces; only the "no data" bar differs, because the marketing ink tokens
- * paint nothing on the dark app surface.
- */
 export function HistoryBars({
   days,
   reduced,

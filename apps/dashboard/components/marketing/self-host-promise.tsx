@@ -58,7 +58,6 @@ const CLAIMS: Claim[] = [
 
 const CLAIM_TAB_ITEMS = CLAIMS.map((c) => ({ id: c.id, label: c.label, icon: c.icon }));
 
-/** Tabbed claims: one strip switches between the four self-host proofs, evidence shown for the active tab. */
 function ClaimTabs() {
   const [active, setActive] = React.useState<ClaimId>('tiers');
   const claim = CLAIMS.find((c) => c.id === active) ?? CLAIMS[0]!;
@@ -81,7 +80,6 @@ function ClaimTabs() {
   );
 }
 
-/** WEBSITE.md §4.5: centerpiece section. Centered header w/ ambient code texture, terminal replay, tabbed claims. */
 export function SelfHostPromise() {
   return (
     <section className="relative overflow-hidden bg-m-bg-lighter px-6 py-16 sm:px-10">

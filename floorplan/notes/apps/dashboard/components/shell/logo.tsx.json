@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shell/logo.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Logo",
+      "line": 1,
+      "offset": 0,
+      "text": "The Helix mark: three isometric plates descending from violet to the ground\ncolour, with the wordmark alongside.\n\nInlined rather than loaded as an `<img>` so the bottom plate and the wordmark\ncan take `currentColor`. In the source SVG both are the near-black `#0B1220`,\nwhich would disappear against the dark theme's background — the plate has to\nfollow the foreground rather than stay fixed.\n\nThe two violets are brand constants and do not vary by theme.",
+      "kind": "doc"
+    }
+  ]
+}

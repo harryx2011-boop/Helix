@@ -1,0 +1,167 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/persistent-frontier.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "db",
+      "line": 16,
+      "offset": 0,
+      "text": "A fake job_tasks table.\n\nIt models the SQL the frontier actually issues rather than replaying fixed\nrows, because every property under test here is about what a WHERE clause\ndoes and does not match. `now` is settable so lease expiry can be reached\nwithout waiting five minutes for it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "db",
+      "line": 43,
+      "offset": 27,
+      "text": "Reclaim: only rows whose lease is already past, by the database's clock.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 163,
+      "offset": null,
+      "text": "A claim without an expiry is the flag this design exists to replace.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 172,
+      "offset": null,
+      "text": "No release(): the process was killed, so nothing ran on the way out.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 187,
+      "offset": null,
+      "text": "Well inside the lease. Taking this would hand live work to a second\nworker and pay for the same page twice.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 203,
+      "offset": null,
+      "text": "Without the renewal the original lease would have expired by now.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 216,
+      "offset": null,
+      "text": "The renewal exists to outlive a slow page, not to attach a query to each.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 226,
+      "offset": null,
+      "text": "Three workers in turn: each resumes, claims the task, and is killed\nbefore it can finish — the shape of a page that reliably OOMs a renderer.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 234,
+      "offset": null,
+      "text": "An unbounded reclaim loop turns one poison page into a crawl that never\nends, so a task that has burned its attempts is failed instead.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": null,
+      "line": 244,
+      "offset": null,
+      "text": "Another worker legitimately reclaimed the row and is fetching it now.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": null,
+      "line": 264,
+      "offset": null,
+      "text": "A terminal row keeping a stale expiry is what a reclaim sweep would read\nas abandoned work, and the page would be fetched a second time.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 282,
+      "offset": null,
+      "text": "Reclaimed before the queue is read, so the recovered task is restored too.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": null,
+      "line": 296,
+      "offset": null,
+      "text": "Persistent dedup: a completed URL stays seen across the restart.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": null,
+      "line": 307,
+      "offset": null,
+      "text": "Handed to a fetcher and still in progress when SIGTERM arrives.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": null,
+      "line": 312,
+      "offset": null,
+      "text": "A page mid-fetch is the one most worth recovering, and the one a queue\nthat forgets its handouts silently loses.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": null,
+      "line": 322,
+      "offset": null,
+      "text": "These are exactly the leases that need renewing: a slow render is what\npushes a fetch past the lease in the first place.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": null,
+      "line": 343,
+      "offset": null,
+      "text": "The worker loop ends on pending === 0. Forgetting handed-out work here\nwould end the crawl while a page was still being fetched.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": null,
+      "line": 354,
+      "offset": null,
+      "text": "A's lease expires and B reclaims and re-claims the task.",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": null,
+      "line": 360,
+      "offset": null,
+      "text": "A finally finishes the page it started and reports it.",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": null,
+      "line": 395,
+      "offset": null,
+      "text": "The worker adds discovered links and flushes only past a threshold, so a\nclaim that ran before the INSERT matched nothing and the fetched page was\ndropped: a crawl kept its seed and lost every page it discovered.",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/api-keys.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 18,
+      "offset": null,
+      "text": "Short enough to be useless to an attacker, long enough to pick out of a list.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 34,
+      "offset": null,
+      "text": "Sanity-check the avalanche property rather than trusting SHA-256 blindly.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 49,
+      "offset": null,
+      "text": "timingSafeEqual throws on length mismatch; the wrapper must absorb that.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 59,
+      "offset": null,
+      "text": "The desktop app injects the bootstrap key from its bridge. A revoke from the\nKeys page that survived a restart would lock the app out for good.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 95,
+      "offset": null,
+      "text": "/usage/all runs one aggregate query per key this returns, so an unbounded\nlist here is an unbounded fan-out there rather than merely a large response.",
+      "kind": "doc"
+    }
+  ]
+}

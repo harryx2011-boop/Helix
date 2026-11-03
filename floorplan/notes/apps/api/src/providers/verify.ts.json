@@ -1,0 +1,87 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/providers/verify.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "KeyVerdict",
+      "line": 6,
+      "offset": 0,
+      "text": "Does the provider accept this credential?\n\nA stored key used to be \"configured\", never \"correct\". `getProviderStatuses`\nreports `configured: true` on row existence alone and the dashboard paints\n\"Connected · key ending in ab12\" in green, so a mistyped or revoked key\nlooked healthy indefinitely and the first sign of trouble was a failed\nextraction — by which point the caller has no reason to suspect the key.\n\nEach check here sends ONE cheap authenticated GET (the provider's model-list\nendpoint) carrying exactly the credential under test, and classifies the\nanswer three ways:\n\nvalid         the provider accepted the credential (2xx — or 429, which is\nan authenticated answer: a rate-limited key is a real key)\ninvalid       the provider rejected the credential itself (401/403, plus\nGemini's 400 API_KEY_INVALID shape)\nunverifiable  the answer proves nothing about the credential — DNS, TLS,\nsocket, timeout, 5xx\n\nThe three-way split is the point. `invalid` must mean the PROVIDER said no,\nnever that this instance's egress was down: the route refuses to store an\ninvalid key, so collapsing `unverifiable` into `invalid` would reject good\nkeys during a transient outage, and collapsing it into `valid` would put\nback the green-dot lie this module exists to remove.\n\nModel-list GET rather than a generation call: free, fast, needs no model id,\nand exercises exactly the thing being asked about — the credential.\n\nThe plaintext goes into a request header and nowhere else. It is never\nlogged, never included in a returned message, and never echoed in an error.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "KeyCheck.message",
+      "line": 10,
+      "offset": 0,
+      "text": "Human-readable detail for the caller. Never contains the credential.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "requestFor",
+      "line": 15,
+      "offset": 0,
+      "text": "Where each cloud provider answers \"is this credential good\", and how it wants\nto be asked.\n\nOpenRouter is `/key`, NOT `/models`. Its catalogue is public and answers 200\nto an absent or garbage token, so checking `/models` there would pass every\ninvalid key and report a working provider that fails on the first real call.\n`/key` is the endpoint that actually reads the token.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "requestFor",
+      "line": 37,
+      "offset": 22,
+      "text": "Local runtimes are reached by base URL, not credential, and are verified\nby `verifyLocalProvider` below. Listed so the switch stays exhaustive and\na provider cannot be added without deciding what its check is.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "classifyKeyResponse",
+      "line": 44,
+      "offset": 0,
+      "text": "Pure classification, exported so a test can drive it without a network.\n\nGemini rejects a bad key with 400 rather than 401, distinguishable from an\nordinary bad request only by the body's API_KEY_INVALID reason.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "verifyProviderKey",
+      "line": 52,
+      "offset": 0,
+      "text": "Verifies a cloud provider's API key by asking the provider.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "verifyProviderKey",
+      "line": 65,
+      "offset": 13,
+      "text": "The thrown detail is deliberately not forwarded. Fetch errors do not\ncarry the key, but \"nothing from this path reaches the caller\" needs no\ncase analysis to stay true.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "verifyLocalProvider",
+      "line": 81,
+      "offset": 0,
+      "text": "Verifies a local runtime by reaching its base URL, which is the whole\ncredential there — most need no key at all. Private addresses are allowed\nfor the same reason `listLocalProviderModels` allows them: a local runtime is\nloopback or LAN by design.\n\nA local runtime that is merely switched off is `unverifiable`, not `invalid`.\nThe URL may be perfectly correct and the caller may simply not have started\nOllama yet, and refusing to save it would strand them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "verifyLocalProvider",
+      "line": 90,
+      "offset": 9,
+      "text": "Never followed: a redirect would take the call to a host nobody checked.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": "verifyProvider",
+      "line": 107,
+      "offset": 0,
+      "text": "Verifies whichever credential this provider actually uses.",
+      "kind": "doc"
+    }
+  ]
+}

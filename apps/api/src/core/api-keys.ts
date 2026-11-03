@@ -1,16 +1,6 @@
 import { createHash, randomInt, timingSafeEqual } from 'node:crypto';
 import { getPool } from '../db/pool.js';
 
-/**
- * Helix API keys.
- *
- * These authenticate a caller to this instance. They are unrelated to the
- * operator's LLM, proxy and vector-store credentials, which live in environment
- * variables and are never stored here — Helix calls your models with your keys.
- *
- * Keys are stored as SHA-256 hashes. The plaintext is returned exactly once, at
- * creation, and cannot be recovered afterwards.
- */
 
 const PREFIX = 'helix-';
 const KEY_LENGTH = 16;
@@ -28,7 +18,6 @@ export interface ApiKey {
 }
 
 export interface CreatedApiKey extends ApiKey {
-  /** Shown once. Not recoverable. */
   key: string;
 }
 
@@ -36,12 +25,6 @@ export function hashKey(key: string): string {
   return createHash('sha256').update(key).digest('hex');
 }
 
-/**
- * Compare hex digests without leaking timing information.
- *
- * Lookup is by hash so the database does the work, but any direct comparison
- * still goes through this.
- */
 export function safeEqual(a: string, b: string): boolean {
   const bufA = Buffer.from(a, 'utf8');
   const bufB = Buffer.from(b, 'utf8');
@@ -56,7 +39,6 @@ export function generateKey(): { key: string; hash: string; prefix: string } {
   return {
     key,
     hash: hashKey(key),
-    // Enough to identify a key in a list without revealing it.
     prefix: key.slice(0, PREFIX.length + PREFIX_VISIBLE),
   };
 }
@@ -97,10 +79,6 @@ export async function createApiKey(name: string, rateLimit = 1000): Promise<Crea
   return { ...toApiKey(row), key };
 }
 
-/**
- * Resolve a presented key. Returns undefined for unknown or revoked keys —
- * the caller must not be able to distinguish the two.
- */
 export async function verifyApiKey(key: string): Promise<ApiKey | undefined> {
   if (!key.startsWith(PREFIX)) return undefined;
 
@@ -114,7 +92,6 @@ export async function verifyApiKey(key: string): Promise<ApiKey | undefined> {
   const row = rows[0];
   if (!row) return undefined;
 
-  // Fire-and-forget: a failed usage stamp must never fail the request.
   void getPool()
     .query('UPDATE api_keys SET last_used_at = now() WHERE id = $1', [row.id])
     .catch(() => undefined);
@@ -122,10 +99,6 @@ export async function verifyApiKey(key: string): Promise<ApiKey | undefined> {
   return toApiKey(row);
 }
 
-/**
- * Register a key minted elsewhere (the hosted website mints `helix-` keys and
- * mirrors them here so this instance can validate them by hash). Idempotent.
- */
 export async function importApiKey(plaintext: string, name: string, rateLimit = 1000): Promise<ApiKey> {
   if (!plaintext.startsWith(PREFIX)) throw new Error('key must start with ' + PREFIX);
   const { rows } = await getPool().query<KeyRow>(
@@ -148,10 +121,6 @@ export async function revokeApiKeyByHash(plaintextHash: string): Promise<boolean
   return (rowCount ?? 0) > 0;
 }
 
-/**
- * Ceiling on `listApiKeys`. /usage/all runs a query per key returned, so an
- * unbounded list here is an unbounded fan-out there, not just a large response.
- */
 export const API_KEY_LIST_LIMIT = 500;
 
 export async function listApiKeys(): Promise<ApiKey[]> {
@@ -172,14 +141,6 @@ export async function revokeApiKey(id: string): Promise<boolean> {
   return (rowCount ?? 0) > 0;
 }
 
-/**
- * Ensure the bootstrap key from the environment exists as a real, active row.
- *
- * Without this the first request has nothing to authenticate against. The key
- * named by `HELIX_BOOTSTRAP_KEY` is registered and active at every boot, so a
- * revoke lasts only until the next restart: the desktop app injects this key
- * and would otherwise be locked out for good. To retire it, unset the variable.
- */
 export async function ensureBootstrapKey(plaintext: string): Promise<void> {
   const hash = hashKey(plaintext);
   const prefix = plaintext.slice(0, PREFIX.length + PREFIX_VISIBLE);

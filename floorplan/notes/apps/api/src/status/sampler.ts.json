@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/status/sampler.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "StatusSampler",
+      "line": 14,
+      "offset": 0,
+      "text": "Runs the same checks `/health` runs, once a minute, and keeps a rolling\n90-day history for `/status/history`. A DB outage is not fatal to the\nsampler itself — it just has nowhere to write this tick, so it logs once\nand tries again next tick rather than crashing the process over a page\nnobody has to see immediately.",
+      "kind": "doc"
+    }
+  ]
+}

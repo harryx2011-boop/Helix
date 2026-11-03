@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/embed.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "EMBED_HELLO",
+      "line": 2,
+      "offset": 0,
+      "text": "The API key handoff for `/app` shown inside the Helix VS Code extension.\n\nThe extension hosts `/app` in an iframe inside a webview. The iframe sees no\n`window.helixDesktop` and its storage is not the browser's, so the key the\nextension keeps is passed in by message: the app asks its parent once, and\ntakes an answer only from that parent, only from a VS Code webview origin,\nand only in the shape of a Helix key.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "WEBVIEW_ORIGIN",
+      "line": 5,
+      "offset": 0,
+      "text": "The webview origin scheme VS Code gives every webview.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "EmbedWindow",
+      "line": 9,
+      "offset": 0,
+      "text": "The parts of `window` this module uses, so tests can pass a stand-in.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "trustedKey",
+      "line": 19,
+      "offset": 0,
+      "text": "The key in a trusted handoff message, or null for anything else.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "listenForEmbedKey",
+      "line": 30,
+      "offset": 0,
+      "text": "Inside a frame, ask the parent for a key and call `onKey` with each trusted\nanswer. Outside a frame, do nothing. Returns the unsubscribe.\n\nThe hello is sent to any origin because it carries nothing; the answer is\nwhat gets checked.",
+      "kind": "doc"
+    }
+  ]
+}

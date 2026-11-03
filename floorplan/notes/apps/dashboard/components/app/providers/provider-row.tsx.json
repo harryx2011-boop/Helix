@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/providers/provider-row.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ProviderMeta.local",
+      "line": 20,
+      "offset": 0,
+      "text": "Local runtimes take a base URL instead of an API key.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ProviderIcon",
+      "line": 42,
+      "offset": 0,
+      "text": "`docs.vllm.ai` / `ollama.com` ship real PNG marks; `openai-compatible` isn't a company and gets a lucide icon instead.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ModelPicker",
+      "line": 70,
+      "offset": 0,
+      "text": "Browses the models this provider will actually serve, next to the free-text\nmodel input it never replaces — a provider may hold a model this list can't\nsee (a local runtime still pulling, a cloud model newer than the catalogue).\n\nFor a LOCAL runtime the API fetches against the base URL already saved, not\nwhatever sits unsaved in the text field, so a pending edit never gets\nsilently checked against the old host — hence the `savedBaseUrl` gate.\n\nA CLOUD provider needs no base URL, and its catalogue answers even with no\nkey stored (the curated list), so browsing is offered from the start rather\nthan only after a save.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "detectedRuntime",
+      "line": 157,
+      "offset": 0,
+      "text": "A runtime the API found answering on its default address, offered only while nothing is stored for it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "ProviderRow",
+      "line": 201,
+      "offset": 15,
+      "text": "A detected address pre-fills the field, so \"Use it\" and a hand-typed URL\nshare one save path — nothing is stored until the button is clicked.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "ProviderRow",
+      "line": 240,
+      "offset": 54,
+      "text": "The API refuses an outright rejected credential, so reaching here means\nthe provider either accepted it or could not be asked. Saying \"saved\"\nfor both would put back the green-dot lie: an unproven credential is\nstored, and the caller is told exactly that.",
+      "kind": "what"
+    }
+  ]
+}

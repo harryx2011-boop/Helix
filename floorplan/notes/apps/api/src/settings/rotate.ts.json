@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/settings/rotate.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "RotationResult",
+      "line": 6,
+      "offset": 0,
+      "text": "Encryption-key rotation.\n\nRotating `HELIX_ENCRYPTION_KEY` used to be unrecoverable: `decryptSecret`\ntakes one key, the rows carried no marker saying which key encrypted them,\nand a new key therefore turned every stored provider key into undecryptable\nbytes. Nothing warned anyone, because nothing reads a provider key until a\ncaller makes an LLM-backed request.\n\nRotation now re-encrypts every row inside one transaction. Every row is\ndecrypted with the old key and re-encrypted with the new one before anything\nis committed, so a wrong old key aborts the whole rotation with nothing\nwritten rather than destroying half the table.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "fingerprint",
+      "line": 19,
+      "offset": 0,
+      "text": "Identifies a key without revealing it, so a version row is auditable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "rotateEncryptionKey",
+      "line": 58,
+      "offset": 28,
+      "text": "Decrypt everything before writing anything: a wrong old key must fail the\nrotation, not leave the table split across two keys.",
+      "kind": "why"
+    }
+  ]
+}

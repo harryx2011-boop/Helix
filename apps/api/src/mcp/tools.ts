@@ -1,12 +1,5 @@
 import { deref, flattenAllOf, type JsonObject, type OpenApiSpec } from './spec.js';
 
-/**
- * MCP tools are generated from openapi.yaml, never written by hand, so a tool's
- * name, description and input schema cannot drift from the HTTP contract. Only
- * operations the running server actually serves become tools: the spec may
- * describe an endpoint before its route exists, and an agent must not be
- * offered a tool that 404s.
- */
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -20,7 +13,6 @@ export interface ToolDef {
   description: string;
   inputSchema: JsonObject;
   method: HttpMethod;
-  /** Spec path, e.g. `/jobs/{id}`. */
   path: string;
   params: ToolParam[];
   hasBody: boolean;
@@ -28,30 +20,6 @@ export interface ToolDef {
 
 export type IsLive = (method: HttpMethod, path: string) => boolean;
 
-/**
- * Operations an MCP client must confirm before they run.
- *
- * WHY THE GATE IS HERE AND NOT ON THE ROUTES. A curl caller who sends DELETE
- * chose that verb. A model reached it by inference from a description, and
- * `CallTool` hands it to `app.inject` with no idea one operation is heavier
- * than another — a DELETE dispatches exactly like a GET. The asymmetry is in
- * the caller, so the gate belongs at the caller's boundary.
- *
- * WHY THESE FOUR AND NOT EVERY MUTATION. Twenty operations mutate, but most of
- * them ARE the product: /scrape, /crawl, /search and /interact all POST, and
- * gating those would mean confirming a scrape. What is listed here is the set a
- * caller cannot undo — a stored credential that silently re-points every later
- * inference call, and deletes that take their history with them.
- *
- * `putProvider` is the sharpest and the reason this exists: per its own spec
- * text, every LLM-backed request made with this Helix key afterwards uses the
- * supplied credential instead of the instance's. A tool that can redirect all
- * downstream inference should not fire on one inferred call.
- *
- * `confirm` is model-supplied, so this stops an INFERRED call and not an
- * INSTRUCTED one — the same limit Canvas's confirm has. It buys a turn in which
- * a human sees what is about to happen, which is the whole claim.
- */
 export const CONFIRM_REQUIRED: ReadonlyArray<{ method: HttpMethod; path: string; warning: string }> = [
   {
     method: 'PUT',
@@ -79,7 +47,6 @@ export const CONFIRM_REQUIRED: ReadonlyArray<{ method: HttpMethod; path: string;
   },
 ];
 
-/** The warning for an operation that needs confirming, or undefined if it does not. */
 export function needsConfirmation(method: HttpMethod, path: string): string | undefined {
   return CONFIRM_REQUIRED.find((e) => e.method === method && e.path === path)?.warning;
 }
@@ -172,11 +139,6 @@ export function generateTools(spec: OpenApiSpec, isLive: IsLive = () => true): T
         params.push({ name, in: where });
       }
 
-      /* An operation that cannot be undone advertises `confirm` and says why in
-         the description, so the model learns the requirement from the manifest
-         rather than from a refusal. The property is added to the SCHEMA only —
-         `planRequest` strips it before the request is built, so the HTTP
-         contract is untouched and a curl caller never sees it. */
       const warning = needsConfirmation(method, path);
       if (warning) {
         properties['confirm'] = {
@@ -215,16 +177,11 @@ export interface PlannedRequest {
   body?: Record<string, unknown>;
 }
 
-/** Split MCP tool arguments into the HTTP pieces of a request. */
 export function planRequest(tool: ToolDef, args: Record<string, unknown>, prefix = '/v1'): PlannedRequest {
   let path = tool.path;
   const query = new URLSearchParams();
   const body: Record<string, unknown> = { ...args };
 
-  /* `confirm` is an MCP-layer argument, never part of the HTTP contract. It is
-     dropped unconditionally rather than only for gated operations, so a model
-     that sends it on some other tool cannot push an unexpected field into a
-     request body the route will then reject. */
   delete body['confirm'];
 
   for (const param of tool.params) {

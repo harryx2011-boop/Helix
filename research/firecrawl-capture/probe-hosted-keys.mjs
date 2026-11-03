@@ -3,10 +3,6 @@ import path from 'node:path';
 import { chromium } from 'playwright';
 import { clerk, clerkSetup } from '@clerk/testing/playwright';
 
-// End-to-end proof of the one-database model: sign in through Clerk, create a
-// key on /app/keys, then read the same row back through Supabase's Data API.
-// Run from research/firecrawl-capture with MSYS_NO_PATHCONV=1 and the dashboard
-// dev server on 3400 in hosted mode.
 
 const envText = fs.readFileSync(path.resolve('../../apps/dashboard/.env.local'), 'utf8');
 const env = Object.fromEntries(

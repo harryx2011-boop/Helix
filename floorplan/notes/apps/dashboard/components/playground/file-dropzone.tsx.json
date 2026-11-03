@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/file-dropzone.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FileDropzoneProps.idleHint",
+      "line": 19,
+      "offset": 0,
+      "text": "Shown when no file is selected and the zone is not being dragged over.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "FileDropzone",
+      "line": 22,
+      "offset": 0,
+      "text": "Drop-to-select file zone shared by every playground form that takes an\nupload. `dragDepth` counts nested dragenter/dragleave pairs — those fire for\nevery child element the pointer crosses, so a plain boolean flickers as it\nmoves over the label's own contents.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "FileDropzone",
+      "line": 32,
+      "offset": 10,
+      "text": "The prompt box can clear the file too; without this the native input\nstill holds it and picking the same file again fires no change event.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "FileDropzone",
+      "line": 50,
+      "offset": 28,
+      "text": "A label rather than a div: clicking anywhere in the zone opens the\npicker and keyboard focus reaches the real input, so the drop zone\ncosts no accessibility to gain its size.",
+      "kind": "what"
+    }
+  ]
+}

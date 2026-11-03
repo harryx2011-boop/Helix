@@ -4,12 +4,6 @@ import * as React from 'react';
 import { fetchHealth, fetchStatusHistory } from '@/lib/api';
 import type { HealthResponse, ServiceHistory, StatusHistoryResponse } from '@/lib/status';
 
-/*
- * The data layer both status surfaces share: the public /status page and the
- * operator's /app/self-host/health screen poll the same two open routes and
- * derive the same rows, so the polling, ordering and incident maths live here
- * once and each page only decides how to paint them.
- */
 
 export const HEALTH_POLL_MS = 30_000;
 
@@ -33,11 +27,6 @@ export function formatLastUpdated(date: Date): string {
   });
 }
 
-/**
- * Fetches `/health` every 30s while the tab is visible; pauses in the
- * background rather than burning cycles on a hidden tab. Bumping `nonce`
- * restarts the loop, which is what a manual refresh is.
- */
 export function useHealthPolling(
   baseUrl: string | null,
   nonce = 0,
@@ -70,8 +59,6 @@ export function useHealthPolling(
       try {
         const body = await fetchHealth(base);
         if (cancelled) return;
-        // `/health` reports its dependencies, not itself — the round trip of
-        // this very request is the API row's own latency signal.
         body.services['api'] = { status: body.status, latencyMs: Math.round(performance.now() - started) };
         setHealth(body);
         setError(false);
@@ -134,7 +121,6 @@ export function indexHistory(history: StatusHistoryResponse | null): Map<string,
   return map;
 }
 
-/** Known services in their fixed order, then anything else the instance reports, so a new dependency never goes unlisted. */
 export function orderServices(health: HealthResponse | null, historyByService: Map<string, ServiceHistory>): string[] {
   const names = new Set<string>(SERVICE_ORDER);
   for (const key of Object.keys(health?.services ?? {})) names.add(key);
@@ -142,7 +128,6 @@ export function orderServices(health: HealthResponse | null, historyByService: M
   return SERVICE_ORDER.filter((s) => names.has(s)).concat(Array.from(names).filter((s) => !SERVICE_ORDER.includes(s)));
 }
 
-/** Mean of the days that have samples, or null when none do yet. */
 export function averageUptime(history: ServiceHistory | undefined): number | null {
   if (!history) return null;
   const withData = history.days.filter((d) => d.okPct !== null);

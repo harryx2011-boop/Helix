@@ -1,15 +1,3 @@
-/**
- * Characterization test for HelixClient.
- *
- * Pins the exact HTTP request every public method sends today: method, URL,
- * headers, and body shape. This is the safety net for the planned rewrite
- * (client generated from openapi.yaml) - every assertion here must still
- * hold, unchanged, once the client is regenerated.
- *
- * Not a spec: some of what is pinned (e.g. metadataScrub's AbortError
- * behaviour, noted inline) is known to be changing and is deliberately left
- * unpinned rather than asserted.
- */
 import { describe, expect, it, vi } from 'vitest';
 import { HelixClient } from './client.js';
 import type {
@@ -618,8 +606,6 @@ describe('HelixClient characterization: parse upload variants', () => {
     expect(request.url).toBe(`${BASE_URL}/parse`);
     expect(request.authorization).toBe(AUTH);
     expect(request.contentType).toBeUndefined();
-    // Part order follows openapi.yaml's ParseUpload schema; the route reads each
-    // field by name (routes/parse.ts), so only the set of parts is pinned.
     expect(request.formEntries[0]).toEqual(['file', { filename: 'report.pdf' }]);
     expect(request.formEntries).toEqual(
       expect.arrayContaining([

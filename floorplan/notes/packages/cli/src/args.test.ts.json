@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/cli/src/args.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 20,
+      "offset": null,
+      "text": "A boolean flag given an inline value must accept only true/false and\nreject anything else, rather than silently discarding the value and\ntreating the flag as set regardless of what was written.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 32,
+      "offset": null,
+      "text": "A valued flag whose next token looks like another flag must not silently\nswallow it as the value -- `--key --all` should fail loudly rather than\ntreat \"--all\" as the key.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 41,
+      "offset": null,
+      "text": "Only a token starting with -- is treated as another flag.",
+      "kind": "what"
+    }
+  ]
+}

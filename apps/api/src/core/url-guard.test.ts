@@ -173,8 +173,6 @@ describe('checkUrl', () => {
     expect((await checkUrl('file:///etc/passwd', { allowPrivate: true })).ok).toBe(false);
   });
 
-  // Link-local carries the cloud metadata endpoint and CGNAT is the carrier's
-  // space: neither is a private target anyone opted in to.
   it.each(['http://169.254.169.254/', 'http://100.64.0.1/', 'http://[::ffff:169.254.169.254]/', 'http://[fe80::1]/'])(
     'refuses the always-blocked address %s even when private targets are allowed',
     async (url) => {

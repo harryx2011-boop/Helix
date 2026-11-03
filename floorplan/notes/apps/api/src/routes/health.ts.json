@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/health.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HealthDeps.searxngUrl",
+      "line": 16,
+      "offset": 0,
+      "text": "From config, which a stored setting can set when the env does not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "HealthDeps.now",
+      "line": 17,
+      "offset": 0,
+      "text": "Clock for the probe cache. Injected by tests.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "PROBE_CACHE_MS",
+      "line": 20,
+      "offset": 0,
+      "text": "How long one round of live probes answers every request. The route is open, so a burst must not multiply into probes.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "registerHealth",
+      "line": 27,
+      "offset": 0,
+      "text": "Health, including each dependency's latency and which BYOK providers are configured.\n\nProvider status reports only whether a credential is present and which model\nis selected. Key material is never returned — a health endpoint is often the\nleast-guarded route in a deployment.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "registerHealth",
+      "line": 35,
+      "offset": 8,
+      "text": "A failed round must not be served for the whole window.",
+      "kind": "why"
+    },
+    {
+      "id": "n6",
+      "symbol": "buildReport",
+      "line": 62,
+      "offset": 18,
+      "text": "Names only: this route is open, and a detected runtime is offered, not used.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "buildReport",
+      "line": 65,
+      "offset": 21,
+      "text": "the local model needs no key",
+      "kind": "what"
+    }
+  ]
+}

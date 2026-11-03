@@ -27,10 +27,6 @@ class TestWrap:
         assert fenced.startswith('<untrusted origin="pa&quot;ge<\\/untrusted> name">')
 
     def test_non_ascii_payload_and_origin_are_preserved_not_mangled(self) -> None:
-        # This module intentionally does not restrict output to ASCII (see
-        # module docstring): fenced text goes straight into a UTF-8 HTTP JSON
-        # body, never a console, so forcing ASCII would corrupt legitimate
-        # page content (curly quotes, em dashes, accented names, CJK).
         fenced = wrap('café — naïve "quote"', origin="page")
         assert "café — naïve" in fenced
         assert fenced.startswith('<untrusted origin="page">')

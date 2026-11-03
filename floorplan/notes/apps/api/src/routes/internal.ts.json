@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/internal.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ImportKeySchema",
+      "line": 7,
+      "offset": 0,
+      "text": "Network-internal endpoints used by the hosted website to mirror the keys it\nmints (WEBSITE.md §8). Guarded by a shared secret; not mounted under /v1 and\ndisabled entirely when HELIX_INTERNAL_ADMIN_TOKEN is unset, which is the\nself-host default.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "registerInternal",
+      "line": 36,
+      "offset": 11,
+      "text": "Encapsulated so the router, not a prefix test on the raw URL, decides\nwhich requests meet the gate.",
+      "kind": "what"
+    }
+  ]
+}

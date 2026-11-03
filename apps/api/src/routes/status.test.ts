@@ -1,11 +1,6 @@
 import Fastify from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * `/status/history` contract. Postgres is a fake: what matters here is that
- * the route shapes the query's rows into ascending per-day buckets, clamps
- * `days`, and serves a cached response inside the 60s window.
- */
 
 interface Call {
   text: string;

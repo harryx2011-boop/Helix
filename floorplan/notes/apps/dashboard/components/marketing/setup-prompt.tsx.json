@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/setup-prompt.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "AgentTarget.href",
+      "line": 22,
+      "offset": 0,
+      "text": "Where \"Open in\" goes. A deep link installs Helix's MCP server directly; a docs URL is the fallback for tools with no install scheme.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "AgentTarget.copiesPrompt",
+      "line": 23,
+      "offset": 0,
+      "text": "Copy the setup prompt on the way out, for tools that open to a prompt box rather than an installer.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SetupPrompt",
+      "line": 38,
+      "offset": 0,
+      "text": "A split pill: copy the setup prompt, or open Helix in the agent you already\nuse. The three marks are the affordance — they say \"your tool is here\"\nbefore the menu opens. Secondary weight, so it sits under the CTA pair\nwithout competing with it.",
+      "kind": "doc"
+    }
+  ]
+}

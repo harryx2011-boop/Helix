@@ -1,13 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { RobotsCache } from './robots.js';
 
-/**
- * Where the robots.txt fetch is allowed to end up.
- *
- * A public host answering 302 to an internal address is the usual way around a
- * check made only on the first URL, so redirects are followed by hand and every
- * hop is checked.
- */
 
 function respond(status: number, headers: Record<string, string>, body = ''): Response {
   return new Response(body, { status, headers });
@@ -25,7 +18,6 @@ describe('RobotsCache redirects', () => {
     const robots = new RobotsCache('HelixBot/test', undefined, fetchImpl as unknown as typeof fetch);
     const rules = await robots.forUrl('https://example.com/page');
 
-    // The hop was refused, so no rules were read: everything is permitted.
     expect(rules.isAllowed('https://example.com/page')).toBe(true);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(fetchImpl.mock.calls.every((call) => !String(call[0]).includes('127.0.0.1'))).toBe(true);

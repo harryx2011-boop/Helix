@@ -5,14 +5,6 @@ import { InternalTickets, registerAuth } from './auth.js';
 import { RateLimiter } from './rate-limit.js';
 import type { ApiKey } from './api-keys.js';
 
-/**
- * Which paths the open list actually opens.
- *
- * The list is a prefix match, so anything that makes a protected path *start*
- * with `/v1/health` is a bypass. `app.inject` normalises `..` away and cannot
- * reproduce it, so these drive a real socket and write the request line by
- * hand.
- */
 
 const KEY: ApiKey = {
   id: '0f6c1d2e-3a4b-4c5d-8e6f-7a8b9c0d1e2f',
@@ -43,7 +35,6 @@ async function listen(): Promise<number> {
   return address.port;
 }
 
-/** Sends a request line verbatim, so the literal path reaches the server unnormalised. */
 function rawGet(port: number, path: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const socket = connect(port, '127.0.0.1', () => {

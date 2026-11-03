@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/preferences.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Preferences",
+      "line": 7,
+      "offset": 0,
+      "text": "Per-browser preferences. Deliberately not on `profiles`: these describe the\nmachine someone is sitting at, not the account — a phone and a desktop want\ndifferent answers, and a self-host install has no account to hang them on.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "Preferences.appearance",
+      "line": 8,
+      "offset": 0,
+      "text": "`system` follows the OS; the app surface is dark-first regardless (FRONTEND.md §3).",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "Preferences.reduceMotion",
+      "line": 11,
+      "offset": 0,
+      "text": "Overrides the OS setting in one direction only: it can force motion off, never on.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "SIDEBAR_STORAGE_KEY",
+      "line": 25,
+      "offset": 0,
+      "text": "The sidebar reads its own key on mount, so the preference seeds that rather than replacing it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "read",
+      "line": 33,
+      "offset": 6,
+      "text": "Spread over the defaults rather than trusting the shape: a preference\nadded after someone's last visit is absent from their stored object.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "write",
+      "line": 43,
+      "offset": 4,
+      "text": "A browser with storage disabled still gets a working session; the\npreference simply does not survive the tab.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "usePreferences",
+      "line": 76,
+      "offset": 24,
+      "text": "The sidebar stores '1'/'0', not 'true'/'false'; writing the wrong\nshape here reads back as collapsed either way.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "usePreferences",
+      "line": 78,
+      "offset": 26,
+      "text": "Same as above: the session still works without persistence.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "usePrefersReducedMotion",
+      "line": 88,
+      "offset": 0,
+      "text": "True when motion should be suppressed: the OS asks for it, or the user set\nthe override here. Components already honour `prefers-reduced-motion` in CSS;\nthis covers the JS-driven fields, which CSS cannot reach.",
+      "kind": "doc"
+    }
+  ]
+}

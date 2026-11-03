@@ -26,35 +26,16 @@ class Usage:
 class Rate:
     input_per_million: float
     output_per_million: float
-    # Multipliers on `input_per_million`, not standalone rates: every provider
-    # that reports cache tokens prices them as a fraction or multiple of the
-    # same fresh-input rate, never a rate of their own.
     cache_read_multiplier: float = 0.1
     cache_write_multiplier: float = 1.25
 
 
-# USD per 1,000,000 tokens. Keyed by (provider, model) rather than model alone,
-# because the same model name can mean different rates behind different wire
-# formats (e.g. an OpenRouter-routed model is not this table's problem to
-# price — see the note below).
-#
-# Anthropic: platform.claude.com/docs/en/about-claude/pricing, checked
-# 2026-09-05. Cache read at 0.1x input and cache write at 1.25x input are
-# Anthropic's own published ratios, uniform across this model family.
 PRICE_TABLE: dict[tuple[str, str], Rate] = {
     ("anthropic", "claude-opus-5"): Rate(5.0, 25.0),
     ("anthropic", "claude-sonnet-5"): Rate(2.0, 10.0),
     ("anthropic", "claude-haiku-4-5"): Rate(1.0, 5.0),
 
-    # OpenAI, Gemini and OpenRouter entries go here ONLY with a cited source
-    # checked against this codebase's actual DEFAULT_MODELS/adapter model set
-    # (see llm.py). None are added speculatively: an uncited row is a guess
-    # wearing a price tag, and this table's whole point is refusing to guess.
 
-    # Local runtimes speak the OpenAI wire format but run on the operator's
-    # own hardware — priced at exactly zero, not absent, so a caller reading
-    # `cost_usd` sees a real answer rather than the "unpriced" case reserved
-    # for a model this table has no opinion on.
     ("ollama", "*"): Rate(0.0, 0.0, cache_read_multiplier=0.0, cache_write_multiplier=0.0),
     ("vllm", "*"): Rate(0.0, 0.0, cache_read_multiplier=0.0, cache_write_multiplier=0.0),
     ("openai-compatible", "*"): Rate(0.0, 0.0, cache_read_multiplier=0.0, cache_write_multiplier=0.0),

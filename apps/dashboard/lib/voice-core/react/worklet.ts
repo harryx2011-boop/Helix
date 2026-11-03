@@ -1,6 +1,3 @@
-/** Resamples the device rate to 16 kHz and posts 320-sample (20 ms) Int16 frames.
- *  Copied from Composer's public/worklets/mic-processor.js; inlined so a host app
- *  has no asset to copy. */
 export const MIC_WORKLET_NAME = "voice-core-mic";
 
 export const MIC_WORKLET_SOURCE = `

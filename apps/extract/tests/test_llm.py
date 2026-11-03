@@ -23,8 +23,6 @@ def _result(model: str) -> llm.ExtractionResult:
     return llm.ExtractionResult(data={"title": "T"}, tokens_input=1, tokens_output=1, model_used=model)
 
 
-# Minimal stand-ins for the Anthropic SDK shapes `_call_anthropic` reads from a
-# response: a text block, a tool_use block, and the usage/model wrapper.
 @dataclass
 class _TextBlock:
     text: str
@@ -91,8 +89,6 @@ class TestResolve:
         assert llm._resolve("gpt-4.1", "openai") == ("openai", "gpt-4.1")
 
     def test_provider_override_does_not_carry_the_instance_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        # HELIX_LLM_MODEL belongs to the instance's provider. Sending it to
-        # another vendor is a 404 dressed up as a 500.
         monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
         monkeypatch.setattr(settings, "helix_llm_model", "claude-sonnet-4-5")
         provider, model = llm._resolve(None, "openai")
@@ -546,9 +542,6 @@ class TestCrossProviderFallback:
     async def test_a_candidate_provider_with_no_usable_credential_is_skipped(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Priority order is anthropic, openai, gemini, openrouter. The primary
-        # is anthropic itself; openai has no caller key and no instance key,
-        # so the hop must skip straight to gemini.
         async def anthropic_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
             raise llm.ProviderError("anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True)
 
@@ -617,10 +610,6 @@ class TestCrossProviderFallback:
     async def test_two_documents_in_one_request_each_get_their_own_notice(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Guards against the notice ever being (or becoming) a crawl/batch
-        # aggregate: two pages with different kept/total, processed back to
-        # back as one caller request would, must not leak one page's counts
-        # into the other's notice.
         seen: list[str] = []
 
         async def stub(content: str, *_args: object, **_kwargs: object) -> llm.ExtractionResult:
@@ -648,7 +637,6 @@ class TestCrossProviderFallback:
         assert second_notice in seen[1]
         assert first_notice not in seen[1]
 
-        # The notice sits inside the user-message content, after the fenced page.
         for content in seen:
             fence_close = content.index("</untrusted>")
             notice_pos = content.index("[content clipped:")
@@ -763,10 +751,6 @@ class TestAnthropicRequestShape:
     async def test_schema_error_from_the_anthropic_call_does_not_trigger_cross_provider_fallback(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Exercises the same guarantee through the real `extract_structured`
-        # entry point, using the actual `_call_anthropic` (not a stub), so the
-        # SchemaError raised deep in the SDK-response parsing is what proves
-        # out — not a hand-raised one a stub could get wrong.
         monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: False)
         captured: dict[str, Any] = {}
         response = _FakeMessage(content=[_TextBlock(text="no tool call here")], stop_reason="end_turn")
@@ -822,7 +806,4 @@ class TestAnthropicOutputFormatFeatureGate:
         assert "output_config" not in captured["kwargs"]
 
     def test_feature_check_reflects_the_installed_sdk(self) -> None:
-        # Not mocked: proves the real feature-check function runs against the
-        # SDK actually installed in this venv, rather than only ever being
-        # exercised through a monkeypatched stand-in.
         assert isinstance(llm._anthropic_supports_output_format(), bool)

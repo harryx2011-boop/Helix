@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/setup-guides.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PanelToggle",
+      "line": 36,
+      "offset": 0,
+      "text": "The two-option pill that sits in a terminal panel's chrome.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SetupGuides",
+      "line": 126,
+      "offset": 0,
+      "text": "Tabbed request/response for the SDK, CLI and agent wiring, then one onboarding band for coding agents.",
+      "kind": "doc"
+    }
+  ]
+}

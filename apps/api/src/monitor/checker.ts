@@ -5,14 +5,6 @@ import { normalizeForComparison } from './sensitivity.js';
 import type { CheckRecord, MonitorEvent, MonitorRecord, MonitorStore, SnapshotRecord } from './store.js';
 import { evaluateTrigger, type TriggerReason } from './triggers.js';
 
-/**
- * One check of one monitor.
- *
- * Fetch the page, compare it with the last snapshot, decide whether that
- * counts as a change, record the outcome, and queue a webhook if it does.
- * Unchanged pages store no new snapshot and send nothing — the check row is
- * the only trace they leave, which is what makes them free.
- */
 
 export type FetchOutcome =
   | { ok: true; content: string; contentHash?: string | undefined }
@@ -21,17 +13,9 @@ export type FetchOutcome =
 export interface CheckerDeps {
   store: MonitorStore;
   fetchPage: (monitor: MonitorRecord) => Promise<FetchOutcome>;
-  /**
-   * Runs structured extraction for a monitor with `jsonOptions` set. Only
-   * called on a change that already passed the trigger, so a quiet or
-   * filtered check never pays for a model call. A failure is logged and
-   * falls back to the text diff rather than failing the check.
-   */
   extractJson?: ((monitor: MonitorRecord, content: string) => Promise<Record<string, unknown>>) | undefined;
   retention: { keep: number; maxAgeDays: number; keepChecks: number };
-  /** A page larger than this is a failed check, not a stored snapshot. */
   maxContentBytes?: number | undefined;
-  /** Base path used to build `snapshotUrl`, e.g. `/v1/monitor`. */
   basePath?: string | undefined;
   logger?: Log | undefined;
   now?: (() => Date) | undefined;
@@ -45,11 +29,6 @@ export interface CheckOutcome {
 
 export const DEFAULT_MAX_CONTENT_BYTES = 1_048_576;
 
-/**
- * A stored or delivered diff past this size keeps its counts and loses its
- * ops and text. History rows are written on every changed check and never
- * expire by content size, so the page must not be copied into them whole.
- */
 export const MAX_DIFF_BYTES = 131_072;
 
 export function hashContent(content: string): string {
@@ -60,7 +39,6 @@ export function snapshotUrl(basePath: string, monitorId: string, snapshotId: num
   return `${basePath}/${monitorId}/snapshots/${snapshotId}`;
 }
 
-/** `trigger.selector` is shorthand for `includeSelectors`; the explicit list wins when both are set. */
 export function includeSelectorsFor(monitor: MonitorRecord): string[] {
   if (monitor.scrapeOptions.includeSelectors && monitor.scrapeOptions.includeSelectors.length > 0) {
     return monitor.scrapeOptions.includeSelectors;
@@ -83,8 +61,6 @@ function diffForPayload(diff: Diff | JsonDiff, inline: boolean): Record<string, 
     changeRatio: diff.changeRatio,
     ...(diff.coarse ? { coarse: true } : {}),
   };
-  // Inline off withholds the page text, and the summary quotes it, so that
-  // payload gets the summary's counts line only.
   if (!inline) return { ...counts, summary: summarizeDiff({ ...diff, ops: [] }) };
   const bounded = boundedDiff(diff, MAX_DIFF_BYTES);
   const withSummary = { ...counts, summary: diff.summary };
@@ -151,7 +127,6 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
       triggerReason?: TriggerReason | undefined;
     },
   ): Promise<CheckOutcome> => {
-    // Summarized from the full diff, before a size bound drops its passages.
     const diff = input.diff ? { ...input.diff, summary: summarizeDiff(input.diff) } : null;
     const check = await deps.store.recordCheck({
       monitorId: monitor.id,
@@ -180,8 +155,6 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
       await deps.store.pruneSnapshots(monitor.id, deps.retention.keep, deps.retention.maxAgeDays);
     }
 
-    // `checked` is every check; `changed` is the subset that fired. A webhook
-    // on both gets both for a change, each under its own dedupe key.
     const events: MonitorEvent[] = [];
     if (input.changed && wants(monitor, 'changed')) events.push('changed');
     if (wants(monitor, 'checked')) events.push('checked');
@@ -236,17 +209,12 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
 
   const textDiff = diffText(before, after, monitor.diff.granularity);
 
-  // A whitespace-only edit differs verbatim but tokenizes to no added or
-  // removed tokens, since whitespace tokens are not counted as changes. Left
-  // alone that reaches the trigger with an empty diff and fires on nothing.
   if (textDiff.added === 0 && textDiff.removed === 0) {
     return finish({ reason: 'filtered', changed: false, diff: null, snapshot: null });
   }
 
   const verdict = evaluateTrigger(monitor.trigger, { before, after, diff: textDiff });
 
-  // The baseline moves whenever the content really differs, so the next
-  // keyword check compares against what the page says now.
   const snapshot = await deps.store.saveSnapshot({
     monitorId: monitor.id,
     url: monitor.url,
@@ -259,9 +227,6 @@ export async function runCheck(monitor: MonitorRecord, deps: CheckerDeps): Promi
     return finish({ reason: 'trigger_not_met', changed: false, diff: textDiff, snapshot, triggerReason: verdict.reason });
   }
 
-  // The text diff always decides whether the change fires; JSON extraction is
-  // an additional, more expensive view taken only once a change is already
-  // going out, so a trigger that suppresses the change never pays for it.
   let diff: Diff | JsonDiff = textDiff;
   if (monitor.jsonOptions && deps.extractJson) {
     try {

@@ -14,15 +14,9 @@ const TIER_LABEL: Record<Tier, string> = {
 
 interface FetchLadderProps {
   tiersAttempted: Tier[];
-  /** The tier that produced the returned result, or undefined on total failure. */
   resolvedTier?: Tier | undefined;
 }
 
-/**
- * Renders every rung Helix walked, in ladder order — not just the attempted
- * set — so a caller sees both which tiers were tried and which were skipped
- * because escalation stopped early or was never needed.
- */
 export function FetchLadder({ tiersAttempted, resolvedTier }: FetchLadderProps) {
   const attemptedSet = new Set(tiersAttempted);
   const highestAttempted = tiersAttempted.length > 0 ? tiersAttempted[tiersAttempted.length - 1] : undefined;

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/docs.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Block",
+      "line": 1,
+      "offset": 0,
+      "text": "The plain-language docs: install, how it works, settings, privacy and help.\nThe developer references (API, MCP, command line, one page per feature) stay in `docs-content.ts`.\nEngine, model and port names are allowed here and nowhere else on the marketing site.",
+      "kind": "doc"
+    }
+  ]
+}

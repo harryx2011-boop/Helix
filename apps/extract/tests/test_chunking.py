@@ -36,16 +36,12 @@ class TestAnchors:
         assert a == b
 
     def test_survives_an_edit_further_down_the_chunk(self) -> None:
-        # Anchors hash the opening only, so appending to a section does not
-        # break every citation that pointed into it.
         opening = "The Pro plan costs $29 per month and includes everything in Starter. "
         a = make_anchor("https://e.com/d", ["Pricing"], opening + "Original tail.")
         b = make_anchor("https://e.com/d", ["Pricing"], opening + "A rewritten tail entirely.")
         assert a == b
 
     def test_does_not_encode_position(self) -> None:
-        # An anchor containing "chunk 7" breaks when chunk 3 is edited. Two
-        # identical sections at different positions must anchor identically.
         text = "Identical section content here."
         assert make_anchor("https://e.com/d", ["A"], text) == make_anchor(
             "https://e.com/d", ["A"], text
@@ -75,8 +71,6 @@ class TestChunkMarkdown:
         assert any("$29" in c.text for c in chunks)
 
     def test_carries_the_heading_into_each_chunk(self) -> None:
-        # A chunk saying "it costs $29" is useless without the heading that
-        # says what "it" is — the context is what makes it retrievable.
         chunks = chunk_markdown(DOC, "https://e.com/docs", strategy="heading")
         pricing = next(c for c in chunks if "$29" in c.text)
 
@@ -97,8 +91,6 @@ class TestChunkMarkdown:
         assert two.heading_path == ["Two"]
 
     def test_splits_a_long_section_on_sentence_boundaries(self) -> None:
-        # A chunk cut mid-sentence embeds badly and reads as incoherent to
-        # whoever eventually sees the citation.
         long_section = "# Long\n\n" + "This is a complete sentence about the topic. " * 200
         chunks = chunk_markdown(long_section, "https://e.com/d", max_tokens=100)
 
@@ -119,7 +111,6 @@ class TestChunkMarkdown:
         text = "# S\n\n" + "Word " * 5_000
         chunks = chunk_markdown(text, "https://e.com/d", max_tokens=128)
 
-        # Four characters per token, plus slack for the heading prefix.
         assert all(len(c.text) <= 128 * 4 + 200 for c in chunks)
 
     def test_fixed_strategy_ignores_structure(self) -> None:
@@ -143,10 +134,6 @@ class TestChunkMarkdown:
         assert [c.index for c in chunks] == list(range(len(chunks)))
 
     def test_overlap_larger_than_max_tokens_stays_within_budget(self) -> None:
-        # An overlap at or beyond the chunk budget re-carries the whole chunk
-        # forward every time, so each new chunk only grows: nothing is ever
-        # dropped and the token budget stops meaning anything. Clamped, every
-        # chunk stays near the same small size instead of climbing linearly.
         text = "Sentence one here. " * 100
         chunks = chunk_markdown(text, "https://e.com/d", max_tokens=5, overlap=1000)
 

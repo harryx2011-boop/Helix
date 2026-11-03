@@ -1,0 +1,87 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/sdk-ts/src/transport.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HelixClientOptions",
+      "line": 4,
+      "offset": 0,
+      "text": "The hand-written half of the SDK: how a request is sent, never which ones\nexist. Every endpoint method lives in client.ts, generated from openapi.yaml\nby codegen/generate.ts, and calls through `send`, `raw` or `url` here.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SendOptions.auth",
+      "line": 15,
+      "offset": 0,
+      "text": "False for the few operations the spec marks `security: []`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "HelixTransport.url",
+      "line": 27,
+      "offset": 0,
+      "text": "An empty value is left out, so an unset cursor never becomes `?cursor=`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "HelixTransport.raw",
+      "line": 37,
+      "offset": 0,
+      "text": "Send a request and return the response once it is known to be 2xx.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "wrapFetchError",
+      "line": 71,
+      "offset": 0,
+      "text": "A caller-supplied AbortSignal firing is a deliberate cancellation, not a\nnetwork failure, and must reach the caller as itself: wrapping it as a\nHelixApiError would make \"I cancelled this\" indistinguishable from \"the\nnetwork is down\". Anything else gets wrapped, with the original failure\nattached as `cause` so it is not lost.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "toFormData",
+      "line": 78,
+      "offset": 0,
+      "text": "An upload as multipart/form-data. `fields` comes from the operation's\nmultipart schema in openapi.yaml; arrays go comma-separated and objects as\nJSON strings, which is how the API reads them back.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "decodeMetadataScrub",
+      "line": 90,
+      "offset": 0,
+      "text": "`/metadata/scrub` answers with the file itself and puts the report in a\nheader, so this unwraps both into one value. Check `report.retained` before\ntreating the result as clean: some formats cannot drop every entry without\ncorrupting the file, and those are reported rather than silently kept.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "decodeMetadataScrub",
+      "line": 91,
+      "offset": 1,
+      "text": "A typed failure comes back as JSON in the usual envelope rather than as\nfile bytes, so the content type is what tells the two apart.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "decodeMetadataScrub",
+      "line": 97,
+      "offset": 7,
+      "text": "Handing back bytes with an invented empty report would claim nothing was\nfound, which is a worse answer than saying the report is missing.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "filenameFromDisposition",
+      "line": 115,
+      "offset": 0,
+      "text": "Pull the suggested filename out of a Content-Disposition header.",
+      "kind": "doc"
+    }
+  ]
+}

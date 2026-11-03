@@ -29,7 +29,6 @@ export const apiSpec: ChildFactory = (ctx) => {
     label: 'Starting database',
     port: ctx.ports.api,
     healthUrl: `${origin}/v1/health`,
-    // 503 is the API reporting a degraded dependency, which still means it is serving.
     isUp: (status: number) => status === 200 || status === 503,
     ipc: true,
   }

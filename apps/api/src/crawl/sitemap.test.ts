@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SitemapFetcher } from './sitemap.js';
 
-/**
- * Where the sitemap fetch is allowed to end up. A sitemap URL is quoted from a
- * remote robots.txt, so it is attacker-chosen twice over: once in the file and
- * again in whatever it redirects to.
- */
 
 const URLSET = '<urlset><url><loc>https://example.com/a</loc></url></urlset>';
 

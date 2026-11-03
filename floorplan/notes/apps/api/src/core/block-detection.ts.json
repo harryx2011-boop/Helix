@@ -1,0 +1,191 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/block-detection.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FailureReason",
+      "line": 2,
+      "offset": 0,
+      "text": "Block detection.\n\nA bot-challenge page is a failure even when the upstream returns HTTP 200 —\nwhich Cloudflare interstitials routinely do. Returning challenge HTML as if it\nwere content is the single worst thing a scraping API can do: the caller stores\ngarbage, and (in credit-metered products) pays for it.\n\nNo single signal is trusted. Several weak indicators combine into a verdict,\nand the verdict names which signals fired so a failure is debuggable rather\nthan mysterious.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "FailureReason",
+      "line": 12,
+      "offset": 10,
+      "text": "The caller pointed the browser at this host or the network it sits on.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "FailureReason",
+      "line": 13,
+      "offset": 11,
+      "text": "The session was closed, by the caller or a timeout, while the run was still on it.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "FailureReason",
+      "line": 14,
+      "offset": 12,
+      "text": "The fetch could not even be attempted — a Helix service was unreachable.\nThis is our own infrastructure failing, not the target site, and must never\nbe reported as a block or challenge: those name something the site did.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": "FailureReason",
+      "line": 15,
+      "offset": 13,
+      "text": "The caller's own connection closed before the call finished — distinct\nfrom `timeout`, which is this side giving up on its own budget.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "classifyTransportError",
+      "line": 17,
+      "offset": 0,
+      "text": "Classify a transport-layer error string into a typed reason.\n\nA transport error is a failure to complete the request at all — no HTTP\nresponse came back. The distinction that matters most: a Helix service being\ndown (`service_unavailable`) is our fault, and reporting it as a bot challenge\nwould send an operator chasing an anti-bot problem that does not exist.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "classifyTransportError",
+      "line": 20,
+      "offset": 3,
+      "text": "Our own services unreachable — the fetch never left the building.",
+      "kind": "why"
+    },
+    {
+      "id": "n8",
+      "symbol": "BlockVerdict.detectedBy",
+      "line": 60,
+      "offset": 0,
+      "text": "Which signals fired. Surfaced to the caller for debugging.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "BlockVerdict.confidence",
+      "line": 61,
+      "offset": 0,
+      "text": "0–1. Above 0.5 is treated as blocked.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "ResponseFacts.extractedText",
+      "line": 69,
+      "offset": 0,
+      "text": "Text recovered by the extractor, when extraction has already run.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "ScanFacts",
+      "line": 79,
+      "offset": 0,
+      "text": "ResponseFacts plus the body lowercased once, and whether the page is interstitial-shaped.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "bodyIncludes",
+      "line": 87,
+      "offset": 0,
+      "text": "Body markers only count on a page shaped like an interstitial: an error status, or\nlittle real content. A full page that embeds Turnstile, loads Cloudflare's JS\ndetections or names a vendor in prose is content, not a block.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "SIGNALS",
+      "line": 99,
+      "offset": 0,
+      "text": "Vendor fingerprints are deliberately specific. Matching on a bare mention of\n\"cloudflare\" would flag any page that merely names its CDN.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "SIGNALS",
+      "line": 100,
+      "offset": 1,
+      "text": "--- explicit status codes -------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "SIGNALS",
+      "line": 119,
+      "offset": 20,
+      "text": "--- vendor fingerprints ---------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "SIGNALS.test",
+      "line": 129,
+      "offset": 25,
+      "text": "Not the bare \"challenge-platform\": ordinary pages load\n/cdn-cgi/challenge-platform/scripts/jsd/main.js; only the interstitial sets _cf_chl_opt.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "SIGNALS.test",
+      "line": 146,
+      "offset": 42,
+      "text": "DataDome sets x-datadome on every response it lets through, so the header alone is not a block.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "SIGNALS",
+      "line": 181,
+      "offset": 82,
+      "text": "--- generic challenge markers --------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "SIGNALS.name",
+      "line": 191,
+      "offset": 90,
+      "text": "The wall with no vendor marker: reddit's \"Prove your humanity\", Google's\n\"enable JavaScript and cookies\", a press-and-hold gate. Scored as an\nempty success before this fired, which is worse than a failure — a crawl\nrecorded the page as read and moved on. The phrases are full clauses\nrather than single words, and the interstitial gate still applies, so a\npage writing *about* verification is content.",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": "SIGNALS",
+      "line": 219,
+      "offset": 120,
+      "text": "--- content-shape heuristics ---------------------------------------------\nWeak on their own: a genuinely tiny page is not a block. They matter as\ncorroboration when a vendor marker has already fired.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "detectBlock",
+      "line": 237,
+      "offset": 2,
+      "text": "Lowercase once, and only when a body marker can count: a full 1 MB page skips it.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "detectBlock",
+      "line": 250,
+      "offset": 15,
+      "text": "Strongest signal drives the verdict; corroborating ones add a little.",
+      "kind": "what"
+    },
+    {
+      "id": "n23",
+      "symbol": "classifyFailure",
+      "line": 266,
+      "offset": 0,
+      "text": "A 2xx that is really a block still needs a reason. Non-2xx maps to a transport\nreason when no block signal fired.",
+      "kind": "doc"
+    }
+  ]
+}

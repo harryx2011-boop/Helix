@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/webhooks/target.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 76,
+      "offset": null,
+      "text": "The fetch and extract services, the API itself, the database.",
+      "kind": "what"
+    }
+  ]
+}

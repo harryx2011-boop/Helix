@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/auth.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "KEY",
+      "line": 9,
+      "offset": 0,
+      "text": "Which paths the open list actually opens.\n\nThe list is a prefix match, so anything that makes a protected path *start*\nwith `/v1/health` is a bypass. `app.inject` normalises `..` away and cannot\nreproduce it, so these drive a real socket and write the request line by\nhand.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "rawGet",
+      "line": 38,
+      "offset": 0,
+      "text": "Sends a request line verbatim, so the literal path reaches the server unnormalised.",
+      "kind": "doc"
+    }
+  ]
+}

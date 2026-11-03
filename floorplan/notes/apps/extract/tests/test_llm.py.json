@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_llm.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "_TextBlock",
+      "line": 26,
+      "offset": 0,
+      "text": "Minimal stand-ins for the Anthropic SDK shapes `_call_anthropic` reads from a\nresponse: a text block, a tool_use block, and the usage/model wrapper.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "TestResolve.test_provider_override_does_not_carry_the_instance_model",
+      "line": 92,
+      "offset": 1,
+      "text": "HELIX_LLM_MODEL belongs to the instance's provider. Sending it to\nanother vendor is a 404 dressed up as a 500.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "TestCrossProviderFallback.test_a_candidate_provider_with_no_usable_credential_is_skipped",
+      "line": 545,
+      "offset": 4,
+      "text": "Priority order is anthropic, openai, gemini, openrouter. The primary\nis anthropic itself; openai has no caller key and no instance key,\nso the hop must skip straight to gemini.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": "TestCrossProviderFallback.test_two_documents_in_one_request_each_get_their_own_notice",
+      "line": 613,
+      "offset": 4,
+      "text": "Guards against the notice ever being (or becoming) a crawl/batch\naggregate: two pages with different kept/total, processed back to\nback as one caller request would, must not leak one page's counts\ninto the other's notice.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": "TestCrossProviderFallback.test_two_documents_in_one_request_each_get_their_own_notice",
+      "line": 640,
+      "offset": 31,
+      "text": "The notice sits inside the user-message content, after the fenced page.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "TestAnthropicRequestShape.test_schema_error_from_the_anthropic_call_does_not_trigger_cross_provider_fallback",
+      "line": 754,
+      "offset": 4,
+      "text": "Exercises the same guarantee through the real `extract_structured`\nentry point, using the actual `_call_anthropic` (not a stub), so the\nSchemaError raised deep in the SDK-response parsing is what proves\nout — not a hand-raised one a stub could get wrong.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "TestAnthropicOutputFormatFeatureGate.test_feature_check_reflects_the_installed_sdk",
+      "line": 809,
+      "offset": 1,
+      "text": "Not mocked: proves the real feature-check function runs against the\nSDK actually installed in this venv, rather than only ever being\nexercised through a monkeypatched stand-in.",
+      "kind": "what"
+    }
+  ]
+}

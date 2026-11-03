@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/db/pool.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 7,
+      "offset": null,
+      "text": "The database behind jobs, results, keys, monitors and vectors.\n\nOne datastore, no Redis, no broker. Which engine serves it is a driver\nchosen at boot: `pg` for an external Postgres, `pglite` for Postgres in this\nprocess with its data in a folder. Both speak the same SQL, so every query\nsite, migration and the SKIP LOCKED queue run unchanged on either.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "transaction",
+      "line": 36,
+      "offset": 0,
+      "text": "Run work inside a transaction, rolling back on any throw.",
+      "kind": "doc"
+    }
+  ]
+}

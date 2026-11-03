@@ -1,7 +1,4 @@
 // Bundles apps/api into one ESM file that Electron's own Node runs without tsx
-// (DESKTOP-PLAN.md Phase 4). Writes dist/helix-api.js plus two manifests the
-// desktop stage script reads: externals.json (packages to install beside the
-// bundle) and runtime-files.json (files the API reads from disk at runtime).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { dirname, join } from 'node:path';
@@ -12,21 +9,10 @@ const apiDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const distDir = join(apiDir, 'dist');
 const pkg = JSON.parse(readFileSync(join(apiDir, 'package.json'), 'utf8'));
 
-// Installed beside the bundle, never inlined: each ships a WASM or native
-// payload, or loads its own files by path at runtime.
-//   playwright, playwright-core: browser registry, driver scripts, native launchers.
-//   @electric-sql/pglite(-pgvector): postgres.wasm, the data bundle and extension tarballs.
-//   pino: fastify's logger; its transports spawn thread-stream workers by file path.
-//   sharp: native libvips binaries, one optional package per platform.
 const EXTERNALS = ['playwright', 'playwright-core', '@electric-sql/pglite', '@electric-sql/pglite-pgvector', 'pino', 'sharp'];
 
-// Optional peers that are required lazily and never installed: pg's native
-// binding and ws's C accelerators. Left as runtime requires that fail softly.
 const OPTIONAL = ['pg-native', 'bufferutil', 'utf-8-validate'];
 
-// Paths the API resolves from its own location. `stagedAt` is relative to the
-// staged api folder, whose layout mirrors apps/api with dist/helix-api.js as
-// the entry.
 const RUNTIME_FILES = [
   {
     source: 'apps/api/migrations',
@@ -60,8 +46,6 @@ const result = await build({
   sourcemap: false,
   external: [...EXTERNALS, ...OPTIONAL],
   define: { HELIX_API_VERSION: JSON.stringify(pkg.version) },
-  // Bundled CommonJS calls require() for the externals and node builtins; an
-  // ESM file has no require of its own, so give it one.
   banner: {
     js: [
       "import { createRequire as __helixCreateRequire } from 'node:module';",

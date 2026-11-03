@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/search.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 150,
+      "offset": null,
+      "text": "A failed call must not be served from the cache once the backend recovers.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 382,
+      "offset": null,
+      "text": "The rest hang until the signal cuts them, as a stalled host would.",
+      "kind": "what"
+    }
+  ]
+}

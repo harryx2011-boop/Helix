@@ -1,0 +1,207 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/crawl.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CrawlLimits",
+      "line": 14,
+      "offset": 0,
+      "text": "Crawl.\n\nAsynchronous: returns a job id, and work proceeds against the Postgres-backed\nqueue. Pass `estimate: true` to learn what a crawl would cost before spending\nanything on it — the answer to the loudest complaint about tools in this\ncategory, where a job's size is unknowable until the bill arrives.\n\n`GET` and `DELETE /crawl/{jobId}` serve the same job view as `/jobs/{id}`,\nunder the path the crawl spec documents.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CrawlLimits.defaultLimit",
+      "line": 15,
+      "offset": 0,
+      "text": "Applied when the request omits `limit`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "CrawlLimits.maxLimit",
+      "line": 16,
+      "offset": 0,
+      "text": "A request above this is rejected, not clamped: silent clamping hides the ceiling.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "CrawlLimits.respectRobots",
+      "line": 18,
+      "offset": 0,
+      "text": "Applied when the request omits `respectRobots`. The operator sets the instance's stance.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "CRAWL_FORMATS",
+      "line": 33,
+      "offset": 0,
+      "text": "The formats a crawled page can be asked for. openapi.yaml has always declared\nthis as the closed `Format` enum; validating it as a bare string let an\nunknown name through to be dropped silently per page, which reads to the\ncaller as the format simply not working.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "JsonOptionsSchema",
+      "line": 38,
+      "offset": 0,
+      "text": "Structured extraction applied to every page of the crawl.\n\nThe same shape `/scrape` accepts, so a schema written for one page works\nacross a whole site without being restated. `schema` and `prompt` are both\noptional individually but one is required when `json` is among the formats;\nthe route rejects the combination rather than the worker dropping it per page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "WebhookUrlSchema",
+      "line": 53,
+      "offset": 0,
+      "text": "The dispatcher POSTs from the server's own network, so the target is\nchecked here before the job exists, and the headers it will send are checked\nagainst what fetch accepts: a header fetch rejects fails every attempt.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "WebhookObjectSchema",
+      "line": 73,
+      "offset": 12,
+      "text": "Copied into every delivery row, so bounded like the headers.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "WebhookSchema",
+      "line": 82,
+      "offset": 0,
+      "text": "The spec writes `webhook` as a bare URL; the fuller object form carries\nheaders, an event filter and metadata. Both normalise to the object.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "CollectionNameSchema",
+      "line": 84,
+      "offset": 0,
+      "text": "The name becomes a path segment in the vector store's URL, so it is a plain identifier.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "crawlRequestSchema",
+      "line": 95,
+      "offset": 2,
+      "text": "Absent when `resume` names an existing job, whose seed is already known.\nChecked in `superRefine` rather than here, so the error names the pair.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "crawlRequestSchema",
+      "line": 96,
+      "offset": 3,
+      "text": "Revive a cancelled crawl instead of starting one.\n\nThe frontier is already durable — a worker that dies resumes on its own —\nso what this adds is un-cancelling: the job's queued rows are still there\nuntil `expires_at`, and this re-queues them under the original job id.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "crawlRequestSchema",
+      "line": 111,
+      "offset": 18,
+      "text": "Omit unchanged pages from the response instead of returning them.\n\n`incremental` decides what is *fetched*; this decides what is *returned*.\nA weekly re-crawl of a 500-page docs site wants the twelve pages that\nmoved, not 500 rows to diff client-side. Implies `incremental`, because\nfiltering on a hash the crawl never loaded would return everything.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "crawlRequestSchema",
+      "line": 112,
+      "offset": 19,
+      "text": "Cap on pages sharing a path prefix. Bounds calendar and facet traps,\nwhere a crawl otherwise spends its whole limit on ?date=2019-04-17.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "crawlRequestSchema",
+      "line": 113,
+      "offset": 20,
+      "text": "Content filters, applied after extraction and before the page is kept.\n`includeContent` keeps only pages matching at least one pattern;\n`excludeContent` drops any page matching one. Path patterns cannot\nexpress \"skip the login wall\" when every such page has a distinct URL.",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": "crawlRequestSchema",
+      "line": 142,
+      "offset": 49,
+      "text": "`json` without a schema or prompt would be dropped silently on every\npage. Rejecting the request says so once instead of n times.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "normaliseCrawlRequest",
+      "line": 156,
+      "offset": 0,
+      "text": "Collapse the aliases into the one shape the worker reads.\n\n`seedUrl` is passed separately for a resumed crawl, whose seed comes from the\nstored job rather than the request body.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "normaliseCrawlRequest",
+      "line": 170,
+      "offset": 14,
+      "text": "A response filter over unchanged pages is meaningless unless the crawl\nloaded the hashes to compare against, so asking for one turns the other on.",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "invalidPattern",
+      "line": 190,
+      "offset": 0,
+      "text": "The first path pattern that neither parses as a glob nor as a regular expression.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "registerCrawl",
+      "line": 226,
+      "offset": 27,
+      "text": "Resume: the seed and the queued rows already exist, so this re-opens the\njob rather than creating one. Jobs are not partitioned between keys: one\noperator owns the instance, so any valid key may resume any crawl.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "registerCrawl",
+      "line": 257,
+      "offset": 58,
+      "text": "A 'running' job whose lease has lapsed has no worker behind it: the\nprocess that claimed it died without releasing it. Refusing that as\n\"already running\" is what made the strand permanent, since the worker\nwill not re-claim it either. An unexpired lease still means a live\nworker and is still refused.\nAbsent as well as null: a row read before 012 applied carries no lease\ncolumn at all, and treating that as \"held\" would restore the strand.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "registerCrawl",
+      "line": 268,
+      "offset": 69,
+      "text": "Rows left 'running' belonged to the cancelled worker and will never be\ncompleted by it; they go back on the queue alongside the untouched ones.",
+      "kind": "why"
+    },
+    {
+      "id": "n23",
+      "symbol": "registerCrawl",
+      "line": 293,
+      "offset": 94,
+      "text": "The seed is the caller's choice of what this instance connects to, and it\nis written to the frontier for a worker to fetch later. Checked here, or\nthe job is accepted and the fetch happens out of band.",
+      "kind": "what"
+    },
+    {
+      "id": "n24",
+      "symbol": "registerCrawl",
+      "line": 328,
+      "offset": 129,
+      "text": "The seed is the frontier's first entry; the worker expands from there.\nWritten as the frontier's `url` and `key` (see FrontierItem): the worker\nclaims and completes rows by that exact string, so a raw\n`https://example.com` row was never matched and its page was dropped.",
+      "kind": "why"
+    },
+    {
+      "id": "n25",
+      "symbol": "registerCrawl",
+      "line": 345,
+      "offset": 146,
+      "text": "The estimate on its own, without submitting a job body a caller does not\nintend to run. Registered before `/crawl/:id` so \"estimate\" is never\nmatched as a job id.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/latest-release.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "pickInstaller",
+      "line": 25,
+      "offset": 0,
+      "text": "The NSIS installer in a release, or null when the release has none (a draft, a prerelease, or assets still uploading).",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "fetchLatestInstaller",
+      "line": 33,
+      "offset": 0,
+      "text": "The latest published installer, re-checked every ten minutes. Null until the\nfirst release exists and on any failure, so the page shows \"coming soon\"\nrather than a download link that 404s.",
+      "kind": "doc"
+    }
+  ]
+}

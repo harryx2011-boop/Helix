@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/schedule.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 30,
+      "offset": null,
+      "text": "A 45-minute cron fires at :00 and :45, a 15-minute gap, not 45. Any\nminute amount that does not divide 60 has the same problem, and the\nequivalent is true for hours over a day and any multi-day interval: a\nday-of-month step restarts the count at 1 every month, so a 10-day\nschedule fires on day 21, day 31 (or the 1st), day 11 -- never a steady\n10 days apart.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 110,
+      "offset": null,
+      "text": "9am London in August is 08:00 UTC.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 123,
+      "offset": null,
+      "text": "Hourly, plus an extra firing one minute past nine.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 138,
+      "offset": null,
+      "text": "Hourly cron, Mon-Fri 9-17 UTC. From a Friday evening, the next in-window\nfiring is Monday morning, not Friday 18:00.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 163,
+      "offset": null,
+      "text": "The window is open 8 hours a day, so the largest gap (Friday 16:00 to\nMonday 09:00) dwarfs the 1-hour cron interval elsewhere in the sample.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 169,
+      "offset": null,
+      "text": "Saturday",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 170,
+      "offset": null,
+      "text": "Monday",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 192,
+      "offset": null,
+      "text": "08:30 UTC is 09:30 London in August (BST), inside the window.",
+      "kind": "what"
+    }
+  ]
+}

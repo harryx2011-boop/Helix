@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "research/firecrawl-capture/shoot-self-host-settings.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BASE",
+      "line": 5,
+      "offset": 0,
+      "text": "Self-host settings screen (no Clerk: self-host has no hosted auth).\nVerifies the admin-token gate, then the settings list once a token is saved.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 20,
+      "offset": null,
+      "text": "The whole /app shell sits behind the self-host API-key gate, so seed that\nfirst; the admin-token gate is the thing under test, one layer in.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 23,
+      "offset": null,
+      "text": "1. No admin token saved -> the gate asks for one.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 29,
+      "offset": null,
+      "text": "2. Save the token -> the settings list loads.",
+      "kind": "what"
+    }
+  ]
+}

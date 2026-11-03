@@ -1,12 +1,6 @@
 import type { FetchLike } from './target';
 
-/**
- * Web Monitoring, read for the Monitors view: each monitor, and its latest
- * checks with the plain summary a change carries (`summarizeDiff`,
- * `apps/api/src/monitor/diff.ts`).
- */
 
-/** Checks shown under one monitor. */
 const HISTORY_LIMIT = 10;
 const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -25,7 +19,6 @@ export interface CheckItem {
   summary: string | null;
 }
 
-/** What a tree row shows. */
 export interface Row {
   label: string;
   description: string;
@@ -44,7 +37,6 @@ async function getJson(url: string, apiKey: string, fetchLike: FetchLike): Promi
   return response.json();
 }
 
-/** The array under `key`, or empty when the body is not an object holding one. */
 function listIn(body: unknown, key: string): Record<string, unknown>[] {
   if (typeof body !== 'object' || body === null) return [];
   const list = (body as Record<string, unknown>)[key];

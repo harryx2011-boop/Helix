@@ -11,7 +11,6 @@ export class MicError extends Error {
   }
 }
 
-/** What the dictation controller needs from a microphone; MicCapture is the browser one. */
 export interface Mic {
   start(): Promise<void>;
   stop(): Promise<void>;
@@ -20,7 +19,6 @@ export interface Mic {
 
 export interface MicOptions {
   deviceId?: string;
-  /** A served copy of the worklet, for a CSP that blocks blob: worklets. */
   workletUrl?: string;
 }
 
@@ -36,14 +34,11 @@ function toMicError(e: unknown): MicError {
   return new MicError("unknown", `Microphone unavailable${detail}.`);
 }
 
-/** Browser mic capture at 16 kHz PCM16, after Composer's src/renderer/lib/audio/capture.ts. */
 export class MicCapture implements Mic {
   private ctx: AudioContext | null = null;
   private stream: MediaStream | null = null;
   private node: AudioWorkletNode | null = null;
   private readonly handlers = new Set<(pcm: Int16Array) => void>();
-  // Bumped by stop(): a start() still awaiting the permission prompt or the
-  // worklet sees it and releases what it opened instead of leaving the mic live.
   private session = 0;
 
   constructor(private readonly opts: MicOptions = {}) {}
@@ -73,7 +68,6 @@ export class MicCapture implements Mic {
       });
     } catch (e) {
       if (!this.opts.deviceId) throw toMicError(e);
-      // A remembered device that has since been unplugged must not lock dictation out.
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio });
       } catch (e2) {

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/command-palette/store.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "sidebarListeners",
+      "line": 37,
+      "offset": 0,
+      "text": "The sidebar owns its collapsed state and its localStorage key; the palette\nlives outside it. A request rather than shared state, so the sidebar keeps\ndeciding what \"toggle\" means at the current breakpoint.",
+      "kind": "doc"
+    }
+  ]
+}

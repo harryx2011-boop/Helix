@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/page-frame.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PageFrame",
+      "line": 5,
+      "offset": 0,
+      "text": "The /app page skeleton: a centred column whose vertical hairlines run the\nfull height of the page, with horizontal hairlines that bleed past the\ncolumn edges so rows read as one grid rather than stacked cards. The\ncolumn itself has no solid background, so the AppGrid layer the shell\nmounts behind every screen (app-shell.tsx) shows through the empty space\naround and between rows; FrameRow defaults to a solid background so text\nnever sits on a grid line, and opts out via `transparent` for rows that\nwant the grid to show through (e.g. spacer rows). Every app screen\ncomposes these; nothing here fetches.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": "FrameRowProps.bleed",
+      "line": 16,
+      "offset": 0,
+      "text": "Draw the bottom hairline past the column edges (the crossing-lines look).",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "FrameRowProps.flush",
+      "line": 17,
+      "offset": 0,
+      "text": "Skip the bottom hairline (last row before the page ends).",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "FrameRowProps.transparent",
+      "line": 18,
+      "offset": 0,
+      "text": "Opt out of the default solid background, letting the AppGrid layer show through.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "FrameHeading",
+      "line": 30,
+      "offset": 0,
+      "text": "Title + one-line description at the top of a row, optionally with an action on\nthe right. `field` is an ambient character field: it mounts in a clipped,\ninert layer behind the text (position it with its own `absolute` classes) and\nnever takes part in the row's layout.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "FrameHeading",
+      "line": 43,
+      "offset": 13,
+      "text": "Anchor for a deep link, so the command palette can jump to one section.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "FrameCells",
+      "line": 61,
+      "offset": 0,
+      "text": "Equal cells separated by hairlines; collapses to one column below `md`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "FrameTag",
+      "line": 70,
+      "offset": 0,
+      "text": "Mono `[ LIVE ]`-style tag used beside row titles.",
+      "kind": "doc"
+    }
+  ]
+}

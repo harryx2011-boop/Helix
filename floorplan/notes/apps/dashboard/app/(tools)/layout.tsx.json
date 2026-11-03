@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(tools)/layout.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ToolsLayout",
+      "line": 9,
+      "offset": 0,
+      "text": "The browser-side tools keep the light `--m-*` surface they were designed on;\nonly the marketing chrome around them is gone, so the header links back to\nthe app instead.",
+      "kind": "doc"
+    }
+  ]
+}

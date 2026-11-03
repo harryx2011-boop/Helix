@@ -1,14 +1,6 @@
 import { getPool } from '../db/pool.js';
 import { settingDef, SETTINGS, type Effect } from './registry.js';
 
-/**
- * Persisted setting overrides.
- *
- * The environment stays the source of defaults; a row here overrides one. An
- * instance with an empty table behaves exactly as it did before this existed,
- * and clearing a row reverts to the environment value rather than to a
- * hardcoded one.
- */
 
 export interface StoredSetting {
   key: string;
@@ -22,7 +14,6 @@ export interface SettingView extends StoredSetting {
   effect: Effect;
   description: string;
   warning?: string | undefined;
-  /** The value the environment supplies, shown so an operator can see what they overrode. */
   envValue: unknown;
   overridden: boolean;
 }
@@ -33,8 +24,6 @@ export async function readOverrides(): Promise<Map<string, unknown>> {
   );
   const out = new Map<string, unknown>();
   for (const row of rows) {
-    // A key retired from the registry stays in the table but is never applied:
-    // deleting rows on deploy would silently discard an operator's intent.
     if (settingDef(row.key)) out.set(row.key, row.value);
   }
   return out;

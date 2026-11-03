@@ -72,8 +72,6 @@ const app = Fastify({
   logger: {
     level: config.logLevel,
     redact: {
-      // Provider credentials must never reach a log line. Neither must the
-      // live-view token, which rides in the query string of its own route.
       paths: [
         'req.headers.authorization',
         'req.headers["x-api-key"]',
@@ -88,11 +86,9 @@ const app = Fastify({
   },
   trustProxy: true,
   bodyLimit: 5 * 1024 * 1024,
-  // Shutdown must not wait on idle keep-alive sockets; the database closes after it.
   forceCloseConnections: true,
 });
 
-// A server that lost DATABASE_URL would otherwise boot silently on an empty local database.
 if (!process.env['HELIX_DB']) {
   app.log.warn(
     config.db === 'pglite' ? { driver: config.db, dataDir: config.dataDir } : { driver: config.db },
@@ -100,9 +96,6 @@ if (!process.env['HELIX_DB']) {
   );
 }
 
-// A thrown error must not reach the caller as the database's or a library's
-// own message. Fastify's own errors carry a status (413 for an oversized body,
-// 400 for malformed JSON); anything else is a 500 with the request id to grep.
 app.setErrorHandler((error: FastifyError, request, reply) => {
   const statusCode = error.statusCode !== undefined && error.statusCode >= 400 ? error.statusCode : 500;
   if (statusCode >= 500) {
@@ -122,10 +115,6 @@ app.setErrorHandler((error: FastifyError, request, reply) => {
 
 const pool = createPool({ driver: config.db, connectionString: config.databaseUrl, dataDir: config.dataDir }, app.log);
 
-// Stored overrides are merged before anything reads `config`, so a setting the
-// screen reported as "restart required" genuinely takes effect on restart.
-// Migrations have not run yet on a first boot, so a missing table is not an
-// error here — there is nothing to override until one exists.
 try {
   const stored = await readOverrides();
   for (const [key, value] of stored) {
@@ -152,8 +141,6 @@ const browserPool = new BrowserPool({
   ...(config.remoteCdpUrl ? { remoteCdpUrl: config.remoteCdpUrl } : {}),
   logger: app.log,
 });
-// Not awaited: an unreachable camoufox costs a 5 s connect timeout, and boot
-// should not wait on a tier that only the hardest pages ever reach.
 void browserPool.probeExternalTiers();
 
 const sessions = new SessionRegistry({
@@ -164,8 +151,6 @@ const sessions = new SessionRegistry({
   logger: app.log,
 });
 
-// The SearXNG URL comes from config, where a value stored from the settings
-// screen lands; the env alone would ignore it.
 const searchProvider = createSearchProvider(
   config.searchProvider,
   { ...process.env, SEARXNG_URL: config.searxngUrl },
@@ -216,10 +201,8 @@ const monitorRetention = {
   keepChecks: config.monitorRetainChecks,
 };
 
-/** A monitor check is a markdown-only scrape through the same ladder as /scrape. */
 const fetchMonitorPage = async (monitor: MonitorRecord): Promise<FetchOutcome> => {
   const options = monitor.scrapeOptions;
-  // The stored proxy is re-checked and pinned on every check: its name may resolve elsewhere by now.
   let proxy = options.proxy?.url;
   if (proxy) {
     const pinned = await pinProxyUrl(proxy, { allowPrivate: config.allowPrivateUrls });
@@ -249,7 +232,6 @@ const fetchMonitorPage = async (monitor: MonitorRecord): Promise<FetchOutcome> =
   return { ok: true, content, contentHash: result.content.contentHash };
 };
 
-/** Structured extraction for a monitor's `jsonOptions`, on the same helix-extract path `/scrape`'s `jsonOptions` uses. */
 const extractMonitorJson = async (monitor: MonitorRecord, content: string): Promise<Record<string, unknown>> => {
   const jsonOptions = monitor.jsonOptions;
   if (!jsonOptions) throw new Error('extractMonitorJson called without jsonOptions');
@@ -308,9 +290,6 @@ const limiter = new RateLimiter({
 
 setInterval(() => limiter.prune(), 60_000).unref();
 
-// Counts every authenticated response into hourly buckets (011_request_usage.sql).
-// Buffered rather than written inline: a database round-trip per reply for a
-// number read at hourly resolution is the wrong price.
 const usageRecorder = new UsageRecorder({
   onError: (error) => app.log.warn({ error }, 'usage flush failed — counts for this interval are lost'),
 });
@@ -318,12 +297,8 @@ const usageRecorder = new UsageRecorder({
 const tickets = new InternalTickets();
 
 await app.register(helmet, { contentSecurityPolicy: false });
-// Scoped to the dashboard origin(s). The dashboard authenticates with a
-// bearer key rather than cookies, so credentials mode stays off.
 await app.register(cors, { origin: config.corsOrigins });
 
-// `/settings` is exempt from API-key auth because it enforces a stricter gate
-// of its own: the operator's admin token, not any caller's key.
 registerAuth(app, {
   verifyApiKey,
   limiter,
@@ -452,7 +427,6 @@ await app.register(
       userAgent: config.userAgent,
     });
     await registerRobots(instance, { userAgent: config.userAgent, allowPrivateUrls: config.allowPrivateUrls });
-    // Last: it forwards to the four routes above, which must already exist.
     await registerDocument(instance);
   },
   { prefix: '/v1' },
@@ -460,8 +434,6 @@ await app.register(
 
 await registerInternal(app, { adminToken: config.internalAdminToken, publicUrl: config.publicUrl });
 
-// The environment supplies the defaults; a stored override replaces one. Kept
-// beside `config` so the settings screen can show what it overrode.
 const settingsEnvValues: Record<string, unknown> = {
   browserMaxContexts: config.browserMaxContexts,
   browserRecycleAfter: config.browserRecycleAfter,
@@ -508,9 +480,6 @@ await registerSettings(app, {
   publicUrl: config.publicUrl,
 });
 
-// Tools are generated from openapi.yaml for the routes registered above; the
-// bearer key on the MCP request is the same key the HTTP API takes, verified
-// and rate limited once on the way in; the replayed tool call rides a ticket.
 await registerMcp(app, { prefix: '/v1', tickets, only: config.mcpTools });
 if (config.staticDir) await registerStatic(app, { dir: config.staticDir });
 
@@ -532,11 +501,7 @@ const start = async (): Promise<void> => {
       );
     }
 
-    // The pool warms lazily on first render: a browser that may never be used
-    // should not add seconds to boot or hundreds of megabytes to idle memory.
 
-    // Runs in-process. A separate worker deployment would scale further, but
-    // one process is the right default for a self-hosted tool.
     void crawlWorker.start();
     void crawlWebhookDispatcher.start();
     await monitorScheduler.start();
@@ -545,8 +510,6 @@ const start = async (): Promise<void> => {
     statusSampler.start();
     usageRecorder.start();
 
-    // Ninety days, swept hourly. Bounds request_usage without its own service:
-    // the table is the only thing here that grows purely with traffic.
     setInterval(() => {
       void pruneUsage(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)).catch((error: unknown) =>
         app.log.warn({ error }, 'usage retention sweep failed'),
@@ -571,7 +534,6 @@ const shutdown = (reason: string): void => {
   if (shuttingDown) return;
   shuttingDown = true;
   app.log.info({ reason }, 'shutting down');
-  // The ceiling. The desktop supervisor force-kills after 10 s.
   setTimeout(() => process.exit(0), 8_000).unref();
 
   const within = (work: Promise<unknown>, ms: number): Promise<unknown> =>
@@ -584,12 +546,8 @@ const shutdown = (reason: string): void => {
     crawlWebhookDispatcher.stop();
     statusSampler.stop();
     usageRecorder.stop();
-    // Flushed before the pool closes, or the final interval of counts is lost
-    // on every clean restart rather than only on a crash.
     await usageRecorder.flush().catch(() => undefined);
     await within(sessions.closeAll(), 2_000);
-    // Bounded: an in-flight scrape can run 30 s, and the database must close
-    // inside the supervisor's grace window or PGlite is killed mid-write.
     await within(app.close(), 3_000);
     await closePool().catch(() => undefined);
     await browserPool.close().catch(() => undefined);
@@ -599,7 +557,6 @@ const shutdown = (reason: string): void => {
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => shutdown(signal));
 }
-// Windows has no SIGTERM: the desktop supervisor asks over the IPC channel instead.
 process.on('message', (message: unknown) => {
   if (typeof message === 'object' && message !== null && (message as { type?: unknown }).type === 'shutdown') {
     shutdown('ipc');

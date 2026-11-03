@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/url-guard.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 176,
+      "offset": null,
+      "text": "Link-local carries the cloud metadata endpoint and CGNAT is the carrier's\nspace: neither is a private target anyone opted in to.",
+      "kind": "what"
+    }
+  ]
+}

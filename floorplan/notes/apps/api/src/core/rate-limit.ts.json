@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/rate-limit.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "RateLimitDecision",
+      "line": 2,
+      "offset": 0,
+      "text": "Per-key rate limiting, token bucket.\n\nThe load-bearing property is that it FAILS OPEN. If the backing store is\nunavailable, the request proceeds and a warning is logged. A limiter that\nrejects traffic because its own infrastructure hiccuped has converted an\ninternal problem into a client-visible outage — which is precisely the bug\nthat makes comparable products return 429 to everyone during a brief Redis\nblip, complete with `undefined` in the error message.\n\nEvery decision also carries the numbers needed for `X-RateLimit-*` headers, so\nautonomous clients can self-throttle without parsing error strings.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "RateLimitDecision.resetAt",
+      "line": 6,
+      "offset": 0,
+      "text": "Unix seconds.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "RateLimitDecision.degraded",
+      "line": 8,
+      "offset": 0,
+      "text": "True when the limiter could not consult its store and allowed by default.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "RateLimiterOptions.limit",
+      "line": 17,
+      "offset": 0,
+      "text": "Requests permitted per window.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "RateLimiterOptions.windowMs",
+      "line": 18,
+      "offset": 0,
+      "text": "Window length in milliseconds.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "RateLimiter",
+      "line": 22,
+      "offset": 0,
+      "text": "In-memory token bucket. Adequate for a single-node self-host, which is the\ndefault deployment. A shared-store implementation can satisfy the same\ninterface for multi-node — and must keep the fail-open behaviour.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "RateLimiter.check",
+      "line": 41,
+      "offset": 7,
+      "text": "Continuous refill: no window edges to stampede against.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "RateLimiter.check",
+      "line": 72,
+      "offset": 38,
+      "text": "Fail open. Never turn our own fault into the caller's 429.",
+      "kind": "why"
+    },
+    {
+      "id": "n9",
+      "symbol": "RateLimiter.prune",
+      "line": 83,
+      "offset": 0,
+      "text": "Drop buckets untouched for a full window, so idle keys do not accumulate.",
+      "kind": "doc"
+    }
+  ]
+}

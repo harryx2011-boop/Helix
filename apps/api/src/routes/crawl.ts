@@ -10,25 +10,11 @@ import { estimateCrawl } from '../crawl/estimate.js';
 import { checkUrl } from '../core/url-guard.js';
 import { cancelJob, fetchJobView } from './jobs.js';
 
-/**
- * Crawl.
- *
- * Asynchronous: returns a job id, and work proceeds against the Postgres-backed
- * queue. Pass `estimate: true` to learn what a crawl would cost before spending
- * anything on it — the answer to the loudest complaint about tools in this
- * category, where a job's size is unknowable until the bill arrives.
- *
- * `GET` and `DELETE /crawl/{jobId}` serve the same job view as `/jobs/{id}`,
- * under the path the crawl spec documents.
- */
 
 export interface CrawlLimits {
-  /** Applied when the request omits `limit`. */
   defaultLimit: number;
-  /** A request above this is rejected, not clamped: silent clamping hides the ceiling. */
   maxLimit: number;
   maxDepth: number;
-  /** Applied when the request omits `respectRobots`. The operator sets the instance's stance. */
   respectRobots: boolean;
 }
 
@@ -44,25 +30,11 @@ export interface CrawlRouteDeps extends MapRouteDeps {
   limits?: Partial<CrawlLimits> | undefined;
 }
 
-/**
- * The formats a crawled page can be asked for. openapi.yaml has always declared
- * this as the closed `Format` enum; validating it as a bare string let an
- * unknown name through to be dropped silently per page, which reads to the
- * caller as the format simply not working.
- */
 export const CRAWL_FORMATS = ['markdown', 'html', 'rawHtml', 'text', 'links', 'screenshot', 'json', 'chunks'] as const;
 
 export const TIERS = ['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox'] as const;
 export const EXTRACTORS = ['trafilatura', 'readability', 'auto'] as const;
 
-/**
- * Structured extraction applied to every page of the crawl.
- *
- * The same shape `/scrape` accepts, so a schema written for one page works
- * across a whole site without being restated. `schema` and `prompt` are both
- * optional individually but one is required when `json` is among the formats;
- * the route rejects the combination rather than the worker dropping it per page.
- */
 export const JsonOptionsSchema = z.object({
   schema: z.record(z.unknown()).optional(),
   prompt: z.string().min(1).max(2000).optional(),
@@ -78,9 +50,6 @@ export const ScrapeOptionsSchema = z.object({
   jsonOptions: JsonOptionsSchema.optional(),
 });
 
-// The dispatcher POSTs from the server's own network, so the target is
-// checked here before the job exists, and the headers it will send are checked
-// against what fetch accepts: a header fetch rejects fails every attempt.
 const WebhookUrlSchema = z
   .string()
   .url()
@@ -101,7 +70,6 @@ const WebhookObjectSchema = z
     if (headerProblem) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['headers'], message: headerProblem });
     }
-    // Copied into every delivery row, so bounded like the headers.
     if (webhook.metadata && Buffer.byteLength(JSON.stringify(webhook.metadata)) > MAX_WEBHOOK_BYTES) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -111,11 +79,8 @@ const WebhookObjectSchema = z
     }
   });
 
-// The spec writes `webhook` as a bare URL; the fuller object form carries
-// headers, an event filter and metadata. Both normalise to the object.
 export const WebhookSchema = z.union([WebhookUrlSchema.transform((url) => ({ url })), WebhookObjectSchema]);
 
-// The name becomes a path segment in the vector store's URL, so it is a plain identifier.
 const CollectionNameSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, 'letters, digits, _ and - only, at most 64');
 
 export const DestinationSchema = z.object({
@@ -127,18 +92,7 @@ export const DestinationSchema = z.object({
 
 function crawlRequestSchema(limits: CrawlLimits) {
   return z.object({
-    /**
-     * Absent when `resume` names an existing job, whose seed is already known.
-     * Checked in `superRefine` rather than here, so the error names the pair.
-     */
     url: z.string().url().optional(),
-    /**
-     * Revive a cancelled crawl instead of starting one.
-     *
-     * The frontier is already durable — a worker that dies resumes on its own —
-     * so what this adds is un-cancelling: the job's queued rows are still there
-     * until `expires_at`, and this re-queues them under the original job id.
-     */
     resume: z.string().uuid().optional(),
     estimate: z.boolean().default(false),
     limit: z.number().int().min(1).max(limits.maxLimit).default(limits.defaultLimit),
@@ -154,26 +108,8 @@ function crawlRequestSchema(limits: CrawlLimits) {
     maxConcurrency: z.number().int().min(1).max(64).optional(),
     delay: z.number().min(0).max(60).optional(),
     incremental: z.boolean().default(false),
-    /**
-     * Omit unchanged pages from the response instead of returning them.
-     *
-     * `incremental` decides what is *fetched*; this decides what is *returned*.
-     * A weekly re-crawl of a 500-page docs site wants the twelve pages that
-     * moved, not 500 rows to diff client-side. Implies `incremental`, because
-     * filtering on a hash the crawl never loaded would return everything.
-     */
     changesOnly: z.boolean().default(false),
-    /**
-     * Cap on pages sharing a path prefix. Bounds calendar and facet traps,
-     * where a crawl otherwise spends its whole limit on ?date=2019-04-17.
-     */
     maxPagesPerPath: z.number().int().min(1).max(100_000).optional(),
-    /**
-     * Content filters, applied after extraction and before the page is kept.
-     * `includeContent` keeps only pages matching at least one pattern;
-     * `excludeContent` drops any page matching one. Path patterns cannot
-     * express "skip the login wall" when every such page has a distinct URL.
-     */
     includeContent: z.array(z.string()).default([]),
     excludeContent: z.array(z.string()).default([]),
     ignoreQueryParameters: z.boolean().default(false),
@@ -203,8 +139,6 @@ function crawlRequestSchema(limits: CrawlLimits) {
         message: 'cannot be combined with `resume`: the work is already queued',
       });
     }
-    // `json` without a schema or prompt would be dropped silently on every
-    // page. Rejecting the request says so once instead of n times.
     const formats = body.scrapeOptions?.formats ?? body.formats;
     const json = body.scrapeOptions?.jsonOptions;
     if (formats?.includes('json') && !json?.schema && !json?.prompt) {
@@ -219,12 +153,6 @@ function crawlRequestSchema(limits: CrawlLimits) {
 
 type ParsedCrawlRequest = z.infer<ReturnType<typeof crawlRequestSchema>>;
 
-/**
- * Collapse the aliases into the one shape the worker reads.
- *
- * `seedUrl` is passed separately for a resumed crawl, whose seed comes from the
- * stored job rather than the request body.
- */
 export function normaliseCrawlRequest(body: ParsedCrawlRequest, seedUrl?: string): CrawlJobRequest {
   const scrape = body.scrapeOptions ?? {};
   const url = body.url ?? seedUrl;
@@ -239,8 +167,6 @@ export function normaliseCrawlRequest(body: ParsedCrawlRequest, seedUrl?: string
     sitemap: body.sitemap,
     respectRobots: body.respectRobots,
     politeness: body.politeness,
-    // A response filter over unchanged pages is meaningless unless the crawl
-    // loaded the hashes to compare against, so asking for one turns the other on.
     incremental: body.incremental || body.changesOnly,
     changesOnly: body.changesOnly,
     includeContent: body.includeContent,
@@ -261,7 +187,6 @@ export function normaliseCrawlRequest(body: ParsedCrawlRequest, seedUrl?: string
   return request;
 }
 
-/** The first path pattern that neither parses as a glob nor as a regular expression. */
 function invalidPattern(body: ParsedCrawlRequest): string | undefined {
   for (const field of ['includePaths', 'excludePaths'] as const) {
     const index = body[field].findIndex((pattern) => compilePathPattern(pattern) === undefined);
@@ -298,9 +223,6 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
       });
     }
 
-    // Resume: the seed and the queued rows already exist, so this re-opens the
-    // job rather than creating one. Jobs are not partitioned between keys: one
-    // operator owns the instance, so any valid key may resume any crawl.
     if (parsed.data.resume) {
       const jobId = parsed.data.resume;
       const { rows } = await getPool().query<{
@@ -332,13 +254,6 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
         });
       }
 
-      // A 'running' job whose lease has lapsed has no worker behind it: the
-      // process that claimed it died without releasing it. Refusing that as
-      // "already running" is what made the strand permanent, since the worker
-      // will not re-claim it either. An unexpired lease still means a live
-      // worker and is still refused.
-      // Absent as well as null: a row read before 012 applied carries no lease
-      // column at all, and treating that as "held" would restore the strand.
       const leaseHeld = existing.lease_expires_at
         ? existing.lease_expires_at.getTime() > Date.now()
         : false;
@@ -350,8 +265,6 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
         });
       }
 
-      // Rows left 'running' belonged to the cancelled worker and will never be
-      // completed by it; they go back on the queue alongside the untouched ones.
       const { rowCount } = await getPool().query(
         `UPDATE job_tasks
             SET status = 'queued', claimed_at = NULL, claimed_by = NULL, available_at = now()
@@ -377,9 +290,6 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
 
     const body = normaliseCrawlRequest(parsed.data);
 
-    // The seed is the caller's choice of what this instance connects to, and it
-    // is written to the frontier for a worker to fetch later. Checked here, or
-    // the job is accepted and the fetch happens out of band.
     const urlVerdict = await checkUrl(body.url, {
       allowPrivate: deps.allowPrivateUrls,
       resolve: deps.resolveHost,
@@ -415,10 +325,6 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
       });
     }
 
-    // The seed is the frontier's first entry; the worker expands from there.
-    // Written as the frontier's `url` and `key` (see FrontierItem): the worker
-    // claims and completes rows by that exact string, so a raw
-    // `https://example.com` row was never matched and its page was dropped.
     const seed = fetchUrl(body.url) ?? body.url;
     const key = normaliseUrl(body.url, { ignoreQuery: body.ignoreQueryParameters }) ?? seed;
     await getPool().query(
@@ -436,11 +342,6 @@ export async function registerCrawl(app: FastifyInstance, deps: CrawlRouteDeps):
     });
   });
 
-  /**
-   * The estimate on its own, without submitting a job body a caller does not
-   * intend to run. Registered before `/crawl/:id` so "estimate" is never
-   * matched as a job id.
-   */
   app.post('/crawl/estimate', async (request, reply) => {
     const parsed = schema.safeParse(request.body);
 

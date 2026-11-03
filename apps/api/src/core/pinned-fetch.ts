@@ -4,21 +4,8 @@ import { isIP, type LookupFunction } from 'node:net';
 import { Readable } from 'node:stream';
 import { isPrivateAddress, systemLookup, UnsafeUrlError, type Lookup } from './url-guard.js';
 
-/**
- * A fetch whose address check and connection use the same DNS answer.
- *
- * Checking a name and then calling `fetch` resolves it twice, and a name with
- * a zero TTL can answer a public address to the check and a private one to the
- * connection. Here the check runs inside the socket's own lookup, so the
- * address that passed is the address connected to.
- *
- * It never follows redirects: callers that follow them do so by hand and send
- * each hop back through this function. It does not decompress bodies, so it
- * sends no Accept-Encoding of its own.
- */
 
 export interface PinnedFetchOptions {
-  /** True for an address that must not be reached. Defaults to every non-public address. */
   blocked?: ((address: string) => boolean) | undefined;
   lookup?: Lookup | undefined;
 }
@@ -100,5 +87,4 @@ export function createPinnedFetch(options: PinnedFetchOptions = {}): PinnedFetch
     });
 }
 
-/** The default pinned fetch: every non-public address refused. */
 export const pinnedFetch: PinnedFetch = createPinnedFetch();

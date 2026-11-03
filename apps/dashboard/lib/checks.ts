@@ -26,12 +26,6 @@ export async function runPdfAssess(request: PdfAssessRequest | FormData, apiKey:
   return requireClient(apiKey).pdfAssess(request);
 }
 
-/**
- * A browser cannot fetch an arbitrary third-party page: that site's CORS
- * policy decides, and it will not name this origin. `/scrape` exists for
- * exactly this — the server fetches, the browser matches selectors against
- * what comes back.
- */
 export async function fetchHtmlForSelectors(url: string, apiKey: string | null): Promise<string> {
   const body = { url, formats: ['rawHtml'] };
   const response = await requireClient(apiKey).scrape(body as never);
@@ -70,7 +64,6 @@ function toMatch(element: Element, index: number): SelectorMatch {
   };
 }
 
-/** Runs the selector in the browser against already-fetched HTML, so typing re-matches without another request. */
 export function matchSelector(html: string, selector: string, kind: SelectorKind): SelectorResult {
   if (!selector.trim()) return { matches: [], error: null };
   const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -97,12 +90,6 @@ export function matchSelector(html: string, selector: string, kind: SelectorKind
   }
 }
 
-/**
- * The point of the tab: turn a working selector into the request body that
- * uses it. `ScrapeOptions` takes `includeSelectors`, which is CSS — an XPath
- * expression has nowhere to go there, so that case is reported rather than
- * emitted as a body the API would reject.
- */
 export function selectorAsScrapeBody(url: string, selector: string, kind: SelectorKind): string | null {
   if (kind === 'xpath') return null;
   return JSON.stringify({ url, formats: ['markdown'], includeSelectors: [selector] }, null, 2);

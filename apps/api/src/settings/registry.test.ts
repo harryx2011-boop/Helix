@@ -4,8 +4,6 @@ import { loadConfig } from '../config.js';
 
 describe('settings registry — crawl policy knobs', () => {
   it('exposes the adaptive concurrency floor and ceiling as a pair', () => {
-    // A ceiling without a floor lets an operator bound the damage but not the
-    // slowness; the adaptive loop needs both ends declared to be clamped.
     expect(isEditable('maxHostConcurrency')).toBe(true);
     expect(isEditable('minHostConcurrency')).toBe(true);
   });
@@ -28,24 +26,17 @@ describe('settings registry — crawl policy knobs', () => {
   });
 
   it('keeps every new knob a restart setting, not a live one', () => {
-    // These are read when a crawl worker is constructed. Advertising them as
-    // live would tell an operator a running crawl had picked up a change it
-    // never saw.
     for (const key of ['minHostConcurrency', 'crawlSessionPoolSize', 'crawlSessionMaxBlocks']) {
       expect(settingDef(key)?.effect).toBe('restart');
     }
   });
 
   it('refuses to write a key that is not in the registry', () => {
-    // The registry is an allowlist: the database URL and the admin token have
-    // no business being reachable from an HTTP surface.
     expect(isEditable('databaseUrl')).toBe(false);
     expect(isEditable('crawlSessionProxyUrl')).toBe(false);
   });
 
   it('names only keys the config has, so a stored value can take effect', () => {
-    // A stored override is written onto `config[key]` at boot. A key the
-    // schema does not declare is written and then read by nothing.
     const config = loadConfig({});
     for (const setting of SETTINGS) {
       expect(Object.hasOwn(config, setting.key), setting.key).toBe(true);

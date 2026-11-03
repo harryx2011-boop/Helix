@@ -1,0 +1,135 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/hard-parts.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 24,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 24,
+      "offset": null,
+      "text": "DocParse: browser strip + document card + ASCII particle stream +",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 24,
+      "offset": null,
+      "text": "a \"Parsing… / Parsed\" status chip, cycling through four file types.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "DocFile",
+      "line": 25,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 168,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 168,
+      "offset": null,
+      "text": "JsonExtract: mini page with skeleton + price, and a JSON block whose",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 168,
+      "offset": null,
+      "text": "values scramble then resolve via AnimatedCode, synced to a status chip.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "K",
+      "line": 169,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 266,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": null,
+      "line": 266,
+      "offset": null,
+      "text": "ActionGrid: the Interact action set as a 4x2 hairline grid. A run walks",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": null,
+      "line": 266,
+      "offset": null,
+      "text": "the tiles in order, then holds on \"done\" before starting over.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 267,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "ACTIONS",
+      "line": 267,
+      "offset": 0,
+      "text": "The `InteractActionSchema` union minus `executeJavascript`, in the order a session usually runs them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": null,
+      "line": 369,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": null,
+      "line": 369,
+      "offset": null,
+      "text": "HardParts section",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "HardParts",
+      "line": 370,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    }
+  ]
+}

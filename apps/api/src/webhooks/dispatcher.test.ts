@@ -50,7 +50,6 @@ function fakeDb(
   };
 }
 
-/** Every test target resolves publicly; DNS is not what is under test. */
 const resolve = async () => ['93.184.216.34'];
 
 function fakeFetch(status: number | Error): typeof fetch & { calls: { url: string; init: RequestInit }[] } {
@@ -65,7 +64,6 @@ function fakeFetch(status: number | Error): typeof fetch & { calls: { url: strin
 }
 
 describe('WebhookDispatcher', () => {
-  // An unread body holds its socket open until the stream is collected.
   it('drains the response body so the connection is released', async () => {
     const db = fakeDb([row()]);
     let cancelled = false;

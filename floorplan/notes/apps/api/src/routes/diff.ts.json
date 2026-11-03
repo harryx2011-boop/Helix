@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/diff.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MAX_DIFF_BYTES",
+      "line": 13,
+      "offset": 0,
+      "text": "One-shot diff, with no monitor and nothing stored.\n\n`/monitor` keeps a schedule and a baseline snapshot; this is for a caller\nthat already has two things to compare right now — two pages, or two texts\nit read itself — and wants the same Myers diff `/monitor` uses, without\ncreating anything that outlives the request.",
+      "kind": "doc"
+    }
+  ]
+}

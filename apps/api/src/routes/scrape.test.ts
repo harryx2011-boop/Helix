@@ -343,8 +343,6 @@ describe('POST /scrape proxy and mobile', () => {
     expect(res.json().message).toContain('HELIX_PROXY_URL');
   });
 
-  // A caller's proxy is a host this instance connects to, so it meets the
-  // same egress rules as the target URL.
   it.each([
     'http://169.254.169.254',
     'http://127.0.0.1:7402',
@@ -375,7 +373,6 @@ describe('POST /scrape proxy and mobile', () => {
   it('passes a caller-supplied proxy through', async () => {
     const { app, deps } = await build();
     await post(app, { url: 'https://example.com', proxy: { url: 'http://user:pass@mine:3128', geo: 'DE' } });
-    // Pinned to the address the guard checked, so a second lookup cannot swap in another.
     expect(deps.fetchClient.fetch).toHaveBeenCalledWith(
       expect.objectContaining({ proxy: 'http://user:pass@93.184.216.34:3128' }),
     );
@@ -461,8 +458,6 @@ describe('POST /scrape engine and tier selection', () => {
   });
 
   it('never reaches camoufox on its own when the tier is auto', async () => {
-    // The ladder escalates on evidence up to chromium; the opt-in tier is
-    // reached by naming it, never by a block.
     const challenge = '<html><body><div class="cf-browser-verification">Checking your browser before accessing</div></body></html>';
     const { app, deps } = await build({
       fetchClient: fetchClientReturning(challenge),

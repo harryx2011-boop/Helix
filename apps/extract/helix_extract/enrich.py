@@ -29,9 +29,7 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Any, Literal
 
-# Why a claimed field did not survive. A closed vocabulary, declared as a real
 # type rather than described in prose, so a caller cannot invent a reason and a
-# typo fails at the boundary instead of becoming a novel string in a response.
 GroundingRejection = Literal[
     "no_citation",
     "citation_too_short",
@@ -39,20 +37,12 @@ GroundingRejection = Literal[
     "value_not_in_citation",
 ]
 
-# Shortest passage that can identify itself inside a document. Below this a
-# "quote" matches somewhere in almost any text by chance, which makes the check
-# pass without meaning anything. Kept in step with the gateway's own floor.
 MIN_CITATION_CHARS = 24
 
 
 _WS = re.compile(r"\s+")
 _MARKUP = re.compile(r"[*_`#>|]")
 
-# NFKC folds the space variants but NOT the quote and dash variants a markdown
-# extractor emits - measured, not assumed. Without this table a model that
-# retyped an em dash as a hyphen would have a true citation rejected, so the
-# folds are spelled out. Every entry maps a typographic variant onto its ASCII
-# form; none maps one letter or digit onto another.
 _PUNCTUATION = str.maketrans(
     {
         "‘": "'", "’": "'", "‚": "'", "‛": "'", "′": "'",
@@ -106,8 +96,6 @@ def value_in_citation(value: Any, citation: str) -> bool:
         return True
 
     if isinstance(value, (int, float)):
-        # 1200000 written on the page as "1,200,000". Separators are form, not
-        # substance, so comparing without them is not a loosening of the test.
         strip = str.maketrans("", "", ", ")
         return needle.translate(strip) in haystack.translate(strip)
 

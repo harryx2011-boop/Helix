@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/local-setup-offer.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "LocalSetupOffer",
+      "line": 9,
+      "offset": 0,
+      "text": "The offer to do the setup for them, on the last step of onboarding.\n\nThe person finishing this wizard has answers saved and a key minted, and\nstill has to wire Helix into whatever they are actually building. That is\nthe moment the offer is worth making — not on the marketing page they have\nalready left.\n\nIt hands the work to their own coding agent rather than pretending to run\nanything from the browser: `setupPrompt()` is the same prompt the marketing\npage ships, written for an agent that installs the skill, finds a key\nwithout ever printing it, and smoke-tests the result. A button here cannot\ntouch their filesystem; an agent in their editor can.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "LocalSetupOffer",
+      "line": 22,
+      "offset": 13,
+      "text": "A denied clipboard permission is not an error worth a banner: the\nprompt is on the setup page too, and saying nothing beats a toast the\nuser cannot act on.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "LocalSetupOffer",
+      "line": 48,
+      "offset": 39,
+      "text": "Announced on copy without moving anything: the button label already\nchanged, but a screen reader needs the change said out loud.",
+      "kind": "what"
+    }
+  ]
+}

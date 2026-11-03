@@ -1,11 +1,4 @@
 // Phase B gate (voice-core plan): dictation lands in the agent composer of the packaged app.
-// Launches the app with a fake microphone that plays a recorded WAV, drives the composer's mic
-// button through the app's own debug port, and prints what happened. No OS input, no real mic.
-//
-//   node scripts/verify-dictation.mjs [exe] [--wav <file>] [--seconds 14] [--port 9334]
-//
-// It refuses to run while an installed Helix holds the desktop ports, and it keeps its own
-// user-data folder, so the installed app's data is never touched.
 import { execFileSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
@@ -128,7 +121,6 @@ try {
   try {
     execFileSync('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true })
   } catch {
-    // already gone
   }
   await sleep(2000)
   fs.rmSync(userData, { recursive: true, force: true })

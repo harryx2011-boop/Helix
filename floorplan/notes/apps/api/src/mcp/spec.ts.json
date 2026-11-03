@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/mcp/spec.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "JsonObject",
+      "line": 7,
+      "offset": 0,
+      "text": "openapi.yaml is the source of truth for the MCP tool surface. It lives at the\nrepo root in development and beside `dist/` in the container image, so the\nloader walks upward from this module until it finds one. HELIX_OPENAPI_PATH\noverrides the search.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "deref",
+      "line": 54,
+      "offset": 0,
+      "text": "Inline every `$ref` so a tool's input schema stands alone: MCP clients never\nsee the `components` section. A reference that points back into itself is\nreplaced by a bare object rather than recursing forever.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "flattenAllOf",
+      "line": 76,
+      "offset": 0,
+      "text": "Collapse a top-level `allOf` of object schemas into one object schema so the\ntool's `properties` are visible without the client having to merge them.",
+      "kind": "doc"
+    }
+  ]
+}

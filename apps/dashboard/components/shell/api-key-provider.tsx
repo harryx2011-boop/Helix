@@ -12,11 +12,6 @@ interface ApiKeyContextValue {
 
 const ApiKeyContext = React.createContext<ApiKeyContextValue | undefined>(undefined);
 
-/**
- * Loads the key from localStorage after mount (SSR/export has no localStorage),
- * so every consumer sees `null` until hydration resolves it — the key gate
- * below reacts to that instead of racing it.
- */
 export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
   const [apiKey, setApiKeyState] = React.useState<string | null>(null);
   const [hydrated, setHydrated] = React.useState(false);
@@ -24,8 +19,6 @@ export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     setApiKeyState(getApiKey());
     setHydrated(true);
-    // Inside the VS Code extension the key arrives by message, and replaces
-    // whatever this frame's storage held.
     return listenForEmbedKey((key) => {
       persistApiKey(key);
       setApiKeyState(key);
@@ -49,7 +42,6 @@ export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
   return <ApiKeyContext.Provider value={value}>{children}</ApiKeyContext.Provider>;
 }
 
-/** Null outside the provider, e.g. `(tools)`, which mounts none. */
 export function useOptionalApiKey(): ApiKeyContextValue | null {
   return React.useContext(ApiKeyContext) ?? null;
 }

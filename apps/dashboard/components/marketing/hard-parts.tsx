@@ -21,10 +21,6 @@ function useInView(ref: React.RefObject<Element | null>): boolean {
   return inView;
 }
 
-/* ---------------------------------------------------------------------- */
-/* DocParse: browser strip + document card + ASCII particle stream +      */
-/* a "Parsing… / Parsed" status chip, cycling through four file types.    */
-/* ---------------------------------------------------------------------- */
 
 type DocFile = { name: string; badge: string };
 const DOC_FILES: DocFile[] = [
@@ -169,10 +165,6 @@ function DocParse({ quiet }: { quiet: boolean }) {
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* JsonExtract: mini page with skeleton + price, and a JSON block whose    */
-/* values scramble then resolve via AnimatedCode, synced to a status chip. */
-/* ---------------------------------------------------------------------- */
 
 const K = (text: string): Token => ({ kind: 'key', text });
 const S = (text: string): Token => ({ kind: 'string', text });
@@ -271,12 +263,7 @@ function JsonExtract({ quiet }: { quiet: boolean }) {
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* ActionGrid: the Interact action set as a 4x2 hairline grid. A run walks */
-/* the tiles in order, then holds on "done" before starting over.          */
-/* ---------------------------------------------------------------------- */
 
-/** The `InteractActionSchema` union minus `executeJavascript`, in the order a session usually runs them. */
 const ACTIONS = [
   { type: 'navigate', label: 'Navigate', icon: Navigation },
   { type: 'click', label: 'Click', icon: MousePointerClick },
@@ -379,9 +366,6 @@ function ActionGrid({ quiet }: { quiet: boolean }) {
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* HardParts section                                                       */
-/* ---------------------------------------------------------------------- */
 
 export function HardParts() {
   return (

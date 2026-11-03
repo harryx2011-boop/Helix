@@ -2,20 +2,6 @@ import { createHash } from 'node:crypto';
 import { getPool } from '../db/pool.js';
 import { decryptSecret, encryptSecret } from '../providers/crypto.js';
 
-/**
- * Encryption-key rotation.
- *
- * Rotating `HELIX_ENCRYPTION_KEY` used to be unrecoverable: `decryptSecret`
- * takes one key, the rows carried no marker saying which key encrypted them,
- * and a new key therefore turned every stored provider key into undecryptable
- * bytes. Nothing warned anyone, because nothing reads a provider key until a
- * caller makes an LLM-backed request.
- *
- * Rotation now re-encrypts every row inside one transaction. Every row is
- * decrypted with the old key and re-encrypted with the new one before anything
- * is committed, so a wrong old key aborts the whole rotation with nothing
- * written rather than destroying half the table.
- */
 
 export interface RotationResult {
   rotated: number;
@@ -30,7 +16,6 @@ export class RotationError extends Error {
   }
 }
 
-/** Identifies a key without revealing it, so a version row is auditable. */
 export function fingerprint(key: Buffer): string {
   return createHash('sha256').update(key).digest('hex').slice(0, 16);
 }
@@ -70,8 +55,6 @@ export async function rotateEncryptionKey(oldKey: Buffer, newKey: Buffer): Promi
       from,
     ]);
 
-    // Decrypt everything before writing anything: a wrong old key must fail the
-    // rotation, not leave the table split across two keys.
     const reEncrypted = rows.map((row) => {
       let plaintext: string;
       try {

@@ -35,7 +35,6 @@ describe('RateLimiter', () => {
     for (let i = 0; i < 60; i++) limiter.check('key');
     expect(limiter.check('key').allowed).toBe(false);
 
-    // One second later, roughly one token is back.
     vi.advanceTimersByTime(1_000);
     expect(limiter.check('key').allowed).toBe(true);
 
@@ -43,12 +42,8 @@ describe('RateLimiter', () => {
   });
 
   it('FAILS OPEN when the backing store throws', () => {
-    // The behaviour this whole module exists to guarantee. An internal fault must
-    // never become a client-visible 429 — the failure mode that takes comparable
-    // products down for every caller during a brief store outage.
     const limiter = new RateLimiter({ limit: 1, windowMs: 60_000 });
 
-    // Simulate the store failing.
     const broken = limiter as unknown as { '#buckets': Map<string, unknown> };
     Object.defineProperty(broken, '#buckets', {
       get() {
@@ -64,7 +59,6 @@ describe('RateLimiter', () => {
     const onDegraded = vi.fn();
     const limiter = new RateLimiter({ limit: 1, windowMs: 60_000, onDegraded });
 
-    // A limiter that silently stops limiting is worse than one that fails loudly.
     expect(limiter.check('key').degraded).toBe(false);
     expect(onDegraded).not.toHaveBeenCalled();
   });
@@ -73,8 +67,6 @@ describe('RateLimiter', () => {
     const limiter = new RateLimiter({ limit: 10, windowMs: 60_000 });
     const headers = rateLimitHeaders(limiter.check('key'));
 
-    // Agents self-throttle from these. They must never contain `undefined`,
-    // which is exactly what a comparable product returns during a store outage.
     expect(headers['X-RateLimit-Limit']).toBe('10');
     expect(headers['X-RateLimit-Remaining']).toBe('9');
     expect(Number(headers['X-RateLimit-Reset'])).toBeGreaterThan(0);
@@ -91,7 +83,6 @@ describe('RateLimiter', () => {
     vi.advanceTimersByTime(5_000);
     limiter.prune();
 
-    // A pruned key starts fresh.
     expect(limiter.check('old').remaining).toBe(4);
     vi.useRealTimers();
   });

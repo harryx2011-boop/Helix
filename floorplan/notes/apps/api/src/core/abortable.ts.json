@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/abortable.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "abortable",
+      "line": 1,
+      "offset": 0,
+      "text": "Races an in-flight promise against an abort signal.\n\nSome in-flight work has no cancellation hook of its own — Fastify's `inject`\nruns a handler against a synthetic request/response pair with no socket to\nclose, so the caller disconnecting can only ever stop the *waiting*, never\nthe work itself. This is that: the awaited promise still settles on its own\ntime, but a route can stop blocking the reply on it once the signal fires,\nthe same way `raceInFlight` in the crawl worker stops waiting on in-flight\nfetches rather than pretending it can cancel them.",
+      "kind": "doc"
+    }
+  ]
+}

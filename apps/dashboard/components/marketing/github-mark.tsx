@@ -1,4 +1,3 @@
-/** Inline GitHub mark (Octicons `mark-github`), currentColor so it tracks the button's text color. */
 export function GithubMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 16 16" className={className} fill="currentColor" aria-hidden="true">

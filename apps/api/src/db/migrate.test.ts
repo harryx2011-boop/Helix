@@ -4,12 +4,6 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * 001_init.sql shipped with a pgvector block that was unreachable everywhere
- * it ran (pgvector was never present), so every deployed database recorded it
- * under the checksum of the broken text. The fix must not brick those
- * upgrades — case (c) below is that tolerance path, exercised once.
- */
 
 const db = vi.hoisted(() => {
   const state = {
@@ -83,9 +77,6 @@ describe('migrate', () => {
   });
 
   it('tolerates 001_init.sql stored under its prior checksum and updates it', async () => {
-    // The real pre-fix checksum baked into migrate.ts's PRIOR_CHECKSUMS map —
-    // every database that ran the old, syntactically-broken 001_init.sql
-    // recorded exactly this value.
     const priorChecksum = 'fe5eba1b27c750c815064ca92d54234b7469f4071e3f42a5d6890e3a75342041';
     const fixedSql = 'CREATE TABLE chunks (id uuid);\n';
 

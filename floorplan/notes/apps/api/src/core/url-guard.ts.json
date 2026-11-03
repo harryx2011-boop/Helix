@@ -1,0 +1,223 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/url-guard.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HostResolver",
+      "line": 5,
+      "offset": 0,
+      "text": "Egress guard for caller-supplied URLs.\n\nAn API key is a low-trust boundary for a scraper: keys are handed to many\nusers, and every one of them chooses what this instance fetches. Without a\ncheck, `http://169.254.169.254/` returns the host's cloud credentials in\n`rawHtml`, and internal services become reachable through the fetch tiers.\n\nTwo layers: `checkUrl` runs once per request in the route (scheme, literal\naddress, DNS resolution), and `isPrivateHost` is the literal-only check the\nfetch tiers apply to every redirect hop.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "UrlGuardOptions.allowPrivate",
+      "line": 8,
+      "offset": 0,
+      "text": "Operator opt-in for instances that scrape their own intranet.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "expandV6",
+      "line": 45,
+      "offset": 0,
+      "text": "Eight 16-bit groups, or undefined when the literal does not parse.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "expandV6",
+      "line": 50,
+      "offset": 5,
+      "text": "An embedded dotted-quad tail (::ffff:10.0.0.1) becomes two groups.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "isPrivateV6",
+      "line": 79,
+      "offset": 7,
+      "text": "::/96: :: and ::1, and the deprecated v4-compatible form (::7f00:1), which is never a public address.",
+      "kind": "why"
+    },
+    {
+      "id": "n6",
+      "symbol": "isPrivateV6",
+      "line": 80,
+      "offset": 8,
+      "text": "2002::/16 (6to4) embeds a v4 address in groups 1 and 2.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "isPrivateV6",
+      "line": 81,
+      "offset": 9,
+      "text": "fec0::/10, deprecated site-local.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "isPrivateV6",
+      "line": 82,
+      "offset": 10,
+      "text": "::ffff:a.b.c.d (IPv4-mapped) and 64:ff9b::/96 (NAT64) carry a v4 address.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "isPrivateV6",
+      "line": 84,
+      "offset": 12,
+      "text": "fc00::/7 unique local, fe80::/10 link-local, ff00::/8 multicast.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "isPrivateV6",
+      "line": 87,
+      "offset": 15,
+      "text": "2001:db8::/32 is reserved for documentation and routes nowhere.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "isPrivateAddress",
+      "line": 91,
+      "offset": 0,
+      "text": "Loopback, link-local, private-range, multicast or reserved. Unparseable input counts as private.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "isPrivateHost",
+      "line": 107,
+      "offset": 0,
+      "text": "The literal-only check: an address, or a name that is local by definition.\nNo DNS, so it is cheap enough to run on every redirect hop.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "checkUrl",
+      "line": 119,
+      "offset": 0,
+      "text": "Scheme, literal host, then what the name resolves to.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "checkProxyUrl",
+      "line": 136,
+      "offset": 0,
+      "text": "A caller-supplied proxy is a host this instance connects to and hands the\nrequest to, so it meets the same address rules as the target URL.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "checkProxyUrl",
+      "line": 148,
+      "offset": 12,
+      "text": "A socks5 URL has an opaque host that the URL parser leaves as written;\nre-reading it as http normalises numeric spellings such as 0x7f000001.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "pinProxyUrl",
+      "line": 159,
+      "offset": 0,
+      "text": "A caller's proxy URL with its host replaced by the address the guard checked.\n\nThe fetch service and the browser resolve the proxy host themselves; handing\nthem the checked address leaves no second lookup to answer differently. An\nhttps proxy keeps its name, since its certificate is issued to the name.\nA name that does not resolve is refused rather than left to a later lookup.",
+      "kind": "doc"
+    },
+    {
+      "id": "n17",
+      "symbol": "pinProxyUrl",
+      "line": 182,
+      "offset": 23,
+      "text": "checkHost fails open on a lookup error, so the answer pinned here is checked here.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "pinProxyUrl",
+      "line": 190,
+      "offset": 31,
+      "text": "The URL serialiser adds a root path the caller did not write; leave it off.",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "checkHost",
+      "line": 194,
+      "offset": 0,
+      "text": "The address rules shared by target and proxy URLs: literal host, then DNS.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "checkHost",
+      "line": 208,
+      "offset": 14,
+      "text": "A name that does not resolve fails in the fetch tier with a typed `dns`\nreason, which says more than a 400 would.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "Lookup",
+      "line": 223,
+      "offset": 0,
+      "text": "The interact surface, over the same address rules.\n\n`checkUrl` answers a verdict a route turns into a 400; the browser actions\nwant a throw they can catch per navigation, and a resolver shaped like\n`dns.lookup`'s `all` form. Both are the one blocklist above; a change to the\nranges reaches every caller.",
+      "kind": "doc"
+    },
+    {
+      "id": "n22",
+      "symbol": "isPublicAddress",
+      "line": 234,
+      "offset": 0,
+      "text": "True when the literal address is routable on the public internet.",
+      "kind": "doc"
+    },
+    {
+      "id": "n23",
+      "symbol": "ALWAYS_BLOCKED",
+      "line": 238,
+      "offset": 0,
+      "text": "The ranges no caller reaches, even where private addresses are allowed.\n\nAn operator who allows private addresses means loopback and their own LAN —\nwhere a local model runtime lives. Link-local carries the cloud metadata\nendpoint, and CGNAT is the provider's shared space, not the operator's\nnetwork. Neither is ever the intended target of that opt-in.",
+      "kind": "doc"
+    },
+    {
+      "id": "n24",
+      "symbol": "isAlwaysBlocked",
+      "line": 243,
+      "offset": 0,
+      "text": "Link-local or CGNAT, in v4 or v4-mapped v6 form, or v6 link-local (fe80::/10).",
+      "kind": "doc"
+    },
+    {
+      "id": "n25",
+      "symbol": "checkAlwaysBlocked",
+      "line": 253,
+      "offset": 0,
+      "text": "With private targets allowed, the literal host and its DNS answers still stay out of the always-blocked ranges.",
+      "kind": "doc"
+    },
+    {
+      "id": "n26",
+      "symbol": "blockedRange",
+      "line": 271,
+      "offset": 0,
+      "text": "Names the reserved range when the URL's host sits in one, for a message that says which.",
+      "kind": "doc"
+    },
+    {
+      "id": "n27",
+      "symbol": "assertPublicUrl",
+      "line": 282,
+      "offset": 0,
+      "text": "Throws unless the URL is http(s) to a publicly routable address, name resolution included.",
+      "kind": "doc"
+    }
+  ]
+}

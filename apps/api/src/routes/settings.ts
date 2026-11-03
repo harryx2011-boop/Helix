@@ -7,19 +7,9 @@ import { applyLive, type LiveTargets } from '../settings/apply.js';
 import { currentVersion, rotateEncryptionKey, RotationError } from '../settings/rotate.js';
 import { deriveEncryptionKey } from '../providers/crypto.js';
 
-/**
- * Operator settings for a self-hosted instance.
- *
- * Mounted outside `/v1` and gated by the same admin token as `/internal`,
- * because these are the instance's own controls rather than a caller's: an API
- * key must never be able to widen the instance's network reach or rotate the
- * key protecting everyone's stored credentials. With no admin token set — the
- * self-host default — the routes are not registered at all.
- */
 
 const UpdateSchema = z.object({
   value: z.unknown(),
-  /** Required for a `guarded` setting. Names the key, so a blanket `true` cannot slip one through. */
   confirm: z.string().optional(),
 });
 
@@ -30,11 +20,9 @@ const RotateSchema = z.object({
 
 export interface SettingsRouteDeps {
   adminToken: string | undefined;
-  /** The values the environment supplied at boot, shown as the baseline behind each override. */
   envValues: Record<string, unknown>;
   live: LiveTargets;
   encryptionKey: Buffer;
-  /** The instance's public URL; the admin gate accepts its host name beside loopback. */
   publicUrl?: string | undefined;
 }
 
@@ -42,8 +30,6 @@ export async function registerSettings(app: FastifyInstance, deps: SettingsRoute
   if (!deps.adminToken) return;
   const token = deps.adminToken;
 
-  // Encapsulated: the gate covers exactly the routes registered in here, as
-  // the router matched them, not as the raw URL spelled them.
   await app.register(
     async (scope) => {
       scope.addHook('onRequest', adminGate({ token, publicUrl: deps.publicUrl }));
@@ -119,10 +105,6 @@ function registerSettingsRoutes(app: FastifyInstance, deps: SettingsRouteDeps): 
     }
 
     const cleared = await clearOverride(key);
-    // Reverting a live setting must take the environment's value now, not at
-    // the next restart, or the screen and the running instance disagree. With
-    // no environment value to revert to, there is nothing to apply: calling
-    // the setter would hand it `undefined` where it expects a real value.
     const applied = cleared && deps.envValues[key] !== undefined ? applyLive(key, deps.envValues[key], deps.live) : false;
 
     return reply.send({ success: true, key, cleared, applied, restartRequired: cleared && !applied });
@@ -154,9 +136,6 @@ function registerSettingsRoutes(app: FastifyInstance, deps: SettingsRouteDeps): 
 
     try {
       const result = await rotateEncryptionKey(deps.encryptionKey, newKey);
-      // The process still holds the old key in memory. Until HELIX_ENCRYPTION_KEY
-      // is updated and the instance restarted, it can no longer read what it
-      // just re-encrypted — so say so rather than reporting a clean success.
       return reply.send({
         success: true,
         ...result,

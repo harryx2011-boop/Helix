@@ -1,6 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomInt } from 'node:crypto';
 
-/** `helix-` + 16 chars from [A-Za-z0-9] (WEBSITE.md §8). */
 export const KEY_PREFIX = 'helix-';
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const KEY_BODY_LENGTH = 16;
@@ -15,7 +14,6 @@ export function hashApiKey(key: string): string {
   return createHash('sha256').update(key, 'utf8').digest('hex');
 }
 
-/** `helix-a7K2` — the part safe to show in tables. */
 export function keyPrefix(key: string): string {
   return key.slice(0, KEY_PREFIX.length + 4);
 }
@@ -24,7 +22,6 @@ export function keyLast3(key: string): string {
   return key.slice(-3);
 }
 
-/** `helix-a7K2………sT1` */
 export function maskApiKey(prefix: string, last3: string): string {
   return `${prefix}………${last3}`;
 }
@@ -41,7 +38,6 @@ function encryptionKey(): Buffer {
   return buf;
 }
 
-/** AES-256-GCM. Ciphertext carries the auth tag appended (16 bytes). */
 export function encryptApiKey(key: string): { ciphertext: Buffer; iv: Buffer } {
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', encryptionKey(), iv);

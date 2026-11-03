@@ -15,8 +15,6 @@ PRICING_SCHEMA = {
 
 class TestSchemaTerms:
     def test_splits_camel_case_field_names(self) -> None:
-        # A schema asking for `monthlyPrice` should match text saying "monthly"
-        # and "price"; without the split it matches neither.
         terms = schema_terms({"type": "object", "properties": {"monthlyPrice": {}}})
 
         assert "monthly" in terms
@@ -49,8 +47,6 @@ class TestSplitBlocks:
         assert len(split_blocks("First paragraph.\n\nSecond paragraph.")) == 2
 
     def test_keeps_a_heading_with_its_section(self) -> None:
-        # A heading alone scores poorly and carries the context its section
-        # needs, so detaching it loses the signal that makes the section findable.
         blocks = split_blocks("# Pricing\n\nOur plans start at $10 per month.")
 
         assert len(blocks) == 1
@@ -72,7 +68,6 @@ class TestScoreBlock:
         assert relevant > irrelevant
 
     def test_does_not_reward_mere_repetition(self) -> None:
-        # A block saying "price" ten times is not ten times more relevant.
         wanted = schema_terms(PRICING_SCHEMA)
 
         once = score_block("The monthly price of the plan.", wanted)
@@ -104,8 +99,6 @@ class TestTrimToBudget:
         assert len(trimmed) < len(content)
 
     def test_preserves_document_order(self) -> None:
-        # A document reordered by score reads as nonsense, and models do worse
-        # on it than on a coherent excerpt.
         blocks = [
             "# Intro\n\nWelcome to our company page.",
             "# Pricing\n\nThe monthly price is $29.",
@@ -120,8 +113,6 @@ class TestTrimToBudget:
             assert trimmed.index("monthly price") < trimmed.index("Pro plan")
 
     def test_falls_back_to_the_opening_when_nothing_matches(self) -> None:
-        # With no signal, the start of a document is the best guess: titles,
-        # summaries and lead paragraphs live there.
         content = "\n\n".join(f"Block {i} of entirely unrelated prose content." * 20 for i in range(50))
 
         trimmed, kept, total = trim_to_budget(content, PRICING_SCHEMA, max_tokens=100)
@@ -130,9 +121,6 @@ class TestTrimToBudget:
         assert kept > 0 and kept < total
 
     def test_never_returns_nothing_when_one_block_exceeds_the_budget(self) -> None:
-        # A single enormous paragraph must not trim to an empty string — empty
-        # output reads as "this page had no content", which is a worse answer
-        # than a truncated excerpt.
         content = "One enormous unbroken paragraph. " * 2_000
 
         trimmed, kept, _ = trim_to_budget(content, PRICING_SCHEMA, max_tokens=100)
@@ -153,7 +141,6 @@ class TestTrimToBudget:
 
         trimmed, _, _ = trim_to_budget(content, PRICING_SCHEMA, max_tokens=500)
 
-        # 500 tokens at ~4 chars each, with a little slack for block joins.
         assert len(trimmed) <= 500 * 4 + 100
 
 
@@ -212,7 +199,6 @@ class TestSaltedBlockResistance:
             assert "Acme Widget" in trimmed, f"the real answer was displaced at {budget} tokens"
 
     def test_a_benign_page_keeps_every_block_that_answers_the_schema(self) -> None:
-        # The controls must not cost an ordinary page its actual answers.
         answers = [self.LEGIT, "Price: $49.99 USD", "Availability: In stock"]
         filler = [f"Shipping and returns policy section {i} with delivery details." for i in range(300)]
         page = "\n\n".join(filler[:150] + answers + filler[150:])

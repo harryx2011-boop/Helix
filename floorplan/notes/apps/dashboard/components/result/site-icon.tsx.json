@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/result/site-icon.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SiteIconProps.src",
+      "line": 17,
+      "offset": 0,
+      "text": "Overrides the derived Google favicon URL, e.g. `metadata.favicon` once the API supplies it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SiteIcon",
+      "line": 22,
+      "offset": 0,
+      "text": "Small rounded site favicon for URL/hostname rows, sourced from the same\nGoogle favicon service as `public/providers/*.png`. Falls back to a\nneutral Globe glyph on load failure or an unparseable URL — never a\nbroken-image icon.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SiteIcon",
+      "line": 26,
+      "offset": 4,
+      "text": "Keyed by the resolved src so a recycled row retries for its new site\nrather than staying on the fallback glyph.",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/search-index.json/route.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "parseTwin",
+      "line": 28,
+      "offset": 5,
+      "text": "The trailing agent block is identical on every page and would match every query for \"agent\".",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "GET",
+      "line": 40,
+      "offset": 0,
+      "text": "The command palette's docs index (title, headings, a bounded slice of prose\nper page), derived from the same markdown twins `/md` and `/llms.txt` serve\nso it can never disagree with the pages. Static, so a self-host export\nships it as a file and the browser fetches it once instead of bundling the\ncorpus.",
+      "kind": "doc"
+    }
+  ]
+}

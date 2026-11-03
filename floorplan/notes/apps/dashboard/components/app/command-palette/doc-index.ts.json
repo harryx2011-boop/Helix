@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/command-palette/doc-index.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "loadDocIndex",
+      "line": 7,
+      "offset": 0,
+      "text": "Fetched once per page load, on the first open; a failure clears the cache so the next open retries.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -3,12 +3,6 @@ import { z } from 'zod';
 import { RobotsCache } from '../crawl/robots.js';
 import { checkUrl, type HostResolver } from '../core/url-guard.js';
 
-/**
- * Dry-run robots.txt check: whether a URL is allowed, without fetching it.
- *
- * Shares `RobotsCache` with `/crawl` and `/map`, so the answer here is exactly
- * what a crawl would decide — never a second opinion from a separate parser.
- */
 
 const RobotsCheckRequestSchema = z.object({
   url: z.string().url(),
@@ -17,9 +11,7 @@ const RobotsCheckRequestSchema = z.object({
 
 export interface RobotsRouteDeps {
   userAgent: string;
-  /** `HELIX_ALLOW_PRIVATE_URLS`: let callers fetch loopback, link-local and private-range addresses. */
   allowPrivateUrls?: boolean | undefined;
-  /** DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver. */
   resolveHost?: HostResolver | undefined;
 }
 
@@ -39,9 +31,6 @@ export async function registerRobots(app: FastifyInstance, deps: RobotsRouteDeps
 
     const body = parsed.data;
 
-    // The URL is the caller's choice of what this instance connects to. Without
-    // this, an API key reaches cloud metadata, Postgres and the internal
-    // services through the robots.txt fetch.
     const urlVerdict = await checkUrl(body.url, {
       allowPrivate: deps.allowPrivateUrls,
       resolve: deps.resolveHost,

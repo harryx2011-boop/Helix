@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/db/migrate.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TABLE",
+      "line": 8,
+      "offset": 0,
+      "text": "Migrations.\n\nApplied in filename order inside a transaction, each recorded with a checksum.\nAn already-applied file whose contents changed is an error rather than a\nsilent re-run: editing shipped migrations is how environments drift apart\nwithout anyone noticing.\n\nCompose also mounts `migrations/` into the Postgres init directory, so a fresh\nvolume is set up before the API starts. This runner handles every case after\nthat — upgrades, and any deployment not using compose.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PRIOR_CHECKSUMS",
+      "line": 15,
+      "offset": 0,
+      "text": "A recorded checksum can disagree with the current file without the migration\nhaving changed meaning. Two causes, both benign, are tolerated once per file:\nthe runner rewrites the stored checksum to the current one and moves on,\nrather than tripping the immutability check.\n\n  001_init.sql shipped with a syntactically broken but unreachable pgvector\n  block (the IF EXISTS guard only ever found pgvector absent), so every\n  database that recorded that checksum holds the schema the fixed file makes.\n\n  001/003/004 were first applied from a checkout with CRLF line endings\n  (core.autocrlf, before .gitattributes pinned *.sql to LF), so their stored\n  checksums are the CRLF hash of the identical content the LF files now hold.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "PRIOR_CHECKSUMS.001_init.sql",
+      "line": 17,
+      "offset": 1,
+      "text": "pre-fix: broken (unreachable) pgvector chunks block",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "PRIOR_CHECKSUMS.001_init.sql",
+      "line": 18,
+      "offset": 2,
+      "text": "CRLF-applied form of the current content",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "PRIOR_CHECKSUMS.003_monitor.sql",
+      "line": 20,
+      "offset": 0,
+      "text": "CRLF-applied forms of the current content",
+      "kind": "what"
+    }
+  ]
+}

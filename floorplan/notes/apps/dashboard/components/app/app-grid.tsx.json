@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/app-grid.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "mulberry32",
+      "line": 7,
+      "offset": 0,
+      "text": "Dark-token port of the marketing GridCells/PixelSquares techniques\n(components/shared/ambient.tsx) for the /app surface: hairline cell\ngrid, `+` crosshairs at intersections, drifting cell markers, and\nassembling pixel clusters. Same contract — seeded PRNG, IntersectionObserver\ngated, static under reduced motion, deterministic first paint.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "outerCol",
+      "line": 45,
+      "offset": 0,
+      "text": "Markers stay in the outer thirds so they never sit under centred content.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "AssembleCluster",
+      "line": 71,
+      "offset": 0,
+      "text": "n×n cluster of 6px squares that fills in one-by-one, holds, then clears and repeats.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "AppGridProps.sparkles",
+      "line": 123,
+      "offset": 0,
+      "text": "How many ✦ nodes to pin at intersections. Seeded into the outer thirds, and unlike markers they do not drift.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "AppGrid",
+      "line": 160,
+      "offset": 33,
+      "text": "Nodes sit on intersections from row 3 down: the first rows are under the\nheader panel every screen opens with, and a pill half-hidden by a card\nedge reads as a glitch rather than a decoration.",
+      "kind": "what"
+    }
+  ]
+}

@@ -5,22 +5,10 @@ import { UnsafeUrlError, assertPublicUrl, type Lookup } from '../core/url-guard.
 import type { ExtractClient } from '../extract/client.js';
 import type { Log } from '../core/logger.js';
 
-/**
- * Interact actions: the spec's union (research/api-specs/browser-interaction-api.md §5).
- *
- * Distinct from the pre-scrape `actions[]` on /scrape, which runs inside a
- * one-shot render. These run against a page that persists between calls, so a
- * `navigate` here is a real action rather than the implicit first step, and
- * `extract` returns its answer as the run's `output`.
- *
- * Deterministic by construction: every action names its target. The only model
- * call is `extract`, and it runs against the operator's configured provider.
- */
 
 const MAX_TOTAL_WAIT_MS = 60_000;
 const ACTION_TIMEOUT_MS = 10_000;
 const NAVIGATE_TIMEOUT_MS = 30_000;
-/** Serialized size of one `executeJavascript` return value. */
 const MAX_JS_RETURN_CHARS = 1_000_000;
 
 export const InteractActionSchema = z.discriminatedUnion('type', [
@@ -31,7 +19,6 @@ export const InteractActionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('scroll'),
     direction: z.enum(['up', 'down']).default('down'),
-    /** Pixels. Omitted: one viewport height. */
     amount: z.number().int().min(1).max(20_000).optional(),
   }),
   z.object({
@@ -52,11 +39,8 @@ export const InteractActionSchema = z.discriminatedUnion('type', [
 export type InteractAction = z.infer<typeof InteractActionSchema>;
 
 export interface InteractOutcome {
-  /** Result of the last `extract`: the answer string, or the JSON of a schema result. */
   output?: string | undefined;
-  /** Structured result of the last `extract`. */
   data?: Record<string, unknown> | undefined;
-  /** Last screenshot as a data URL. */
   screenshot?: string | undefined;
   javascriptReturns: unknown[];
   actionsRun: number;
@@ -66,26 +50,15 @@ export interface InteractOutcome {
 export interface InteractActionDeps {
   extractClient: ExtractClient;
   logger?: Log | undefined;
-  /** DNS for the URL guard; tests supply a fake. */
   lookup?: Lookup | undefined;
 }
 
-/**
- * A failed action, carrying what the route's typed failure envelope needs.
- * `reason` is the same enum every other fetch failure uses, so a client that
- * already handles Scrape needs nothing new.
- */
 export class ActionError extends Error {
   readonly index: number;
   readonly actionType: InteractAction['type'];
   readonly reason: FailureReason;
   readonly statusCode: number | undefined;
   readonly detectedBy: string[];
-  /**
-   * The page's main thread did not come back. Chromium cannot interrupt a
-   * script that never yields, so the only way to reclaim the session is to
-   * close it; the route does that whatever the caller asked for.
-   */
   readonly pageUnresponsive: boolean;
 
   constructor(input: {
@@ -115,7 +88,6 @@ class EvaluateTimeoutError extends Error {
   }
 }
 
-/** `page.evaluate` has no timeout of its own; a script that never settles must not hold the request. */
 async function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
   let timer: NodeJS.Timeout | undefined;
   const deadline = new Promise<never>((_, reject) => {
@@ -128,12 +100,6 @@ async function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
   }
 }
 
-/**
- * Keeps every request the page makes on the public internet: navigations,
- * redirects, subresources, and anything a script fetches. The `navigate`
- * check gives a clear answer for the URL the caller named; this catches the
- * rest. Each host is resolved once per page.
- */
 export async function guardPage(page: Page, lookup?: Lookup): Promise<void> {
   const verdicts = new Map<string, Promise<boolean>>();
   await page.route('**/*', async (route, request) => {
@@ -172,7 +138,6 @@ export function parseInteractActions(input: unknown[]): InteractAction[] {
   });
 }
 
-/** A prompt without a schema still runs through structured extraction: one string field. */
 function answerSchema(prompt: string): Record<string, unknown> {
   return {
     type: 'object',
@@ -183,11 +148,6 @@ function answerSchema(prompt: string): Record<string, unknown> {
   };
 }
 
-/**
- * What the model sees. Boilerplate-stripped markdown when helix-extract is up,
- * so the caller's own token bill stays proportional to the content; the page's
- * visible text otherwise.
- */
 async function pageText(page: Page, deps: InteractActionDeps): Promise<string> {
   const html = await page.content();
   try {
@@ -302,8 +262,6 @@ async function runOne(
     case 'wait': {
       const remaining = Math.max(0, MAX_TOTAL_WAIT_MS - wait.total);
       if (action.selector) {
-        // Playwright reads a timeout of 0 as no timeout at all, so an exhausted
-        // budget has to fail here rather than be passed on.
         if (remaining <= 0) {
           throw new ActionError({
             index,
@@ -332,9 +290,6 @@ async function runOne(
     }
 
     case 'executeJavascript': {
-      // Runs in page context. The value stays in the page as a handle until
-      // its size is known, so a script cannot push hundreds of megabytes
-      // through CDP into the response.
       try {
         const value = await withTimeout(
           (async () => {

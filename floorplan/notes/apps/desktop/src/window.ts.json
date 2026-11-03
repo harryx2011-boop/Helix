@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/src/window.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "trustedSender",
+      "line": 35,
+      "offset": 0,
+      "text": "Our window's top document on our own origin; an iframe inside it never qualifies.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "createMainWindow",
+      "line": 65,
+      "offset": 20,
+      "text": "Keys go only to a document served by our own API, never to a page a link wandered to.",
+      "kind": "why"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/install-frames.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FRAME_MS",
+      "line": 1,
+      "offset": 0,
+      "text": "The /download page's install sequence as literal frames (DESIGN.md §3, §6):\n125 ms per frame, one change per frame, a terminal frame, no loop. Frames are\nbuilt by applying one change at a time and snapshotting, so the one-change\nrule holds by construction.",
+      "kind": "doc"
+    }
+  ]
+}

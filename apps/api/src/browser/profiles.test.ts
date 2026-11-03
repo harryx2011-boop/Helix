@@ -13,13 +13,6 @@ import {
   type BrowserProfile,
 } from './profiles.js';
 
-/**
- * The JS layer is what a page can read about the machine it thinks it is on.
- * These tests hold two lines: a definition the loader cannot parse is skipped
- * rather than crashing a render, and the generated script is deterministic —
- * a value that varies between two reads is the tell the whole subsystem exists
- * to avoid.
- */
 
 function profileFixture(overrides: Partial<BrowserProfile> = {}): BrowserProfile {
   return {
@@ -116,7 +109,6 @@ describe('unverified profiles', () => {
 
     const profile = getProfile('chrome-guess', { warn } as never);
 
-    // Applied: a guessed identity still beats leaking the host's real one.
     expect(profile?.id).toBe('chrome-guess');
     expect(warn).toHaveBeenCalledOnce();
     expect(JSON.stringify(warn.mock.calls[0])).toContain('never captured');
@@ -135,14 +127,6 @@ describe('unverified profiles', () => {
 });
 
 describe('the canvas seed', () => {
-  /**
-   * The attack this defends against: the profile id ships in a public repo, so
-   * a seed derived from it alone is a pure function of data the tracker already
-   * has. They recompute it, invert the transform, and read the true hardware
-   * canvas hash - every install handing out the same stable identifier behind a
-   * veneer of protection. Cortex shipped that exact bug and measured 0 of 4096
-   * bytes differing after inversion.
-   */
   it('differs between two instances running the same public profile', () => {
     const profile = profileFixture();
 
@@ -173,8 +157,6 @@ describe('the canvas seed', () => {
   });
 
   it('falls back to random rather than to a guessable value', () => {
-    // No instance secret configured: the seed must still not be computable from
-    // the profile, so two processes disagree.
     const profile = profileFixture();
     resetInstanceSecret();
     const first = fingerprintScript(profile);
@@ -185,8 +167,6 @@ describe('the canvas seed', () => {
   });
 
   it('perturbs every profile, with no seed value that is a silent no-op', () => {
-    // The first implementation used a single XOR bit, so half of all profiles
-    // XORed with zero and perturbed nothing at all.
     for (const id of ['chrome-a', 'chrome-b', 'chrome-c', 'chrome-d']) {
       const script = scriptWithSecret('e'.repeat(64), profileFixture({ id }));
       expect(script).not.toContain('seed & 1');
@@ -200,8 +180,8 @@ describe('fingerprintScript', () => {
     const script = fingerprintScript(profileFixture());
 
     expect(script).toContain('Google Inc. (Apple)');
-    expect(script).toContain('37445'); // UNMASKED_VENDOR_WEBGL
-    expect(script).toContain('37446'); // UNMASKED_RENDERER_WEBGL
+    expect(script).toContain('37445');
+    expect(script).toContain('37446');
     expect(script).toContain('hardwareConcurrency');
     expect(script).toContain('deviceMemory');
   });
@@ -228,8 +208,6 @@ describe('fingerprintScript', () => {
   });
 
   it('is syntactically valid JavaScript', () => {
-    // A script that throws on parse would break every render that used the
-    // profile, and addInitScript reports it far from here.
     expect(() => new Function(fingerprintScript(profileFixture()))).not.toThrow();
   });
 

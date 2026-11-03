@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/checks/check-shell.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "useCheckKey",
+      "line": 10,
+      "offset": 0,
+      "text": "Checks calls the instance directly and needs the operator's own key, which\n`(tools)` does not mount an ApiKeyProvider for — this reads the same\n`localStorage` entry that provider does.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "needsKey",
+      "line": 20,
+      "offset": 0,
+      "text": "Without the browser-held key there is nothing to call with.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "RunLabel",
+      "line": 85,
+      "offset": 0,
+      "text": "Busy state for a submit button; the label stays put so the row does not reflow.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "Verdict",
+      "line": 103,
+      "offset": 0,
+      "text": "A verdict headline: one word, then the detail underneath.",
+      "kind": "doc"
+    }
+  ]
+}

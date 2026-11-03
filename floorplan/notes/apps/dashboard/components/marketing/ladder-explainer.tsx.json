@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/ladder-explainer.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "LadderExplainerProps",
+      "line": 6,
+      "offset": 0,
+      "text": "Replays DESIGN.md §3 Sequence A (fetch-ladder escalation) frames 0->4 at\n125ms/frame, then holds on the settled frame. `playKey` changes to trigger\na fresh run (hero \"See how the ladder works\" CTA, or a submit in the hero panel).",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "FRAMES",
+      "line": 19,
+      "offset": 0,
+      "text": "One entry per frame: [rows for each tier, reason line]",
+      "kind": "what"
+    }
+  ]
+}

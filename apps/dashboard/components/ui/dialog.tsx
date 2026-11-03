@@ -34,12 +34,6 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        // `min-w-0` on the grid and its children: a grid track sizes to its
-        // content's min-content width, so one unbreakable line (a long shell
-        // command in a <pre>) pushed the panel past max-w-* and the content
-        // spilled out the side. `max-h`/`overflow-y-auto` do the same for a
-        // tall dialog, which otherwise ran off the top and bottom of the
-        // viewport with no way to reach either end.
         'fixed left-1/2 top-1/2 z-50 grid max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] min-w-0 max-w-md -translate-x-1/2 -translate-y-1/2 grid-cols-[minmax(0,1fr)] gap-4 overflow-y-auto overflow-x-hidden rounded-card border border-border bg-card p-6 shadow-lg data-[state=open]:animate-slide-up',
         className,
       )}

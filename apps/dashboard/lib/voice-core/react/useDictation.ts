@@ -11,11 +11,6 @@ export interface UseDictation {
   cancel(): void;
 }
 
-/**
- * The mic button for a prompt box. `connect` asks the host for the service
- * (for Electron: an IPC call that runs VoiceCoreSupervisor.ensureStarted);
- * `onText` receives each final transcript to insert.
- */
 export function useDictation(options: DictationOptions): UseDictation {
   const ref = useRef<DictationController | null>(null);
   if (ref.current === null) ref.current = new DictationController(options);

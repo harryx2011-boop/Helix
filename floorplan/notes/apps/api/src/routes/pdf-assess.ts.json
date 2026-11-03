@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/pdf-assess.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PdfAssessJsonRequestSchema",
+      "line": 10,
+      "offset": 0,
+      "text": "Whether a PDF needs OCR, without converting it.\n\nWraps helix-extract's `/assess` — the same classifier `/parse` runs before\nchoosing a parser — so a caller can decide whether a full parse is worth\npaying for, or route straight to OCR, before spending either.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "registerPdfAssess",
+      "line": 49,
+      "offset": 2,
+      "text": "Pinned: the address the lookup checked is the address connected to.",
+      "kind": "what"
+    }
+  ]
+}

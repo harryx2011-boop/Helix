@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/frontier.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 20,
+      "offset": null,
+      "text": "Same document, three spellings.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 26,
+      "offset": null,
+      "text": "Fetching the slash-stripped key made docs.python.org serve `/3/tutorial`,\nand every relative link on it resolved one directory too high.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 72,
+      "offset": null,
+      "text": "The spec's own example: seed the site root, include /blog/*. The root is\nwhere the blog links live; filtering it out crawls nothing.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 88,
+      "offset": null,
+      "text": "Off-site still wins: the seed exemption is about path filters only.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 100,
+      "offset": null,
+      "text": "duplicate of the seed",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 105,
+      "offset": null,
+      "text": "A URL matching both is excluded: the narrower statement is the intent.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 136,
+      "offset": null,
+      "text": "Head-of-line blocking would leave a crawl idle behind one slow host.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 149,
+      "offset": null,
+      "text": "A silent cap reads as complete coverage. The counts make the gap visible.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 161,
+      "offset": null,
+      "text": "Above the exact-set threshold, dedup becomes probabilistic. A URL just\nadded must still always be recognised — false positives are the accepted\nfailure mode, false negatives are not.",
+      "kind": "why"
+    }
+  ]
+}

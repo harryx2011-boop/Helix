@@ -1,0 +1,87 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/status/checks.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HELIX_API_VERSION",
+      "line": 8,
+      "offset": 0,
+      "text": "Set by `scripts/bundle.mjs`: the bundle sits at a different depth, so `../../package.json` would miss.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "API_VERSION",
+      "line": 9,
+      "offset": 0,
+      "text": "Read once at import time — the manifest does not change while the process runs.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ServiceCheckDeps.lightpandaEnabled",
+      "line": 18,
+      "offset": 0,
+      "text": "Present only when the instance runs Lightpanda as a distinct render tier.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ServiceCheckDeps.camoufoxEnabled",
+      "line": 19,
+      "offset": 0,
+      "text": "Present only when the instance offers the Camoufox tier.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "ServiceCheckDeps.remoteCdpConfigured",
+      "line": 20,
+      "offset": 0,
+      "text": "True when the render tier connects to a remote browser instead of launching one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "CHECKS_TIMEOUT_MS",
+      "line": 29,
+      "offset": 0,
+      "text": "Overall bound on one round of checks, so a hung dependency cannot hang `/health` itself.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "runServiceChecks",
+      "line": 31,
+      "offset": 0,
+      "text": "The checks `/health` and the uptime sampler both run — timed individually\nso a slow dependency shows up as a latency spike, not just an eventual\ntimeout. Shared here so the two never drift.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "runServiceChecks",
+      "line": 79,
+      "offset": 48,
+      "text": "Engines are listed as launched rather than as available: a non-default\nengine is launched on its first request, so an empty list before any\ntraffic is the pool being warm for its default, not a missing browser.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "runServiceChecks",
+      "line": 87,
+      "offset": 56,
+      "text": "`stats()` does not distinguish the Lightpanda tier from Chromium — it is a\nseparate CDP endpoint the pool connects to per-render, not a pooled\nresource with its own counters. The only signal available here is whether\nthe instance has it enabled, so that is what a `lightpanda` entry reports.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": "runServiceChecks",
+      "line": 91,
+      "offset": 60,
+      "text": "Same caveat as lightpanda: both are endpoints connected to per-render, so\n\"enabled\" is the only fact available without spending a connection here.",
+      "kind": "what"
+    }
+  ]
+}

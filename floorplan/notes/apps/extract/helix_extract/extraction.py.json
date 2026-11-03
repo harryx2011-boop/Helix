@@ -1,0 +1,95 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/extraction.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MIN_USEFUL_CHARS",
+      "line": 26,
+      "offset": 0,
+      "text": "Below this, an extraction is treated as having found nothing worth keeping.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "_extract_links",
+      "line": 71,
+      "offset": 19,
+      "text": "Fragments point at the same document, so they are not separate links.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "_apply_selectors",
+      "line": 104,
+      "offset": 25,
+      "text": "Rebuild a full document rather than handing back a bare fragment:\nextractors reject a rootless tree as invalid HTML and return\nnothing, which reads as \"the selector matched no content\".\n\nThe kept region is re-parented into <article> because boilerplate\ndetection classifies by element type — a <footer> or <nav> the\ncaller explicitly asked for would otherwise be stripped as chrome.\nAn explicit selector is a statement of intent that outranks the\nextractor's guess about what matters on the page.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": "_apply_selectors",
+      "line": 111,
+      "offset": 32,
+      "text": "Unwrap chrome tags — <footer>, <nav>, <aside> — and keep their\nchildren. Boilerplate detection classifies by element type, so\na footer the caller explicitly selected would still be stripped\neven nested inside <article>.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "_readability_extract",
+      "line": 159,
+      "offset": 5,
+      "text": "readability returns HTML, so convert it through trafilatura rather than\nwriting a second, differently-behaved markdown serialiser.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "_to_text",
+      "line": 172,
+      "offset": 2,
+      "text": "links and images",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "_to_text",
+      "line": 173,
+      "offset": 3,
+      "text": "headings",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "_to_text",
+      "line": 174,
+      "offset": 4,
+      "text": "emphasis, code, quotes",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "_to_text",
+      "line": 175,
+      "offset": 5,
+      "text": "rules",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "extract",
+      "line": 197,
+      "offset": 18,
+      "text": "`auto` means: if the precise engine found little, try the one that\nover-includes. A short page and an over-stripped page look identical from\nhere, and returning nothing is the worse error.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "extract",
+      "line": 206,
+      "offset": 27,
+      "text": "Last resort: extract from the whole document rather than the main-content",
+      "kind": "what"
+    }
+  ]
+}

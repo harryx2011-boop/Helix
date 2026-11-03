@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/voice-core/react/dictation.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "DictationSnapshot.partial",
+      "line": 9,
+      "offset": 0,
+      "text": "The live re-decode while listening; replaced, never appended.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "DictationOptions.connect",
+      "line": 21,
+      "offset": 0,
+      "text": "Starts the service if needed (the host's supervisor, over IPC) and returns where it is.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "DictationController",
+      "line": 33,
+      "offset": 0,
+      "text": "The mic-button state machine, free of React so it can be tested and reused:\nidle -> starting (mic opening, service coming up) -> listening -> transcribing\n-> idle, with error reachable from any step. Frames captured while starting are\nheld and sent once the socket exists, so a cold start loses no speech.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "DictationController.open",
+      "line": 98,
+      "offset": 7,
+      "text": "A rejection, not a null, so Promise.all fails at once and the teardown\nreleases a mic that is still waiting on its permission prompt.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "DictationController.open",
+      "line": 116,
+      "offset": 25,
+      "text": "A tap released before the mic opened: stop() already closed it, nothing was said.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "DictationController.stop",
+      "line": 121,
+      "offset": 0,
+      "text": "Ends the utterance and resolves with its text (\"\" when nothing was said).",
+      "kind": "doc"
+    }
+  ]
+}

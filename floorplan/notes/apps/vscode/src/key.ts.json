@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/vscode/src/key.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SECRET_ID",
+      "line": 4,
+      "offset": 0,
+      "text": "The API key, kept in VS Code's SecretStorage (the OS keychain), never in\nsettings. Asked for once (Harry's call, 2026-10-17) and handed to the\nframed app on request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MIN_KEY_BODY",
+      "line": 6,
+      "offset": 0,
+      "text": "Shorter than this after `helix-` is no key Helix mints.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "keyProblem",
+      "line": 8,
+      "offset": 0,
+      "text": "Why `value` is not a usable key, or undefined when it is.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "promptForKey",
+      "line": 23,
+      "offset": 0,
+      "text": "Prompts for a key and stores it. Undefined when the prompt was dismissed.",
+      "kind": "doc"
+    }
+  ]
+}

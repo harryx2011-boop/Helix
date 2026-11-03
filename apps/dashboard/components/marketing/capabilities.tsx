@@ -15,7 +15,6 @@ import type { Endpoint } from '@/lib/endpoints';
 const TABS = ENDPOINTS.filter((e) => e.product);
 const TAB_ITEMS = TABS.map((t) => ({ id: t.id, label: t.name, icon: t.icon, group: t.group }));
 
-/** The headline four. The rest reach through the track below and the Capabilities menu. */
 const CARDS: readonly EndpointCardItem[] = [
   { id: 'search', blurb: 'Search the web and read every result in the same call.' },
   { id: 'scrape', blurb: 'One URL in, clean markdown, JSON or a screenshot out.' },
@@ -23,7 +22,6 @@ const CARDS: readonly EndpointCardItem[] = [
   { id: 'monitor', blurb: 'Re-read on a schedule, get a diff when something changes.', fresh: true },
 ];
 
-/** Verbatim request/response pairs, one per tab — matched to each capability page's openapi-sourced examples. */
 const REQUEST: Record<Endpoint, string> = {
   document: `POST /v1/document
 {
@@ -197,7 +195,6 @@ const RESPONSE: Record<Endpoint, string> = {
 }`,
 };
 
-/** One tabbed request/response panel covering all six capabilities, each tab linking to its own page. */
 export function Capabilities() {
   const [active, setActive] = React.useState<Endpoint>('scrape');
   const def = TABS.find((t) => t.id === active) ?? TABS[0]!;

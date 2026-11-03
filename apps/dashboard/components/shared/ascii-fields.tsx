@@ -6,12 +6,6 @@ import { useInView, useReducedMotion } from './ambient';
 import { noise } from './ascii-fluid';
 import { FIELD_TONE, type FieldTone } from './field-tone';
 
-/*
- * Three more character fields, each a different motion so the page does not
- * repeat one motif. All share the contract of AsciiHelix and AsciiFluid: two
- * <pre> layers, deterministic first paint, paused off-screen, static under
- * reduced motion, and a tick rate low enough to read as ambient texture.
- */
 
 function useTicker(running: boolean, fps: number): number {
   const [tick, setTick] = React.useState(0);
@@ -34,7 +28,6 @@ interface FieldProps {
   fps?: number;
   quiet?: boolean;
   className?: string;
-  /** `app` swaps the marketing ink tokens for the dark surface's foreground and primary. */
   tone?: FieldTone;
 }
 
@@ -62,11 +55,6 @@ function Field({
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* AsciiNoise: a domain-warped value-noise cloud. Glyph weight follows the  */
-/* field, so dense and sparse regions drift and fold into each other like  */
-/* smoke. Meant for wide backgrounds; mask it at the edges where it mounts. */
-/* ---------------------------------------------------------------------- */
 
 const CLOUD = '   .·:-=+*#%';
 
@@ -99,10 +87,6 @@ export function AsciiNoise({ cols = 90, rows = 18, seed = 3, fps = 8, quiet, cla
   return <Field layers={layers} className={className} fieldRef={ref} tone={tone} />;
 }
 
-/* ---------------------------------------------------------------------- */
-/* AsciiFlow: particles carried by a slowly turning vector field, leaving   */
-/* trails that decay into lighter glyphs. Reads as streamlines in a fluid.  */
-/* ---------------------------------------------------------------------- */
 
 const TRAIL = ' .:-=+*#';
 const PARTICLES = 120;
@@ -182,11 +166,6 @@ export function AsciiFlow({ cols = 60, rows = 14, seed = 3, fps = 10, quiet, cla
   return <Field layers={layers} className={className} fieldRef={ref} tone={tone} />;
 }
 
-/* ---------------------------------------------------------------------- */
-/* AsciiOrbit: concentric rings of glyphs turning at different speeds, a    */
-/* pulse of heavier characters travelling around each. The character cell  */
-/* is taller than it is wide, so the x radius is stretched to read round.  */
-/* ---------------------------------------------------------------------- */
 
 const RING = ['·', '-', '=', '+'];
 const ASPECT = 1.9;
@@ -225,14 +204,8 @@ export function AsciiOrbit({ cols = 34, rows = 17, seed = 3, fps = 8, quiet, cla
   return <Field layers={layers} className={className} fieldRef={ref} tone={tone} />;
 }
 
-/* ---------------------------------------------------------------------- */
-/* AsciiSegments: eight arc segments with gaps between them, turning as one */
-/* body while a highlight travels the ring. Eight arcs on 45° centres read  */
-/* as a segmented band, distinct from `orbit`, which is continuous rings.   */
-/* ---------------------------------------------------------------------- */
 
 const SEG = ['·', '-', '=', '+'];
-/** Fraction of each 45° cell that is ink; the rest is the gap. Matches the mark's 34°/45°. */
 const SEG_DUTY = 34 / 45;
 
 function segmentLayers(cols: number, rows: number, time: number, seed: number): [string, string] {
@@ -245,12 +218,9 @@ function segmentLayers(cols: number, rows: number, time: number, seed: number): 
 
   bands.forEach((r, band) => {
     const steps = Math.max(8, Math.floor(Math.PI * 2 * r * ASPECT));
-    // Outer bands lag, so the ring reads as one body with depth rather than
-    // three independent spinners.
     const spin = time * (0.22 - band * 0.05) + seed * 0.37;
     for (let s = 0; s < steps; s++) {
       const a = (s / steps) * Math.PI * 2 + spin;
-      // Position within this segment's 45° cell; outside the duty cycle is gap.
       const cell = (((a % (Math.PI / 4)) + Math.PI / 4) % (Math.PI / 4)) / (Math.PI / 4);
       if (cell > SEG_DUTY) continue;
       const x = Math.round(cx + Math.cos(a) * r * ASPECT);
@@ -263,7 +233,6 @@ function segmentLayers(cols: number, rows: number, time: number, seed: number): 
     }
   });
 
-  // The eight inner dots, on the same 45° centres as the segments.
   const dotR = 1.5;
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2 + time * 0.22 + seed * 0.37;

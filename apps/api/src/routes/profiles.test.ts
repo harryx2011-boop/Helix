@@ -1,12 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * Profile success/block rate, read straight off `documents` and
- * `fetch_failures`. The fake models the two counting subqueries and the
- * `GREATEST` over their two max-timestamp subqueries, rather than
- * precomputing a rate, so the route's own arithmetic is what is under test.
- */
 
 interface DocRow {
   profile: string | null;

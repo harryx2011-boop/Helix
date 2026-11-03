@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/interact.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 370,
+      "offset": null,
+      "text": "The page is torn out from under the run: the session goes, then the\naction fails as Playwright would once the target is gone.",
+      "kind": "what"
+    }
+  ]
+}

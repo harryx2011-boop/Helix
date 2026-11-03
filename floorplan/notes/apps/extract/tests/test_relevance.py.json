@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_relevance.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TestSchemaTerms.test_splits_camel_case_field_names",
+      "line": 18,
+      "offset": 1,
+      "text": "A schema asking for `monthlyPrice` should match text saying \"monthly\"\nand \"price\"; without the split it matches neither.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "TestSplitBlocks.test_keeps_a_heading_with_its_section",
+      "line": 50,
+      "offset": 1,
+      "text": "A heading alone scores poorly and carries the context its section\nneeds, so detaching it loses the signal that makes the section findable.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "TestScoreBlock.test_does_not_reward_mere_repetition",
+      "line": 71,
+      "offset": 1,
+      "text": "A block saying \"price\" ten times is not ten times more relevant.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "TestTrimToBudget.test_preserves_document_order",
+      "line": 102,
+      "offset": 1,
+      "text": "A document reordered by score reads as nonsense, and models do worse\non it than on a coherent excerpt.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "TestTrimToBudget.test_falls_back_to_the_opening_when_nothing_matches",
+      "line": 116,
+      "offset": 1,
+      "text": "With no signal, the start of a document is the best guess: titles,\nsummaries and lead paragraphs live there.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "TestTrimToBudget.test_never_returns_nothing_when_one_block_exceeds_the_budget",
+      "line": 124,
+      "offset": 1,
+      "text": "A single enormous paragraph must not trim to an empty string — empty\noutput reads as \"this page had no content\", which is a worse answer\nthan a truncated excerpt.",
+      "kind": "why"
+    },
+    {
+      "id": "n7",
+      "symbol": "TestTrimToBudget.test_respects_the_budget",
+      "line": 144,
+      "offset": 5,
+      "text": "500 tokens at ~4 chars each, with a little slack for block joins.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "TestSaltedBlockResistance.test_a_benign_page_keeps_every_block_that_answers_the_schema",
+      "line": 202,
+      "offset": 1,
+      "text": "The controls must not cost an ordinary page its actual answers.",
+      "kind": "why"
+    }
+  ]
+}

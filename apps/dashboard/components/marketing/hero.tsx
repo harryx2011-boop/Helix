@@ -7,7 +7,6 @@ import { GithubMark } from './github-mark';
 import { SetupPrompt } from './setup-prompt';
 import { GITHUB_URL } from '@/lib/github-stars';
 
-/** WEBSITE.md §4.2. H1 + subhead + CTA pair + hero panel, over a hairline grid texture. */
 export function Hero() {
   return (
     <section className="relative overflow-hidden pb-32 pt-20 sm:pt-28">

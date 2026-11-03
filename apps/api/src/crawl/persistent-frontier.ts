@@ -2,41 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { getPool } from '../db/pool.js';
 import { Frontier, type FrontierItem, type FrontierOptions } from './frontier.js';
 
-/**
- * A frontier that survives a restart.
- *
- * The in-memory {@link Frontier} owns scope rules and dedup; this wraps it with
- * a Postgres-backed queue so a worker that dies mid-crawl resumes where it
- * stopped instead of starting over. On a ten-thousand-page crawl that is the
- * difference between a blip and losing an hour of work.
- *
- * Writes are batched. One INSERT per discovered URL would make the database the
- * bottleneck long before the network was.
- *
- * Claims are LEASES, not flags. A worker that exits cleanly returns its claims;
- * a worker that is killed cannot, and a bare 'running' status would strand those
- * rows forever — the crawl completes reporting fewer pages than it queued, with
- * no failure row to explain the gap. Every claim therefore carries an expiry
- * that the holder extends while it works, and any worker may reclaim a task
- * whose lease has passed. Expiry is decided by the database clock, never by the
- * worker's: two machines whose clocks disagree by a minute would otherwise
- * reclaim each other's live work.
- */
 
 const FLUSH_THRESHOLD = 50;
 const CLAIM_BATCH = 20;
 
-/**
- * How long a claim is good for.
- *
- * Long enough that a slow chromium render plus its extraction finishes inside
- * it, short enough that a crashed worker's queue is recovered while the crawl
- * is still running. Too short is worse than too long: it hands live work to a
- * second worker and pays for the same page twice.
- */
 const LEASE_SECONDS = 300;
 
-/** Renewals are attempted at a third of the lease, so one lost round trip is survivable. */
 const RENEW_INTERVAL_MS = (LEASE_SECONDS / 3) * 1000;
 
 interface PendingRow {
@@ -49,24 +20,9 @@ interface PendingRow {
 export class PersistentFrontier {
   readonly #frontier: Frontier;
   readonly #jobId: string;
-  /**
-   * Identifies this worker's claims so `release()` returns only its own.
-   * Without it, a shutting-down worker would requeue tasks another worker had
-   * legitimately reclaimed and is fetching right now.
-   */
   readonly #workerId: string;
   #pendingWrites: PendingRow[] = [];
-  /** Claimed in the database, not yet handed to a fetcher. */
   #claimed: FrontierItem[] = [];
-  /**
-   * Handed out and being fetched right now.
-   *
-   * Tracked separately from `#claimed` because these are the rows whose lease
-   * most needs renewing and whose loss on shutdown actually costs a page. Before
-   * this existed, `next()` spliced an item out of `#claimed` and the frontier
-   * forgot a row that was still 'running' in Postgres — so a shutdown requeued
-   * only the unstarted buffer, and every page mid-fetch was stranded.
-   */
   #inFlight = new Map<string, FrontierItem>();
   #lastRenewal = 0;
 
@@ -76,16 +32,7 @@ export class PersistentFrontier {
     this.#frontier = new Frontier(options);
   }
 
-  /**
-   * Rebuild in-memory state from the queue after a restart.
-   *
-   * Completed URLs are re-added to the dedup filter — without that, a resumed
-   * crawl would happily re-enqueue everything it had already finished.
-   */
   async resume(): Promise<{ restored: number; alreadyDone: number; reclaimed: number }> {
-    // Reclaim first: a task whose lease died with its worker is queued work,
-    // and reading the queue before recovering it would leave it out of the
-    // restored count and out of the crawl.
     const reclaimed = await this.reclaimExpired();
 
     const { rows: done } = await getPool().query<{ url: string }>(
@@ -94,11 +41,8 @@ export class PersistentFrontier {
     );
 
     for (const row of done) {
-      // Depth is irrelevant here: this only needs to mark the URL as seen.
       this.#frontier.add(row.url, 0);
     }
-    // Those adds populated the queue as a side effect; drain it so only genuinely
-    // pending work is dispensed.
     this.#frontier.drain();
 
     const { rows: pending } = await getPool().query<{
@@ -119,19 +63,6 @@ export class PersistentFrontier {
     return { restored: pending.length, alreadyDone: done.length, reclaimed };
   }
 
-  /**
-   * Return tasks whose lease has expired to the queue.
-   *
-   * Safe to run while other workers hold live leases: the WHERE clause only
-   * matches rows whose expiry is already in the past by the database's own
-   * clock, so a task being actively renewed is never taken from under its
-   * holder. Comparing against a timestamp computed in Node would make that
-   * guarantee depend on two machines agreeing about the time.
-   *
-   * A task that has burned through its attempts is failed rather than requeued.
-   * A URL that kills three workers in a row will kill the fourth, and an
-   * unbounded reclaim loop turns one poison page into a crawl that never ends.
-   */
   async reclaimExpired(): Promise<number> {
     const { rowCount } = await getPool().query(
       `UPDATE job_tasks
@@ -150,15 +81,6 @@ export class PersistentFrontier {
     return rowCount ?? 0;
   }
 
-  /**
-   * Push this worker's leases forward.
-   *
-   * Rate-limited by the caller's clock rather than run per fetch: the renewal
-   * exists to outlive a slow page, not to be a round trip attached to every one.
-   * `status = 'running'` in the WHERE means a lease already reclaimed by another
-   * worker is not silently taken back — the row has moved on, and this worker's
-   * result for it will be discarded by the same condition on completion.
-   */
   async renewLeases(now = Date.now()): Promise<number> {
     const urls = this.#leased();
     if (urls.length === 0) return 0;
@@ -174,7 +96,6 @@ export class PersistentFrontier {
     return rowCount ?? 0;
   }
 
-  /** Offer a URL. Accepted URLs are queued for the next flush. */
   add(url: string, depth: number): boolean {
     const before = this.#frontier.enqueued;
     const accepted = this.#frontier.add(url, depth);
@@ -194,14 +115,12 @@ export class PersistentFrontier {
     return accepted;
   }
 
-  /** Write queued discoveries. Called on a threshold and before waiting. */
   async flush(): Promise<void> {
     if (this.#pendingWrites.length === 0) return;
 
     const batch = this.#pendingWrites;
     this.#pendingWrites = [];
 
-    // One multi-row INSERT rather than N statements.
     const values: unknown[] = [];
     const tuples: string[] = [];
 
@@ -223,12 +142,6 @@ export class PersistentFrontier {
     if (this.#pendingWrites.length >= FLUSH_THRESHOLD) await this.flush();
   }
 
-  /**
-   * Take the next URL for a host with capacity, marking it claimed.
-   *
-   * Claims are batched: marking one row at a time would put a round trip in
-   * front of every single fetch.
-   */
   async next(canFetch: (site: string) => boolean): Promise<FrontierItem | undefined> {
     const ready = this.#claimed.findIndex((item) => canFetch(item.site));
     if (ready >= 0) {
@@ -237,8 +150,6 @@ export class PersistentFrontier {
       return item;
     }
 
-    // Pull a batch out of the in-memory queue regardless of host availability,
-    // then hand back whichever of them a free host can take.
     const batch: FrontierItem[] = [];
     for (let i = 0; i < CLAIM_BATCH; i++) {
       const item = this.#frontier.next(() => true);
@@ -248,8 +159,6 @@ export class PersistentFrontier {
 
     if (batch.length === 0) return undefined;
 
-    // The claim matches rows by URL, so any still buffered must exist first;
-    // otherwise the claim misses, the fetch runs unowned and its result is dropped.
     await this.flush();
 
     await getPool().query(
@@ -272,24 +181,12 @@ export class PersistentFrontier {
     return item;
   }
 
-  /** Every URL this worker holds a lease on, buffered or in flight. */
   #leased(): string[] {
     return [...this.#claimed.map((item) => item.url), ...this.#inFlight.keys()];
   }
 
-  /**
-   * Record a finished page, but only while this worker still holds the claim.
-   *
-   * `claimed_by` is the same guard `release()` carries, and for the same reason:
-   * a worker whose lease expired mid-fetch is no longer the owner of that row,
-   * and flipping it to a terminal status would take the page away from the
-   * worker now fetching it and store the document twice. The caller is told
-   * whether the row moved so it can drop a result the queue has moved past.
-   */
   async markCompleted(url: string): Promise<boolean> {
     this.#inFlight.delete(url);
-    // The lease is cleared with the status. A terminal row keeping a stale
-    // expiry is what a reclaim sweep would read as abandoned work.
     const { rowCount } = await getPool().query(
       `UPDATE job_tasks
           SET status = 'completed', claimed_at = NULL, claimed_by = NULL, lease_expires_at = NULL
@@ -311,7 +208,6 @@ export class PersistentFrontier {
     return (rowCount ?? 0) > 0;
   }
 
-  /** Return unfetched claims to the queue, so a shutdown loses nothing. */
   async release(): Promise<void> {
     const urls = this.#leased();
     if (urls.length === 0) return;

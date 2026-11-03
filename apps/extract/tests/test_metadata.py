@@ -15,8 +15,6 @@ import pytest
 
 from helix_extract import metadata as m
 
-# --- builders ----------------------------------------------------------------
-
 
 def _tiff(entries: list[tuple[int, int, bytes]], gps: list[tuple[int, int, bytes]] | None = None) -> bytes:
     """Assemble a little-endian TIFF block, optionally with a GPS sub-IFD."""
@@ -103,7 +101,6 @@ CORE_XML = (
 )
 
 
-# --- risk ranking ------------------------------------------------------------
 
 
 class TestClassify:
@@ -123,8 +120,6 @@ class TestClassify:
         assert m.classify("xmp:CreatorTool", "Photoshop")[0] is m.Risk.MEDIUM
 
     def test_an_email_in_the_value_escalates_whatever_the_key(self) -> None:
-        # The key vocabularies of XMP and docProps are open-ended, so the name
-        # alone can never be the whole test.
         assert m.classify("Comment", "ping me at jane@example.com") == (m.Risk.HIGH, m.Category.IDENTITY)
 
     def test_a_home_directory_path_escalates(self) -> None:
@@ -132,7 +127,6 @@ class TestClassify:
         assert m.classify("Comment", "/home/jroe/photos")[0] is m.Risk.HIGH
 
     def test_the_value_can_only_raise_the_band(self) -> None:
-        # A plain value under a high-risk key stays high.
         assert m.classify("GPSLatitude", "51.5")[0] is m.Risk.HIGH
 
 
@@ -149,7 +143,6 @@ class TestSummarize:
         assert m.summarize(findings) == {"high": 2, "medium": 0, "low": 1}
 
 
-# --- JPEG --------------------------------------------------------------------
 
 
 class TestJpeg:
@@ -186,8 +179,6 @@ class TestJpeg:
         )
         found = {f.key: f for f in m.scan_jpeg(data).findings}
 
-        # A raw DMS triple is the least readable form of the most consequential
-        # finding; the decimal pair is what makes the report actionable.
         assert found["Coordinates"].value == "51.507222, -0.127500"
         assert found["Coordinates"].risk is m.Risk.HIGH
         assert found["Coordinates"].category is m.Category.LOCATION
@@ -236,7 +227,6 @@ class TestJpeg:
         assert result.retained == []
         assert result.data.startswith(b"\xff\xd8")
         assert result.data.endswith(b"\xff\xd9")
-        # A re-scan is the only honest proof; the intent to remove is not proof.
         assert m.scan_jpeg(result.data).findings == []
 
     def test_scrub_is_a_no_op_on_a_file_that_carries_nothing(self) -> None:
@@ -246,8 +236,6 @@ class TestJpeg:
         assert result.removed == []
 
     def test_a_zero_length_segment_is_not_left_behind(self) -> None:
-        # Emptying rather than removing would still tell a reader the file once
-        # carried EXIF; the segment must be gone entirely.
         data = _jpeg(_exif_segment([(0x013B, 2, b"Jane Roe\x00")]))
         assert b"\xff\xe1" not in m.scrub_jpeg(data).data
 
@@ -256,12 +244,10 @@ class TestJpeg:
             m.scan_jpeg(b"not a jpeg at all")
 
     def test_a_truncated_segment_chain_does_not_hang_or_raise(self) -> None:
-        # A length that runs past the end stops the walk rather than looping.
         data = b"\xff\xd8" + b"\xff\xe1" + struct.pack(">H", 60000) + b"short"
         assert m.scan_jpeg(data).findings == []
 
 
-# --- PNG ---------------------------------------------------------------------
 
 
 class TestPng:
@@ -288,13 +274,11 @@ class TestPng:
 
         assert result.removed
         assert m.scan_png(result.data).findings == []
-        # The image itself must survive intact.
         assert b"IDAT" in result.data
         assert b"IEND" in result.data
         assert result.data.startswith(m._PNG_SIG)
 
     def test_scrub_keeps_rendering_chunks_that_are_not_metadata(self) -> None:
-        # Dropping gAMA would change how the image displays.
         data = _png_image((b"gAMA", struct.pack(">I", 45455)), (b"tEXt", b"Author\x00Jane Roe"))
         assert b"gAMA" in m.scrub_png(data).data
 
@@ -303,7 +287,6 @@ class TestPng:
             m.scan_png(b"\x89PNGX")
 
 
-# --- OOXML -------------------------------------------------------------------
 
 
 class TestOoxml:
@@ -327,7 +310,6 @@ class TestOoxml:
         keys = [f.key for f in findings]
 
         assert keys.count("MatterNumber") == 1
-        # The typed wrapper's own tag is meaningless and must not be reported.
         assert "lpwstr" not in keys
 
     def test_detects_the_file_kind_from_the_package_layout(self) -> None:
@@ -352,8 +334,6 @@ class TestOoxml:
         )
         result = m.scrub_ooxml(data)
 
-        # Dropping it would break a relationship and corrupt the document, so it
-        # stays — and the report must say so, or the caller acts on "clean".
         assert [f.key for f in result.retained] == ["word/comments.xml"]
         assert result.retained[0].removable is False
         assert result.warnings
@@ -361,15 +341,12 @@ class TestOoxml:
             assert "word/comments.xml" in archive.namelist()
 
     def test_scrub_flattens_entry_timestamps(self) -> None:
-        # A zip entry's own mtime is metadata; keeping it would leak what the
-        # scrub just removed.
         result = m.scrub_ooxml(_docx({"docProps/core.xml": CORE_XML}))
         with zipfile.ZipFile(io.BytesIO(result.data)) as archive:
             assert all(info.date_time == (1980, 1, 1, 0, 0, 0) for info in archive.infolist())
 
     def test_a_malformed_property_part_warns_instead_of_failing_the_scan(self) -> None:
         result = m.scan_ooxml(_docx({"docProps/core.xml": "<not-closed"}))
-        # A partial report beats none, but the caller has to know it is partial.
         assert result.warnings
         assert "core.xml" in result.warnings[0]
 
@@ -378,7 +355,6 @@ class TestOoxml:
             m.scan_ooxml(b"PK not really")
 
 
-# --- dispatch ----------------------------------------------------------------
 
 
 class TestDispatch:
@@ -399,8 +375,6 @@ class TestDispatch:
 
 class TestValueHandling:
     def test_an_oversized_value_says_it_was_truncated(self) -> None:
-        # A value silently cut to look complete is how a reader concludes the
-        # rest of it does not exist.
         finding = m._finding("g", "Comment", "x" * 5000)
         assert finding is not None
         assert "truncated" in finding.value

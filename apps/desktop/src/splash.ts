@@ -24,7 +24,6 @@ export interface Splash {
   close(): Promise<void>
 }
 
-/** Remaining wait so a splash shown at `shownAt` stays up at least `min` ms. */
 export function remainingShow(shownAt: number | null, now: number, min = SPLASH_MIN_MS): number {
   return shownAt === null ? min : Math.max(0, min - (now - shownAt))
 }

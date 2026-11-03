@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/playground.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Playground",
+      "line": 69,
+      "offset": 11,
+      "text": "Preferences arrive after mount (localStorage), so the default endpoint is\napplied once, and only when the URL did not already name a tab — a link\ninto a specific tab must win over a stored preference.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": "Playground",
+      "line": 76,
+      "offset": 18,
+      "text": "One file for the box's paperclip and the upload-taking forms alike, so a\npaste into the box is what the form submits, not a second copy.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "Playground",
+      "line": 78,
+      "offset": 20,
+      "text": "A sidebar row carries `tab` alone (no `url`), so the tab must follow the\nURL on every navigation, not just the ones that also bring a url — else\nthe pill row and the sidebar's active row can point at different tabs.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": "Playground",
+      "line": 88,
+      "offset": 30,
+      "text": "`selectTab` replaces the URL without `url`, so only a link that carries\none (the hero, the command palette) re-targets an already-mounted playground.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "Playground",
+      "line": 137,
+      "offset": 79,
+      "text": "The toolbar's Format picker owns the scrape `formats` array. The Options\nform still builds `extract` when a schema is set, and that only reaches\nthe API alongside `json`, so the two are merged rather than one winning.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "Playground",
+      "line": 155,
+      "offset": 97,
+      "text": "The filename is only known on the upload path; the animation falls back\nto its own copy when the request came from a URL.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "Playground",
+      "line": 191,
+      "offset": 133,
+      "text": "Each form owns its own submit-ready state (schema validity, actions, etc.); the\nprompt box's Run button proxies to the mounted form's native submit so that\nvalidation stays colocated with the fields that produce it. The form stays\nmounted (visually collapsed via sr-only) whether or not Options is expanded,\nso this always finds the current endpoint's form.",
+      "kind": "why"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 360,
+      "offset": null,
+      "text": "Re-export response types consumed by forms/results for convenience.",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,0 +1,223 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/main.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "LocalEmbeddings",
+      "line": 46,
+      "offset": 1,
+      "text": "missing | downloading | ready | failed",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "ExtractResponse",
+      "line": 93,
+      "offset": 7,
+      "text": "SHA-256 of normalised content. Drives incremental crawl and change\ndetection, so it must be stable across cosmetic markup churn.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "DocumentResponse",
+      "line": 121,
+      "offset": 3,
+      "text": "Classified before parsing, so a scanned document routes to OCR instead of\nsilently returning garbled characters — the failure that produces mojibake\nfor CJK PDFs in tools that skip this step.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "parse_document",
+      "line": 134,
+      "offset": 7,
+      "text": "The file is the raw body and its kind is the Content-Type header. No\nbase64, no JSON envelope: the gateway already holds the bytes once and\nshould not need two more copies of a 25 MB upload to hand them over.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "parse_document",
+      "line": 150,
+      "offset": 23,
+      "text": "The parser opened the bytes and refused them: the caller's file, not\nthe service, is what failed.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "assess_pdf_route",
+      "line": 172,
+      "offset": 2,
+      "text": "Same wire shape as /document: raw bytes, kind from Content-Type. PDF\nonly — the classifier this wraps has nothing to say about DOCX or XLSX,\nwhich carry no scanned-vs-text-layer distinction to assess.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "MetadataScanResponse",
+      "line": 205,
+      "offset": 3,
+      "text": "All three risk bands are always present, so a caller rendering a summary\nnever has to tell an absent band from a zero one.",
+      "kind": "why"
+    },
+    {
+      "id": "n8",
+      "symbol": "scan_metadata",
+      "line": 240,
+      "offset": 2,
+      "text": "Same wire shape as /document: raw bytes, kind from Content-Type.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "StructuredRequest",
+      "line": 303,
+      "offset": 4,
+      "text": "Per-request override of the instance default. The key for that provider\nmust already be configured, or supplied via `provider_keys` below.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": "StructuredRequest",
+      "line": 306,
+      "offset": 7,
+      "text": "The caller's own provider keys, decrypted by the gateway, keyed by\nprovider name. Present only when the caller has stored at least one;\noverrides the instance's environment credential for that provider.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "StructuredRequest",
+      "line": 308,
+      "offset": 9,
+      "text": "The caller's own local-runtime base URLs, decrypted by the gateway, keyed\nby provider name. Same semantics as `provider_keys`, for Ollama, vLLM and\nOpenAI-compatible servers.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "StructuredResponse",
+      "line": 313,
+      "offset": 2,
+      "text": "The passages that reached the model, in page order, with the relevance\nscore that selected them. Only filled when `include_sources` was set.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "StructuredResponse",
+      "line": 317,
+      "offset": 6,
+      "text": "How much of the page reached the model. Surfaced so a caller can tell a\nmissing field apart from a trimmed-away one.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "StructuredResponse",
+      "line": 319,
+      "offset": 8,
+      "text": "The provider that actually answered, and every provider tried and\nabandoned before it. Empty `fallback_from` means the first provider\nthe request resolved to succeeded outright.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "StructuredResponse",
+      "line": 321,
+      "offset": 10,
+      "text": "From pricing.PRICE_TABLE; null when (provider_used, model_used) is\nunpriced rather than free — see that module's note on the distinction.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "structured",
+      "line": 341,
+      "offset": 15,
+      "text": "A schema problem is the caller's to fix, and the hint says how.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "structured",
+      "line": 344,
+      "offset": 18,
+      "text": "Also the caller's, but a different field than the schema.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "structured",
+      "line": 348,
+      "offset": 22,
+      "text": "No credentials, or the provider refused. Not the caller's fault.",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "EnrichVerifyRequest",
+      "line": 368,
+      "offset": 1,
+      "text": "The content that was sent to the model, fences included. Citations are\nchecked against this rather than against the original page, so a passage\nthe relevance trimmer dropped fails here even though it is really on the\npage - the model could not have read it.",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": "EnrichVerifyRequest",
+      "line": 369,
+      "offset": 2,
+      "text": "Claimed fields, keyed by field name, each an object carrying `value` and\n`citation` as the enrichment schema asks the model to return them.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "VerifiedField",
+      "line": 377,
+      "offset": 5,
+      "text": "Null when the model correctly reported the content does not state the\nfield; set only when a claim was made and rejected.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "VerifiedField",
+      "line": 378,
+      "offset": 6,
+      "text": "False for booleans, which cannot appear literally in the prose that\nestablishes them. Surfaced so a caller can tell that weaker case apart.",
+      "kind": "what"
+    },
+    {
+      "id": "n23",
+      "symbol": "SchemaRequest",
+      "line": 416,
+      "offset": 3,
+      "text": "Previous schema JSON, sent back when the caller is refining rather than\nstarting fresh.",
+      "kind": "what"
+    },
+    {
+      "id": "n24",
+      "symbol": "SchemaRequest",
+      "line": 418,
+      "offset": 5,
+      "text": "The caller's own provider keys, decrypted by the gateway, keyed by\nprovider name. Same semantics as StructuredRequest's.",
+      "kind": "what"
+    },
+    {
+      "id": "n25",
+      "symbol": "SchemaRequest",
+      "line": 421,
+      "offset": 8,
+      "text": "Naming a provider is the only way to reach a local runtime: auto-pick\nwalks cloud vendors, so an instance with only Ollama configured would\notherwise report no credentials.",
+      "kind": "why"
+    },
+    {
+      "id": "n26",
+      "symbol": "ChunkRequest._overlap_within_budget",
+      "line": 475,
+      "offset": 2,
+      "text": "An overlap at or beyond the chunk budget re-carries a whole chunk\nforward on every split, so chunking never makes progress.",
+      "kind": "why"
+    },
+    {
+      "id": "n27",
+      "symbol": "Chunk",
+      "line": 482,
+      "offset": 2,
+      "text": "Stable across re-crawls, so a citation keeps resolving after the page moves.",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,7 +1,4 @@
 // Scrape throughput baseline over a fixed URL set (SUITE-PLAN Phase 1).
-// Usage: HELIX_API_KEY=helix-... node apps/api/scripts/bench-scrape.mjs <label> [runs=4] [baseUrl]
-// Runs the set serially `runs` times and writes per-URL medians to
-// research/research_notes/Helix anti bot scraping 2026/bench-<label>.json.
 
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -123,7 +120,6 @@ const mode = (xs) => {
     };
   });
 
-  // The failure URLs are expected to fail; success rate is over the rest.
   const scored = perUrl.filter((u) => u.kind !== 'fail');
   const all = runs.flat();
   const summary = {
@@ -132,7 +128,6 @@ const mode = (xs) => {
     runs: RUNS,
     urls: URLS.length,
     successRate: scored.reduce((a, u) => a + u.successes, 0) / (scored.length * RUNS),
-    // A success with no content (an empty challenge page) is not one.
     usefulRate:
       all.filter((x) => x.kind !== 'fail' && x.ok && x.mdBytes >= 100).length / (scored.length * RUNS),
     p50Ms: median(perUrl.map((u) => u.medianMs)),

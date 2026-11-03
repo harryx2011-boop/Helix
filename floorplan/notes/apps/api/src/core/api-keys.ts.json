@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/api-keys.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PREFIX",
+      "line": 5,
+      "offset": 0,
+      "text": "Helix API keys.\n\nThese authenticate a caller to this instance. They are unrelated to the\noperator's LLM, proxy and vector-store credentials, which live in environment\nvariables and are never stored here — Helix calls your models with your keys.\n\nKeys are stored as SHA-256 hashes. The plaintext is returned exactly once, at\ncreation, and cannot be recovered afterwards.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CreatedApiKey.key",
+      "line": 21,
+      "offset": 0,
+      "text": "Shown once. Not recoverable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "safeEqual",
+      "line": 28,
+      "offset": 0,
+      "text": "Compare hex digests without leaking timing information.\n\nLookup is by hash so the database does the work, but any direct comparison\nstill goes through this.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "generateKey",
+      "line": 42,
+      "offset": 7,
+      "text": "Enough to identify a key in a list without revealing it.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "verifyApiKey",
+      "line": 82,
+      "offset": 0,
+      "text": "Resolve a presented key. Returns undefined for unknown or revoked keys —\nthe caller must not be able to distinguish the two.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "verifyApiKey",
+      "line": 95,
+      "offset": 13,
+      "text": "Fire-and-forget: a failed usage stamp must never fail the request.",
+      "kind": "why"
+    },
+    {
+      "id": "n7",
+      "symbol": "importApiKey",
+      "line": 102,
+      "offset": 0,
+      "text": "Register a key minted elsewhere (the hosted website mints `helix-` keys and\nmirrors them here so this instance can validate them by hash). Idempotent.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "API_KEY_LIST_LIMIT",
+      "line": 124,
+      "offset": 0,
+      "text": "Ceiling on `listApiKeys`. /usage/all runs a query per key returned, so an\nunbounded list here is an unbounded fan-out there, not just a large response.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "ensureBootstrapKey",
+      "line": 144,
+      "offset": 0,
+      "text": "Ensure the bootstrap key from the environment exists as a real, active row.\n\nWithout this the first request has nothing to authenticate against. The key\nnamed by `HELIX_BOOTSTRAP_KEY` is registered and active at every boot, so a\nrevoke lasts only until the next restart: the desktop app injects this key\nand would otherwise be locked out for good. To retire it, unset the variable.",
+      "kind": "doc"
+    }
+  ]
+}

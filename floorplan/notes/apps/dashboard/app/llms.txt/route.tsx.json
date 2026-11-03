@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/llms.txt/route.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "GET",
+      "line": 7,
+      "offset": 0,
+      "text": "Index of every markdown twin on the site (WEBSITE.md §2, §9.4), the `llms.txt` category convention.",
+      "kind": "doc"
+    }
+  ]
+}

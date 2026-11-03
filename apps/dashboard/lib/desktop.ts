@@ -1,15 +1,8 @@
-/**
- * The Electron preload exposes `window.helixDesktop` through `contextBridge`.
- * Its presence is the one signal that the dashboard is running inside the
- * desktop app, where the instance's own key and admin token are handed over
- * instead of typed in.
- */
 export interface HelixDesktop {
   apiKey: string;
   adminToken: string;
   version: string;
   platform: 'win32';
-  /** Starts the local voice service on first use and answers where it is; absent in older desktop builds. */
   voice?: { connect: () => Promise<unknown> };
 }
 
@@ -30,7 +23,6 @@ export function isDesktop(): boolean {
   return bridge() !== undefined;
 }
 
-/** Null outside the desktop app; an empty string from the bridge counts as absent. */
 export function desktopCredentials(): { apiKey: string | null; adminToken: string | null } | null {
   const value = bridge();
   if (!value) return null;
@@ -38,7 +30,6 @@ export function desktopCredentials(): { apiKey: string | null; adminToken: strin
   return { apiKey: pick(value.apiKey), adminToken: pick(value.adminToken) };
 }
 
-/** Whether a listed key (known only by its prefix) is the one the desktop app authenticates with. */
 export function isDesktopKey(keyPrefix: string): boolean {
   const apiKey = desktopCredentials()?.apiKey;
   return Boolean(apiKey && keyPrefix.length > 0 && apiKey.startsWith(keyPrefix));
@@ -60,7 +51,6 @@ function isVoiceConnection(value: unknown): value is VoiceConnection {
   }
 }
 
-/** The desktop app's dictation service, or null in a browser and in a desktop build without it. */
 export function desktopVoice(): { connect: () => Promise<VoiceConnection | null> } | null {
   const voice = bridge()?.voice;
   if (!voice || typeof voice.connect !== 'function') return null;

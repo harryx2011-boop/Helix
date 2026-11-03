@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/scheduler.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SchedulerOptions",
+      "line": 6,
+      "offset": 0,
+      "text": "The monitor scheduler.\n\nDue monitors live in Postgres (`next_check_at`), not in process memory, so\na restart picks up where it left off and two API processes share the work\nwithout a broker. Cron parsing and \"when next\" come from croner; the tick\nis a plain interval that asks the store what is due.\n\nA check outside the schedule (`POST /monitor/:id/check`) goes through the\nsame claim and the same in-flight budget, so one monitor never runs two\nchecks at once and a burst of manual checks cannot exceed the cap.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SchedulerOptions.concurrency",
+      "line": 9,
+      "offset": 0,
+      "text": "Checks running at once across all monitors.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SchedulerOptions.stuckAfterMs",
+      "line": 11,
+      "offset": 0,
+      "text": "A claim older than this with no check running is treated as a crash.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "MonitorScheduler.releaseStuck",
+      "line": 57,
+      "offset": 0,
+      "text": "A monitor whose claim was never released was mid-check when its process\ndied. Give it a next time again rather than leaving it silent forever.\nOnly claims older than `stuckAfterMs` qualify: a fresh one belongs to a\ncheck that is running right now, possibly in another process.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "MonitorScheduler.tick",
+      "line": 67,
+      "offset": 0,
+      "text": "Run every due check, up to the concurrency cap. Returns how many ran.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "MonitorScheduler.runNow",
+      "line": 85,
+      "offset": 0,
+      "text": "Check one monitor now, under the same claim and budget as the schedule.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "MonitorScheduler.#run",
+      "line": 111,
+      "offset": 12,
+      "text": "Whatever happened, the monitor gets its next slot. A paused or deleted\nmonitor is left alone: the update is a no-op for a deleted one and\n`claimDue` ignores paused ones.",
+      "kind": "what"
+    }
+  ]
+}

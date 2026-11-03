@@ -18,11 +18,9 @@ interface Opts {
   apiKey?: string;
   baseUrl?: string;
   mcpUrl?: string;
-  /** For an endpoint with more than one operation, e.g. `/scrub` on Metadata. */
   pathSuffix?: string;
 }
 
-/** One request, four ways. Shared by the hero panel and the playground's Get code (WEBSITE.md §4.2, §7.4). */
 export function generateCode(lang: Lang, opts: Opts): string {
   const def = endpointById(opts.endpoint);
   const path = `${def?.path ?? `/v1/${opts.endpoint}`}${opts.pathSuffix ?? ''}`;

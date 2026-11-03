@@ -5,11 +5,6 @@ import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
 
-/**
- * One URL that throws ends the request; the URLs still in flight beside it must
- * be told to stop, or they hold browser contexts and gate slots until their
- * own timeout.
- */
 it('aborts the URLs still in flight when one URL throws', async () => {
   let siblingSignal: AbortSignal | undefined;
   const fetchClient = {

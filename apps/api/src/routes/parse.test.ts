@@ -82,10 +82,6 @@ async function postJson(app: FastifyInstance, body: unknown) {
 }
 
 describe('POST /v1/parse — over a real socket', () => {
-  // `inject` has no socket, so it never emits the request `close` that Node
-  // fires once a body has been read; only a listening server shows it. The
-  // async onRequest hook stands in for auth, which is what lets that `close`
-  // land after the handler starts listening.
   const withAuth = (app: FastifyInstance): void => {
     app.addHook('onRequest', async () => {
       await new Promise((resolve) => setTimeout(resolve, 5));
@@ -573,8 +569,6 @@ describe('POST /v1/parse — parser outcomes', () => {
     expect(body.warnings[0]).toContain('ocr: off');
   });
 
-  // A short but clean layer now comes back as text, so the warning must not
-  // call it missing.
   it('calls a returned text layer sparse, not missing', async () => {
     const client = extractClient({
       document: vi.fn(async () => ({ ...PARSED, markdown: 'Dummy PDF file', needsOcr: true, ocrApplied: false })),

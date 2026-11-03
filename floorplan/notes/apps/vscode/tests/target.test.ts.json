@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/vscode/tests/target.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "healthOn",
+      "line": 4,
+      "offset": 0,
+      "text": "Answers `/v1/health` on the given ports, refuses the rest.",
+      "kind": "doc"
+    }
+  ]
+}

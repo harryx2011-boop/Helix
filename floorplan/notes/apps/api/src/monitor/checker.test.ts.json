@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/checker.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 88,
+      "offset": null,
+      "text": "The plain summary rides with the stored diff and the webhook alike.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 106,
+      "offset": null,
+      "text": "Counts only: the summary's quoted passages are diff text, which inline off withholds.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 222,
+      "offset": null,
+      "text": "A later success clears the error state.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 234,
+      "offset": null,
+      "text": "History entries whose snapshot was pruned lose the pointer, not the row.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 300,
+      "offset": null,
+      "text": "A failure during a pause does not flip it to error either.",
+      "kind": "what"
+    }
+  ]
+}

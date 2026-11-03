@@ -36,7 +36,6 @@ export function PdfCheck() {
 
   const blocked = needsKey(apiKey) && ready;
 
-  /** The route rejects non-PDFs server-side; filtering here saves the round trip. */
   function acceptFile(candidate: File | null | undefined) {
     if (!candidate) return;
     const isPdf = candidate.type === 'application/pdf' || candidate.name.toLowerCase().endsWith('.pdf');

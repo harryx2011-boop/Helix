@@ -28,8 +28,6 @@ export interface StreamHandlers {
   onPartial?(text: string): void;
 }
 
-/** One utterance over WS /stream. Frames sent before the socket opens are held
- *  and flushed on open, so audio captured while the service starts is kept. */
 export class StreamSession {
   private readonly ws: WebSocket;
   private readonly pending: ArrayBuffer[] = [];
@@ -45,7 +43,6 @@ export class StreamSession {
       this.resolveFinal = resolve;
       this.rejectFinal = reject;
     });
-    // Callers that only await `ready` must not see an unhandled final rejection.
     this.final.catch(() => {});
     let markReady!: () => void;
     let failReady!: (e: Error) => void;
@@ -111,7 +108,6 @@ export class StreamSession {
     else this.pending.push(frame);
   }
 
-  /** Ends the utterance; resolves with the final transcript. */
   stop(): Promise<TranscribeResult> {
     this.control("stop");
     return this.final;
@@ -123,7 +119,6 @@ export class StreamSession {
     try {
       this.ws.close();
     } catch {
-      // already closing
     }
   }
 
@@ -166,7 +161,6 @@ export class VoiceCoreClient {
     return (await res.json()) as Health;
   }
 
-  /** One whole recording (any format the service decodes: WAV, WebM, Ogg...). */
   async transcribe(audio: Blob | ArrayBuffer | Uint8Array, filename = "audio.wav", signal?: AbortSignal): Promise<TranscribeResult> {
     const blob = audio instanceof Blob ? audio : new Blob([audio as BlobPart]);
     const form = new FormData();

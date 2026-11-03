@@ -1,28 +1,4 @@
 #!/usr/bin/env node
-/**
- * Record a real browser's JS surface into a profile definition.
- *
- * What this does and does not cover matters, because the file it writes claims
- * to be a recording:
- *
- * - It records the **JS layer** — what a page's own JavaScript can read about
- *   the machine. That is the layer `apps/api/src/browser/profiles.ts` applies.
- * - It does **not** record the transport layer. TLS and HTTP/2 fingerprints are
- *   not observable from inside a browser; they are facts about a handshake only
- *   the server sees. Helix gets those from `wreq-util`'s emulation presets, so
- *   the `tls` and `http2` blocks here are carried for documentation and for the
- *   Rust coherence validator, not replayed.
- *
- * Because of that split, `--id` must name an identity `apps/fetch` actually
- * resolves (see `available()` in apps/fetch/src/profile.rs). Recording Chrome
- * 152's JS surface under a name the transport tier falls back from would
- * produce exactly the contradiction profiles exist to prevent.
- *
- * Usage:
- *   node tools/capture/capture.mjs --id chrome-137
- *   node tools/capture/capture.mjs --id chrome-137 --channel chrome --headed
- *   node tools/capture/capture.mjs --id safari-18-5 --browser webkit
- */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -115,9 +91,6 @@ async function main() {
     headless: !args.headed,
     ...(args.channel ? { channel: args.channel } : {}),
     ...(args.executable ? { executablePath: args.executable } : {}),
-    // `screen.width` reports the display, but a browser launched into a small
-    // window can report the window instead. Starting maximised, with no forced
-    // viewport below, is what makes the recorded geometry the real monitor's.
     ...(args.headed && args.browser === 'chromium' ? { args: ['--start-maximized'] } : {}),
   });
 
@@ -125,8 +98,6 @@ async function main() {
   try {
     const context = await browser.newContext({ viewport: null });
     const page = await context.newPage();
-    // A real origin, not about:blank: some APIs behave differently on an opaque
-    // origin, and a recording taken there would not describe normal browsing.
     await page.goto('https://example.com/', { waitUntil: 'domcontentloaded' });
     await page.addScriptTag({ content: readSurface });
     surface = await page.evaluate(() => globalThis.__helixReadSurface());
@@ -134,7 +105,6 @@ async function main() {
     await browser.close();
   }
 
-  // A recording is only useful if it describes a browser a site would believe.
   const problems = recordingProblems(surface);
   if (problems.length > 0 && !args.force) {
     console.error('Refusing to record:');
@@ -162,9 +132,6 @@ async function main() {
     process.exit(1);
   }
 
-  // A JS layer recorded from Chrome 151 stored under the chrome-137 identity is a
-  // contradiction: the transport tier would present 137's fingerprint beside a 151
-  // user-agent. Warned rather than refused, since the id is the caller's choice.
   const mismatch = versionMismatch(args.id, version);
   if (mismatch) {
     console.warn(
@@ -264,7 +231,6 @@ async function main() {
       process.exit(1);
     }
   } catch {
-    // Does not exist, which is the normal case.
   }
 
   writeFileSync(outPath, `${JSON.stringify(definition, null, 2)}\n`);

@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/result/markdown-view.test.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 30,
+      "offset": null,
+      "text": "Immediate render: plain <pre><code> before the lazy highlighter resolves.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 38,
+      "offset": null,
+      "text": "The lazy Shiki import can be slow on a loaded machine; the test budget must exceed the waitFor budget.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 103,
+      "offset": null,
+      "text": "CommonMark's own backslash-escaping collapses `\\\\` to a single literal `\\`\nin link-destination source before it ever reaches urlTransform, so the\n`\\\\evil.com` / `/\\evil.com` bypass forms cannot be expressed through\nordinary markdown link syntax at all — they are exercised directly against\nisSafeHref in lib/markdown-links.test.ts instead, which is where a raw\nhref (e.g. from HTML, already stripped here since there is no rehype-raw)\nwould actually reach the policy unmolested.",
+      "kind": "what"
+    }
+  ]
+}

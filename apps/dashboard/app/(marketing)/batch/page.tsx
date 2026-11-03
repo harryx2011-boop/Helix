@@ -14,7 +14,6 @@ export const metadata: Metadata = {
   description: 'Up to 10,000 URLs in, one job to poll. Runs /scrape on the crawl worker: per-host politeness, robots.txt, and a result per URL.',
 };
 
-/* Request and response mirror POST /batch/scrape and GET /batch/scrape/{jobId} in openapi.yaml. */
 const REQUEST = `POST /v1/batch/scrape
 {
   "urls": [

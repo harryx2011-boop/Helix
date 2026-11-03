@@ -1,6 +1,4 @@
 // Compares the text a model receives over MCP with the compact REST body for the same call.
-// Usage: node apps/api/scripts/mcp-response-size.mjs [--url http://host:port]   (HELIX_API_KEY is the bearer)
-// Without --url it boots a scratch API on HELIX_SCRATCH_PORT; outbound calls use https://example.com.
 import { connect, startScratch } from './mcp-schema-size.mjs';
 
 const args = process.argv.slice(2);

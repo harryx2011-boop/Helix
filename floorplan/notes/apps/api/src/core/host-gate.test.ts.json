@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/host-gate.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "tick",
+      "line": 6,
+      "offset": 0,
+      "text": "Resolves on the next macrotask, so queued work gets a chance to start.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "poll",
+      "line": 8,
+      "offset": 0,
+      "text": "Longer than the gate's 50 ms poll, so a freed slot is actually taken up.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 33,
+      "offset": null,
+      "text": "One release per call, waiting out the gate's poll each time so the next\nqueued call actually picks the freed slot up.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 39,
+      "offset": null,
+      "text": "Four requests ran, never more than two at once.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 63,
+      "offset": null,
+      "text": "One slot each, so both run: the limit is per host, not global.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 115,
+      "offset": null,
+      "text": "Hold the only slot without ever releasing it.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 124,
+      "offset": null,
+      "text": "A stated Retry-After of a minute: no amount of waiting inside the ceiling helps.",
+      "kind": "what"
+    }
+  ]
+}

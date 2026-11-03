@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/sdk-ts/src/client.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 355,
+      "offset": null,
+      "text": "An AbortError from the caller's own signal is a deliberate cancellation,\nnot a network failure, and must not be indistinguishable from one: a\ncaller that retries on \"network error\" but not on \"I cancelled this\"\nneeds the real error identity to tell the two apart.",
+      "kind": "why"
+    }
+  ]
+}

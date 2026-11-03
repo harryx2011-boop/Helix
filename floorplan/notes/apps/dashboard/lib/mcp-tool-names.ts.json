@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/mcp-tool-names.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "OVERRIDES",
+      "line": 3,
+      "offset": 0,
+      "text": "The MCP tool name for each catalog endpoint. The server names a tool\n`helix_<snake(operationId)>` (apps/api/src/mcp/tools.ts), and an operationId\nis not always the catalog id: `metadata` is `metadataScan`, `monitor` is\n`createMonitor`. Every surface that prints a tool name reads this map, and\n`mcp-tool-names.test.ts` checks each entry against openapi.yaml.",
+      "kind": "doc"
+    }
+  ]
+}

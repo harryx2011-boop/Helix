@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/screenshot.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MAX_FULL_PAGE_HEIGHT",
+      "line": 4,
+      "offset": 0,
+      "text": "Screenshots travel inline as base64 inside the JSON response, so their size\nis response memory on both ends. A full-page capture of an endless feed is\notherwise attacker-sized: the page's height decides how much the server and\nthe dashboard hold. Height is clipped first; if the encoded result is still\nover the byte cap, the viewport alone is returned.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ScreenshotOptions.quality",
+      "line": 14,
+      "offset": 0,
+      "text": "JPEG and WebP only; Playwright rejects it on PNG.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ScreenshotOptions.selector",
+      "line": 15,
+      "offset": 0,
+      "text": "Capture this element instead of the page. A miss is reported, not silently full-page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ScreenshotOptions.omitBackground",
+      "line": 16,
+      "offset": 0,
+      "text": "Transparent background where the page itself does not paint one. PNG and WebP only.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "ScreenshotResult.warning",
+      "line": 24,
+      "offset": 0,
+      "text": "Set when the request could not be honoured exactly, so the caller is told rather than guessing.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "encodeOptions",
+      "line": 27,
+      "offset": 0,
+      "text": "Playwright refuses `quality` on PNG and `omitBackground` on JPEG, and both\nare errors rather than warnings. Deciding here keeps the caller from having\nto know which combinations are legal.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "capture",
+      "line": 48,
+      "offset": 0,
+      "text": "`captureScreenshot` with the format, byte count and any warning kept.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "capture",
+      "line": 54,
+      "offset": 6,
+      "text": "An unmatched selector returns the page instead — silently, which reads as\n\"the element looked like that\". Say so, and return the viewport.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "capture",
+      "line": 89,
+      "offset": 41,
+      "text": "A caller who asked for the whole page and got 4,096px of it has an\nimage that looks complete. The truncation has to be said out loud.",
+      "kind": "what"
+    }
+  ]
+}

@@ -2,14 +2,6 @@ import type { FastifyInstance } from 'fastify';
 import { getPool } from '../db/pool.js';
 import { isJobId, notFound } from './jobs.js';
 
-/**
- * What a job actually consumed, beside the projection it was made against.
- *
- * Every figure here was measured or saved when the job ran. One that was not
- * is `null`, and `reasons` says why: a zero would claim the job used nothing,
- * and a projection recomputed now would describe today's site, not the one the
- * job crawled.
- */
 
 interface CostRow {
   id: string;

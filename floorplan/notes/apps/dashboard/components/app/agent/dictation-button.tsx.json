@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/agent/dictation-button.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "DictationButton",
+      "line": 71,
+      "offset": 0,
+      "text": "A mic for the desktop app only: the website has no local speech service, so nothing renders there.",
+      "kind": "doc"
+    }
+  ]
+}

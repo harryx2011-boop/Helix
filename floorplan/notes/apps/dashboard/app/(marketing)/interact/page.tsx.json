@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(marketing)/interact/page.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "REQUEST",
+      "line": 10,
+      "offset": 0,
+      "text": "openapi.yaml → /interact → requestBody.examples.oneShot, and InteractResponse.",
+      "kind": "what"
+    }
+  ]
+}

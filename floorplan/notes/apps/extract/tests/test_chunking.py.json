@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_chunking.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TestAnchors.test_survives_an_edit_further_down_the_chunk",
+      "line": 39,
+      "offset": 1,
+      "text": "Anchors hash the opening only, so appending to a section does not\nbreak every citation that pointed into it.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "TestAnchors.test_does_not_encode_position",
+      "line": 45,
+      "offset": 1,
+      "text": "An anchor containing \"chunk 7\" breaks when chunk 3 is edited. Two\nidentical sections at different positions must anchor identically.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "TestChunkMarkdown.test_carries_the_heading_into_each_chunk",
+      "line": 74,
+      "offset": 1,
+      "text": "A chunk saying \"it costs $29\" is useless without the heading that\nsays what \"it\" is — the context is what makes it retrievable.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "TestChunkMarkdown.test_splits_a_long_section_on_sentence_boundaries",
+      "line": 94,
+      "offset": 1,
+      "text": "A chunk cut mid-sentence embeds badly and reads as incoherent to\nwhoever eventually sees the citation.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "TestChunkMarkdown.test_respects_the_token_budget",
+      "line": 114,
+      "offset": 4,
+      "text": "Four characters per token, plus slack for the heading prefix.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "TestChunkMarkdown.test_overlap_larger_than_max_tokens_stays_within_budget",
+      "line": 137,
+      "offset": 1,
+      "text": "An overlap at or beyond the chunk budget re-carries the whole chunk\nforward every time, so each new chunk only grows: nothing is ever\ndropped and the token budget stops meaning anything. Clamped, every\nchunk stays near the same small size instead of climbing linearly.",
+      "kind": "what"
+    }
+  ]
+}

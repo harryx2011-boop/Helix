@@ -30,8 +30,6 @@ from pathlib import Path
 from .settings import settings
 
 RETRY_AFTER_SECONDS = 30
-# A failed attempt is retried by a later request, not by a loop, and not sooner
-# than this: a bad checksum is only known after the whole pack has downloaded.
 FAILED_RETRY_SECONDS = 300
 _CHUNK_BYTES = 1 << 20
 
@@ -162,8 +160,6 @@ class EmbeddingsRuntime:
         path = str(self.site_packages)
         if path not in sys.path:
             sys.path.insert(0, path)
-        # Any model beyond the bundled one downloads beside the pack, not into a
-        # user-wide cache the uninstaller would never clean.
         os.environ["HF_HOME"] = str(self.models)
         os.environ["SENTENCE_TRANSFORMERS_HOME"] = str(self.models / "hub")
         importlib.invalidate_caches()
@@ -228,8 +224,6 @@ class EmbeddingsRuntime:
         if not os.path.isdir(os.path.join(partial, "site-packages")):
             raise ValueError("the runtime pack has no site-packages directory")
         if self.home.exists():
-            # A broken earlier install may hold loaded DLLs; move it aside rather
-            # than fail on a delete Windows refuses.
             stale = _long(self.root / f"embeddings.stale-{int(time.time())}")
             os.rename(_long(self.home), stale)
             shutil.rmtree(stale, ignore_errors=True)
@@ -237,8 +231,6 @@ class EmbeddingsRuntime:
 
 
 def _long(path: Path) -> str:
-    # Extended-length form: torch's deepest files pass MAX_PATH under a long
-    # runtime dir, and LongPathsEnabled is off on a default Windows install.
     text = str(path.resolve())
     if sys.platform == "win32" and not text.startswith("\\\\?\\"):
         return "\\\\?\\" + text

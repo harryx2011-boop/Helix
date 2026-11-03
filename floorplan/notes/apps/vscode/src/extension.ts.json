@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/vscode/src/extension.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "POLL_MS",
+      "line": 8,
+      "offset": 0,
+      "text": "How often the status bar re-checks the API.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "servesApp",
+      "line": 92,
+      "offset": 0,
+      "text": "Whether `/app` answers with the app, which a dev API without a static dir does not.",
+      "kind": "doc"
+    }
+  ]
+}

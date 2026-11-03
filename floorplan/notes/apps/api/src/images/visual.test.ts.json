@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/images/visual.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 53,
+      "offset": null,
+      "text": "The test server is on loopback, so both the check and the connection are opened up.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 60,
+      "offset": null,
+      "text": "The connection checks its own DNS answer, so a check that passed earlier is not the last word.",
+      "kind": "what"
+    }
+  ]
+}

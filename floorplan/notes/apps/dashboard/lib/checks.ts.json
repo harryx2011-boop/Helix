@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/checks.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "fetchHtmlForSelectors",
+      "line": 29,
+      "offset": 0,
+      "text": "A browser cannot fetch an arbitrary third-party page: that site's CORS\npolicy decides, and it will not name this origin. `/scrape` exists for\nexactly this — the server fetches, the browser matches selectors against\nwhat comes back.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "matchSelector",
+      "line": 67,
+      "offset": 0,
+      "text": "Runs the selector in the browser against already-fetched HTML, so typing re-matches without another request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "selectorAsScrapeBody",
+      "line": 93,
+      "offset": 0,
+      "text": "The point of the tab: turn a working selector into the request body that\nuses it. `ScrapeOptions` takes `includeSelectors`, which is CSS — an XPath\nexpression has nowhere to go there, so that case is reported rather than\nemitted as a body the API would reject.",
+      "kind": "doc"
+    }
+  ]
+}

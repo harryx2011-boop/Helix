@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/map-with-limit.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "mapWithLimit",
+      "line": 1,
+      "offset": 0,
+      "text": "Runs `fn` over `items` with at most `limit` in flight, preserving order.",
+      "kind": "doc"
+    }
+  ]
+}

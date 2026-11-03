@@ -14,7 +14,6 @@ export const metadata: Metadata = {
   description: 'Describe the data you want in a sentence and get a JSON Schema back, ready for jsonOptions.schema on /scrape and /parse or scrapeOptions.schema on /search.',
 };
 
-/* Request and response mirror POST /agent/schema in openapi.yaml. */
 const REQUEST = `POST /v1/agent/schema
 {
   "prompt": "Every pricing plan on the page, with its name, monthly price and included features.",

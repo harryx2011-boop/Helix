@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(marketing)/map/page.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "REQUEST",
+      "line": 10,
+      "offset": 0,
+      "text": "Request and response mirror POST /map in openapi.yaml.",
+      "kind": "what"
+    }
+  ]
+}

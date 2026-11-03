@@ -2,7 +2,6 @@ import { FrameBand } from './section-frame';
 import { ScrollStrip } from './scroll-strip';
 import { AsciiFlow } from '@/components/shared/ascii-fields';
 
-/** WEBSITE.md §4.8. Ends every marketing page. Mono panel pointing agents at the onboarding skill. */
 export function AgentBlock() {
   return (
     <>

@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/admin-gate.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "LOOPBACK_HOSTS",
+      "line": 5,
+      "offset": 0,
+      "text": "The admin-token gate for operator routes (`/settings`, `/internal`, `/v1/keys`).\n\nRegister it as an `onRequest` hook inside an encapsulated plugin that holds\nonly the gated routes. The router then decides which requests it covers:\nevery spelling of a path that reaches one of those handlers meets the gate,\nwhatever the raw URL looked like.\n\nThe Host check refuses a request addressed to any name other than loopback or\nthe configured public URL. A page on another site that rebinds its own name\nto 127.0.0.1 still sends its own name as the Host, so it is refused here.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "hostNameOf",
+      "line": 7,
+      "offset": 0,
+      "text": "The lowercase host name of a Host header or URL, port removed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "AdminGateOptions.publicUrl",
+      "line": 17,
+      "offset": 0,
+      "text": "The instance's public URL; its host name is accepted beside loopback.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "AdminGateOptions.message",
+      "line": 18,
+      "offset": 0,
+      "text": "The 401 message, so each surface keeps its own wording.",
+      "kind": "doc"
+    }
+  ]
+}

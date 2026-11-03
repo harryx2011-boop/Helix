@@ -1,11 +1,6 @@
 export const GITHUB_REPO = 'harryx2011-boop/Helix';
 export const GITHUB_URL = `https://github.com/${GITHUB_REPO}`;
 
-/**
- * Star count for the nav button, fetched server-side and cached for an hour.
- * Returns `null` on any failure (rate limit, private repo, offline build) and
- * the nav falls back to the word "GitHub"; a missing number is never an error.
- */
 export async function fetchGithubStars(): Promise<string | null> {
   try {
     const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}`, {

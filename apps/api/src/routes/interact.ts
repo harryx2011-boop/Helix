@@ -21,20 +21,6 @@ import {
 } from '../browser/sessions.js';
 import { Screencast, cdpSessionFor, type CastSessionFactory } from '../browser/screencast.js';
 
-/**
- * POST /interact, POST /interact/session, GET|DELETE /interact/session/:id,
- * and the live view at /interact/live/:id (+ /stream).
- *
- * The endpoint shape follows research/api-specs/browser-interaction-api.md §4;
- * the runtime is the Playwright pool and the in-process session registry. A
- * session is a leased page: it keeps cookies, storage and focus between calls
- * until the caller closes it or a timeout does.
- *
- * Failures inside a run are reported in a 200 with `success: false`, the same
- * envelope every other endpoint uses, plus the index of the action that failed.
- * A non-2xx means the request itself was wrong: bad body, unknown session,
- * session busy, or the operator's session cap.
- */
 
 const InteractRequestSchema = z.object({
   url: z.string().url().optional(),
@@ -58,19 +44,14 @@ const OpenSessionSchema = z.object({
 export interface InteractRouteDeps {
   sessions: SessionRegistry;
   extractClient: ExtractClient;
-  /** Public origin of this instance; live-view URLs are built on it. */
   publicUrl: string;
-  /** Overridable for tests; the default opens a CDP session on the page. */
   castFactory?: ((session: Session) => CastSessionFactory) | undefined;
-  /** DNS for the URL guard; tests supply a fake. */
   lookup?: Lookup | undefined;
 }
 
 const SSE_HEARTBEAT_MS = 15_000;
-/** Streams one session may fan out to. A leaked link cannot become unbounded work. */
 const MAX_LIVE_VIEWERS = 4;
 
-/** Playwright's wording when the page went away under a running call. */
 const CLOSED_UNDER_RUN = /has been closed|target closed|session closed/i;
 
 export async function registerInteract(app: FastifyInstance, deps: InteractRouteDeps): Promise<void> {
@@ -103,10 +84,6 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
   const invalid = (reply: FastifyReply, requestId: string, message: string, field?: string) =>
     reply.code(400).send({ error: 'invalid_request', message, field, requestId });
 
-  /**
-   * Open a session and fence its page. The guard is part of opening: a page
-   * that can reach the instance's own network must never be handed out.
-   */
   const openGuarded = async (apiKeyId: string, options: { headers?: Record<string, string> | undefined; viewport?: { width: number; height: number } | undefined }) => {
     const session = await deps.sessions.open(apiKeyId, options);
     try {
@@ -126,7 +103,6 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
     closedUnderRun = false,
   ): Record<string, unknown> => {
     if (error instanceof ActionError) {
-      // The implicit navigation from `url` sits ahead of the caller's list.
       const actionIndex = initialNavigation ? error.index - 1 : error.index;
       return {
         success: false,
@@ -254,8 +230,6 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
     const steps: InteractAction[] = body.url ? [{ type: 'navigate', url: body.url }, ...actions] : actions;
     const initialNavigation = Boolean(body.url);
 
-    // `sessionOpen` answers for the registry, not for what the caller asked:
-    // a DELETE or the hard timeout can take the page away under a run.
     const stillOpen = () => deps.sessions.get(session.id, apiKeyId) !== undefined;
 
     try {
@@ -274,9 +248,6 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
     } catch (error) {
       release();
       const closedUnderRun = !stillOpen();
-      // A failed run on a session the caller wants to keep stays open so the
-      // caller can inspect it, retry, or close it. A one-shot run is cleaned
-      // up, and so is a page whose script never came back.
       const unresponsive = error instanceof ActionError && error.pageUnresponsive;
       if (!body.keepSessionOpen || unresponsive) await deps.sessions.close(session.id, apiKeyId);
       const sessionOpen = body.keepSessionOpen && stillOpen();
@@ -350,8 +321,6 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
     return reply.code(204).send();
   });
 
-  // Live view. Authenticated by the per-session token in the URL rather than
-  // the API key: a browser tab opened from a link cannot send a bearer header.
   app.get<{ Params: { id: string }; Querystring: { token?: string } }>(
     '/interact/live/:id',
     async (request, reply) => {
@@ -397,9 +366,6 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
         'x-accel-buffering': 'no',
       });
 
-      // Frames go through a sink that honours socket backpressure: a viewer
-      // that stops reading gets the newest frame when it resumes, and the
-      // process never buffers the ones it missed.
       const sink = sseSink(res);
       sink.event('session', JSON.stringify({ sessionId: session.id, url: session.page.url() }));
 
@@ -426,8 +392,6 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
     },
   );
 
-  // The same stream over a WebSocket, for a viewer that wants one. SSE stays
-  // the default: it needs nothing beyond the HTTP server and reconnects itself.
   await app.register(websocket);
   app.get<{ Params: { id: string }; Querystring: { token?: string } }>(
     '/interact/live/:id/ws',
@@ -468,8 +432,6 @@ export async function registerInteract(app: FastifyInstance, deps: InteractRoute
       });
 
       socket.on('close', cleanup);
-      // The stream is one-way; a viewer that sends anything is ignored rather
-      // than trusted, since this connection carries no authority to act.
       socket.on('message', () => {});
     },
   );
@@ -491,11 +453,6 @@ function sendOpenFailure(reply: FastifyReply, requestId: string, error: unknown)
   });
 }
 
-/**
- * The viewer. One image element fed by the event stream; nothing to load from
- * anywhere else, so it works on an instance with no outbound network.
- * Tokens: app dark ground, violet accent, 6px radius, mono micro-labels.
- */
 function viewerHtml(sessionId: string): string {
   const safeId = sessionId.replace(/[^a-z0-9_]/gi, '');
   return `<!doctype html>

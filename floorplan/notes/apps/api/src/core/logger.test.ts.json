@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/logger.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 23,
+      "offset": null,
+      "text": "The real string a live probe produced against OpenAI.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 29,
+      "offset": null,
+      "text": "The part the caller can act on survives.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 65,
+      "offset": null,
+      "text": "A bare 32-hex string is as likely to be a request id as a key, and a bare\n64-hex string is almost always a sha256 of content. Masking either on shape\nalone destroys the identifiers an operator traces a request by, so a long\nhex run is masked only where the surrounding words claim it is a secret.",
+      "kind": "doc"
+    }
+  ]
+}

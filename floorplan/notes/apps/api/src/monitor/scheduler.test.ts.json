@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/scheduler.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 92,
+      "offset": null,
+      "text": "Hourly cron, Mon-Fri 9-17 UTC, due right now on a Friday afternoon.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 116,
+      "offset": null,
+      "text": "The 17:00 and later Friday firings are outside the window; the next one\ninside it is Monday morning.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 175,
+      "offset": null,
+      "text": "The same monitor is claimed; a second one finds no slot.",
+      "kind": "what"
+    }
+  ]
+}

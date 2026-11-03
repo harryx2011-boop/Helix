@@ -1,0 +1,87 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/static/serve.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "StaticOptions.dir",
+      "line": 7,
+      "offset": 0,
+      "text": "The dashboard's static export (`apps/dashboard/out`).",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "API_PREFIXES",
+      "line": 10,
+      "offset": 0,
+      "text": "Paths the API owns. The UI never answers for them, and they never skip auth.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "UI_FRAME_ANCESTORS",
+      "line": 24,
+      "offset": 0,
+      "text": "Who may show the UI in a frame: this origin, and a VS Code webview (the\nHelix extension hosts `/app` in one). `vscode-file:` is the workbench the\nwebview sits in, and frame-ancestors checks every ancestor, not only the\nparent. The API's own replies keep helmet's SAMEORIGIN.\n\nAccepted surface: the scheme admits any extension's webview, not only\nHelix's (an origin per webview is random, so it cannot be pinned). No web\npage can frame the UI, and an installed extension already runs with this\nuser's full access, so it gains nothing a frame would add.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "UI_CONTENT_SECURITY_POLICY",
+      "line": 26,
+      "offset": 0,
+      "text": "The UI's content policy. The renderer holds the API key and admin token, so\nscript may come only from this origin, with no string evaluation (WebAssembly\nstays allowed for the syntax highlighter), and plugins, base rewrites and\nforeign form targets are refused.\n\nponytail: 'unsafe-inline' stays because the static export inlines its\nbootstrap scripts; hashing them at export time would close inline injection too.\nThere is no default-src: images and API calls may point at other hosts\n(thumbnails, another instance), and a connect-src allow-list would break that.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "UI_CONTENT_SECURITY_POLICY",
+      "line": 27,
+      "offset": 1,
+      "text": "blob: carries the dictation mic's AudioWorklet (lib/voice-core/react/capture.ts),\nbuilt from the page's own source; only script already on the page can mint one.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "isUiPath",
+      "line": 34,
+      "offset": 0,
+      "text": "A path the UI may answer without a key: anything outside the API's prefixes.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "candidatesFor",
+      "line": 47,
+      "offset": 0,
+      "text": "A Next.js static export writes `/app/keys` as `app/keys.html` or `app/keys/index.html` depending on `trailingSlash`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "registerStatic",
+      "line": 52,
+      "offset": 0,
+      "text": "Serves the dashboard's static export from the API's own origin, so the\ndesktop app is one process on one port and CORS never enters into it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "registerStatic",
+      "line": 64,
+      "offset": 12,
+      "text": "A colon names an NTFS alternate data stream (`app.html::$DATA`), which resolves inside the root.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "registerStatic",
+      "line": 68,
+      "offset": 16,
+      "text": "X-Frame-Options has no allow-list, so it gives way to the CSP form.",
+      "kind": "what"
+    }
+  ]
+}

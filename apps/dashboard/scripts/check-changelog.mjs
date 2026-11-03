@@ -1,6 +1,4 @@
 // Fails when the changelog data and the repository disagree: a tag or a manifest version with no entry, an entry with
-// no source, a wrong release kind, a commit that does not match its tag, or a list that does not descend by version.
-// Needs full git history and tags (a shallow clone fails on purpose). Run: npm run check:changelog
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

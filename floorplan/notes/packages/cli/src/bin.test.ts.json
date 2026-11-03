@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/cli/src/bin.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "quiet",
+      "line": 4,
+      "offset": 0,
+      "text": "console.log/error calls in main() are noisy in test output; silence them\nwithout hiding real assertion failures.",
+      "kind": "what"
+    }
+  ]
+}

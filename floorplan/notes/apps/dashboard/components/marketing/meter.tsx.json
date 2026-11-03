@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/meter.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MeterRow.value",
+      "line": 9,
+      "offset": 0,
+      "text": "0–100.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MeterRow.display",
+      "line": 11,
+      "offset": 0,
+      "text": "Thin variant only: replaces the percent readout (e.g. \"14.2 kb\").",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "MeterPanel",
+      "line": 21,
+      "offset": 0,
+      "text": "Illustrative ratio bars. Grow from zero on scroll-in and hold; the values\nare an example distribution, never this instance's telemetry, and the\npanel says so. Reduced motion pins every bar at its value with no transition.",
+      "kind": "doc"
+    }
+  ]
+}

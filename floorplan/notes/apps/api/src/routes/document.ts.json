@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/document.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 5,
+      "offset": null,
+      "text": "POST /v1/document — one endpoint over every document operation.\n\nParse, metadata and assess were three endpoints a caller had to know\nabout separately, all taking the same file and answering in the same\nenvelope. This is the single surface; `op` picks the operation.\n\nIt **dispatches** rather than reimplements. Each underlying route owns\nmultipart parsing, its own body limit, an in-flight cap and a result cache,\nand a second copy of that logic here would be the kind of duplication that\ndrifts silently — the dispatcher would keep working while quietly disagreeing\nabout upload ceilings. Rewriting the URL and re-entering the router keeps one\nimplementation of each operation.\n\nThe original paths stay registered and documented: this is an addition,\nnot a migration, and callers already using `/v1/parse` are not broken by it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "OPERATIONS",
+      "line": 5,
+      "offset": 0,
+      "text": "`op` values and the route each one forwards to.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "opOf",
+      "line": 19,
+      "offset": 0,
+      "text": "`op` comes from the JSON body, or from the query string.\n\nA multipart upload is buffered rather than parsed here — that is the target\nroute's job, and parsing it twice would consume the stream — so an upload\nnames its operation as `?op=`, which is also why the query is checked first.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "registerDocument",
+      "line": 30,
+      "offset": 1,
+      "text": "Buffers the raw body untouched so the target route's own content-type\nparser sees exactly what the caller sent, multipart boundaries included.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "registerDocument",
+      "line": 35,
+      "offset": 6,
+      "text": "A JSON body still goes through Fastify's own parser — the wildcard above\nadds a fallback for everything else rather than replacing it — so `op` is\nread from a parsed object here, and malformed JSON is already a 400\nbefore this handler runs.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "registerDocument",
+      "line": 46,
+      "offset": 17,
+      "text": "Re-enter the router at the operation's own path. `inject` runs the full\nchain — auth, rate limit, body parsing, the handler — so the operation\nbehaves identically whether it was reached here or directly.\n`inject` sets content-length from the payload it is given. Forwarding the\noriginal value would describe a body length that no longer applies, and\nan explicit `undefined` is rejected outright, so the key is removed.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "registerDocument",
+      "line": 49,
+      "offset": 20,
+      "text": "`inject` gives the injected request no real socket, so a disconnect on\nthis outer connection cannot reach it — only stop this handler waiting\non it, which is what `abortable` does.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "registerDocument",
+      "line": 80,
+      "offset": 51,
+      "text": "`inject` reports the length of its own response; letting it through\nalongside a re-serialised body is how a truncated reply happens.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "registerDocument",
+      "line": 84,
+      "offset": 55,
+      "text": "A scrub answers with file bytes, not JSON, so the payload is forwarded as\nreceived rather than parsed and re-encoded.",
+      "kind": "what"
+    }
+  ]
+}

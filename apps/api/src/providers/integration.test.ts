@@ -3,11 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { encryptSecret } from './crypto.js';
 
-/**
- * End-to-end: a caller's stored provider key reaches the extract client on
- * `/scrape`, `/parse` and `/agent/schema` — the actual point of this feature,
- * as opposed to the route-contract tests for `/v1/providers` itself.
- */
 
 const ENCRYPTION_KEY = createHash('sha256').update('integration-test-secret').digest();
 const API_KEY_ID = 'key-with-stored-anthropic';
@@ -260,7 +255,6 @@ describe('provider key resolution reaches the extract client', () => {
     } as unknown as ExtractClient;
 
     app = Fastify();
-    // No apiKey hook: this request is anonymous, as in the unit route tests.
     await registerScrape(app, {
       fetchClient: {
         fetch: vi.fn(async () => ({

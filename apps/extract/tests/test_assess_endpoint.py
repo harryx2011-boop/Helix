@@ -38,7 +38,5 @@ def test_returns_the_assessment_shape_for_a_pdf() -> None:
 
 
 def test_does_not_convert_anything_only_classifies() -> None:
-    # A markdown-conversion field appearing here would mean this silently grew
-    # into a second /document, rather than staying the classification-only step.
     response = client.post("/assess", content=b"%PDF-1.4\n%%EOF", headers={"content-type": "application/pdf"})
     assert "markdown" not in response.json()

@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/keys.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "KeyRow",
+      "line": 6,
+      "offset": 0,
+      "text": "Key management contract, wired behind the real auth hook rather than a stub.\n\nOne operator owns a Helix instance, and only the operator's admin token\nmanages its API keys. An API key, however valid, cannot mint, list or\nrevoke keys. The tests drive the routes through `registerAuth` with a fake\nkey store: a route tested with auth mocked away passes just as happily when\nthe gate is deleted.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "db",
+      "line": 37,
+      "offset": 20,
+      "text": "The revoked predicate is honoured only because the statement asks for\nit. Filtering unconditionally would let the lookup drop `revoked_at IS\nNULL` while these tests still reported revoked keys as rejected.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "build",
+      "line": 71,
+      "offset": 0,
+      "text": "A default parameter would fire on an explicit `undefined`, quietly turning\nthe disabled-instance case back into an enabled one.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "seedKey",
+      "line": 90,
+      "offset": 0,
+      "text": "Seeds a usable credential the way the bootstrap path does, so auth has something real to resolve.",
+      "kind": "doc"
+    }
+  ]
+}

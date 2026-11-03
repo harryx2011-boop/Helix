@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/vectors.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MAX_QUERY_CHARS",
+      "line": 8,
+      "offset": 0,
+      "text": "Semantic search over what a crawl wrote to a vector destination.\n\nThe query is embedded by the same helix-extract that embedded the chunks, and\nthe search refuses to run when the collection was embedded with a different\nmodel: vectors from two models live in unrelated spaces, and scoring one\nagainst the other returns confident nonsense rather than an error.",
+      "kind": "doc"
+    }
+  ]
+}

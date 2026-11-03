@@ -29,14 +29,6 @@ const PLACEHOLDERS: Record<Endpoint, string[]> = {
 
 const HOLD_MS = 4200;
 
-/**
- * Rotates through the example URLs, one at a time.
- *
- * Deliberately not a typewriter: a caret redrawing the field every ~50ms reads
- * as flicker in a box someone is trying to read, and it competes with the
- * cursor once they click in. A slow swap makes the same point — here are the
- * kinds of thing this field takes — without moving while anyone looks at it.
- */
 function useRotatingPlaceholder(phrases: readonly string[], active: boolean): string {
   const [index, setIndex] = React.useState(0);
 
@@ -67,20 +59,12 @@ export const RUN_LABEL: Record<Endpoint, string> = {
   monitor: 'Create monitor',
 };
 
-/** The five tabs the landing shows; the rest live in the Capabilities menu. */
 const HERO_TABS: readonly Endpoint[] = ['search', 'map', 'scrape', 'parse', 'crawl'];
 
-/** Endpoints that take a scrape `formats` array, so the Format button applies. */
 const FORMAT_TABS: readonly Endpoint[] = ['scrape'];
 
-/**
- * Only a query can hold a line break. Every other tab takes a URL, which
- * cannot, so there Shift+Enter is swallowed and a pasted newline is dropped;
- * the box still wraps a long URL instead of scrolling it off the right edge.
- */
 const MULTILINE_TABS: readonly Endpoint[] = ['search'];
 
-/** Past this the box scrolls rather than growing: eight lines at 20px. */
 const MAX_HEIGHT_PX = 160;
 
 const SCHEME = /^(https?:\/\/)/i;
@@ -90,11 +74,6 @@ function splitScheme(value: string): { scheme: string; rest: string } {
   return match ? { scheme: match[1]!, rest: value.slice(match[1]!.length) } : { scheme: '', rest: value };
 }
 
-/**
- * The `/app` shell's dark tokens have no `m-*` values, and `Segmented` is
- * written in them. Rather than a second track component, the track's tokens
- * are re-pointed at the app's own palette for the duration of this subtree.
- */
 const APP_TRACK_VARS = {
   '--m-bg': 'hsl(var(--card))',
   '--m-surface': 'hsl(var(--secondary))',
@@ -139,33 +118,17 @@ interface PromptBoxProps {
   loading: boolean;
   disabled: boolean;
   optionsOpen?: boolean;
-  /** Present on the app: the 36px sliders button opens the Options panel. */
   onToggleOptions?: () => void;
   onGetCode?: () => void;
   getCodeDisabled?: boolean;
-  /** Present when the caller owns a scrape `formats` array; shows the Format button on scrape. */
   formats?: readonly Format[];
   onFormatsChange?: (formats: Format[]) => void;
-  /**
-   * Present on the app: the paperclip and a pasted file both land here, and
-   * it is the same file the active tab's form submits. Only tabs listed in
-   * `lib/uploads.ts` show the paperclip or accept a paste.
-   */
   attachment?: File | null;
   onAttachmentChange?: (file: File | null) => void;
-  /** Replaces the per-endpoint run label, for a surface whose submit does not run the request. */
   submitLabel?: string;
   className?: string;
 }
 
-/**
- * The one prompt box: group-labelled endpoint track above, then the composer
- * (attachment chip, scheme chip and auto-growing textarea), hairline, toolbar.
- * Rendered on the landing (`hero`, light tokens) and on `/app/playground`
- * (`app`, dark tokens). The URL value the parent holds is always the full
- * URL; the `https://` chip is display only. Enter runs; a leading `/` opens
- * the jump-to-endpoint palette.
- */
 export function PromptBox({
   variant,
   activeId,
@@ -201,8 +164,6 @@ export function PromptBox({
   const listId = React.useId();
   const hintId = React.useId();
 
-  // Reduced motion gets the first URL as a plain placeholder: the point is to
-  // show a real example, and that survives without the animation.
   const rotating = value.length === 0 && !focused && !reduceMotion;
   const placeholder = useRotatingPlaceholder(placeholders, rotating);
 

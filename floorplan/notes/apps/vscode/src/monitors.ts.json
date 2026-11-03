@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/vscode/src/monitors.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 4,
+      "offset": null,
+      "text": "Web Monitoring, read for the Monitors view: each monitor, and its latest\nchecks with the plain summary a change carries (`summarizeDiff`,\n`apps/api/src/monitor/diff.ts`).",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "HISTORY_LIMIT",
+      "line": 4,
+      "offset": 0,
+      "text": "Checks shown under one monitor.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "Row",
+      "line": 22,
+      "offset": 0,
+      "text": "What a tree row shows.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "listIn",
+      "line": 40,
+      "offset": 0,
+      "text": "The array under `key`, or empty when the body is not an object holding one.",
+      "kind": "doc"
+    }
+  ]
+}

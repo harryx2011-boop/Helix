@@ -54,8 +54,6 @@ function ExploreCell({ endpoint }: { endpoint: EndpointSummary }) {
 }
 
 function ExploreRow({ endpoints }: { endpoints: EndpointSummary[] }) {
-  // Map lives inside Search/Crawl (WEBSITE.md §11: "not a seventh product") — only the
-  // six standalone products get a cell, so the grid never orphans a lone item on its own row.
   const productIds = new Set(PRODUCTS.map((p) => p.id));
   const products = endpoints.filter((e) => productIds.has(e.id as (typeof PRODUCTS)[number]['id']));
   const firstRow = products.slice(0, 3);
@@ -123,8 +121,6 @@ function ApiKeyRow({ welcome }: { welcome: boolean }) {
   const [showing, setShowing] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
 
-  // The key lives in this browser, so revealing it is a local toggle rather
-  // than a request for something the server is holding.
   const masked = apiKey ? `${apiKey.slice(0, 10)}${'•'.repeat(8)}${apiKey.slice(-3)}` : null;
   const display = showing && apiKey ? apiKey : (masked ?? '·'.repeat(8));
 
@@ -266,7 +262,6 @@ export function OverviewClient({
 }: {
   endpoints: EndpointSummary[];
   welcome: boolean;
-  /** Omitted by the static-export build, which cannot read searchParams on the server. */
   connect?: boolean;
 }) {
   const [urlConnect, setUrlConnect] = React.useState(false);

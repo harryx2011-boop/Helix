@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/parse.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 85,
+      "offset": null,
+      "text": "`inject` has no socket, so it never emits the request `close` that Node\nfires once a body has been read; only a listening server shows it. The\nasync onRequest hook stands in for auth, which is what lets that `close`\nland after the handler starts listening.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 572,
+      "offset": null,
+      "text": "A short but clean layer now comes back as text, so the warning must not\ncall it missing.",
+      "kind": "why"
+    }
+  ]
+}

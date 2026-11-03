@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/map.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "deps",
+      "line": 5,
+      "offset": 0,
+      "text": "Link discovery had no host filter at all: every off-site link on the seed\npage was recorded as part of the site's map, and `includeSubdomains` was\nparsed from the request and then dropped before it reached this function.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 67,
+      "offset": null,
+      "text": "notexample.com ends with \"example.com\" as a string but is a different site.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 98,
+      "offset": null,
+      "text": "The seed URL is the caller's choice of what this instance connects to.\nWithout the guard, `/map` fetches `http://127.0.0.1:<port>/` and returns the\nlinks it found on an internal page.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -10,7 +10,6 @@ interface FormFooterProps {
   onGetCode: () => void;
 }
 
-/** Shared [Get code] + [Run] footer for every playground form (WEBSITE.md §7.4). */
 export function FormFooter({ loading, disabled, comingSoon, onGetCode }: FormFooterProps) {
   return (
     <div className="mt-auto flex items-center gap-2 pt-2">

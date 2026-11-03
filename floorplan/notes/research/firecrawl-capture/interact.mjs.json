@@ -1,0 +1,279 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "research/firecrawl-capture/interact.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "pickSelectorCandidates",
+      "line": 48,
+      "offset": 13,
+      "text": "prefer elements with explicit button-primary/button-secondary design-system classes over plain nav text links",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "captureHomepage",
+      "line": 75,
+      "offset": 0,
+      "text": "============================================================\nPART 1+2+3: homepage hover states, scroll animation, hero motion\n============================================================",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "captureHomepage",
+      "line": 89,
+      "offset": 14,
+      "text": "---- PART 4-ish prelim: find candidate elements ----",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "captureHomepage",
+      "line": 99,
+      "offset": 24,
+      "text": "---- PART 1: HOVER STATES ----",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "captureHomepage",
+      "line": 132,
+      "offset": 57,
+      "text": "move mouse away to reset",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "captureHomepage",
+      "line": 142,
+      "offset": 67,
+      "text": "hover a feature card: firecrawl's cards are divs containing a \"Learn more\" link that\nfades in via opacity-0 -> opacity-100 on parent hover (Tailwind group-hover pattern)",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "captureHomepage",
+      "line": 143,
+      "offset": 68,
+      "text": "find a card container: walk up from a \"Learn more\" link with opacity-0 to a reasonably-sized ancestor",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "captureHomepage",
+      "line": 152,
+      "offset": 77,
+      "text": "the card is a clickable button/div wrapper; accept a reasonably-sized ancestor (card widths ~250-320px, height ~80-350px on this design)",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "captureHomepage",
+      "line": 196,
+      "offset": 121,
+      "text": "---- PART 3: HERO MOTION ----",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "captureHomepage",
+      "line": 210,
+      "offset": 135,
+      "text": "enumerate animation-name computed values + matching keyframes",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "captureHomepage",
+      "line": 229,
+      "offset": 154,
+      "text": "dedupe by animationName",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "captureHomepage",
+      "line": 246,
+      "offset": 171,
+      "text": "also check for canvas/video/svg-animate elements in hero",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "captureHomepage",
+      "line": 261,
+      "offset": 186,
+      "text": "---- detect animation library fingerprints ----",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "captureHomepage",
+      "line": 284,
+      "offset": 209,
+      "text": "---- PART 2: SCROLL-TRIGGERED ANIMATION ----",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "captureHomepage",
+      "line": 322,
+      "offset": 247,
+      "text": "For each section, scroll it to just below viewport top, wait, then check opacity/transform change",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "captureHomepage",
+      "line": 327,
+      "offset": 252,
+      "text": "capture the section itself AND up to 20 descendants (opacity/transform animations often live on inner wrappers, not the section)",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "captureHomepage",
+      "line": 365,
+      "offset": 290,
+      "text": "IntersectionObserver detection",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "captureWidgets",
+      "line": 382,
+      "offset": 0,
+      "text": "============================================================\nPART 4: INTERACTIVE WIDGETS — homepage demo + /playground\n============================================================",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "captureWidgets",
+      "line": 387,
+      "offset": 5,
+      "text": "---- Homepage runnable demo ----",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": "captureWidgets",
+      "line": 418,
+      "offset": 36,
+      "text": "try to find and click a run/submit button near the input, WITHOUT signing in",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "captureWidgets",
+      "line": 446,
+      "offset": 64,
+      "text": "---- /playground ----",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "captureWidgets",
+      "line": 453,
+      "offset": 71,
+      "text": "firecrawl playground tabs are plain buttons (Search/Scrape/Parse/Map/Crawl), no role=tab",
+      "kind": "what"
+    },
+    {
+      "id": "n23",
+      "symbol": "captureWidgets",
+      "line": 471,
+      "offset": 89,
+      "text": "click through each known tab and screenshot",
+      "kind": "what"
+    },
+    {
+      "id": "n24",
+      "symbol": "captureWidgets",
+      "line": 485,
+      "offset": 103,
+      "text": "check for auth gate on run — firecrawl playground's action buttons are \"Start searching\" / \"Start scraping\" / \"Start crawling\" etc, or \"Get code\"",
+      "kind": "what"
+    },
+    {
+      "id": "n25",
+      "symbol": "captureCodeSamples",
+      "line": 515,
+      "offset": 0,
+      "text": "============================================================\nPART 5: CODE SAMPLE PRESENTATION (language tabs)\n============================================================",
+      "kind": "what"
+    },
+    {
+      "id": "n26",
+      "symbol": "captureCodeSamples",
+      "line": 524,
+      "offset": 9,
+      "text": "find code block containers with tabs (python/js/curl etc)",
+      "kind": "what"
+    },
+    {
+      "id": "n27",
+      "symbol": "captureCodeSamples",
+      "line": 532,
+      "offset": 17,
+      "text": "look for tab buttons in the ancestor chain (up to 4 levels)",
+      "kind": "what"
+    },
+    {
+      "id": "n28",
+      "symbol": "captureCodeSamples",
+      "line": 555,
+      "offset": 40,
+      "text": "interact with the first tabbed code block found",
+      "kind": "what"
+    },
+    {
+      "id": "n29",
+      "symbol": "captureCodeSamples",
+      "line": 571,
+      "offset": 56,
+      "text": "capture token color mapping from the visible code block",
+      "kind": "what"
+    },
+    {
+      "id": "n30",
+      "symbol": "captureResponsive",
+      "line": 614,
+      "offset": 0,
+      "text": "============================================================\nPART 6: RESPONSIVE BREAKPOINTS\n============================================================",
+      "kind": "what"
+    },
+    {
+      "id": "n31",
+      "symbol": "captureResponsive",
+      "line": 639,
+      "offset": 25,
+      "text": "container width: look for a common wrapper with max-width",
+      "kind": "what"
+    },
+    {
+      "id": "n32",
+      "symbol": "captureResponsive",
+      "line": 646,
+      "offset": 32,
+      "text": "capability/feature grid column count: find a grid with 3+ children",
+      "kind": "what"
+    },
+    {
+      "id": "n33",
+      "symbol": "captureResponsive",
+      "line": 659,
+      "offset": 45,
+      "text": "nav hamburger check",
+      "kind": "what"
+    },
+    {
+      "id": "n34",
+      "symbol": null,
+      "line": 701,
+      "offset": null,
+      "text": "============================================================\nrun all\n============================================================",
+      "kind": "what"
+    }
+  ]
+}

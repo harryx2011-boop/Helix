@@ -2,11 +2,6 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 
-/**
- * Route contract tests. Postgres is replaced with an in-memory fake so the
- * point stays the request/response surface and the encryption round trip,
- * not a real database.
- */
 
 interface Row {
   provider: string;
@@ -117,11 +112,6 @@ async function build(
   return built;
 }
 
-/* Saving a credential now verifies it against the provider first, so every PUT
-   in this file would otherwise make a real network call and be refused. The
-   default stub answers 200 — "the provider accepted it" — leaving each test
-   free to assert the storage contract it is actually about. Tests that care
-   about a REJECTED credential override this with their own stub. */
 const realFetch = globalThis.fetch;
 
 beforeEach(() => {
@@ -231,9 +221,6 @@ describe('PUT /v1/providers/:provider', () => {
     });
   });
 
-  /* The guarantee this endpoint gained: a credential the provider rejects is
-     never stored. Storing it would report `configured: true` and paint
-     "Connected" for a key that cannot work. */
   it('refuses to store a key the provider rejects, and stores nothing', async () => {
     globalThis.fetch = vi.fn(async () => new Response('unauthorized', { status: 401 })) as unknown as typeof fetch;
     app = await build();
@@ -249,8 +236,6 @@ describe('PUT /v1/providers/:provider', () => {
     expect(db.state.rows).toHaveLength(0);
   });
 
-  /* A provider outage must not refuse a good key. The credential is stored and
-     the caller is told it could not be checked. */
   it('stores a key it could not check, and says so', async () => {
     globalThis.fetch = vi.fn(async () => {
       throw new TypeError('fetch failed');
@@ -270,8 +255,6 @@ describe('PUT /v1/providers/:provider', () => {
     expect(db.state.rows).toHaveLength(1);
   });
 
-  /* The plaintext goes to the provider in a header and into the database
-     encrypted. It must never come back in the refusal message. */
   it('never echoes the key in a rejection message', async () => {
     const secret = 'sk-openai-do-not-leak';
     globalThis.fetch = vi.fn(async () => new Response(secret, { status: 401 })) as unknown as typeof fetch;
@@ -299,10 +282,6 @@ describe('PUT /v1/providers/:provider', () => {
     expect(response.json().field).toBe('baseUrl');
   });
 
-  /* A caller-supplied base URL is an egress target: stored, forwarded to
-     extract, and fetched server-side with the caller's key attached. An API key
-     is handed to many users, so without this guard one of them could point the
-     instance at cloud metadata and read the host's credentials back out. */
   it('refuses a private base URL on a cloud provider, and stores nothing', async () => {
     app = await build();
     for (const baseUrl of [
@@ -323,8 +302,6 @@ describe('PUT /v1/providers/:provider', () => {
     expect(db.state.rows).toHaveLength(0);
   });
 
-  /* The exemption is the private-address rule and only that rule: loopback and
-     LAN are exactly where Ollama and vLLM live. */
   it('still allows a loopback base URL for a local runtime', async () => {
     app = await build();
     const response = await app.inject({
@@ -349,9 +326,6 @@ describe('PUT /v1/providers/:provider', () => {
     expect(db.state.rows).toHaveLength(1);
   });
 
-  /* Loopback and LAN are where a local runtime lives; link-local and CGNAT are
-     not. 169.254.169.254 is the cloud metadata endpoint, and naming a provider
-     "ollama" must not be enough to reach it. */
   it('refuses link-local and CGNAT on a local runtime, and stores nothing', async () => {
     app = await build();
     for (const baseUrl of ['http://169.254.169.254/', 'http://169.254.1.1:11434', 'http://100.64.0.1:11434']) {
@@ -623,10 +597,6 @@ describe('GET /v1/providers/:provider/models', () => {
     expect(response.json().field).toBe('baseUrl');
   });
 
-  /* Cloud providers used to be refused here, which left the four of them with a
-     free-text model box and no discovery at all. They now answer from the live
-     catalogue, falling back to the curated list — so with no key stored and the
-     catalogue unreachable, the answer is still a usable list rather than a 400. */
   it('answers a cloud provider from the curated list when no key is stored', async () => {
     app = await build();
     const response = await app.inject({

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/agent-block.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "AgentBlock",
+      "line": 5,
+      "offset": 0,
+      "text": "WEBSITE.md §4.8. Ends every marketing page. Mono panel pointing agents at the onboarding skill.",
+      "kind": "doc"
+    }
+  ]
+}

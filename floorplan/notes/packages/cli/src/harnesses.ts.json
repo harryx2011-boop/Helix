@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/cli/src/harnesses.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Harness.markers",
+      "line": 18,
+      "offset": 0,
+      "text": "Paths (relative to home) whose presence means the harness is installed.",
+      "kind": "doc"
+    }
+  ]
+}

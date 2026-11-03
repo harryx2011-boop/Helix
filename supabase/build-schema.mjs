@@ -3,18 +3,6 @@ import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/**
- * Builds supabase/schema.sql: one file that takes a FRESH Supabase project to
- * the full hosted schema — the API's own migrations, then the hosted ones.
- *
- * The API records each migration it applies in `schema_migrations` with a
- * sha256 of the file, and refuses to re-run one it has seen. The generated
- * file seeds that table with the same hashes, so an API booting against a
- * project set up this way finds nothing to do rather than failing on
- * `CREATE TABLE api_keys` a second time.
- *
- * Fresh projects only: the API migrations do not use IF NOT EXISTS.
- */
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');

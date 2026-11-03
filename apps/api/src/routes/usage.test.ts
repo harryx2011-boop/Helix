@@ -2,15 +2,6 @@ import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiKey } from '../core/api-keys.js';
 
-/**
- * Usage route contract. Postgres is a fake, so what is asserted is the surface:
- * the window bounds, that the query is scoped to the calling key alone, and the
- * aggregation shape the dashboard reads.
- *
- * The bounds matter more than they look: `hours` reaches a timestamp comparison
- * on a table that grows with traffic, so an unbounded value is a full scan a
- * caller can ask for.
- */
 
 interface Call {
   text: string;
@@ -40,8 +31,6 @@ const db = vi.hoisted(() => {
     state.calls.push({ text, values });
 
     if (state.fail && text.includes(state.fail)) {
-      // Postgres reports a missing relation as 42P01; the shape matters because
-      // the route may only degrade on this and not on an arbitrary fault.
       const error = Object.assign(new Error('relation "request_usage" does not exist'), { code: '42P01' });
       throw error;
     }
@@ -129,9 +118,6 @@ let app: FastifyInstance;
 
 async function build(): Promise<FastifyInstance> {
   const built = Fastify();
-  // The same redacting handler index.ts installs. Without it a bare Fastify
-  // returns the driver's own message, so a leak test on a handler-less app
-  // would be measuring the harness rather than the API.
   built.setErrorHandler((error: FastifyError, request, reply) => {
     const statusCode = error.statusCode !== undefined && error.statusCode >= 400 ? error.statusCode : 500;
     if (statusCode >= 500) {
@@ -361,7 +347,6 @@ describe('GET /v1/usage aggregation', () => {
 
     expect(body.total).toBe(17);
     expect(body.rateLimited).toBe(4);
-    // 429 is counted as rate-limited only, never folded into errors.
     expect(body.errors).toBe(3);
   });
 
@@ -463,12 +448,6 @@ describe('GET /v1/usage/all', () => {
 });
 
 describe('GET /v1/usage when the usage table is missing', () => {
-  /**
-   * Characterisation, not approval. `request_usage` arrives in migration 011, so
-   * an instance that has not run it answers 500 here rather than degrading to an
-   * empty chart. The dashboard's usage panel is the caller; if that is ever
-   * changed to degrade, this test is what should fail and say so.
-   */
   it('answers 500 rather than degrading, which an un-migrated instance will hit', async () => {
     app = await build();
     db.state.fail = 'FROM request_usage';
@@ -489,10 +468,6 @@ describe('GET /v1/usage when the usage table is missing', () => {
   });
 });
 
-/**
- * `/usage/all` totals every key on the instance, all of them the one
- * operator's, so it is always registered.
- */
 describe('registration', () => {
   it('serves the instance-wide summary', async () => {
     app = await build();

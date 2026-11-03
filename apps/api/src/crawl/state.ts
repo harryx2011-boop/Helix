@@ -1,25 +1,6 @@
 import { getPool } from '../db/pool.js';
 import { siteOf } from './url.js';
 
-/**
- * Per-site crawl memory.
- *
- * Lets a scheduled re-crawl skip pages that have not changed. The saving is
- * real: on a documentation site most pages are static between crawls, and
- * re-fetching all of them to discover that is the bulk of the cost.
- *
- * Three signals, in descending order of trust:
- *
- * 1. **ETag** — the server's own assertion that content is identical.
- * 2. **Last-Modified** — a date the server chose. Usually honest.
- * 3. **Content hash** — ours, computed after extraction. Always available, but
- *    only knowable after fetching, so it saves re-processing rather than the
- *    request itself.
- *
- * Sitemap `<lastmod>` is deliberately absent from that list. It is frequently
- * stale or fabricated, so it may prioritise work but must never be the sole
- * evidence a page is unchanged.
- */
 
 export interface CrawlStateRecord {
   url: string;
@@ -51,7 +32,6 @@ const toRecord = (row: StateRow): CrawlStateRecord => ({
   unchangedStreak: row.unchanged_streak,
 });
 
-/** Everything known about a set of URLs from previous crawls. */
 export async function loadState(urls: string[]): Promise<Map<string, CrawlStateRecord>> {
   if (urls.length === 0) return new Map();
 
@@ -82,7 +62,6 @@ export interface RecordVisitInput {
   etag?: string | undefined;
   lastModified?: string | undefined;
   statusCode?: number | undefined;
-  /** Whether the content matched what was stored. */
   unchanged: boolean;
 }
 
@@ -124,12 +103,6 @@ export async function recordVisit(input: RecordVisitInput): Promise<void> {
   );
 }
 
-/**
- * Conditional-request headers for a URL we have seen before.
- *
- * This is the only mechanism that avoids the download itself: the server
- * answers 304 and sends no body. Everything else saves processing, not bandwidth.
- */
 export function conditionalHeaders(
   state: CrawlStateRecord | undefined,
 ): Record<string, string> | undefined {
@@ -142,7 +115,6 @@ export function conditionalHeaders(
   return Object.keys(headers).length > 0 ? headers : undefined;
 }
 
-/** Whether extracted content matches what was stored. */
 export function isUnchanged(
   state: CrawlStateRecord | undefined,
   contentHash: string,

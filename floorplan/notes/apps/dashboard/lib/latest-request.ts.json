@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/latest-request.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "createLatest",
+      "line": 1,
+      "offset": 0,
+      "text": "Guards against a slower earlier async response landing after a faster later\none. Call `next()` before issuing a request, and only apply a response when\n`isCurrent(id)` still holds true when it comes back.",
+      "kind": "doc"
+    }
+  ]
+}

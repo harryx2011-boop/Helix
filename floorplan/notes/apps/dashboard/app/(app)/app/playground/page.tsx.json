@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(app)/app/playground/page.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PlaygroundPage",
+      "line": 4,
+      "offset": 0,
+      "text": "The tab is read client-side rather than from `searchParams`: self-host\nprerenders this page into a static export, where awaiting searchParams is a\nbuild error.\n\n`Playground` calls `useSearchParams`, which opts the route out of static\nprerendering unless it sits under a Suspense boundary.",
+      "kind": "doc"
+    }
+  ]
+}

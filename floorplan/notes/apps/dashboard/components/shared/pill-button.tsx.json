@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/pill-button.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PillButton",
+      "line": 14,
+      "offset": 0,
+      "text": "Primary: violet fill, white text, shadow-btn -> shadow-btn-hover on hover.\nSecondary: ink-alpha wash, 3.9% -> 5.9% on hover. No transform on either (WEBSITE.md §3.1).",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,13 +1,6 @@
 import { join } from 'node:path';
 import { z } from 'zod';
 
-/**
- * Configuration is read once, at boot, and validated.
- *
- * Provider credentials (LLM, embedding, proxy, vector store) belong to the
- * operator and arrive through the environment. They are never accepted over the
- * API and never stored in the database — Helix calls your models with your keys.
- */
 
 const bool = (d: boolean) =>
   z
@@ -35,21 +28,17 @@ const positiveInt = (d: number) => int(d).pipe(z.number().min(1));
 
 const ConfigSchema = z.object({
   port: int(7400),
-  /** Bind address. The desktop app sets 127.0.0.1 so the instance never reaches the LAN. */
   host: z.string().default('0.0.0.0'),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
   bootstrapKey: z.string().optional(),
   internalAdminToken: z.string().optional(),
-  /** AES-256-GCM key for stored provider keys, as 32 bytes of hex or base64. Unset derives it from HELIX_BOOTSTRAP_KEY (SHA-256), so self-host stays zero-config. */
   encryptionKey: z.string().optional(),
 
-  /** `pglite` runs Postgres in-process with its data under `dataDir`; `pg` connects to `databaseUrl`. */
   db: z.enum(['pg', 'pglite']),
   databaseUrl: z.string().optional(),
   dataDir: z.string().default(join(process.cwd(), 'data')),
   fetchUrl: z.string().default('http://localhost:7401'),
   extractUrl: z.string().default('http://localhost:7402'),
-  /** Shared secret sent to the fetch and extract services; each refuses calls without it when set. */
   serviceToken: z.string().optional(),
 
   respectRobots: bool(true),
@@ -60,90 +49,51 @@ const ConfigSchema = z.object({
   crawlSessionPoolSize: int(8),
   crawlSessionMaxBlocks: int(2),
 
-  // Guard rails for crawls. Without a billing layer nothing else bounds a
-  // runaway job, so the operator sets the default and the ceiling.
   crawlDefaultLimit: int(1000),
   crawlMaxLimit: int(100_000),
   crawlMaxDepth: int(50),
 
-  // Webhook deliveries are signed only when a secret is configured.
   webhookSecret: z.string().optional(),
   webhookMaxAttempts: int(20),
 
   browserPoolSize: positiveInt(4),
   browserMaxContexts: positiveInt(20),
-  /** Recycle a browser process after this many pages, to bound memory growth. */
   browserRecycleAfter: int(250),
   lightpandaEnabled: bool(false),
   lightpandaUrl: z.string().default('http://localhost:9222'),
-  /** Which browser drives the render tier when a request does not name one. */
   browserEngine: z.enum(['chromium', 'firefox', 'webkit']).default('chromium'),
-  /**
-   * Playwright channel for the chromium engine.
-   *
-   * `chromium` is the full browser; empty selects Playwright's default, which
-   * is the headless shell when one is installed. The full build is what the
-   * walled sites measure differently: the shell announces itself in ways a
-   * hardened page reads, and it has no new-headless mode. Reversing
-   * DESKTOP-PLAN D14 (recorded there as D17), the desktop app now ships it.
-   */
   browserChannel: z.string().default('chromium'),
   camoufoxEnabled: bool(false),
   camoufoxUrl: z.string().default('ws://localhost:9223'),
-  /**
-   * A remote browser the render tier connects to instead of launching locally.
-   * Unset means launch locally, which is the only arrangement where the pages
-   * fetched and the headers sent stay on the operator's own machine.
-   */
   remoteCdpUrl: z.string().optional(),
 
-  /** Where callers reach this instance from outside; live-view URLs are built on it. */
   publicUrl: z.string().default('http://localhost:7400'),
   interactMaxSessions: int(4),
   interactIdleTimeoutSeconds: int(300),
   interactHardTimeoutSeconds: int(900),
 
   proxyUrl: z.string().optional(),
-  /**
-   * Off by default: a caller-chosen URL must not reach loopback, link-local or
-   * private-range addresses, or an API key becomes a door to the instance's
-   * network and cloud metadata. Turn on only for an instance that scrapes its
-   * own intranet and trusts every key it issues.
-   */
   allowPrivateUrls: bool(false),
 
-  /** `auto` picks SearXNG, then Serper, then SerpAPI, whichever has credentials. */
   searchProvider: z.enum(['auto', 'searxng', 'serper', 'serpapi', 'none']).default('auto'),
-  /** The operator's own SearXNG instance; editable from the settings screen. */
   searxngUrl: z.string().optional(),
   searchMaxResults: int(50),
   searchScrapeConcurrency: int(5),
-  /** Provider-hit cache lifetime for identical queries; 0 disables it. */
   searchCacheTtlMs: int(60_000),
-  /** Wall-clock budget for one search call, backend query and page reads included. */
   searchMaxDurationMs: int(120_000),
 
   resultTtlHours: int(168),
 
-  /** Upload ceiling for `/parse`, enforced at the gateway before a byte reaches helix-extract. */
   parseMaxUploadMb: int(25),
-  /** Parses held in memory at once; beyond this `/parse` answers 503 with Retry-After. */
   parseMaxInflight: int(8),
 
-  /** Shortest gap between two checks of one monitor, in seconds. Hourly by default. */
   monitorMinIntervalSeconds: int(3600),
-  /** Checks running at once across all monitors on this instance. */
   monitorConcurrency: int(2),
   monitorRetainSnapshots: int(30),
   monitorRetainDays: int(90),
-  /** History rows kept per monitor; older ones are pruned as checks run. */
   monitorRetainChecks: int(2000),
-  /** A page whose text exceeds this many bytes fails the check instead of being stored. */
   monitorMaxContentBytes: int(1_048_576),
 
-  // Comma-separated allowed origins for the dashboard. Defaults to the dev
-  // origins for the split-port setup (dashboard 3400 -> API 7400). Set
-  // explicitly in production to the dashboard's real origin.
   corsOrigins: z
     .string()
     .optional()
@@ -153,7 +103,6 @@ const ConfigSchema = z.object({
         : v.split(',').map((o) => o.trim()).filter(Boolean),
     ),
   staticDir: z.string().optional(),
-  // MCP tool names to expose (comma list); unset exposes every live operation.
   mcpTools: z
     .string()
     .optional()

@@ -1,17 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-/*
- * The /app page skeleton: a centred column whose vertical hairlines run the
- * full height of the page, with horizontal hairlines that bleed past the
- * column edges so rows read as one grid rather than stacked cards. The
- * column itself has no solid background, so the AppGrid layer the shell
- * mounts behind every screen (app-shell.tsx) shows through the empty space
- * around and between rows; FrameRow defaults to a solid background so text
- * never sits on a grid line, and opts out via `transparent` for rows that
- * want the grid to show through (e.g. spacer rows). Every app screen
- * composes these; nothing here fetches.
- */
 
 export function PageFrame({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
@@ -24,11 +13,8 @@ export function PageFrame({ children, className }: { children: React.ReactNode; 
 interface FrameRowProps {
   children: React.ReactNode;
   className?: string;
-  /** Draw the bottom hairline past the column edges (the crossing-lines look). */
   bleed?: boolean;
-  /** Skip the bottom hairline (last row before the page ends). */
   flush?: boolean;
-  /** Opt out of the default solid background, letting the AppGrid layer show through. */
   transparent?: boolean;
 }
 
@@ -41,12 +27,6 @@ export function FrameRow({ children, className, bleed = true, flush, transparent
   );
 }
 
-/**
- * Title + one-line description at the top of a row, optionally with an action on
- * the right. `field` is an ambient character field: it mounts in a clipped,
- * inert layer behind the text (position it with its own `absolute` classes) and
- * never takes part in the row's layout.
- */
 export function FrameHeading({
   title,
   description,
@@ -60,7 +40,6 @@ export function FrameHeading({
   action?: React.ReactNode;
   field?: React.ReactNode;
   className?: string;
-  /** Anchor for a deep link, so the command palette can jump to one section. */
   id?: string;
 }) {
   return (
@@ -79,7 +58,6 @@ export function FrameHeading({
   );
 }
 
-/** Equal cells separated by hairlines; collapses to one column below `md`. */
 export function FrameCells({ cols = 3, children, className }: { cols?: 2 | 3 | 4; children: React.ReactNode; className?: string }) {
   const colClass = { 2: 'md:grid-cols-2', 3: 'md:grid-cols-3', 4: 'md:grid-cols-4' }[cols];
   return (
@@ -89,7 +67,6 @@ export function FrameCells({ cols = 3, children, className }: { cols?: 2 | 3 | 4
   );
 }
 
-/** Mono `[ LIVE ]`-style tag used beside row titles. */
 export function FrameTag({ children, tone = 'muted' }: { children: React.ReactNode; tone?: 'muted' | 'accent' }) {
   return (
     <span className={cn('font-mono text-[11px] uppercase tracking-wide', tone === 'accent' ? 'text-primary' : 'text-muted-foreground')}>

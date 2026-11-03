@@ -20,14 +20,12 @@ describe('redactUrlToken', () => {
 
 describe('redactSecrets', () => {
   it('scrubs the masked key OpenAI echoes back on a 401', () => {
-    // The real string a live probe produced against OpenAI.
     const upstream =
       "openai (gpt-4o-mini) returned HTTP 401: Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-inval************-000. You can find your API key at https://platform.openai.com/account/api-keys.'}}";
     const safe = redactSecrets(upstream);
 
     expect(safe).not.toContain('sk-inval');
     expect(safe).toContain('[redacted]');
-    // The part the caller can act on survives.
     expect(safe).toContain('401');
     expect(safe).toContain('openai (gpt-4o-mini)');
   });
@@ -64,12 +62,6 @@ describe('redactSecrets', () => {
     expect(redactSecrets('helix-extract-worker restarted')).toBe('helix-extract-worker restarted');
   });
 
-  /**
-   * A bare 32-hex string is as likely to be a request id as a key, and a bare
-   * 64-hex string is almost always a sha256 of content. Masking either on shape
-   * alone destroys the identifiers an operator traces a request by, so a long
-   * hex run is masked only where the surrounding words claim it is a secret.
-   */
   it('scrubs a hex token that names itself a secret', () => {
     expect(redactSecrets('secret=0123456789abcdef0123456789abcdef')).toBe('secret=[redacted]');
     expect(redactSecrets('authorization: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef')).toBe(

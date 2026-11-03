@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/webhooks/signature.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 20,
+      "offset": null,
+      "text": "A captured delivery replayed an hour later must fail even with a valid MAC.",
+      "kind": "why"
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/docs-content.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ENDPOINT_DOCS",
+      "line": 28,
+      "offset": 0,
+      "text": "Purpose / when-to-use / response-shape / failure reasons per endpoint — the\nsingle source for both `/docs/[slug]` and the generated SKILL.md (WEBSITE.md\n§9.3), so the two surfaces cannot drift from each other.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "docsEndpointList",
+      "line": 123,
+      "offset": 0,
+      "text": "Sections offered by the docs index and the SKILL.md generator (WEBSITE.md §9.3).",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "docsCurlExample",
+      "line": 127,
+      "offset": 0,
+      "text": "curl example for an endpoint, used by both `/docs/[slug]` and SKILL.md.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 139,
+      "offset": null,
+      "text": "-------------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 139,
+      "offset": null,
+      "text": "Agent surfaces (WEBSITE.md §9): MCP, CLI, Skills.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 139,
+      "offset": null,
+      "text": "",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 139,
+      "offset": null,
+      "text": "Plain strings, no JSX, so `/docs/[slug]`, the `.md` twins and the docs",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 139,
+      "offset": null,
+      "text": "index all render the same words. Backticks mark inline code.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "AgentSurfaceSlug",
+      "line": 140,
+      "offset": 0,
+      "text": "-------------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "AgentSurfaceDocs.summary",
+      "line": 151,
+      "offset": 0,
+      "text": "One line for the docs index card and the markdown frontmatter.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "liveMcpToolNames",
+      "line": 155,
+      "offset": 0,
+      "text": "The tool name for every endpoint whose route is live; the MCP server derives the same names from openapi.yaml operationIds.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 245,
+      "offset": null,
+      "text": "-------------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": null,
+      "line": 245,
+      "offset": null,
+      "text": "Reference pages: api-reference, sdks, agents.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": null,
+      "line": 245,
+      "offset": null,
+      "text": "",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": null,
+      "line": 245,
+      "offset": null,
+      "text": "Same plain-string DocSectionContent shape as agentSurfaceDocs, rendered by",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": null,
+      "line": 245,
+      "offset": null,
+      "text": "the same StaticShell + ContentSection pair in `/docs/[slug]`.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "ReferenceSlug",
+      "line": 246,
+      "offset": 0,
+      "text": "-------------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "ReferenceDoc.endpointRows",
+      "line": 253,
+      "offset": 0,
+      "text": "Rendered as a distinct list, not folded into a paragraph — api-reference only.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": "apiReferenceDoc",
+      "line": 262,
+      "offset": 0,
+      "text": "The six live endpoints, method + path + auth, one line each, linking to their own doc page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "sdksDoc",
+      "line": 307,
+      "offset": 0,
+      "text": "Honest state: sdk-ts is an empty package, @helix/cli is unpublished. Plain HTTP is what works today.",
+      "kind": "doc"
+    },
+    {
+      "id": "n21",
+      "symbol": "agentsIndexDoc",
+      "line": 340,
+      "offset": 0,
+      "text": "Index over the three agent surfaces (MCP, CLI, Skills), linking onward to each.",
+      "kind": "doc"
+    }
+  ]
+}

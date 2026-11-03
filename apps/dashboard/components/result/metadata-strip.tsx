@@ -3,7 +3,6 @@ import { FetchLadder } from '@/components/ladder/fetch-ladder';
 import { SiteIcon } from '@/components/result/site-icon';
 import type { DocumentMetadata } from '@/lib/api';
 
-/** Timing and hash are surfaced from the raw response, since Document.metadata doesn't carry them (see openapi.yaml Metadata vs. the route's actual payload). */
 interface MetadataStripProps {
   metadata: DocumentMetadata;
   timingMs?: number | undefined;
@@ -11,9 +10,6 @@ interface MetadataStripProps {
 }
 
 export function MetadataStrip({ metadata, timingMs, contentHash }: MetadataStripProps) {
-  // Server-reported timing (pipeline duration) is authoritative; the client
-  // stopwatch (round-trip including network) is the fallback for callers
-  // that pass no metadata.timingMs.
   const displayedTimingMs = metadata.timingMs ?? timingMs;
   const displayedUrl = metadata.finalUrl ?? metadata.sourceUrl;
 

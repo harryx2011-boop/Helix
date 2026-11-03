@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/performance.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TraceTable",
+      "line": 31,
+      "offset": 0,
+      "text": "One blocked request, tier by tier, ending in the typed failure the caller receives. Sample data, labelled as such.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "Performance",
+      "line": 67,
+      "offset": 0,
+      "text": "Home §3: what the ladder costs, what the model receives, what a block looks like. One hero cell, three beneath.",
+      "kind": "doc"
+    }
+  ]
+}

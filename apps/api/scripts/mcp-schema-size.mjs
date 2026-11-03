@@ -1,7 +1,4 @@
 // Prints the compact-JSON size of every MCP tool in tools/list.
-// Usage: node apps/api/scripts/mcp-schema-size.mjs [--json out.json] [--url http://host:port/mcp]
-// Without --url it boots a scratch API on HELIX_SCRATCH_PORT (default 7485) with a throwaway
-// data dir and key, exposing the agent-facing 30-tool core. With --url, HELIX_API_KEY is the bearer.
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -46,7 +43,7 @@ export async function startScratch(port = Number(process.env.HELIX_SCRATCH_PORT 
   for (let i = 0; i < 120; i++) {
     try {
       if ((await fetch(`${base}/v1/health`)).status < 500) break;
-    } catch { /* not up yet */ }
+    } catch { }
     await new Promise((r) => setTimeout(r, 500));
   }
   return {
@@ -54,7 +51,7 @@ export async function startScratch(port = Number(process.env.HELIX_SCRATCH_PORT 
     key,
     stop() {
       child.kill();
-      try { rmSync(dataDir, { recursive: true, force: true }); } catch { /* pglite may still hold files */ }
+      try { rmSync(dataDir, { recursive: true, force: true }); } catch { }
     },
   };
 }

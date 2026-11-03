@@ -1,0 +1,103 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/results.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "AnimatedJsonView",
+      "line": 56,
+      "offset": 0,
+      "text": "A one-shot reveal (never `scramble` — that mode is reserved for decorative\nidle widgets, not real response data the user is meant to read, per\nresearch/17-firecrawl-code-animation-prompt-box.md §1/§4) of a fresh result's\nJSON, keyed so it replays whenever a new response lands.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ResultsProps.pending",
+      "line": 86,
+      "offset": 0,
+      "text": "What is currently in flight. A skeleton is the right placeholder for a\nresponse whose shape is known; a metadata read is work of unknown length\nover a file the user just handed over, and gets an animation that shows\nthe work instead.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ResultsProps.endpoint",
+      "line": 87,
+      "offset": 0,
+      "text": "The tab the run came from: names the Endpoint cell and the share link.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ResultsProps.input",
+      "line": 88,
+      "offset": 0,
+      "text": "The prompt value the run was made with (URL or query).",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "ResultsProps.onBack",
+      "line": 89,
+      "offset": 0,
+      "text": "Go back: return to the prompt with the result cleared.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "tokenSaving",
+      "line": 125,
+      "offset": 0,
+      "text": "Markdown against the raw HTML it came from, by byte size. A proxy for the\ntoken saving, hence the tilde; shown only when the API returned both.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "ChromeProps.subject",
+      "line": 237,
+      "offset": 0,
+      "text": "Identity bar centre: favicon + host for URLs, the query for search.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "ChromeProps.debug",
+      "line": 244,
+      "offset": 0,
+      "text": "Copied by Debug issue: everything needed to file a report.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "Chrome",
+      "line": 251,
+      "offset": 0,
+      "text": "One chrome for every kind: identity bar, fact cells, results header, then the body.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "ExtractView",
+      "line": 407,
+      "offset": 2,
+      "text": "Every field except the provenance envelope, in first-row order so the table\nreads the way the schema was written.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "Results",
+      "line": 625,
+      "offset": 2,
+      "text": "File-shaped work gets the lens: an upload the user just handed over, a\nwait of unknown length, and a skeleton that would be shaped like the\nwrong thing. Everything else keeps the skeleton, which is correct where\nthe response shape IS known.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "Results",
+      "line": 835,
+      "offset": 212,
+      "text": "The operation is chosen at runtime, so the shape is only known to the\ncaller. JSON is the honest rendering rather than guessing a view.",
+      "kind": "what"
+    }
+  ]
+}

@@ -30,8 +30,6 @@ def _defang_payload(text: str) -> str:
 
 
 def _defang_origin(origin: str) -> str:
-    # Defang and quote-escape only — see module docstring for why this does
-    # not also restrict to ASCII.
     safe = _defang_payload(origin).replace('"', "&quot;")
     return " ".join(safe.split())
 

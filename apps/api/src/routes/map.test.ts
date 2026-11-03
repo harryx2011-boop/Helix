@@ -2,11 +2,6 @@ import { afterEach, describe, expect, it } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { discoverUrls, registerMap, type MapRouteDeps } from './map.js';
 
-/**
- * Link discovery had no host filter at all: every off-site link on the seed
- * page was recorded as part of the site's map, and `includeSubdomains` was
- * parsed from the request and then dropped before it reached this function.
- */
 function deps(links: string[]): MapRouteDeps {
   return {
     userAgent: 'helix-test',
@@ -69,7 +64,6 @@ describe('host scoping', () => {
   });
 
   it('does not treat a lookalike host as a subdomain', async () => {
-    // notexample.com ends with "example.com" as a string but is a different site.
     const { links } = await discoverUrls(
       'https://example.com/',
       { ...OPTIONS, includeSubdomains: true },
@@ -101,11 +95,6 @@ describe('host scoping', () => {
   });
 });
 
-/**
- * The seed URL is the caller's choice of what this instance connects to.
- * Without the guard, `/map` fetches `http://127.0.0.1:<port>/` and returns the
- * links it found on an internal page.
- */
 describe('POST /map egress guard', () => {
   let app: FastifyInstance | undefined;
 

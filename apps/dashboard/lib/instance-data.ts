@@ -5,18 +5,6 @@ import type { Job } from '@/lib/api';
 import { PUBLIC_API_URL } from '@/lib/mode';
 import { KeysError, listInstanceKeys } from '@/lib/instance-keys';
 
-/**
- * Live instance data for the command palette. Every section answers with a
- * list or a reason, never an empty list standing in for "could not ask":
- * an unreachable instance and an account with no monitors look identical
- * otherwise, and the palette has to say which one it is.
- *
- * `unavailable` is reserved for a real failure (network error, rejected key,
- * 5xx) and renders with a warning icon. `empty` is an expected no-data state
- * (no key saved yet, no jobs run yet) with the same reason text but no
- * warning treatment — conflating the two made the palette show what looked
- * like three simultaneous errors on a brand-new instance.
- */
 export type Section<T> =
   | { status: 'ok'; items: T[] }
   | { status: 'unavailable'; reason: string }
@@ -65,7 +53,6 @@ function reasonOf(err: unknown): string {
   return err instanceof Error ? err.message : 'Unexpected error.';
 }
 
-/** The keys client takes no signal, so its call is raced against the palette's deadline here. */
 function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const onAbort = (): void => reject(new DOMException('Aborted', 'AbortError'));

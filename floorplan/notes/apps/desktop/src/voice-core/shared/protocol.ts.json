@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/src/voice-core/shared/protocol.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TranscribeResult.truncated",
+      "line": 26,
+      "offset": 0,
+      "text": "Stream only: the utterance hit the service's length cap and was finalized there.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/estimate.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TIER_SECONDS",
+      "line": 8,
+      "offset": 0,
+      "text": "Rough per-tier wall-clock, used only for projections.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CHARS_PER_TOKEN",
+      "line": 16,
+      "offset": 0,
+      "text": "Characters per token, near enough for an estimate.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "estimateCrawl",
+      "line": 19,
+      "offset": 0,
+      "text": "What a crawl would cost before it runs.\n\nShared by `estimate: true` on POST /crawl and by POST /crawl/estimate, which\nexists because callers want the number without constructing a job body they\ndo not intend to submit.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "estimateCrawl",
+      "line": 32,
+      "offset": 13,
+      "text": "Without running the ladder there is no way to know the tier split, so\nthe estimate assumes the cheap path and says so. An estimate that\nsilently assumed the expensive path would be useless in the other\ndirection.",
+      "kind": "what"
+    }
+  ]
+}

@@ -112,7 +112,6 @@ describe('POST /v1/metadata', () => {
 
     const body = response.json();
     expect(body.success).toBe(true);
-    // Ordered by consequence, not by the order helix-extract happened to read them.
     expect(body.data.findings.map((f: MetadataFinding) => f.risk)).toEqual(['high', 'medium', 'low']);
     expect(body.data.riskSummary).toEqual({ high: 1, medium: 1, low: 1 });
     expect(body.data.metadata.fileType).toBe('pdf');
@@ -244,7 +243,6 @@ describe('POST /v1/metadata', () => {
     });
 
     const first = post(app, '/v1/metadata', { url: 'https://example.com/a.pdf' });
-    // Let the first request take the slot before the second arrives.
     await new Promise((resolve) => setImmediate(resolve));
     const second = await post(app, '/v1/metadata', { url: 'https://example.com/b.pdf' });
 
@@ -345,7 +343,6 @@ describe('scrubbedFilename', () => {
   });
 
   it('strips characters that would break out of the Content-Disposition header', () => {
-    // A quote would end the filename token; a newline would inject a header.
     expect(scrubbedFilename('a"b.pdf', 'pdf')).toBe('a_b.scrubbed.pdf');
     expect(scrubbedFilename('a\r\nb.pdf', 'pdf')).toBe('a__b.scrubbed.pdf');
     expect(scrubbedFilename('../../etc/passwd.pdf', 'pdf')).toBe('.._.._etc_passwd.scrubbed.pdf');

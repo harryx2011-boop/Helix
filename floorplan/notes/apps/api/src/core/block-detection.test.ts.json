@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/block-detection.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 13,
+      "offset": null,
+      "text": "The case that matters most: upstream says 200, body is an interstitial.\nReturning this as content is how a scraper silently poisons a dataset.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 56,
+      "offset": null,
+      "text": "A blog post about CDNs is not a block page. Fingerprints must be specific\nenough that discussion of a vendor does not trip them.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 66,
+      "offset": null,
+      "text": "A legitimately tiny page is not a block. This signal only corroborates.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 72,
+      "offset": null,
+      "text": "Cloudflare injects /cdn-cgi/challenge-platform/scripts/jsd/main.js into ordinary\npages, sites embed Turnstile on login forms, and READMEs name DataDome. Probed\nlive 2026-10-05: discord.com, medium.com and github READMEs were all flagged,\nwalking every tier and failing pages the tls tier had already fetched.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 92,
+      "offset": null,
+      "text": "Reddit's wall: 200, a short page, no vendor marker. Scored as an empty\nsuccess before this signal existed, which is the worst answer available —\nthe crawl believed it had read the page.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 114,
+      "offset": null,
+      "text": "The same phrase in prose on a real page is content, not a wall. The\ninterstitial gate is what separates them.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 139,
+      "offset": null,
+      "text": "The bug this exists to prevent: a fetch service being down was reported as\na Cloudflare challenge, sending operators to chase an anti-bot problem\nthat did not exist.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 164,
+      "offset": null,
+      "text": "A transport failure is a failure to reach the site at all. The site said\nnothing, so nothing it \"did\" — block, challenge — can be the reason.",
+      "kind": "what"
+    }
+  ]
+}

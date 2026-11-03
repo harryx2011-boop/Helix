@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/src/supervisor.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Supervisor.currentLabel",
+      "line": 87,
+      "offset": 0,
+      "text": "The label of the first child, in registry order, that is not yet healthy.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "Supervisor.startAll",
+      "line": 91,
+      "offset": 0,
+      "text": "Brings up every child that is not already healthy, so a second call retries only the failures.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "Supervisor.stopAll",
+      "line": 219,
+      "offset": 10,
+      "text": "Above the API's own 8 s shutdown ceiling, so PGlite closes before anything is killed.",
+      "kind": "what"
+    }
+  ]
+}

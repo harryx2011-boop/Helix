@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/ephemeral-keys.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ALPHABET",
+      "line": 4,
+      "offset": 0,
+      "text": "Stateless key generation for deployments with no key store.\n\nWhen the instance cannot be reached there is nothing to persist a key into.\nRather than disable the page, mint the key in the browser and show it once: nothing is sent to a\nserver, nothing is stored, and no record of it exists anywhere afterwards.\n\nA key only becomes real when the operator adds it to their own instance —\n`POST /internal/keys` mirrors one in, or HELIX_BOOTSTRAP_KEY sets it at boot.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "generateEphemeralKey",
+      "line": 7,
+      "offset": 0,
+      "text": "32 chars from a 62-symbol alphabet (~190 bits). Uses the browser CSPRNG and\nrejects biased draws rather than taking `% ALPHABET.length`, which would\nfavour the first 8 letters.",
+      "kind": "doc"
+    }
+  ]
+}

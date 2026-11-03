@@ -97,7 +97,6 @@ export function Sidebar({
     });
   }, []);
 
-  // Below lg the desktop rail is not rendered, so "toggle" means the drawer.
   React.useEffect(
     () => onSidebarToggle(() => (window.matchMedia('(min-width: 1024px)').matches ? toggle() : onMobileOpenChange(true))),
     [toggle, onMobileOpenChange],
@@ -107,7 +106,6 @@ export function Sidebar({
 
   return (
     <>
-      {/* Desktop */}
       <aside
         className="relative hidden shrink-0 flex-col border-r border-border bg-background transition-[width] duration-200 ease-out lg:flex"
         style={{ width: hydrated ? width : EXPANDED_WIDTH }}
@@ -115,7 +113,6 @@ export function Sidebar({
         <SidebarBody collapsed={hydrated && collapsed} selectedEndpoints={selectedEndpoints} onToggle={toggle} />
       </aside>
 
-      {/* Mobile: sheet-style drawer via Dialog */}
       <DialogPrimitive.Root open={mobileOpen} onOpenChange={onMobileOpenChange}>
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-fade-in lg:hidden" />

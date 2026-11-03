@@ -1,0 +1,183 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/animated-code.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "AnimatedCodeProps.charMs",
+      "line": 18,
+      "offset": 0,
+      "text": "'type' mode: per-character delay (default 15ms, spec range 12-18).",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "AnimatedCodeProps.lineMs",
+      "line": 19,
+      "offset": 0,
+      "text": "'reveal' mode: per-line stagger (default 50ms, spec range 40-60).",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "AnimatedCodeProps.playOnView",
+      "line": 21,
+      "offset": 0,
+      "text": "Gate the animation start on IntersectionObserver (>=40% visible). Default true.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "AnimatedCodeProps.resolveMs",
+      "line": 22,
+      "offset": 0,
+      "text": "'scramble' mode: total window over which values resolve (default 2200ms).",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "AnimatedCodeProps.onDone",
+      "line": 23,
+      "offset": 0,
+      "text": "Fires once when a non-looping run completes (or immediately, for 'static'/reduced-motion).",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "tokenizeLines",
+      "line": 29,
+      "offset": 0,
+      "text": "Lexes a raw code string into key / string / punct / plain tokens per line.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "tokenizeLine",
+      "line": 35,
+      "offset": 2,
+      "text": "Capture each quoted string plus any whitespace+colon that follows it, so a\nJSON key (\"markdown\":) can be told apart from a value (\"markdown\") — only\nvalues scramble; keys stay static like every other structural token.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "tokenizePlain",
+      "line": 51,
+      "offset": 1,
+      "text": "split remaining plain text on punctuation runs so { } [ ] : , stay their own tokens",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "AnimatedCode",
+      "line": 134,
+      "offset": 37,
+      "text": "reveal",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": null,
+      "line": 158,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": null,
+      "line": 158,
+      "offset": null,
+      "text": "scramble: values (string/number tokens) cycle glyphs then resolve",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 158,
+      "offset": null,
+      "text": "independently at staggered times within resolveMs; loop re-scrambles",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": null,
+      "line": 158,
+      "offset": null,
+      "text": "after a hold.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "ScrambleValueState",
+      "line": 159,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "ScrambleCode",
+      "line": 222,
+      "offset": 56,
+      "text": "hold on resolved frame, then start a new run",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": null,
+      "line": 254,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": null,
+      "line": 254,
+      "offset": null,
+      "text": "type: character-by-character typewriter with a blinking block cursor.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "TypeCode",
+      "line": 255,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "reTokenizeVisible",
+      "line": 317,
+      "offset": 0,
+      "text": "Re-slices the original token/kind structure down to however many chars of each line are visible.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": null,
+      "line": 336,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": null,
+      "line": 336,
+      "offset": null,
+      "text": "reveal: per-line fade-in-up, staggered.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "RevealCode",
+      "line": 337,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    }
+  ]
+}

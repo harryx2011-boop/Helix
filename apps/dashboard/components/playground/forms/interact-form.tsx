@@ -64,7 +64,6 @@ interface InteractFormProps {
   loading: boolean;
 }
 
-/** Form for POST /v1/interact, built from the InteractRequest schema in openapi.yaml. */
 export function InteractForm({ url, onSubmit, onGetCode, loading }: InteractFormProps) {
   const [sessionId, setSessionId] = React.useState('');
   const [actions, setActions] = React.useState<Action[]>([

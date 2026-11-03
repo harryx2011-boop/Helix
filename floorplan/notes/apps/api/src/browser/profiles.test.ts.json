@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/profiles.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "profileFixture",
+      "line": 17,
+      "offset": 0,
+      "text": "The JS layer is what a page can read about the machine it thinks it is on.\nThese tests hold two lines: a definition the loader cannot parse is skipped\nrather than crashing a render, and the generated script is deterministic —\na value that varies between two reads is the tell the whole subsystem exists\nto avoid.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 112,
+      "offset": null,
+      "text": "Applied: a guessed identity still beats leaking the host's real one.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 130,
+      "offset": null,
+      "text": "The attack this defends against: the profile id ships in a public repo, so\na seed derived from it alone is a pure function of data the tracker already\nhas. They recompute it, invert the transform, and read the true hardware\ncanvas hash - every install handing out the same stable identifier behind a\nveneer of protection. Cortex shipped that exact bug and measured 0 of 4096\nbytes differing after inversion.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 160,
+      "offset": null,
+      "text": "No instance secret configured: the seed must still not be computable from\nthe profile, so two processes disagree.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 170,
+      "offset": null,
+      "text": "The first implementation used a single XOR bit, so half of all profiles\nXORed with zero and perturbed nothing at all.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 183,
+      "offset": null,
+      "text": "UNMASKED_VENDOR_WEBGL",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 184,
+      "offset": null,
+      "text": "UNMASKED_RENDERER_WEBGL",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 211,
+      "offset": null,
+      "text": "A script that throws on parse would break every render that used the\nprofile, and addInitScript reports it far from here.",
+      "kind": "what"
+    }
+  ]
+}

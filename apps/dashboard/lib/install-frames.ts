@@ -1,9 +1,3 @@
-/**
- * The /download page's install sequence as literal frames (DESIGN.md §3, §6):
- * 125 ms per frame, one change per frame, a terminal frame, no loop. Frames are
- * built by applying one change at a time and snapshotting, so the one-change
- * rule holds by construction.
- */
 export const FRAME_MS = 125;
 
 const BAR = 16;

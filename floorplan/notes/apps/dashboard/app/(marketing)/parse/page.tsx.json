@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(marketing)/parse/page.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "metadata",
+      "line": 4,
+      "offset": 0,
+      "text": "Parse folded into the Document API. Kept as a page rather than a redirect\nbecause `output: export` (self-host) does not run `redirects()`, so a\nrewrite here would 404 on the static build while working on the hosted one.",
+      "kind": "doc"
+    }
+  ]
+}

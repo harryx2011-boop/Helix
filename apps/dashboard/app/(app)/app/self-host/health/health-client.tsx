@@ -48,10 +48,6 @@ const STATUS_META: Record<
   unhealthy: { label: 'Down', dot: 'bg-destructive', text: 'text-destructive', badge: 'destructive', Icon: CircleX },
 };
 
-/**
- * Ready is a hollow ring rather than a filled dot: its dependencies are up but
- * no request has proven the route, and a filled green would claim it had.
- */
 const UTILITY_META: Record<
   UtilityState,
   { label: string; dot: string; text: string; badge: 'success' | 'warning' | 'destructive' | 'secondary'; Icon: typeof CircleCheck; rank: number }
@@ -70,7 +66,6 @@ function formatChecked(date: Date): string {
   return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' });
 }
 
-/** The API this build was pointed at, resolved after hydration because it reads `window.location`. */
 function useInstanceBase(): { baseUrl: string | null; hydrated: boolean } {
   const [hydrated, setHydrated] = React.useState(false);
   React.useEffect(() => setHydrated(true), []);
@@ -85,7 +80,6 @@ type OutcomesState =
 const SELF_HOST_NO_OUTCOMES =
   'This build is a static export with no usage route, and the instance’s /v1/usage reports errors in total rather than per tool.';
 
-/** Per-tool outcomes came from the hosted dashboard's usage route, which left with hosted mode. */
 function useOutcomes(enabled: boolean): OutcomesState {
   const [state, setState] = React.useState<OutcomesState>({ kind: 'loading' });
 
@@ -135,8 +129,6 @@ function UtilityStats({ row, outcomes }: { row: UtilityRowData; outcomes: Outcom
   const o = row.outcomes;
 
   if (row.state === 'not_configured') {
-    // Every call answers 503 until a backend is set; counting those as failures
-    // would report an outage that is really an unset variable.
     return (
       <>
         <Stat
@@ -245,7 +237,6 @@ function UtilityRowSkeleton() {
   );
 }
 
-/** Which tools stand on a dependency, so a red row here reads as the cause of a red row above. */
 const NEEDED_BY: Record<DependencyId, { hard: string[]; soft: string[] }> = (() => {
   const out: Record<DependencyId, { hard: string[]; soft: string[] }> = {
     postgres: { hard: [], soft: [] },
@@ -462,11 +453,6 @@ function KeyProviderRows({ apiKey, flushLast }: { apiKey: string | null; flushLa
   );
 }
 
-/**
- * The headline is about the tools, and it only speaks once the live check has
- * answered. It never says "all working" ahead of the evidence: with outcomes
- * still loading it says so, and with none recorded it says "ready".
- */
 function headline(rows: UtilityRowData[]): { title: string; state: UtilityState } {
   const worst = rows.reduce<UtilityState>((acc, row) => (UTILITY_META[row.state].rank > UTILITY_META[acc].rank ? row.state : acc), 'working');
   const count = (state: UtilityState) => rows.filter((r) => r.state === state).length;

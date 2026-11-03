@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/agent-onboarding/SKILL.md/route.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "GET",
+      "line": 7,
+      "offset": 0,
+      "text": "Public, ungated agent onboarding (WEBSITE.md §2, §9.3): the same generator that\nproduces a per-user SKILL.md, run here with every endpoint and no key. Explains\nhow to obtain a key, which endpoints exist, and the request shapes.",
+      "kind": "doc"
+    }
+  ]
+}

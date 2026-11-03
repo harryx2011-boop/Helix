@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/keys.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "KeysRouteDeps",
+      "line": 7,
+      "offset": 0,
+      "text": "API key management.\n\nThese keys authenticate callers to this instance. They have nothing to do with\nthe operator's LLM, proxy or vector-store credentials, which live in the\nenvironment and never pass through the API.\n\nOne operator owns an instance, and only the operator's admin token\n(HELIX_INTERNAL_ADMIN_TOKEN) manages its keys. An API key is a caller's\ncredential: it cannot mint, list or revoke keys. With no admin token set the\nroutes are not registered; HELIX_BOOTSTRAP_KEY still provides the first key.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "KeysRouteDeps.publicUrl",
+      "line": 9,
+      "offset": 0,
+      "text": "The instance's public URL; the admin gate accepts its host name beside loopback.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ADMIN_ONLY",
+      "line": 12,
+      "offset": 0,
+      "text": "Served without an API key: the admin gate in this scope is the check.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "registerKeyRoutes",
+      "line": 46,
+      "offset": 17,
+      "text": "Returned exactly once. There is no way to recover it later.",
+      "kind": "what"
+    }
+  ]
+}

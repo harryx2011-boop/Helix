@@ -3,11 +3,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-/**
- * Replays DESIGN.md §3 Sequence A (fetch-ladder escalation) frames 0->4 at
- * 125ms/frame, then holds on the settled frame. `playKey` changes to trigger
- * a fresh run (hero "See how the ladder works" CTA, or a submit in the hero panel).
- */
 interface LadderExplainerProps {
   playKey?: number;
   className?: string;
@@ -21,7 +16,6 @@ interface LadderRow {
 
 const TIERS = ['plain', 'tls', 'lightpanda', 'chromium'] as const;
 
-// One entry per frame: [rows for each tier, reason line]
 const FRAMES: { rows: LadderRow[]; reason: string }[] = [
   {
     rows: [

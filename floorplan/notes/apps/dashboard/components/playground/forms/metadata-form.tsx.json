@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/forms/metadata-form.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MetadataFormProps.file",
+      "line": 18,
+      "offset": 0,
+      "text": "Owned by the playground so the prompt box's paperclip and this form share one file.",
+      "kind": "doc"
+    }
+  ]
+}

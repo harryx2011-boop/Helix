@@ -35,11 +35,6 @@ function dayKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-/**
- * Buckets raw `(service, day)` rows into one entry per calendar day over the
- * requested range, ascending, even for days with no samples at all — a bar
- * chart with a gap in the middle needs to know the gap exists, not just skip it.
- */
 export function bucketHistory(rows: SampleRow[], days: number, now: Date = new Date()): ServiceHistory[] {
   const byService = new Map<string, Map<string, SampleRow>>();
   const services = new Set<string>();
@@ -88,7 +83,6 @@ interface CacheEntry {
 
 let cache: Map<number, CacheEntry> | undefined;
 
-/** `GET /status/history` — per-service daily uptime and p50 latency for the public status page. */
 export async function registerStatus(app: FastifyInstance): Promise<void> {
   cache = new Map();
 

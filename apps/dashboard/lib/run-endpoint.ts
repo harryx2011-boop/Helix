@@ -28,11 +28,6 @@ import type {
 } from '@/lib/api';
 import type { RunnableEndpoint as Endpoint } from '@/lib/endpoints';
 
-/**
- * Metadata has two operations behind one tab, and the scrub answers with file
- * bytes rather than JSON. The caller names which one it wants; everything else
- * about the call path is unchanged.
- */
 export type EndpointMode = 'scan' | 'scrub';
 
 export interface RunResult<T> {
@@ -41,7 +36,6 @@ export interface RunResult<T> {
   body: T;
 }
 
-/** The browser calls the operator's own instance directly with the key from `useApiKey()`. */
 export async function runEndpoint<T>(
   endpoint: Endpoint,
   body: Record<string, unknown> | FormData,
@@ -56,7 +50,6 @@ export async function runEndpoint<T>(
   return { ok: true, status: 200, body: json as T };
 }
 
-// Each branch returns a different response shape; the caller asserts the union member it expects for the endpoint it asked for.
 async function callInstance(
   client: HelixClient,
   endpoint: Endpoint,
@@ -92,10 +85,6 @@ async function callInstance(
         ? client.metadataScrub(body as MetadataRequest | FormData)
         : client.metadataScan(body as MetadataRequest | FormData);
     case 'document':
-      // The dispatcher forwards by `op`, which the form puts in the body. An
-      // upload goes to the operation's own route instead: `/document` would
-      // have to name the op in the query string, and the file tabs already
-      // call `/parse` and `/metadata` directly.
       return client.document(body as unknown as DocumentRequest);
     case 'extract':
       return client.extract(body as unknown as ExtractRequest);

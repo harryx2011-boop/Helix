@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/capabilities.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CARDS",
+      "line": 18,
+      "offset": 0,
+      "text": "The headline four. The rest reach through the track below and the Capabilities menu.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "REQUEST",
+      "line": 25,
+      "offset": 0,
+      "text": "Verbatim request/response pairs, one per tab — matched to each capability page's openapi-sourced examples.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "Capabilities",
+      "line": 198,
+      "offset": 0,
+      "text": "One tabbed request/response panel covering all six capabilities, each tab linking to its own page.",
+      "kind": "doc"
+    }
+  ]
+}

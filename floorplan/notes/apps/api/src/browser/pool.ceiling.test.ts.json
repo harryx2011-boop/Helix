@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/pool.ceiling.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "launches",
+      "line": 4,
+      "offset": 0,
+      "text": "`size` bounds the fleet, not just the boot sequence.\n\n`#acquire` picks the least-loaded browser below `maxContexts` and falls\nthrough to `#launch` when every one of them is full. Nothing consults\n`size` again after `start()` spent it, so saturation launches browsers\nwithout a ceiling: at the shipped defaults (`size: 4`, `maxContexts: 20`)\nthe 81st concurrent render starts a fifth Chrome, the 101st a sixth, and so\non. The rate limiter defaults to 1000 req/min per key, so one caller stays\nwell inside its budget while the box runs out of memory — the exact failure\nthe file header says the design exists to prevent.\n\nA saturated pool must queue for a freed slot instead of launching.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 62,
+      "offset": null,
+      "text": "Two leases fill the single browser. The third has nowhere to go: it must\nwait for one of them to close, not start a second Chrome.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 94,
+      "offset": null,
+      "text": "The close frees the only slot and trips the recycle threshold at once.\nThe freed slot belongs to a browser that is now retiring, so the parked\ncaller is served by the replacement or by nothing at all.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 119,
+      "offset": null,
+      "text": "Chrome drops a Target.closeTarget that lands on a navigation commit, so\npage.close() waits for a detach that never comes: reddit's JS challenge\nheld a 20 s render for 393 s. Disposing the context does not wait on it.",
+      "kind": "why"
+    }
+  ]
+}

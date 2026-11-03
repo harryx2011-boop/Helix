@@ -23,7 +23,6 @@ import trafilatura
 from lxml import html as lxml_html
 from readability import Document
 
-# Below this, an extraction is treated as having found nothing worth keeping.
 MIN_USEFUL_CHARS = 200
 
 
@@ -69,7 +68,6 @@ def _extract_links(doc_html: str, base_url: str) -> list[str]:
             continue
         if not absolute.startswith(("http://", "https://")):
             continue
-        # Fragments point at the same document, so they are not separate links.
         absolute = absolute.split("#", 1)[0]
         if absolute and absolute not in seen:
             seen[absolute] = None
@@ -103,15 +101,6 @@ def _apply_selectors(
             except Exception:
                 continue
         if kept:
-            # Rebuild a full document rather than handing back a bare fragment:
-            # extractors reject a rootless tree as invalid HTML and return
-            # nothing, which reads as "the selector matched no content".
-            #
-            # The kept region is re-parented into <article> because boilerplate
-            # detection classifies by element type — a <footer> or <nav> the
-            # caller explicitly asked for would otherwise be stripped as chrome.
-            # An explicit selector is a statement of intent that outranks the
-            # extractor's guess about what matters on the page.
             document = lxml_html.Element("html")
             body = lxml_html.Element("body")
             article = lxml_html.Element("article")
@@ -119,10 +108,6 @@ def _apply_selectors(
             body.append(article)
 
             for element in kept:
-                # Unwrap chrome tags — <footer>, <nav>, <aside> — and keep their
-                # children. Boilerplate detection classifies by element type, so
-                # a footer the caller explicitly selected would still be stripped
-                # even nested inside <article>.
                 if element.tag in ("footer", "nav", "aside", "header"):
                     if element.text and element.text.strip():
                         holder = lxml_html.Element("p")
@@ -171,8 +156,6 @@ def _readability_extract(doc_html: str, url: str) -> tuple[str, str | None]:
     summary_html = doc.summary(html_partial=True)
     title = doc.short_title() or None
 
-    # readability returns HTML, so convert it through trafilatura rather than
-    # writing a second, differently-behaved markdown serialiser.
     markdown = trafilatura.extract(
         summary_html,
         url=url,
@@ -186,10 +169,10 @@ def _readability_extract(doc_html: str, url: str) -> tuple[str, str | None]:
 
 def _to_text(markdown: str) -> str:
     """Plain text from markdown, for hashing and length checks."""
-    text = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", markdown)  # links and images
-    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)  # headings
-    text = re.sub(r"[*_`>]", "", text)  # emphasis, code, quotes
-    text = re.sub(r"^\s*[-–—|]+\s*$", "", text, flags=re.MULTILINE)  # rules
+    text = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", markdown)
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"[*_`>]", "", text)
+    text = re.sub(r"^\s*[-–—|]+\s*$", "", text, flags=re.MULTILINE)
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
@@ -211,9 +194,6 @@ def extract(
         markdown, title = _trafilatura_extract(prepared, url, only_main_content)
         used = "trafilatura"
 
-    # `auto` means: if the precise engine found little, try the one that
-    # over-includes. A short page and an over-stripped page look identical from
-    # here, and returning nothing is the worse error.
     if extractor == "auto" and len(_to_text(markdown)) < MIN_USEFUL_CHARS:
         fallback_markdown, fallback_title = _readability_extract(prepared, url)
         if len(_to_text(fallback_markdown)) > len(_to_text(markdown)):
@@ -223,7 +203,6 @@ def extract(
         markdown, title = _readability_extract(prepared, url)
         used = "readability"
 
-    # Last resort: extract from the whole document rather than the main-content
     # region. A nav-heavy page is worth more than an empty response.
     if not markdown.strip() and only_main_content:
         markdown, retry_title = _trafilatura_extract(prepared, url, only_main=False)

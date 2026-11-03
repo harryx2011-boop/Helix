@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/pinned-fetch.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "server",
+      "line": 6,
+      "offset": 0,
+      "text": "The pinned fetch checks what a name resolves to inside the connection's own\nlookup, so the address it checked is the address it connects to. A local\nserver stands in for the private target: a refused request never reaches it.",
+      "kind": "doc"
+    }
+  ]
+}

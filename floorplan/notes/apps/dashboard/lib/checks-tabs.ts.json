@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/checks-tabs.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CHECK_TABS",
+      "line": 1,
+      "offset": 0,
+      "text": "Tab identity, shared by the server route and the client components. Kept\nout of `lib/checks.ts` because that module is `'use client'` — importing\nthese from there gives a server component a client reference proxy, not\nthe array.",
+      "kind": "doc"
+    }
+  ]
+}

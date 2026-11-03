@@ -1,21 +1,9 @@
 import type { Log } from '../core/logger.js';
 import { getPool } from './pool.js';
 
-/**
- * Deletes results older than the result TTL (`HELIX_RESULT_TTL_HOURS`), judged
- * by each row's own timestamp: `jobs.created_at`, `documents.fetched_at`. The
- * `expires_at` column is not read: nothing sets it, and its 7-day default
- * would ignore the configured TTL.
- *
- * Documents go first so standalone scrapes (no job) are covered; deleting a
- * job then cascades to its tasks, failures, deliveries and remaining documents.
- * A job a worker still holds on a live lease is spared, and so are its
- * documents, so a long crawl is never pulled out from under the worker.
- */
 
 export interface SweepOptions {
   ttlHours: number;
-  /** PGlite has no autovacuum, so space freed by a delete is never reused unless this runs. */
   vacuum?: boolean;
   batchSize?: number;
   now?: Date;
@@ -43,12 +31,9 @@ const DELETE_JOBS = `
        AND NOT (status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at >= $1)
      LIMIT $3)`;
 
-// Every table a sweep shrinks, directly or through the jobs cascade, plus the
-// ones other retention jobs prune.
 const VACUUM = `VACUUM documents, jobs, job_tasks, fetch_failures, webhook_deliveries,
   uptime_samples, request_usage, monitor_snapshots, monitor_checks`;
 
-// Bounded batches keep each statement's locks short on a shared Postgres.
 async function deleteInBatches(text: string, now: Date, cutoff: Date, batchSize: number): Promise<number> {
   let total = 0;
   for (;;) {
@@ -87,7 +72,6 @@ export function startSweeper(options: {
       (error: unknown) => options.logger?.warn({ error }, 'expired results sweep failed'),
     );
   };
-  // A desktop app that is opened for minutes at a time might never reach the first hourly tick.
   const first = setTimeout(sweep, options.firstDelayMs ?? 60_000);
   first.unref();
   const timer = setInterval(sweep, options.intervalMs ?? 60 * 60 * 1000);

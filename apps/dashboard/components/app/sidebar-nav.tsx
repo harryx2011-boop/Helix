@@ -70,12 +70,6 @@ export function buildNavGroups(selectedEndpoints: readonly string[]): NavGroup[]
   ];
 }
 
-/**
- * Every playground row shares one pathname and differs only in `?tab=`, so a
- * path-only comparison lit all eight at once. A row that carries a tab must
- * match the tab too; the bare playground path (no tab) falls back to the first
- * row so the list is never entirely unlit.
- */
 function isActive(pathname: string, href: string, activeTab: string | null, defaultTab: string | undefined): boolean {
   const [hrefPath, hrefQuery] = href.split('?');
   if (hrefPath === '/app') return pathname === '/app';
@@ -93,10 +87,6 @@ interface SidebarNavProps {
   collapsed: boolean;
 }
 
-/**
- * `useSearchParams` opts a route out of static prerendering unless it sits
- * under a Suspense boundary, and the self-host build is a static export.
- */
 export function SidebarNav(props: SidebarNavProps) {
   return (
     <React.Suspense fallback={<nav className="flex flex-1 flex-col" aria-label="App navigation" />}>

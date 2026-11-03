@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/vscode/src/status.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "StatusView",
+      "line": 3,
+      "offset": 0,
+      "text": "What the status-bar item shows. `warning` picks the warning background.",
+      "kind": "doc"
+    }
+  ]
+}

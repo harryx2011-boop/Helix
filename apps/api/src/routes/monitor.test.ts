@@ -18,7 +18,6 @@ beforeEach(async () => {
   store = new MemoryMonitorStore();
   page = { ok: true, content: 'Standard $29/month' };
   app = Fastify();
-  // Stands in for the API key hook: `x-test-key` names the calling key.
   app.addHook('onRequest', async (request) => {
     const key = request.headers['x-test-key'];
     if (typeof key === 'string') request.apiKey = asKey(key);
@@ -153,8 +152,6 @@ describe('POST /v1/monitor', () => {
       timezone: 'UTC',
       window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 },
     });
-    // The window pushed the next check to the following in-window instant, not
-    // just the next cron tick.
     expect(typeof body.nextCheckAt).toBe('string');
   });
 
@@ -208,9 +205,6 @@ describe('POST /v1/monitor', () => {
     });
   });
 
-  // Every other route validating a provider name uses this enum. Here it was a
-  // bare string, so an unknown name was stored and only failed later, on a
-  // scheduled check, where the caller sees it as lastError rather than a 400.
   it('rejects a jsonOptions provider outside the supported set', async () => {
     const response = await create({
       url: 'https://example.com',
@@ -266,7 +260,6 @@ describe('GET /v1/monitor and /v1/monitor/:id', () => {
 
     const list = await app.inject({ method: 'GET', url: '/v1/monitor' });
     expect(list.json().monitors).toHaveLength(1);
-    // The list is capped; a caller must be able to tell a short list from a cut one.
     expect(list.json().truncated).toBe(false);
 
     const beforeCheck = await app.inject({ method: 'GET', url: `/v1/monitor/${id}` });
@@ -341,7 +334,6 @@ describe('PATCH /v1/monitor/:id', () => {
     expect(patched.json().schedule.cron).toBe('0 0 * * *');
     expect(patched.json().nextCheckAt).toBeNull();
 
-    // Pausing during the run sticks; resuming sets a time again.
     const paused = await app.inject({ method: 'PATCH', url: `/v1/monitor/${id}`, payload: { status: 'paused' } });
     expect(paused.json().nextCheckAt).toBeNull();
     const resumed = await app.inject({ method: 'PATCH', url: `/v1/monitor/${id}`, payload: { status: 'active' } });
@@ -414,7 +406,6 @@ describe('ownership', () => {
       expect(response.statusCode, `${method} ${url}`).toBe(404);
     }
 
-    // Nothing changed for the owner.
     const still = await app.inject({ method: 'GET', url: `/v1/monitor/${id}`, headers: { 'x-test-key': KEY_A } });
     expect(still.statusCode).toBe(200);
     expect(still.json().webhook.url).toBe('https://hooks.test/x');

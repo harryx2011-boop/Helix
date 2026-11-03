@@ -1,0 +1,575 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/worker.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "DestinationConfig",
+      "line": 21,
+      "offset": 0,
+      "text": "The crawl worker.\n\nClaims a queued job, walks its frontier, and writes results as it goes.\n\nTwo properties matter more than throughput. Progress is durable — every page\nis written when it completes, so a restart resumes rather than starts over.\nAnd failures are recorded as typed rows rather than dropped, so a crawl that\nreturned forty pages out of a hundred can say what happened to the other sixty.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CrawlJobRequest.changesOnly",
+      "line": 42,
+      "offset": 0,
+      "text": "Omit unchanged pages from the result set. Implies `incremental`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "CrawlJobRequest.includeContent",
+      "line": 43,
+      "offset": 0,
+      "text": "Regex/glob patterns matched against extracted content, after the fetch.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "CrawlJobRequest.maxPagesPerPath",
+      "line": 45,
+      "offset": 0,
+      "text": "Cap on pages sharing a path prefix; bounds calendar and facet traps.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "CrawlJobRequest.jsonOptions",
+      "line": 46,
+      "offset": 0,
+      "text": "Structured extraction applied to every page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "compileContentFilters",
+      "line": 61,
+      "offset": 0,
+      "text": "Content filters, compiled once per job.\n\nReuses `compilePathPattern` so a caller learns one pattern syntax for paths\nand content rather than two. An include set keeps only matching pages; an\nexclude set drops matching ones, and exclude wins where both match.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "PageStructured",
+      "line": 71,
+      "offset": 0,
+      "text": "Per-page structured-extraction result.\n\n`blocksKept`/`blocksTotal` travel with the value because a page whose blocks\nwere clipped answered from part of itself, and nothing in the value says so.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "isAbort",
+      "line": 77,
+      "offset": 0,
+      "text": "Whether a rejection is this side stopping the call, rather than the call\ngoing wrong.\n\n`AbortSignal.any` surfaces its reason as a DOMException named `AbortError`;\n`fetch` in some runtimes reports the same condition as a plain Error whose\nmessage says so. Both are the job being cancelled, and neither is a fault\nworth counting or retrying — `TimeoutError` deliberately is not matched here,\nbecause that is this side giving up on its own budget.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "CANCEL_POLL_MS",
+      "line": 90,
+      "offset": 0,
+      "text": "How often a running crawl asks whether it has been cancelled.\n\nA poll rather than a listener: a crawl of ten thousand pages should not run\nten thousand extra queries, and two seconds of extra work after a cancel is\ncheaper than that.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "JOB_LEASE_SECONDS",
+      "line": 92,
+      "offset": 0,
+      "text": "How long a worker's hold on a job row survives without renewal.\n\nMatches the task lease in `persistent-frontier.ts`: the two expire on the\nsame clock, so a dead worker's job and its tasks become reclaimable together\nrather than leaving a window where one is free and the other is not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "pathPrefixOf",
+      "line": 94,
+      "offset": 0,
+      "text": "Path prefix a `maxPagesPerPath` budget is counted against.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "WorkerDeps.maxHostConcurrency",
+      "line": 106,
+      "offset": 0,
+      "text": "Ceiling for adaptive per-host concurrency when a request names none.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "WorkerDeps.minHostConcurrency",
+      "line": 107,
+      "offset": 0,
+      "text": "Floor the adaptive controller may not back off below.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "WorkerDeps.proxyUrl",
+      "line": 108,
+      "offset": 0,
+      "text": "The operator's proxy (`HELIX_PROXY_URL`), the same one `/scrape` resolves\n`proxy: \"auto\" | \"stealth\"` against. The session pool rotates among the\nURLs it is given; it does not read the environment itself.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "WorkerDeps.sessionPoolSize",
+      "line": 109,
+      "offset": 0,
+      "text": "Live identities a crawl holds at once.",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": "WorkerDeps.sessionMaxBlocks",
+      "line": 110,
+      "offset": 0,
+      "text": "Blocks one identity absorbs before it is retired and replaced.",
+      "kind": "doc"
+    },
+    {
+      "id": "n17",
+      "symbol": "WorkerDeps.encryptionKey",
+      "line": 112,
+      "offset": 0,
+      "text": "Decrypts the job owner's stored provider keys, so per-page structured\nextraction runs against their model rather than failing for want of a key.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "WorkerDeps.defaultModel",
+      "line": 113,
+      "offset": 0,
+      "text": "Shown in the saved projection, as `/crawl/estimate` shows it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": "WorkerDeps.allowPrivateUrls",
+      "line": 114,
+      "offset": 0,
+      "text": "`HELIX_ALLOW_PRIVATE_URLS`, for the projection's discovery.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "CrawlWorker.#claimJob",
+      "line": 128,
+      "offset": 0,
+      "text": "Claim one queued job.\n\n`FOR UPDATE SKIP LOCKED` is what makes several workers safe against one\nqueue without a broker: each claims a different row, and none blocks.",
+      "kind": "doc"
+    },
+    {
+      "id": "n21",
+      "symbol": "CrawlWorker.#renewJobLease",
+      "line": 161,
+      "offset": 0,
+      "text": "Extend this worker's hold on the job it is crawling.",
+      "kind": "doc"
+    },
+    {
+      "id": "n22",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 217,
+      "offset": 18,
+      "text": "One pool per job. Identities are not shared between crawls: a session\ncarries the cookie jar of the site it was used on, and handing that to a\ncrawl of a different host leaks one caller's session state into another.",
+      "kind": "what"
+    },
+    {
+      "id": "n23",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 238,
+      "offset": 39,
+      "text": "Resume before seeding: a restarted crawl already has a frontier, and\nre-seeding it would duplicate work the dedup filter has forgotten.",
+      "kind": "what"
+    },
+    {
+      "id": "n24",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 251,
+      "offset": 52,
+      "text": "The route queues the seed before any worker sees the job, so one queued\nrow and nothing else is a crawl that has not started, not a resume.",
+      "kind": "what"
+    },
+    {
+      "id": "n25",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 254,
+      "offset": 55,
+      "text": "Dedupe keys make this safe on resume: a restarted crawl does not announce\nitself twice.",
+      "kind": "what"
+    },
+    {
+      "id": "n26",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 260,
+      "offset": 61,
+      "text": "The projection this crawl is measured against, made before any page is\nfetched. A resumed crawl keeps its first run's; a batch discovers nothing.",
+      "kind": "what"
+    },
+    {
+      "id": "n27",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 275,
+      "offset": 76,
+      "text": "Previous visits to this site, for incremental mode.",
+      "kind": "what"
+    },
+    {
+      "id": "n28",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 279,
+      "offset": 80,
+      "text": "Seed from the sitemap too: link-following alone misses pages nothing\nlinks to, which on a documentation site is most of the deep content.\n\nEntries arrive at depth 1, so a crawl capped at the seed page rejects\nevery one of them. Discovering a sitemap it cannot use costs the fetch\nand the whole walk of a sitemap index for nothing.",
+      "kind": "what"
+    },
+    {
+      "id": "n29",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 291,
+      "offset": 92,
+      "text": "The lease taken at claim time has been running through resume, sitemap\ndiscovery and the incremental state load, and the crawl loop only renews\nit on its first poll. A slow preamble is long enough for another worker\nto reclaim a job that is plainly still being worked on.",
+      "kind": "what"
+    },
+    {
+      "id": "n30",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 299,
+      "offset": 100,
+      "text": "Pages dropped by a content filter, reported rather than silently missing.",
+      "kind": "doc"
+    },
+    {
+      "id": "n31",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 300,
+      "offset": 101,
+      "text": "Pages dropped for exceeding their path's budget.",
+      "kind": "doc"
+    },
+    {
+      "id": "n32",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 301,
+      "offset": 102,
+      "text": "Results discarded because this worker no longer held the task row.",
+      "kind": "doc"
+    },
+    {
+      "id": "n33",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 302,
+      "offset": 103,
+      "text": "304 pages whose links could not be followed, because a 304 has no body.",
+      "kind": "doc"
+    },
+    {
+      "id": "n34",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 303,
+      "offset": 104,
+      "text": "Recorded pages by the tier that served them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n35",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 304,
+      "offset": 105,
+      "text": "Wall time of pages a render tier served, cheaper tiers tried first included.",
+      "kind": "doc"
+    },
+    {
+      "id": "n36",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 309,
+      "offset": 110,
+      "text": "Aborted when the job is cancelled or the worker is shutting down.\n\nThe frontier stops handing out pages the moment cancellation is seen, but\na page already inside `extractClient.structured()` keeps running — and\nthat call is billed to the caller's own provider. Without a signal\nreaching it, cancelling a crawl stops the fetching and pays for the\nthinking anyway.",
+      "kind": "doc"
+    },
+    {
+      "id": "n37",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 311,
+      "offset": 112,
+      "text": "Resolved once per job: every page of a crawl runs against the same\nowner's keys, and re-decrypting them per page would be the crawl's\nslowest step on a site of any size.",
+      "kind": "what"
+    },
+    {
+      "id": "n38",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 318,
+      "offset": 119,
+      "text": "Pages kept per path prefix, against `maxPagesPerPath`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n39",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 323,
+      "offset": 124,
+      "text": "Wait for the next page to finish, or for the cancellation poll to be due,\nwhichever comes first.\n\nA bare `Promise.race(inFlight)` blocks until a page completes, so a crawl\nwhose last outstanding page takes two minutes cannot notice it was\ncancelled for two minutes — the signal exists but nothing reaches the\ncheck that fires it. Racing a timer bounds that to the poll interval.",
+      "kind": "doc"
+    },
+    {
+      "id": "n40",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 337,
+      "offset": 138,
+      "text": "Poll for cancellation rather than checking every iteration: a crawl of\nten thousand pages should not run ten thousand extra queries.",
+      "kind": "what"
+    },
+    {
+      "id": "n41",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 340,
+      "offset": 141,
+      "text": "Leases have to be pushed forward while pages are still being fetched,\nor a crawl of slow pages reclaims its own live work out from under\nitself. The frontier decides whether a renewal is actually due.",
+      "kind": "what"
+    },
+    {
+      "id": "n42",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 341,
+      "offset": 142,
+      "text": "On the same clock as the task leases: a job renewed less often than\nits tasks would be stolen out from under a worker that is plainly\nstill working.",
+      "kind": "what"
+    },
+    {
+      "id": "n43",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 345,
+      "offset": 146,
+      "text": "Before awaiting them: settling first would wait for the very model\ncalls the cancellation is meant to stop.",
+      "kind": "what"
+    },
+    {
+      "id": "n44",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 368,
+      "offset": 169,
+      "text": "Every queued host is paced out; wait for the shortest delay.",
+      "kind": "what"
+    },
+    {
+      "id": "n45",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 383,
+      "offset": 184,
+      "text": "One identity for this whole request, pinned before the fetch. The\nprofile and the proxy travel together because splitting them is\nexactly the incoherence the Rust profile validator exists to refuse.",
+      "kind": "why"
+    },
+    {
+      "id": "n46",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 400,
+      "offset": 201,
+      "text": "Conditional headers are the only mechanism that avoids the download\nitself — a 304 carries no body. Everything else saves processing.",
+      "kind": "what"
+    },
+    {
+      "id": "n47",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 415,
+      "offset": 216,
+      "text": "The fetch stops too, not only the model call: a cancelled crawl\nthat keeps loading pages in a browser tier is still spending.",
+      "kind": "what"
+    },
+    {
+      "id": "n48",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 424,
+      "offset": 225,
+      "text": "A page the job itself stopped is not a page that failed. Writing\nit to `fetch_failures` would leave a cancelled crawl reporting\nhundreds of broken URLs it never actually tried to read.\n\nThe row is left leased rather than marked either way: the\ncancellation path calls `frontier.release()` immediately after\nthis, which returns every still-leased row to `queued`, so a\nresumed job retries the page instead of skipping it as done or\nspending an attempt on it.\n\nOnly when the abort came from this job stopping, though. An\n`aborted` from anywhere else still has to reach the frontier, or\nthe URL stays leased and `pending` never drains — the loop then\nspins until the lease expires.",
+      "kind": "why"
+    },
+    {
+      "id": "n49",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 431,
+      "offset": 232,
+      "text": "The classifier's verdict, not the status code: a challenge page\narrives as 200 and would otherwise be scored as a healthy fetch by\nboth the concurrency controller and the session pool.",
+      "kind": "why"
+    },
+    {
+      "id": "n50",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 449,
+      "offset": 250,
+      "text": "A 304 is the host answering the conditional request: unchanged,\nstated outright. Comparing content hashes would disagree, because\nthe body it compares against was never sent. Not gated on\n`incremental`: a caller's own If-None-Match gets a 304 too, and its\nempty body is not a document.",
+      "kind": "why"
+    },
+    {
+      "id": "n51",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 456,
+      "offset": 257,
+      "text": "A 304 may repeat its validators or omit them entirely. Writing\nthe empty body's hash and a null etag would leave the next run\nwith nothing to ask with, so the download this just avoided\nwould be paid for on every later crawl.",
+      "kind": "what"
+    },
+    {
+      "id": "n52",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 468,
+      "offset": 269,
+      "text": "Content filters run after extraction, because that is the first\npoint the page's text exists. A dropped page still contributes its\nlinks, for the same reason an unchanged one does.",
+      "kind": "why"
+    },
+    {
+      "id": "n53",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 477,
+      "offset": 278,
+      "text": "A budget per path prefix bounds calendar and facet traps, where one\npath would otherwise consume the whole crawl limit.",
+      "kind": "why"
+    },
+    {
+      "id": "n54",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 489,
+      "offset": 290,
+      "text": "Claimed before anything is stored. A lease that expired mid-fetch\nhas been reclaimed, and the worker holding it now will store this\npage itself — writing it here too is a duplicate `documents` row\nand a page counted twice.",
+      "kind": "what"
+    },
+    {
+      "id": "n55",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 492,
+      "offset": 293,
+      "text": "An unchanged page still contributes its links — the page did not\nmove, but the pages it points at may have.",
+      "kind": "what"
+    },
+    {
+      "id": "n56",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 493,
+      "offset": 294,
+      "text": "Structured extraction, applied to every kept page. A model\nfailure costs the page its `json` field, never the crawl: the\npage was read, and dropping 4,000 markdown documents because one\nprovider call timed out is a worse answer than a null field.",
+      "kind": "why"
+    },
+    {
+      "id": "n57",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 507,
+      "offset": 308,
+      "text": "Reported per page, because a page whose blocks were clipped\nproduced an answer from part of itself and the caller\ncannot see that from the value alone.",
+      "kind": "why"
+    },
+    {
+      "id": "n58",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 512,
+      "offset": 313,
+      "text": "A cancelled job is not a failed extraction. Counting it in\n`jsonFailed` would report the crawl as having tried and lost\npages it deliberately stopped, and a retry layer reading that\ncount would re-fire the call the cancellation just killed.",
+      "kind": "what"
+    },
+    {
+      "id": "n59",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 543,
+      "offset": 344,
+      "text": "The markdown is not copied into the delivery row: the dispatcher\nreads it from `documents` at send time, so a crawl with a webhook\nstores each page once.",
+      "kind": "what"
+    },
+    {
+      "id": "n60",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 555,
+      "offset": 356,
+      "text": "Counted only for the unchanged case: a page dropped by a filter\nor a path budget was read and is not evidence the site is static.",
+      "kind": "what"
+    },
+    {
+      "id": "n61",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 558,
+      "offset": 359,
+      "text": "A 304 carries no body and so no links: the pages below this one are\nnot reached through it. Counted so the result says so, instead of\na clean \"unchanged\" hiding a crawl that stopped here.\nponytail: the real fix follows the previous run's links, which\nneeds them stored in crawl_state (a migration; TODO.md).",
+      "kind": "what"
+    },
+    {
+      "id": "n62",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 561,
+      "offset": 362,
+      "text": "Expand the frontier from what this page linked to.",
+      "kind": "what"
+    },
+    {
+      "id": "n63",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 582,
+      "offset": 383,
+      "text": "The same evidence, read for a different question. Politeness asks\n\"how fast may I go\"; the pool asks \"is this identity still usable\".\nA host that blocks one identity and accepts another is answering\nonly the second question, so both have to be asked separately.",
+      "kind": "what"
+    },
+    {
+      "id": "n64",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 599,
+      "offset": 400,
+      "text": "A shutdown mid-crawl returns unfetched claims to the queue rather than\nstranding them as permanently \"running\".",
+      "kind": "what"
+    },
+    {
+      "id": "n65",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 606,
+      "offset": 407,
+      "text": "Every path that ends a page moves its task row to a terminal status, so a\nrow still queued or running here is a page the job would silently omit.",
+      "kind": "what"
+    },
+    {
+      "id": "n66",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 642,
+      "offset": 443,
+      "text": "Named even at zero when the caller asked for the filter, so an\nempty result is distinguishable from a filter that matched nothing.",
+      "kind": "what"
+    },
+    {
+      "id": "n67",
+      "symbol": "CrawlWorker.#crawl",
+      "line": 654,
+      "offset": 455,
+      "text": "A cancellation that landed between the last poll and the queue draining\nleaves the row cancelled and the update unapplied. Cancellation emits\nnothing, so neither does this.",
+      "kind": "what"
+    },
+    {
+      "id": "n68",
+      "symbol": "CrawlWorker.#storeToDestination",
+      "line": 687,
+      "offset": 0,
+      "text": "Chunk, embed and upsert one page into the configured destination.\n\nA failure here is recorded and swallowed rather than thrown: the page\nitself is already stored, and a vector-store outage should not cost the\ncrawl the page it already fetched.",
+      "kind": "doc"
+    },
+    {
+      "id": "n69",
+      "symbol": "CrawlWorker.#emit",
+      "line": 726,
+      "offset": 0,
+      "text": "Queue a webhook event. A queue failure is logged, never thrown: the crawl's\nresults are already durable, and losing one notification is recoverable\nwhere losing the crawl is not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n70",
+      "symbol": "CrawlWorker.#recordDocument",
+      "line": 774,
+      "offset": 33,
+      "text": "A page whose blocks were clipped answered from part of itself.\nReported per page so a caller reading one row can see it, rather\nthan only in a job-level total that averages the fact away.",
+      "kind": "what"
+    },
+    {
+      "id": "n71",
+      "symbol": "CrawlWorker.start",
+      "line": 810,
+      "offset": 0,
+      "text": "Poll for work until stopped.",
+      "kind": "doc"
+    }
+  ]
+}

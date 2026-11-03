@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "research/firecrawl-capture/shoot-helix.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BASE",
+      "line": 5,
+      "offset": 0,
+      "text": "Screenshots of the local Helix site for the design pass (WEBSITE.md §12 DoD).\nusage: node shoot-helix.mjs [baseUrl] [route ...]",
+      "kind": "what"
+    }
+  ]
+}

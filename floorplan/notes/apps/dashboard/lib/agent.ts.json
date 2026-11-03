@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/agent.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "runWithConcurrency",
+      "line": 25,
+      "offset": 0,
+      "text": "Runs an async task list with a bounded number in flight, preserving input order in the output.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "scrapeForSchema",
+      "line": 46,
+      "offset": 0,
+      "text": "Reads one URL and pulls its `jsonOptions.schema` extraction, keyed for the agent's merged results view.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "searchForSchema",
+      "line": 81,
+      "offset": 0,
+      "text": "Search-driven mode: search for the prompt, then read each result's `json` extraction.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "flattenRow",
+      "line": 102,
+      "offset": 0,
+      "text": "Flattens one level of nested objects/arrays into dotted keys, for CSV export.",
+      "kind": "doc"
+    }
+  ]
+}

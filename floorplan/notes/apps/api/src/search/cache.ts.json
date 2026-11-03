@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/search/cache.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SearchCache",
+      "line": 3,
+      "offset": 0,
+      "text": "Short-lived cache of backend hits, keyed on the full query. Identical\nsearches within the window reuse the ranked list instead of re-hitting the\nbackend; the pages themselves are always read fresh.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SearchCache.set",
+      "line": 27,
+      "offset": 2,
+      "text": "An empty list is not worth a slot: it is the shape a failed or degraded\nbackend call produces, and serving it for the whole window would hide a\nrecovery behind \"no results\".",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "SearchCache.set",
+      "line": 29,
+      "offset": 4,
+      "text": "Bounded: the oldest insertion goes first, which is close enough to LRU\nfor a cache measured in seconds.",
+      "kind": "what"
+    }
+  ]
+}

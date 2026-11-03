@@ -1,20 +1,8 @@
 import type { CDPSession, Page } from 'playwright';
 import type { Log } from '../core/logger.js';
 
-/**
- * Read-only live view of a session, from Chrome's own screencast.
- *
- * `Page.startScreencast` pushes a JPEG whenever the compositor produces a new
- * frame and stays silent while the page is still, so an idle session costs no
- * bandwidth. Frames fan out to every attached viewer; the cast starts with the
- * first viewer and stops with the last, never running for nobody.
- *
- * Transport to the browser is server-sent events rather than a WebSocket: the
- * stream is one-way, and SSE needs nothing beyond the HTTP server already here.
- */
 
 export interface ScreencastFrame {
-  /** Base64 JPEG. */
   data: string;
   width: number;
   height: number;
@@ -30,7 +18,6 @@ export interface ScreencastOptions {
 
 type Listener = (frame: ScreencastFrame) => void;
 
-/** The slice of a CDP session the cast uses; tests supply a fake. */
 export interface CastSession {
   send(method: 'Page.startScreencast', params: Record<string, unknown>): Promise<unknown>;
   send(method: 'Page.stopScreencast'): Promise<unknown>;
@@ -106,7 +93,6 @@ export class Screencast {
             this.#options.logger?.debug({ error }, 'screencast listener threw');
           }
         }
-        // Chrome holds the next frame until this one is acknowledged.
         cdp.send('Page.screencastFrameAck', { sessionId: event.sessionId }).catch(() => undefined);
       });
       await cdp.send('Page.startScreencast', {

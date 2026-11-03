@@ -1,15 +1,6 @@
 import { promises as dns } from 'node:dns';
 import { BlockList, isIP } from 'node:net';
 
-/**
- * Where `/parse` is allowed to fetch from.
- *
- * The url path fetches from inside the gateway, next to helix-fetch,
- * helix-extract, Postgres and the browser tier. A key holder must not be able
- * to point it at any of those, so the host is resolved and every address it
- * yields is checked against the non-public ranges before a connection opens,
- * and again on every redirect.
- */
 
 export type Lookup = (hostname: string) => Promise<Array<{ address: string; family: number }>>;
 
@@ -59,10 +50,6 @@ export class HostNotAllowedError extends Error {
   }
 }
 
-/**
- * Throws when the URL may not be fetched. Resolution failures are left to the
- * fetch itself so they keep their `dns` classification.
- */
 export async function assertPublicUrl(url: URL, lookup: Lookup): Promise<void> {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new HostNotAllowedError('`url` must use http or https.');

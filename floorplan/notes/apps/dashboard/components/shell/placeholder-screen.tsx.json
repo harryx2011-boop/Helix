@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shell/placeholder-screen.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PlaceholderScreen",
+      "line": 13,
+      "offset": 10,
+      "text": "Solid backing: the shell paints a grid with drifting markers behind every screen.",
+      "kind": "what"
+    }
+  ]
+}

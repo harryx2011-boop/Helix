@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/documents.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MIN_CHARS_PER_PAGE",
+      "line": 29,
+      "offset": 0,
+      "text": "Below this ratio of extractable characters per page, a PDF is treated as\nscanned regardless of what the text layer claims to contain.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "GARBLED_THRESHOLD",
+      "line": 31,
+      "offset": 0,
+      "text": "Above this proportion of replacement/control/private-use characters, a text\nlayer has decoded wrongly even though it produced output.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "looks_garbled",
+      "line": 128,
+      "offset": 19,
+      "text": "replacement character",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "looks_garbled",
+      "line": 133,
+      "offset": 24,
+      "text": "Co = private use, Cn = unassigned, Cc = control (excluding whitespace).",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "looks_garbled",
+      "line": 142,
+      "offset": 33,
+      "text": "A text layer that produced almost no word-like runs is also suspect: real\nprose has vowels and spaces, mojibake frequently has neither.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "assess_pdf",
+      "line": 182,
+      "offset": 33,
+      "text": "Sample rather than read everything: a hundred-page report does not\nneed full extraction to reveal whether it has a text layer.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "_pdf_to_markdown",
+      "line": 251,
+      "offset": 16,
+      "text": "Page markers keep a citation locatable in the source document.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "parse",
+      "line": 397,
+      "offset": 46,
+      "text": "`never` means the caller accepts a degraded answer over an expensive one,\nbut the flags still report what was found so the result is not mistaken\nfor clean text.",
+      "kind": "why"
+    },
+    {
+      "id": "n9",
+      "symbol": "parse",
+      "line": 401,
+      "offset": 50,
+      "text": "With no OCR parser, a text layer that is merely short is still real\ntext: fall through and return it, as `never` would. Only a garbled\nlayer is withheld, and a layer with nothing in it has nothing to give.",
+      "kind": "why"
+    }
+  ]
+}

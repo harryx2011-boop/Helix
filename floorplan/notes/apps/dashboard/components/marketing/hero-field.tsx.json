@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/hero-field.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HeroField",
+      "line": 15,
+      "offset": 0,
+      "text": "One of the four character fields in its standard hero placement. Mount\ninside a `relative` wrapper and keep the content `relative` so it paints\nabove. `cloud` is a ring around the centred title, `wave` flanks it at the\nsides, `flow` sits behind it with the centre cleared, `orbit` hangs at the\nright edge. Every placement is hidden on small screens.",
+      "kind": "doc"
+    }
+  ]
+}

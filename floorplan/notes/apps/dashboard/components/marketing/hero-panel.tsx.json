@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/hero-panel.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "NOISE_GLYPH",
+      "line": 15,
+      "offset": 0,
+      "text": "Deterministic fill for the pre-mount scramble placeholder — same glyph on server and client.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "HeroPanel",
+      "line": 17,
+      "offset": 0,
+      "text": "WEBSITE.md §4.2 hero panel + research/17 prompt-box anatomy: the shared\nPromptBox (group-labelled endpoint track, URL row, toolbar) over a\ngenerated request that types itself and a response that scrambles in, then\nthe ladder explainer below. Submit hands the value to the playground.\nComposes only — never fetches.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "HeroPanel",
+      "line": 24,
+      "offset": 7,
+      "text": "Response scramble only starts once the request finishes typing (research/17):\ngated by requestDone, and re-keyed only when the request itself re-types.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "ScrambledPlaceholder",
+      "line": 109,
+      "offset": 0,
+      "text": "Pre-gate placeholder for the response panel: every quoted JSON value (not\nkeys) renders as glyph noise, matching ScrambleCode's mid-flight look, so\nnothing readable leaks before the request finishes typing (research/17).\nReduced motion renders the real, settled response immediately instead.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "ScrambledPlaceholder",
+      "line": 112,
+      "offset": 3,
+      "text": "First paint (server + client) must be deterministic or React flags a\nhydration mismatch on the random glyphs. Render a fixed seed on mount,\nonly randomize afterwards.",
+      "kind": "why"
+    },
+    {
+      "id": "n6",
+      "symbol": "noiseLine",
+      "line": 135,
+      "offset": 10,
+      "text": "JSON key: stays static, ink-coloured, never scrambles.",
+      "kind": "why"
+    },
+    {
+      "id": "n7",
+      "symbol": "RESPONSE_PREVIEW",
+      "line": 156,
+      "offset": 0,
+      "text": "Endpoint response preview shapes (lib/docs-content.ts response envelopes, trimmed for the hero).",
+      "kind": "doc"
+    }
+  ]
+}

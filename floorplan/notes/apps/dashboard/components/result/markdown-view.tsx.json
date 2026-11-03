@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/result/markdown-view.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "useKatexCss",
+      "line": 14,
+      "offset": 0,
+      "text": "KaTeX's stylesheet ships in the `katex` package already installed for\nrehype-katex; importing it dynamically bundles it via Next rather than\nreaching out to a CDN, so math still renders in the offline desktop app.\nOnly loaded on a page that actually renders math.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SafeAnchor",
+      "line": 22,
+      "offset": 0,
+      "text": "Anchors safe (http/https/mailto/relative); anything else — `javascript:`, `data:`, `file:` — renders as plain text, never a link.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SafeAnchor",
+      "line": 24,
+      "offset": 2,
+      "text": "Same http(s)-detection the link policy itself uses (lib/markdown-links.ts),\nrather than a second ad hoc `/^https?:/` — so a URL shape the policy treats\nas \"http-like\" (a protocol-relative URL, if one ever slipped through a\nfuture change to the policy) still gets rel=\"noopener noreferrer\" here too.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "PrePassthrough",
+      "line": 45,
+      "offset": 0,
+      "text": "react-markdown wraps a fenced block in `pre > code`; the code override already renders its own `pre`/copy-button chrome, so `pre` here is a pass-through.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "MarkdownViewProps.components",
+      "line": 57,
+      "offset": 0,
+      "text": "Extra tag-to-component overrides, merged over the defaults (link policy, code highlighting) — never replacing them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "MarkdownView",
+      "line": 61,
+      "offset": 0,
+      "text": "Styled via `.markdown-body` in globals.css rather than a typography plugin — one less dependency for a few element rules.",
+      "kind": "doc"
+    }
+  ]
+}

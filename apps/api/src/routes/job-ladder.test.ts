@@ -72,8 +72,6 @@ describe('GET /v1/jobs/{id}/ladder', () => {
     });
   });
 
-  // An empty list would claim the first tier served the page; for a page
-  // recorded before climbs were kept, nobody knows.
   it('answers null, not an empty list, for a page recorded before climbs were kept', async () => {
     db.state.documents = [{ url: 'https://example.com/old', tier: 'tls', profile: null, metadata: { tiersAttempted: ['plain', 'tls'] } }];
 

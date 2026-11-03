@@ -1,12 +1,6 @@
 import Fastify from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * Settings route contract. Postgres is a fake: the point is the surface —
- * the admin gate, what may be written at all, the confirmation a guarded
- * setting demands, and whether a change is reported as applied or as needing a
- * restart.
- */
 
 interface Call {
   text: string;
@@ -87,8 +81,6 @@ describe('settings auth', () => {
     expect(response.statusCode).toBe(401);
   });
 
-  // The admin gate answered before any route did, and a caller with one error
-  // handler still needs `message` and `requestId` here like everywhere else.
   it('refuses in the same error envelope every other route uses', async () => {
     const { app } = await buildApp();
     const response = await app.inject({ method: 'GET', url: '/settings' });
@@ -103,8 +95,6 @@ describe('settings auth', () => {
 });
 
 describe('the admin gate cannot be routed around', () => {
-  // The router decodes and normalises the path before matching, so any
-  // spelling that reaches a settings handler must meet the gate first.
   it.each(['/%73ettings', '/%73ettings/', '/settings/', '/%53ettings', '/Settings', '//settings', '/settings//'])(
     'never serves %s without the admin token',
     async (url) => {
@@ -158,14 +148,6 @@ describe('the admin gate cannot be routed around', () => {
 });
 
 describe('the API-key auth hook', () => {
-  /**
-   * `/settings` is listed in `registerAuth`'s `open` prefixes so the admin-token
-   * gate is the one that answers. Dropping it from that list makes every
-   * settings request fail as "Invalid API key", and adding a route under a
-   * prefix the hook does not know about is easy to get wrong in the other
-   * direction too — so pin both halves: exempt from the key check, still
-   * refused without the admin token.
-   */
   it('lets a settings request past the key check and into the admin gate', async () => {
     const app = Fastify();
     registerAuth(app, {
@@ -185,7 +167,6 @@ describe('the API-key auth hook', () => {
     const rejected = await app.inject({ method: 'GET', url: '/settings' });
     expect(rejected.statusCode).toBe(401);
     expect(rejected.json()).toMatchObject({ error: 'unauthorized' });
-    // Not the key check's message: the admin gate answered.
     expect(JSON.stringify(rejected.json())).not.toContain('API key');
 
     const accepted = await app.inject({ method: 'GET', url: '/settings', headers: auth });

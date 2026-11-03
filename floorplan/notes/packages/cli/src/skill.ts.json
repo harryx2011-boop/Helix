@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/cli/src/skill.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SkillSource",
+      "line": 2,
+      "offset": 0,
+      "text": "SKILL.md is served keyless and covers every endpoint. Helix keeps no account\ndata, so there is no per-account variant to prefer.\n\nThe request is bounded: fetch has no timeout of its own, and a site that\naccepts the connection and never answers must not hang the install.",
+      "kind": "doc"
+    }
+  ]
+}

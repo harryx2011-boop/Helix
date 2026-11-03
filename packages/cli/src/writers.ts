@@ -1,10 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-/**
- * File writers shared by every harness. Each preserves whatever else is in the
- * file: a user's other MCP servers and settings are not ours to touch.
- */
 
 export const SERVER_ID = 'helix';
 
@@ -31,7 +27,6 @@ export function writeFileEnsuringDir(path: string, content: string): void {
   writeFileSync(path, content, 'utf8');
 }
 
-/** Sets `mcpServers.helix` in a JSON config, keeping every other key. */
 export function upsertJsonMcpServer(path: string, entry: JsonObject): JsonObject {
   const config = readJson(path);
   const servers = (config['mcpServers'] && typeof config['mcpServers'] === 'object' && !Array.isArray(config['mcpServers'])
@@ -64,11 +59,6 @@ export function codexSection({ mcpUrl, apiKey }: McpTarget): string {
   ].join('\n');
 }
 
-/**
- * Replaces the `[mcp_servers.helix]` table (and any of its sub-tables) in a
- * TOML file, leaving the rest byte-for-byte intact. Full TOML parsing is not
- * needed to do that safely: tables start at column 0 with `[`.
- */
 export function upsertTomlSection(existing: string, section: string): string {
   const lines = existing.split(/\r?\n/);
   const header = section.split('\n')[0]!;

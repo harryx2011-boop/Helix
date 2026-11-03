@@ -27,16 +27,10 @@ from .schema_compiler import SchemaError
 
 T = TypeVar("T")
 
-# Attempts include the first try, so 3 means up to 2 retries.
 MAX_ATTEMPTS = 3
 BASE_DELAY_SECONDS = 0.5
 MAX_DELAY_SECONDS = 4.0
 
-# A ceiling on the one genuinely unbounded step here: the SDK call itself. None
-# of the three SDKs accept a cooperative cancellation token, and none is given
-# a client-level timeout, so a stalled connection would otherwise hang this
-# coroutine (and the request awaiting it) indefinitely. Generous on purpose —
-# this is a ceiling for a stuck connection, not a latency budget.
 CALL_TIMEOUT_SECONDS = 120.0
 
 
@@ -69,11 +63,6 @@ def _status_of(exc: Exception) -> int | None:
     return getattr(exc, "status_code", None) or getattr(exc, "status", None)
 
 
-# 429 (rate limit), 5xx (provider-side fault) and a connection failure carry no
-# information about the request itself, so retrying them can plausibly help.
-# Everything else — a bad key, a malformed request, a model that does not
-# exist — will fail identically on the second attempt, and retrying it only
-# delays the failure the caller needs to see.
 def _is_retryable(exc: Exception) -> bool:
     status = _status_of(exc)
     if status == 429 or (status is not None and status >= 500):
@@ -130,10 +119,6 @@ async def call_structured(
         except (ProviderError, RequestError, SchemaError):
             raise
         except TimeoutError as exc:
-            # asyncio.wait_for's own TimeoutError, not a status the SDK
-            # reported — nothing here says the far end would answer
-            # differently a second time, so this does not retry or fall back,
-            # only stops the wait and reports what happened.
             raise ProviderError(
                 f"{provider} ({model}) did not respond within {CALL_TIMEOUT_SECONDS:.0f}s.",
                 fallback_eligible=False,
@@ -145,13 +130,9 @@ async def call_structured(
                 raise ProviderError(
                     describe_failure(provider, model, exc), fallback_eligible=retryable
                 ) from exc
-            # Full jitter: spreads retries from concurrent callers instead of
-            # having them all wake up and hit the same rate limit together.
             delay = min(MAX_DELAY_SECONDS, BASE_DELAY_SECONDS * (2 ** (attempt - 1)))
             await asyncio.sleep(random.uniform(0, delay))
 
-    # Unreachable: the loop always returns or raises. Kept for type-checkers
-    # that cannot see that MAX_ATTEMPTS >= 1 makes the loop non-empty.
     assert last_exc is not None
     raise ProviderError(describe_failure(provider, model, last_exc)) from last_exc
 

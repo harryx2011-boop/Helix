@@ -30,7 +30,6 @@ describe('diffText', () => {
     expect(diff.added).toBe(1);
     expect(diff.removed).toBe(1);
     expect(diff.text).toBe('Standard [-$29/month-]{+$34/month+} billed annually');
-    // Whitespace tokens are not counted: 4 words either side, 2 changed.
     expect(diff.changeRatio).toBeCloseTo(0.5);
   });
 
@@ -92,7 +91,6 @@ describe('diffText on large rewrites', () => {
     const diff = diffText(before, after, 'word');
     expect(Date.now() - started).toBeLessThan(2_000);
     expect(process.memoryUsage().heapUsed - heapBefore).toBeLessThan(64 * 1024 * 1024);
-    // One line replaced by one line: the line-granularity stage answered.
     expect(diff.granularity).toBe('line');
     expect(diff.added).toBe(1);
     expect(diff.removed).toBe(1);
@@ -248,12 +246,9 @@ describe('summarizeDiff', () => {
   });
 
   it('never cuts a character in half, so the summary stays valid JSON for Postgres', () => {
-    // An emoji is two UTF-16 units; one straddling the cut used to leave a
-    // lone surrogate, which a jsonb column rejects along with the whole row.
     const diff = diffText('intro', `intro ${'x'.repeat(78)}😀 tail words here`, 'word');
     const added = summarizeDiff(diff).split('\n').find((line) => line.startsWith('Added:'));
     expect(added).toBeDefined();
-    // encodeURIComponent throws URIError on a lone surrogate.
     expect(() => encodeURIComponent(added!)).not.toThrow();
   });
 

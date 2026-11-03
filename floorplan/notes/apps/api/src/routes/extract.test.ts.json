@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/extract.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "StructuredStub",
+      "line": 9,
+      "offset": 0,
+      "text": "The rule worth testing here is the one that distinguishes this endpoint from\na model call with a schema attached: a field the page does not support is\ndropped and reported, never returned as though it were read.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "extractClient",
+      "line": 15,
+      "offset": 0,
+      "text": "Carries both methods the route reaches for: `extract` (the pipeline's own\ntext extraction) and `structured` (the model step). Built together rather\nthan merged later — spreading a stub to override one method is what silently\ndropped the other.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "fetchClient",
+      "line": 49,
+      "offset": 0,
+      "text": "Answers every fetch with the same readable page, so the pipeline succeeds.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "browserPool",
+      "line": 62,
+      "offset": 0,
+      "text": "Present so an escalation has somewhere to go. The pipeline escalates on\nevidence, and a short fixture page can read as a block; without a pool that\nbecomes `no browser pool is configured` and the row is lost for a reason\nthat has nothing to do with what these tests are checking.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 223,
+      "offset": null,
+      "text": "A named field makes it the caller's request that is wrong, which is the\nsame distinction /scrape draws; an unnamed one is `invalid_schema`.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 225,
+      "offset": null,
+      "text": "One 400, not one per URL.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 279,
+      "offset": null,
+      "text": "Hosts, not paths: the per-host gate paces one host and these tests are about the route.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 286,
+      "offset": null,
+      "text": "Finishes the first call last, so completion order cannot be the input order.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 347,
+      "offset": null,
+      "text": "The point of stopping: the same 400 would arrive for all four URLs, and\nthe caller has one schema to fix.",
+      "kind": "what"
+    }
+  ]
+}

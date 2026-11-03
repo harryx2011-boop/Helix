@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/shiki-langs.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SHIKI_LANGS",
+      "line": 1,
+      "offset": 0,
+      "text": "Fixed language set for fenced-code highlighting: common web/scripting\nlanguages plus the shapes Helix itself deals in (curl, yaml/json for\nopenapi, bash for setup snippets). An unknown fence tag falls back to\nplain text rather than pulling in Shiki's full grammar bundle.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "resolveShikiLang",
+      "line": 36,
+      "offset": 0,
+      "text": "Normalizes a fence-tag language to one Shiki has loaded, or `undefined` for plain fallback.",
+      "kind": "doc"
+    }
+  ]
+}

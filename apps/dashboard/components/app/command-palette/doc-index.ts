@@ -4,7 +4,6 @@ import type { DocIndexEntry } from '@/lib/palette-search';
 
 let pending: Promise<DocIndexEntry[]> | null = null;
 
-/** Fetched once per page load, on the first open; a failure clears the cache so the next open retries. */
 export function loadDocIndex(): Promise<DocIndexEntry[]> {
   pending ??= fetch('/search-index.json')
     .then((response) => {

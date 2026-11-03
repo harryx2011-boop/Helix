@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(marketing)/scrape/page.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "REQUEST",
+      "line": 10,
+      "offset": 0,
+      "text": "openapi.yaml `/scrape` → examples.structured, verbatim.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "RESPONSE",
+      "line": 36,
+      "offset": 0,
+      "text": "openapi.yaml `ScrapeResponse`: Document + warnings + ExtractionUsage.",
+      "kind": "doc"
+    }
+  ]
+}

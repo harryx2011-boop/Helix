@@ -6,7 +6,6 @@ export type DictationState = "idle" | "starting" | "listening" | "transcribing" 
 
 export interface DictationSnapshot {
   state: DictationState;
-  /** The live re-decode while listening; replaced, never appended. */
   partial: string;
   error: string | null;
 }
@@ -19,7 +18,6 @@ export interface Stream {
 }
 
 export interface DictationOptions {
-  /** Starts the service if needed (the host's supervisor, over IPC) and returns where it is. */
   connect(): Promise<VoiceCoreConnection | null>;
   onText?(text: string): void;
   createMic?(): Mic;
@@ -32,12 +30,6 @@ function message(err: unknown): string {
   return err instanceof Error && err.message ? err.message : "Dictation failed.";
 }
 
-/**
- * The mic-button state machine, free of React so it can be tested and reused:
- * idle -> starting (mic opening, service coming up) -> listening -> transcribing
- * -> idle, with error reachable from any step. Frames captured while starting are
- * held and sent once the socket exists, so a cold start loses no speech.
- */
 export class DictationController {
   private snap: DictationSnapshot = IDLE;
   private readonly listeners = new Set<() => void>();
@@ -103,8 +95,6 @@ export class DictationController {
     let stream: Stream | null = null;
     this.offFrame = mic.onFrame((pcm) => (stream ? stream.send(pcm) : held.push(pcm)));
     try {
-      // A rejection, not a null, so Promise.all fails at once and the teardown
-      // releases a mic that is still waiting on its permission prompt.
       const service = this.opts.connect().then((c) => {
         if (!c) throw new Error("The voice service did not start.");
         return c;
@@ -123,13 +113,11 @@ export class DictationController {
       await stream.ready;
       if (gen === this.run && this.snap.state === "starting") this.set({ state: "listening" });
     } catch (err) {
-      // A tap released before the mic opened: stop() already closed it, nothing was said.
       if (err instanceof MicError && err.code === "aborted" && this.snap.state === "transcribing") return;
       this.fail(gen, err);
     }
   }
 
-  /** Ends the utterance and resolves with its text ("" when nothing was said). */
   async stop(): Promise<string> {
     const { state } = this.snap;
     if (state !== "starting" && state !== "listening") return "";

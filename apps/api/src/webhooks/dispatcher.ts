@@ -11,30 +11,13 @@ import { signPayload } from './signature.js';
 import { resolvedTargetProblem, type Resolver } from './target.js';
 import { pinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 
-/**
- * Delivers queued webhooks.
- *
- * Claims due rows by pushing their `next_retry_at` forward as a lease, so a
- * crashed dispatcher leaves nothing stuck: the lease expires and the row is
- * simply due again. A 2xx marks the row delivered. A failure that another
- * attempt could fix (a 5xx, a timeout, a dropped connection) schedules a retry
- * with backoff until the attempt ceiling. One that will not change (a 4xx, a
- * redirect, a private target) dead-letters at once: twenty attempts over three
- * days at a receiver answering 404 is not persistence, it is a flood. Dead rows
- * are kept for the retention window so they can be inspected and replayed.
- */
 
 const PURGE_INTERVAL_MS = 60 * 60 * 1000;
 
-/** Statuses a later attempt may turn into a 2xx. */
 function isRetryableStatus(status: number): boolean {
   return status === 408 || status === 425 || status === 429 || status >= 500;
 }
 
-/**
- * Undici wraps network failures (refused, reset, DNS) in a TypeError carrying a
- * `cause`; a TypeError without one is the request itself being unsendable.
- */
 function isPermanentError(error: unknown): boolean {
   return error instanceof TypeError && (error as { cause?: unknown }).cause === undefined;
 }
@@ -65,7 +48,6 @@ export interface DispatcherDeps {
   batchSize?: number;
   requestTimeoutMs?: number;
   leaseSeconds?: number;
-  /** Delivered and dead rows older than this are deleted. Omitted means never. */
   retentionHours?: number | undefined;
   resolve?: Resolver;
   logger?: Log | undefined;
@@ -98,7 +80,6 @@ export class WebhookDispatcher {
 
   constructor(deps: DispatcherDeps) {
     this.#db = deps.db;
-    // Pinned: the target checked before the send is the address the send reaches.
     this.#fetch = deps.fetch ?? pinnedFetch;
     this.#secret = deps.secret;
     this.#maxAttempts = deps.maxAttempts ?? WEBHOOK_MAX_ATTEMPTS;
@@ -128,19 +109,12 @@ export class WebhookDispatcher {
     return rows;
   }
 
-  /** Deliver everything currently due. Returns one outcome per row claimed. */
   async runOnce(): Promise<DeliveryOutcome[]> {
     const rows = await this.#claim();
     const outcomes = await Promise.all(rows.map((row) => this.deliver(row)));
     return outcomes;
   }
 
-  /**
-   * A `page` event carries the page's markdown, which lives in `documents`.
-   * It is read at send time rather than copied into the queue row, so a crawl
-   * with a webhook stores each page once. A page purged before delivery sends
-   * `null`.
-   */
   async #hydrate(row: DeliveryRow): Promise<unknown> {
     const data = row.payload.data;
     if (row.payload.event !== 'page' || !row.job_id || typeof data !== 'object' || data === null) {
@@ -178,7 +152,6 @@ export class WebhookDispatcher {
     };
     const serialised = JSON.stringify(body);
 
-    // Caller headers first, so the ones Helix promises cannot be replaced.
     const headers: Record<string, string> = {
       ...(row.payload.headers ?? {}),
       'content-type': 'application/json',
@@ -193,7 +166,6 @@ export class WebhookDispatcher {
     let permanent = false;
 
     try {
-      // A redirect is not followed: the target was checked, its Location was not.
       const response = await this.#fetch(row.url, {
         method: 'POST',
         headers,
@@ -202,7 +174,6 @@ export class WebhookDispatcher {
         signal: AbortSignal.timeout(this.#requestTimeoutMs),
       });
       statusCode = response.status;
-      // Drained so the socket goes back to the pool; the body is never read.
       await response.body?.cancel().catch(() => undefined);
       if (!response.ok) {
         const location = response.headers.get('location');
@@ -262,7 +233,6 @@ export class WebhookDispatcher {
     return { id: row.id, status: 'retry', attempts, statusCode, error };
   }
 
-  /** Delete settled rows past retention, at most once an hour. */
   async purgeIfDue(): Promise<number> {
     if (this.#retentionHours === undefined) return 0;
     const now = this.#now();
@@ -273,7 +243,6 @@ export class WebhookDispatcher {
     return purged;
   }
 
-  /** Poll for due deliveries until stopped. */
   async start(intervalMs = 5_000): Promise<void> {
     if (this.#running) return;
     this.#running = true;

@@ -27,7 +27,6 @@ describe('applyOperators', () => {
   });
 
   it('groups several domains so the OR binds correctly', () => {
-    // Without the parentheses the OR would apply to the query terms too.
     const result = applyOperators({
       ...base,
       sources: ['web'],
@@ -50,7 +49,6 @@ describe('applyOperators', () => {
 
 describe('freshnessToTbs', () => {
   it('maps a single unit without a redundant 1', () => {
-    // Google expects `qdr:d`, not `qdr:d1`.
     expect(freshnessToTbs('1d')).toBe('qdr:d');
     expect(freshnessToTbs('1w')).toBe('qdr:w');
   });
@@ -74,7 +72,6 @@ describe('provider configuration', () => {
   });
 
   it('refuses to search without a key rather than returning nothing', async () => {
-    // Silently returning zero results would look like "the web has no answer".
     await expect(
       new SerperProvider(undefined).search({ query: 'x', limit: 5, sources: ['web'] }),
     ).rejects.toThrow(/SERPER_API_KEY/);

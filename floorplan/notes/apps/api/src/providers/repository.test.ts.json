@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/providers/repository.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 21,
+      "offset": null,
+      "text": "A PUT that only changes the base URL (the local-provider case: e.g. saving\na new port for an openai-compatible server after a key was already stored)\nmust not blank out the previously-stored key. The route always fetches\nEXCLUDED.* in the ON CONFLICT clause; without COALESCE against the\nexisting row, an omitted apiKey overwrites the ciphertext columns with\nNULL.",
+      "kind": "why"
+    }
+  ]
+}

@@ -1,18 +1,5 @@
 import { checkUrl } from '../core/url-guard.js';
 
-/**
- * Source guardrails: what may become evidence for an enriched field.
- *
- * Enrichment is search-driven, so the candidate set is whatever a SERP returned
- * for a sparse identifier. That set reliably contains registrar parking pages,
- * "coming soon" placeholders and social profiles, none of which carry the facts
- * being asked for but all of which read as plausible prose to a model. Rejecting
- * them here is cheaper than un-inventing a value later, and it is the difference
- * between "no data" and a confident wrong answer.
- *
- * Every rejection names a reason, because the reason travels to the caller when
- * a field ends up null.
- */
 
 export const SOURCE_REJECTIONS = [
   'parked_domain',
@@ -33,28 +20,10 @@ export interface SourceVerdict {
 
 const OK: SourceVerdict = { ok: true };
 
-/**
- * Minimum characters of extracted text before a page counts as having said
- * anything. A real about/team/pricing page clears this several times over; a
- * placeholder rarely reaches it even counting its own boilerplate.
- */
 export const CONTENT_FLOOR_CHARS = 300;
 
-/**
- * Length above which the phrase-based parked and placeholder tests stop
- * applying. Those tests match short marketing phrases that a long, genuine page
- * may quote in passing; a real parking page is a few hundred characters of
- * nothing. Without this bound, "coming soon" in a product roadmap would discard
- * the roadmap.
- */
 const SHORT_PAGE_CHARS = 2_000;
 
-/**
- * Hosts whose pages are mostly interstitial, login-walled or infinite-scroll
- * chrome. They do carry facts, but the fraction that survives extraction is
- * noise, and a citation into one cannot be re-verified by a caller who is not
- * logged in.
- */
 const SOCIAL_BLOCKLIST = [
   'facebook.com',
   'instagram.com',
@@ -70,7 +39,6 @@ const SOCIAL_BLOCKLIST = [
   'weibo.com',
 ];
 
-/** Registrar and hosting parking services, matched on the host serving the page. */
 const PARKING_HOSTS = [
   'sedoparking.com',
   'parkingcrew.net',
@@ -85,10 +53,6 @@ const PARKING_HOSTS = [
   'cashparking.com',
 ];
 
-/**
- * Phrases identifying a parked or for-sale domain, matched against a lowercased,
- * whitespace-collapsed body so markup and line wrapping cannot hide them.
- */
 const PARKED_PHRASES = [
   'this domain is for sale',
   'this domain name is for sale',
@@ -101,7 +65,6 @@ const PARKED_PHRASES = [
   'related searches',
 ];
 
-/** Phrases identifying a site that exists but has not launched, or a default server page. */
 const PLACEHOLDER_PHRASES = [
   'coming soon',
   'under construction',
@@ -129,7 +92,6 @@ function hostOf(url: string): string | undefined {
   }
 }
 
-/** True when `host` is the blocked domain or a subdomain of it. */
 function matchesHost(host: string, blocked: string): boolean {
   return host === blocked || host.endsWith(`.${blocked}`);
 }
@@ -159,12 +121,6 @@ export interface SourceCandidate {
   text: string;
 }
 
-/**
- * Whether one fetched page may become evidence.
- *
- * Order is most-specific-first where reasons overlap: a parked page is also
- * below the content floor, and "parked" is the more useful reason to hand back.
- */
 export function screenSource(candidate: SourceCandidate): SourceVerdict {
   if (isBlocklistedSocial(candidate.url)) {
     return {
@@ -190,19 +146,7 @@ export function screenSource(candidate: SourceCandidate): SourceVerdict {
   return OK;
 }
 
-/**
- * URL validation for a source before it is fetched.
- *
- * `checkUrl` is the same SSRF guard the scrape pipeline uses. Enrichment reaches
- * this path with URLs a search backend chose rather than URLs a caller typed, so
- * the guard applies with more force here, not less.
- */
 export async function screenUrl(url: string): Promise<SourceVerdict> {
-  // The blocklist is a URL-level decision and belongs before the fetch, not
-  // after it. Screening it only on fetched content means a blocklisted page is
-  // requested anyway, and - since these hosts serve an interstitial to a
-  // non-browser client - it is then rejected for whatever the interstitial
-  // looked like, reporting a reason that is true but not the actual one.
   if (isBlocklistedSocial(url)) {
     return {
       ok: false,
@@ -215,7 +159,6 @@ export async function screenUrl(url: string): Promise<SourceVerdict> {
   return OK;
 }
 
-/** Canonical form for dedupe: host lowercased, tracking params and fragment dropped, trailing slash normalised. */
 export function canonicaliseUrl(raw: string): string {
   try {
     const url = new URL(raw);
@@ -232,7 +175,6 @@ export function canonicaliseUrl(raw: string): string {
   }
 }
 
-/** Drops repeat URLs, keeping first-seen order. */
 export function dedupeByUrl<T extends { url: string }>(items: readonly T[]): T[] {
   const seen = new Set<string>();
   const out: T[] = [];

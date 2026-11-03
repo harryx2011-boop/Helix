@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(marketing)/architecture/architecture-markdown.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "H2",
+      "line": 7,
+      "offset": 0,
+      "text": "Anchors `/architecture#roadmap` to the \"Build order\" heading without a rehype-slug dependency.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "A",
+      "line": 17,
+      "offset": 0,
+      "text": "The document links its siblings by bare filename; on the site those files only\nexist in the repo, so a bare relative reference is resolved to its GitHub blob\nURL before the shared link policy sees it (bare filenames have no scheme and\nwould otherwise pass through as same-origin, 404ing on this site).",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ArchitectureMarkdown",
+      "line": 26,
+      "offset": 0,
+      "text": "A `components` override with function values (`h1`, `h2`, `a`) cannot cross\nthe server/client boundary as a prop — React Server Components can only\nserialize plain data into a Client Component. This wrapper stays entirely on\nthe client side so the overrides are constructed where they are used, and\nthe server page above only ever passes it a plain markdown string.",
+      "kind": "doc"
+    }
+  ]
+}

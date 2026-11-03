@@ -89,7 +89,6 @@ describe('MonitorScheduler', () => {
 
   it('reschedules a windowed monitor past the check that falls outside business hours', async () => {
     const store = new MemoryMonitorStore();
-    // Hourly cron, Mon-Fri 9-17 UTC, due right now on a Friday afternoon.
     const due = new Date('2026-08-28T16:00:00Z');
     const m = await store.create({
       apiKeyId: null,
@@ -114,8 +113,6 @@ describe('MonitorScheduler', () => {
 
     expect(await scheduler.tick()).toBe(1);
     expect(ran).toEqual([m.id]);
-    // The 17:00 and later Friday firings are outside the window; the next one
-    // inside it is Monday morning.
     expect((await store.get(m.id))?.nextCheckAt?.toISOString()).toBe('2026-08-31T09:00:00.000Z');
   });
 
@@ -175,7 +172,6 @@ describe('MonitorScheduler', () => {
     expect(scheduler.inFlight).toBe(1);
     expect((await store.get(m.id))?.nextCheckAt).toBeNull();
 
-    // The same monitor is claimed; a second one finds no slot.
     const other = await monitor(store, new Date('2026-08-24T13:00:00Z'));
     expect(await scheduler.runNow(other.id)).toEqual({ ok: false, reason: 'busy' });
 

@@ -5,7 +5,6 @@ import { showPanel } from './panel';
 import { statusView } from './status';
 import { candidatePorts, findApi, type ApiTarget } from './target';
 
-/** How often the status bar re-checks the API. */
 const POLL_MS = 30_000;
 
 const PAGES = {
@@ -90,7 +89,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {}
 
-/** Whether `/app` answers with the app, which a dev API without a static dir does not. */
 async function servesApp(origin: string): Promise<boolean> {
   try {
     const response = await fetch(`${origin}/app`, { method: 'HEAD', signal: AbortSignal.timeout(3_000) });

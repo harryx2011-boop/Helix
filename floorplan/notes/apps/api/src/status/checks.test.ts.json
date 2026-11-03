@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/status/checks.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 8,
+      "offset": null,
+      "text": "The optional render backends are endpoints connected to per-render rather\nthan pooled resources, so \"configured\" is the only fact available without\nspending a connection inside a health check. These tests hold that an entry\nappears only when the operator turned the thing on — a health page listing a\ntier nobody enabled is worse than one line shorter.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 43,
+      "offset": null,
+      "text": "Empty is the pool being cold, not a missing browser.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 65,
+      "offset": null,
+      "text": "The URL routinely carries a token, and a health endpoint is often the\nleast-guarded route in a deployment.",
+      "kind": "what"
+    }
+  ]
+}

@@ -18,12 +18,6 @@ const { upsertProviderKey } = await import('./repository.js');
 const ENCRYPTION_KEY = Buffer.alloc(32, 7);
 
 describe('upsertProviderKey', () => {
-  /* A PUT that only changes the base URL (the local-provider case: e.g. saving
-     a new port for an openai-compatible server after a key was already stored)
-     must not blank out the previously-stored key. The route always fetches
-     EXCLUDED.* in the ON CONFLICT clause; without COALESCE against the
-     existing row, an omitted apiKey overwrites the ciphertext columns with
-     NULL. */
   it('keeps the stored key, iv and last4 when the upsert carries no apiKey', async () => {
     db.query.mockClear();
     await upsertProviderKey('key-1', 'openai-compatible', ENCRYPTION_KEY, {

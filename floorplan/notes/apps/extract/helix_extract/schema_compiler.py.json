@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/schema_compiler.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FABRICATION_KEYWORDS",
+      "line": 26,
+      "offset": 0,
+      "text": "Keywords that induce fabrication. A model told to return at least three items\nwill invent a third rather than report that it found two.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "_strictify",
+      "line": 82,
+      "offset": 9,
+      "text": "An object that declares no properties is a free-form map, not an empty\nrecord. Stamping `additionalProperties: false` on it forbids every key,\nwhich under strict mode makes the field structurally unfillable — the\nmodel cannot emit content it is not allowed to emit.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "_strictify",
+      "line": 98,
+      "offset": 25,
+      "text": "An optional field becomes nullable rather than absent, so the model\ncan still say \"not found\" without violating strict mode.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "_strictify",
+      "line": 105,
+      "offset": 32,
+      "text": "No `type` at all — an `enum`, `$ref`, `const`, or a bare\n`anyOf`/`oneOf`. There is no type list to extend, so wrap\nthe whole thing in an anyOf with a null branch instead.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "_GEMINI_TYPES",
+      "line": 173,
+      "offset": 0,
+      "text": "Gemini uses uppercase type names and understands only a subset of JSON Schema.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "_to_gemini",
+      "line": 190,
+      "offset": 5,
+      "text": "Silently dropping unknown keywords is correct here: Gemini rejects\nthe whole request for one it does not recognise.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "_to_gemini",
+      "line": 194,
+      "offset": 9,
+      "text": "A nullable union becomes the base type plus a nullable flag.",
+      "kind": "what"
+    }
+  ]
+}

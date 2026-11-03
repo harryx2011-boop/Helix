@@ -12,16 +12,8 @@ import { AnimatedCode, randomGlyphString, usePrefersReducedMotion } from '@/comp
 import { CodeToken } from '@/components/shared/code-panel';
 import { LadderExplainer } from './ladder-explainer';
 
-/** Deterministic fill for the pre-mount scramble placeholder — same glyph on server and client. */
 const NOISE_GLYPH = '░';
 
-/**
- * WEBSITE.md §4.2 hero panel + research/17 prompt-box anatomy: the shared
- * PromptBox (group-labelled endpoint track, URL row, toolbar) over a
- * generated request that types itself and a response that scrambles in, then
- * the ladder explainer below. Submit hands the value to the playground.
- * Composes only — never fetches.
- */
 export function HeroPanel({ id }: { id?: string }) {
   const router = useRouter();
   const [url, setUrl] = React.useState('');
@@ -29,8 +21,6 @@ export function HeroPanel({ id }: { id?: string }) {
   const [formats, setFormats] = React.useState<Format[]>([...DEFAULT_FORMATS]);
   const [playKey, setPlayKey] = React.useState<number | undefined>(undefined);
   const [requestKey, setRequestKey] = React.useState(0);
-  // Response scramble only starts once the request finishes typing (research/17):
-  // gated by requestDone, and re-keyed only when the request itself re-types.
   const [requestDone, setRequestDone] = React.useState(false);
 
   const lang: Lang = 'curl';
@@ -116,18 +106,9 @@ export function HeroPanel({ id }: { id?: string }) {
   );
 }
 
-/**
- * Pre-gate placeholder for the response panel: every quoted JSON value (not
- * keys) renders as glyph noise, matching ScrambleCode's mid-flight look, so
- * nothing readable leaks before the request finishes typing (research/17).
- * Reduced motion renders the real, settled response immediately instead.
- */
 function ScrambledPlaceholder({ code }: { code: string }) {
   const reducedMotion = usePrefersReducedMotion();
   const lines = React.useMemo(() => code.split('\n'), [code]);
-  // First paint (server + client) must be deterministic or React flags a
-  // hydration mismatch on the random glyphs. Render a fixed seed on mount,
-  // only randomize afterwards.
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
   const randomize = mounted && !reducedMotion;
@@ -151,7 +132,6 @@ function noiseLine(line: string, randomize: boolean): React.ReactNode {
     if (plain) nodes.push(plain);
     if (quoted) {
       if (colon) {
-        // JSON key: stays static, ink-coloured, never scrambles.
         nodes.push(
           <CodeToken key={i} kind="key">
             {quoted}
@@ -173,7 +153,6 @@ function noiseLine(line: string, randomize: boolean): React.ReactNode {
   return nodes;
 }
 
-/** Endpoint response preview shapes (lib/docs-content.ts response envelopes, trimmed for the hero). */
 const RESPONSE_PREVIEW: Record<Endpoint, string> = {
   document: `{
   "success": true,

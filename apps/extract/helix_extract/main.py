@@ -43,7 +43,6 @@ runtime.embeddings_runtime.activate()
 
 
 class LocalEmbeddings(BaseModel):
-    # missing | downloading | ready | failed
     state: str
     percent: int | None = None
     message: str | None = None
@@ -91,8 +90,6 @@ class ExtractResponse(BaseModel):
     language: str | None = None
     links: list[str] = Field(default_factory=list)
     extractor_used: str
-    # SHA-256 of normalised content. Drives incremental crawl and change
-    # detection, so it must be stable across cosmetic markup churn.
     content_hash: str
 
 
@@ -121,9 +118,6 @@ async def extract(request: ExtractRequest) -> ExtractResponse:
 class DocumentResponse(BaseModel):
     markdown: str
     pages: int
-    # Classified before parsing, so a scanned document routes to OCR instead of
-    # silently returning garbled characters — the failure that produces mojibake
-    # for CJK PDFs in tools that skip this step.
     needs_ocr: bool
     ocr_applied: bool
     suspected_garbled_text: bool
@@ -137,9 +131,6 @@ async def parse_document(
     max_pages: int | None = Query(default=None, ge=1),
     tables: str = Query(default="auto", pattern="^(auto|high-fidelity)$"),
 ) -> DocumentResponse:
-    # The file is the raw body and its kind is the Content-Type header. No
-    # base64, no JSON envelope: the gateway already holds the bytes once and
-    # should not need two more copies of a 25 MB upload to hand them over.
     content_type = request.headers.get("content-type", "")
     data = await request.body()
     if not data:
@@ -156,8 +147,6 @@ async def parse_document(
     except ValueError as exc:
         raise HTTPException(status_code=415, detail=str(exc)) from exc
     except documents.DocumentError as exc:
-        # The parser opened the bytes and refused them: the caller's file, not
-        # the service, is what failed.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return DocumentResponse(
@@ -180,9 +169,6 @@ class PdfAssessmentResponse(BaseModel):
 
 @app.post("/assess", response_model=PdfAssessmentResponse)
 async def assess_pdf_route(request: Request) -> PdfAssessmentResponse:
-    # Same wire shape as /document: raw bytes, kind from Content-Type. PDF
-    # only — the classifier this wraps has nothing to say about DOCX or XLSX,
-    # which carry no scanned-vs-text-layer distinction to assess.
     content_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
     data = await request.body()
     if not data:
@@ -216,8 +202,6 @@ class MetadataFinding(BaseModel):
 class MetadataScanResponse(BaseModel):
     file_type: str
     findings: list[MetadataFinding]
-    # All three risk bands are always present, so a caller rendering a summary
-    # never has to tell an absent band from a zero one.
     risk_summary: dict[str, int]
     warnings: list[str] = Field(default_factory=list)
 
@@ -253,7 +237,6 @@ def _metadata_type(content_type: str) -> str:
 
 @app.post("/metadata/scan", response_model=MetadataScanResponse)
 async def scan_metadata(request: Request) -> MetadataScanResponse:
-    # Same wire shape as /document: raw bytes, kind from Content-Type.
     content_type = request.headers.get("content-type", "")
     data = await request.body()
     if not data:
@@ -317,41 +300,24 @@ class StructuredRequest(BaseModel):
     content: str
     schema_: dict = Field(alias="schema")
     prompt: str | None = None
-    # Per-request override of the instance default. The key for that provider
-    # must already be configured, or supplied via `provider_keys` below.
     provider: str | None = None
     model: str | None = None
     include_sources: bool = False
-    # The caller's own provider keys, decrypted by the gateway, keyed by
-    # provider name. Present only when the caller has stored at least one;
-    # overrides the instance's environment credential for that provider.
     provider_keys: dict[str, str] | None = None
     provider_models: dict[str, str] | None = None
-    # The caller's own local-runtime base URLs, decrypted by the gateway, keyed
-    # by provider name. Same semantics as `provider_keys`, for Ollama, vLLM and
-    # OpenAI-compatible servers.
     provider_base_urls: dict[str, str] | None = None
 
 
 class StructuredResponse(BaseModel):
     data: dict
-    # The passages that reached the model, in page order, with the relevance
-    # score that selected them. Only filled when `include_sources` was set.
     sources: list[dict] = Field(default_factory=list)
     tokens_input: int
     tokens_output: int
     model_used: str
-    # How much of the page reached the model. Surfaced so a caller can tell a
-    # missing field apart from a trimmed-away one.
     blocks_kept: int = 0
     blocks_total: int = 0
-    # The provider that actually answered, and every provider tried and
-    # abandoned before it. Empty `fallback_from` means the first provider
-    # the request resolved to succeeded outright.
     provider_used: str = ""
     fallback_from: list[dict[str, str]] = Field(default_factory=list)
-    # From pricing.PRICE_TABLE; null when (provider_used, model_used) is
-    # unpriced rather than free — see that module's note on the distinction.
     cost_usd: float | None = None
     tokens_cache_read: int | None = None
     tokens_cache_write: int | None = None
@@ -372,16 +338,13 @@ async def structured(request: StructuredRequest) -> StructuredResponse:
             provider_base_urls=request.provider_base_urls,
         )
     except SchemaError as exc:
-        # A schema problem is the caller's to fix, and the hint says how.
         detail = f"{exc.message} {exc.hint}".strip() if exc.hint else exc.message
         raise HTTPException(status_code=400, detail=detail) from exc
     except llm.RequestError as exc:
-        # Also the caller's, but a different field than the schema.
         raise HTTPException(
             status_code=400, detail={"message": exc.message, "field": exc.field}
         ) from exc
     except llm.ProviderError as exc:
-        # No credentials, or the provider refused. Not the caller's fault.
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     return StructuredResponse(
@@ -402,13 +365,7 @@ async def structured(request: StructuredRequest) -> StructuredResponse:
 
 
 class EnrichVerifyRequest(BaseModel):
-    # The content that was sent to the model, fences included. Citations are
-    # checked against this rather than against the original page, so a passage
-    # the relevance trimmer dropped fails here even though it is really on the
-    # page - the model could not have read it.
     content: str
-    # Claimed fields, keyed by field name, each an object carrying `value` and
-    # `citation` as the enrichment schema asks the model to return them.
     claims: dict
 
 
@@ -417,11 +374,7 @@ class VerifiedField(BaseModel):
     value: Any = None
     citation: str | None = None
     grounded: bool
-    # Null when the model correctly reported the content does not state the
-    # field; set only when a claim was made and rejected.
     reason: str | None = None
-    # False for booleans, which cannot appear literally in the prose that
-    # establishes them. Surfaced so a caller can tell that weaker case apart.
     value_in_citation: bool
 
 
@@ -460,18 +413,11 @@ async def enrich_verify(request: EnrichVerifyRequest) -> EnrichVerifyResponse:
 class SchemaRequest(BaseModel):
     prompt: str
     urls: list[str] = Field(default_factory=list)
-    # Previous schema JSON, sent back when the caller is refining rather than
-    # starting fresh.
     hint: dict | None = None
     instruction: str | None = None
-    # The caller's own provider keys, decrypted by the gateway, keyed by
-    # provider name. Same semantics as StructuredRequest's.
     provider_keys: dict[str, str] | None = None
     provider_models: dict[str, str] | None = None
     provider_base_urls: dict[str, str] | None = None
-    # Naming a provider is the only way to reach a local runtime: auto-pick
-    # walks cloud vendors, so an instance with only Ollama configured would
-    # otherwise report no credentials.
     provider: str | None = None
     model: str | None = None
 
@@ -526,8 +472,6 @@ class ChunkRequest(BaseModel):
 
     @model_validator(mode="after")
     def _overlap_within_budget(self) -> "ChunkRequest":
-        # An overlap at or beyond the chunk budget re-carries a whole chunk
-        # forward on every split, so chunking never makes progress.
         if self.overlap >= self.max_tokens:
             raise ValueError("overlap must be smaller than max_tokens")
         return self
@@ -535,7 +479,6 @@ class ChunkRequest(BaseModel):
 
 class Chunk(BaseModel):
     text: str
-    # Stable across re-crawls, so a citation keeps resolving after the page moves.
     anchor: str
     tokens: int
     heading_path: list[str] = Field(default_factory=list)

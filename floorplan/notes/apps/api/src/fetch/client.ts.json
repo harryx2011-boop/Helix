@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/fetch/client.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FetchOptions",
+      "line": 6,
+      "offset": 0,
+      "text": "Client for helix-fetch (tiers 0 and 1).\n\nThis service reports what happened at the transport layer and applies no\npolicy of its own. Block classification lives in the core, so the rules stay\nin one place and are testable without a network.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "FetchOptions.impersonate",
+      "line": 8,
+      "offset": 0,
+      "text": "false selects tier 0 (plain); true selects tier 1 (TLS-impersonating).",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "FetchOptions.allowPrivate",
+      "line": 14,
+      "offset": 0,
+      "text": "Operator opt-in: follow redirects onto private addresses.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "FetchResult.setCookies",
+      "line": 21,
+      "offset": 0,
+      "text": "Every `Set-Cookie` line; `headers` keeps only one of them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "FetchClient.fetch",
+      "line": 42,
+      "offset": 3,
+      "text": "A little headroom over the inner timeout, so the service can report\nits own failure rather than being cut off mid-answer.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "FetchClient.tierToImpersonate",
+      "line": 103,
+      "offset": 0,
+      "text": "Map a tier onto the impersonation flag this service understands.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,13 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { getPool } from '../db/pool.js';
 
-/**
- * Success/block rate for one fingerprint profile.
- *
- * `documents.profile` and `fetch_failures.profile` both name the identity that
- * was applied, win or lose, so the rate is real usage against this profile
- * rather than a count of failures alone.
- */
 
 interface ProfileHealthRow {
   successes: string;

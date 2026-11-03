@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/jobs.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PAGE_SIZE",
+      "line": 5,
+      "offset": 0,
+      "text": "Job status, results and cancellation.\n\nResults are paginated by cursor rather than returned whole: a crawl of ten\nthousand pages does not fit in one response, and a caller that has to guess\nwhether it received everything has not really received anything.\n\nThe handlers are exported so `/crawl/{jobId}` can serve the same view under\nthe path the crawl spec documents.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "isJobId",
+      "line": 9,
+      "offset": 0,
+      "text": "Job ids are uuids. Anything else is answered as not found before it reaches\na query: Postgres rejects a malformed value on a uuid column as an error,\nwhich would surface as a 500 for what is a caller's typo.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "CURSOR",
+      "line": 13,
+      "offset": 0,
+      "text": "Only an offset this API handed out is a cursor. Postgres rejects a negative or oversized one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "JobViewOptions.basePath",
+      "line": 40,
+      "offset": 0,
+      "text": "Path prefix used to build the `next` cursor link, e.g. `/v1/jobs`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "JobViewOptions.type",
+      "line": 41,
+      "offset": 0,
+      "text": "Restrict to one job type; other types answer 404 on that path.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "cancelJob",
+      "line": 129,
+      "offset": 6,
+      "text": "Cancelling drops queued work but leaves finished results retrievable —\nand deliberately does not emit one failure webhook per abandoned URL,\nwhich turns a cancellation into a flood for the receiver.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "fetchJobSchema",
+      "line": 168,
+      "offset": 0,
+      "text": "A job's expected output shape, projected from the request that created it\nrather than stored separately — `jobs.request` already holds the whole\noriginal body, and a second copy would only be a chance for the two to\ndisagree.",
+      "kind": "doc"
+    }
+  ]
+}

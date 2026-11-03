@@ -1,0 +1,87 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/scripts/stage.mjs",
+  "description": "Builds every runtime piece and copies it into apps/desktop/resources for electron-builder's extraResources.",
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "Usage: node scripts/stage.mjs [--skip api,ui,extract,fetch,voice,browsers] [--skip <step>]...",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "corepack",
+      "line": 25,
+      "offset": 0,
+      "text": "Calling the JS entry points through this node avoids the .cmd shims, which need a shell.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "lockedVersions",
+      "line": 53,
+      "offset": 0,
+      "text": "Exact resolved versions of apps/api's direct dependencies, read from pnpm-lock.yaml.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "packageVersion",
+      "line": 72,
+      "offset": 0,
+      "text": "The single version of a package in the lockfile's packages section, for externals that are not direct deps.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "steps.api",
+      "line": 94,
+      "offset": 9,
+      "text": "dist/ also holds tsc output from `build`; the runtime needs only the single-file bundle.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "steps.api",
+      "line": 125,
+      "offset": 40,
+      "text": "electron-builder drops every node_modules dir under extraResources, so the externals travel\nunder a different source name and electron-builder.yml maps them back to api/node_modules.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "steps.ui",
+      "line": 136,
+      "offset": 3,
+      "text": "Always rebuilt: an export left over from a hosted or dev build would ship silently.\nBoth set explicitly: .env.local would otherwise make the build hosted and bake localhost:7400 into the chunks.",
+      "kind": "why"
+    },
+    {
+      "id": "n8",
+      "symbol": "steps.voice",
+      "line": 173,
+      "offset": 1,
+      "text": "voice-core is a sibling repo with its own build (uv + PyInstaller); HELIX_VOICE_CORE_SRC points elsewhere.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "steps.browsers",
+      "line": 190,
+      "offset": 5,
+      "text": "The full Chromium, about 450 MB, not the headless shell (D17 reverses D14).\nThe shell has no new-headless mode and announces itself in ways a hardened\npage reads, which is most of why the walled sites in bench-scrape still\nfailed; the installer carrying it is the price of the tier working.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": "steps.browsers",
+      "line": 194,
+      "offset": 9,
+      "text": ".links records this dev checkout's playwright path for browser GC; the installed app has no use for it.",
+      "kind": "what"
+    }
+  ]
+}

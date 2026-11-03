@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/monitor.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 21,
+      "offset": null,
+      "text": "Stands in for the API key hook: `x-test-key` names the calling key.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 155,
+      "offset": null,
+      "text": "The window pushed the next check to the following in-window instant, not\njust the next cron tick.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 208,
+      "offset": null,
+      "text": "Every other route validating a provider name uses this enum. Here it was a\nbare string, so an unknown name was stored and only failed later, on a\nscheduled check, where the caller sees it as lastError rather than a 400.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 263,
+      "offset": null,
+      "text": "The list is capped; a caller must be able to tell a short list from a cut one.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 337,
+      "offset": null,
+      "text": "Pausing during the run sticks; resuming sets a time again.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 409,
+      "offset": null,
+      "text": "Nothing changed for the owner.",
+      "kind": "what"
+    }
+  ]
+}

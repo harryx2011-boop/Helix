@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/scripts/build-fast.mjs",
+  "description": "Next's own type pass is ~90 s; the tsgo typecheck run just before this is seconds.",
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "The env var tells next.config.ts that check already ran. Set here, not in the\nnpm script, so it works on Windows and POSIX without cross-env.",
+      "kind": "what"
+    }
+  ]
+}

@@ -11,7 +11,6 @@ import { AsciiFlow, AsciiOrbit } from '@/components/shared/ascii-fields';
 import { endpointById } from '@/lib/catalog';
 import type { Endpoint } from '@/lib/endpoints';
 
-/** Hero field per endpoint, chosen so neighbours in the nav never share one. */
 const HERO_MOTIF: Record<Endpoint, HeroMotif> = {
   scrape: 'cloud',
   document: 'orbit',
@@ -32,7 +31,6 @@ function seedFor(id: string): number {
   return s;
 }
 
-/** Per-endpoint mock animation: type = content composing, reveal = results listing. */
 const MOCK_MODE: Record<Endpoint, AnimatedCodeMode> = {
   scrape: 'type',
   document: 'type',
@@ -52,33 +50,24 @@ export interface FeatureCardCopy {
   lead: string;
   body: string;
   evidence?: string;
-  /** When set, the cell renders an illustrative meter panel labelled by `evidence` instead of the evidence chip. */
   meters?: MeterRow[];
   meterSize?: 'pill' | 'thin';
 }
 
 export interface CapabilityPageCopy {
   endpoint: Endpoint;
-  /** Second line of the H1 renders in violet. */
   h1: [string, string];
   subhead: string;
-  /** Mock panel: browser-chrome or terminal-chrome, per WEBSITE.md §5's Mock column. */
   mock: {
     chrome: 'browser' | 'terminal';
     label: string;
     code: string;
   };
   features: FeatureCardCopy[];
-  /** Verbatim request/response pair — from openapi.yaml for live endpoints, the spec for coming ones. */
   request: string;
   response: string;
 }
 
-/**
- * The §5 capability-page template, six instances. Structure: eyebrow pill,
- * two-line H1 (line 2 violet), subhead, CTA pair, device mock, feature grid,
- * request/response block. The layout supplies nav/footer/agent-block.
- */
 export function CapabilityPage({ endpoint, h1, subhead, mock, features, request, response }: CapabilityPageCopy) {
   const def = endpointById(endpoint);
   if (!def) return null;
@@ -170,7 +159,6 @@ export function CapabilityPage({ endpoint, h1, subhead, mock, features, request,
   );
 }
 
-/** Bento rhythm: wide / narrow, then narrow / wide. */
 const SPAN: ('wide' | 'narrow')[] = ['wide', 'narrow', 'narrow', 'wide'];
 
 function FeatureCell({ icon, lead, body, evidence, meters, meterSize, index }: FeatureCardCopy & { index: number }) {

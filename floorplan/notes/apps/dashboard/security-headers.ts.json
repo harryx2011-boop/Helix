@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/security-headers.ts",
+  "description": "Next.js needs inline scripts for hydration and React writes inline style",
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "csp",
+      "line": 2,
+      "offset": 0,
+      "text": "attributes, so script-src and style-src keep 'unsafe-inline'. Everything\nelse stays same-origin: fonts are self-hosted and the site loads no\nthird-party script, image, frame or connection.",
+      "kind": "what"
+    }
+  ]
+}

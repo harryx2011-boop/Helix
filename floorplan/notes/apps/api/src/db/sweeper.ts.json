@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/db/sweeper.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SweepOptions",
+      "line": 5,
+      "offset": 0,
+      "text": "Deletes results older than the result TTL (`HELIX_RESULT_TTL_HOURS`), judged\nby each row's own timestamp: `jobs.created_at`, `documents.fetched_at`. The\n`expires_at` column is not read: nothing sets it, and its 7-day default\nwould ignore the configured TTL.\n\nDocuments go first so standalone scrapes (no job) are covered; deleting a\njob then cascades to its tasks, failures, deliveries and remaining documents.\nA job a worker still holds on a live lease is spared, and so are its\ndocuments, so a long crawl is never pulled out from under the worker.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SweepOptions.vacuum",
+      "line": 7,
+      "offset": 0,
+      "text": "PGlite has no autovacuum, so space freed by a delete is never reused unless this runs.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "VACUUM",
+      "line": 34,
+      "offset": 0,
+      "text": "Every table a sweep shrinks, directly or through the jobs cascade, plus the\nones other retention jobs prune.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "deleteInBatches",
+      "line": 37,
+      "offset": 0,
+      "text": "Bounded batches keep each statement's locks short on a shared Postgres.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "startSweeper",
+      "line": 75,
+      "offset": 15,
+      "text": "A desktop app that is opened for minutes at a time might never reach the first hourly tick.",
+      "kind": "why"
+    }
+  ]
+}

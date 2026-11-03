@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shell/theme-provider.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ThemeProvider",
+      "line": 16,
+      "offset": 0,
+      "text": "Dark-first: an operator's console defaults to dark regardless of OS\npreference (FRONTEND.md §3), but a stored choice always wins.",
+      "kind": "doc"
+    }
+  ]
+}

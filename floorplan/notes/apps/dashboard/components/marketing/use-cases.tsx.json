@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/use-cases.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "UseCases",
+      "line": 89,
+      "offset": 0,
+      "text": "WEBSITE.md §4.7: selectable use-case list driving a live demo panel.",
+      "kind": "doc"
+    }
+  ]
+}

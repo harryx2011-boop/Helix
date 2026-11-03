@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/scripts/bundle.mjs",
+  "description": "Bundles apps/api into one ESM file that Electron's own Node runs without tsx",
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "(DESKTOP-PLAN.md Phase 4). Writes dist/helix-api.js plus two manifests the\ndesktop stage script reads: externals.json (packages to install beside the\nbundle) and runtime-files.json (files the API reads from disk at runtime).",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "EXTERNALS",
+      "line": 12,
+      "offset": 0,
+      "text": "Installed beside the bundle, never inlined: each ships a WASM or native\npayload, or loads its own files by path at runtime.\n  playwright, playwright-core: browser registry, driver scripts, native launchers.\n  @electric-sql/pglite(-pgvector): postgres.wasm, the data bundle and extension tarballs.\n  pino: fastify's logger; its transports spawn thread-stream workers by file path.\n  sharp: native libvips binaries, one optional package per platform.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "OPTIONAL",
+      "line": 14,
+      "offset": 0,
+      "text": "Optional peers that are required lazily and never installed: pg's native\nbinding and ws's C accelerators. Left as runtime requires that fail softly.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": "RUNTIME_FILES",
+      "line": 16,
+      "offset": 0,
+      "text": "Paths the API resolves from its own location. `stagedAt` is relative to the\nstaged api folder, whose layout mirrors apps/api with dist/helix-api.js as\nthe entry.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "result.banner",
+      "line": 49,
+      "offset": 0,
+      "text": "Bundled CommonJS calls require() for the externals and node builtins; an\nESM file has no require of its own, so give it one.",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/scripts/bench-scrape.mjs",
+  "description": "Scrape throughput baseline over a fixed URL set (SUITE-PLAN Phase 1).",
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 3,
+      "offset": null,
+      "text": "Usage: HELIX_API_KEY=helix-... node apps/api/scripts/bench-scrape.mjs <label> [runs=4] [baseUrl]\nRuns the set serially `runs` times and writes per-URL medians to\nresearch/research_notes/Helix anti bot scraping 2026/bench-<label>.json.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "scored",
+      "line": 123,
+      "offset": 0,
+      "text": "The failure URLs are expected to fail; success rate is over the rest.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "summary.usefulRate",
+      "line": 131,
+      "offset": 0,
+      "text": "A success with no content (an empty challenge page) is not one.",
+      "kind": "what"
+    }
+  ]
+}

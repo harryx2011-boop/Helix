@@ -1,0 +1,103 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/webhooks/dispatcher.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PURGE_INTERVAL_MS",
+      "line": 15,
+      "offset": 0,
+      "text": "Delivers queued webhooks.\n\nClaims due rows by pushing their `next_retry_at` forward as a lease, so a\ncrashed dispatcher leaves nothing stuck: the lease expires and the row is\nsimply due again. A 2xx marks the row delivered. A failure that another\nattempt could fix (a 5xx, a timeout, a dropped connection) schedules a retry\nwith backoff until the attempt ceiling. One that will not change (a 4xx, a\nredirect, a private target) dead-letters at once: twenty attempts over three\ndays at a receiver answering 404 is not persistence, it is a flood. Dead rows\nare kept for the retention window so they can be inspected and replayed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "isRetryableStatus",
+      "line": 17,
+      "offset": 0,
+      "text": "Statuses a later attempt may turn into a 2xx.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "isPermanentError",
+      "line": 21,
+      "offset": 0,
+      "text": "Undici wraps network failures (refused, reset, DNS) in a TypeError carrying a\n`cause`; a TypeError without one is the request itself being unsendable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "DispatcherDeps.retentionHours",
+      "line": 51,
+      "offset": 0,
+      "text": "Delivered and dead rows older than this are deleted. Omitted means never.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "WebhookDispatcher.constructor",
+      "line": 83,
+      "offset": 2,
+      "text": "Pinned: the target checked before the send is the address the send reaches.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "WebhookDispatcher.runOnce",
+      "line": 112,
+      "offset": 0,
+      "text": "Deliver everything currently due. Returns one outcome per row claimed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "WebhookDispatcher.#hydrate",
+      "line": 118,
+      "offset": 0,
+      "text": "A `page` event carries the page's markdown, which lives in `documents`.\nIt is read at send time rather than copied into the queue row, so a crawl\nwith a webhook stores each page once. A page purged before delivery sends\n`null`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "WebhookDispatcher.deliver",
+      "line": 155,
+      "offset": 18,
+      "text": "Caller headers first, so the ones Helix promises cannot be replaced.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "WebhookDispatcher.deliver",
+      "line": 169,
+      "offset": 32,
+      "text": "A redirect is not followed: the target was checked, its Location was not.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "WebhookDispatcher.deliver",
+      "line": 177,
+      "offset": 40,
+      "text": "Drained so the socket goes back to the pool; the body is never read.",
+      "kind": "why"
+    },
+    {
+      "id": "n11",
+      "symbol": "WebhookDispatcher.purgeIfDue",
+      "line": 236,
+      "offset": 0,
+      "text": "Delete settled rows past retention, at most once an hour.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "WebhookDispatcher.start",
+      "line": 246,
+      "offset": 0,
+      "text": "Poll for due deliveries until stopped.",
+      "kind": "doc"
+    }
+  ]
+}

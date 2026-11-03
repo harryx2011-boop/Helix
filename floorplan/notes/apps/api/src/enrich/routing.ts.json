@@ -1,0 +1,111 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/enrich/routing.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "EXTRACTOR_PHASES",
+      "line": 2,
+      "offset": 0,
+      "text": "Field routing: answer from structure before paying a model.\n\nA model call is the most expensive and least trustworthy way to learn\nsomething the page already states in a machine-readable form. A JSON-LD\nOrganization block names the company; an og:title names the page; a mailto:\nlink names the email. Reading those costs microseconds, cannot hallucinate,\nand yields a citation that is exact by construction.\n\nSo each field is offered to the phases in order — metadata, then DOM\nstructure, then the model — and the model is asked only for the fields the\ncheap phases could not fill. On a page with good structured data this is the\ndifference between one model call and none.\n\nThe phases are not equally trustworthy and are not treated as such. A\nstructural hit is a fact read out of a named element; a model hit is a claim\nthat must then survive grounding. Both carry the phase that produced them, so\nthe difference is visible in the response rather than averaged away.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "FieldSpec.name",
+      "line": 7,
+      "offset": 0,
+      "text": "Field name as it appears in the caller schema and the response.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "FieldSpec.description",
+      "line": 8,
+      "offset": 0,
+      "text": "What is wanted, in the caller own words. Travels to the model when the cheap phases miss.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "PhaseHit.citation",
+      "line": 14,
+      "offset": 0,
+      "text": "The exact text the value was read out of, used as the citation.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "PhaseHit.locator",
+      "line": 17,
+      "offset": 0,
+      "text": "The element or key the value came from, named so a caller can re-read it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "PageEvidence.text",
+      "line": 22,
+      "offset": 0,
+      "text": "Extracted main-content text. What the model reads and what citations are checked against.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "PageEvidence.html",
+      "line": 24,
+      "offset": 0,
+      "text": "Raw HTML, when the pipeline was asked for it. The metadata and structural phases need it; the model phase does not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "jsonLdNodes",
+      "line": 27,
+      "offset": 0,
+      "text": "JSON-LD blocks on the page, parsed and flattened. Invalid blocks are skipped rather than failing the page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "metaTags",
+      "line": 59,
+      "offset": 0,
+      "text": "`<meta name|property=... content=...>` pairs, keyed lowercase.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "FIELD_SOURCES",
+      "line": 90,
+      "offset": 0,
+      "text": "Which metadata keys and JSON-LD properties answer a given field name.\n\nDeliberately a small, explicit table rather than a fuzzy matcher. A wrong\nstructural hit is worse than a miss, because it skips the model phase and\narrives with high confidence; the cost of missing a mapping is only that the\nmodel gets asked, which is the behaviour without this table at all.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "jsonLdScalar",
+      "line": 113,
+      "offset": 0,
+      "text": "Coerce a JSON-LD leaf to a scalar. Nested objects yield their `name`, which is how schema.org nests an Organization or Person.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "coerce",
+      "line": 123,
+      "offset": 0,
+      "text": "Coerce a scalar to the type the field asked for, or reject it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "runMetadataPhase",
+      "line": 136,
+      "offset": 0,
+      "text": "The metadata phase: `<meta>` tags and JSON-LD.\n\nThe citation for a structural hit is the key and its value written out, not a\nspan of body text, because that is literally where the value was read from and\na caller re-reading the page will find it there.\n\nSuch a hit needs no grounding check and deliberately does not get one. The\nvalue was parsed out of the fetched document by this process, so there is no\nmodel claim to disbelieve; a re-derivation step was written, found by mutation\ntesting to change no outcome, and removed rather than left in place reading as\nprotection it did not provide.",
+      "kind": "doc"
+    }
+  ]
+}

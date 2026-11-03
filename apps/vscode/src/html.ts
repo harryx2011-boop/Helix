@@ -1,18 +1,7 @@
-/**
- * The panel's page: one full-size iframe on the Helix app, and a small
- * script that passes the API key from the extension to that iframe.
- *
- * The key never sits in this HTML. The framed app asks for it
- * (`helix:embed-hello`, from `apps/dashboard/lib/embed.ts`); this page asks
- * the extension, then posts the answer to the iframe at its exact origin.
- */
 
 export interface PanelPage {
-  /** `http://127.0.0.1:<port>`. */
   origin: string;
-  /** The app page to open, e.g. `/app` or `/app/playground?tab=monitor`. */
   path: string;
-  /** A fresh random value per render, for the script's CSP nonce. */
   nonce: string;
 }
 

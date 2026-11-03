@@ -1,22 +1,9 @@
 import { listLocalProviderModels } from './models.js';
 import type { LocalProvider } from './repository.js';
 
-/**
- * Finds a local model runtime answering on its install-default address, so the
- * operator can be offered it instead of typing a base URL they may not know.
- *
- * Detection only offers. Nothing is stored and no request is routed to a
- * detected runtime until the operator saves it through `PUT /providers`: a
- * model call the operator never chose is a surprise, even on their own machine.
- *
- * The probe targets a fixed loopback address the instance picks itself, never
- * a caller's URL, so it sits with the service health checks rather than behind
- * the URL guard that protects fetches made on a caller's behalf.
- */
 
 export interface LocalRuntime {
   provider: LocalProvider;
-  /** The base URL to offer for storing, in the form `PUT /providers` takes. */
   baseUrl: string;
 }
 
@@ -30,9 +17,7 @@ export const DEFAULT_RUNTIMES: LocalRuntime[] = [{ provider: 'ollama', baseUrl: 
 
 export interface DetectorOptions {
   runtimes?: LocalRuntime[];
-  /** Health and the providers panel both ask; one probe answers both for this long. */
   ttlMs?: number;
-  /** An absent runtime is the common case and must not slow `/health` down. */
   timeoutMs?: number;
   now?: () => number;
 }

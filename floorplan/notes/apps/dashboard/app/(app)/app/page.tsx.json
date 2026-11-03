@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(app)/app/page.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "OverviewPage",
+      "line": 4,
+      "offset": 0,
+      "text": "No server-side data: the key lives in the browser and every figure on this\npage comes from the instance it talks to. Static in both modes, which also\nkeeps the self-host export buildable — awaiting `searchParams` would not be.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -16,10 +16,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-/**
- * Masked-key display plus the two escape hatches the plan calls for:
- * "offer a way to change or clear it" (FRONTEND.md F0).
- */
 export function KeyMenu() {
   const { apiKey, setApiKey, clearApiKey } = useApiKey();
   const { theme, setTheme } = useTheme();

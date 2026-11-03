@@ -2,15 +2,6 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 
-/**
- * The key-sync surface the hosted website mirrors its keys through.
- *
- * Its only trust boundary is a shared secret, and the route is the whole of
- * that boundary — there is no per-caller identity behind it. So the gate gets
- * tested from every angle a mistake could open it: absent, wrong, wrong shape,
- * right value in the wrong header form, and the disabled-by-default case that
- * is what a self-host deployment actually runs.
- */
 
 interface KeyRow {
   id: string;
@@ -28,8 +19,6 @@ const db = vi.hoisted(() => {
       const [name, hash, prefix, rateLimit] = values as [string, string, string, number];
       const existing = state.rows.find((r) => r.key_hash === hash);
       if (existing) {
-        // Mirrors ON CONFLICT (key_hash) DO UPDATE: an import is idempotent and
-        // un-revokes, which is how the website re-enables a key it re-issues.
         existing.name = name;
         existing.rate_limit = rateLimit;
         existing.revoked_at = null;
@@ -67,8 +56,6 @@ const KEY = 'helix-ABCDEFGHIJKLMNOP';
 
 let app: FastifyInstance;
 
-// A default parameter would fire on an explicit `undefined`, quietly turning
-// the disabled-instance cases back into enabled ones.
 async function build(...args: [] | [adminToken: string | undefined]): Promise<FastifyInstance> {
   const adminToken = args.length === 0 ? TOKEN : args[0];
   const built = Fastify();

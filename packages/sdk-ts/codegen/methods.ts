@@ -1,44 +1,18 @@
-/**
- * The SDK's method table. Each row names an operation in openapi.yaml and
- * holds only what the spec cannot say: the method's public name where it
- * differs from the operationId, the TypeScript types from src/types.ts where
- * the spec's schema is inline, and argument shapes kept for compatibility.
- * HTTP method, path, path and query parameters, whether a body is optional,
- * multipart fields, 204-means-void and unauthenticated routes all come from
- * the spec. codegen/generate.ts turns this into src/client.ts.
- *
- * Every operation in the spec is either a row here or listed in NOT_IN_SDK,
- * and the generator refuses to run otherwise, so a new endpoint cannot land
- * in the spec without a decision about the SDK.
- */
 
 export interface SdkMethod {
-  /** Public method name. */
   name: string;
-  /** operationId in openapi.yaml. */
   op: string;
   doc?: string;
-  /** Argument names for the path parameters, in path order, where they differ from the spec's. */
   pathArgs?: readonly string[];
-  /** TypeScript types for path parameters, by spec name, where `string`/`number` is too loose. */
   pathTypes?: Readonly<Record<string, string>>;
-  /** How query parameters are taken: one options object (default), one argument each, or not at all. */
   query?: 'options' | 'positional' | 'none';
-  /** Named type for the options object; otherwise it is written out from the spec's parameters. */
   queryType?: string;
-  /** Type of the body argument where the spec's JSON schema is inline or broader. */
   request?: string;
-  /** Name of the body argument. Defaults to `request`. */
   bodyArg?: string;
-  /** An upload type accepted in place of `request` and sent as multipart/form-data. */
   upload?: string;
-  /** Builds the body from one argument instead of taking it whole. */
   bodyFrom?: { field: string; arg: string; type: string };
-  /** Return type where the spec's response schema is inline or differs. */
   response?: string;
-  /** A function in src/transport.ts that decodes a non-JSON response. */
   decode?: string;
-  /** Build and return the URL instead of sending a request. */
   url?: boolean;
 }
 
@@ -135,7 +109,6 @@ A field with no grounding span in its source is dropped and reported in
   { name: 'updateMonitor', op: 'updateMonitor', bodyArg: 'patch' },
   { name: 'deleteMonitor', op: 'deleteMonitor' },
   { name: 'monitorHistory', op: 'monitorHistory', response: 'MonitorHistoryResponse' },
-  // Typed `unknown` since before generation; the spec's MonitorSnapshot would narrow it.
   { name: 'monitorSnapshot', op: 'monitorSnapshot', response: 'unknown' },
   { name: 'checkMonitor', op: 'checkMonitor', response: 'CheckMonitorResponse' },
   { name: 'monitorDeliveries', op: 'monitorDeliveries', response: 'MonitorDeliveriesResponse' },
@@ -164,7 +137,6 @@ A field with no grounding span in its source is dropped and reported in
   { name: 'health', op: 'health' },
 ];
 
-/** Operations in the spec with no SDK method, and why. */
 export const NOT_IN_SDK: Readonly<Record<string, string>> = {
   interactLiveView: 'An HTML page for a browser tab, not an API call.',
   pdfAssess: 'Not in the SDK yet; reachable through document({ op: "assess" }).',

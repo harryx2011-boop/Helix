@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/escalation.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ARTICLE",
+      "line": 13,
+      "offset": 0,
+      "text": "The camoufox tier is the expensive end of the ladder and runs in a process\nthe operator had to start. So the property under test is not that it works —\nit is that nothing reaches it by accident. Evidence walks a request up to\nchromium; only an explicit ceiling goes further.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 86,
+      "offset": null,
+      "text": "A ceiling is permission to go higher, not a reason to.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 99,
+      "offset": null,
+      "text": "Reached through the ceiling rather than as a floor: the tier below is\nstill preferred, and this only confirms camoufox is not skipped as\nincapable once a request has been allowed to climb.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 112,
+      "offset": null,
+      "text": "Plain sends no User-Agent and a non-browser JA4; a WAF scores that as a bot\nbefore tls ever runs (npmjs answered plain with 403 cf-mitigated).",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 172,
+      "offset": null,
+      "text": "example.com as served 2026-10-06: one sentence, one external script.",
+      "kind": "what"
+    }
+  ]
+}

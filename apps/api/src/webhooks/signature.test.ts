@@ -17,7 +17,6 @@ describe('webhook signatures', () => {
   });
 
   it('rejects a timestamp outside the tolerance window', () => {
-    // A captured delivery replayed an hour later must fail even with a valid MAC.
     const header = signPayload(SECRET, 1_700_000_000, BODY);
     expect(verifySignature(SECRET, header, BODY, { now: 1_700_003_601 })).toBe(false);
   });

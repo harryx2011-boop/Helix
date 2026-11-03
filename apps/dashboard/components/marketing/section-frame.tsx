@@ -2,12 +2,6 @@ import type { LucideIcon } from '@/components/icons/lucide';
 import { cn } from '@/lib/utils';
 import { CodeRain, PixelSquares } from '@/components/shared/ambient';
 
-/**
- * Firecrawl-style page frame: two vertical hairlines run the full page height,
- * mounted once in `(marketing)/layout.tsx` around every section. `FrameBand`
- * draws the between-section band, bleeding its horizontal hairlines out to
- * the viewport edge since the column itself has no horizontal hairline.
- */
 export function FrameColumn({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative mx-auto max-w-container overflow-x-hidden border-x-0 sm:border-x sm:border-m-border-faint">
@@ -17,13 +11,11 @@ export function FrameColumn({ children }: { children: React.ReactNode }) {
 }
 
 export interface FrameBandProps {
-  /** Seeds the ambient fields so neighbouring bands never share a pattern. */
   step?: string;
   icon?: LucideIcon;
   className?: string;
 }
 
-/** Band between sections, split at ~45% by a hairline; the section H2 beneath it carries the label. */
 export function FrameBand({ step, icon: Icon, className }: FrameBandProps) {
   return (
     <div className={cn('relative flex h-16 items-stretch border-y border-m-border-faint', className)}>

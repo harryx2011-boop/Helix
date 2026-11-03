@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/agent/schema-json.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SchemaJson",
+      "line": 3,
+      "offset": 0,
+      "text": "Minimal JSON pretty-printer with token coloring: keys stay foreground,\nstrings take the primary token, punctuation and literals go muted.",
+      "kind": "doc"
+    }
+  ]
+}

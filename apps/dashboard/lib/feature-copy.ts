@@ -1,11 +1,6 @@
 import type { LucideIcon } from '@/components/icons/lucide';
 import { BellRing, Camera, CalendarClock, CircleSlash, Crop, Eye, FileStack, Files, Filter, Gauge, GitBranch, GitCompareArrows, Globe2, KeyRound, Layers, Link2, ListChecks, Map as MapIcon, MousePointerClick, Quote, RefreshCw, ScanEye, ScanSearch, Search, ShieldCheck, ShieldHalf, SlidersHorizontal, Table2, Timer, FileText, Network, Braces, Sparkles, Calculator, Crosshair, Layers3 } from '@/components/icons/lucide';
 
-/**
- * Marketing copy for each thing Helix does, in plain words. One registry feeds the
- * feature pages, the home cards, the nav and the footer, so a name changes in one place.
- * The catalog (`lib/catalog.ts`) keeps the API names the signed-in app uses.
- */
 export type FeatureId =
   | 'scrape'
   | 'document'
@@ -29,12 +24,9 @@ export interface FeatureCard {
 export interface FeatureCopy {
   id: FeatureId;
   route: string;
-  /** Short plain label for the nav, footer and home cards. */
   name: string;
-  /** One sentence for a card. */
   blurb: string;
   icon: LucideIcon;
-  /** Nav column: what the person is trying to do. */
   group: 'Read' | 'Find' | 'Act and watch';
   title: string;
   description: string;
@@ -42,9 +34,7 @@ export interface FeatureCopy {
   subhead: string;
   mock: { chrome: 'browser' | 'terminal'; label: string; code: string };
   cards: [FeatureCard, FeatureCard, FeatureCard, FeatureCard];
-  /** The technical page for this feature. */
   docs: string;
-  /** True when the home page lists it. */
   home?: boolean;
 }
 

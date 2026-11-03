@@ -1,4 +1,3 @@
-/** A 16-bit mono WAV around raw PCM, for POST /transcribe. */
 export function encodeWav(pcm: Int16Array, sampleRate: number): Uint8Array {
   const out = new Uint8Array(44 + pcm.length * 2);
   const v = new DataView(out.buffer);

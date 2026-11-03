@@ -7,10 +7,6 @@ import { migrate, type MigrationResult } from './migrate.js';
 import { PgMonitorStore } from '../monitor/store.js';
 import { PgVectorSink } from '../vectors/sink.js';
 
-/**
- * The shipped migrations and queue SQL on the real engine, through the same
- * `createPool` the API boots with. No server, no Postgres: PGlite in memory.
- */
 
 const MIGRATIONS = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'migrations');
 
@@ -48,7 +44,6 @@ describe('migrate on pglite', () => {
 });
 
 describe('queue claims on pglite', () => {
-  // Verbatim from CrawlWorker.#claimJob.
   const CLAIM_JOB = `UPDATE jobs
           SET status = 'running',
               started_at = COALESCE(started_at, now()),
@@ -104,8 +99,6 @@ describe('queue claims on pglite', () => {
 });
 
 describe('pgvector sink on pglite', () => {
-  // chunks.embedding is vector(384); a unit vector along one axis per chunk
-  // makes the expected ranking exact.
   const axis = (i: number, lean = 0) => Array.from({ length: 384 }, (_, j) => (j === i ? 1 : j === i + 1 ? lean : 0));
   const sink = new PgVectorSink();
 

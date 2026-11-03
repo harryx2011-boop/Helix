@@ -8,24 +8,8 @@ import { cancelJob, fetchJobView } from './jobs.js';
 import { checkUrl, type HostResolver } from '../core/url-guard.js';
 import { mapWithLimit } from '../core/map-with-limit.js';
 
-/**
- * Batch scrape: many URLs in, one job to poll.
- *
- * This is `/scrape` run on the machinery `/crawl` already owns — the same job
- * table, worker, per-host politeness and result pagination. It adds no fetch,
- * extract or browser behaviour of its own.
- *
- * A batch is a crawl whose frontier is supplied rather than discovered, which
- * is expressed with the options the frontier already understands: `maxDepth: 0`
- * rejects every link a page yields as too deep, and `allowExternal` lets the
- * supplied list span hosts. Nothing is followed, nothing is guessed.
- *
- * Asynchronous only. A synchronous form would be a second execution path for
- * work that already outlives a request timeout at any interesting size.
- */
 
 export interface BatchLimits {
-  /** URLs one batch may carry. A caller-supplied list is not a runaway frontier, so this is generous. */
   maxUrls: number;
 }
 
@@ -33,13 +17,10 @@ export const DEFAULT_BATCH_LIMITS: BatchLimits = { maxUrls: 10_000 };
 
 export interface BatchRouteDeps {
   limits?: Partial<BatchLimits> | undefined;
-  /** `HELIX_ALLOW_PRIVATE_URLS`: let a batch fetch loopback and private-range addresses. */
   allowPrivateUrls?: boolean | undefined;
-  /** DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver. */
   resolveHost?: HostResolver | undefined;
 }
 
-/** The first URL whose host fails the egress check, checking each host once. */
 async function firstUnsafeUrl(urls: string[], deps: BatchRouteDeps): Promise<{ url: string; reason: string } | undefined> {
   const oneUrlPerHost = new Map<string, string>();
   for (const url of urls) {
@@ -60,7 +41,6 @@ const HttpUrlSchema = z
 function batchRequestSchema(limits: BatchLimits) {
   return z.object({
     urls: z.array(z.string()).min(1).max(limits.maxUrls),
-    /** Drop unparseable URLs and report them, instead of rejecting the whole batch. */
     ignoreInvalidURLs: z.boolean().default(false),
     formats: z.array(z.enum(CRAWL_FORMATS)).min(1).optional(),
     tier: z.enum(TIERS).optional(),
@@ -90,13 +70,7 @@ function partitionUrls(urls: string[]): PartitionedUrls {
       invalid.push(candidate);
       continue;
     }
-    // Stored as the frontier's `url` (see FrontierItem): the worker claims and
-    // completes rows by that exact string, so a raw `https://example.com` row
-    // was never matched and its page was dropped.
     const url = fetchUrl(candidate) ?? candidate;
-    // The frontier dedupes on the normalised key too, but doing it here keeps
-    // `total` honest in the 202 rather than reporting a count the job will
-    // never reach.
     const key = normaliseUrl(candidate) ?? url;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -106,13 +80,6 @@ function partitionUrls(urls: string[]): PartitionedUrls {
   return { valid, invalid };
 }
 
-/**
- * The job request the crawl worker reads.
- *
- * `maxDepth: 0` is what makes this a batch rather than a crawl: the worker
- * still calls `frontier.add` for every link it finds, and every one is rejected
- * as too deep.
- */
 export function toBatchJobRequest(body: ParsedBatchRequest, urls: string[]): CrawlJobRequest {
   const scrape = body.scrapeOptions ?? {};
   const seed = urls[0] as string;
@@ -124,7 +91,6 @@ export function toBatchJobRequest(body: ParsedBatchRequest, urls: string[]): Cra
     includePaths: [],
     excludePaths: [],
     allowSubdomains: true,
-    // A supplied list may span hosts; scope filtering would silently drop them.
     allowExternal: true,
     sitemap: 'skip',
     respectRobots: true,
@@ -182,7 +148,6 @@ export async function registerBatch(app: FastifyInstance, deps: BatchRouteDeps =
       });
     }
 
-    // Every URL is the caller's choice of what this instance connects to.
     const unsafe = await firstUnsafeUrl(valid, deps);
     if (unsafe) {
       return reply.code(400).send({
@@ -212,8 +177,6 @@ export async function registerBatch(app: FastifyInstance, deps: BatchRouteDeps =
       });
     }
 
-    // Every URL is a seed at depth 0. A crawl seeds one and discovers the rest;
-    // here the caller has already done the discovering.
     const values: string[] = [];
     const params: unknown[] = [job.id];
     valid.forEach((url, index) => {

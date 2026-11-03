@@ -2,17 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { listApiKeys } from '../core/api-keys.js';
 import { summariseUsage } from '../core/usage.js';
 
-/**
- * Request usage for the calling key.
- *
- * Scoped to `request.apiKey` and nothing else: a key id in the query would let
- * any caller read any other caller's traffic, and there is no ownership model
- * at this layer to check it against. The hosted dashboard aggregates across a
- * profile's keys by calling this with each of them — that fan-out belongs where
- * the profile is known, which is the dashboard, not here.
- */
 
-/** Hours. Bounded so a caller cannot ask for a scan of the whole table. */
 const MIN_WINDOW = 1;
 const MAX_WINDOW = 24 * 90;
 const DEFAULT_WINDOW = 24 * 7;
@@ -53,18 +43,10 @@ export async function registerUsage(app: FastifyInstance): Promise<void> {
         rateLimit: apiKey.rateLimit,
         lastUsedAt: apiKey.lastUsedAt,
       },
-      // The limiter is an in-process token bucket, so remaining headroom is
-      // only knowable from the X-RateLimit-* headers on a live response, not
-      // from anything stored. Stating the window here keeps the dashboard from
-      // presenting a stored count as if it were current headroom.
       window: { hours: parsed, unit: 'hour' },
     });
   });
 
-  /**
-   * Usage across every key on this instance. Every key belongs to the one
-   * operator, so summing them crosses no boundary.
-   */
   app.get<{ Querystring: { hours?: string } }>('/usage/all', async (request, reply) => {
     const raw = request.query.hours;
     const parsed = raw === undefined ? DEFAULT_WINDOW : Number(raw);

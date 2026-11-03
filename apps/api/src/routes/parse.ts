@@ -9,16 +9,6 @@ import { createPinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 import { rejectFabricationKeywords } from './scrape.js';
 import { resolveProviderKeys, toClientKeys } from '../providers/resolve.js';
 
-/**
- * POST /v1/parse — documents by upload or URL, same envelope as /scrape.
- *
- * Two inputs, one pipeline. A multipart `file` goes straight to helix-extract;
- * a `url` is fetched here first (binary-safe: helix-fetch decodes bodies as
- * text, which destroys a PDF). Either way the bytes are classified, hashed,
- * and parsed once per distinct file. The gateway enforces the upload ceiling
- * before a byte leaves the process, refuses remote hosts that are not public,
- * and caps how many parses it holds in memory at once.
- */
 
 const JsonOptionsSchema = z
   .object({
@@ -26,8 +16,6 @@ const JsonOptionsSchema = z
     prompt: z.string().min(1).optional(),
     model: z.string().min(1).optional(),
   })
-  // `provider` is deliberately not accepted: the instance's HELIX_LLM_PROVIDER
-  // applies to every call, and silently dropping an override would be a lie.
   .strict();
 
 const ParseOptionsSchema = z.object({
@@ -35,7 +23,6 @@ const ParseOptionsSchema = z.object({
   ocr: z.enum(['auto', 'force', 'off']).default('auto'),
   maxPages: z.number().int().min(1).optional(),
   tables: z.enum(['auto', 'high-fidelity']).default('auto'),
-  /** Remote fetch budget for the `url` path, in milliseconds. */
   timeout: z.number().int().min(1_000).max(300_000).default(30_000),
   jsonOptions: JsonOptionsSchema.optional(),
 });
@@ -54,14 +41,10 @@ export interface ParseRouteDeps {
   extractClient: ExtractClient;
   maxUploadBytes: number;
   userAgent: string;
-  /** Injectable for tests; defaults to global fetch. */
   fetchImpl?: PinnedFetch | undefined;
-  /** Injectable for tests; defaults to the system resolver. */
   lookup?: Lookup | undefined;
-  /** Parses held in memory at once before the route answers 503. */
   maxInFlight?: number | undefined;
   cache?: ParseCache<DocumentResult> | undefined;
-  /** Decrypts the caller's stored provider keys, when present, for `jsonOptions`. */
   encryptionKey?: Buffer | undefined;
 }
 
@@ -104,7 +87,6 @@ function firstIssueMessage(error: z.ZodError): { message: string; field: string 
   return { message: first ? `${field}: ${first.message}` : 'invalid request body', field };
 }
 
-// --- multipart --------------------------------------------------------------
 
 function parseFormats(values: FormDataEntryValue[]): string[] | undefined {
   const flat = values
@@ -183,7 +165,6 @@ export async function readMultipart(
   };
 }
 
-// --- remote fetch -----------------------------------------------------------
 
 function filenameFromUrl(url: string): string | undefined {
   try {
@@ -209,9 +190,6 @@ function filenameFromDisposition(header: string | null): string | undefined {
   return plain?.[1]?.trim() || undefined;
 }
 
-// The failure detail names the class of error and the code only. The
-// underlying message carries the resolved address and port, which would turn
-// the response into a probe of whatever the gateway can reach.
 function classifyRemoteError(error: unknown): ParseFailure {
   const err = error as { name?: string; cause?: { code?: string } };
   const code = err.cause?.code ?? '';
@@ -236,7 +214,6 @@ export async function fetchRemote(
     userAgent: string;
     timeoutMs: number;
     maxBytes: number;
-    /** Aborts the download when the caller disconnects, combined with the per-hop timeout above. */
     signal?: AbortSignal | undefined;
   },
 ): Promise<{ ok: true; file: FileInput } | { ok: false; failure: ParseFailure } | { ok: false; tooLarge: true }> {
@@ -244,9 +221,6 @@ export async function fetchRemote(
   let current = new URL(url);
   let response: Response;
 
-  // Redirects are followed by hand so every hop is checked against the host
-  // policy: an allowed public host answering 302 to an internal address is the
-  // usual way around a check made only on the first URL.
   for (let hop = 0; ; hop += 1) {
     if (deps.signal?.aborted) {
       return { ok: false, failure: classifyRemoteError({ name: 'AbortError' }) };
@@ -270,9 +244,6 @@ export async function fetchRemote(
         signal: deps.signal ? AbortSignal.any([timeout, deps.signal]) : timeout,
       });
     } catch (error) {
-      // `AbortSignal.any` loses which of the two signals actually fired, so
-      // the caller's is checked directly rather than reporting a caller
-      // disconnect as this hop's own download timeout.
       if (deps.signal?.aborted) {
         return { ok: false, failure: { reason: 'aborted', detail: 'the caller disconnected before the download finished' } };
       }
@@ -346,7 +317,6 @@ export async function fetchRemote(
   };
 }
 
-// --- route ------------------------------------------------------------------
 
 function validateOptions(raw: unknown): ParseOptions {
   const parsed = ParseOptionsSchema.safeParse(raw);
@@ -398,8 +368,6 @@ function tooLargeBody(request: FastifyRequest, maxBytes: number): Record<string,
 function documentFailure(error: unknown): ParseFailure | RequestError {
   if (error instanceof ExtractHttpError) {
     if (error.status === 415) return { reason: 'unsupported_type', detail: error.detail };
-    // 422 is helix-extract's answer for bytes its parser could not open: a
-    // corrupt or mislabelled file, which retrying will not fix.
     if (error.status === 422) return { reason: 'unsupported_type', detail: error.detail };
     if (error.status === 400) return invalid(error.detail);
     return { reason: 'service_unavailable', detail: error.detail || `helix-extract answered HTTP ${error.status}` };
@@ -424,17 +392,11 @@ function saturatedBody(request: FastifyRequest, maxInFlight: number): Record<str
 
 export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps): Promise<void> {
   const lookup = deps.lookup ?? defaultLookup;
-  // Pinned: the address the lookup checked is the address connected to.
   const fetchImpl = deps.fetchImpl ?? createPinnedFetch({ lookup });
   const cache = deps.cache ?? new ParseCache<DocumentResult>();
   const maxInFlight = deps.maxInFlight ?? DEFAULT_MAX_IN_FLIGHT;
-  // Multipart framing adds headers and boundaries on top of the file itself.
   const bodyLimit = deps.maxUploadBytes + 64 * 1024;
 
-  // Each parse holds its file in memory for as long as helix-extract takes,
-  // and the per-key rate limit counts requests, not bytes. This is the bound
-  // on resident uploads; the browser pool's maxContexts plays the same role
-  // for /scrape.
   let inFlight = 0;
 
   await app.register(async (scope) => {
@@ -444,8 +406,6 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
       (_request, body, done) => done(null, body),
     );
 
-    // Refuse before the body is buffered; the handler re-checks when it
-    // actually takes a slot.
     scope.addHook('preParsing', async (request, reply) => {
       if (inFlight >= maxInFlight) {
         void reply.header('retry-after', '1');
@@ -459,8 +419,6 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
       if (status === 413) {
         return reply.code(413).send(tooLargeBody(request, deps.maxUploadBytes));
       }
-      // Fastify's own parser errors (malformed or empty JSON, a content type
-      // with no parser) are the client's to fix, not ours to alarm on.
       if (status !== undefined && status >= 400 && status < 500) {
         const message =
           status === 415
@@ -513,8 +471,6 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
           const raw = request.body;
           if (!Buffer.isBuffer(raw)) throw invalid('multipart body was empty.', 'file');
           const read = await readMultipart(raw, contentType);
-          // The framed body is not needed again; only the file's own bytes stay
-          // resident for the parse.
           (request as { body: unknown }).body = undefined;
           file = read.file;
           options = validateOptions(read.options);
@@ -591,8 +547,6 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
       const fileType: FileType = classified.fileType;
 
       const hash = contentHash(file.bytes);
-      // Office containers share a zip signature, so the parser is chosen from
-      // the declared type or name; the same bytes can legitimately parse two ways.
       const cacheKey = ParseCache.key(hash, {
         fileType,
         ocr: options.ocr,
@@ -675,8 +629,6 @@ export async function registerParse(app: FastifyInstance, deps: ParseRouteDeps):
           }
           const detail =
             error instanceof ExtractHttpError ? error.detail : error instanceof Error ? error.message : String(error);
-          // The document parsed; the model step is the part that failed. Return
-          // what exists and say what is missing rather than discarding the parse.
           warnings.push(`json: structured extraction failed: ${detail}`);
         }
       }

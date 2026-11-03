@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/profiles.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "DocRow",
+      "line": 5,
+      "offset": 0,
+      "text": "Profile success/block rate, read straight off `documents` and\n`fetch_failures`. The fake models the two counting subqueries and the\n`GREATEST` over their two max-timestamp subqueries, rather than\nprecomputing a rate, so the route's own arithmetic is what is under test.",
+      "kind": "doc"
+    }
+  ]
+}

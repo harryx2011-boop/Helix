@@ -1,0 +1,183 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/scrape.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FORMATS",
+      "line": 16,
+      "offset": 0,
+      "text": "Scrape: one URL in, one document out.\n\nEvery format here is produced by code that exists. Formats the spec lists but\nnothing serves yet (`images`, `pdf`, `summary`) are rejected at validation\nrather than accepted and silently dropped.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PROVIDERS",
+      "line": 20,
+      "offset": 0,
+      "text": "Providers helix-extract can route to. A request may pick one; the key must already be configured.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ProxySchema",
+      "line": 45,
+      "offset": 0,
+      "text": "`auto` uses the operator's proxy when one is configured and goes direct\notherwise. `stealth` insists on the operator's proxy. `none` goes direct even\nwhen one is configured. An object is the caller's own proxy for this request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ScrapeRequestSchema.engine",
+      "line": 57,
+      "offset": 0,
+      "text": "Which browser drives the render tier. The instance default when unset.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "ScrapeRequestSchema.jsonOptions",
+      "line": 70,
+      "offset": 0,
+      "text": "The spec's name for `extract`. Either key is accepted; not both.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "ScrapeRequestSchema.maxAge",
+      "line": 72,
+      "offset": 0,
+      "text": "Accept a cached result up to this many milliseconds old. 0 always fetches.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "ScrapeRouteDeps.proxyUrl",
+      "line": 81,
+      "offset": 0,
+      "text": "The operator's proxy (`HELIX_PROXY_URL`), used by `proxy: \"auto\" | \"stealth\"`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "ScrapeRouteDeps.allowPrivateUrls",
+      "line": 82,
+      "offset": 0,
+      "text": "`HELIX_ALLOW_PRIVATE_URLS`: let callers fetch loopback, link-local and private-range addresses.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "ScrapeRouteDeps.resolveHost",
+      "line": 83,
+      "offset": 0,
+      "text": "DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "ScrapeRouteDeps.encryptionKey",
+      "line": 84,
+      "offset": 0,
+      "text": "Decrypts the caller's stored provider keys, when present, for `jsonOptions`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "rejectFabricationKeywords",
+      "line": 87,
+      "offset": 0,
+      "text": "Reject extraction schemas that push models to fabricate.\n\nLength keywords do not make a model find more real items; they make it invent\nentries to satisfy the constraint. Vendors document this as a caveat and let\nthe request through anyway. Refusing it with an explanation is better than a\nconfidently wrong answer.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "registerScrape",
+      "line": 155,
+      "offset": 19,
+      "text": "The URL is the caller's choice of what this instance connects to. Without\nthis, an API key reaches cloud metadata, Postgres and the internal\nservices through the fetch tiers.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "registerScrape",
+      "line": 197,
+      "offset": 61,
+      "text": "A prompt alone gives the model nothing to fill. Constrained decoding\nneeds a shape, and an empty shape returns an empty object.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "registerScrape",
+      "line": 217,
+      "offset": 81,
+      "text": "A caller's proxy is a host this instance connects to; the operator's is trusted.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "registerScrape",
+      "line": 226,
+      "offset": 90,
+      "text": "Actions change the page they run on, so their result is never replayed.",
+      "kind": "why"
+    },
+    {
+      "id": "n16",
+      "symbol": "registerScrape",
+      "line": 235,
+      "offset": 99,
+      "text": "A phone layout only exists in a browser. Forcing the tier here keeps the\ncaller's `tier: \"auto\"` honest instead of returning the desktop HTML with\n`mobile: true` quietly ignored.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "registerScrape",
+      "line": 245,
+      "offset": 109,
+      "text": "Paced with every other call this instance makes to the same host. A single\nscrape used to be exempt, which made the crawl's politeness easy to walk\naround: an agent calling /scrape in a loop is a crawl the host cannot tell\napart from one.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "registerScrape",
+      "line": 266,
+      "offset": 130,
+      "text": "The wait for the host's turn is spent from the caller's timeout, not\nadded to it: a 30 s scrape must answer within 30 s.",
+      "kind": "why"
+    },
+    {
+      "id": "n19",
+      "symbol": "registerScrape",
+      "line": 278,
+      "offset": 142,
+      "text": "A failure is reported inside a 200 so the caller can see which tiers and\nprofile were tried. A bot challenge is never dressed up as content.",
+      "kind": "why"
+    },
+    {
+      "id": "n20",
+      "symbol": "registerScrape",
+      "line": 339,
+      "offset": 203,
+      "text": "Tokens are billed by the caller's provider. Helix does not carry a\nprice table, so the amount is reported as unknown rather than zero.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "registerScrape",
+      "line": 350,
+      "offset": 214,
+      "text": "The page was read; only the model step failed. `null` with the reason\nbeside it, rather than a failed request that hides the content.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "registerScrape",
+      "line": 388,
+      "offset": 252,
+      "text": "True only when a phone viewport was actually applied. Firefox takes the\noption without emulating touch, so it does not count as applied.",
+      "kind": "what"
+    }
+  ]
+}

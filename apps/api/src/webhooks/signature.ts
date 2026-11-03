@@ -1,10 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-/**
- * Stripe-shaped signing: HMAC-SHA256 over `{timestamp}.{body}`, sent as
- * `Helix-Signature: t=<unix>,v1=<hex>`. The timestamp inside the signed string
- * is what stops a captured delivery from being replayed later.
- */
 
 export const SIGNATURE_HEADER = 'helix-signature';
 const DEFAULT_TOLERANCE_SECONDS = 300;
@@ -19,7 +14,6 @@ export interface VerifyOptions {
   now?: number;
 }
 
-/** Constant-time check of a `Helix-Signature` header against the raw body. */
 export function verifySignature(
   secret: string,
   header: string,

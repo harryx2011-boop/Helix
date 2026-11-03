@@ -1,21 +1,5 @@
 import { z } from 'zod';
 
-/**
- * The catalogue of operator-editable settings.
- *
- * Every entry declares how a change takes effect, because that is what an
- * operator most needs to know and what a settings screen most easily lies
- * about:
- *
- * - `live`    — applied immediately through a setter on a running object.
- * - `restart` — persisted, but the process reads it only at boot.
- * - `guarded` — as `restart`, and refused unless the caller confirms it
- *               explicitly. These change the instance's security posture.
- *
- * A setting absent from this registry cannot be written at all. That is
- * deliberate: the database URL, the listen port and the internal admin token
- * have no business being reachable from an HTTP surface, so they are not here.
- */
 
 export type Effect = 'live' | 'restart' | 'guarded';
 
@@ -24,9 +8,7 @@ export interface SettingDef {
   env: string;
   effect: Effect;
   schema: z.ZodTypeAny;
-  /** Shown beside the field. Says what the setting does, not what type it is. */
   description: string;
-  /** Why a guarded setting is dangerous. Required for `guarded`. */
   warning?: string;
 }
 

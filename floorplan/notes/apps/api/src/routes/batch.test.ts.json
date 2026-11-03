@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/batch.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Call",
+      "line": 5,
+      "offset": 0,
+      "text": "Batch route contract. Postgres is a fake: what matters here is the request\nsurface, that every URL is seeded rather than discovered, and that the job\nrequest the worker will read cannot follow a link.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 110,
+      "offset": null,
+      "text": "The worker claims and completes rows by the frontier's normalised URL; a\nraw `https://example.com` row matched nothing and its page was dropped.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 139,
+      "offset": null,
+      "text": "maxDepth 0 rejects every discovered link as too deep; skipping the sitemap\nstops the other source of URLs the caller did not ask for.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 165,
+      "offset": null,
+      "text": "Same closed set as /scrape and /crawl; openapi declares it as the Format enum.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 261,
+      "offset": null,
+      "text": "`/batch/scrape/{id}` serves the same rows as `/jobs/{id}`: one operator owns\nevery key, so neither statement carries an owner predicate.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/cli/src/init.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "browserUrl",
+      "line": 57,
+      "offset": 0,
+      "text": "The website no longer hosts the app, so --browser sends a person to the desktop download.",
+      "kind": "doc"
+    }
+  ]
+}

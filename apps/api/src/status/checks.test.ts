@@ -4,13 +4,6 @@ import type { FetchClient } from '../fetch/client.js';
 import type { ExtractClient } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
 
-/**
- * The optional render backends are endpoints connected to per-render rather
- * than pooled resources, so "configured" is the only fact available without
- * spending a connection inside a health check. These tests hold that an entry
- * appears only when the operator turned the thing on — a health page listing a
- * tier nobody enabled is worse than one line shorter.
- */
 
 vi.mock('../db/pool.js', () => ({
   checkHealth: vi.fn(async () => ({ status: 'ok' as const, latencyMs: 1 })),
@@ -47,7 +40,6 @@ describe('service checks', () => {
       extractClient,
       browserPool: browserPool([]),
     });
-    // Empty is the pool being cold, not a missing browser.
     expect(services['browser']?.detail).toContain('engine: chromium');
   });
 
@@ -70,8 +62,6 @@ describe('service checks', () => {
   });
 
   it('never puts the remote endpoint itself in the response', async () => {
-    // The URL routinely carries a token, and a health endpoint is often the
-    // least-guarded route in a deployment.
     const services = await runServiceChecks({
       fetchClient,
       extractClient,

@@ -17,17 +17,6 @@ import type {
 import { MONITOR_LIST_LIMIT } from '../monitor/store.js';
 import { PROVIDERS, rejectFabricationKeywords } from './scrape.js';
 
-/**
- * Monitor.
- *
- * Create a watch on one URL, read its state and timeline, adjust or pause it,
- * delete it. Checks run on the scheduler, not in the request; `POST .../check`
- * asks the scheduler for one right now, under the same claim and budget.
- *
- * Every monitor belongs to the API key that created it. A key that holds
- * another key's monitor id gets 404, the same answer as for an id that does
- * not exist.
- */
 
 const BASE_PATH = '/v1/monitor';
 const HISTORY_PAGE = 50;
@@ -131,9 +120,7 @@ export interface MonitorRouteDeps {
   store: MonitorStore;
   scheduler: MonitorScheduler<CheckOutcome>;
   minIntervalSeconds: number;
-  /** `HELIX_ALLOW_PRIVATE_URLS`: let monitors watch loopback and private-range addresses. */
   allowPrivateUrls?: boolean | undefined;
-  /** DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver. */
   resolveHost?: HostResolver | undefined;
 }
 
@@ -181,7 +168,6 @@ function toJsonOptions(input: z.infer<typeof JsonOptionsSchema>): MonitorJsonOpt
   };
 }
 
-/** `trigger.selector` and a non-empty `includeSelectors` name the same knob twice. */
 function selectorConflict(scrape: MonitorRecord['scrapeOptions'], trigger: z.infer<typeof TriggerSchema>): boolean {
   return trigger.selector !== undefined && (scrape.includeSelectors?.length ?? 0) > 0;
 }
@@ -272,7 +258,6 @@ function serializeDelivery(delivery: DeliveryRecord): Record<string, unknown> {
 export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDeps): Promise<void> {
   const owner = (request: FastifyRequest): string | null => request.apiKey?.id ?? null;
 
-  /** The monitor, if it exists and belongs to the calling key. */
   const load = async (request: FastifyRequest<{ Params: { id: string } }>): Promise<MonitorRecord | undefined> => {
     const monitor = await deps.store.get(request.params.id);
     return monitor && monitor.apiKeyId === owner(request) ? monitor : undefined;
@@ -308,7 +293,6 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
 
   const guard = { allowPrivate: deps.allowPrivateUrls, resolve: deps.resolveHost };
 
-  /** A caller's proxy is a host every check connects to, so it meets the egress rules once, here. */
   const proxyProblem = async (scrape: z.infer<typeof ScrapeOptionsSchema> | undefined): Promise<string | undefined> => {
     if (!scrape?.proxy) return undefined;
     const verdict = await checkProxyUrl(scrape.proxy.url, guard);
@@ -397,10 +381,6 @@ export async function registerMonitor(app: FastifyInstance, deps: MonitorRouteDe
 
     const patch: Parameters<MonitorStore['update']>[1] = {};
 
-    // A null `nextCheckAt` on a monitor that is not paused is a running
-    // check's claim. Setting a time now would let the scheduler claim it
-    // again before that check ends; the check's own reschedule reads the
-    // new schedule when it finishes.
     const claimed = existing.status !== 'paused' && existing.nextCheckAt === null;
 
     if (body.schedule !== undefined) {

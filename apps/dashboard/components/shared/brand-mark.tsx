@@ -1,7 +1,6 @@
 import { BRAND_MARKS, type BrandId } from '@/lib/brand-marks';
 import { cn } from '@/lib/utils';
 
-/** A platform's or client's real mark. `mono` forces currentColor, e.g. white on the violet button. */
 export function BrandMark({ id, mono, className }: { id: BrandId; mono?: boolean; className?: string }) {
   const mark: { src: string; mono?: boolean } = BRAND_MARKS[id];
   if (mono ?? mark.mono) {

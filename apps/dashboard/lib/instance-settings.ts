@@ -3,17 +3,6 @@
 import { desktopCredentials } from '@/lib/desktop';
 import { resolveBaseUrl } from '@/lib/api';
 
-/**
- * Instance settings, called straight from the browser.
- *
- * Self-host serves this dashboard as a static export from the API itself, so
- * there is no dashboard server to hold a secret and no route handler to proxy
- * through. The operator's admin token therefore lives in localStorage beside
- * the API key, the same way self-host already handles credentials.
- *
- * The token authenticates the operator, not a caller: it is the same
- * `HELIX_INTERNAL_ADMIN_TOKEN` the instance was started with.
- */
 
 const STORAGE_KEY = 'helix.adminToken';
 
@@ -68,7 +57,6 @@ interface FailureBody {
 
 export class SettingsError extends Error {
   readonly status: number;
-  /** Set when the API refused pending a confirmation naming this key. */
   readonly confirm: string | undefined;
 
   constructor(message: string, status: number, confirm?: string) {

@@ -27,12 +27,6 @@ describe('everyToCron', () => {
     expect(() => everyToCron('0h')).toThrow(ScheduleError);
   });
 
-  // A 45-minute cron fires at :00 and :45, a 15-minute gap, not 45. Any
-  // minute amount that does not divide 60 has the same problem, and the
-  // equivalent is true for hours over a day and any multi-day interval: a
-  // day-of-month step restarts the count at 1 every month, so a 10-day
-  // schedule fires on day 21, day 31 (or the 1st), day 11 -- never a steady
-  // 10 days apart.
   it('rejects minute amounts that do not divide 60', () => {
     expect(() => everyToCron('45m')).toThrow(ScheduleError);
     expect(() => everyToCron('45m')).toThrow(/cron expression/);
@@ -113,7 +107,6 @@ describe('nextRun', () => {
   it('computes the next firing after a given instant in the schedule timezone', () => {
     const from = new Date('2026-08-24T12:30:00Z');
     expect(nextRun({ cron: '0 * * * *', timezone: 'UTC' }, from)?.toISOString()).toBe('2026-08-24T13:00:00.000Z');
-    // 9am London in August is 08:00 UTC.
     expect(nextRun({ cron: '0 9 * * *', timezone: 'Europe/London' }, from)?.toISOString()).toBe(
       '2026-08-25T08:00:00.000Z',
     );
@@ -127,7 +120,6 @@ describe('minimum interval', () => {
   });
 
   it('catches a pattern that is sparse except at one point', () => {
-    // Hourly, plus an extra firing one minute past nine.
     const gap = minimumGapSeconds({ cron: '0,1 9 * * *', timezone: 'UTC' }, 8, new Date('2026-08-24T00:00:00Z'));
     expect(gap).toBe(60);
   });
@@ -143,8 +135,6 @@ describe('minimum interval', () => {
 
 describe('business-hours window', () => {
   it('skips a firing outside the window to the next one inside it', () => {
-    // Hourly cron, Mon-Fri 9-17 UTC. From a Friday evening, the next in-window
-    // firing is Monday morning, not Friday 18:00.
     const schedule = normalizeSchedule({
       cron: '0 * * * *',
       timezone: 'UTC',
@@ -170,16 +160,14 @@ describe('business-hours window', () => {
       timezone: 'UTC',
       window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 },
     });
-    // The window is open 8 hours a day, so the largest gap (Friday 16:00 to
-    // Monday 09:00) dwarfs the 1-hour cron interval elsewhere in the sample.
     const from = new Date('2026-08-24T00:00:00Z');
     expect(minimumGapSeconds(schedule, 8, from)).toBe(3600);
   });
 
   it('defaults days to Monday-Friday when omitted', () => {
     const schedule = normalizeSchedule({ cron: '0 12 * * *', timezone: 'UTC', window: { startHour: 9, endHour: 17 } });
-    expect(withinWindow(schedule.window!, new Date('2026-08-22T12:00:00Z'), 'UTC')).toBe(false); // Saturday
-    expect(withinWindow(schedule.window!, new Date('2026-08-24T12:00:00Z'), 'UTC')).toBe(true); // Monday
+    expect(withinWindow(schedule.window!, new Date('2026-08-22T12:00:00Z'), 'UTC')).toBe(false);
+    expect(withinWindow(schedule.window!, new Date('2026-08-24T12:00:00Z'), 'UTC')).toBe(true);
   });
 
   it('rejects a window and cron combination that never intersects', () => {
@@ -201,7 +189,6 @@ describe('business-hours window', () => {
       timezone: 'Europe/London',
       window: { days: [1, 2, 3, 4, 5], startHour: 9, endHour: 17 },
     });
-    // 08:30 UTC is 09:30 London in August (BST), inside the window.
     expect(withinWindow(schedule.window!, new Date('2026-08-24T08:30:00Z'), 'Europe/London')).toBe(true);
   });
 });

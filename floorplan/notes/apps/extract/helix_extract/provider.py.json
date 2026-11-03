@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/provider.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MAX_ATTEMPTS",
+      "line": 30,
+      "offset": 0,
+      "text": "Attempts include the first try, so 3 means up to 2 retries.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "CALL_TIMEOUT_SECONDS",
+      "line": 34,
+      "offset": 0,
+      "text": "A ceiling on the one genuinely unbounded step here: the SDK call itself. None\nof the three SDKs accept a cooperative cancellation token, and none is given\na client-level timeout, so a stalled connection would otherwise hang this\ncoroutine (and the request awaiting it) indefinitely. Generous on purpose —\nthis is a ceiling for a stuck connection, not a latency budget.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "_is_retryable",
+      "line": 66,
+      "offset": 0,
+      "text": "429 (rate limit), 5xx (provider-side fault) and a connection failure carry no\ninformation about the request itself, so retrying them can plausibly help.\nEverything else — a bad key, a malformed request, a model that does not\nexist — will fail identically on the second attempt, and retrying it only\ndelays the failure the caller needs to see.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "call_structured",
+      "line": 122,
+      "offset": 25,
+      "text": "asyncio.wait_for's own TimeoutError, not a status the SDK\nreported — nothing here says the far end would answer\ndifferently a second time, so this does not retry or fall back,\nonly stops the wait and reports what happened.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "call_structured",
+      "line": 133,
+      "offset": 36,
+      "text": "Full jitter: spreads retries from concurrent callers instead of\nhaving them all wake up and hit the same rate limit together.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "call_structured",
+      "line": 136,
+      "offset": 39,
+      "text": "Unreachable: the loop always returns or raises. Kept for type-checkers\nthat cannot see that MAX_ATTEMPTS >= 1 makes the loop non-empty.",
+      "kind": "what"
+    }
+  ]
+}

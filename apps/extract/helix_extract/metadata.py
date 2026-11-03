@@ -34,8 +34,6 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from xml.etree import ElementTree
 
-# --- model ------------------------------------------------------------------
-
 
 class Risk(str, Enum):
     """How much a value discloses. An ordinal band, not a probability."""
@@ -64,8 +62,6 @@ class Finding:
     value: str
     risk: Risk
     category: Category
-    # Whether a scrub can remove this one. A few entries are structural and
-    # survive by necessity; saying so beats silently keeping them.
     removable: bool = True
 
 
@@ -73,9 +69,6 @@ class Finding:
 class ScanResult:
     file_type: str
     findings: list[Finding] = field(default_factory=list)
-    # Set when a container opened but one of its parts could not be read. The
-    # scan is still returned — a partial report beats none — but the caller has
-    # to know it is partial or it will read absence as safety.
     warnings: list[str] = field(default_factory=list)
 
 
@@ -83,8 +76,6 @@ class ScanResult:
 class ScrubResult:
     data: bytes
     removed: list[Finding] = field(default_factory=list)
-    # Detected and NOT removed. Never silently empty: a scrub that left
-    # something behind must name it.
     retained: list[Finding] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
@@ -98,13 +89,8 @@ class MetadataError(Exception):
         self.kind = kind
 
 
-# --- risk ranking ------------------------------------------------------------
 
-# Exact keys first, then substrings. A key matched by neither lands at
-# LOW / OTHER: an unknown tag is still reported, but it does not inflate the
-# risk summary on the strength of a name nobody recognised.
 _EXACT_RISK: dict[str, tuple[Risk, Category]] = {
-    # Location — the highest-consequence disclosure in a consumer photo.
     "gpslatitude": (Risk.HIGH, Category.LOCATION),
     "gpslongitude": (Risk.HIGH, Category.LOCATION),
     "gpsaltitude": (Risk.HIGH, Category.LOCATION),
@@ -115,7 +101,6 @@ _EXACT_RISK: dict[str, tuple[Risk, Category]] = {
     "gpsversionid": (Risk.LOW, Category.LOCATION),
     "gpslatituderef": (Risk.MEDIUM, Category.LOCATION),
     "gpslongituderef": (Risk.MEDIUM, Category.LOCATION),
-    # Identity — names a person, not a machine.
     "artist": (Risk.HIGH, Category.IDENTITY),
     "author": (Risk.HIGH, Category.IDENTITY),
     "creator": (Risk.HIGH, Category.IDENTITY),
@@ -126,7 +111,6 @@ _EXACT_RISK: dict[str, tuple[Risk, Category]] = {
     "copyright": (Risk.MEDIUM, Category.IDENTITY),
     "manager": (Risk.MEDIUM, Category.IDENTITY),
     "company": (Risk.MEDIUM, Category.IDENTITY),
-    # Device — a serial number is a durable cross-file fingerprint.
     "bodyserialnumber": (Risk.HIGH, Category.DEVICE),
     "serialnumber": (Risk.HIGH, Category.DEVICE),
     "lensserialnumber": (Risk.HIGH, Category.DEVICE),
@@ -136,7 +120,6 @@ _EXACT_RISK: dict[str, tuple[Risk, Category]] = {
     "model": (Risk.MEDIUM, Category.DEVICE),
     "lensmake": (Risk.LOW, Category.DEVICE),
     "lensmodel": (Risk.LOW, Category.DEVICE),
-    # Software — reveals the toolchain, and often an internal build string.
     "software": (Risk.MEDIUM, Category.SOFTWARE),
     "producer": (Risk.MEDIUM, Category.SOFTWARE),
     "application": (Risk.MEDIUM, Category.SOFTWARE),
@@ -144,7 +127,6 @@ _EXACT_RISK: dict[str, tuple[Risk, Category]] = {
     "creatortool": (Risk.MEDIUM, Category.SOFTWARE),
     "processingsoftware": (Risk.MEDIUM, Category.SOFTWARE),
     "appversion": (Risk.LOW, Category.SOFTWARE),
-    # Timestamps — a working-hours pattern across many files deanonymises.
     "datetime": (Risk.LOW, Category.TIMESTAMP),
     "datetimeoriginal": (Risk.MEDIUM, Category.TIMESTAMP),
     "datetimedigitized": (Risk.LOW, Category.TIMESTAMP),
@@ -152,7 +134,6 @@ _EXACT_RISK: dict[str, tuple[Risk, Category]] = {
     "moddate": (Risk.LOW, Category.TIMESTAMP),
     "modificationtime": (Risk.LOW, Category.TIMESTAMP),
     "totaltime": (Risk.MEDIUM, Category.TIMESTAMP),
-    # Content descriptors.
     "title": (Risk.LOW, Category.CONTENT),
     "subject": (Risk.LOW, Category.CONTENT),
     "keywords": (Risk.LOW, Category.CONTENT),
@@ -182,14 +163,9 @@ _SUBSTRING_RISK: tuple[tuple[str, Risk, Category], ...] = (
     ("time", Risk.LOW, Category.TIMESTAMP),
 )
 
-# A value shaped like an email address or a home-directory path is high-risk
-# whatever key it arrived under: the key vocabularies of XMP and docProps are
-# open-ended, so the name alone can never be the whole test.
 _EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]{2,}")
 _USER_PATH_RE = re.compile(r"(?:[A-Za-z]:\\Users\\|\\\\[^\\]+\\|/(?:home|Users)/)")
 
-# Beyond this a value is a blob (a thumbnail, an ICC profile, a base64 packet)
-# and pasting it into the response helps nobody.
 _MAX_VALUE_CHARS = 512
 
 
@@ -199,8 +175,6 @@ def classify(key: str, value: str) -> tuple[Risk, Category]:
     if normalized in _EXACT_RISK:
         risk, category = _EXACT_RISK[normalized]
     else:
-        # Drop a namespace prefix ("xmp:CreatorTool") before the substring pass,
-        # and try the bare name against the exact table first.
         bare = normalized.rsplit(":", 1)[-1]
         if bare in _EXACT_RISK:
             risk, category = _EXACT_RISK[bare]
@@ -212,7 +186,6 @@ def classify(key: str, value: str) -> tuple[Risk, Category]:
             else:
                 risk, category = Risk.LOW, Category.OTHER
 
-    # The value can only raise the band, never lower it.
     if _EMAIL_RE.search(value) or _USER_PATH_RE.search(value):
         return Risk.HIGH, Category.IDENTITY
     return risk, category
@@ -227,22 +200,17 @@ def _finding(group: str, key: str, value: object, *, removable: bool = True) -> 
     if not text:
         return None
     if len(text) > _MAX_VALUE_CHARS:
-        # Say it was cut. A value silently truncated to look complete is how a
-        # reader concludes the rest of it does not exist.
         text = f"{text[: _MAX_VALUE_CHARS - 32]}… [{len(text)} chars, truncated]"
     risk, category = classify(key, text)
     return Finding(group=group, key=key, value=text, risk=risk, category=category, removable=removable)
 
 
-# --- JPEG --------------------------------------------------------------------
 
 _SOI = b"\xff\xd8"
 
-# Segments carrying metadata rather than image data. APP0 (JFIF) is structural
-# and stays: some decoders read density and thumbnail framing from it.
 _JPEG_META_MARKERS: dict[int, str] = {
-    0xE1: "exif",  # APP1 — EXIF and XMP
-    0xE2: "icc",  # APP2 — ICC profile / FlashPix
+    0xE1: "exif",
+    0xE2: "icc",
     0xE3: "app3",
     0xE4: "app4",
     0xE5: "app5",
@@ -252,15 +220,13 @@ _JPEG_META_MARKERS: dict[int, str] = {
     0xE9: "app9",
     0xEA: "app10",
     0xEB: "app11",
-    0xEC: "app12",  # Picture Info / Ducky
-    0xED: "iptc",  # APP13 — Photoshop IRB / IPTC
-    0xEE: "adobe",  # APP14
+    0xEC: "app12",
+    0xED: "iptc",
+    0xEE: "adobe",
     0xEF: "app15",
-    0xFE: "comment",  # COM
+    0xFE: "comment",
 }
 
-# EXIF tag ids this module names. An unnamed tag is still reported, as
-# "Tag0x<id>", so a scan never calls a file clean for want of a label.
 _EXIF_TAGS: dict[int, str] = {
     0x010E: "ImageDescription",
     0x010F: "Make",
@@ -296,12 +262,8 @@ _GPS_TAGS: dict[int, str] = {
     0x001D: "GPSDateStamp",
 }
 
-# Bytes per component, by EXIF type id.
 _TYPE_SIZES: dict[int, int] = {1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 1, 7: 1, 8: 2, 9: 4, 10: 8, 11: 4, 12: 8}
 
-# Guards on values read out of a file that may be malformed or hostile: a
-# corrupt entry count would otherwise drive a multi-million-iteration loop, and
-# a corrupt size a gigabyte-sized slice.
 _MAX_IFD_ENTRIES = 512
 _MAX_VALUE_BYTES = 1 << 20
 
@@ -322,9 +284,9 @@ def _segments(data: bytes) -> list[tuple[int, int, int]]:
         if data[i] != 0xFF:
             break
         marker = data[i + 1]
-        if marker == 0xDA:  # SOS
+        if marker == 0xDA:
             break
-        if marker == 0xD9 or 0xD0 <= marker <= 0xD8:  # standalone markers
+        if marker == 0xD9 or 0xD0 <= marker <= 0xD8:
             i += 2
             continue
         (length,) = struct.unpack(">H", data[i + 2 : i + 4])
@@ -336,9 +298,9 @@ def _segments(data: bytes) -> list[tuple[int, int, int]]:
 
 
 def _format_value(raw: bytes, type_id: int, components: int, order: str) -> str:
-    if type_id == 2:  # ASCII
+    if type_id == 2:
         return raw.split(b"\x00", 1)[0].decode("utf-8", "replace")
-    if type_id in (5, 10):  # RATIONAL / SRATIONAL — GPS coordinates live here
+    if type_id in (5, 10):
         code = "ii" if type_id == 10 else "II"
         parts: list[str] = []
         for k in range(components):
@@ -355,7 +317,6 @@ def _format_value(raw: bytes, type_id: int, components: int, order: str) -> str:
             str(struct.unpack(order + code, raw[k * width : k * width + width])[0])
             for k in range(min(components, len(raw) // width))
         )
-    # BYTE / SBYTE / UNDEFINED, and anything unrecognised.
     text = raw.split(b"\x00", 1)[0].decode("utf-8", "replace").strip()
     return text or raw[:32].hex()
 
@@ -419,7 +380,6 @@ def _parse_exif(payload: bytes) -> list[Finding]:
         for key, value in sub_values:
             if (found := _finding("exif", key, value)) is not None:
                 findings.append(found)
-        # A GPS pointer can sit in either IFD; the outer one wins if both name it.
         if "GPSInfoIFDPointer" in sub_pointers:
             pointers.setdefault("GPSInfoIFDPointer", sub_pointers["GPSInfoIFDPointer"])
 
@@ -428,11 +388,6 @@ def _parse_exif(payload: bytes) -> list[Finding]:
         for key, value in gps_values:
             if (found := _finding("gps", key, value)) is not None:
                 findings.append(found)
-        # A raw DMS triple ("51, 30, 26") is the single most consequential
-        # finding in a consumer photo and the least readable. Resolving it to a
-        # decimal pair is what makes the report actionable rather than technically
-        # correct — a reader should not have to do the arithmetic to learn that
-        # the file gives away a home address.
         if (coordinate := _decimal_coordinate(dict(gps_values))) is not None:
             findings.append(
                 Finding(
@@ -521,8 +476,6 @@ def scan_jpeg(data: bytes) -> ScanResult:
             if (found := _finding("comment", "Comment", body)) is not None:
                 result.findings.append(found)
             continue
-        # The rest are vendor-specific inside, but their presence and size are
-        # themselves the disclosure — an ICC profile names the editing suite.
         result.findings.append(
             Finding(
                 group=group,
@@ -555,13 +508,9 @@ def scrub_jpeg(data: bytes) -> ScrubResult:
     return ScrubResult(data=bytes(out), removed=scanned.findings, warnings=scanned.warnings)
 
 
-# --- PNG ---------------------------------------------------------------------
 
 _PNG_SIG = b"\x89PNG\r\n\x1a\n"
 
-# Ancillary chunks carrying metadata. Critical chunks (IHDR, PLTE, IDAT, IEND)
-# and rendering-relevant ancillaries (gAMA, cHRM, sRGB, tRNS, pHYs) are never
-# touched: dropping them changes how the image displays.
 _PNG_META_CHUNKS = frozenset({b"tEXt", b"zTXt", b"iTXt", b"tIME", b"eXIf", b"iCCP"})
 
 
@@ -634,7 +583,6 @@ def scan_png(data: bytes) -> ScanResult:
         if pair is None:
             continue
         key, value = pair
-        # An XMP packet arrives as an iTXt keyed `XML:com.adobe.xmp`.
         if "xmp" in key.lower() and "<" in value:
             result.findings.extend(_parse_xmp(value.encode("utf-8")))
             continue
@@ -655,14 +603,9 @@ def scrub_png(data: bytes) -> ScrubResult:
     return ScrubResult(data=bytes(out), removed=scanned.findings, warnings=scanned.warnings)
 
 
-# --- OOXML (docx / pptx / xlsx) ----------------------------------------------
 
-# The parts carrying authorship. `custom.xml` holds whatever the organisation
-# put there, which in practice is where template and matter references hide.
 _OOXML_PROP_PARTS = ("docProps/core.xml", "docProps/app.xml", "docProps/custom.xml")
 
-# Parts naming people that cannot be dropped without corrupting the document:
-# a relationship elsewhere in the package still points at them.
 _OOXML_TRACKED_SUFFIXES = ("/comments.xml", "/people.xml", "/commentsExtended.xml")
 
 _OOXML_STRUCTURAL_TAGS = frozenset({"coreProperties", "Properties", "property"})
@@ -693,8 +636,6 @@ def _tracked_findings(names: list[str]) -> list[Finding]:
     ]
 
 
-# A small upload can declare gigabytes of entries. Read sizes are bounded by
-# what each entry declares, so checking the declared sizes bounds the inflate.
 _OOXML_MAX_ENTRIES = 10_000
 _OOXML_MAX_TOTAL_BYTES = 256 * 1024 * 1024
 _OOXML_MAX_PART_BYTES = 4 * 1024 * 1024
@@ -738,10 +679,6 @@ def scan_ooxml(data: bytes) -> ScanResult:
         except ElementTree.ParseError as exc:
             result.warnings.append(f"{part} is not valid XML: {exc}")
             continue
-        # custom.xml wraps each value in a typed child (`<vt:lpwstr>`) whose own
-        # tag is meaningless — the name lives on the parent's attribute. Those
-        # children are consumed by their parent and skipped on their own pass,
-        # or every custom property is reported twice, once under a useless key.
         consumed: set[int] = set()
         for element in root.iter():
             tag = element.tag.rsplit("}", 1)[-1]
@@ -795,7 +732,6 @@ def scrub_ooxml(data: bytes) -> ScrubResult:
     return ScrubResult(data=buffer.getvalue(), removed=removed, retained=retained, warnings=warnings)
 
 
-# --- PDF ---------------------------------------------------------------------
 
 _PDF_INFO_KEYS = ("Title", "Author", "Subject", "Keywords", "Creator", "Producer", "CreationDate", "ModDate")
 
@@ -814,7 +750,7 @@ def _pdf_document(data: bytes):  # noqa: ANN202 - pdfium does not export its typ
         raise MetadataError("pdf", "pypdfium2 is not installed") from exc
     try:
         return pdfium.PdfDocument(io.BytesIO(data))
-    except Exception as exc:  # pdfium raises its own error types
+    except Exception as exc:
         raise MetadataError("pdf", exc) from exc
 
 
@@ -837,17 +773,13 @@ def scan_pdf(data: bytes) -> ScanResult:
         for key in _PDF_INFO_KEYS:
             try:
                 value = document.get_metadata_value(key)
-            except Exception:  # a key pdfium cannot read is not a scan failure
+            except Exception:
                 continue
             if (found := _finding("docinfo", key, value)) is not None:
                 result.findings.append(found)
     finally:
         document.close()
 
-    # XMP lives in a metadata stream pdfium does not expose. Reading it out of
-    # the raw bytes is crude, but it is the packet's documented framing, and a
-    # PDF whose XMP names an author while DocInfo is empty is common enough
-    # that skipping it would make the scan actively misleading.
     span = _xmp_span(data)
     if span is not None:
         packet = data[span[0] : span[1]]
@@ -878,8 +810,6 @@ def scrub_pdf(data: bytes) -> ScrubResult:
 
     out = buffer.getvalue()
 
-    # The packet keeps its byte length: xref offsets past it are absolute, so it
-    # is overwritten with padding rather than deleted.
     span = _xmp_span(out)
     if span is not None:
         start, end = span
@@ -888,13 +818,10 @@ def scrub_pdf(data: bytes) -> ScrubResult:
             padding = b" " * (width - len(_EMPTY_XMP) - len(_XMP_TERMINATOR))
             out = out[:start] + _EMPTY_XMP + padding + _XMP_TERMINATOR + out[end:]
 
-    # Re-scan: a finding still present afterwards is retained, not removed.
     try:
         after = scan_pdf(out)
         warnings = list(scanned.warnings)
     except MetadataError as exc:
-        # The rewrite produced bytes we cannot re-open. Return the original
-        # rather than a file we cannot vouch for.
         return ScrubResult(
             data=data,
             removed=[],
@@ -917,7 +844,6 @@ def scrub_pdf(data: bytes) -> ScrubResult:
     return ScrubResult(data=out, removed=removed, retained=retained, warnings=warnings)
 
 
-# --- dispatch ----------------------------------------------------------------
 
 _SCANNERS = {
     "jpg": scan_jpeg,

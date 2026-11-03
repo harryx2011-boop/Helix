@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/sidebar-nav.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "isActive",
+      "line": 73,
+      "offset": 0,
+      "text": "Every playground row shares one pathname and differs only in `?tab=`, so a\npath-only comparison lit all eight at once. A row that carries a tab must\nmatch the tab too; the bare playground path (no tab) falls back to the first\nrow so the list is never entirely unlit.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SidebarNav",
+      "line": 90,
+      "offset": 0,
+      "text": "`useSearchParams` opts a route out of static prerendering unless it sits\nunder a Suspense boundary, and the self-host build is a static export.",
+      "kind": "doc"
+    }
+  ]
+}

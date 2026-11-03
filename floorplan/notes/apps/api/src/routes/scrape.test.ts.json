@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/scrape.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 346,
+      "offset": null,
+      "text": "A caller's proxy is a host this instance connects to, so it meets the\nsame egress rules as the target URL.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 376,
+      "offset": null,
+      "text": "Pinned to the address the guard checked, so a second lookup cannot swap in another.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 461,
+      "offset": null,
+      "text": "The ladder escalates on evidence up to chromium; the opt-in tier is\nreached by naming it, never by a block.",
+      "kind": "why"
+    }
+  ]
+}

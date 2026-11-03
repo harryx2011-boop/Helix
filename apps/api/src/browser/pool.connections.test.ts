@@ -1,13 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * The shared connection to an external browser (camoufox here; lightpanda and
- * a remote CDP endpoint go through the same `#connection`).
- *
- * Driven through the public ways in, `probeExternalTiers()` and `render()`,
- * with a fake `firefox.connect` that counts connects and lets a test drop a
- * connection.
- */
 
 interface FakeBrowser {
   connected: boolean;
@@ -136,14 +128,10 @@ describe('the shared connection', () => {
     await pool.probeExternalTiers();
     expect(fake.connects).toBe(1);
 
-    // Stale without the event having fired yet: Playwright reports the close
-    // asynchronously, so both callers see the dead handle.
     fake.browsers[0]!.connected = false;
 
     await Promise.all([pool.probeExternalTiers(), pool.probeExternalTiers()]);
 
-    // One reconnect shared by both. A second would leave a live connection
-    // that nothing tracks and close() never closes.
     expect(fake.connects).toBe(2);
     await pool.close();
   });

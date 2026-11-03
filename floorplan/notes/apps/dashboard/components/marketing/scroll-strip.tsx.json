@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/scroll-strip.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "STRIP_TOKENS",
+      "line": 8,
+      "offset": 0,
+      "text": "ScrollStrip: one thin line of wire-format tokens between sections whose\nhorizontal offset is the strip's own scroll progress through the viewport,\nso the page's motion is the only clock. Same contract as the ambient\nprimitives: seeded first paint, rAF-throttled, idle off-screen, static\nunder reduced motion.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "TRAVEL",
+      "line": 10,
+      "offset": 0,
+      "text": "Total horizontal travel across the strip's pass through the viewport, in px.",
+      "kind": "doc"
+    }
+  ]
+}

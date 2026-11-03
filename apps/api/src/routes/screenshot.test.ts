@@ -25,7 +25,6 @@ function browserPool(
     screenshot?: string | undefined;
     noScreenshot?: boolean;
     html?: string;
-    /** Echoed back as the capture result, so a test can assert what reached the pool. */
     result?: { format: string; bytes: number; warning?: string };
   } = {},
 ): BrowserPool {
@@ -196,8 +195,6 @@ describe('POST /screenshot', () => {
   });
 
   it('still fails a Cloudflare challenge page rendered at the screenshot tier', async () => {
-    // The invariant this route must not weaken by skipping extraction: a
-    // bot-challenge page must never come back as a successful screenshot.
     const challengeHtml =
       '<html><head><title>Just a moment...</title></head>' +
       '<body><div class="cf-browser-verification">Checking your browser before accessing</div></body></html>';

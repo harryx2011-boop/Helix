@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/mcp-tool-names.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "toolName",
+      "line": 7,
+      "offset": 0,
+      "text": "The server's naming rule, apps/api/src/mcp/tools.ts `toolName`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 17,
+      "offset": null,
+      "text": "The docs page and the code snippets used to print `helix_${id}`, which named\ntools the server does not generate (`helix_metadata`, `helix_monitor`).",
+      "kind": "what"
+    }
+  ]
+}

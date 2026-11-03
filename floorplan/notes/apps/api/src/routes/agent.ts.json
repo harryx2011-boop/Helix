@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/agent.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HttpUrlSchema",
+      "line": 7,
+      "offset": 0,
+      "text": "POST /v1/agent/schema — turns a plain-language data request into a JSON\nSchema.\n\nThe dashboard's Agent research preview lets someone describe what they want\nscraped before committing to a full `scrapeOptions.jsonOptions.schema`. This\nasks helix-extract to design that schema with the operator's own model, so\nthe result is paste-ready into `/scrape` or `/search`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PROVIDERS",
+      "line": 12,
+      "offset": 0,
+      "text": "Providers helix-extract can route to. Naming one is the only way to reach a local runtime.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "AgentRouteDeps.encryptionKey",
+      "line": 34,
+      "offset": 0,
+      "text": "Decrypts the caller's stored provider keys, when present, so schema design can use them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "registerAgent",
+      "line": 92,
+      "offset": 51,
+      "text": "helix-extract's /schema named a specific request field at fault\n(a 400), or has no provider configured (a 503, no `field`).",
+      "kind": "what"
+    }
+  ]
+}

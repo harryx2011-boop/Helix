@@ -1,10 +1,3 @@
-/**
- * SKILL.md is served keyless and covers every endpoint. Helix keeps no account
- * data, so there is no per-account variant to prefer.
- *
- * The request is bounded: fetch has no timeout of its own, and a site that
- * accepts the connection and never answers must not hang the install.
- */
 
 export interface SkillSource {
   markdown: string;

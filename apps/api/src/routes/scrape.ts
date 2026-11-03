@@ -12,19 +12,11 @@ import { tierMemory } from '../core/tier-memory.js';
 import { cookieJar } from '../core/cookie-jar.js';
 import { scrapeCache } from '../core/scrape-cache.js';
 
-/**
- * Scrape: one URL in, one document out.
- *
- * Every format here is produced by code that exists. Formats the spec lists but
- * nothing serves yet (`images`, `pdf`, `summary`) are rejected at validation
- * rather than accepted and silently dropped.
- */
 
 const FORMATS = ['markdown', 'html', 'rawHtml', 'text', 'links', 'screenshot', 'json', 'chunks'] as const;
 
 export type ScrapeFormat = (typeof FORMATS)[number];
 
-/** Providers helix-extract can route to. A request may pick one; the key must already be configured. */
 export const PROVIDERS = [
   'anthropic',
   'openai',
@@ -50,11 +42,6 @@ const ProxyObjectSchema = z.object({
   geo: z.string().length(2).optional(),
 });
 
-/**
- * `auto` uses the operator's proxy when one is configured and goes direct
- * otherwise. `stealth` insists on the operator's proxy. `none` goes direct even
- * when one is configured. An object is the caller's own proxy for this request.
- */
 const ProxySchema = z.union([z.enum(['auto', 'stealth', 'none']), ProxyObjectSchema]);
 
 const ChunkSchema = z.object({
@@ -67,7 +54,6 @@ const ScrapeRequestSchema = z.object({
   url: z.string().url(),
   formats: z.array(z.enum(FORMATS)).min(1).default(['markdown']),
   tier: z.enum(['auto', 'plain', 'tls', 'lightpanda', 'chromium', 'camoufox']).default('auto'),
-  /** Which browser drives the render tier. The instance default when unset. */
   engine: z.enum(['chromium', 'firefox', 'webkit']).optional(),
   onlyMainContent: z.boolean().default(true),
   includeSelectors: z.array(z.string()).default([]),
@@ -81,10 +67,8 @@ const ScrapeRequestSchema = z.object({
   proxy: ProxySchema.optional(),
   actions: z.array(z.unknown()).max(50).optional(),
   extract: ExtractSchema.optional(),
-  /** The spec's name for `extract`. Either key is accepted; not both. */
   jsonOptions: ExtractSchema.optional(),
   chunk: ChunkSchema.optional(),
-  /** Accept a cached result up to this many milliseconds old. 0 always fetches. */
   maxAge: z.number().int().min(0).max(2_592_000_000).default(0),
 });
 
@@ -94,24 +78,12 @@ export interface ScrapeRouteDeps {
   fetchClient: FetchClient;
   extractClient: ExtractClient;
   browserPool?: BrowserPool | undefined;
-  /** The operator's proxy (`HELIX_PROXY_URL`), used by `proxy: "auto" | "stealth"`. */
   proxyUrl?: string | undefined;
-  /** `HELIX_ALLOW_PRIVATE_URLS`: let callers fetch loopback, link-local and private-range addresses. */
   allowPrivateUrls?: boolean | undefined;
-  /** DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver. */
   resolveHost?: HostResolver | undefined;
-  /** Decrypts the caller's stored provider keys, when present, for `jsonOptions`. */
   encryptionKey?: Buffer | undefined;
 }
 
-/**
- * Reject extraction schemas that push models to fabricate.
- *
- * Length keywords do not make a model find more real items; they make it invent
- * entries to satisfy the constraint. Vendors document this as a caveat and let
- * the request through anyway. Refusing it with an explanation is better than a
- * confidently wrong answer.
- */
 export function rejectFabricationKeywords(schema: Record<string, unknown>, path = 'extract.schema'): void {
   for (const keyword of ['minItems', 'maxItems'] as const) {
     if (keyword in schema) {
@@ -180,9 +152,6 @@ export async function registerScrape(
 
     const body = parsed.data;
 
-    // The URL is the caller's choice of what this instance connects to. Without
-    // this, an API key reaches cloud metadata, Postgres and the internal
-    // services through the fetch tiers.
     const urlVerdict = await checkUrl(body.url, {
       allowPrivate: deps.allowPrivateUrls,
       resolve: deps.resolveHost,
@@ -225,8 +194,6 @@ export async function registerScrape(
     const wantsJson = body.formats.includes('json');
 
     if (wantsJson && !extraction?.schema) {
-      // A prompt alone gives the model nothing to fill. Constrained decoding
-      // needs a shape, and an empty shape returns an empty object.
       return reply.code(400).send({
         error: 'invalid_request',
         message:
@@ -247,7 +214,6 @@ export async function registerScrape(
       });
     }
 
-    // A caller's proxy is a host this instance connects to; the operator's is trusted.
     const proxyVerdict =
       typeof body.proxy === 'object'
         ? await pinProxyUrl(body.proxy.url, { allowPrivate: deps.allowPrivateUrls, resolve: deps.resolveHost })
@@ -257,7 +223,6 @@ export async function registerScrape(
       return reply.code(400).send({ error: 'invalid_request', message, field: 'proxy.url', requestId: request.id });
     }
 
-    // Actions change the page they run on, so their result is never replayed.
     const { maxAge, ...cacheable } = body;
     const cacheKey = maxAge > 0 && !body.actions?.length ? JSON.stringify(cacheable) : undefined;
     const hit = cacheKey ? scrapeCache.get(cacheKey, maxAge) : undefined;
@@ -267,9 +232,6 @@ export async function registerScrape(
       return reply.code(200).send(cached);
     }
 
-    // A phone layout only exists in a browser. Forcing the tier here keeps the
-    // caller's `tier: "auto"` honest instead of returning the desktop HTML with
-    // `mobile: true` quietly ignored.
     const tier = body.mobile && body.tier === 'auto' ? 'chromium' : body.tier;
 
     const warnings: string[] = [];
@@ -280,10 +242,6 @@ export async function registerScrape(
       warnings.push('mobile: the lightpanda tier has no layout engine, so the phone viewport was not applied.');
     }
 
-    // Paced with every other call this instance makes to the same host. A single
-    // scrape used to be exempt, which made the crawl's politeness easy to walk
-    // around: an agent calling /scrape in a loop is a crawl the host cannot tell
-    // apart from one.
     const pipelineOptions = {
       url: body.url,
       formats: body.formats,
@@ -305,8 +263,6 @@ export async function registerScrape(
 
     const result = await hostGate.run(
       body.url,
-      // The wait for the host's turn is spent from the caller's timeout, not
-      // added to it: a 30 s scrape must answer within 30 s.
       (waitedMs) =>
         runPipeline({ ...pipelineOptions, timeout: Math.max(1, body.timeout - waitedMs) }, {
           fetchClient: deps.fetchClient,
@@ -319,8 +275,6 @@ export async function registerScrape(
       gateOutcome,
     );
 
-    // A failure is reported inside a 200 so the caller can see which tiers and
-    // profile were tried. A bot challenge is never dressed up as content.
     if (!result.success) {
       return reply.code(200).send({
         success: false,
@@ -382,8 +336,6 @@ export async function registerScrape(
           tokens: { input: structured.tokensInput, output: structured.tokensOutput },
           blocksKept: structured.blocksKept,
           blocksTotal: structured.blocksTotal,
-          // Tokens are billed by the caller's provider. Helix does not carry a
-          // price table, so the amount is reported as unknown rather than zero.
           providerCost: { amount: null, currency: 'USD' },
         };
       } catch (error) {
@@ -395,8 +347,6 @@ export async function registerScrape(
             requestId: request.id,
           });
         }
-        // The page was read; only the model step failed. `null` with the reason
-        // beside it, rather than a failed request that hides the content.
         const detail = error instanceof Error ? error.message : 'structured extraction failed';
         request.log.warn({ error, url: body.url }, 'structured extraction failed');
         data['json'] = null;
@@ -435,8 +385,6 @@ export async function registerScrape(
       profile: result.profileUsed,
       extractor: content.extractorUsed,
       engine: result.engineUsed,
-      // True only when a phone viewport was actually applied. Firefox takes the
-      // option without emulating touch, so it does not count as applied.
       mobile: body.mobile && result.tier === 'chromium' && result.engineUsed !== 'firefox',
       timingMs: result.timingMs,
       fromCache: false,

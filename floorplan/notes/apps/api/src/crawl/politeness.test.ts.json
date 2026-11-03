@@ -1,0 +1,111 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/politeness.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 19,
+      "offset": null,
+      "text": "One slow host must not throttle a crawl across every other host.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 31,
+      "offset": null,
+      "text": "An explicit rate-limit signal is obeyed, not interpreted.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 55,
+      "offset": null,
+      "text": "Additive increase: one extra slot, not a jump back to the ceiling.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 72,
+      "offset": null,
+      "text": "Establish a baseline the spike can be measured against.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 101,
+      "offset": null,
+      "text": "A site asking to be paced gets one request at a time, spaced as asked —\nits stated wish outranks whatever adaptation would have chosen.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 130,
+      "offset": null,
+      "text": "A Cloudflare interstitial arrives as 200. Reading the status alone would\nscore this as a healthy fetch and ramp straight into the wall.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 163,
+      "offset": null,
+      "text": "The host stated a number. Guessing shorter than asked is what earns the\nnext block, so the stated value wins over our own default.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 175,
+      "offset": null,
+      "text": "Enough clean fetches to have ramped twice were this an ordinary recovery.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 199,
+      "offset": null,
+      "text": "Recovery is real, not permanent punishment — a host that blocked once and\nhas behaved since should not be crawled at one request forever.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": null,
+      "line": 233,
+      "offset": null,
+      "text": "The floor is the operator saying \"never go slower than this\". A 429\ncollapses to it, not through it.",
+      "kind": "why"
+    },
+    {
+      "id": "n11",
+      "symbol": null,
+      "line": 237,
+      "offset": null,
+      "text": "An operator lowering maxHostConcurrency below a default initial value\nwould otherwise run the whole crawl above the ceiling they just set.",
+      "kind": "why"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 249,
+      "offset": null,
+      "text": "Two settings written at different times can contradict each other. The\nceiling wins, because it is the one that bounds harm to the target host.",
+      "kind": "why"
+    },
+    {
+      "id": "n13",
+      "symbol": null,
+      "line": 290,
+      "offset": null,
+      "text": "Nothing idle to drop, so the map grows rather than lose a held slot or a stated wait.",
+      "kind": "what"
+    }
+  ]
+}

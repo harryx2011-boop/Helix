@@ -86,8 +86,6 @@ class TestUngroundedFieldsAreDropped:
         assert len(normalise("Rotterdam")) < MIN_CITATION_CHARS
 
     def test_drops_a_passage_the_trimmer_removed_even_though_it_is_on_the_page(self):
-        # The blind spot this module exists to cover: the gateway would find this
-        # passage in the fetched page, but it never reached the model.
         trimmed = "<<<HELIX_UNTRUSTED origin=\"https://acme.example/\"\nAcme Robotics builds warehouse automation.\n>>>HELIX_UNTRUSTED"
         [verdict] = verify_fields(
             trimmed,

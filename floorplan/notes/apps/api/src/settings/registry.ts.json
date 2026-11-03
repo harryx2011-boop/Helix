@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/settings/registry.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Effect",
+      "line": 4,
+      "offset": 0,
+      "text": "The catalogue of operator-editable settings.\n\nEvery entry declares how a change takes effect, because that is what an\noperator most needs to know and what a settings screen most easily lies\nabout:\n\n- `live`    — applied immediately through a setter on a running object.\n- `restart` — persisted, but the process reads it only at boot.\n- `guarded` — as `restart`, and refused unless the caller confirms it\nexplicitly. These change the instance's security posture.\n\nA setting absent from this registry cannot be written at all. That is\ndeliberate: the database URL, the listen port and the internal admin token\nhave no business being reachable from an HTTP surface, so they are not here.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SettingDef.description",
+      "line": 11,
+      "offset": 0,
+      "text": "Shown beside the field. Says what the setting does, not what type it is.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SettingDef.warning",
+      "line": 12,
+      "offset": 0,
+      "text": "Why a guarded setting is dangerous. Required for `guarded`.",
+      "kind": "doc"
+    }
+  ]
+}

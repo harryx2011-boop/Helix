@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/runtime.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FAILED_RETRY_SECONDS",
+      "line": 33,
+      "offset": 0,
+      "text": "A failed attempt is retried by a later request, not by a loop, and not sooner\nthan this: a bad checksum is only known after the whole pack has downloaded.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "EmbeddingsRuntime._install",
+      "line": 163,
+      "offset": 4,
+      "text": "Any model beyond the bundled one downloads beside the pack, not into a\nuser-wide cache the uninstaller would never clean.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "EmbeddingsRuntime._unpack",
+      "line": 227,
+      "offset": 8,
+      "text": "A broken earlier install may hold loaded DLLs; move it aside rather\nthan fail on a delete Windows refuses.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "_long",
+      "line": 234,
+      "offset": 1,
+      "text": "Extended-length form: torch's deepest files pass MAX_PATH under a long\nruntime dir, and LongPathsEnabled is off on a default Windows install.",
+      "kind": "what"
+    }
+  ]
+}

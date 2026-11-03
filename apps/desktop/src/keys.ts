@@ -42,15 +42,6 @@ function store(file: string, secrets: Secrets, cipher: Cipher): void {
   fs.writeFileSync(file, JSON.stringify(encode(secrets, cipher)), { mode: 0o600 })
 }
 
-/**
- * Reads the stored key and admin token, or makes and stores them on first run.
- * An unreadable file is moved aside, never overwritten, so the old secrets stay recoverable.
- *
- * Secrets are written only under OS encryption: a base64 file is the secret in
- * the clear, and a file mode does not protect it on Windows. Without encryption
- * they live for this launch only. A plain file from an older build is still
- * read, and re-encrypted as soon as encryption is available.
- */
 export function loadOrCreateSecrets(file: string, cipher: Cipher, log: (m: string) => void, rand: Random = randomBytes, now = Date.now): Secrets {
   if (fs.existsSync(file)) {
     let read: { stored: CredentialFile; secrets: Secrets } | undefined
@@ -63,7 +54,6 @@ export function loadOrCreateSecrets(file: string, cipher: Cipher, log: (m: strin
       log(`credentials: could not read ${file} (${String(e)}); moved to ${aside} and generated new ones`)
     }
     if (read) {
-      // Outside the read: a failed re-encrypt must not move a readable file aside.
       if (read.stored.enc === 'plain' && cipher.available()) {
         try {
           store(file, read.secrets, cipher)

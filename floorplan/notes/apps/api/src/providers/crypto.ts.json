@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/providers/crypto.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ALGORITHM",
+      "line": 4,
+      "offset": 0,
+      "text": "AES-256-GCM for stored provider keys.\n\nThe encryption key comes from `HELIX_ENCRYPTION_KEY` (32 raw bytes, as hex or\nbase64) or, unset, is derived as SHA-256 of `HELIX_BOOTSTRAP_KEY` — self-host\nstays zero-config, since every instance already sets the bootstrap key.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "deriveEncryptionKey",
+      "line": 7,
+      "offset": 0,
+      "text": "Falls back to a random, process-local key when neither `HELIX_ENCRYPTION_KEY`\nnor `HELIX_BOOTSTRAP_KEY` is set, the same way an instance with no bootstrap\nkey still boots and simply rejects every request rather than crashing — a\nstored provider key just will not decrypt across a restart in that state.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "encryptSecret",
+      "line": 28,
+      "offset": 0,
+      "text": "Encrypts `plaintext`. The GCM auth tag is appended to the ciphertext.",
+      "kind": "doc"
+    }
+  ]
+}

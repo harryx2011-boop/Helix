@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/vectors/sink.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 6,
+      "offset": null,
+      "text": "The property the whole re-crawl story depends on: crawling a page twice\nmust update its vectors, not append a second copy of every chunk.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 27,
+      "offset": null,
+      "text": "Several vector stores validate the format and reject anything else.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 62,
+      "offset": null,
+      "text": "ensureCollection sizes the Qdrant collection from chunk 0's embedding\nalone. If a later chunk in the same batch carries a different length —\na provider swap mid-crawl, or a bug upstream — Qdrant either rejects the\nwhole batch with an opaque error or silently truncates/pads, neither of\nwhich says which chunk was wrong.",
+      "kind": "what"
+    }
+  ]
+}

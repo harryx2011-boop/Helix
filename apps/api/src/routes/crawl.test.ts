@@ -1,11 +1,6 @@
 import Fastify from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * Route contract tests. Postgres and URL discovery are replaced with fakes:
- * the point is the request/response surface — aliases, caps, validation and
- * the `/crawl/{jobId}` view — not the crawl itself.
- */
 
 interface Call {
   text: string;
@@ -23,7 +18,6 @@ const db = vi.hoisted(() => {
     documents: [] as Record<string, unknown>[],
     cancelled: undefined as { id: string; status: string } | undefined,
     exists: false,
-    /** The row POST /crawl { resume } reads, and how many tasks it re-queues. */
     resumable: undefined as Record<string, unknown> | undefined,
     requeued: 0,
   };
@@ -102,9 +96,6 @@ afterEach(() => {
 });
 
 describe('POST /v1/crawl', () => {
-  /* The seed is the caller's choice of what this instance connects to, and it
-     is written to the frontier for a worker to fetch later. Without the guard
-     the job is accepted and the SSRF happens out of band, in the worker. */
   it('refuses a private or link-local seed, and queues nothing', async () => {
     const app = await buildApp();
 
@@ -318,7 +309,6 @@ describe('POST /v1/crawl', () => {
     });
   });
 
-  // The name becomes part of the vector store's URL path.
   it.each([
     { type: 'qdrant', collection: '../../collections' },
     { type: 'qdrant', collection: 'docs/points/delete' },
@@ -385,9 +375,6 @@ describe('POST /v1/crawl', () => {
     expect(db.state.calls).toHaveLength(0);
   });
 
-  // openapi.yaml has always declared these as the closed Format enum. Validating
-  // as a bare string accepted a name nothing serves, then dropped it per page,
-  // which reads as the format silently not working.
   it('rejects a format outside the published set instead of dropping it later', async () => {
     const app = await buildApp();
     const response = await app.inject({
@@ -567,10 +554,6 @@ describe('DELETE /v1/crawl/{jobId}', () => {
   });
 });
 
-/**
- * `/crawl/{jobId}` serves the same rows as `/jobs/{id}`: one operator owns
- * every key, so neither statement carries an owner predicate.
- */
 describe('crawl job reads', () => {
   it('leaves both statements unscoped', async () => {
     const app = await buildApp();
@@ -628,7 +611,6 @@ describe('crawl expansion', () => {
   });
 
   it('refuses to resume a job that is still running', async () => {
-    // An unexpired lease is the evidence a worker is alive and holding it.
     db.state.resumable = {
       api_key_id: null,
       status: 'running',
@@ -644,10 +626,6 @@ describe('crawl expansion', () => {
     expect(response.json().error).toBe('already_running');
   });
 
-  /* A worker killed with -9 leaves the job at 'running' with a lease nobody
-   * renews. Refusing that as already_running is what made the strand
-   * permanent: the worker will not re-claim a 'running' row either, so the
-   * job had no way back. See 012_job_leases.sql. */
   it('resumes a running job whose lease has lapsed', async () => {
     db.state.resumable = {
       api_key_id: null,
@@ -743,7 +721,6 @@ describe('crawl expansion', () => {
       excludeContent: ['^Sign in'],
       maxPagesPerPath: 25,
     });
-    // changesOnly filters on hashes the crawl must have loaded to compare.
     expect(stored.incremental).toBe(true);
   });
 

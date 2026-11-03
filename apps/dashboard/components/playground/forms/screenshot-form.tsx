@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 
 const FORMATS: readonly ScreenshotFormat[] = ['png', 'jpeg', 'webp'];
 
-/** Named device sizes, so the common cases are one click rather than two numbers. */
 const PRESETS = [
   { label: 'Desktop', width: 1440, height: 900 },
   { label: 'Laptop', width: 1280, height: 800 },
@@ -37,9 +36,6 @@ export function ScreenshotForm({ url, onSubmit, onGetCode, loading }: Screenshot
   const [omitBackground, setOmitBackground] = React.useState(false);
   const [waitFor, setWaitFor] = React.useState('0');
 
-  // PNG has no lossy setting, and JPEG has no alpha. Rather than let the form
-  // offer a control the server will ignore, each is hidden where it means
-  // nothing — the same rule the route applies when it builds its encode options.
   const lossy = format !== 'png';
   const canBeTransparent = format !== 'jpeg';
 

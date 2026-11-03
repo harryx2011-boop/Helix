@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/robots.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "respond",
+      "line": 5,
+      "offset": 0,
+      "text": "Where the robots.txt fetch is allowed to end up.\n\nA public host answering 302 to an internal address is the usual way around a\ncheck made only on the first URL, so redirects are followed by hand and every\nhop is checked.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 21,
+      "offset": null,
+      "text": "The hop was refused, so no rules were read: everything is permitted.",
+      "kind": "what"
+    }
+  ]
+}

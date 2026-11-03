@@ -19,8 +19,6 @@ from dataclasses import dataclass, field
 
 CHARS_PER_TOKEN = 4
 
-# How much of a chunk's opening identifies it. Short enough that editing a
-# paragraph does not break every citation into its section.
 ANCHOR_WINDOW_CHARS = 64
 
 _HEADING = re.compile(r"^(#{1,6})\s+(.+)$", re.MULTILINE)
@@ -91,8 +89,6 @@ def _split_by_heading(markdown: str) -> list[tuple[list[str], str]]:
         flush()
 
         title = line.lstrip("#").strip()
-        # Truncate the path to the parent level, then append this heading, so a
-        # deeper heading nests and a shallower one resets.
         path = path[: level - 1]
         path.append(title)
 
@@ -117,8 +113,6 @@ def _pack_sentences(text: str, max_chars: int, overlap_chars: int) -> list[str]:
         if size + sentence_len > max_chars and current:
             chunks.append(" ".join(current).strip())
 
-            # Carry the tail of the previous chunk so a fact spanning the
-            # boundary is still retrievable from both sides.
             if overlap_chars > 0:
                 carried: list[str] = []
                 carried_size = 0
@@ -133,8 +127,6 @@ def _pack_sentences(text: str, max_chars: int, overlap_chars: int) -> list[str]:
                 current = []
                 size = 0
 
-        # A single sentence over the budget has to be split; there is no
-        # boundary left to respect.
         if sentence_len > max_chars:
             if current:
                 chunks.append(" ".join(current).strip())
@@ -166,9 +158,6 @@ def chunk_markdown(
     - ``semantic`` — sections split on sentence boundaries when oversized.
     """
     max_chars = max_tokens * CHARS_PER_TOKEN
-    # An overlap at or beyond the budget re-carries a whole chunk forward on
-    # every split, so chunks only grow and never make progress through the
-    # document. Clamping keeps a direct caller from producing that.
     overlap_chars = min(overlap, max_tokens - 1) * CHARS_PER_TOKEN if overlap > 0 else 0
 
     if not markdown.strip():
@@ -177,8 +166,6 @@ def chunk_markdown(
     chunks: list[Chunk] = []
 
     if strategy == "fixed":
-        # A stride of zero or less would yield no chunks at all, silently
-        # returning an empty result for a document that plainly has content.
         stride = max(1, max_chars - overlap_chars)
         for start in range(0, len(markdown), stride):
             body = markdown[start : start + max_chars].strip()
@@ -197,8 +184,6 @@ def chunk_markdown(
         prefix = "\n".join(f"{'#' * (i + 1)} {h}" for i, h in enumerate(heading_path))
 
         if strategy == "heading" or len(body) <= max_chars:
-            # Headings are prepended so a chunk read in isolation still says
-            # what it is about.
             text = f"{prefix}\n\n{body}".strip() if prefix else body
             chunks.append(
                 Chunk(

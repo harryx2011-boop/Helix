@@ -1,9 +1,6 @@
-import type { IpcMain, IpcMainInvokeEvent } from 'electron'
 import path from 'node:path'
 import { devCommand, packagedCommand, VoiceCoreSupervisor, type ServiceCommand } from './voice-core/main'
 import type { VoiceCoreConnection } from './voice-core/shared/protocol'
-
-export const VOICE_CONNECT_CHANNEL = 'helix:voice-connect'
 
 export interface VoiceInput {
   resources: string
@@ -48,14 +45,4 @@ export function createVoice(plan: VoicePlan | null): VoiceHost {
   if (!plan) return { ensureStarted: () => Promise.resolve(null), stop: () => Promise.resolve() }
   const supervisor = new VoiceCoreSupervisor({ command: plan.command, env: plan.env })
   return { ensureStarted: () => supervisor.ensureStarted(), stop: () => supervisor.stop() }
-}
-
-/** The page asks for the service through IPC and gets the token only if it is our own top document. */
-export function registerVoiceIpc(
-  ipc: Pick<IpcMain, 'handle' | 'removeHandler'>,
-  voice: VoiceHost,
-  trusted: (e: IpcMainInvokeEvent) => boolean,
-): () => void {
-  ipc.handle(VOICE_CONNECT_CHANNEL, (e) => (trusted(e) ? voice.ensureStarted() : null))
-  return () => ipc.removeHandler(VOICE_CONNECT_CHANNEL)
 }

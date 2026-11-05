@@ -1,6 +1,6 @@
 import path from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
-import { createVoice, registerVoiceIpc, resolveVoice, VOICE_CONNECT_CHANNEL, type VoiceHost } from './voice'
+import { describe, expect, it } from 'vitest'
+import { createVoice, resolveVoice } from './voice'
 
 const RES = path.join('C:', 'Helix', 'resources')
 const REPO = path.join('D:', 'Helix')
@@ -51,39 +51,5 @@ describe('an install without voice-core', () => {
     const voice = createVoice(null)
     expect(await voice.ensureStarted()).toBeNull()
     await expect(voice.stop()).resolves.toBeUndefined()
-  })
-})
-
-describe('the connect channel', () => {
-  const conn = { baseUrl: 'http://127.0.0.1:9000', token: 't' }
-  const voice: VoiceHost = { ensureStarted: vi.fn(async () => conn), stop: vi.fn(async () => {}) }
-
-  function setup(trusted: boolean) {
-    let listener: ((e: never) => unknown) | undefined
-    const ipc = {
-      handle: vi.fn((channel: string, l: (e: never) => unknown) => {
-        expect(channel).toBe(VOICE_CONNECT_CHANNEL)
-        listener = l
-      }),
-      removeHandler: vi.fn(),
-    }
-    const dispose = registerVoiceIpc(ipc as never, voice, () => trusted)
-    return { ipc, dispose, call: () => listener!({} as never) }
-  }
-
-  it('hands the connection to our own window', async () => {
-    expect(await setup(true).call()).toEqual(conn)
-  })
-
-  it('gives a foreign page nothing and does not start the service for it', async () => {
-    vi.mocked(voice.ensureStarted).mockClear()
-    expect(await setup(false).call()).toBeNull()
-    expect(voice.ensureStarted).not.toHaveBeenCalled()
-  })
-
-  it('removes the handler when disposed', () => {
-    const { ipc, dispose } = setup(true)
-    dispose()
-    expect(ipc.removeHandler).toHaveBeenCalledWith(VOICE_CONNECT_CHANNEL)
   })
 })

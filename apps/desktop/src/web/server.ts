@@ -6,6 +6,8 @@ export interface BridgeInfo {
   apiKey: string
   adminToken: string
   version: string
+  /** The API's own origin (7410): it takes the API key, so copied snippets and MCP configs point there. */
+  apiOrigin: string
 }
 
 export interface WebServerOptions extends GateConfig {
@@ -29,7 +31,7 @@ const json = (v: unknown): string => JSON.stringify(v).replace(/</g, '\\u003c')
  * passed the gate ever receives it.
  */
 export function bridgeScript(info: BridgeInfo): string {
-  const body = `{apiKey:${json(info.apiKey)},adminToken:${json(info.adminToken)},version:${json(info.version)},platform:'win32',voice:{connect:function(){return fetch(${json(VOICE_PATH)},{method:'POST',credentials:'same-origin'}).then(function(r){return r.ok?r.json():null}).catch(function(){return null})}}}`
+  const body = `{apiKey:${json(info.apiKey)},adminToken:${json(info.adminToken)},version:${json(info.version)},apiOrigin:${json(info.apiOrigin)},platform:'win32',voice:{connect:function(){return fetch(${json(VOICE_PATH)},{method:'POST',credentials:'same-origin'}).then(function(r){return r.ok?r.json():null}).catch(function(){return null})}}}`
   return `<script>window.helixDesktop=Object.freeze(${body});</script>`
 }
 

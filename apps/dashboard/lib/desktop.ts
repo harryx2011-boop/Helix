@@ -9,6 +9,8 @@ export interface HelixDesktop {
   adminToken: string;
   version: string;
   platform: 'win32';
+  /** The API origin that takes the API key, set by the browser launcher; its page origin is gated by a cookie. */
+  apiOrigin?: string;
   /** Starts the local voice service on first use and answers where it is; absent in older desktop builds. */
   voice?: { connect: () => Promise<unknown> };
 }
@@ -36,6 +38,12 @@ export function desktopCredentials(): { apiKey: string | null; adminToken: strin
   if (!value) return null;
   const pick = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
   return { apiKey: pick(value.apiKey), adminToken: pick(value.adminToken) };
+}
+
+/** The API origin the browser launcher names, or null (Electron, a plain browser). */
+export function desktopApiOrigin(): string | null {
+  const origin = bridge()?.apiOrigin;
+  return typeof origin === 'string' && origin.length > 0 ? origin : null;
 }
 
 /** Whether a listed key (known only by its prefix) is the one the desktop app authenticates with. */

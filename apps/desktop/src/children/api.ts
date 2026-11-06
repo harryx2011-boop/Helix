@@ -13,7 +13,8 @@ export const apiSpec: ChildFactory = (ctx) => {
     HELIX_HOST: '127.0.0.1',
     HELIX_FETCH_URL: loopback(ctx.ports.scrape),
     HELIX_EXTRACT_URL: loopback(ctx.ports.extract),
-    HELIX_PUBLIC_URL: ctx.publicOrigin ?? origin,
+    // Links (interact liveViewUrl) stay on the API origin: the gated page origin needs the launch cookie.
+    HELIX_PUBLIC_URL: origin,
     HELIX_CORS_ORIGINS: ctx.publicOrigin ?? origin,
     HELIX_BOOTSTRAP_KEY: ctx.secrets.apiKey,
     HELIX_INTERNAL_ADMIN_TOKEN: ctx.secrets.adminToken,

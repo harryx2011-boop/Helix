@@ -97,7 +97,7 @@ async function main(): Promise<void> {
     token,
     upstreamPort: DESKTOP_PORTS.api,
     ...(uiDev ? { uiPort: UI_DEV_PORT } : {}),
-    info: { apiKey: secrets.apiKey, adminToken: secrets.adminToken, version },
+    info: { apiKey: secrets.apiKey, adminToken: secrets.adminToken, version, apiOrigin: loopback(DESKTOP_PORTS.api) },
     voice: () => voice.ensureStarted(),
     log,
   })

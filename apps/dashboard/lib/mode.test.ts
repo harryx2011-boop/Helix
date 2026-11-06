@@ -49,6 +49,17 @@ describe('instanceUrl', () => {
     expect(fresh.MCP_URL).toBe('http://localhost:7400/mcp');
   });
 
+  it('shows the API origin the browser launcher names, not its gated page origin', () => {
+    vi.stubEnv('NEXT_PUBLIC_HELIX_API_URL', '');
+    vi.stubEnv('NEXT_PUBLIC_HELIX_MCP_URL', '');
+    vi.stubGlobal('window', {
+      location: { origin: 'http://127.0.0.1:3410', port: '3410' },
+      helixDesktop: { apiKey: 'k', adminToken: 't', version: '1', platform: 'win32', apiOrigin: 'http://127.0.0.1:7410' },
+    });
+    expect(instanceUrl()).toBe('http://127.0.0.1:7410');
+    expect(instanceMcpUrl()).toBe('http://127.0.0.1:7410/mcp');
+  });
+
   it('shows a baked API URL over the page origin', () => {
     vi.stubEnv('NEXT_PUBLIC_HELIX_API_URL', 'https://helix.example.com');
     atOrigin('http://127.0.0.1:7410');

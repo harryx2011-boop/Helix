@@ -5,7 +5,7 @@ import { COOKIE } from './gate'
 import { bridgeScript, createWebServer, portFor } from './server'
 
 const TOKEN = 'f'.repeat(64)
-const INFO = { apiKey: 'helix-' + '1'.repeat(32), adminToken: '2'.repeat(64), version: '9.9.9' }
+const INFO = { apiKey: 'helix-' + '1'.repeat(32), adminToken: '2'.repeat(64), version: '9.9.9', apiOrigin: 'http://127.0.0.1:7410' }
 
 let upstream: http.Server
 let gate: http.Server
@@ -157,8 +157,13 @@ describe('web server', () => {
   })
 
   it('S10: the bridge script cannot be closed early by a value', () => {
-    const s = bridgeScript({ apiKey: '</script><b>', adminToken: 'x', version: '1' })
+    const s = bridgeScript({ apiKey: '</script><b>', adminToken: 'x', version: '1', apiOrigin: 'http://127.0.0.1:7410' })
     expect(s).not.toContain('</script><b>')
+  })
+
+  it('S12: the bridge names the API origin, so copied snippets target the port that takes the API key', () => {
+    const s = bridgeScript({ apiKey: 'k', adminToken: 'x', version: '1', apiOrigin: 'http://127.0.0.1:7410' })
+    expect(s).toContain('apiOrigin:"http://127.0.0.1:7410"')
   })
 })
 

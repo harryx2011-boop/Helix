@@ -143,9 +143,9 @@ describe('baseEnv', () => {
     expect(env).toEqual({ PATH: 'C:/Windows', SystemRoot: 'C:/Windows', OPENAI_API_KEY: 'k' })
   })
 
-  it('S-web: a publicOrigin replaces the API origin for links and CORS', () => {
+  it('S-web: a publicOrigin is allowed for CORS; links stay on the API origin, which takes the API key', () => {
     const env = spec('api', ctx({ dev: true, publicOrigin: 'http://127.0.0.1:3410' })).env
-    expect(env.HELIX_PUBLIC_URL).toBe('http://127.0.0.1:3410')
+    expect(env.HELIX_PUBLIC_URL).toBe('http://127.0.0.1:7410')
     expect(env.HELIX_CORS_ORIGINS).toBe('http://127.0.0.1:3410')
     expect(env.HELIX_HOST).toBe('127.0.0.1')
   })

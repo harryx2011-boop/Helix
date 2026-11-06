@@ -1,3 +1,5 @@
+import { desktopApiOrigin } from './desktop';
+
 /**
  * One app, two build modes (DESKTOP-PLAN.md Phase 2).
  *
@@ -14,11 +16,15 @@ export const PUBLIC_API_URL = process.env.NEXT_PUBLIC_HELIX_API_URL || 'http://l
  * The instance URL to show a person. Off the dev port with no baked URL, the
  * API serves this page itself (the desktop app, a self-host export), so the
  * page's own origin is the instance; `resolveBaseUrl` in `lib/api.ts` makes the
- * same call for requests. Browser-only: server render and export get the fallback.
+ * same call for requests. The browser launcher's page origin (3410) is gated by a
+ * cookie and refuses the API key, so its bridge names the API origin, which wins.
+ * Browser-only: server render and export get the fallback.
  */
 export function instanceUrl(): string {
   const baked = process.env.NEXT_PUBLIC_HELIX_API_URL;
   if (baked) return baked;
+  const desktopApi = desktopApiOrigin();
+  if (desktopApi) return desktopApi;
   if (!HOSTED && typeof window !== 'undefined' && window.location.port !== '3400') return window.location.origin;
   return PUBLIC_API_URL;
 }

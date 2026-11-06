@@ -8,6 +8,7 @@ import { timingSafeEqual } from 'node:crypto'
  */
 
 export const COOKIE = 'hlx_web'
+const MANIFEST = '/manifest.webmanifest'
 
 export interface GateConfig {
   port: number
@@ -65,6 +66,10 @@ export function decide(cfg: GateConfig, req: GateRequest): Decision {
 
   const site = one(req.headers['sec-fetch-site'])
   if (site !== undefined && site !== 'same-origin' && site !== 'none') return deny(403, 'Cross-site request refused')
+
+  // Browsers fetch the PWA manifest without cookies; it is public. The exact raw path only,
+  // so a path that merely normalizes to it upstream still needs the cookie.
+  if (req.method === 'GET' && req.url.split('?')[0] === MANIFEST) return { kind: 'allow' }
 
   let url: URL
   try {

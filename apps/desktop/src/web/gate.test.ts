@@ -77,4 +77,14 @@ describe('web gate', () => {
   it('S13: a request target that is not a valid URL is a 400, not a throw', () => {
     expect(decide(cfg, req({ url: 'http://[/x' }))).toMatchObject({ kind: 'deny', status: 400 })
   })
+
+  it('S14: the PWA manifest needs no cookie (browsers fetch it without one), but still passes Host and Origin', () => {
+    const anon = { cookie: undefined }
+    expect(decide(cfg, req({ url: '/manifest.webmanifest', headers: anon }))).toEqual({ kind: 'allow' })
+    expect(decide(cfg, req({ url: '/manifest.webmanifest', headers: { ...anon, host: 'evil.example' } }))).toMatchObject({ status: 403 })
+    expect(decide(cfg, req({ url: '/manifest.webmanifest', headers: { ...anon, origin: 'https://evil.example' } }))).toMatchObject({ status: 403 })
+    // Only that exact path and GET: a path that merely normalizes to it, or another method, still needs the cookie.
+    expect(decide(cfg, req({ url: '/v1/../manifest.webmanifest', headers: anon }))).toMatchObject({ status: 401 })
+    expect(decide(cfg, req({ method: 'POST', url: '/manifest.webmanifest', headers: anon }))).toMatchObject({ status: 401 })
+  })
 })

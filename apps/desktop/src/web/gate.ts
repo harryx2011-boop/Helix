@@ -66,7 +66,13 @@ export function decide(cfg: GateConfig, req: GateRequest): Decision {
   const site = one(req.headers['sec-fetch-site'])
   if (site !== undefined && site !== 'same-origin' && site !== 'none') return deny(403, 'Cross-site request refused')
 
-  const url = new URL(req.url, `http://${host}`)
+  let url: URL
+  try {
+    url = new URL(req.url, `http://${host}`)
+  } catch {
+    // An absolute-form target such as `http://[/x` would otherwise throw out of both handlers.
+    return deny(400, 'Bad request target')
+  }
   const offered = url.searchParams.get('t')
   if (offered !== null && req.method === 'GET' && sameToken(offered, cfg.token)) {
     url.searchParams.delete('t')

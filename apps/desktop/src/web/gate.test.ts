@@ -73,4 +73,8 @@ describe('web gate', () => {
     expect(c).toContain('SameSite=Strict')
     expect(c).toContain('Path=/')
   })
+
+  it('S13: a request target that is not a valid URL is a 400, not a throw', () => {
+    expect(decide(cfg, req({ url: 'http://[/x' }))).toMatchObject({ kind: 'deny', status: 400 })
+  })
 })

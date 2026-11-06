@@ -81,17 +81,25 @@ export interface WebSecretsInput {
   log: (msg: string) => void
 }
 
+// A new key would orphan the provider keys already stored in the database, so an existing
+// file is decoded or the launch stops; it is never moved aside or replaced.
+function readOrStop(file: string, cipherFor: (stored: CredentialFile) => Cipher): Secrets {
+  try {
+    const stored = JSON.parse(fs.readFileSync(file, 'utf8')) as CredentialFile
+    return decode(stored, cipherFor(stored))
+  } catch (e) {
+    throw new Error(`Could not read the stored Helix credentials in ${file} (${e instanceof Error ? e.message : String(e)}). Nothing was changed.`)
+  }
+}
+
 export function loadWebSecrets(i: WebSecretsInput): Secrets {
   const file = path.join(i.userData, 'credentials.json')
   if (fs.existsSync(file)) {
-    try {
-      const stored = JSON.parse(fs.readFileSync(file, 'utf8')) as CredentialFile
-      const cipher = stored.enc === 'safeStorage' ? electronCipher(electronKey(path.join(i.userData, 'Local State'), i.dpapi)) : dpapiCipher(i.dpapi)
-      return decode(stored, cipher)
-    } catch (e) {
-      // A new key would orphan the provider keys already stored in the database, so stop instead.
-      throw new Error(`Could not read the stored Helix credentials in ${file} (${e instanceof Error ? e.message : String(e)}). Nothing was changed.`)
-    }
+    return readOrStop(file, (stored) =>
+      stored.enc === 'safeStorage' ? electronCipher(electronKey(path.join(i.userData, 'Local State'), i.dpapi)) : dpapiCipher(i.dpapi),
+    )
   }
-  return loadOrCreateSecrets(path.join(i.webDir, 'credentials.json'), dpapiCipher(i.dpapi), i.log)
+  const own = path.join(i.webDir, 'credentials.json')
+  if (fs.existsSync(own)) return readOrStop(own, () => dpapiCipher(i.dpapi))
+  return loadOrCreateSecrets(own, dpapiCipher(i.dpapi), i.log)
 }

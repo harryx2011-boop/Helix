@@ -75,6 +75,19 @@ describe('web secrets', () => {
     expect(fs.readFileSync(path.join(webDir, 'credentials.json'), 'utf8')).not.toContain(first.apiKey)
   })
 
+  it('S6: an unreadable web credentials file stops the launch; it is not moved aside or replaced', () => {
+    const userData = path.join(dir, 'Helix')
+    const webDir = path.join(dir, 'web')
+    fs.mkdirSync(userData)
+    loadWebSecrets({ userData, webDir, dpapi: fakeDpapi, log })
+    const before = fs.readFileSync(path.join(webDir, 'credentials.json'))
+    // A DPAPI call that fails (a busy PC timing out PowerShell) must not rotate the key.
+    const failing: Dpapi = { protect: fakeDpapi.protect, unprotect: () => { throw new Error('timed out') } }
+    expect(() => loadWebSecrets({ userData, webDir, dpapi: failing, log })).toThrow(/credentials/i)
+    expect(fs.readdirSync(webDir)).toEqual(['credentials.json'])
+    expect(fs.readFileSync(path.join(webDir, 'credentials.json'))).toEqual(before)
+  })
+
   it('S5: electronCipher refuses a value that is not v10', () => {
     const c = electronCipher(randomBytes(32))
     expect(() => c.decrypt(Buffer.from('v11abcdefghijklmnopqrstuvwxyz0123456789'))).toThrow()

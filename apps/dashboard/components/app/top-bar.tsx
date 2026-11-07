@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Bell, CircleHelp, Menu, Plug, Search } from '@/components/icons/lucide';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { IconButton } from '@/components/ui/icon-button';
 import { PUBLIC_API_URL, instanceUrl } from '@/lib/mode';
 import { openPalette } from './command-palette/store';
 
@@ -62,14 +62,7 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav?: () => void }) {
       </div>
       <div className="flex items-center gap-1.5 sm:gap-2">
         <PaletteTrigger />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Notifications" disabled>
-              <Bell className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>No notifications yet</TooltipContent>
-        </Tooltip>
+        <IconButton label="No notifications yet" aria-label="Notifications" icon={<Bell className="h-4 w-4" />} className="text-foreground" disabled />
         <Button variant="outline" size="icon" className="hidden sm:hidden md:inline-flex" aria-label="Help" asChild>
           <Link href="/docs">
             <CircleHelp className="h-3.5 w-3.5" />

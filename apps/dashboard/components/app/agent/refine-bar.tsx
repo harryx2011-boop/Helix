@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Link2, Loader2, Play, Wand2 } from '@/components/icons/lucide';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { IconButton } from '@/components/ui/icon-button';
 import { UrlList } from './url-list';
 import { OutputToggle, type AgentOutputFormat } from './output-toggle';
 import { cn } from '@/lib/utils';
@@ -60,20 +60,13 @@ export function RefineBar({
             placeholder="Describe changes to the schema"
             className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
           />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-pressed={urlsOpen}
-                aria-label="Add URLs"
-                onClick={() => setUrlsOpen((open) => !open)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-muted-foreground transition-colors duration-150 ease-out hover:bg-secondary hover:text-foreground"
-              >
-                <Link2 className="h-4 w-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Add URLs</TooltipContent>
-          </Tooltip>
+          <IconButton
+            label="Add URLs"
+            icon={<Link2 className="h-4 w-4" />}
+            aria-pressed={urlsOpen}
+            onClick={() => setUrlsOpen((open) => !open)}
+            className="shrink-0 rounded-pill hover:bg-secondary"
+          />
           <OutputToggle value={outputFormat} onChange={onOutputFormatChange} />
           {refining && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />}
         </div>

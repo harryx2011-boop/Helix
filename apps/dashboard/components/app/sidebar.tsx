@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Logo } from '@/components/shell/logo';
 import { SidebarNav } from './sidebar-nav';
 import { UserChip } from './user-chip';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { IconButton } from '@/components/ui/icon-button';
 import { onSidebarToggle } from './command-palette/store';
 
 const STORAGE_KEY = 'helix.app.sidebarCollapsed';
@@ -18,19 +18,13 @@ const COLLAPSED_WIDTH = 64;
 function CollapseToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   if (collapsed) {
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label="Expand sidebar"
-            className="flex h-9 w-9 items-center justify-center self-center rounded-card text-muted-foreground transition-colors duration-150 ease-out hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="right">Expand sidebar</TooltipContent>
-      </Tooltip>
+      <IconButton
+        label="Expand sidebar"
+        icon={<ChevronRight className="h-4 w-4" />}
+        side="right"
+        onClick={onToggle}
+        className="self-center hover:bg-secondary"
+      />
     );
   }
   return (

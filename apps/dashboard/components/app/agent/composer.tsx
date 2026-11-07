@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { ArrowUp, Link2, Loader2, Sparkles } from '@/components/icons/lucide';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { IconButton } from '@/components/ui/icon-button';
 import { DictationButton, joinDictation, type DictationCaption } from './dictation-button';
 import { UrlList } from './url-list';
 import { OutputToggle, type AgentOutputFormat } from './output-toggle';
@@ -69,20 +69,13 @@ export function Composer({
           rows={1}
           className="my-1.5 min-h-[24px] max-h-[200px] min-w-0 flex-1 resize-none bg-transparent text-[15px] leading-6 text-foreground outline-none placeholder:text-muted-foreground"
         />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-pressed={urlsOpen}
-              aria-label="Add URLs"
-              onClick={() => setUrlsOpen((open) => !open)}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-muted-foreground transition-colors duration-150 ease-out hover:bg-secondary hover:text-foreground"
-            >
-              <Link2 className="h-4 w-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>Add URLs</TooltipContent>
-        </Tooltip>
+        <IconButton
+          label="Add URLs"
+          icon={<Link2 className="h-4 w-4" />}
+          aria-pressed={urlsOpen}
+          onClick={() => setUrlsOpen((open) => !open)}
+          className="shrink-0 rounded-pill hover:bg-secondary"
+        />
         <DictationButton onText={(heard) => onValueChange(joinDictation(value, heard))} onCaption={setCaption} />
         <OutputToggle value={outputFormat} onChange={onOutputFormatChange} />
         <button

@@ -41,6 +41,8 @@ import type { Endpoint } from '@/lib/endpoints';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TabBar, TabBarContent } from '@/components/ui/tab-bar';
+import { usePrefersReducedMotion } from '@/lib/preferences';
 import { Badge } from '@/components/ui/badge';
 import { FrameCells } from '@/components/app/page-frame';
 import { MetadataStrip } from '@/components/result/metadata-strip';
@@ -171,52 +173,42 @@ function PillTabs<T extends string>({
   value,
   onChange,
   label,
+  children,
 }: {
   tabs: PillTab<T>[];
   value: T;
   onChange: (id: T) => void;
   label: string;
+  children: React.ReactNode;
 }) {
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    e.preventDefault();
-    const index = tabs.findIndex((t) => t.id === value);
-    const next = tabs[(index + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
-    if (next) {
-      onChange(next.id);
-      (e.currentTarget.querySelector(`[data-id="${next.id}"]`) as HTMLElement | null)?.focus();
-    }
-  };
+  const reduceMotion = usePrefersReducedMotion();
   return (
-    <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className="inline-flex items-center gap-0.5 self-start rounded-pill border border-border p-0.5">
-      {tabs.map((tab) => {
-        const active = tab.id === value;
-        const Icon = tab.icon;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            data-id={tab.id}
-            aria-selected={active}
-            tabIndex={active ? 0 : -1}
-            onClick={() => onChange(tab.id)}
-            className={cn(
-              'inline-flex h-7 items-center gap-1.5 rounded-pill px-3 text-xs font-medium transition-colors duration-150 ease-out',
-              active ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
+    <TabBar
+      variant="pill"
+      value={value}
+      onValueChange={(id) => onChange(id as T)}
+      listLabel={label}
+      listClassName="self-start"
+      animated={!reduceMotion}
+      className="flex flex-col gap-4"
+      items={tabs.map(({ id, label: text, icon: Icon, chip }) => ({
+        value: id,
+        className: 'text-xs',
+        label: (
+          <>
             <Icon className="h-3.5 w-3.5" aria-hidden />
-            {tab.label}
-            {tab.chip && (
+            {text}
+            {chip && (
               <span className="rounded-pill bg-accent px-1.5 py-px font-mono text-[10px] text-accent-foreground" title="By byte size, markdown against the raw HTML">
-                {tab.chip}
+                {chip}
               </span>
             )}
-          </button>
-        );
-      })}
-    </div>
+          </>
+        ),
+      }))}
+    >
+      {children}
+    </TabBar>
   );
 }
 
@@ -596,26 +588,35 @@ function DocumentResult({
           ))}
         </ul>
       )}
-      <PillTabs tabs={tabs} value={tab} onChange={setTab} label="Result view" />
-      {tab === 'markdown' && data.markdown && <MarkdownView content={data.markdown} />}
-      {tab === 'json' && hasJson && (
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground">Extracted JSON</span>
-            {usage && (
-              <span className="font-mono text-xs text-muted-foreground">
-                {usage.model} · {usage.tokens.input} in / {usage.tokens.output} out · {usage.blocksKept}/{usage.blocksTotal} blocks
-              </span>
-            )}
-          </div>
-          <AnimatedJsonView data={data.json} />
-        </div>
-      )}
-      {tab === 'json' && <JsonView data={data} />}
-      {tab === 'screenshot' && data.screenshot && (
-        // eslint-disable-next-line @next/next/no-img-element -- inline data URL from the API
-        <img src={data.screenshot} alt="Page screenshot" className="rounded-card border border-border" />
-      )}
+      <PillTabs tabs={tabs} value={tab} onChange={setTab} label="Result view">
+        {data.markdown && (
+          <TabBarContent value="markdown" className="mt-0">
+            <MarkdownView content={data.markdown} />
+          </TabBarContent>
+        )}
+        <TabBarContent value="json" className="mt-0 flex-col gap-4 data-[state=active]:flex">
+          {hasJson && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Extracted JSON</span>
+                {usage && (
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {usage.model} · {usage.tokens.input} in / {usage.tokens.output} out · {usage.blocksKept}/{usage.blocksTotal} blocks
+                  </span>
+                )}
+              </div>
+              <AnimatedJsonView data={data.json} />
+            </div>
+          )}
+          <JsonView data={data} />
+        </TabBarContent>
+        {data.screenshot && (
+          <TabBarContent value="screenshot" className="mt-0">
+            {/* eslint-disable-next-line @next/next/no-img-element -- inline data URL from the API */}
+            <img src={data.screenshot} alt="Page screenshot" className="rounded-card border border-border" />
+          </TabBarContent>
+        )}
+      </PillTabs>
     </div>
   );
 }
@@ -1145,16 +1146,17 @@ function MapResult({
       onBack={onBack}
       input={input}
     >
-      <PillTabs tabs={tabs} value={tab} onChange={setTab} label="Map view" />
-      {tab === 'links' && (
-        <div className="-mx-4 flex flex-col border-t border-border">
+      <PillTabs tabs={tabs} value={tab} onChange={setTab} label="Map view">
+        <TabBarContent value="links" className="mt-0 -mx-4 flex-col border-t border-border data-[state=active]:flex">
           {links.map((link, i) => (
             <NumberedRow key={link.url} index={i + 1} url={link.url} title={link.title} />
           ))}
           {links.length === 0 && <span className="px-4 py-4 text-sm text-muted-foreground">No URLs discovered.</span>}
-        </div>
-      )}
-      {tab === 'json' && <JsonView data={links} />}
+        </TabBarContent>
+        <TabBarContent value="json" className="mt-0">
+          <JsonView data={links} />
+        </TabBarContent>
+      </PillTabs>
     </Chrome>
   );
 }

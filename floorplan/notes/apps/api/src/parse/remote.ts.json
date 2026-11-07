@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/parse/remote.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Lookup",
+      "line": 5,
+      "offset": 0,
+      "text": "Where `/parse` is allowed to fetch from.\n\nThe url path fetches from inside the gateway, next to helix-fetch,\nhelix-extract, Postgres and the browser tier. A key holder must not be able\nto point it at any of those, so the host is resolved and every address it\nyields is checked against the non-public ranges before a connection opens,\nand again on every redirect.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "assertPublicUrl",
+      "line": 53,
+      "offset": 0,
+      "text": "Throws when the URL may not be fetched. Resolution failures are left to the\nfetch itself so they keep their `dns` classification.",
+      "kind": "doc"
+    }
+  ]
+}

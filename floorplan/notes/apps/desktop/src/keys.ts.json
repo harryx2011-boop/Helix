@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/src/keys.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "loadOrCreateSecrets",
+      "line": 45,
+      "offset": 0,
+      "text": "Reads the stored key and admin token, or makes and stores them on first run.\nAn unreadable file is moved aside, never overwritten, so the old secrets stay recoverable.\n\nSecrets are written only under OS encryption: a base64 file is the secret in\nthe clear, and a file mode does not protect it on Windows. Without encryption\nthey live for this launch only. A plain file from an older build is still\nread, and re-encrypted as soon as encryption is available.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "loadOrCreateSecrets",
+      "line": 57,
+      "offset": 12,
+      "text": "Outside the read: a failed re-encrypt must not move a readable file aside.",
+      "kind": "why"
+    }
+  ]
+}

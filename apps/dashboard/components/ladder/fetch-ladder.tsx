@@ -14,11 +14,6 @@ interface FetchLadderProps {
   resolvedTier?: ResultTier | undefined;
 }
 
-/**
- * Renders every rung Helix walked, in ladder order — not just the attempted
- * set — so a caller sees both which tiers were tried and which were skipped
- * because escalation stopped early or was never needed.
- */
 export function FetchLadder({ tiersAttempted, resolvedTier }: FetchLadderProps) {
   const attemptedSet = new Set(tiersAttempted);
   const rungs = LADDER.filter((tier) => !RETIRED.has(tier) || attemptedSet.has(tier) || tier === resolvedTier);

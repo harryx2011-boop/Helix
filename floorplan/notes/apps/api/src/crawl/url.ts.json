@@ -1,0 +1,159 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/url.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "URL normalisation.\n\nDedup is only as good as the key it compares. `https://site.com/`,\n`https://www.site.com`, and `https://site.com/?utm_source=x` are one page\nwearing three hats, and a crawler that treats them as three fetches three\ntimes and reports inflated coverage.\n\nNormalisation is deliberately conservative: it only removes things that\nprovably cannot change what a server returns. Query parameters are sorted,\nnot dropped, because `?page=2` matters even though `?utm_source` does not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "TRACKING_PARAMS",
+      "line": 2,
+      "offset": 0,
+      "text": "Parameters that identify a campaign or a session, never a document.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "NormaliseOptions.ignoreQuery",
+      "line": 23,
+      "offset": 0,
+      "text": "Drop the query string entirely.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "NormaliseOptions.ignoreWww",
+      "line": 24,
+      "offset": 0,
+      "text": "Treat `www.` and the bare host as the same site.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "normaliseUrl",
+      "line": 37,
+      "offset": 10,
+      "text": "A fragment is resolved by the browser and never sent to the server, so two\nURLs differing only by fragment are the same fetch.",
+      "kind": "why"
+    },
+    {
+      "id": "n6",
+      "symbol": "normaliseUrl",
+      "line": 44,
+      "offset": 17,
+      "text": "Default ports carry no meaning.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "normaliseUrl",
+      "line": 56,
+      "offset": 29,
+      "text": "Ordering is not significant to a server, but it is to string equality.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "normaliseUrl",
+      "line": 62,
+      "offset": 35,
+      "text": "`/path/` and `/path` are the same document often enough, and different\nrarely enough, that collapsing the trailing slash is the right default.\nThe root is left alone: `https://site.com/` is canonical.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "fetchUrl",
+      "line": 69,
+      "offset": 0,
+      "text": "The URL a crawl requests and records: parsed, fragment dropped, otherwise as\nfound. `normaliseUrl` is only the dedup key; fetching its slash-stripped form\nmakes a server that answers `/docs` without redirecting resolve every\nrelative link one directory too high.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "siteOf",
+      "line": 81,
+      "offset": 0,
+      "text": "The registrable domain, used to partition politeness per site.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "siteOf",
+      "line": 87,
+      "offset": 6,
+      "text": "A full public-suffix list is overkill here: politeness only needs a\nstable grouping key, and grouping by the last two labels is stable even\nwhere it is not strictly the registrable domain.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "depthFrom",
+      "line": 114,
+      "offset": 0,
+      "text": "Depth below a base path, or undefined when the URL is outside it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "MAX_PATTERN_LENGTH",
+      "line": 134,
+      "offset": 0,
+      "text": "Longer than any path pattern a caller means; bounds the work a regex can do.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "isGlobPattern",
+      "line": 136,
+      "offset": 0,
+      "text": "A path pattern is a glob when it uses `*` or `?` and nothing that only a\nregular expression would: anchors, groups, classes, escapes, alternation.\n`/blog/*` is what the spec documents; `^/blog` keeps working for callers who\nalready send regular expressions.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "hasNestedQuantifier",
+      "line": 140,
+      "offset": 0,
+      "text": "A quantified group that itself repeats or alternates (`(a+)+`, `(a|aa)*`)\nbacktracks exponentially on a non-matching path. Patterns are matched inside\nthe API process against every discovered link, so one such pattern would\nstall every request on the server.",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": "wildcardMatch",
+      "line": 144,
+      "offset": 0,
+      "text": "Wildcard match without a regular expression: `*` (or `**`) matches any run\nof characters including `/`, `?` matches one character other than `/`.\nLinear in the pattern for each position of the path, never exponential,\nwhich is why globs are not compiled to `.*`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n17",
+      "symbol": "globMatcher",
+      "line": 172,
+      "offset": 0,
+      "text": "Glob over the pathname. `/blog/*` means \"everything under /blog\", which is\nwhat the include/exclude use reads as, so it also matches `/blog` itself:\nthe trailing slash is not significant after normalisation. A pattern\nwithout a leading slash matches anywhere in the path.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "compilePathPattern",
+      "line": 186,
+      "offset": 0,
+      "text": "Compile a path pattern, or undefined when it is a regular expression that\ndoes not parse or could not be matched in bounded time.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": "compilePathPatterns",
+      "line": 197,
+      "offset": 0,
+      "text": "Compile every pattern, dropping the ones that do not compile: an invalid pattern must not match everything by accident.",
+      "kind": "doc"
+    }
+  ]
+}

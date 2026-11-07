@@ -1,0 +1,87 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/screenshot.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ScreenshotRequestSchema",
+      "line": 10,
+      "offset": 0,
+      "text": "Screenshot-only fast path.\n\nSame pipeline `/scrape` uses with `formats: [screenshot]`, minus every other\nformat field in the response. `screenshot` already forces the Chromium tier\ninside the pipeline, so this saves a caller nothing on tier selection — only\non response size and, via `skipExtraction`, on the markdown extraction pass\nneither this route nor its caller ever reads.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ScreenshotRequestSchema.fullPage",
+      "line": 13,
+      "offset": 0,
+      "text": "Everything below the fold, capped at `MAX_FULL_PAGE_HEIGHT` and said so when clipped.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ScreenshotRequestSchema.selector",
+      "line": 14,
+      "offset": 0,
+      "text": "Capture one element. A selector matching nothing warns rather than silently framing the page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ScreenshotRequestSchema.quality",
+      "line": 24,
+      "offset": 0,
+      "text": "JPEG and WebP only; ignored on PNG, which has no lossy setting.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "ScreenshotRequestSchema.omitBackground",
+      "line": 25,
+      "offset": 0,
+      "text": "Transparent where the page paints nothing. Ignored on JPEG, which has no alpha.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "ScreenshotRequestSchema.darkMode",
+      "line": 33,
+      "offset": 0,
+      "text": "Emulates the dark colour scheme, for pages that honour prefers-color-scheme.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "ScreenshotRequestSchema.blockAds",
+      "line": 34,
+      "offset": 0,
+      "text": "Keeps ad and consent-dialog chrome out of the frame.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "ScreenshotRequestSchema",
+      "line": 44,
+      "offset": 34,
+      "text": "Both name a region; honouring one silently would return an image that\nis not what either asked for.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "registerScreenshot",
+      "line": 95,
+      "offset": 26,
+      "text": "A caller's proxy is a host this instance connects to; the operator's is trusted.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "registerScreenshot",
+      "line": 166,
+      "offset": 97,
+      "text": "A clipped full-page capture, or a selector that matched nothing, returns\nan image that looks like what was asked for. The capture layer says so;\nthis is where the caller hears it.",
+      "kind": "what"
+    }
+  ]
+}

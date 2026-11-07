@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/status/history-bars.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HistoryBars",
+      "line": 16,
+      "offset": 0,
+      "text": "One bar per day over the last 90. The status tokens are shared by both\nsurfaces; only the \"no data\" bar differs, because the marketing ink tokens\npaint nothing on the dark app surface.",
+      "kind": "doc"
+    }
+  ]
+}

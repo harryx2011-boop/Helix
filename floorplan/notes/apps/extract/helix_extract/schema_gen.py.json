@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/schema_gen.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "META_SCHEMA",
+      "line": 32,
+      "offset": 0,
+      "text": "A schema for schemas: loose enough to admit any valid JSON Schema object, but\nit pins down the shape a model reaches for reliably (object/array/properties)\nrather than leaving the field wide open to unstructured text.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "_call_anthropic_json",
+      "line": 147,
+      "offset": 31,
+      "text": "An unusable answer here (no tool call, or text that isn't valid\nJSON) returns `{}` rather than raising `SchemaError` — `generate_schema`\nalready has its own repair-retry for exactly this shape of failure\nvia `_is_usable_schema`, and short-circuiting it would drop that.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "generate_schema",
+      "line": 272,
+      "offset": 37,
+      "text": "One repair attempt: re-prompt with the failure named, rather than\nfailing outright on a model that returned close-but-not-quite JSON.",
+      "kind": "what"
+    }
+  ]
+}

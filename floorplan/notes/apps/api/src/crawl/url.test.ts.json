@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/url.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 15,
+      "offset": null,
+      "text": "The complaint that motivates this: a crawl returning site.com/,\nwww.site.com/ and site.com/#top as three separate pages.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 25,
+      "offset": null,
+      "text": "?page=2 is a different document; ?utm_source is the same one.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 80,
+      "offset": null,
+      "text": "Getting this wrong would treat bbc.co.uk and itv.co.uk as one site and\npace them against a shared budget.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 114,
+      "offset": null,
+      "text": "A broken regex must not silently become \"match everything\", which would\nturn an exclude rule into a crawl-nothing rule.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 134,
+      "offset": null,
+      "text": "The spec's own example: include /blog/*, exclude /blog/tag/*.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 158,
+      "offset": null,
+      "text": "The seed `https://example.com/blog/` normalises to `/blog`; the spec's\n`/blog/*` must still cover it.",
+      "kind": "why"
+    }
+  ]
+}

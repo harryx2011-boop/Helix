@@ -1,0 +1,95 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_documents.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "marker_absent",
+      "line": 93,
+      "offset": 2,
+      "text": "A None entry in sys.modules makes every `from marker... import` raise\nImportError, which is exactly what a base install without the extra sees.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "TestLooksGarbled.test_accepts_non_latin_scripts",
+      "line": 121,
+      "offset": 1,
+      "text": "CJK text is the case that breaks naive heuristics: it is legitimate\ncontent with no Latin word shapes at all, and must not be mistaken for\nmojibake simply for being unfamiliar.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "TestLooksGarbled.test_flags_private_use_characters",
+      "line": 128,
+      "offset": 1,
+      "text": "A subsetted font with no ToUnicode table decodes into this range.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "TestLooksGarbled.test_treats_empty_input_as_not_garbled",
+      "line": 131,
+      "offset": 1,
+      "text": "Nothing to judge. \"Empty\" is a separate condition from \"wrong\".",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "TestAssessPdf.test_flags_a_pdf_with_no_text_as_needing_ocr",
+      "line": 144,
+      "offset": 1,
+      "text": "This is the scanned-document case. Parsing anyway produces nothing,\nand reporting that as clean output is how empty results reach a RAG index.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "TestParse.test_respects_max_pages",
+      "line": 179,
+      "offset": 5,
+      "text": "The page count still reports the true total, not the truncated one.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "TestParse.test_reports_ocr_need_even_when_ocr_is_declined",
+      "line": 182,
+      "offset": 1,
+      "text": "`never` accepts a degraded answer, but the flags must still say what\nwas found — otherwise empty output reads as a genuinely empty document.",
+      "kind": "why"
+    },
+    {
+      "id": "n8",
+      "symbol": "TestParse.test_does_not_claim_ocr_ran_when_marker_is_absent",
+      "line": 188,
+      "offset": 1,
+      "text": "Marker ships in the `documents` extra. Without it, the honest answer is\nan empty result flagged as needing OCR — never the broken text layer.",
+      "kind": "why"
+    },
+    {
+      "id": "n9",
+      "symbol": "TestShortPdfWithoutOcr.test_keeps_a_short_clean_text_layer",
+      "line": 202,
+      "offset": 0,
+      "text": "A one-line PDF falls under MIN_CHARS_PER_PAGE and so is flagged for OCR,\nbut its text is real. With no OCR parser installed, that text is the best\nanswer available and must not be thrown away.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": "TestCorruptFiles",
+      "line": 237,
+      "offset": 1,
+      "text": "A zip signature followed by nothing is what a truncated upload looks like.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "TestCorruptFiles.test_reports_an_unopenable_pdf_when_ocr_is_declined",
+      "line": 252,
+      "offset": 1,
+      "text": "With OCR off the text-layer parser has to open the bytes itself, and\na PDF header on garbage is a bad file, not a service outage.",
+      "kind": "what"
+    }
+  ]
+}

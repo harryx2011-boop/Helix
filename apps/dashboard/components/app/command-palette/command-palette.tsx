@@ -65,7 +65,6 @@ export function CommandPalette({ selectedEndpoints }: { selectedEndpoints: reado
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.key.toLowerCase() !== 'k' || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
-      // Someone typing in a form keeps their Ctrl+K; only the palette's own input may toggle it.
       if (isEditable(e.target) && e.target.dataset.paletteInput === undefined) return;
       e.preventDefault();
       togglePalette();
@@ -78,11 +77,6 @@ export function CommandPalette({ selectedEndpoints }: { selectedEndpoints: reado
     <DialogPrimitive.Root open={open} onOpenChange={setPaletteOpen}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-fade-in motion-reduce:animate-none" />
-        {/*
-         * The portal lands outside the app layout's `dark` / `data-surface`
-         * wrapper, so both are repeated here: one for the hsl tokens, one so
-         * the global reduced-motion rule reaches the rows inside.
-         */}
         <DialogPrimitive.Content
           data-surface="app"
           className="dark fixed left-1/2 top-[8vh] z-50 grid max-h-[min(32rem,calc(92vh-1rem))] w-[calc(100vw-2rem)] min-w-0 max-w-xl -translate-x-1/2 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-card border border-border bg-card text-foreground shadow-lg focus-within:ring-1 focus-within:ring-ring/40 data-[state=open]:animate-slide-up motion-reduce:animate-none sm:top-[12vh] sm:max-h-[min(32rem,calc(88vh-1rem))]"
@@ -123,8 +117,6 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
     };
   }, []);
 
-  // One deadline for every live lookup: a section that has not answered by
-  // then reports that, rather than a skeleton that never resolves.
   const jobIds = React.useMemo(
     () => recentRuns.filter((r) => r.endpoint === 'crawl' && r.id).slice(0, JOB_LOOKUPS).map((r) => r.id!),
     [recentRuns],
@@ -140,7 +132,6 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
       window.clearTimeout(deadline);
       controller.abort();
     };
-    // Deliberately not re-fetched as recent runs change under it: one fetch per open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey]);
 
@@ -274,8 +265,6 @@ function PaletteBody({ selectedEndpoints }: { selectedEndpoints: readonly string
     return out;
   }, [recentRuns, selectedEndpoints, docs, data, go]);
 
-  // Sections that cannot list anything still get a row saying why, but only
-  // once there is a query: on an empty palette that would be noise.
   const notes = React.useMemo<Partial<Record<PaletteGroup, Note>>>(() => {
     if (!query.trim()) return {};
     const out: Partial<Record<PaletteGroup, Note>> = {};

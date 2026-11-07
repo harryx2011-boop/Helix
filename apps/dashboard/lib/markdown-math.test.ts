@@ -41,14 +41,6 @@ describe('preprocessMarkdownMath', () => {
     expect(preprocessMarkdownMath(huge)).toBe(huge);
   });
 
-  // Security-review regression: the original `\(...\)`/`\[...\]` bridge used
-  // `text.replace(/\\\(([\s\S]*?)\\\)/g, ...)`, a lazy quantifier that goes
-  // quadratic on an unclosed run because there is nothing to stop the engine
-  // scanning from every position out to the end of the string looking for a
-  // closer that never appears (measured by the reviewer: 100k chars ~6.5s,
-  // 200k chars ~29s, on the main thread inside a `useMemo`). The replacement
-  // is a linear scanner bounded to a fixed window per opener; both delimiter
-  // pairs must stay well under the review's 100ms bar at that same size.
   it('preprocesses 200k chars of unclosed \\( in well under 100ms', () => {
     const input = '\\(' + 'a'.repeat(200_000);
     const start = performance.now();
@@ -63,11 +55,6 @@ describe('preprocessMarkdownMath', () => {
     expect(performance.now() - start).toBeLessThan(100);
   });
 
-  // Second-review regression: one giant unclosed opener is O(n) for any
-  // implementation, so the tests above cannot catch a scanner that pays a fresh
-  // bounded scan (up to MAX_DELIMITER_SPAN chars) per opener. Text *packed*
-  // with unclosed openers can: 240k `\(` cost ~1.1s at the 500k cap before the
-  // closer and blank-line lookahead were cached across openers.
   const CAP = 500_000;
   const denseCases: Array<[string, string]> = [
     ['\\( x250k', '\\('.repeat(CAP / 2)],
@@ -78,7 +65,7 @@ describe('preprocessMarkdownMath', () => {
   ];
   for (const [label, input] of denseCases) {
     it(`preprocesses ${input.length} chars of densely packed unclosed openers (${label}) in well under 100ms`, () => {
-      preprocessMarkdownMath(input.slice(0, 20_000)); // warm the JIT so the timing is the scanner, not startup
+      preprocessMarkdownMath(input.slice(0, 20_000));
       const start = performance.now();
       preprocessMarkdownMath(input);
       expect(performance.now() - start).toBeLessThan(100);

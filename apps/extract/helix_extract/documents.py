@@ -26,12 +26,8 @@ import unicodedata
 from dataclasses import dataclass
 from enum import Enum
 
-# Below this ratio of extractable characters per page, a PDF is treated as
-# scanned regardless of what the text layer claims to contain.
 MIN_CHARS_PER_PAGE = 50
 
-# Above this proportion of replacement/control/private-use characters, a text
-# layer has decoded wrongly even though it produced output.
 GARBLED_THRESHOLD = 0.10
 
 
@@ -129,12 +125,11 @@ def looks_garbled(text: str) -> bool:
             continue
         considered += 1
 
-        if char == "�":  # replacement character
+        if char == "�":
             suspicious += 1
             continue
 
         category = unicodedata.category(char)
-        # Co = private use, Cn = unassigned, Cc = control (excluding whitespace).
         if category in ("Co", "Cn", "Cc"):
             suspicious += 1
 
@@ -144,8 +139,6 @@ def looks_garbled(text: str) -> bool:
     if suspicious / considered > GARBLED_THRESHOLD:
         return True
 
-    # A text layer that produced almost no word-like runs is also suspect: real
-    # prose has vowels and spaces, mojibake frequently has neither.
     words = re.findall(r"[^\W\d_]{2,}", sample)
     if considered > 200 and len(words) < considered / 50:
         return True
@@ -186,8 +179,6 @@ def assess_pdf(data: bytes) -> PdfAssessment:
         if pages == 0:
             return PdfAssessment(0, 0, True, False, "the PDF has no pages")
 
-        # Sample rather than read everything: a hundred-page report does not
-        # need full extraction to reveal whether it has a text layer.
         sample_indices = list(range(min(pages, 5)))
         collected: list[str] = []
 
@@ -257,7 +248,6 @@ def _pdf_to_markdown(data: bytes, max_pages: int | None = None) -> tuple[str, in
             page = document[index]
             text = page.get_textpage().get_text_range().strip()
             if text:
-                # Page markers keep a citation locatable in the source document.
                 parts.append(f"<!-- page {index + 1} -->\n\n{text}")
 
         return "\n\n".join(parts), total
@@ -404,16 +394,10 @@ def parse(
 
     assessment = assess_pdf(data)
 
-    # `never` means the caller accepts a degraded answer over an expensive one,
-    # but the flags still report what was found so the result is not mistaken
-    # for clean text.
     should_ocr = ocr == "always" or (ocr == "auto" and assessment.needs_ocr)
 
     if should_ocr:
         markdown, parser = _ocr_pdf(data, max_pages)
-        # With no OCR parser, a text layer that is merely short is still real
-        # text: fall through and return it, as `never` would. Only a garbled
-        # layer is withheld, and a layer with nothing in it has nothing to give.
         text_layer_usable = not assessment.suspected_garbled_text and assessment.chars_extracted > 0
         if parser != "none" or not text_layer_usable:
             return ParsedDocument(

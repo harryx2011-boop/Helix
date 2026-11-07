@@ -27,7 +27,7 @@ Every `tier: "auto"` scrape with no capability needs starts at `plain`. That tie
 - Each tier gets the full `options.timeout` (default 30 s, max 300 s). There is no shared deadline across tiers, so a 30 s request can take about 4 x 30 s in the worst case — [apps/api/src/core/pipeline.ts:184-193,213-231](apps/api/src/core/pipeline.ts), [apps/api/src/routes/scrape.ts:73](apps/api/src/routes/scrape.ts)
 - A disabled lightpanda is still stepped onto as a transport error before chromium.
   - Probe: `example.com` escalations were `["content absent from raw HTML","content absent from raw HTML","transport error: lightpanda tier requested but not enabled"]`, and the page climbed to chromium (pipe.mts run).
-  - The same finding is already logged in [FOLLOWUPS-PLAN.md:78-80](FOLLOWUPS-PLAN.md) (example.com 0.3 s → 3.6 s), with fixes planned in [SUITE-PLAN.md:82-86](SUITE-PLAN.md).
+  - The same finding is already logged in [docs/plans/2026-09-26-followups-plan.md:78-80](docs/plans/2026-09-26-followups-plan.md) (example.com 0.3 s → 3.6 s), with fixes planned in [docs/plans/2026-10-05-suite-plan.md:82-86](docs/plans/2026-10-05-suite-plan.md).
 - HTTP 429 and 403 are block signals, so they escalate at once to a heavier tier against the same host. `Retry-After` is parsed only for the final failure report and is never honoured between tiers — [apps/api/src/core/block-detection.ts:122-133](apps/api/src/core/block-detection.ts), [apps/api/src/core/pipeline.ts:147-161,431-434](apps/api/src/core/pipeline.ts)
 - A non-2xx page with enough text is returned as `success: true`.
   - Probe: `https://www.npmjs.com/does-not-exist-404` returned success at tier `tls`, after plain earned a `403 cf-mitigated` (pipe.mts run).
@@ -81,7 +81,7 @@ The `tls` tier is good: `wreq` 0.16 on BoringSSL presents a real Chrome 149 JA4 
   - the JSON profile documents `"acceptEncoding": "gzip, deflate, br, zstd"` — [packages/profiles/definitions/chrome-148-windows.json:61](packages/profiles/definitions/chrome-148-windows.json)
   - `Cargo.toml` enables no wreq compression features — [apps/fetch/Cargo.toml:30](apps/fetch/Cargo.toml)
 - A client is built per request. The code says this is deliberate, so a pooled connection does not carry the previous identity's TLS session. The cost is a full TCP and TLS handshake on every fetch, with no cookie store — [apps/fetch/src/main.rs:165-198,222](apps/fetch/src/main.rs)
-  - Reusing the client per `(profile, proxy, allow_private)` is already planned in [SUITE-PLAN.md:87-88](SUITE-PLAN.md).
+  - Reusing the client per `(profile, proxy, allow_private)` is already planned in [docs/plans/2026-10-05-suite-plan.md:87-88](docs/plans/2026-10-05-suite-plan.md).
 - Caller headers are added with `request.header(name, value)` after the emulation headers ("caller headers win"). This can change Chrome's header order or duplicate a header — [apps/fetch/src/main.rs:234-241](apps/fetch/src/main.rs)
 - Proxy: one `wreq::Proxy::all(proxy)` per request, operator-supplied, with no pool — [apps/fetch/src/main.rs:181-183](apps/fetch/src/main.rs). The route resolves `auto | stealth | none | {url}` — [apps/api/src/routes/scrape.ts:43-54,141-156](apps/api/src/routes/scrape.ts)
 - The body is read with `response.text()`. There is no size cap and no content-type check, and an undecodable body becomes `None` — [apps/fetch/src/main.rs:272-280](apps/fetch/src/main.rs)
@@ -133,7 +133,7 @@ The profile JS layer runs only when a caller names a profile. Even then it never
   - One `context.route(() => true, …)` handler is installed on every render, because `blockPrivate` is on by default, so every subresource round-trips through Node — [apps/api/src/browser/pool.ts:199-220,619-622](apps/api/src/browser/pool.ts)
   - Playwright documents that "Enabling routing disables http cache" — `node_modules/playwright-core/types/types.d.ts:4368`
   - The handler aborts private hosts, plus 20 ad and consent hosts only when `blockAds` is set — [apps/api/src/browser/pool.ts:156-182](apps/api/src/browser/pool.ts)
-  - Images, fonts and media are never blocked, even for a markdown-only scrape. Blocking them is planned in [SUITE-PLAN.md:89](SUITE-PLAN.md).
+  - Images, fonts and media are never blocked, even for a markdown-only scrape. Blocking them is planned in [docs/plans/2026-10-05-suite-plan.md:89](docs/plans/2026-10-05-suite-plan.md).
   - `blockAds` is not in the scrape route schema, so `/v1/scrape` never sets it — [apps/api/src/routes/scrape.ts:62-83,257-275](apps/api/src/routes/scrape.ts)
 - Navigation is `goto(..., waitUntil: 'domcontentloaded')`, then `page.content()` immediately, unless `waitFor` is set. Nothing waits for a JS challenge to clear or for network idle — [apps/api/src/browser/pool.ts:223-245](apps/api/src/browser/pool.ts)
 - Reuse and concurrency:
@@ -142,7 +142,7 @@ The profile JS layer runs only when a caller names a profile. Even then it never
   - Callers park in `#acquire` when the pool is full — [apps/api/src/browser/pool.ts:422-438](apps/api/src/browser/pool.ts)
   - A new context per render — [apps/api/src/browser/pool.ts:592-598](apps/api/src/browser/pool.ts)
   - Recycle drain polls every 100 ms — [apps/api/src/browser/pool.ts:460-463](apps/api/src/browser/pool.ts)
-- Lightpanda (`connectOverCDP`), Camoufox (`firefox.connect`) and remote CDP each connect and disconnect **per render** — [apps/api/src/browser/pool.ts:680-683,721,758-760,787,837,885](apps/api/src/browser/pool.ts). One persistent connection is planned in [SUITE-PLAN.md:90](SUITE-PLAN.md).
+- Lightpanda (`connectOverCDP`), Camoufox (`firefox.connect`) and remote CDP each connect and disconnect **per render** — [apps/api/src/browser/pool.ts:680-683,721,758-760,787,837,885](apps/api/src/browser/pool.ts). One persistent connection is planned in [docs/plans/2026-10-05-suite-plan.md:90](docs/plans/2026-10-05-suite-plan.md).
 - Lightpanda and Camoufox contexts get no profile, init script or route except the private guard — [apps/api/src/browser/pool.ts:686-700,763-778](apps/api/src/browser/pool.ts)
 
 ### Inferences
@@ -242,7 +242,7 @@ The unit suites for the ladder, detection, pool, profiles, sessions, scrape rout
 ### Cited Findings
 - `npx vitest run` over pipeline, escalation, block-detection, scrape, pool, pool.ceiling, profiles, engines, sessions, job-ladder and job-cost gave **11 files passed, 166 tests passed, duration 28.71 s** (run 2026-10-05 21:25 from `apps/api`). `pool.test.ts` took 17.7 s, using real browsers.
 - Rust `cargo test` was not completed (section 2 gap).
-- Benchmarks: none. `apps/api/scripts/` holds `bundle.mjs`, `mcp-response-size.mjs`, `mcp-schema-size.mjs` and `smoke-live.mjs`. `smoke-live.mjs` is a per-operation live smoke check, not a throughput measurement — [apps/api/scripts/smoke-live.mjs:1-4](apps/api/scripts/smoke-live.mjs). A baseline script (p50/p95, tier reached, bytes, success rate) is planned but not built — [SUITE-PLAN.md:78-80](SUITE-PLAN.md)
+- Benchmarks: none. `apps/api/scripts/` holds `bundle.mjs`, `mcp-response-size.mjs`, `mcp-schema-size.mjs` and `smoke-live.mjs`. `smoke-live.mjs` is a per-operation live smoke check, not a throughput measurement — [apps/api/scripts/smoke-live.mjs:1-4](apps/api/scripts/smoke-live.mjs). A baseline script (p50/p95, tier reached, bytes, success rate) is planned but not built — [docs/plans/2026-10-05-suite-plan.md:78-80](docs/plans/2026-10-05-suite-plan.md)
 - Metrics:
   - The crawl worker counts `tierBreakdown` and `browserSeconds` into job usage — [apps/api/src/crawl/worker.ts:400,696,815-816](apps/api/src/crawl/worker.ts)
   - `GET /v1/jobs/:id/ladder` reads `tier`, `tiersAttempted`, `escalations` and `timingMs` from `documents.metadata` — [apps/api/src/routes/job-ladder.ts](apps/api/src/routes/job-ladder.ts)
@@ -254,7 +254,7 @@ The unit suites for the ladder, detection, pool, profiles, sessions, scrape rout
 ## 7. Concrete inefficiencies and anti-bot defects, ranked (file:line)
 
 ### Takeaway
-The highest-value fixes are ranked below. Items 1-3 and 5 have live evidence from this audit. Items marked "planned" are already listed in `SUITE-PLAN.md` Phase 1.
+The highest-value fixes are ranked below. Items 1-3 and 5 have live evidence from this audit. Items marked "planned" are already listed in `docs/plans/2026-10-05-suite-plan.md` Phase 1.
 
 ### Cited Findings
 1. **False-positive challenge detection on normal Cloudflare pages** (discord, medium, cloudflare.com, CF Turnstile docs). This turns tls successes into failures. See [apps/api/src/core/block-detection.ts:149-156,204-212](apps/api/src/core/block-detection.ts) and the fp.mts and pipe.mts probes. Not in SUITE-PLAN.

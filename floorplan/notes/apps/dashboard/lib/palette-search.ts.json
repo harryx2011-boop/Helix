@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/palette-search.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PaletteItem.body",
+      "line": 24,
+      "offset": 0,
+      "text": "Lowercased prose; matched last and weakest, so a page that mentions \"crawl\" ranks under the Crawl route.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "DocIndexEntry",
+      "line": 29,
+      "offset": 0,
+      "text": "One entry of `/search-index.json`, built from the markdown twins at build time.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "scoreItem",
+      "line": 61,
+      "offset": 0,
+      "text": "Higher is better; 0 is no match. The ladder is deliberate: a title equal to\nthe query beats one that starts with it, which beats one that contains it,\nand any of those beats a keyword hit, which beats a fuzzy subsequence, which\nbeats a body mention. Body matching only counts tokens of three characters\nor more, or \"how do i use crawl\" would match every page on \"i\" and \"do\".",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "scoreItem",
+      "line": 79,
+      "offset": 18,
+      "text": "A body hit that also names the page (\"crawl\" in \"Web Crawling API\")\noutranks the same words in a neighbouring page's prose. Title only:\nevery endpoint doc shares a \"When to use it\" heading, so a keyword hit\non \"use\" would hand the same bonus to all of them.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "search",
+      "line": 92,
+      "offset": 0,
+      "text": "Sections in display order. With a query, the section holding the best match\nleads, so \"crawl\" opens on the Crawl route while \"how do i use crawl\" opens\non the Crawl docs. Ties keep the canonical order.",
+      "kind": "doc"
+    }
+  ]
+}

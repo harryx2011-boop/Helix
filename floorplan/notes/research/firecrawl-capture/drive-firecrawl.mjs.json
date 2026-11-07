@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "research/firecrawl-capture/drive-firecrawl.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 10,
+      "offset": null,
+      "text": "dismiss cookie/banners if any",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "total",
+      "line": 12,
+      "offset": 0,
+      "text": "scroll the whole page slowly so lazy sections mount",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "perf",
+      "line": 16,
+      "offset": 0,
+      "text": "1. find the reliability section",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "samples",
+      "line": 22,
+      "offset": 0,
+      "text": "2. sample progress bars: any element whose inline width is a percentage or which has role=progressbar",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "rowHtml",
+      "line": 41,
+      "offset": 0,
+      "text": "3. look for the bar's parent markup (Firecrawl / Puppeteer / cURL rows)",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "gridInfo",
+      "line": 49,
+      "offset": 0,
+      "text": "4. bento grid: the section containing \"We handle the hard stuff\" or similar four-card grid",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 63,
+      "offset": null,
+      "text": "5. screenshots of named sections",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 73,
+      "offset": null,
+      "text": "6. capability page feature grid",
+      "kind": "what"
+    }
+  ]
+}

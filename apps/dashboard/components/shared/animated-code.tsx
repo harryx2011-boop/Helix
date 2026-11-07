@@ -15,32 +15,23 @@ export type AnimatedCodeMode = 'scramble' | 'type' | 'reveal' | 'static';
 export interface AnimatedCodeProps {
   code: string | Token[][];
   mode: AnimatedCodeMode;
-  /** 'type' mode: per-character delay (default 15ms, spec range 12-18). */
   charMs?: number;
-  /** 'reveal' mode: per-line stagger (default 50ms, spec range 40-60). */
   lineMs?: number;
   loop?: boolean;
-  /** Gate the animation start on IntersectionObserver (>=40% visible). Default true. */
   playOnView?: boolean;
-  /** 'scramble' mode: total window over which values resolve (default 2200ms). */
   resolveMs?: number;
-  /** Fires once when a non-looping run completes (or immediately, for 'static'/reduced-motion). */
   onDone?: () => void;
   className?: string;
 }
 
 const SCRAMBLE_GLYPHS = '░▒▓█ABCabc019';
 
-/** Lexes a raw code string into key / string / punct / plain tokens per line. */
 function tokenizeLines(code: string): Token[][] {
   return code.split('\n').map((line) => tokenizeLine(line));
 }
 
 function tokenizeLine(line: string): Token[] {
   const tokens: Token[] = [];
-  // Capture each quoted string plus any whitespace+colon that follows it, so a
-  // JSON key ("markdown":) can be told apart from a value ("markdown") — only
-  // values scramble; keys stay static like every other structural token.
   const parts = line.split(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')(\s*:)?/g);
   for (let i = 0; i < parts.length; i += 3) {
     const plain = parts[i];
@@ -57,7 +48,6 @@ function tokenizeLine(line: string): Token[] {
 }
 
 function tokenizePlain(part: string, tokens: Token[]): void {
-  // split remaining plain text on punctuation runs so { } [ ] : , stay their own tokens
   const bits = part.split(/([{}[\]:,()])/g);
   for (const bit of bits) {
     if (!bit) continue;
@@ -141,7 +131,6 @@ export function AnimatedCode({ code, mode, charMs = 15, lineMs = 50, loop = fals
     );
   }
 
-  // reveal
   return (
     <div ref={containerRef} className={cn('min-w-0 max-w-full', className)}>
       <RevealCode lines={lines} active={shouldAnimate} loop={loop} lineMs={lineMs} />
@@ -166,11 +155,6 @@ function StaticLines({ lines }: { lines: Token[][] }) {
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* scramble: values (string/number tokens) cycle glyphs then resolve      */
-/* independently at staggered times within resolveMs; loop re-scrambles   */
-/* after a hold.                                                          */
-/* ---------------------------------------------------------------------- */
 
 interface ScrambleValueState {
   lineIndex: number;
@@ -235,7 +219,6 @@ function ScrambleCode({ lines, active, loop, resolveMs }: { lines: Token[][]; ac
       const allResolved = values.every((v) => elapsed >= v.resolveAt);
       if (allResolved) {
         if (loop) {
-          // hold on resolved frame, then start a new run
           setTimeout(() => {
             if (!cancelled) setRunId((k) => k + 1);
           }, 1400);
@@ -268,9 +251,6 @@ function ScrambleCode({ lines, active, loop, resolveMs }: { lines: Token[][]; ac
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* type: character-by-character typewriter with a blinking block cursor.  */
-/* ---------------------------------------------------------------------- */
 
 function TypeCode({ lines, active, loop, charMs, onDone }: { lines: Token[][]; active: boolean; loop: boolean; charMs: number; onDone?: (() => void) | undefined }) {
   const fullText = React.useMemo(() => lines.map((l) => l.map((t) => t.text).join('')).join('\n'), [lines]);
@@ -334,7 +314,6 @@ function TypeCode({ lines, active, loop, charMs, onDone }: { lines: Token[][]; a
   );
 }
 
-/** Re-slices the original token/kind structure down to however many chars of each line are visible. */
 function reTokenizeVisible(lines: Token[][], visibleLines: string[]): Token[][] {
   return lines.slice(0, visibleLines.length).map((line, li) => {
     const budget = visibleLines[li]?.length ?? 0;
@@ -354,9 +333,6 @@ function reTokenizeVisible(lines: Token[][], visibleLines: string[]): Token[][] 
   });
 }
 
-/* ---------------------------------------------------------------------- */
-/* reveal: per-line fade-in-up, staggered.                                */
-/* ---------------------------------------------------------------------- */
 
 function RevealCode({ lines, active, loop, lineMs }: { lines: Token[][]; active: boolean; loop: boolean; lineMs: number }) {
   const [runId, setRunId] = React.useState(0);

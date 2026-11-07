@@ -2,9 +2,6 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 
-// Browser-level diagnosis of the deployed Clerk sign-in. curl is misleading here:
-// without Accept: text/html, Clerk treats the request as non-page and rewrites
-// /app to 404, which is not what a person in a browser sees.
 const BASE = process.env.BASE ?? 'https://helixapi-dev.vercel.app';
 const EMAIL = process.env.E2E_EMAIL ?? 'e2e+clerk_test@helix.dev';
 const CODE = process.env.E2E_CODE ?? '424242';

@@ -1,0 +1,103 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/result/metadata-scanning.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ScanningMode",
+      "line": 7,
+      "offset": 0,
+      "text": "The scanning animation shown while a file is being read or scrubbed.\n\nWhy this animates at all: a scan is occasional (not a keyboard action), its\nduration is genuinely unknown — 150ms for a small PDF, seconds for a large\none — and the purpose is state indication. A loop is the honest shape for\nwork whose length cannot be predicted; a progress bar would have to invent a\nnumber it does not have.\n\nWhy a magnifying glass: it is what \"scan\" looks like, so the metaphor costs\nthe reader nothing. The lens genuinely magnifies rather than merely drifting\nover the page — a second copy of the page is scaled up, clipped to the lens\ncircle, and offset so the same point stays under the glass. An outline that\nmoved over unchanged content would be decoration; magnification is the whole\nreason the shape is legible.\n\nThe scrub pass runs the same mechanism in reverse: the tags are already on\nthe page and the lens takes them away as it passes. That is exactly the\ndifference between the two operations, shown rather than labelled.\n\nEvery value comes from the project's own scale, and the global\n`prefers-reduced-motion` block in globals.css collapses the loop to a single\nstatic frame with no extra code here.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "LINES",
+      "line": 13,
+      "offset": 0,
+      "text": "Text lines, so the lens has something to actually magnify.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 15,
+      "offset": null,
+      "text": "Where the metadata sits on the page. Each tag reacts when the lens reaches\nit, so the lens reads as the cause rather than a coincidence — the delay is\nderived from position below, never hand-tuned per tag.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "SLOTS",
+      "line": 15,
+      "offset": 0,
+      "text": "Positions are fixed by the lens path (see the note above); only the labels\nchange per mode, so a parse and a scan share one solved geometry.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "LABELS.parse",
+      "line": 25,
+      "offset": 0,
+      "text": "A parse pulls structure out of the page, not provenance.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "PageContent",
+      "line": 36,
+      "offset": 0,
+      "text": "The page content, drawn twice: once as the page, once inside the lens. The\nsecond copy is scaled by the `metadata-lens-content` keyframes (ZOOM = 1.85),\nnot by anything here, so both copies stay one component and the tags in the\nglass can never drift out of step with the tags on the page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "MetadataScanning",
+      "line": 87,
+      "offset": 12,
+      "text": "The page.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "MetadataScanning",
+      "line": 91,
+      "offset": 16,
+      "text": "The glass. Two nested animations: the lens travels the page, and the\nmagnified copy inside counter-translates so the content under the lens\nis the content the lens is over.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "MetadataScanning",
+      "line": 101,
+      "offset": 26,
+      "text": "A real lens sits above the page, so it casts one.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "MetadataScanning",
+      "line": 104,
+      "offset": 29,
+      "text": "The magnified page. `transform-origin: 0 0` with a scale, then a\ntranslate of -(scale-1)/scale of the lens centre, keeps the point\nunder the glass aligned with the point on the page beneath it.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "MetadataScanning",
+      "line": 116,
+      "offset": 41,
+      "text": "A soft highlight across the glass, so it reads as glass.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "MetadataScanning",
+      "line": 119,
+      "offset": 44,
+      "text": "The handle, angled off the lower-right of the lens.",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/static/serve.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 163,
+      "offset": null,
+      "text": "As `index.ts` registers it: helmet's X-Frame-Options SAMEORIGIN on every reply.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 180,
+      "offset": null,
+      "text": "The renderer holds the API key and admin token, so a page must not load\nscript from anywhere else, evaluate strings, embed plugins or rebase links.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 182,
+      "offset": null,
+      "text": "blob: is the dictation mic's AudioWorklet, which the page builds from its own source.",
+      "kind": "what"
+    }
+  ]
+}

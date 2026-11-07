@@ -71,8 +71,6 @@ describe('old tier names', () => {
 });
 
 describe('the lower ladder is unchanged', () => {
-  // Plain sends no User-Agent and a non-browser JA4; a WAF scores that as a bot
-  // before tls ever runs (npmjs answered plain with 403 cf-mitigated).
   it('starts an auto request at tls, never plain', () => {
     expect(minimumViableTier({})).toBe('tls');
   });
@@ -118,7 +116,6 @@ describe('an empty extraction on a server-rendered page', () => {
 });
 
 describe('a short page that is complete', () => {
-  // example.com as served 2026-10-06: one sentence, one external script.
   const EXAMPLE = `<!doctype html><html lang=en><head><meta charset=utf-8><title>Example Domain</title><style>body{font:16px/1.6 system-ui}</style></head><body><p>This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.</p><script src=/s.js></script></body></html>`;
   const EXAMPLE_TEXT =
     'This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.';

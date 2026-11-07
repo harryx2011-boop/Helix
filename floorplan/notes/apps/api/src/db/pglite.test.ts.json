@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/db/pglite.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "pool",
+      "line": 6,
+      "offset": 0,
+      "text": "The PGlite driver against the real engine, in memory. PGlite has one\nconnection, so the driver's mutex is the only thing keeping a bare query out\nof someone else's open transaction. These are the tests that fail if it\nstops doing that.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 54,
+      "offset": null,
+      "text": "Each transaction sees only committed rows plus its own; no stray query\nsees an uncommitted row; B's rollback leaves nothing behind.",
+      "kind": "what"
+    }
+  ]
+}

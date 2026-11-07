@@ -2,13 +2,6 @@ import { MCP_URL, PUBLIC_API_URL, SITE_URL } from './mode';
 
 export const SKILL_MD_PATH = '/agent-onboarding/SKILL.md';
 
-/**
- * The prompt a person pastes into their coding agent to wire Helix into the
- * current project. Written for the agent, not the person: it installs the
- * skill first, checks for a key without ever printing one, smoke-tests with a
- * status code, and asks the person for the one thing only they can provide.
- * (research/18-exa.md: the shape Exa's agent-skill pages use, in Helix's terms.)
- */
 export function setupPrompt(): string {
   const skillUrl = `${SITE_URL}${SKILL_MD_PATH}`;
   return `Set up Helix on this machine so you can fetch, parse, search, crawl, interact with and monitor the live web through its API.

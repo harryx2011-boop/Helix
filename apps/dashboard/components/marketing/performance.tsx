@@ -28,7 +28,6 @@ const TRACE_ROWS = [
   { tier: 'tls', status: 403, ms: 51, signal: 'challenge-platform' },
 ];
 
-/** One blocked request, tier by tier, ending in the typed failure the caller receives. Sample data, labelled as such. */
 function TraceTable() {
   return (
     <div className="overflow-hidden rounded-panel border border-m-border-muted bg-m-bg">
@@ -65,7 +64,6 @@ function TraceTable() {
   );
 }
 
-/** Home §3: what the ladder costs, what the model receives, what a block looks like. One hero cell, three beneath. */
 export function Performance() {
   return (
     <section className="relative overflow-hidden px-6 py-16 sm:px-10">

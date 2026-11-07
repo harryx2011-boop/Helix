@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/recent-runs.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "RecentRun",
+      "line": 6,
+      "offset": 0,
+      "text": "The playground is stateless by design; this is the one thing it remembers,\nper browser: which endpoint ran against which URL, and when. Never a\nresponse body and never a key. Enough for the palette to jump back, and\nfor an async run, enough to look the job up again.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "write",
+      "line": 42,
+      "offset": 4,
+      "text": "Storage disabled: the run still happened, it just is not remembered.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "subjectOf",
+      "line": 75,
+      "offset": 0,
+      "text": "The URL (or search query) a playground request was about; undefined for a bare file upload.",
+      "kind": "doc"
+    }
+  ]
+}

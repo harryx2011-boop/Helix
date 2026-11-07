@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/providers/detect.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "LocalRuntime",
+      "line": 5,
+      "offset": 0,
+      "text": "Finds a local model runtime answering on its install-default address, so the\noperator can be offered it instead of typing a base URL they may not know.\n\nDetection only offers. Nothing is stored and no request is routed to a\ndetected runtime until the operator saves it through `PUT /providers`: a\nmodel call the operator never chose is a surprise, even on their own machine.\n\nThe probe targets a fixed loopback address the instance picks itself, never\na caller's URL, so it sits with the service health checks rather than behind\nthe URL guard that protects fetches made on a caller's behalf.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "LocalRuntime.baseUrl",
+      "line": 7,
+      "offset": 0,
+      "text": "The base URL to offer for storing, in the form `PUT /providers` takes.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "DetectorOptions.ttlMs",
+      "line": 20,
+      "offset": 0,
+      "text": "Health and the providers panel both ask; one probe answers both for this long.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "DetectorOptions.timeoutMs",
+      "line": 21,
+      "offset": 0,
+      "text": "An absent runtime is the common case and must not slow `/health` down.",
+      "kind": "doc"
+    }
+  ]
+}

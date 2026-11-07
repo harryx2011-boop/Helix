@@ -3,18 +3,6 @@
 import { resolveBaseUrl } from '@/lib/api';
 import { getAdminToken } from '@/lib/instance-settings';
 
-/**
- * API keys, called straight from the browser against the instance.
- *
- * Self-host serves this dashboard as a static export from the API itself, so
- * there is no dashboard server and no route handler to proxy through. The
- * instance already owns the whole key lifecycle at `/v1/keys`; this is the
- * client for it.
- *
- * Authenticated with the instance's admin token, not an API key: one operator
- * owns an instance, and only that operator manages its keys. The desktop app
- * supplies the token; a self-hosted instance takes it from the settings page.
- */
 
 export interface InstanceKey {
   id: string;
@@ -65,7 +53,6 @@ async function call(path: string, init: RequestInit = {}): Promise<unknown> {
 
   const body = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
   if (!response.ok) {
-    // Unregistered key routes answer the framework's "Route <method>:<url> not found"; any other 404 is not that.
     const routesMissing = response.status === 404 && /^Route .+ not found$/.test(body?.message ?? '');
     const message =
       response.status === 401

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/user-chip.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "UserChip",
+      "line": 5,
+      "offset": 0,
+      "text": "The app has no accounts, only a stored key, so the chip is the KeyMenu.",
+      "kind": "doc"
+    }
+  ]
+}

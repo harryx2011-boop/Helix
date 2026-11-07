@@ -1,14 +1,3 @@
-/**
- * Every Helix version, newest first. One entry per version.
- *
- * Sources, per entry: the git tag, the version history of the root `package.json`, the release commit message and
- * the diff, with `context.md` for 1.18.0 onward. `kind` records how a version was released:
- * `tagged`      a `v<version>` tag sits on a Helix commit.
- * `untagged`    the manifest carried the version but no tag was cut.
- * `foreign-tag` the tag exists but belongs to another project merged into the history (Canvas).
- * `baseline`    the first manifest version; never released.
- * `scripts/check-changelog.mjs` compares this list with the tags and the manifest history.
- */
 export type ReleaseKind = 'tagged' | 'untagged' | 'foreign-tag' | 'baseline';
 
 export interface ChangelogEntry {
@@ -579,7 +568,6 @@ const SEMVER = /^\d+\.\d+\.\d+$/;
 const HYPE = /\b(revolutionary|game-changing|seamless(ly)?|unlock(s|ed|ing)?|supercharge[sd]?|empower(s|ed|ing)?|cutting-edge|amazing|magical|excited|thrilled|journey|blazing)\b/i;
 const EMOJI = /\p{Extended_Pictographic}/u;
 
-/** Returns every problem found in a changelog list; an empty array means it is sound. */
 export function validateChangelog(entries: readonly ChangelogEntry[] = CHANGELOG): string[] {
   const problems: string[] = [];
   const seen = new Set<string>();

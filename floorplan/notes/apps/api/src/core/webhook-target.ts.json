@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/webhook-target.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BlockedTargetError",
+      "line": 5,
+      "offset": 0,
+      "text": "Where a webhook may be sent.\n\nA caller-supplied URL that the API then POSTs to, with caller-supplied\nheaders and body, is a request forged from inside the deployment. Only\npublic http(s) hosts qualify: loopback, private, link-local, carrier-grade\nNAT, multicast and the cloud metadata address are refused, both as literals\nwhen the monitor is created and again when the name is resolved at send\ntime.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ipv6Groups",
+      "line": 29,
+      "offset": 0,
+      "text": "Eight 16-bit groups, or null when the text is not an IPv6 address.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ipv6Groups",
+      "line": 34,
+      "offset": 5,
+      "text": "A trailing dotted quad (::ffff:10.0.0.1) becomes two groups.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "webhookTargetProblem",
+      "line": 73,
+      "offset": 0,
+      "text": "The reason a URL cannot be a webhook target on its face, or null when it\nmay be. Needs no network: scheme and literal address only. Names are\nresolved and checked again at send time.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "assertPublicTarget",
+      "line": 91,
+      "offset": 0,
+      "text": "Resolve the host and refuse the send when any answer is a private address.",
+      "kind": "doc"
+    }
+  ]
+}

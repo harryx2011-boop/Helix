@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { checkRow, fetchHistory, fetchMonitors, monitorRow, type CheckItem, type MonitorItem, type Row } from './monitors';
 
-/** Where to read monitors from, or a sentence saying why it cannot. */
 export type Connection = { origin: string; apiKey: string } | string;
 
 type Node =
@@ -9,7 +8,6 @@ type Node =
   | { kind: 'check'; check: CheckItem }
   | { kind: 'message'; text: string };
 
-/** The Monitors view: each monitor, and under it its latest checks with their summaries. */
 export class MonitorsView implements vscode.TreeDataProvider<Node>, vscode.Disposable {
   readonly #changed = new vscode.EventEmitter<Node | undefined>();
   readonly onDidChangeTreeData = this.#changed.event;

@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/health.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "pool",
+      "line": 5,
+      "offset": 0,
+      "text": "Health roll-up.\n\n`/health` is unauthenticated (index.ts lists it under `open`), so it is the\nleast-guarded route in a deployment and the one most likely to be scraped.\nTwo things are asserted: that the worst service check decides the overall\nstatus and the HTTP code, and that a configured provider is reported as a\nboolean and a model name with no key material anywhere in the body.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 96,
+      "offset": null,
+      "text": "Degraded is still serving, so a load balancer must keep the instance in.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 293,
+      "offset": null,
+      "text": "The blanket check. Every provider entry is a boolean plus at most a model\nname, so no value from any credential variable may appear anywhere in the\nbody — including under a key nobody thought to assert on individually.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 328,
+      "offset": null,
+      "text": "`detected` carries runtime names only, never an address or a model list.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 349,
+      "offset": null,
+      "text": "The route is open, so each request must not fan out to live probes of\nevery dependency: a burst of anonymous requests would multiply into them.",
+      "kind": "why"
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/usage.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 4,
+      "offset": null,
+      "text": "Per-key request usage (011_request_usage.sql).\n\nRecorded here rather than derived from `jobs`, which only crawl and\nbatch_scrape ever write: a usage figure built from that table would silently\nomit scrape, parse, search, map, metadata and interact, and a chart that is\nwrong in a way nobody can see is worse than one that says it has no data.\n\nWrites are aggregated into hourly buckets and flushed on a timer. The\nalternative, one INSERT per request on the response path, puts a database\nround-trip in front of every reply for a number read at hourly resolution.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "statusClass",
+      "line": 4,
+      "offset": 0,
+      "text": "2xx | 4xx | 429 | 5xx. 429 is split out of 4xx because being throttled is not the same problem as sending a bad request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "normaliseEndpoint",
+      "line": 14,
+      "offset": 0,
+      "text": "The route family a path belongs to, not the path.\n\nTwo requests for different job ids are the same product; storing them apart\nmakes the table grow with traffic instead of with the API surface, and makes\nthe per-endpoint breakdown a list of uuids. Any segment that looks like an\nidentifier collapses to :id, so an endpoint added later groups correctly\nwithout touching this.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "hourBucket",
+      "line": 27,
+      "offset": 0,
+      "text": "Truncate to the hour in UTC. The primary key is the upsert conflict target, so writer and schema must agree exactly.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "UsageRecorderOptions.flushIntervalMs",
+      "line": 43,
+      "offset": 0,
+      "text": "How often buffered counts are written.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "UsageRecorderOptions.maxPending",
+      "line": 44,
+      "offset": 0,
+      "text": "Flush early once this many distinct buckets are pending. Bounds memory when\na burst spans many keys or endpoints; without it a stalled flush grows the\nmap without limit.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "UsageRecorder",
+      "line": 48,
+      "offset": 0,
+      "text": "Buffers counts in memory and flushes them as one multi-row UPSERT.\n\nBuffered counts are lost if the process dies before a flush. That is the\ndeliberate trade: usage is a reporting figure, not a billing ledger, and\npaying a synchronous write per request to avoid losing at most one interval\nof counts is the wrong side of it. Anything that ever bills must not read\nthis table.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "UsageRecorder.flush",
+      "line": 93,
+      "offset": 0,
+      "text": "Writes and clears the buffer.\n\nThe buffer is drained BEFORE the query rather than after it succeeds: a\nfailing write that put its counts back would replay them against the next\nflush too, and a persistently failing table would grow the map until the\nprocess died of it. Losing an interval of counts is recoverable; turning a\nreporting outage into an OOM is not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "UsageRecorder.flush",
+      "line": 119,
+      "offset": 26,
+      "text": "Never surfaced to a caller: usage recording failing must not fail, slow\nor error a request that already succeeded.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": "UsageSummary.rateLimited",
+      "line": 140,
+      "offset": 0,
+      "text": "Requests the limiter rejected in the window.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "summariseUsage",
+      "line": 146,
+      "offset": 0,
+      "text": "Usage for a set of keys over a window.\n\nEvery aggregate is computed by the database over the (api_key_id,\nbucket_start) index rather than by pulling rows back and summing in JS: a\nmonth of hourly buckets across a busy key is thousands of rows, and three\npasses over them in Node is three unbounded result sets for four numbers.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "summariseUsage",
+      "line": 179,
+      "offset": 33,
+      "text": "Bounded: an instance cannot have more endpoint families than it has\nroutes, but the limit is stated rather than assumed so a malformed row\ncannot turn this into an unbounded response.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "pruneUsage",
+      "line": 206,
+      "offset": 0,
+      "text": "Drop buckets older than the retention window. Called from the same sweep that expires jobs.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,8 +1,3 @@
-/**
- * Minimal argv parser: `--flag`, `--flag value`, `--flag=value`, `-k value`,
- * repeated flags collect into arrays. Small enough that a dependency would cost
- * more than it saves.
- */
 
 export interface ParsedArgs {
   positional: string[];

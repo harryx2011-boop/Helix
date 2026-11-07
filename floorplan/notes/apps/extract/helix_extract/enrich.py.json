@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/enrich.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 32,
+      "offset": null,
+      "text": "Why a claimed field did not survive. A closed vocabulary, declared as a real",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": "GroundingRejection",
+      "line": 33,
+      "offset": 0,
+      "text": "typo fails at the boundary instead of becoming a novel string in a response.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "MIN_CITATION_CHARS",
+      "line": 40,
+      "offset": 0,
+      "text": "Shortest passage that can identify itself inside a document. Below this a\n\"quote\" matches somewhere in almost any text by chance, which makes the check\npass without meaning anything. Kept in step with the gateway's own floor.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "_PUNCTUATION",
+      "line": 46,
+      "offset": 0,
+      "text": "NFKC folds the space variants but NOT the quote and dash variants a markdown\nextractor emits - measured, not assumed. Without this table a model that\nretyped an em dash as a hyphen would have a true citation rejected, so the\nfolds are spelled out. Every entry maps a typographic variant onto its ASCII\nform; none maps one letter or digit onto another.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "value_in_citation",
+      "line": 99,
+      "offset": 20,
+      "text": "1200000 written on the page as \"1,200,000\". Separators are form, not\nsubstance, so comparing without them is not a loosening of the test.",
+      "kind": "what"
+    }
+  ]
+}

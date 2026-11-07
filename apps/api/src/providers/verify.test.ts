@@ -13,9 +13,6 @@ describe('classifyKeyResponse', () => {
     expect(classifyKeyResponse(204, '')).toBe('valid');
   });
 
-  /* A rate-limited key is a real key: the provider had to authenticate it to
-     know it was over quota. Classifying 429 as invalid would refuse to store a
-     working credential during a burst. */
   it('treats 429 as valid, because a rate-limited key is an authenticated key', () => {
     expect(classifyKeyResponse(429, '')).toBe('valid');
   });
@@ -25,8 +22,6 @@ describe('classifyKeyResponse', () => {
     expect(classifyKeyResponse(403, '')).toBe('invalid');
   });
 
-  /* Gemini rejects a bad key with 400, distinguishable from an ordinary bad
-     request only by the body's reason. */
   it("reads Gemini's 400 API_KEY_INVALID shape as invalid", () => {
     expect(classifyKeyResponse(400, '{"error":{"status":"API_KEY_INVALID"}}')).toBe('invalid');
     expect(classifyKeyResponse(400, 'API key not valid. Please pass a valid API key.')).toBe('invalid');
@@ -36,8 +31,6 @@ describe('classifyKeyResponse', () => {
     expect(classifyKeyResponse(400, '{"error":"missing parameter"}')).toBe('unverifiable');
   });
 
-  /* The whole point of the three-way split: a provider outage must never be
-     reported as a bad key, or a transient 5xx refuses a good credential. */
   it('leaves 5xx unverifiable, never invalid', () => {
     expect(classifyKeyResponse(500, '')).toBe('unverifiable');
     expect(classifyKeyResponse(503, '')).toBe('unverifiable');
@@ -67,8 +60,6 @@ describe('verifyProviderKey', () => {
     expect(calls[3]?.headers.authorization).toBe('Bearer or-secret');
   });
 
-  /* OpenRouter's /models catalogue is public and answers 200 to a garbage
-     token, so checking it would pass every invalid key. /key reads the token. */
   it('checks OpenRouter against /key, not the public /models catalogue', async () => {
     let seen = '';
     globalThis.fetch = vi.fn(async (url: unknown) => {
@@ -94,8 +85,6 @@ describe('verifyProviderKey', () => {
     expect(result.verdict).toBe('unverifiable');
   });
 
-  /* The key goes into a request header and nowhere else. A message that echoed
-     it would leak the credential into logs and toasts. */
   it('never puts the key in the returned message', async () => {
     const secret = 'sk-ant-do-not-leak-me';
     globalThis.fetch = vi.fn(async () => new Response(secret, { status: 401 })) as unknown as typeof fetch;
@@ -111,10 +100,6 @@ describe('verifyProviderKey', () => {
 });
 
 describe('verifyProvider', () => {
-  /* Ollama's native API lives at /api/tags on the origin, never at /models
-     (that path is served by vLLM and OpenAI-compatible runtimes). A mock that
-     answers 200 to anything would let this test pass on the wrong URL, so it
-     answers 404 unless the path is exactly /api/tags. */
   it('probes a bare Ollama origin at /api/tags, not /models', async () => {
     let seen = '';
     globalThis.fetch = vi.fn(async (url: unknown) => {
@@ -162,9 +147,6 @@ describe('verifyProvider', () => {
     expect(compat.verdict).toBe('valid');
   });
 
-  /* A runtime that is merely switched off is unverifiable, not invalid: the URL
-     may be perfectly correct and Ollama simply not started yet, and refusing to
-     save it would strand the caller. */
   it('treats an unreachable local runtime as unverifiable, so the URL can still be saved', async () => {
     globalThis.fetch = vi.fn(async () => {
       throw new TypeError('fetch failed');

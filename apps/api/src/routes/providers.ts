@@ -16,15 +16,6 @@ import { blockedRange, checkUrl } from '../core/url-guard.js';
 import { resolveProviderKeys } from '../providers/repository.js';
 import type { DetectLocal } from '../providers/detect.js';
 
-/**
- * A caller's own LLM provider keys, stored against their Helix API key.
- *
- * Every LLM-backed request made with that key then uses these instead of the
- * instance's environment credentials. The plaintext is accepted once, at
- * write time, and never returned again — only its last 4 characters are. A
- * local runtime (ollama, vllm, openai-compatible) stores a base URL instead
- * of, or alongside, a key: most need no credential at all.
- */
 
 const PutBodySchema = z.object({
   apiKey: z
@@ -89,19 +80,6 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
     const { apiKey, model, baseUrl } = parsed.data;
     const local = isLocalProvider(provider);
 
-    /* A caller-supplied base URL is an egress target: it is stored, forwarded
-       to the extract service, and fetched server-side with the caller's key
-       attached. `z.string().url()` only proves it parses, so without this an
-       API key — a low-trust boundary, handed to many users — could point this
-       instance at `http://169.254.169.254/` and read the host's cloud
-       credentials back out, or reach an internal service.
-
-       A LOCAL runtime is exempt from the private-address rule and only from
-       that rule: loopback and LAN are exactly where Ollama and vLLM live, and
-       refusing them would break the one thing those providers are for. Scheme
-       and shape are still checked on both paths, and the exemption stops short
-       of link-local and CGNAT — the metadata endpoint and the carrier's shared
-       space are not anybody's local runtime. */
     if (baseUrl) {
       const reserved = blockedRange(baseUrl);
       if (reserved) {
@@ -141,13 +119,6 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
       });
     }
 
-    /* Verified against the provider BEFORE it is stored. A rejected credential
-       is refused outright: storing it would report `configured: true` and paint
-       "Connected" for a key that cannot work, which is the failure this check
-       exists to remove. A credential that cannot be CHECKED (this instance's
-       egress is down, the provider is 5xx-ing, a local runtime is not running
-       yet) is stored anyway and reported as unverified — refusing there would
-       strand a caller whose key is perfectly good. */
     const check = await verifyProvider(provider, { apiKey, baseUrl });
     if (check.verdict === 'invalid') {
       return reply.code(400).send({
@@ -186,9 +157,6 @@ export async function registerProviders(app: FastifyInstance, deps: ProviderRout
         requestId: request.id,
       });
     }
-    /* A cloud provider's catalogue is fetched with the caller's own stored key.
-       With no key stored the curated list still answers, so the picker is
-       useful before a key is saved rather than only after. */
     if (isCloudProvider(provider)) {
       const resolved = await resolveProviderKeys(apiKeyId, deps.encryptionKey);
       const result = await listCloudModels(provider, resolved[provider]?.key ?? null);

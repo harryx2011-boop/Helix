@@ -1,10 +1,5 @@
 import type { Format } from '@/lib/api';
 
-/**
- * The format picker's cards. Every id is one the API validates
- * (apps/api/src/routes/scrape.ts FORMATS); formats the spec names but nothing
- * serves yet (summary, images, pdf) are deliberately absent.
- */
 export interface FormatVariant {
   id: Format;
   label: string;
@@ -15,10 +10,8 @@ export type FormatIllustration = 'page' | 'html' | 'text' | 'list' | 'viewport' 
 export interface FormatCard {
   id: string;
   label: string;
-  /** Selecting the card selects `variants[0]`; the variant row switches or adds. */
   variants: readonly FormatVariant[];
   illustration: FormatIllustration;
-  /** One line under the name when the format needs something set elsewhere. */
   hint?: string;
 }
 
@@ -49,14 +42,12 @@ export function formatLabel(id: Format): string {
   return LABELS[id];
 }
 
-/** "Markdown", "Markdown +2", or "None" for the toolbar button. */
 export function summarizeFormats(formats: readonly Format[]): string {
   const first = formats[0];
   if (!first) return 'None';
   return formats.length === 1 ? LABELS[first] : `${LABELS[first]} +${formats.length - 1}`;
 }
 
-/** Toggles one id, keeping catalog order so the summary is stable. */
 export function toggleFormat(formats: readonly Format[], id: Format): Format[] {
   const next = formats.includes(id) ? formats.filter((f) => f !== id) : [...formats, id];
   const order = FORMAT_CARDS.flatMap((c) => c.variants.map((v) => v.id));

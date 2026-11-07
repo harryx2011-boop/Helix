@@ -14,7 +14,6 @@ export const metadata: Metadata = {
   description: 'A company name or domain in, grounded columns out. Every value cites the passage that states it; anything unverifiable is null with a reason.',
 };
 
-/* Request and response mirror POST /enrich in openapi.yaml. */
 const REQUEST = `POST /v1/enrich
 {
   "subject": "Acme Robotics",

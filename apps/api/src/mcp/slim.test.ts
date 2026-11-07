@@ -10,7 +10,6 @@ const SURFACE = JSON.parse(
 
 const isObject = (v: unknown): v is JsonObject => typeof v === 'object' && v !== null && !Array.isArray(v);
 
-/* The tools an agent sees: the ones in tool-surface.json, in spec order. */
 const core = generateTools(loadSpec()).filter((t) => t.name in SURFACE);
 const slim = slimManifest(core);
 
@@ -22,7 +21,6 @@ function expandRefs(node: unknown, defs: JsonObject): unknown {
   return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, expandRefs(v, defs)]));
 }
 
-/* What a call can contain: everything but prose and the spellings slim.ts normalises. */
 function skeleton(node: unknown): unknown {
   if (Array.isArray(node)) return node.map(skeleton);
   if (!isObject(node)) return node;

@@ -3,13 +3,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-/*
- * Dark-token port of the marketing GridCells/PixelSquares techniques
- * (components/shared/ambient.tsx) for the /app surface: hairline cell
- * grid, `+` crosshairs at intersections, drifting cell markers, and
- * assembling pixel clusters. Same contract — seeded PRNG, IntersectionObserver
- * gated, static under reduced motion, deterministic first paint.
- */
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -49,7 +42,6 @@ function useInView(ref: React.RefObject<Element | null>): boolean {
 type Marker = '·' | '▪' | '+' | '▫';
 const MARKERS: Marker[] = ['·', '▪', '+', '▫'];
 
-/** Markers stay in the outer thirds so they never sit under centred content. */
 function outerCol(rng: () => number, cols: number): number {
   const side = Math.max(1, Math.floor(cols * 0.3));
   const c = Math.floor(rng() * side);
@@ -76,7 +68,6 @@ function buildCluster(n: number, seed: number): ClusterCell[] {
   return cells;
 }
 
-/** n×n cluster of 6px squares that fills in one-by-one, holds, then clears and repeats. */
 function AssembleCluster({ size = 4, seed = 1 }: { size?: 3 | 4; seed?: number }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
@@ -129,7 +120,6 @@ export interface AppGridProps {
   seed?: number;
   clusters?: { col: number; row: number; size?: 3 | 4 }[];
   crosshairs?: boolean;
-  /** How many ✦ nodes to pin at intersections. Seeded into the outer thirds, and unlike markers they do not drift. */
   sparkles?: number;
   className?: string;
 }
@@ -167,9 +157,6 @@ export function AppGrid({ cell = 100, density = 10, seed = 7, clusters = [], cro
       initial.push({ c: outerCol(rng, cols), r: Math.floor(rng() * rows), m: MARKERS[Math.floor(rng() * MARKERS.length)]! });
     }
     setMarkers(initial);
-    // Nodes sit on intersections from row 3 down: the first rows are under the
-    // header panel every screen opens with, and a pill half-hidden by a card
-    // edge reads as a glitch rather than a decoration.
     const firstRow = 3;
     const pinned: { c: number; r: number }[] = [];
     for (let i = 0; i < sparkles && rows > firstRow; i++) {

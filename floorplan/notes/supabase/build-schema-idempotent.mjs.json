@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "supabase/build-schema-idempotent.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "here",
+      "line": 6,
+      "offset": 0,
+      "text": "Builds supabase/schema-idempotent.sql from supabase/schema.sql.\n\n`schema.sql` is the fresh-project bootstrap and says so: it uses bare\n`CREATE TABLE`, so running it against a database that already has the schema\nfails on the first statement. That makes it useless for the thing an operator\nmost often wants — confirming a live project actually matches the migrations,\nor topping up one that is partly applied.\n\nThis rewrites the same statements to be safely re-runnable. It is generated,\nnot maintained: regenerate after any migration lands, and the drift check in\n`check-schema.mjs` covers the source file it derives from.\n\nnode supabase/build-schema.mjs && node supabase/build-schema-idempotent.mjs",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 12,
+      "offset": null,
+      "text": "CREATE TABLE / INDEX / TYPE → guarded. `CREATE TYPE` has no IF NOT EXISTS in\nPostgres, so those two are wrapped in a DO block that swallows duplicate_object.\nNot line-anchored: one CREATE TABLE lives inside an `EXECUTE $sql$ ... $sql$`\nblock (the pgvector-conditional `chunks` table), so an anchored pattern misses\nit and the run fails on a database that already has it.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 23,
+      "offset": null,
+      "text": "A policy cannot be created twice; drop first. Same for triggers.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 32,
+      "offset": null,
+      "text": "`ALTER TABLE ... ADD COLUMN` and `ADD CONSTRAINT` are the two that repeat.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 55,
+      "offset": null,
+      "text": "The source migrations already `drop ... if exists` before most creates, so the\nrewrites above can emit the same line twice. Collapse consecutive duplicates.",
+      "kind": "what"
+    }
+  ]
+}

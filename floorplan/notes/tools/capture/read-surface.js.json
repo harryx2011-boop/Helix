@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "tools/capture/read-surface.js",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "The script that runs inside the browser being recorded.\n\nKept as its own file, and as plain JS rather than a template string, so the\nthing being evaluated is readable and reviewable on its own. Everything here\nruns in the page, so it may only use what a page has.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "FONT_CANDIDATES",
+      "line": 2,
+      "offset": 0,
+      "text": "Fonts a fingerprinter would plausibly probe for. Absent ones are simply not reported.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "detectFonts",
+      "line": 27,
+      "offset": 0,
+      "text": "There is no API that lists installed fonts, so this measures instead: render\na string in a candidate with a known fallback, and if the width differs from\nthe fallback alone, the candidate resolved to something real.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "webglStrings",
+      "line": 53,
+      "offset": 5,
+      "text": "The unmasked pair is what fingerprinters read; the plain VENDOR is almost\nalways \"WebKit\" and tells nobody anything.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "canvasReads",
+      "line": 60,
+      "offset": 0,
+      "text": "A canvas hash read twice.\n\nTwo identical reads are the expected result and the point of recording it: a\nbrowser that returns different bytes on consecutive reads is either already\nspoofed or running an anti-fingerprinting extension, and its surface should\nnot be recorded as a baseline.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 88,
+      "offset": null,
+      "text": "Firefox and Safari do not implement deviceMemory at all; null is the\nhonest recording, not a guess.",
+      "kind": "what"
+    }
+  ]
+}

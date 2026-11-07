@@ -2,14 +2,14 @@
 
 Open work at 2.3.2 (audited 2026-10-10). Harry's five suite goals (anti-bot, `helix_image_sheet`,
 `helix_data_miner`, the VS Code extension with monitor summaries, Composio sources) are tracked in
-`SUITE-PLAN.md` and the Helix entry of `~/.claude/BACKLOG.md`. Detail lives in `context.md`.
+`docs/plans/2026-10-05-suite-plan.md` and the Helix entry of `~/.claude/BACKLOG.md`. Detail lives in `context.md`.
 
 Nothing here is blocking. The full stack runs locally and every endpoint has been
 exercised against it.
 
 ## Next
 
-- [x] **`FOLLOWUPS-PLAN.md`** (2026-09-26): done. Phases 0–4 landed (crawl/batch URL fix, loud failures,
+- [x] **`docs/plans/2026-09-26-followups-plan.md`** (2026-09-26): done. Phases 0–4 landed (crawl/batch URL fix, loud failures,
       Ollama detection, `/jobs/{id}/ladder` + `/cost`, `/vectors/search` in 2.1.0); the closing live smoke is 64/0/2.
 - [ ] **RLS keyed on `profile_id` from the Clerk claim.** 1.11.1 closed the browser
       surface; `/v1/*` is still guarded by application code alone. Read `context.md`
@@ -19,14 +19,14 @@ exercised against it.
       keyboard or hover behaviour has ever been exercised, and `/app/*` sits behind a
       Clerk interstitial so those screens have only been source-reviewed.
 - [x] Configure a search backend: SearXNG on 127.0.0.1:7440 for the dev stack (2.3.0,
-      `SUITE-PLAN.md` Phase 2). Closed 2026-10-17. The 2026-10-16 settings row alone did not
+      `docs/plans/2026-10-05-suite-plan.md` Phase 2). Closed 2026-10-17. The 2026-10-16 settings row alone did not
       take effect: `ConfigSchema` had no `searxngUrl` and the provider read `process.env`.
       Now `config.searxngUrl` (from `SEARXNG_URL` or a stored setting) builds the provider,
       feeds `/health`, and shows in the settings screen.
 - [x] Decide whether the repo goes public. Done 2026-10-12: `harryx2011-boop/Helix` is PUBLIC.
       The LICENSE note here was wrong: `LICENSE` is in the repo root and
       `apps/desktop/electron-builder.yml` already points NSIS at it (checked 2026-10-16).
-- [ ] **New captured browser profiles.** The last open item of `SUITE-PLAN.md` Phase 1.
+- [ ] **New captured browser profiles.** The last open item of `docs/plans/2026-10-05-suite-plan.md` Phase 1.
       `packages/profiles/definitions/` still holds only `chrome-137-macos` and
       `chrome-148-windows`. Their `$comment` names a `tools/capture` that is not in the
       repo, and a `js` block has to be recorded from a real browser — a hand-written value

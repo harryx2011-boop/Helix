@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   description: 'Turn any URL into clean markdown, JSON or a screenshot. Web pages and documents share one envelope.',
 };
 
-/** openapi.yaml `/scrape` → examples.structured, verbatim. */
 const REQUEST = `POST /v1/scrape
 {
   "url": "https://example.com/pricing",
@@ -34,7 +33,6 @@ const REQUEST = `POST /v1/scrape
   }
 }`;
 
-/** openapi.yaml `ScrapeResponse`: Document + warnings + ExtractionUsage. */
 const RESPONSE = `{
   "success": true,
   "data": {

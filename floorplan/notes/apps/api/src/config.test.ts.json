@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/config.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "base",
+      "line": 7,
+      "offset": 0,
+      "text": "The driver default decides whether an operator with nothing configured gets\na working instance. Unset HELIX_DB follows DATABASE_URL: present means the\nexisting Postgres keeps serving, absent means the in-process engine.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 38,
+      "offset": null,
+      "text": "`int()` backs every numeric setting, including pool sizes that a caller can\nhang the whole instance with if a bad value is silently coerced to\nsomething small. `Number.parseInt` stops at the first non-digit character\ninstead of rejecting the value, so \"1e3\" becomes 1, \"0x10\" becomes 0 and\n\"12abc\" becomes 12 -- each one a config typo that should fail loudly.",
+      "kind": "doc"
+    }
+  ]
+}

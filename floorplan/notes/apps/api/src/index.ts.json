@@ -1,0 +1,191 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/index.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "app.logger.redact.paths",
+      "line": 75,
+      "offset": 0,
+      "text": "Provider credentials must never reach a log line. Neither must the\nlive-view token, which rides in the query string of its own route.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": "app.forceCloseConnections",
+      "line": 89,
+      "offset": 0,
+      "text": "Shutdown must not wait on idle keep-alive sockets; the database closes after it.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 92,
+      "offset": null,
+      "text": "A server that lost DATABASE_URL would otherwise boot silently on an empty local database.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 99,
+      "offset": null,
+      "text": "A thrown error must not reach the caller as the database's or a library's\nown message. Fastify's own errors carry a status (413 for an oversized body,\n400 for malformed JSON); anything else is a 500 with the request id to grep.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 118,
+      "offset": null,
+      "text": "Stored overrides are merged before anything reads `config`, so a setting the\nscreen reported as \"restart required\" genuinely takes effect on restart.\nMigrations have not run yet on a first boot, so a missing table is not an\nerror here — there is nothing to override until one exists.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 144,
+      "offset": null,
+      "text": "Not awaited: an unreachable camoufox costs a 5 s connect timeout, and boot\nshould not wait on a tier that only the hardest pages ever reach.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "searchProvider",
+      "line": 154,
+      "offset": 0,
+      "text": "The SearXNG URL comes from config, where a value stored from the settings\nscreen lands; the env alone would ignore it.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "fetchMonitorPage",
+      "line": 204,
+      "offset": 0,
+      "text": "A monitor check is a markdown-only scrape through the same ladder as /scrape.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "fetchMonitorPage",
+      "line": 206,
+      "offset": 2,
+      "text": "The stored proxy is re-checked and pinned on every check: its name may resolve elsewhere by now.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "extractMonitorJson",
+      "line": 235,
+      "offset": 0,
+      "text": "Structured extraction for a monitor's `jsonOptions`, on the same helix-extract path `/scrape`'s `jsonOptions` uses.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "usageRecorder",
+      "line": 293,
+      "offset": 0,
+      "text": "Counts every authenticated response into hourly buckets (011_request_usage.sql).\nBuffered rather than written inline: a database round-trip per reply for a\nnumber read at hourly resolution is the wrong price.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 300,
+      "offset": null,
+      "text": "Scoped to the dashboard origin(s). The dashboard authenticates with a\nbearer key rather than cookies, so credentials mode stays off.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": null,
+      "line": 302,
+      "offset": null,
+      "text": "`/settings` is exempt from API-key auth because it enforces a stricter gate\nof its own: the operator's admin token, not any caller's key.",
+      "kind": "why"
+    },
+    {
+      "id": "n14",
+      "symbol": null,
+      "line": 430,
+      "offset": null,
+      "text": "Last: it forwards to the four routes above, which must already exist.",
+      "kind": "why"
+    },
+    {
+      "id": "n15",
+      "symbol": "settingsEnvValues",
+      "line": 437,
+      "offset": 0,
+      "text": "The environment supplies the defaults; a stored override replaces one. Kept\nbeside `config` so the settings screen can show what it overrode.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": null,
+      "line": 483,
+      "offset": null,
+      "text": "Tools are generated from openapi.yaml for the routes registered above; the\nbearer key on the MCP request is the same key the HTTP API takes, verified\nand rate limited once on the way in; the replayed tool call rides a ticket.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "start",
+      "line": 505,
+      "offset": 19,
+      "text": "The pool warms lazily on first render: a browser that may never be used\nshould not add seconds to boot or hundreds of megabytes to idle memory.",
+      "kind": "why"
+    },
+    {
+      "id": "n18",
+      "symbol": "start",
+      "line": 505,
+      "offset": 19,
+      "text": "Runs in-process. A separate worker deployment would scale further, but\none process is the right default for a self-hosted tool.",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "start",
+      "line": 513,
+      "offset": 27,
+      "text": "Ninety days, swept hourly. Bounds request_usage without its own service:\nthe table is the only thing here that grows purely with traffic.",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": "shutdown",
+      "line": 537,
+      "offset": 4,
+      "text": "The ceiling. The desktop supervisor force-kills after 10 s.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "shutdown",
+      "line": 549,
+      "offset": 16,
+      "text": "Flushed before the pool closes, or the final interval of counts is lost\non every clean restart rather than only on a crash.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "shutdown",
+      "line": 551,
+      "offset": 18,
+      "text": "Bounded: an in-flight scrape can run 30 s, and the database must close\ninside the supervisor's grace window or PGlite is killed mid-write.",
+      "kind": "why"
+    },
+    {
+      "id": "n23",
+      "symbol": null,
+      "line": 560,
+      "offset": null,
+      "text": "Windows has no SIGTERM: the desktop supervisor asks over the IPC channel instead.",
+      "kind": "what"
+    }
+  ]
+}

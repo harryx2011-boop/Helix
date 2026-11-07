@@ -2,8 +2,6 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 
-// Screenshots of the local Helix site for the design pass (WEBSITE.md §12 DoD).
-// usage: node shoot-helix.mjs [baseUrl] [route ...]
 const BASE = process.argv[2] && process.argv[2].startsWith('http') ? process.argv[2] : 'http://localhost:3400';
 const routes = process.argv.slice(process.argv[2]?.startsWith('http') ? 3 : 2);
 const ROUTES = routes.length ? routes : ['/', '/scrape', '/parse', '/search', '/crawl', '/interact', '/monitor', '/self-host', '/architecture', '/docs', '/sign-in', '/sign-up'];

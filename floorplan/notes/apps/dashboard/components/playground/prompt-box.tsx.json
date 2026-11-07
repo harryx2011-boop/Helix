@@ -1,0 +1,103 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/prompt-box.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "useRotatingPlaceholder",
+      "line": 32,
+      "offset": 0,
+      "text": "Rotates through the example URLs, one at a time.\n\nDeliberately not a typewriter: a caret redrawing the field every ~50ms reads\nas flicker in a box someone is trying to read, and it competes with the\ncursor once they click in. A slow swap makes the same point — here are the\nkinds of thing this field takes — without moving while anyone looks at it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "HERO_TABS",
+      "line": 62,
+      "offset": 0,
+      "text": "The five tabs the landing shows; the rest live in the Capabilities menu.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "FORMAT_TABS",
+      "line": 64,
+      "offset": 0,
+      "text": "Endpoints that take a scrape `formats` array, so the Format button applies.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "MULTILINE_TABS",
+      "line": 66,
+      "offset": 0,
+      "text": "Only a query can hold a line break. Every other tab takes a URL, which\ncannot, so there Shift+Enter is swallowed and a pasted newline is dropped;\nthe box still wraps a long URL instead of scrolling it off the right edge.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "MAX_HEIGHT_PX",
+      "line": 68,
+      "offset": 0,
+      "text": "Past this the box scrolls rather than growing: eight lines at 20px.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "APP_TRACK_VARS",
+      "line": 77,
+      "offset": 0,
+      "text": "The `/app` shell's dark tokens have no `m-*` values, and `Segmented` is\nwritten in them. Rather than a second track component, the track's tokens\nare re-pointed at the app's own palette for the duration of this subtree.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "PromptBoxProps.onToggleOptions",
+      "line": 121,
+      "offset": 0,
+      "text": "Present on the app: the 36px sliders button opens the Options panel.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "PromptBoxProps.formats",
+      "line": 124,
+      "offset": 0,
+      "text": "Present when the caller owns a scrape `formats` array; shows the Format button on scrape.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "PromptBoxProps.attachment",
+      "line": 126,
+      "offset": 0,
+      "text": "Present on the app: the paperclip and a pasted file both land here, and\nit is the same file the active tab's form submits. Only tabs listed in\n`lib/uploads.ts` show the paperclip or accept a paste.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "PromptBoxProps.submitLabel",
+      "line": 128,
+      "offset": 0,
+      "text": "Replaces the per-endpoint run label, for a surface whose submit does not run the request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "PromptBox",
+      "line": 132,
+      "offset": 0,
+      "text": "The one prompt box: group-labelled endpoint track above, then the composer\n(attachment chip, scheme chip and auto-growing textarea), hairline, toolbar.\nRendered on the landing (`hero`, light tokens) and on `/app/playground`\n(`app`, dark tokens). The URL value the parent holds is always the full\nURL; the `https://` chip is display only. Enter runs; a leading `/` opens\nthe jump-to-endpoint palette.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "PromptBox",
+      "line": 167,
+      "offset": 35,
+      "text": "Reduced motion gets the first URL as a plain placeholder: the point is to\nshow a real example, and that survives without the animation.",
+      "kind": "what"
+    }
+  ]
+}

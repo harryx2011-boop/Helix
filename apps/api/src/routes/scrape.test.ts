@@ -346,8 +346,6 @@ describe('POST /scrape proxy and mobile', () => {
     expect(res.json().message).toContain('HELIX_PROXY_URL');
   });
 
-  // A caller's proxy is a host this instance connects to, so it meets the
-  // same egress rules as the target URL.
   it.each([
     'http://169.254.169.254',
     'http://127.0.0.1:7402',
@@ -378,7 +376,6 @@ describe('POST /scrape proxy and mobile', () => {
   it('passes a caller-supplied proxy through', async () => {
     const { app, deps } = await build();
     await post(app, { url: 'https://example.com', proxy: { url: 'http://user:pass@mine:3128', geo: 'DE' } });
-    // Pinned to the address the guard checked, so a second lookup cannot swap in another.
     expect(deps.fetchClient.fetch).toHaveBeenCalledWith(
       expect.objectContaining({ proxy: 'http://user:pass@93.184.216.34:3128' }),
     );

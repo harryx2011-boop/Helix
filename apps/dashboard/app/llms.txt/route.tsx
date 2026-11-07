@@ -4,7 +4,6 @@ import { MARKDOWN_TWIN_PATHS } from '@/lib/markdown-twins';
 
 export const dynamic = 'force-static';
 
-/** Index of every markdown twin on the site (WEBSITE.md §2, §9.4), the `llms.txt` category convention. */
 export async function GET() {
   const base = SITE_URL.replace(/\/$/, '');
   const lines = [

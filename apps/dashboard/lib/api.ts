@@ -1,12 +1,4 @@
-/**
- * Typed Helix API client.
- *
- * Hand-written from openapi.yaml for now — codegen comes later (FRONTEND.md §6).
- * Kept in this one file so it is easy to replace wholesale once the generator
- * lands. Shapes mirror the spec's `components.schemas` names exactly.
- */
 
-/** Every format `/scrape` serves today (openapi.yaml `Format`). */
 export type Format = 'markdown' | 'html' | 'rawHtml' | 'text' | 'links' | 'screenshot' | 'json' | 'chunks';
 
 /** A tier a request asks for: the v3 ladder is plain, tls, browser (openapi.yaml `Tier`). */
@@ -29,7 +21,6 @@ export type FailureReason =
   | 'unsupported_type'
   | 'unsafe_url'
   | 'session_closed'
-  // A Helix service was unreachable — our infrastructure, not the target site.
   | 'service_unavailable';
 
 export interface ProxyConfig {
@@ -43,13 +34,11 @@ export type ExtractProvider = 'anthropic' | 'openai' | 'openrouter' | 'google' |
 export interface ExtractConfig {
   schema?: Record<string, unknown>;
   prompt?: string;
-  /** Per-request override; the key must already be configured on the instance. */
   provider?: ExtractProvider;
   model?: string;
   includeSources?: boolean;
 }
 
-/** `auto`: instance proxy if configured. `stealth`: instance proxy required. `none`: direct. Object: your own. */
 export type ProxyOption = 'auto' | 'stealth' | 'none' | ProxyConfig;
 
 export interface ChunkConfig {
@@ -71,7 +60,6 @@ export interface ScrapeOptions {
   headers?: Record<string, string>;
   profile?: string;
   proxy?: ProxyOption;
-  /** Same option as `jsonOptions`; send one of the two. */
   extract?: ExtractConfig;
   jsonOptions?: ExtractConfig;
   chunk?: ChunkConfig;
@@ -81,7 +69,6 @@ export interface ScrapeRequest extends ScrapeOptions {
   url: string;
 }
 
-// --- Action (InteractAction in openapi.yaml; the /interact discriminated union) ---
 
 export type ActionType = 'navigate' | 'click' | 'type' | 'press' | 'scroll' | 'wait' | 'screenshot' | 'executeJavascript' | 'extract';
 
@@ -106,7 +93,6 @@ export type Action =
   | ExecuteJavascriptAction
   | ExtractAction;
 
-// --- Map ---
 
 export interface MapRequest {
   url: string;
@@ -131,11 +117,9 @@ export interface MapResponse {
   truncated?: boolean;
 }
 
-// --- Search ---
 
 export type SearchFormat = 'markdown' | 'text' | 'rawHtml' | 'links' | 'screenshot';
 
-/** The subset of ScrapeOptions a per-result read accepts (`SearchScrapeOptions` in openapi.yaml). */
 export interface SearchScrapeOptions {
   formats?: SearchFormat[];
   tier?: Tier;
@@ -154,7 +138,6 @@ export interface SearchRequest {
   limit?: number;
   lang?: string;
   country?: string;
-  /** Google-style time filter: qdr:d, qdr:w, qdr:m, qdr:y. */
   tbs?: string;
   freshness?: string;
   sources?: ('web' | 'news' | 'images')[];
@@ -171,7 +154,6 @@ export interface SearchResultItem extends Document {
   position: number;
   publishedAt?: string;
   imageUrl?: string;
-  /** Present when this result page could not be read; the search itself still succeeded. */
   failure?: FetchFailure;
 }
 
@@ -189,7 +171,6 @@ export interface SearchResponse {
   };
 }
 
-// --- Crawl ---
 
 export type WebhookEvent = 'started' | 'page' | 'changed' | 'completed' | 'failed';
 
@@ -205,12 +186,10 @@ export interface CrawlRequest extends ScrapeOptions {
   estimate?: boolean;
   limit?: number;
   maxDepth?: number;
-  /** Globs over the pathname, e.g. `/blog/*`. */
   includePaths?: string[];
   excludePaths?: string[];
   allowSubdomains?: boolean;
   allowExternal?: boolean;
-  /** Alias of `allowExternal`, as the spec writes it. */
   allowExternalLinks?: boolean;
   sitemap?: 'include' | 'skip' | 'only';
   respectRobots?: boolean;
@@ -220,7 +199,6 @@ export interface CrawlRequest extends ScrapeOptions {
   incremental?: boolean;
   ignoreQueryParameters?: boolean;
   scrapeOptions?: Pick<ScrapeOptions, 'formats' | 'tier' | 'extractor' | 'onlyMainContent'>;
-  /** A bare URL subscribes to every event. */
   webhook?: string | WebhookConfig;
 }
 
@@ -273,12 +251,10 @@ export interface Job {
   };
 }
 
-// --- Parse ---
 
 export interface ParseJsonOptions {
   schema?: Record<string, unknown>;
   prompt?: string;
-  /** Overrides the server's default model. The provider is fixed per instance (HELIX_LLM_PROVIDER). */
   model?: string;
 }
 
@@ -288,7 +264,6 @@ export interface ParseRequest {
   ocr?: 'auto' | 'force' | 'off';
   maxPages?: number;
   tables?: 'auto' | 'high-fidelity';
-  /** Remote fetch budget in ms; `url` path only. */
   timeout?: number;
   jsonOptions?: ParseJsonOptions;
 }
@@ -329,7 +304,6 @@ export interface ParseResponseFailure {
 
 export type ParseResponse = ParseResponseSuccess | ParseResponseFailure;
 
-// --- Interact ---
 
 export interface InteractRequest {
   url?: string;
@@ -347,11 +321,9 @@ export interface InteractResponseSuccess {
   url?: string;
   output?: string | null;
   data?: Record<string, unknown> | null;
-  /** `data:image/png;base64,...` */
   screenshot?: string | null;
   javascriptReturns?: unknown[];
   actionsRun?: number;
-  /** Present while the session is open. */
   liveViewUrl?: string;
   expiresAt?: string;
   idleExpiresAt?: string;
@@ -360,7 +332,6 @@ export interface InteractResponseSuccess {
 }
 
 export interface InteractFailure extends FetchFailure {
-  /** Index into `actions`; `null` when the initial navigation from `url` failed. */
   actionIndex?: number | null;
   actionType?: ActionType;
 }
@@ -374,12 +345,10 @@ export interface InteractResponseFailure {
 
 export type InteractResponse = InteractResponseSuccess | InteractResponseFailure;
 
-// --- Monitor ---
 
 export type MonitorGranularity = 'word' | 'line' | 'character';
 export type MonitorEvent = 'changed' | 'checked' | 'failed';
 
-/** A cron string, or `{ cron | every, timezone }`. Mirrors `MonitorSchedule` in openapi.yaml. */
 export type MonitorSchedule = string | { cron?: string; every?: string; timezone?: string };
 
 export interface MonitorWebhook {
@@ -407,7 +376,6 @@ export interface MonitorRequest {
   webhook?: string | MonitorWebhook;
 }
 
-/** Mirrors `Monitor` in openapi.yaml: what `POST /v1/monitor` and `GET /v1/monitor/{id}` return. */
 export interface MonitorResponse {
   success: boolean;
   id: string;
@@ -428,7 +396,6 @@ export interface MonitorResponse {
   stats: { checks: number; changes: number; pagesUnchanged: number };
 }
 
-/** `GET /v1/monitor`: every monitor owned by the calling key. */
 export interface MonitorListResponse {
   success: boolean;
   monitors: Omit<MonitorResponse, 'success'>[];
@@ -439,11 +406,6 @@ export interface DocumentImage {
   alt?: string;
 }
 
-/**
- * Matches what routes/scrape.ts actually sends, which is a superset of the
- * openapi.yaml `Metadata` schema (adds `extractor`, `timingMs`) — the route
- * is the source of truth over the spec until codegen replaces this file.
- */
 export interface DocumentMetadata {
   title?: string;
   description?: string;
@@ -480,16 +442,13 @@ export interface Document {
   summary?: string;
   links?: string[];
   images?: DocumentImage[];
-  /** A `data:image/png;base64,` URI, or `null` with a warning when nothing was captured. */
   screenshot?: string | null;
-  /** `null` with a warning when the model step failed after the page was read. */
   json?: Record<string, unknown> | null;
   jsonSources?: Record<string, unknown>[];
   chunks?: DocumentChunk[] | null;
   metadata?: DocumentMetadata;
 }
 
-/** Present only when a model ran. Tokens are billed by the caller's provider. */
 export interface ExtractionUsage {
   model: string;
   tokens: { input: number; output: number };
@@ -532,7 +491,6 @@ export interface ApiErrorBody {
   requestId?: string;
 }
 
-/** Thrown for transport failures and non-2xx responses — never for a typed `ScrapeResponseFailure`, which is a valid 200. */
 export class HelixApiError extends Error {
   readonly status: number;
   readonly body?: ApiErrorBody | undefined;
@@ -545,7 +503,6 @@ export class HelixApiError extends Error {
   }
 }
 
-// --- Agent schema (POST /v1/agent/schema) ---
 
 export interface AgentSchemaRequest {
   prompt: string;
@@ -568,18 +525,12 @@ export interface AgentSchemaResponseFailure {
 
 export type AgentSchemaResponse = AgentSchemaResponseSuccess | AgentSchemaResponseFailure;
 
-// --- Robots check (POST /v1/robots-check) ---
 
 export interface RobotsCheckRequest {
   url: string;
   userAgent?: string;
 }
 
-/**
- * Answered by the same `RobotsCache` `/crawl` and `/map` consult, so this is
- * the decision a crawl would make rather than a second opinion from a
- * separate parser.
- */
 export interface RobotsCheckResponse {
   url: string;
   userAgent: string;
@@ -588,11 +539,9 @@ export interface RobotsCheckResponse {
   sitemaps: string[];
 }
 
-// --- Diff (POST /v1/diff) ---
 
 export type DiffGranularity = 'word' | 'line' | 'character';
 
-/** Either side of a text diff is literal text or a URL the server reads through the scrape pipeline. */
 export type DiffSide = { text: string } | { url: string };
 
 export interface DiffTextRequest {
@@ -619,14 +568,10 @@ export interface TextDiff {
   granularity: DiffGranularity;
   added: number;
   removed: number;
-  /** Changed tokens over the larger side's token count; 0 when identical. */
   changeRatio: number;
   ops: DiffOp[];
-  /** Line-oriented rendering with `+` / `-` / ` ` prefixes. */
   text: string;
-  /** The edit script was too long to trace token by token; counts are an upper bound. */
   coarse?: true;
-  /** `ops` and `text` were dropped to stay under the size bound. */
   truncated?: true;
 }
 
@@ -654,7 +599,6 @@ export interface DiffResponseFailure {
 
 export type DiffResponse = DiffResponseSuccess | DiffResponseFailure;
 
-// --- PDF assess (POST /v1/pdf-assess) ---
 
 export interface PdfAssessRequest {
   url: string;
@@ -682,7 +626,6 @@ export interface PdfAssessResponseFailure {
 
 export type PdfAssessResponse = PdfAssessResponseSuccess | PdfAssessResponseFailure;
 
-// --- Providers (GET/PUT/DELETE /v1/providers) ---
 
 export type ProviderName = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'ollama' | 'vllm' | 'openai-compatible';
 
@@ -694,7 +637,6 @@ export interface ProviderStatus {
   model?: string | null;
   baseUrl?: string | null;
   updatedAt?: string;
-  /** A local runtime answering on its default address that is not set up yet. Present only when `source` is `none`; offered, never used until saved. */
   detected?: { baseUrl: string; models: string[] };
 }
 
@@ -715,9 +657,7 @@ export interface SaveProviderResponse {
   last4?: string;
   model?: string | null;
   baseUrl?: string | null;
-  /** The provider accepted this credential when it was saved. */
   verified?: boolean;
-  /** Present when the credential could not be checked — stored, but unproven. */
   warning?: string;
 }
 
@@ -739,7 +679,6 @@ export type ListModelsResponse =
   | { success: true; provider: ProviderName; models: ProviderModel[] }
   | { success: false; provider: ProviderName; failure: { reason: ListModelsFailureReason; message: string } };
 
-// --- Health and status (GET /v1/health, GET /v1/status/history) ---
 
 export type HealthStatus = 'ok' | 'degraded' | 'unhealthy';
 
@@ -749,7 +688,6 @@ export interface HealthService {
   latencyMs: number;
 }
 
-/** Instance-level env configuration: whether a credential is present and which model is selected. Never key material. */
 export interface HealthProviders {
   llm: { configured: boolean; model: string };
   embedding: { configured: boolean; model: string };
@@ -782,7 +720,6 @@ export interface StatusHistoryResponse {
 
 export type MetadataFileType = 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'png' | 'jpg';
 
-/** How much a disclosed value gives away. An ordinal band, not a probability. */
 export type MetadataRisk = 'high' | 'medium' | 'low';
 
 export type MetadataCategory =
@@ -795,17 +732,14 @@ export type MetadataCategory =
   | 'other';
 
 export interface MetadataFinding {
-  /** Where it was read from: `exif`, `gps`, `xmp`, `docinfo`, `core`, `app`, `custom`, `png`, `tracked`. */
   group: string;
   key: string;
   value: string;
   risk: MetadataRisk;
   category: MetadataCategory;
-  /** False where the format cannot drop the entry without corrupting the file. */
   removable: boolean;
 }
 
-/** Always carries all three bands, so absent and zero never have to be told apart. */
 export type MetadataRiskSummary = Record<MetadataRisk, number>;
 
 export interface MetadataRequest {
@@ -824,7 +758,6 @@ export interface MetadataScanMetadata {
 }
 
 export interface MetadataScan {
-  /** Sorted worst-first. */
   findings: MetadataFinding[];
   riskSummary: MetadataRiskSummary;
   metadata: MetadataScanMetadata;
@@ -833,7 +766,6 @@ export interface MetadataScan {
 export interface MetadataResponseSuccess {
   success: true;
   data: MetadataScan;
-  /** A container opened but a part could not be read: the report is partial. */
   warnings?: string[];
 }
 
@@ -847,10 +779,6 @@ export type MetadataResponse = MetadataResponseSuccess | MetadataResponseFailure
 
 export interface MetadataScrubReport {
   removed: MetadataFinding[];
-  /**
-   * Detected and NOT removed, each with `removable: false`. Non-empty means the
-   * file is not fully clean.
-   */
   retained: MetadataFinding[];
   riskSummary: MetadataRiskSummary;
   metadata: {
@@ -867,7 +795,6 @@ export interface MetadataScrubReport {
 
 export interface MetadataScrubSuccess {
   success: true;
-  /** The cleaned file, held in memory for the download button. */
   blob: Blob;
   filename: string;
   report: MetadataScrubReport;
@@ -897,7 +824,6 @@ export interface ScreenshotRequest {
 export interface ScreenshotSuccess {
   success: true;
   data: {
-    /** A `data:` URL, or null when the tier that succeeded captured no image. */
     screenshot: string | null;
     format: ScreenshotFormat;
     bytes: number | null;
@@ -918,7 +844,6 @@ export interface ExtractRequest {
   timeout?: number;
 }
 
-/** A field the model returned that nothing in the page supports. */
 export interface DroppedField {
   url: string;
   field: string;
@@ -938,7 +863,6 @@ export interface ExtractRow {
 export interface ExtractResponse {
   success: true;
   data: ExtractRow[];
-  /** Fields discarded for want of a grounding span. Never silently absent. */
   dropped: DroppedField[];
   warnings: string[];
   usage: {
@@ -952,12 +876,10 @@ export interface ExtractResponse {
   };
 }
 
-/** The operations `POST /document` dispatches to. */
 export type DocumentOp = 'parse' | 'metadata' | 'scrub' | 'assess';
 
 export type DocumentRequest = { op: DocumentOp } & Record<string, unknown>;
 
-/** Whatever the dispatched operation answered with; the form knows which it asked for. */
 export type DocumentResponse = Record<string, unknown>;
 
 export interface HelixClientOptions {
@@ -965,19 +887,6 @@ export interface HelixClientOptions {
   apiKey: string;
 }
 
-/**
- * Base URL resolution, split-port model:
- *
- *   1. An explicit URL passed to the client always wins.
- *   2. `NEXT_PUBLIC_HELIX_API_URL` — baked at build time, for a deployment where
- *      the API is not on the dashboard's own host (the split-port default).
- *   3. Same-origin `/v1` — for the bundled case where one server serves both.
- *   4. localhost:7400 — the dev fallback when the dashboard runs on 3400 via
- *      `next dev` and the API is the sibling service on 7400.
- *
- * Helix runs FE 3400 / API 7400 by convention. The two are separate origins in
- * dev, which is why the API sets permissive CORS.
- */
 const DEV_PORT = '3400';
 const API_URL = process.env['NEXT_PUBLIC_HELIX_API_URL'];
 
@@ -1011,11 +920,6 @@ export class HelixClient {
     return this.post<ExtractResponse>('/extract', request, signal);
   }
 
-  /**
-   * `/document` forwards by `op`, so the body goes through as given. A `scrub`
-   * answers with file bytes rather than JSON and is not reachable this way —
-   * the metadata tab calls `/metadata/scrub` directly for that.
-   */
   async document(request: DocumentRequest, signal?: AbortSignal): Promise<DocumentResponse> {
     return this.post<DocumentResponse>('/document', request, signal);
   }
@@ -1032,7 +936,6 @@ export class HelixClient {
     return this.post<CrawlResponse>('/crawl', request, signal);
   }
 
-  /** `GET /v1/crawl/{jobId}`: the same view as `job()`, restricted to crawls. */
   async crawlJob(id: string, signal?: AbortSignal): Promise<Job> {
     return this.get<Job>(`/crawl/${id}`, signal);
   }
@@ -1049,11 +952,6 @@ export class HelixClient {
     return this.post<MetadataResponse>('/metadata', request, signal);
   }
 
-  /**
-   * `POST /v1/metadata/scrub` answers with the cleaned file and puts the report
-   * in a header, so this unwraps both rather than going through `post()`, which
-   * assumes a JSON body.
-   */
   async metadataScrub(request: MetadataRequest | FormData, signal?: AbortSignal): Promise<MetadataScrubResponse> {
     const isFormData = typeof FormData !== 'undefined' && request instanceof FormData;
     let response: Response;
@@ -1079,16 +977,12 @@ export class HelixClient {
       );
     }
 
-    // A typed failure comes back as JSON in the usual envelope rather than as
-    // file bytes; the content type is what tells the two apart.
     if (response.headers.get('content-type')?.includes('application/json')) {
       return (await response.json()) as MetadataResponseFailure;
     }
 
     const header = response.headers.get('x-helix-metadata-report');
     if (!header) {
-      // Showing the file with an invented empty report would claim nothing was
-      // found, which is worse than saying the report is missing.
       throw new HelixApiError('The scrub returned a file without its metadata report.', 502);
     }
 
@@ -1131,7 +1025,6 @@ export class HelixClient {
     return this.post<DiffResponse>('/diff', request, signal);
   }
 
-  /** A URL body is JSON; an upload is `FormData` with a `file` part, which the route parses itself. */
   async pdfAssess(request: PdfAssessRequest | FormData, signal?: AbortSignal): Promise<PdfAssessResponse> {
     return this.post<PdfAssessResponse>('/pdf-assess', request, signal);
   }
@@ -1242,15 +1135,8 @@ export class HelixClient {
   }
 }
 
-/**
- * `/health` and `/status/history` are open routes, so they sit outside
- * `HelixClient` and its Bearer header: a browser with no key (hosted mode,
- * the public status page) can still poll them. `baseUrl` is an instance's
- * `/v1` base, defaulting to this build's own.
- */
 export async function fetchHealth(baseUrl: string = resolveBaseUrl(), signal?: AbortSignal): Promise<HealthResponse> {
   const response = await openGet(`${baseUrl}/health`, signal);
-  // 503 is the route's answer when a dependency is down; the body is still the full report.
   if (!response.ok && response.status !== 503) throw await toApiError(response);
   return response.json() as Promise<HealthResponse>;
 }
@@ -1278,7 +1164,6 @@ async function toApiError(response: Response): Promise<HelixApiError> {
   return new HelixApiError(errorBody?.message ?? `Request failed with status ${response.status}`, response.status, errorBody);
 }
 
-/** Pull the suggested filename out of a Content-Disposition header. */
 function filenameFromDisposition(header: string | null): string | undefined {
   if (!header) return undefined;
   const star = /filename\*=(?:UTF-8|utf-8)''([^;]+)/.exec(header);

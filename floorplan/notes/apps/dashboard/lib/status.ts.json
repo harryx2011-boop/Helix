@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/status.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "getStoredInstanceUrl",
+      "line": 6,
+      "offset": 0,
+      "text": "Hosted mode ships with no instance behind it — `PUBLIC_API_URL` is only a\nlocalhost default meant for self-host dev. The status page instead lets a\nviewer point it at their own deployment, remembered per-browser the same\nway `lib/auth.ts` remembers the API key.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "normalizeInstanceUrl",
+      "line": 11,
+      "offset": 0,
+      "text": "An http(s) origin plus path with no trailing slash, or null when the input is not a fetchable URL.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "resolveStatusApiUrl",
+      "line": 26,
+      "offset": 0,
+      "text": "The API base the status page should poll, or null when hosted mode has no instance configured.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/enrich/confidence.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CONFIDENCE_BANDS",
+      "line": 4,
+      "offset": 0,
+      "text": "Confidence, and what it is honestly allowed to mean here.\n\nThe temptation is to emit a number like 0.87 and let the caller read it as a\nprobability. It would not be one. Calibrating a probability requires a labelled\nset to measure against, and this project has none; a model asked to rate its\nown certainty produces a number that correlates with fluency rather than with\nbeing right. Emitting such a number is worse than emitting nothing, because it\nlaunders a guess into a measurement, and a caller filtering on `> 0.8` would be\nfiltering on nothing.\n\nSo confidence here is NOT a probability and is not presented as one. It is an\nordinal band derived only from facts the code established itself:\n\n`high`      the value was read out of the document structure by this process\n- a meta tag or a JSON-LD property - and re-derived from the\nHTML to confirm it. No model was asked. This cannot be a\nhallucination; it can still be a page stating something false.\n\n`medium`    a model proposed the value, it quoted a passage, that passage was\nfound verbatim in the page the code fetched, and the value itself\nappears inside that passage. The claim is anchored to real text.\n\n`low`       as `medium`, but the value could not be required to appear inside\nits own passage - the boolean case, where a page establishes\n`hiring: true` by saying \"we are hiring\" and never contains the\ntoken \"true\". The passage is real; the inference from it is the\nmodel's and is unverified.\n\nAnything that fails those tests is not assigned a low confidence. It is\nreturned as `null` with a reason, because a wrong value with a caveat is still\na wrong value and callers do not read caveats.\n\nTHE LIMITS, STATED RATHER THAN HIDDEN:\n- These bands are not calibrated. `high` is not \"90% likely correct\"; it is\n\"obtained by a method that cannot fabricate\". No error rate is claimed\nbecause none has been measured.\n- Grounding proves the passage exists, not that it is true. A page that\nstates a falsehood produces a `medium` field quoting it faithfully.\n- Agreement across sources is reported as a count, not folded into the band.\nTwo pages copying one press release are not two pieces of evidence, and\nnothing here can tell that apart from genuine corroboration.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ConfidenceInput.phase",
+      "line": 9,
+      "offset": 0,
+      "text": "Which phase produced the value.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ConfidenceInput.valueInCitation",
+      "line": 10,
+      "offset": 0,
+      "text": "Whether the value itself was found inside its own cited passage. False for booleans.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "bandFor",
+      "line": 13,
+      "offset": 0,
+      "text": "The band for one verified field. Only ever called for fields that already\npassed grounding; an ungrounded field has no confidence because it has no\nvalue.",
+      "kind": "doc"
+    }
+  ]
+}

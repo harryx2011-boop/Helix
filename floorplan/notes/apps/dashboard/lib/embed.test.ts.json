@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/embed.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "framedWindow",
+      "line": 4,
+      "offset": 0,
+      "text": "A window inside a frame, with a parent that records what it was sent.",
+      "kind": "doc"
+    }
+  ]
+}

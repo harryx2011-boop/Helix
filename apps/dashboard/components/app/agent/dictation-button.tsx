@@ -68,7 +68,6 @@ function DictationControl({ onText, onCaption, connect }: DictationButtonProps &
   );
 }
 
-/** A mic for the desktop app only: the website has no local speech service, so nothing renders there. */
 export function DictationButton(props: DictationButtonProps) {
   const [voice, setVoice] = React.useState<ReturnType<typeof desktopVoice>>(null);
   React.useEffect(() => setVoice(desktopVoice()), []);

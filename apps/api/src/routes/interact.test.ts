@@ -367,8 +367,6 @@ describe('POST /v1/interact', () => {
     h = await harness({
       page: () =>
         fakePage({
-          // The page is torn out from under the run: the session goes, then the
-          // action fails as Playwright would once the target is gone.
           click: vi.fn(async () => {
             await ref.sessions!.closeAll();
             throw new Error('Target page, context or browser has been closed');

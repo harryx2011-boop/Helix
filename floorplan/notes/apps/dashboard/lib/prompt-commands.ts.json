@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/prompt-commands.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "COMMAND",
+      "line": 1,
+      "offset": 0,
+      "text": "The prompt box's slash palette, as two pure functions so the matching can be\ntested without a DOM. A lone leading slash plus one word is a command;\n`/docs/api` or `/scrape this` is a path or a phrase and stays text.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "matchCommands",
+      "line": 8,
+      "offset": 0,
+      "text": "Prefix matches first, then substring matches, each in the order given.",
+      "kind": "doc"
+    }
+  ]
+}

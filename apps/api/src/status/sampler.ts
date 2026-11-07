@@ -11,13 +11,6 @@ export interface SamplerOptions extends ServiceCheckDeps {
 
 const RETENTION_DAYS = 90;
 
-/**
- * Runs the same checks `/health` runs, once a minute, and keeps a rolling
- * 90-day history for `/status/history`. A DB outage is not fatal to the
- * sampler itself — it just has nowhere to write this tick, so it logs once
- * and tries again next tick rather than crashing the process over a page
- * nobody has to see immediately.
- */
 export class StatusSampler {
   readonly #deps: ServiceCheckDeps;
   readonly #pool: Pool;

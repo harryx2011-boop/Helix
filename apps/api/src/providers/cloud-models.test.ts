@@ -39,9 +39,6 @@ describe('listCloudModels', () => {
     if (result.ok) expect(result.models.map((m) => m.name)).toContain('claude-brand-new-1');
   });
 
-  /* Gemini names models `models/x` in its catalogue but takes the bare id
-     everywhere else, so a picker that passed the prefixed form through would
-     hand back a value that fails on use. */
   it("strips Gemini's models/ prefix and drops anything that cannot generate", async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({
@@ -62,8 +59,6 @@ describe('listCloudModels', () => {
     }
   });
 
-  /* A picker that empties itself when the network hiccups is worse than one
-     showing slightly stale names the caller can still edit by hand. */
   it('falls back to the curated list when the catalogue is unreachable', async () => {
     globalThis.fetch = vi.fn(async () => {
       throw new TypeError('fetch failed');

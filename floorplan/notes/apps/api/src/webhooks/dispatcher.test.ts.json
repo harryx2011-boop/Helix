@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/webhooks/dispatcher.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "resolve",
+      "line": 53,
+      "offset": 0,
+      "text": "Every test target resolves publicly; DNS is not what is under test.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 67,
+      "offset": null,
+      "text": "An unread body holds its socket open until the stream is collected.",
+      "kind": "what"
+    }
+  ]
+}

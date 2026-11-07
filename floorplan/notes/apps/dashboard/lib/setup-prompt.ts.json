@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/setup-prompt.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "setupPrompt",
+      "line": 5,
+      "offset": 0,
+      "text": "The prompt a person pastes into their coding agent to wire Helix into the\ncurrent project. Written for the agent, not the person: it installs the\nskill first, checks for a key without ever printing one, smoke-tests with a\nstatus code, and asks the person for the one thing only they can provide.\n(research/18-exa.md: the shape Exa's agent-skill pages use, in Helix's terms.)",
+      "kind": "doc"
+    }
+  ]
+}

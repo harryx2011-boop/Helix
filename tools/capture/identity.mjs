@@ -1,11 +1,3 @@
-/**
- * Pure functions deriving a profile's identity from a recorded surface, and the
- * checks that decide whether a recording is usable at all.
- *
- * Separated from the driver so they can be tested without launching a browser —
- * these are exactly the parts where a wrong answer produces a definition that
- * looks authoritative and is not.
- */
 
 /**
  * Identities helix-scrape presents exactly: each is a curl_cffi target in
@@ -50,10 +42,6 @@ export const RESOLVABLE = [
 /** HTTP/2 header table size each engine sends (the old Rust validator's table). */
 export const HEADER_TABLE_SIZE = { chrome: 65536, edge: 65536, firefox: 65536, safari: 4096 };
 
-/**
- * Edge's user-agent contains "Chrome" too, so order matters: the more specific
- * engine has to be tested first or every Edge capture records as Chrome.
- */
 export function browserFromUserAgent(userAgent) {
   const ua = userAgent.toLowerCase();
   if (ua.includes('edg/')) return 'edge';
@@ -72,21 +60,12 @@ export function platformFromSurface(surface) {
   return 'unknown';
 }
 
-/** Safari reports its own version under `Version/`, not `Safari/` (which is the WebKit build). */
 export function versionFromUserAgent(userAgent, browser) {
   const key = browser === 'edge' ? 'edg' : browser === 'safari' ? 'version' : browser;
   const match = new RegExp(`${key}/(\\d+)`, 'i').exec(userAgent);
   return match ? match[1] : 'unknown';
 }
 
-/**
- * Why this recording should not be written.
- *
- * Each of these describes a browser no real user has: a headless UA is a
- * detection signal in itself, and a software rasteriser fingerprints as
- * "no GPU" rather than as a desktop. Recording either under `verified: true`
- * would be worse than having no profile.
- */
 export function recordingProblems(surface) {
   const problems = [];
 
@@ -111,7 +90,6 @@ export function recordingProblems(surface) {
   return problems;
 }
 
-/** The id names one identity and the recording another; the transport layer would contradict the UA. */
 export function versionMismatch(id, version) {
   const idVersion = /-(\d+)/.exec(id)?.[1];
   if (!idVersion || version === 'unknown') return undefined;

@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/settings/registry.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 7,
+      "offset": null,
+      "text": "A ceiling without a floor lets an operator bound the damage but not the\nslowness; the adaptive loop needs both ends declared to be clamped.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 29,
+      "offset": null,
+      "text": "These are read when a crawl worker is constructed. Advertising them as\nlive would tell an operator a running crawl had picked up a change it\nnever saw.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 35,
+      "offset": null,
+      "text": "The registry is an allowlist: the database URL and the admin token have\nno business being reachable from an HTTP surface.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 40,
+      "offset": null,
+      "text": "A stored override is written onto `config[key]` at boot. A key the\nschema does not declare is written and then read by nothing.",
+      "kind": "what"
+    }
+  ]
+}

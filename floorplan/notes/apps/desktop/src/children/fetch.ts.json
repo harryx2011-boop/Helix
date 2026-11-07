@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/src/children/fetch.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "fetchSpec",
+      "line": 5,
+      "offset": 1,
+      "text": "In dev, cwd apps/fetch lets the binary find ../../packages/profiles/definitions; installed, it reads profiles/ beside itself.",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/segmented.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SegmentedItem.brand",
+      "line": 13,
+      "offset": 0,
+      "text": "A real brand mark, shown instead of an icon.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SegmentedItem.group",
+      "line": 14,
+      "offset": 0,
+      "text": "Items sharing a group get one mono label above them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "Segmented",
+      "line": 25,
+      "offset": 0,
+      "text": "One grey track, the active tab lifted white, hairlines between the rest.\nWhen items carry `group`, the labels sit above the track and the track\nitself is painted by a pseudo-element so it stays continuous underneath.",
+      "kind": "doc"
+    }
+  ]
+}

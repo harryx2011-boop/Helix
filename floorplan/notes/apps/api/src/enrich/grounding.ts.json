@@ -1,0 +1,111 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/enrich/grounding.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "Grounding: does the passage the model cited actually exist in the page?\n\nThis is the control the whole endpoint rests on. Everything upstream —\nguardrails, routing, fencing — reduces the chance the model invents a value.\nNone of it removes that chance, because a language model asked for a company\nheadquarters will produce a plausible city whether or not the page named one.\n\nSo enrichment does not trust the answer. It requires the model to quote the\nspan of the page that states the value, and then checks that quote against the\nbytes actually fetched. A quote that is not in the page discards the field —\nthe value becomes null with a reason, and the caller is told the model could\nnot point at where it read the value.\n\nThat converts fabrication from an invisible failure into a visible one. It\ndoes NOT verify that the passage means what the model claimed, only that the\npassage is real and that the value appears within it. A page that lies is\nstill quoted faithfully; grounding is a check against the model, not against\nthe web.\n\nMatching is deliberately forgiving about form and strict about substance.\nWhitespace, case and the punctuation that markdown extraction rewrites\n(smart quotes, dashes, bullet glyphs) are normalised away, because a model\nre-typing a passage will not reproduce them byte for byte and failing it for\nthat would discard true values. Word content is not normalised away: an exact\nnormalised substring is required, so the model cannot pass by quoting\nsomething merely similar.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "GROUNDING_REJECTIONS",
+      "line": 2,
+      "offset": 0,
+      "text": "Why a field the model returned did not survive verification.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "MIN_CITATION_CHARS",
+      "line": 12,
+      "offset": 0,
+      "text": "Shortest passage that can ground a value. Below this a \"quote\" is a fragment\nthat would match somewhere in almost any page by chance, which makes the\ncheck pass without the check meaning anything.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "normaliseForMatch",
+      "line": 14,
+      "offset": 0,
+      "text": "Fold the characters an extractor or a re-typing model rewrites, and nothing\nelse. Quote glyphs, dash glyphs, bullets and non-breaking spaces collapse to\ntheir ASCII form; letters and digits are untouched, so this cannot make two\ndifferent words compare equal.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "GroundingInput.value",
+      "line": 28,
+      "offset": 0,
+      "text": "The value the model claims the page states.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "GroundingInput.citation",
+      "line": 29,
+      "offset": 0,
+      "text": "The passage the model says states it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "GroundingInput.sourceUrl",
+      "line": 30,
+      "offset": 0,
+      "text": "The URL the model attributed the passage to.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "GroundingInput.sources",
+      "line": 31,
+      "offset": 0,
+      "text": "Fetched page text, keyed by the URL it came from. The code owns this map; the model does not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "valueAsText",
+      "line": 38,
+      "offset": 0,
+      "text": "Scalars a citation can be checked to contain. Objects and arrays are grounded by their leaves elsewhere.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "valueAppearsInCitation",
+      "line": 44,
+      "offset": 0,
+      "text": "Whether a claimed value appears inside its own claimed passage.\n\nStrings and numbers must appear literally, after normalisation: a citation\nthat does not contain the value it supposedly states is not evidence for it,\nand this is what stops a real passage being reused to launder an invented\nvalue.\n\nBooleans are exempt, and this is a real limit rather than an oversight. A page\nthat establishes `hiring: true` does so by saying \"we are hiring\", never by\ncontaining the token \"true\". For a boolean the check degrades to \"the passage\nis real and the model chose it\", which is weaker, so booleans carry the\n`evidence.valueInCitation: false` marker in the response rather than being\nsilently treated as equally verified.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "valueAppearsInCitation",
+      "line": 55,
+      "offset": 11,
+      "text": "1200000 in the page as \"1,200,000\"; 0.5 as \".5\". Digits are compared\nwithout their separators, which is a rewriting of form, not of substance.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "verifyGrounding",
+      "line": 62,
+      "offset": 0,
+      "text": "Verify one field the model returned against the pages the code actually\nfetched. Returns the grounded citation, or the reason the field must become\nnull.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "verifyGrounding",
+      "line": 77,
+      "offset": 15,
+      "text": "The model names a URL; only a URL the code fetched is admissible. This is\nthe allowlist half of the check — a citation attributed to a page that was\nnever read cannot be verified against anything.",
+      "kind": "why"
+    }
+  ]
+}

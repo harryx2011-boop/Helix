@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/app-shell.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "AppShell",
+      "line": 25,
+      "offset": 15,
+      "text": "One grid behind every /app screen, as a backdrop that stays put while\ncontent scrolls over it. Three details make that work without touching\nthe pages: the layer is sticky with zero height so it takes no space;\nit is sized with `cqh` against `main` (a size container) rather than\nthe viewport, so it covers exactly the scroll area under the bar; and\nit sits at z-[-1] inside `isolate`, so it paints below in-flow content\n(an absolutely positioned sibling would otherwise paint on top of any\npage whose root is not positioned). Children keep their `h-full` and\n`min-h-full` semantics because nothing wraps them.",
+      "kind": "why"
+    }
+  ]
+}

@@ -5,7 +5,6 @@ import { closePool, createPool, getPool } from './pool.js';
 import { migrate } from './migrate.js';
 import { sweepExpired } from './sweeper.js';
 
-/** The results sweeper on the real schema, PGlite in memory. */
 
 const MIGRATIONS = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'migrations');
 
@@ -43,7 +42,6 @@ async function doc(jobId: string | null, url: string, age: string): Promise<void
 
 describe('sweepExpired', () => {
   it('deletes what is older than the TTL by its own timestamp, whatever expires_at says', async () => {
-    // expires_at keeps its 7-day default on every row here; only age decides.
     const old = await job('old', 'completed', '2 days');
     const fresh = await job('fresh', 'completed', '1 hour');
     const held = await job('held', 'running', '2 days', '5 minutes');
@@ -65,7 +63,6 @@ describe('sweepExpired', () => {
     expect(new Set(jobs.map((r) => r.id))).toEqual(new Set([fresh, held]));
     expect(jobs.map((r) => r.id)).not.toContain(stranded);
     const { rows: docs } = await getPool().query<{ url: string }>('SELECT url FROM documents ORDER BY url', []);
-    // The old job's own document went with it through the cascade.
     expect(docs.map((r) => r.url)).toEqual(['https://fresh.test/a', 'https://scrape.test/new']);
     const { rowCount } = await getPool().query('SELECT 1 FROM job_tasks WHERE job_id = $1', [old]);
     expect(rowCount).toBe(0);

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/field-tone.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FieldTone",
+      "line": 1,
+      "offset": 0,
+      "text": "Which surface a character field paints on. `app` swaps the marketing ink tokens for the dark surface's foreground and primary.",
+      "kind": "doc"
+    }
+  ]
+}

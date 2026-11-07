@@ -17,9 +17,6 @@ describe('parseArgs', () => {
     expect(flagValue(parsed, 'client')).toBe('codex');
   });
 
-  /* A boolean flag given an inline value must accept only true/false and
-     reject anything else, rather than silently discarding the value and
-     treating the flag as set regardless of what was written. */
   it('accepts --flag=true and --flag=false for a boolean flag', () => {
     const asTrue = parseArgs(['--dry-run=true'], VALUED);
     expect(flagSet(asTrue, 'dry-run')).toBe(true);
@@ -32,9 +29,6 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['--dry-run=maybe'], VALUED)).toThrow('--dry-run takes no value');
   });
 
-  /* A valued flag whose next token looks like another flag must not silently
-     swallow it as the value -- `--key --all` should fail loudly rather than
-     treat "--all" as the key. */
   it('throws when a valued flag is immediately followed by another flag', () => {
     expect(() => parseArgs(['--key', '--all'], VALUED)).toThrow('--key requires a value');
   });
@@ -44,7 +38,6 @@ describe('parseArgs', () => {
   });
 
   it('allows a valued flag whose value happens to start with a single dash, e.g. a negative-looking token', () => {
-    // Only a token starting with -- is treated as another flag.
     const parsed = parseArgs(['--key', '-not-a-flag-name'], VALUED);
     expect(flagValue(parsed, 'key')).toBe('-not-a-flag-name');
   });

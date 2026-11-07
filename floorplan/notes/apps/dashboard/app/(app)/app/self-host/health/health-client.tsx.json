@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(app)/app/self-host/health/health-client.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "UTILITY_META",
+      "line": 51,
+      "offset": 0,
+      "text": "Ready is a hollow ring rather than a filled dot: its dependencies are up but\nno request has proven the route, and a filled green would claim it had.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "useInstanceBase",
+      "line": 69,
+      "offset": 0,
+      "text": "The API this build was pointed at, resolved after hydration because it reads `window.location`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "useOutcomes",
+      "line": 83,
+      "offset": 0,
+      "text": "Per-tool outcomes came from the hosted dashboard's usage route, which left with hosted mode.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "UtilityStats",
+      "line": 132,
+      "offset": 21,
+      "text": "Every call answers 503 until a backend is set; counting those as failures\nwould report an outage that is really an unset variable.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "NEEDED_BY",
+      "line": 240,
+      "offset": 0,
+      "text": "Which tools stand on a dependency, so a red row here reads as the cause of a red row above.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "headline",
+      "line": 456,
+      "offset": 0,
+      "text": "The headline is about the tools, and it only speaks once the live check has\nanswered. It never says \"all working\" ahead of the evidence: with outcomes\nstill loading it says so, and with none recorded it says \"ready\".",
+      "kind": "doc"
+    }
+  ]
+}

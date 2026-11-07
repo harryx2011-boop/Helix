@@ -7,22 +7,18 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, dev
 page.setDefaultTimeout(45000);
 await page.goto('https://www.firecrawl.dev/', { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(2500);
-// dismiss cookie/banners if any
 for (const sel of ['button:has-text("Accept")', 'button:has-text("Got it")']) { try { await page.locator(sel).first().click({ timeout: 800 }); } catch {} }
 
-// scroll the whole page slowly so lazy sections mount
 const total = await page.evaluate(() => document.body.scrollHeight);
 for (let y = 0; y < total; y += 600) { await page.evaluate((yy) => window.scrollTo(0, yy), y); await page.waitForTimeout(120); }
 await page.evaluate(() => window.scrollTo(0, 0));
 
-// 1. find the reliability section
 const perf = page.locator('text=Industry-leading reliability').first();
 await perf.scrollIntoViewIfNeeded();
 await page.waitForTimeout(600);
 const perfSection = perf.locator('xpath=ancestor::section[1]');
 try { await perfSection.screenshot({ path: `${OUT}/perf-section.png` }); } catch (e) { console.log('perf section shot failed', e.message); }
 
-// 2. sample progress bars: any element whose inline width is a percentage or which has role=progressbar
 const samples = [];
 for (let i = 0; i < 12; i++) {
   const s = await page.evaluate(() => {
@@ -42,7 +38,6 @@ for (let i = 0; i < 12; i++) {
 }
 fs.writeFileSync(`${OUT}/progress-samples.json`, JSON.stringify(samples, null, 2));
 
-// 3. look for the bar's parent markup (Firecrawl / Puppeteer / cURL rows)
 const rowHtml = await page.evaluate(() => {
   const el = Array.from(document.querySelectorAll('*')).find((e) => e.children.length === 0 && /^Puppeteer$/.test((e.textContent || '').trim()));
   if (!el) return null;
@@ -51,7 +46,6 @@ const rowHtml = await page.evaluate(() => {
 });
 fs.writeFileSync(`${OUT}/bar-row.html`, rowHtml || 'not found');
 
-// 4. bento grid: the section containing "We handle the hard stuff" or similar four-card grid
 const gridInfo = await page.evaluate(() => {
   const res = [];
   for (const el of document.querySelectorAll('*')) {
@@ -66,7 +60,6 @@ const gridInfo = await page.evaluate(() => {
 });
 fs.writeFileSync(`${OUT}/grids.json`, JSON.stringify(gridInfo, null, 2));
 
-// 5. screenshots of named sections
 for (const [name, text] of [['hardstuff', 'hard stuff'], ['bento-token', 'Token-efficient'], ['actions', 'Interact with pages'], ['builtfor', 'Built for Performance']]) {
   try {
     const loc = page.locator(`text=${text}`).first();
@@ -77,7 +70,6 @@ for (const [name, text] of [['hardstuff', 'hard stuff'], ['bento-token', 'Token-
 }
 await page.screenshot({ path: `${OUT}/home-full.png`, fullPage: true });
 
-// 6. capability page feature grid
 await page.goto('https://www.firecrawl.dev/scrape', { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(2000);
 const t2 = await page.evaluate(() => document.body.scrollHeight);

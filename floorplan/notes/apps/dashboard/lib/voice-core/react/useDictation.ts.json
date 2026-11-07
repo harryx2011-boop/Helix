@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/voice-core/react/useDictation.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "useDictation",
+      "line": 14,
+      "offset": 0,
+      "text": "The mic button for a prompt box. `connect` asks the host for the service\n(for Electron: an IPC call that runs VoiceCoreSupervisor.ensureStarted);\n`onText` receives each final transcript to insert.",
+      "kind": "doc"
+    }
+  ]
+}

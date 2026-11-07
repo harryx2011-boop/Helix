@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/sidebar.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Sidebar",
+      "line": 100,
+      "offset": 26,
+      "text": "Below lg the desktop rail is not rendered, so \"toggle\" means the drawer.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "Sidebar",
+      "line": 109,
+      "offset": 35,
+      "text": "Desktop",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "Sidebar",
+      "line": 116,
+      "offset": 42,
+      "text": "Mobile: sheet-style drawer via Dialog",
+      "kind": "what"
+    }
+  ]
+}

@@ -3,12 +3,6 @@ import { z } from 'zod';
 import { hashKey, importApiKey, revokeApiKeyByHash } from '../core/api-keys.js';
 import { adminGate } from '../core/admin-gate.js';
 
-/**
- * Network-internal endpoints used by the hosted website to mirror the keys it
- * mints (WEBSITE.md §8). Guarded by a shared secret; not mounted under /v1 and
- * disabled entirely when HELIX_INTERNAL_ADMIN_TOKEN is unset, which is the
- * self-host default.
- */
 
 const ImportKeySchema = z.object({
   key: z.string().regex(/^helix-[A-Za-z0-9]{16}$/),
@@ -39,8 +33,6 @@ export async function registerInternal(
     message: 'Missing or invalid internal admin token.',
   });
 
-  // Encapsulated so the router, not a prefix test on the raw URL, decides
-  // which requests meet the gate.
   await app.register(
     async (scope) => {
       scope.addHook('onRequest', gate);

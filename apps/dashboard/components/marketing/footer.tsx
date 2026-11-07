@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 import pkg from '@/package.json';
 import { GITHUB_REPO, GITHUB_URL } from '@/lib/github-stars';
 
-/** WEBSITE.md §4.9. Three groups, hairline-divided rows, no Company column. */
 interface FooterLink {
   label: string;
   href: string;
@@ -58,8 +57,6 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: 'Status', href: '/status' },
     ],
   },
-  // A link is dropped rather than rendered href-less when its URL is blanked,
-  // which is how a self-host build removes a sibling app it does not run.
 ].map((column) => ({ ...column, links: column.links.filter((l) => l.href) }));
 
 export function Footer() {

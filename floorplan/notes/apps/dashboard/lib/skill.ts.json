@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/skill.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FAILURE_REASON_NOTES",
+      "line": 7,
+      "offset": 0,
+      "text": "SKILL.md generator (WEBSITE.md §9.3). Pure — no IO, no auth, no Supabase.\nCallers (the onboarding API and the public agent-onboarding page) supply the\nendpoint list, an optional key and the URLs.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "generateSkillMarkdown",
+      "line": 31,
+      "offset": 0,
+      "text": "One file: a preamble, then one section per selected endpoint (WEBSITE.md §9.3).",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "lifecycleNotes",
+      "line": 114,
+      "offset": 0,
+      "text": "Endpoints that do not finish inline need their poll/cancel loop spelled out.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "requestNotes",
+      "line": 128,
+      "offset": 0,
+      "text": "Parameter notes an agent needs to form a correct request. Only for endpoints whose contract is settled.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "usageNotes",
+      "line": 144,
+      "offset": 0,
+      "text": "Endpoint-specific follow-up calls an agent needs after the first request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "endpointNotes",
+      "line": 161,
+      "offset": 0,
+      "text": "Endpoint-specific mechanics an agent needs beyond the envelope.",
+      "kind": "doc"
+    }
+  ]
+}

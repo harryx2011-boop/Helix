@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/cli/src/args.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ParsedArgs",
+      "line": 2,
+      "offset": 0,
+      "text": "Minimal argv parser: `--flag`, `--flag value`, `--flag=value`, `-k value`,\nrepeated flags collect into arrays. Small enough that a dependency would cost\nmore than it saves.",
+      "kind": "doc"
+    }
+  ]
+}

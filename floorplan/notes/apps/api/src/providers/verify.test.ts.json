@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/providers/verify.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 16,
+      "offset": null,
+      "text": "A rate-limited key is a real key: the provider had to authenticate it to\nknow it was over quota. Classifying 429 as invalid would refuse to store a\nworking credential during a burst.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 25,
+      "offset": null,
+      "text": "Gemini rejects a bad key with 400, distinguishable from an ordinary bad\nrequest only by the body's reason.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 34,
+      "offset": null,
+      "text": "The whole point of the three-way split: a provider outage must never be\nreported as a bad key, or a transient 5xx refuses a good credential.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 63,
+      "offset": null,
+      "text": "OpenRouter's /models catalogue is public and answers 200 to a garbage\ntoken, so checking it would pass every invalid key. /key reads the token.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 88,
+      "offset": null,
+      "text": "The key goes into a request header and nowhere else. A message that echoed\nit would leak the credential into logs and toasts.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 103,
+      "offset": null,
+      "text": "Ollama's native API lives at /api/tags on the origin, never at /models\n(that path is served by vLLM and OpenAI-compatible runtimes). A mock that\nanswers 200 to anything would let this test pass on the wrong URL, so it\nanswers 404 unless the path is exactly /api/tags.",
+      "kind": "why"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 150,
+      "offset": null,
+      "text": "A runtime that is merely switched off is unverifiable, not invalid: the URL\nmay be perfectly correct and Ollama simply not started yet, and refusing to\nsave it would strand the caller.",
+      "kind": "what"
+    }
+  ]
+}

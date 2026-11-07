@@ -3,14 +3,6 @@ import { pgDriver } from './drivers/pg.js';
 import { pgliteDriver } from './drivers/pglite.js';
 import type { Driver, DriverName, DriverOptions, Pool, PoolClient } from './drivers/types.js';
 
-/**
- * The database behind jobs, results, keys, monitors and vectors.
- *
- * One datastore, no Redis, no broker. Which engine serves it is a driver
- * chosen at boot: `pg` for an external Postgres, `pglite` for Postgres in this
- * process with its data in a folder. Both speak the same SQL, so every query
- * site, migration and the SKIP LOCKED queue run unchanged on either.
- */
 
 export type { Pool, PoolClient };
 
@@ -41,7 +33,6 @@ export async function closePool(): Promise<void> {
   pool = undefined;
 }
 
-/** Run work inside a transaction, rolling back on any throw. */
 export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await getPool().connect();
   try {

@@ -3,16 +3,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BrowserPool } from './pool.js';
 import { RENDER_ENGINES } from './engines.js';
 
-/**
- * The pool tests that need a real browser.
- *
- * The private-address guard is a security control, and whether an engine
- * honours `context.route` is a property of that engine, not something a mock
- * can answer. So the guard is tested by pointing a real browser of each engine
- * at a real loopback server and asserting the server was never touched — an
- * assertion that fails loudly if a future Playwright drops routing support on
- * one of them.
- */
 
 let server: Server;
 let origin: string;
@@ -20,7 +10,6 @@ let hits = 0;
 let imageHits = 0;
 const headersSeen = new Map<string, Record<string, string | string[] | undefined>>();
 
-/** What a page's own script reads about the browser, written into the DOM so `render` returns it. */
 const PROBE_PAGE = `<html><body><pre id="out"></pre><script>
 const c = document.createElement('canvas');
 c.width = 64; c.height = 16;
@@ -72,7 +61,6 @@ beforeAll(async () => {
     hits++;
     headersSeen.set(request.url ?? '', request.headers);
     if (request.url === '/hop') {
-      // What a JS challenge does: answer, then submit itself once the document is parsed.
       response.writeHead(200, { 'content-type': 'text/html' });
       response.end(
         '<html><body><form action="/landing"><input name="solution" value="1"></form>' +
@@ -132,7 +120,6 @@ describe('the private-address guard holds on every engine', () => {
         hits = 0;
         const result = await browsers.render({ url: origin, timeout: 20_000 });
 
-        // The render fails and, more importantly, nothing reached the server.
         expect(result.error).toBeTruthy();
         expect(hits).toBe(0);
         expect(result.html ?? '').not.toContain('private');
@@ -142,8 +129,6 @@ describe('the private-address guard holds on every engine', () => {
     }, 90_000);
   }
 
-  // A public-looking name that resolves to a private address is refused by
-  // the guard itself (blocked by client), not by a failed lookup in the browser.
   it('refuses a name that resolves to a private address', async () => {
     const port = new URL(origin).port;
     const browsers = pool({
@@ -192,8 +177,6 @@ describe('engine selection', () => {
     const browsers = pool({ defaultEngine: 'chromium' });
     try {
       await browsers.start();
-      // Launching all three eagerly would cost seconds and hundreds of MB for
-      // engines most instances never ask for.
       expect(browsers.stats().engines).toEqual(['chromium']);
 
       await browsers.render({ url: origin, renderEngine: 'webkit', allowPrivate: true, timeout: 20_000 });
@@ -204,8 +187,6 @@ describe('engine selection', () => {
   }, 120_000);
 
   it('does not let one engine borrow another engine spare capacity', async () => {
-    // A context inherits the process it is opened in, so a firefox request
-    // needs a firefox browser however idle the chromium one is.
     const browsers = pool({ defaultEngine: 'chromium', size: 1 });
     try {
       await browsers.start();
@@ -312,7 +293,6 @@ describe('the remote browser backend', () => {
       const result = await browsers.render({ url: 'https://example.com/', timeout: 8_000 });
       expect(result.error).toBeTruthy();
       expect(result.html).toBeUndefined();
-      // Nothing was launched here: the remote path never touches the pool.
       expect(browsers.stats().browsers).toBe(0);
     } finally {
       await browsers.close();
@@ -338,7 +318,6 @@ describe('the chromium tier does not announce automation', () => {
       expect(probe.chrome).toBe('object');
       expect(probe.plugins).toBe(5);
       expect(probe.pluginsTag).toBe('[object PluginArray]');
-      // A real PluginArray carries only its indexes and names as own keys.
       expect(probe.pluginOwnKeys).not.toContain('length');
     } finally {
       await browsers.close();
@@ -449,7 +428,6 @@ describe('a page that navigates itself after load', () => {
       expect(result.error).toBeUndefined();
       expect(result.html).toContain('landed');
       expect(result.finalUrl).toContain('/landing?solution=1');
-      // The status and headers describe the document returned, not the one goto answered.
       expect(result.status).toBe(403);
       expect(result.headers['x-landed']).toBe('1');
     } finally {
@@ -459,9 +437,6 @@ describe('a page that navigates itself after load', () => {
 });
 
 describe('the timeout is the whole budget', () => {
-  // A renderer stuck in script (a JS challenge's proof of work, here a bare
-  // loop) leaves page.close() waiting for minutes. The render must still
-  // answer at its budget, and the browser must keep serving.
   for (const path of ['spin', 'stall']) {
     it(`answers a ${path} page at its budget and keeps the pool usable`, async () => {
       const browsers = pool();

@@ -6,24 +6,15 @@ export interface EstimateDeps extends MapRouteDeps {
   defaultModel: string;
 }
 
-/** Rough per-tier wall-clock, used only for projections. */
 const TIER_SECONDS: Record<string, number> = {
   plain: 0.3,
   tls: 0.4,
   browser: 3.0,
 };
 
-/** Characters per token, near enough for an estimate. */
 const CHARS_PER_TOKEN = 4;
 const AVERAGE_PAGE_CHARS = 6_000;
 
-/**
- * What a crawl would cost before it runs.
- *
- * Shared by `estimate: true` on POST /crawl and by POST /crawl/estimate, which
- * exists because callers want the number without constructing a job body they
- * do not intend to submit.
- */
 export async function estimateCrawl(body: CrawlJobRequest, deps: EstimateDeps): Promise<Record<string, unknown>> {
     const { links, truncated } = await discoverUrls(
       body.url,

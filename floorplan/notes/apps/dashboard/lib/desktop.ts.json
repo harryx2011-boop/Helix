@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/desktop.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HelixDesktop",
+      "line": 1,
+      "offset": 0,
+      "text": "The Electron preload exposes `window.helixDesktop` through `contextBridge`.\nIts presence is the one signal that the dashboard is running inside the\ndesktop app, where the instance's own key and admin token are handed over\ninstead of typed in.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "HelixDesktop.voice",
+      "line": 6,
+      "offset": 0,
+      "text": "Starts the local voice service on first use and answers where it is; absent in older desktop builds.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "desktopCredentials",
+      "line": 26,
+      "offset": 0,
+      "text": "Null outside the desktop app; an empty string from the bridge counts as absent.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "isDesktopKey",
+      "line": 33,
+      "offset": 0,
+      "text": "Whether a listed key (known only by its prefix) is the one the desktop app authenticates with.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "desktopVoice",
+      "line": 54,
+      "offset": 0,
+      "text": "The desktop app's dictation service, or null in a browser and in a desktop build without it.",
+      "kind": "doc"
+    }
+  ]
+}

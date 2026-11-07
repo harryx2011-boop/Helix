@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/engines.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "profile",
+      "line": 13,
+      "offset": 0,
+      "text": "Two lines these tests hold. Chromium's launch flags must never reach an\nengine that would refuse to start on them, and an identity must never be\npresented on an engine that contradicts it — a Chrome UA over Gecko is a\npositive detection signal, which is worse than spoofing nothing.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 37,
+      "offset": null,
+      "text": "These are Chromium command-line switches. Firefox and WebKit do not\naccept them, so passing them through breaks the launch outright.",
+      "kind": "what"
+    }
+  ]
+}

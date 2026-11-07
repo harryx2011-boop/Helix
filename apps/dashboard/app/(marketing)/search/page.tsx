@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   description: 'One call returns ranked results with their content attached. SearXNG or your own SERP key.',
 };
 
-/* Request and response mirror the examples on POST /search in openapi.yaml. */
 const REQUEST = `POST /v1/search
 {
   "query": "transactional email APIs",

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_fence.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TestWrap.test_non_ascii_payload_and_origin_are_preserved_not_mangled",
+      "line": 30,
+      "offset": 1,
+      "text": "This module intentionally does not restrict output to ASCII (see\nmodule docstring): fenced text goes straight into a UTF-8 HTTP JSON\nbody, never a console, so forcing ASCII would corrupt legitimate\npage content (curly quotes, em dashes, accented names, CJK).",
+      "kind": "why"
+    }
+  ]
+}

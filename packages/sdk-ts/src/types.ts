@@ -1,4 +1,3 @@
-/** Every format /scrape and /crawl serve (openapi.yaml Format). */
 export type Format = 'markdown' | 'html' | 'rawHtml' | 'text' | 'links' | 'screenshot' | 'json' | 'chunks';
 
 export type SearchFormat = 'markdown' | 'text' | 'rawHtml' | 'links' | 'screenshot';
@@ -264,7 +263,6 @@ export type ParseResponse = ParseResponseSuccess | ParseResponseFailure;
 
 export type MetadataFileType = 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'png' | 'jpg';
 
-/** How much a disclosed value gives away. An ordinal band, not a probability. */
 export type MetadataRisk = 'high' | 'medium' | 'low';
 
 export type MetadataCategory =
@@ -277,18 +275,14 @@ export type MetadataCategory =
   | 'other';
 
 export interface MetadataFinding {
-  /** Where it was read from: `exif`, `gps`, `xmp`, `docinfo`, `core`, `app`, `custom`, `png`, `tracked`. */
   group: string;
   key: string;
-  /** A long value is truncated and says so, so a cut value is never read as complete. */
   value: string;
   risk: MetadataRisk;
   category: MetadataCategory;
-  /** False where the format cannot drop the entry without corrupting the file. */
   removable: boolean;
 }
 
-/** Always carries all three bands, so absent and zero never have to be told apart. */
 export type MetadataRiskSummary = Record<MetadataRisk, number>;
 
 export interface MetadataRequest {
@@ -313,7 +307,6 @@ export interface MetadataScanMetadata {
 }
 
 export interface MetadataScan {
-  /** Sorted worst-first. */
   findings: MetadataFinding[];
   riskSummary: MetadataRiskSummary;
   metadata: MetadataScanMetadata;
@@ -322,7 +315,6 @@ export interface MetadataScan {
 export interface MetadataResponseSuccess {
   success: true;
   data: MetadataScan;
-  /** A container opened but a part could not be read: the report is partial. */
   warnings?: string[];
 }
 
@@ -335,12 +327,7 @@ export interface MetadataResponseFailure {
 export type MetadataResponse = MetadataResponseSuccess | MetadataResponseFailure;
 
 export interface MetadataScrubReport {
-  /** Sorted worst-first. */
   removed: MetadataFinding[];
-  /**
-   * Detected and NOT removed, each with `removable: false`. Non-empty means the
-   * file is not fully clean — check this before treating it as safe to publish.
-   */
   retained: MetadataFinding[];
   riskSummary: MetadataRiskSummary;
   metadata: {
@@ -355,12 +342,9 @@ export interface MetadataScrubReport {
   warnings?: string[];
 }
 
-/** A successful scrub: the cleaned bytes, plus what was taken out and what stayed. */
 export interface MetadataScrubSuccess {
   success: true;
-  /** The cleaned file. */
   data: Blob;
-  /** The name the API suggests: `<original>.scrubbed.<ext>`. */
   filename: string;
   report: MetadataScrubReport;
 }
@@ -444,12 +428,7 @@ export interface JsonOptions {
 }
 
 export interface CrawlRequest extends ScrapeOptions {
-  /** Required unless `resume` names an existing job, whose seed is already known. */
   url?: string;
-  /**
-   * Revive a cancelled crawl under its original id. Mutually exclusive with
-   * `url`: a resumed crawl keeps the seed it started with.
-   */
   resume?: string;
   estimate?: boolean;
   limit?: number;
@@ -465,16 +444,12 @@ export interface CrawlRequest extends ScrapeOptions {
   maxConcurrency?: number;
   delay?: number;
   incremental?: boolean;
-  /** Omit unchanged pages from the result set. Implies `incremental`. */
   changesOnly?: boolean;
-  /** Cap on pages sharing a path prefix; bounds calendar and facet traps. */
   maxPagesPerPath?: number;
-  /** Glob or regex matched against extracted content, after the fetch. */
   includeContent?: string[];
   excludeContent?: string[];
   ignoreQueryParameters?: boolean;
   scrapeOptions?: Pick<ScrapeOptions, 'formats' | 'tier' | 'extractor' | 'onlyMainContent'> & {
-    /** Structured extraction applied to every page of the crawl. */
     jsonOptions?: JsonOptions;
   };
   destination?: Destination;
@@ -910,7 +885,6 @@ export interface EnrichFieldSpec {
 export interface EnrichRequest {
   subject: string;
   fields: EnrichFieldSpec[];
-  /** Sources to read. Omit to let the instance find them, which needs a search backend. */
   urls?: string[];
   maxSources?: number;
   timeout?: number;
@@ -918,7 +892,6 @@ export interface EnrichRequest {
   model?: string;
 }
 
-/** Why a field came back null. A closed set, so a caller can branch on it. */
 export type EnrichNullReason =
   | 'no_sources'
   | 'all_sources_rejected'
@@ -944,19 +917,10 @@ export type EnrichPhase = 'metadata' | 'structural' | 'model';
 
 export interface EnrichCitation {
   url: string;
-  /** The passage stating the value, verified to appear in the fetched page. */
   quote: string;
-  /** Where it was read: an element for a structural hit, `body` for a model hit. */
   locator: string;
 }
 
-/**
- * One enriched column.
- *
- * `value` is non-null only where the API could tie it to a passage in a page it
- * fetched itself; otherwise it is null and `reason` says why. There is no
- * middle state, so `value !== null` is the only check a caller needs.
- */
 export interface EnrichedField {
   value: string | number | boolean | null;
   confidence: EnrichConfidence | null;
@@ -964,7 +928,6 @@ export interface EnrichedField {
   phase: EnrichPhase | null;
   reason: EnrichNullReason | null;
   evidence: {
-    /** False for booleans, which cannot appear literally in their own citation. */
     valueInCitation: boolean;
     sourcesConsidered: number;
   };
@@ -982,7 +945,6 @@ export interface EnrichResponseSuccess {
   data: Record<string, EnrichedField>;
   sources: { used: string[]; rejected: EnrichRejectedSource[] };
   usage?: { tokens: { input: number; output: number }; model: string };
-  /** Present when there was nothing to read; every field is null for one reason. */
   warnings?: string[];
 }
 
@@ -994,7 +956,6 @@ export interface EnrichResponseFailure {
 export type EnrichResponse = EnrichResponseSuccess | EnrichResponseFailure;
 
 export interface UsageOptions {
-  /** Window in hours, 1 to 2160. Defaults to 168 (seven days). */
   hours?: number;
 }
 
@@ -1012,11 +973,9 @@ export interface UsageResponse {
   since: string;
   until: string;
   total: number;
-  /** Requests the limiter rejected in the window. */
   rateLimited: number;
   errors: number;
   series: UsagePoint[];
-  /** Grouped by route family, busiest first. Capped at 50 families. */
   byEndpoint: UsageByEndpoint[];
   key: {
     id: string;
@@ -1025,10 +984,6 @@ export interface UsageResponse {
     rateLimit: number;
     lastUsedAt: string | null;
   };
-  /**
-   * Counts are stored hourly, so this is not live headroom. Read
-   * `X-RateLimit-Remaining` on any response for that.
-   */
   window: { hours: number; unit: 'hour' };
 }
 
@@ -1060,7 +1015,6 @@ export class HelixApiError extends Error {
   }
 }
 
-/** A resumed crawl answers with its original id rather than a new one. */
 export interface CrawlResumeResponse {
   id: string;
   status: string;
@@ -1072,17 +1026,12 @@ export type ScreenshotFormat = 'png' | 'jpeg' | 'webp';
 
 export interface ScreenshotRequest {
   url: string;
-  /** Everything below the fold, capped server-side and reported in `warnings` when clipped. */
   fullPage?: boolean;
-  /** Capture one element. A selector matching nothing warns rather than silently framing the page. */
   selector?: string;
   clip?: { x: number; y: number; width: number; height: number };
   format?: ScreenshotFormat;
-  /** JPEG and WebP only; ignored on PNG. */
   quality?: number;
-  /** Transparent where the page paints nothing. Ignored on JPEG. */
   omitBackground?: boolean;
-  /** Cannot be combined with `mobile`, which sets its own phone viewport. */
   viewport?: { width: number; height: number; dpr?: number };
   darkMode?: boolean;
   blockAds?: boolean;
@@ -1097,7 +1046,6 @@ export interface ScreenshotRequest {
 export interface ScreenshotSuccess {
   success: true;
   data: {
-    /** A `data:` URL, or null when the tier that succeeded captured no image. */
     screenshot: string | null;
     format: ScreenshotFormat;
     bytes: number | null;
@@ -1110,19 +1058,16 @@ export type ScreenshotResponse = ScreenshotSuccess | ScrapeResponseFailure;
 
 export interface ExtractRequest {
   urls: string[];
-  /** One of `schema` or `prompt` is required. */
   schema?: Record<string, unknown>;
   prompt?: string;
   instruction?: string;
   provider?: string;
   model?: string;
-  /** Keep fields the source does not support. They are reported in `dropped` either way. */
   allowUngrounded?: boolean;
   tier?: Tier;
   timeout?: number;
 }
 
-/** A field the model returned that nothing in the page supports. */
 export interface DroppedField {
   url: string;
   field: string;
@@ -1133,7 +1078,6 @@ export interface ExtractRow {
   _source: {
     url: string;
     spans: Record<string, unknown>[];
-    /** How much of the page reached the model, so a thin answer is explicable. */
     blocksKept: number;
     blocksTotal: number;
   };
@@ -1143,9 +1087,7 @@ export interface ExtractRow {
 export interface ExtractResponse {
   success: true;
   data: ExtractRow[];
-  /** Fields discarded for want of a grounding span. Never silently absent. */
   dropped: DroppedField[];
-  /** A URL that could not be read appears here rather than failing the request. */
   warnings: string[];
   usage: {
     urls: number;
@@ -1158,24 +1100,8 @@ export interface ExtractResponse {
   };
 }
 
-/** The operations `POST /document` dispatches to. */
 export type DocumentOp = 'parse' | 'metadata' | 'scrub' | 'assess';
 
-/**
- * A `/document` request: the operation, plus whatever that operation takes.
- *
- * The fields are the union of the four underlying requests rather than a
- * discriminated type, because the dispatcher forwards the body untouched and
- * each operation validates its own.
- */
 export type DocumentRequest = { op: DocumentOp } & Record<string, unknown>;
 
-/**
- * Whatever the dispatched operation answers with.
- *
- * Left open rather than a union of the four: the operation is chosen at
- * runtime, so a caller that wants a narrow type should call the operation's own
- * method instead. `scrub` in particular answers with file bytes, which
- * `metadataScrub` unwraps and this does not.
- */
 export type DocumentResponse = ParseResponse | MetadataResponse | Record<string, unknown>;

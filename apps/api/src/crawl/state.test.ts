@@ -18,7 +18,6 @@ describe('conditionalHeaders', () => {
   });
 
   it('sends If-None-Match when an ETag is known', () => {
-    // The only mechanism that avoids the download itself: a 304 has no body.
     expect(conditionalHeaders(record({ etag: '"v1"' }))).toEqual({
       'if-none-match': '"v1"',
     });
@@ -29,7 +28,6 @@ describe('conditionalHeaders', () => {
       record({ lastModified: new Date('2026-08-01T12:00:00Z') }),
     );
 
-    // A raw ISO string here would be ignored by most servers.
     expect(headers?.['if-modified-since']).toBe('Sat, 01 Aug 2026 12:00:00 GMT');
   });
 
@@ -43,8 +41,6 @@ describe('conditionalHeaders', () => {
   });
 
   it('sends nothing when only a content hash is known', () => {
-    // A content hash cannot be turned into a conditional request — it is only
-    // knowable after fetching, so it saves processing rather than bandwidth.
     expect(conditionalHeaders(record({ contentHash: 'abc123' }))).toBeUndefined();
   });
 });
@@ -59,7 +55,6 @@ describe('isUnchanged', () => {
   });
 
   it('treats a first visit as changed', () => {
-    // Never seen is not the same as unchanged, and must never skip the write.
     expect(isUnchanged(undefined, 'abc')).toBe(false);
   });
 

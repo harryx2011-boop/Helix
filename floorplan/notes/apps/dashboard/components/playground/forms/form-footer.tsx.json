@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/forms/form-footer.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FormFooter",
+      "line": 13,
+      "offset": 0,
+      "text": "Shared [Get code] + [Run] footer for every playground form (WEBSITE.md §7.4).",
+      "kind": "doc"
+    }
+  ]
+}

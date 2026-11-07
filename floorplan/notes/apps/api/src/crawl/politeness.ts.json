@@ -1,0 +1,255 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/politeness.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PolitenessOptions",
+      "line": 2,
+      "offset": 0,
+      "text": "Adaptive per-host politeness.\n\nAIMD, borrowed from TCP congestion control: ramp concurrency while a host\nstays healthy, and cut it hard the moment it complains. Fast on hosts that\ntolerate it, self-correcting on hosts that do not — without imposing a fixed\nglobal slowdown on everyone to protect the weakest server.\n\nThe alternative designs are both worse. A fixed low limit is slow everywhere\nand still too fast for a struggling host. A fixed high limit gets users\nIP-banned and earns the tool a reputation it cannot shed.\n\nFour signals feed the decrease, and they are deliberately not equal. A 429 or\na `Retry-After` is the host stating a limit, so it collapses to the floor and\nwaits exactly as long as it was told. A block verdict from the classifier is\nworse than a 429 — the host has stopped answering honestly rather than asking\nfor less — so it collapses AND holds down through the ramp, because ramping\nback into an anti-bot system is how a crawl converts a soft block into a hard\nban. A 5xx and a latency spike are both weak evidence, so they halve.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PolitenessOptions.initialConcurrency",
+      "line": 3,
+      "offset": 0,
+      "text": "Concurrency at the start, before anything is known about the host.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "PolitenessOptions.fixedDelayMs",
+      "line": 6,
+      "offset": 0,
+      "text": "Fixed delay between requests, from `Crawl-delay`. Overrides adaptation.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "PolitenessOptions.latencyDegradationFactor",
+      "line": 7,
+      "offset": 0,
+      "text": "Latency multiple over the rolling median that counts as degradation.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "PolitenessOptions.blockBackoffMs",
+      "line": 8,
+      "offset": 0,
+      "text": "Pause after a block verdict, before this host is touched again.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "PolitenessOptions.maxHosts",
+      "line": 9,
+      "offset": 0,
+      "text": "Hosts remembered before the oldest idle one is forgotten. Unset keeps\nevery host, which suits a crawl's controller (it lives for one job); the\ninstance-wide route gate lives as long as the process and sets one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "HostState.nextAvailableAt",
+      "line": 15,
+      "offset": 0,
+      "text": "Earliest time the next request to this host may start.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "HostState.probation",
+      "line": 20,
+      "offset": 0,
+      "text": "Successes still owed before the ramp is allowed to move again.\n\nA block is evidence about the identity as much as the rate, and the rate is\nthe only thing this class controls. Holding the ramp down buys the session\npool time to retire the identity that earned the block, instead of racing\nit back up to the concurrency that triggered one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "DEFAULTS.rampAfterSuccesses",
+      "line": 29,
+      "offset": 0,
+      "text": "Successes needed at the current level before trying one more.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "DEFAULTS.blockBackoffMs",
+      "line": 31,
+      "offset": 0,
+      "text": "A block costs far more than a 429, so the pause is an order longer.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "DEFAULTS.probationSuccesses",
+      "line": 32,
+      "offset": 0,
+      "text": "Clean fetches owed after a block before the ramp may move again.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "RequestOutcome.blocked",
+      "line": 39,
+      "offset": 0,
+      "text": "The classifier said this response was a challenge or a block.\n\nDistinct from the status code on purpose: a Cloudflare interstitial is\nroutinely served as 200, so status alone would read it as a healthy fetch\nand ramp straight into the wall.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "ResolvedOptions",
+      "line": 42,
+      "offset": 0,
+      "text": "Options after defaults are applied — every field is settled except the delay.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "PolitenessController.constructor",
+      "line": 57,
+      "offset": 1,
+      "text": "The clamps are resolved once, here, rather than trusted at each use.\nA caller passing minConcurrency above maxConcurrency (or an operator\nlowering the ceiling under a floor set earlier) would otherwise leave\nevery later Math.max/Math.min pair disagreeing about which one wins, and\nthe adaptive loop would settle above a ceiling it was given to respect.",
+      "kind": "why"
+    },
+    {
+      "id": "n15",
+      "symbol": "PolitenessController.#evictIdleHost",
+      "line": 75,
+      "offset": 0,
+      "text": "Make room for one more host by dropping the oldest idle one. A host with\na request in flight or a backoff running is kept: forgetting it would lose\na held slot or a wait the host asked for. With nothing idle the map grows.",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": "PolitenessController.#evictIdleHost",
+      "line": 78,
+      "offset": 3,
+      "text": "Map keeps insertion order, so the first idle key is the oldest.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "PolitenessController.setCrawlDelay",
+      "line": 106,
+      "offset": 0,
+      "text": "Apply a `Crawl-delay` directive. A site's stated wish wins over adaptation.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "PolitenessController.setCrawlDelay",
+      "line": 109,
+      "offset": 3,
+      "text": "A host asking to be paced is not a host to run parallel requests against.",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "PolitenessController.tryAcquire",
+      "line": 112,
+      "offset": 0,
+      "text": "Whether a request to this host may start now, and if not, when.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "PolitenessController.release",
+      "line": 135,
+      "offset": 0,
+      "text": "Report how a request went, and adjust.",
+      "kind": "doc"
+    },
+    {
+      "id": "n21",
+      "symbol": "PolitenessController.release",
+      "line": 141,
+      "offset": 6,
+      "text": "Checked before the status code, because a challenge page is routinely\nserved as 200 and reading the status first would score it as a success.",
+      "kind": "why"
+    },
+    {
+      "id": "n22",
+      "symbol": "PolitenessController.release",
+      "line": 147,
+      "offset": 12,
+      "text": "Retry-After still wins if the host sent one: it is the only number here\nthe host actually stated, and guessing longer than asked wastes the\ncrawl while guessing shorter is what earned the block.",
+      "kind": "what"
+    },
+    {
+      "id": "n23",
+      "symbol": "PolitenessController.release",
+      "line": 152,
+      "offset": 17,
+      "text": "An explicit rate-limit signal is not a hint to interpret. Obey it.",
+      "kind": "what"
+    },
+    {
+      "id": "n24",
+      "symbol": "PolitenessController.release",
+      "line": 157,
+      "offset": 22,
+      "text": "Without a Retry-After, back off for a second — long enough to matter,\nshort enough not to stall a crawl on one unlucky response.",
+      "kind": "what"
+    },
+    {
+      "id": "n25",
+      "symbol": "PolitenessController.release",
+      "line": 162,
+      "offset": 27,
+      "text": "Multiplicative decrease: the host is struggling, so halve the pressure.",
+      "kind": "what"
+    },
+    {
+      "id": "n26",
+      "symbol": "PolitenessController.release",
+      "line": 175,
+      "offset": 40,
+      "text": "Rising latency is a host asking for less, less explicitly than a 429.",
+      "kind": "what"
+    },
+    {
+      "id": "n27",
+      "symbol": "PolitenessController.release",
+      "line": 184,
+      "offset": 49,
+      "text": "Additive increase: one more slot, only after sustained good behaviour.",
+      "kind": "what"
+    },
+    {
+      "id": "n28",
+      "symbol": "PolitenessController.release",
+      "line": 186,
+      "offset": 51,
+      "text": "Probation is paid off by clean fetches before the ramp is even consulted,\nso a host that blocked once stays at the floor through a long run of\nsuccesses rather than climbing back on the first eight.",
+      "kind": "what"
+    },
+    {
+      "id": "n29",
+      "symbol": "PolitenessController.#latencyDegraded",
+      "line": 202,
+      "offset": 1,
+      "text": "Needs a baseline before it can call anything a regression.",
+      "kind": "what"
+    },
+    {
+      "id": "n30",
+      "symbol": "PolitenessController.#latencyDegraded",
+      "line": 207,
+      "offset": 6,
+      "text": "A median near zero would make any latency look like a spike.",
+      "kind": "what"
+    },
+    {
+      "id": "n31",
+      "symbol": "PolitenessController.onProbation",
+      "line": 220,
+      "offset": 0,
+      "text": "Whether this host is serving its post-block probation.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_enrich.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TestUngroundedFieldsAreDropped.test_drops_a_passage_the_trimmer_removed_even_though_it_is_on_the_page",
+      "line": 89,
+      "offset": 1,
+      "text": "The blind spot this module exists to cover: the gateway would find this\npassage in the fetched page, but it never reached the model.",
+      "kind": "why"
+    }
+  ]
+}

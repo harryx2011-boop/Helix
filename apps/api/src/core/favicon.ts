@@ -1,15 +1,3 @@
-/**
- * Favicon resolution.
- *
- * Pure string parsing — this module never fetches anything. It returns a URL
- * for the client to load, so favicon resolution stays free and side-effect-free
- * no matter how many pages a caller scrapes, crawls or searches.
- *
- * The codebase has no HTML parser dependency (extraction happens out-of-process
- * in helix-extract); a regex scan over the `<head>` follows the same house style
- * as `block-detection.ts`'s single left-to-right walk over tags, rather than
- * adding cheerio/linkedom for one field.
- */
 
 interface IconCandidate {
   href: string;
@@ -30,7 +18,6 @@ function attrValue(match: RegExpMatchArray | null): string | undefined {
   return match[2] ?? match[3] ?? match[4];
 }
 
-/** `"32x32"` -> 32. `"any"` and malformed values sort last. */
 function sizeOf(sizes: string | undefined): number {
   if (!sizes) return 0;
   const m = sizes.match(/(\d+)x\d+/i);
@@ -58,30 +45,16 @@ function declaredIcons(html: string): IconCandidate[] {
   return candidates;
 }
 
-/** Resolve `href` against `finalUrl`. `data:` URIs pass through unresolved. */
 function resolveHref(href: string, finalUrl: string): string | undefined {
   if (/^data:/i.test(href)) return href;
 
   try {
-    // `new URL` already resolves protocol-relative (`//host/x.ico`) hrefs
-    // against the base URL's own protocol.
     return new URL(href, finalUrl).toString();
   } catch {
     return undefined;
   }
 }
 
-/**
- * Resolve the favicon URL for a page.
- *
- * Prefers the page's own declared icon (`<link rel="icon">`, `"shortcut icon"`,
- * or `"apple-touch-icon"`), picking the candidate with the largest declared
- * `sizes` (ties and undeclared sizes keep document order). Falls back to
- * `/favicon.ico` at the origin when nothing is declared or `html` is missing.
- *
- * Never makes a network request — a malformed or absent `sizes`/`href` degrades
- * gracefully rather than throwing.
- */
 export function resolveFavicon(html: string | undefined, finalUrl: string): string | undefined {
   const candidates = html ? declaredIcons(html) : [];
 

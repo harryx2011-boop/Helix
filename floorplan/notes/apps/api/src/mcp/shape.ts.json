@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/mcp/shape.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "isObject",
+      "line": 4,
+      "offset": 0,
+      "text": "What a model reads back from a tool call. The REST route answers every\ncaller with the full envelope; over MCP the same body is trimmed of what a\nmodel cannot act on: nulls and empty containers, tier-ladder diagnostics\n(`helix_get_job_ladder` has them on request), a second copy of the content\nin a format the call did not ask for, and a URL repeated several ways.\nErrors never pass through here.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "OPAQUE",
+      "line": 6,
+      "offset": 0,
+      "text": "The caller's own JSON: a null in an extracted value says \"not found\" and stays.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "SHAPED",
+      "line": 10,
+      "offset": 0,
+      "text": "Tools whose body is page content or a job over it; the rest answer in shapes where no field is bulk.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "POLLS",
+      "line": 15,
+      "offset": 0,
+      "text": "A poll carries no `formats`, so what the crawl was asked for is unknown: its links stay.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "Ctx.formats",
+      "line": 18,
+      "offset": 0,
+      "text": "Formats the call asked for.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "isPage",
+      "line": 28,
+      "offset": 0,
+      "text": "A fetched document: its content, or the fetch metadata that only a document carries.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "shapeRows",
+      "line": 74,
+      "offset": 0,
+      "text": "`data` holds pages for a scrape or crawl, result sets keyed by source for a search, and the caller's own rows for an extract; a bare list of rows is touched only where a row is a page.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "pullImages",
+      "line": 104,
+      "offset": 0,
+      "text": "A screenshot arrives as a base64 data URI. As text it costs tens of\nthousands of tokens and a model cannot read it; as an image block it is\nseen. Each one moves into `images` and leaves a short marker behind.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "shapeResponse",
+      "line": 116,
+      "offset": 0,
+      "text": "Trim a successful tool response; `args` are the call's arguments, which say which formats were asked for.",
+      "kind": "doc"
+    }
+  ]
+}

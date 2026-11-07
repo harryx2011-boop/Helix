@@ -1,0 +1,95 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/scripts/smoke-live.mjs",
+  "description": "Live smoke over every openapi.yaml operation against a running instance.",
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BASE",
+      "line": 3,
+      "offset": 0,
+      "text": "Usage: HELIX_API_KEY=helix-... node apps/api/scripts/smoke-live.mjs [baseUrl]\nWithout a key it runs the open routes and proves every protected route answers 401.\nIt never mutates provider config; the key it creates is revoked before exit.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 63,
+      "offset": null,
+      "text": "Open routes and the auth wall.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 100,
+      "offset": null,
+      "text": "Reads.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 110,
+      "offset": null,
+      "text": "Documents.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "modelOk",
+      "line": 117,
+      "offset": 0,
+      "text": "Model-backed: a typed failure is correct when no LLM is configured.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 123,
+      "offset": null,
+      "text": "Crawl lifecycle.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 146,
+      "offset": null,
+      "text": "Interact sessions.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "mon",
+      "line": 159,
+      "offset": 0,
+      "text": "Monitor lifecycle.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "snapshotUrl",
+      "line": 167,
+      "offset": 0,
+      "text": "Snapshot ids are numbered across every monitor, so follow this one's link from its history.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": null,
+      "line": 175,
+      "offset": null,
+      "text": "Account and instance.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": null,
+      "line": 178,
+      "offset": null,
+      "text": "A local runtime is browsed only after its base URL is saved; unsaved is a 400 naming `baseUrl`.",
+      "kind": "what"
+    }
+  ]
+}

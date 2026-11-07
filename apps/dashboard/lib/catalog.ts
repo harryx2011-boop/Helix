@@ -2,24 +2,14 @@ import type { LucideIcon } from '@/components/icons/lucide';
 import { Braces, Camera, Eye, FileScan, FileText, Files, Map as MapIcon, MousePointerClick, Network, ScanEye, Search } from '@/components/icons/lucide';
 import type { Endpoint, RunnableEndpoint } from './endpoints';
 
-/**
- * The single source of truth for the endpoint catalog across marketing, onboarding,
- * the app sidebar, the playground and SKILL.md generation (WEBSITE.md §11).
- *
- * `status` is flipped to 'live' by the endpoint's workflow, never by hand.
- */
 export type EndpointStatus = 'live' | 'coming';
 export type TabGroup = 'DISCOVER' | 'EXTRACT' | 'CRAWL' | 'ACT' | 'WATCH';
 
 export interface EndpointDef {
   id: Endpoint;
-  /** Proper-noun product name: "Scrape", never "scrape". */
   name: string;
-  /** Footer / capability-page product name. */
   productName: string;
-  /** Sidebar label: the one-word action. */
   sidebarLabel: string;
-  /** One line, used on cards, onboarding rows and the overview. */
   tagline: string;
   method: 'POST' | 'GET';
   path: string;
@@ -27,14 +17,8 @@ export interface EndpointDef {
   group: TabGroup;
   status: EndpointStatus;
   icon: LucideIcon;
-  /** Whether it appears as a standalone product (Map is a capability inside Search/Crawl). */
   product: boolean;
   async: boolean;
-  /**
-   * Whether the playground can call it. False while an endpoint has a marketing
-   * page and a documented shape but no SDK method yet, so the tab is not offered
-   * rather than offered and failing.
-   */
   runnable: boolean;
 }
 
@@ -56,10 +40,8 @@ export const TAB_GROUPS: readonly TabGroup[] = ['DISCOVER', 'EXTRACT', 'CRAWL', 
 
 export const PRODUCTS = ENDPOINTS.filter((e) => e.product);
 
-/** An endpoint the SDK client can call, narrowed so callers index runnable-only maps. */
 export type RunnableEndpointDef = EndpointDef & { id: RunnableEndpoint };
 
-/** What the playground offers a tab for. See `EndpointDef.runnable`. */
 export const RUNNABLE: readonly RunnableEndpointDef[] = ENDPOINTS.filter(
   (e): e is RunnableEndpointDef => e.runnable,
 );
@@ -68,23 +50,16 @@ export function endpointById(id: string): EndpointDef | undefined {
   return ENDPOINTS.find((e) => e.id === id);
 }
 
-/** `endpointById` for surfaces that can only render something callable. */
 export function runnableById(id: string): RunnableEndpointDef | undefined {
   return RUNNABLE.find((e) => e.id === id);
 }
 
-/**
- * Selected endpoints first (in selection order), then the rest in catalog order.
- * Runnable only: every caller renders a playground tab, and a tab the playground
- * does not offer is a dead link.
- */
 export function orderBySelection(selected: readonly string[]): RunnableEndpointDef[] {
   const chosen = selected.map((id) => runnableById(id)).filter((e): e is RunnableEndpointDef => Boolean(e));
   const rest = RUNNABLE.filter((e) => !selected.includes(e.id));
   return [...chosen, ...rest];
 }
 
-/** Example request bodies used by the hero curl builder, playground and SKILL.md. */
 export const EXAMPLE_REQUEST: Record<Endpoint, Record<string, unknown>> = {
   scrape: { url: 'https://example.com', formats: ['markdown'] },
   document: { op: 'parse', url: 'https://example.com/files/report.pdf', formats: ['markdown'], ocr: 'auto' },

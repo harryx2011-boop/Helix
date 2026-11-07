@@ -39,27 +39,12 @@ from dataclasses import dataclass
 
 CHARS_PER_TOKEN = 4
 
-# Share of the budget reserved for the document's opening blocks, filled in
-# document order before ranking is consulted. A quarter is enough that a page's
-# own lead survives any amount of salted text further down, and small enough
-# that a schema asking about something genuinely deep in the page still gets
-# three quarters of the window aimed at it by score.
 LEAD_RESERVE_FRACTION = 0.25
 
-# Ceiling on how much of the budget the highest-scoring band may hold. Real
-# content and salted text occupy separate score ranges (0.56–1.44 against 2.6
-# and up, measured 2026-08-28), so a page whose top band wants more than this
-# is a page where one narrow kind of block is trying to be the whole payload.
-# Half leaves an ordinary page unaffected — its top band rarely fills even a
-# quarter — while guaranteeing the rest of the document keeps half the window.
 TOP_BAND_MAX_FRACTION = 0.5
 
-# Blocks within this multiple of the top score count as one band for the cap
-# above. Wide enough that near-identical salted blocks group together rather
-# than each being treated as its own tier.
 TOP_BAND_RATIO = 0.6
 
-# Words too common to distinguish one block from another.
 STOPWORDS = frozenset(
     """
     a an the and or but if then else of in on at to for with by from as is are was were
@@ -85,9 +70,7 @@ class Selection:
     """What reached the model, and how much of the page that was."""
 
     text: str
-    # The passages sent, in original order. Reported back as `sources` on request.
     kept: list[Block]
-    # 0 when the page fit the budget and nothing was trimmed.
     kept_count: int
     total: int
 
@@ -107,7 +90,6 @@ def schema_terms(schema: dict, prompt: str | None = None) -> set[str]:
 
     def walk(node: object, key: str | None = None) -> None:
         if key:
-            # fundingRound -> funding round
             spaced = re.sub(r"(?<!^)(?=[A-Z])", " ", key)
             collected.extend(_terms(spaced))
 
@@ -251,8 +233,6 @@ def select(
 
     scored = [Block(text=block, score=score_block(block, wanted), index=i) for i, block in enumerate(blocks)]
 
-    # With no usable signal, the opening of the document is the best guess —
-    # titles, summaries and lead paragraphs live there.
     if all(block.score == 0 for block in scored):
         kept: list[Block] = []
         used = 0
@@ -262,10 +242,6 @@ def select(
             kept.append(block)
             used += len(block.text) + 2
 
-        # A single block larger than the whole budget would otherwise return
-        # nothing at all, which reads as "this page was empty". Truncating the
-        # first block is a worse answer than a clean excerpt but a far better
-        # one than silence.
         if not kept:
             excerpt = blocks[0][:budget_chars]
             return Selection(
@@ -285,9 +261,6 @@ def select(
     used = 0
     taken: set[int] = set()
 
-    # The lead reserve, filled in document order and before ranking is
-    # consulted. See the module docstring: score is attacker-steerable and
-    # position is not, so this is what stops salted blocks taking every slot.
     lead_budget = int(budget_chars * LEAD_RESERVE_FRACTION)
     for block in scored:
         cost = len(block.text) + 2
@@ -297,11 +270,6 @@ def select(
         taken.add(block.index)
         used += cost
 
-    # The band cap. Blocks close to the top score are held to a share of the
-    # budget, so a page cannot make one narrow kind of block the entire payload
-    # by repeating it. See TOP_BAND_MAX_FRACTION: the two populations sit in
-    # separate score ranges, so this bites on salted text and not on a page
-    # that genuinely answers the schema in several places.
     top_score = ranked[0].score
     band_floor = top_score * TOP_BAND_RATIO
     band_budget = int(budget_chars * TOP_BAND_MAX_FRACTION)
@@ -322,8 +290,6 @@ def select(
         if in_band:
             band_used += cost
 
-    # Every block individually over budget — take the highest-scoring one,
-    # truncated. Returning nothing would look like an empty page.
     if not kept and ranked:
         best = ranked[0]
         excerpt = best.text[:budget_chars]

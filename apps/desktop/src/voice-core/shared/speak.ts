@@ -34,8 +34,6 @@ export function voiceStudioUrl(): string {
   return (env?.VOICESTUDIO_URL || VOICESTUDIO_DEFAULT_URL).replace(/\/+$/, "");
 }
 
-/** Raw 24 kHz int16 mono from POST /v1/audio/speech. `voice` is a VoiceStudio
- *  profile id, or "default" for its own default voice. */
 export async function speak(text: string, voice = "default", opts: SpeakOptions = {}): Promise<Speech> {
   const base = (opts.baseUrl ?? voiceStudioUrl()).replace(/\/+$/, "");
   const doFetch = opts.fetch ?? fetch;
@@ -62,7 +60,6 @@ export async function speak(text: string, voice = "default", opts: SpeakOptions 
   }
   if (!res.ok) throw new SpeakError("refused", `VoiceStudio refused the request (${res.status}).`);
   const kind = res.headers.get("content-type") ?? "";
-  // A JSON error with a 200 would otherwise be played as noise.
   if (kind && !kind.startsWith("audio/") && !kind.startsWith("application/octet-stream")) {
     throw new SpeakError("not-audio", "VoiceStudio answered without audio.");
   }

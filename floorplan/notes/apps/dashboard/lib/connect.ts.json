@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/connect.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CONNECT_CLIENTS",
+      "line": 2,
+      "offset": 0,
+      "text": "The commands and config snippets the connect sheet, the Overview panel and\nthe docs print. Mirrors what `@helix/cli init` writes (packages/cli/src/writers.ts):\na snippet pasted by hand and a file written by the CLI must produce the same\nserver entry.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CLI_DEFAULT_MCP_URL",
+      "line": 5,
+      "offset": 0,
+      "text": "Defaults baked into `@helix/cli`; flags are only printed when the app's values differ.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ConnectSnippet.target",
+      "line": 30,
+      "offset": 0,
+      "text": "Where the snippet goes: a file path, or \"terminal\".",
+      "kind": "doc"
+    }
+  ]
+}

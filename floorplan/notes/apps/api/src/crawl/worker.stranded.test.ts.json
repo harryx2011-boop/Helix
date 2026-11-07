@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/worker.stranded.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Call",
+      "line": 4,
+      "offset": 0,
+      "text": "A job whose worker was SIGKILLed is stranded at 'running' forever.\n\n010_task_leases.sql gave `job_tasks` a visibility timeout for exactly this\nfailure, and `reclaimExpired` returns those rows to 'queued' on restart. The\nparent `jobs` row never got the same treatment: it is flipped to 'running' at\nclaim time and reset only on the graceful shutdown path. So after a hard kill\nthe tasks are reclaimable but the job that owns them is not claimable, and\n`POST /crawl {resume}` refuses it with `already_running` (crawl.ts:403) —\nthe documented recovery path is closed against the exact failure it exists\nfor. The crawl polls as 'running' with `started_at` set, forever.\n\nThese tests pin the claim predicate itself, which is where the fix belongs.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "claimStatement",
+      "line": 28,
+      "offset": 0,
+      "text": "The single statement the worker uses to take ownership of a job.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 46,
+      "offset": null,
+      "text": "The defect. Without this the row is unreachable by every code path: the\nworker skips it because it is not 'queued', and resume rejects it because\nit is 'running'.",
+      "kind": "why"
+    }
+  ]
+}

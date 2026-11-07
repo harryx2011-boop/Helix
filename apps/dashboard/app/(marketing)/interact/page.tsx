@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   description: 'A stateful browser session your agent can drive: click, type, scroll, wait, extract, and watch it happen in a live view.',
 };
 
-// openapi.yaml → /interact → requestBody.examples.oneShot, and InteractResponse.
 const REQUEST = `POST /v1/interact
 {
   "url": "https://example.com/shop",

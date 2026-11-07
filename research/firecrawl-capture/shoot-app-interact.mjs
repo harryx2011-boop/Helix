@@ -3,7 +3,6 @@ import { clerk, clerkSetup, setupClerkTestingToken } from '@clerk/testing/playwr
 import fs from 'fs';
 import path from 'path';
 
-// Authenticated screenshots of /app (WEBSITE.md §12 DoD). Reads Clerk keys from apps/dashboard/.env.local.
 const envText = fs.readFileSync(path.resolve('../../.worktrees/interact/apps/dashboard/.env.local'), 'utf8');
 const env = Object.fromEntries(envText.split(/\r?\n/).filter((l) => l && !l.startsWith('#') && l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
 process.env.CLERK_PUBLISHABLE_KEY = env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;

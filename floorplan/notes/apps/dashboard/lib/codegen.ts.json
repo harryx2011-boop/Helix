@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/codegen.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Opts.pathSuffix",
+      "line": 21,
+      "offset": 0,
+      "text": "For an endpoint with more than one operation, e.g. `/scrub` on Metadata.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "generateCode",
+      "line": 24,
+      "offset": 0,
+      "text": "One request, four ways. Shared by the hero panel and the playground's Get code (WEBSITE.md §4.2, §7.4).",
+      "kind": "doc"
+    }
+  ]
+}

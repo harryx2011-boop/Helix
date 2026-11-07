@@ -1,9 +1,3 @@
-/**
- * The Electron preload exposes `window.helixDesktop` through `contextBridge`.
- * Its presence is the one signal that the dashboard is running inside the
- * desktop app, where the instance's own key and admin token are handed over
- * instead of typed in.
- */
 export interface HelixDesktop {
   apiKey: string;
   adminToken: string;
@@ -32,7 +26,6 @@ export function isDesktop(): boolean {
   return bridge() !== undefined;
 }
 
-/** Null outside the desktop app; an empty string from the bridge counts as absent. */
 export function desktopCredentials(): { apiKey: string | null; adminToken: string | null } | null {
   const value = bridge();
   if (!value) return null;
@@ -68,7 +61,6 @@ function isVoiceConnection(value: unknown): value is VoiceConnection {
   }
 }
 
-/** The desktop app's dictation service, or null in a browser and in a desktop build without it. */
 export function desktopVoice(): { connect: () => Promise<VoiceConnection | null> } | null {
   const voice = bridge()?.voice;
   if (!voice || typeof voice.connect !== 'function') return null;

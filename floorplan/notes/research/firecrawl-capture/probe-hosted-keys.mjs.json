@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "research/firecrawl-capture/probe-hosted-keys.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "envText",
+      "line": 7,
+      "offset": 0,
+      "text": "End-to-end proof of the one-database model: sign in through Clerk, create a\nkey on /app/keys, then read the same row back through Supabase's Data API.\nRun from research/firecrawl-capture with MSYS_NO_PATHCONV=1 and the dashboard\ndev server on 3400 in hosted mode.",
+      "kind": "what"
+    }
+  ]
+}

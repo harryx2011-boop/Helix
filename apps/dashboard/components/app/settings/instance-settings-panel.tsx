@@ -66,9 +66,6 @@ function BooleanSetting({
   const commit = async (next: boolean) => {
     setSaving(true);
     try {
-      // A guarded setting is refused without a confirmation naming it. Asking
-      // here keeps the decision at the moment of the change rather than behind
-      // a mode the operator might forget they left on.
       const confirm =
         setting.effect === 'guarded' && next && !window.confirm(`${setting.warning ?? ''}\n\nTurn on ${setting.key}?`)
           ? null

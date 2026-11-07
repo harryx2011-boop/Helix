@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/md/[[...slug]]/route.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "generateStaticParams",
+      "line": 6,
+      "offset": 0,
+      "text": "Self-host exports statically, so every twin path has to be enumerated at build time.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "generateStaticParams",
+      "line": 7,
+      "offset": 1,
+      "text": "A path that is also the prefix of another twin (`docs` vs `docs/crawl`)\nwould have to be both a file and a directory in `out/`, which the export\ncannot write. Those stay served by the hosted build only.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "GET",
+      "line": 16,
+      "offset": 0,
+      "text": "Markdown twin of every marketing page, no chrome (WEBSITE.md §9.4): `/md`, `/md/scrape`, `/md/docs/crawl`, …",
+      "kind": "doc"
+    }
+  ]
+}

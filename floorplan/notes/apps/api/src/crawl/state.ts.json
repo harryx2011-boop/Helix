@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/state.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CrawlStateRecord",
+      "line": 5,
+      "offset": 0,
+      "text": "Per-site crawl memory.\n\nLets a scheduled re-crawl skip pages that have not changed. The saving is\nreal: on a documentation site most pages are static between crawls, and\nre-fetching all of them to discover that is the bulk of the cost.\n\nThree signals, in descending order of trust:\n\n1. **ETag** — the server's own assertion that content is identical.\n2. **Last-Modified** — a date the server chose. Usually honest.\n3. **Content hash** — ours, computed after extraction. Always available, but\nonly knowable after fetching, so it saves re-processing rather than the\nrequest itself.\n\nSitemap `<lastmod>` is deliberately absent from that list. It is frequently\nstale or fabricated, so it may prioritise work but must never be the sole\nevidence a page is unchanged.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "loadState",
+      "line": 35,
+      "offset": 0,
+      "text": "Everything known about a set of URLs from previous crawls.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "RecordVisitInput.unchanged",
+      "line": 65,
+      "offset": 0,
+      "text": "Whether the content matched what was stored.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "conditionalHeaders",
+      "line": 106,
+      "offset": 0,
+      "text": "Conditional-request headers for a URL we have seen before.\n\nThis is the only mechanism that avoids the download itself: the server\nanswers 304 and sends no body. Everything else saves processing, not bandwidth.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "isUnchanged",
+      "line": 118,
+      "offset": 0,
+      "text": "Whether extracted content matches what was stored.",
+      "kind": "doc"
+    }
+  ]
+}

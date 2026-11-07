@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/scrape-cache.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ScrapeCache",
+      "line": 1,
+      "offset": 0,
+      "text": "Recent scrape results for `maxAge`. The caller states how stale an answer it\naccepts; anything older is fetched again.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ScrapeCache.#entries",
+      "line": 4,
+      "offset": 0,
+      "text": "Map keeps insertion order, so the first key is the oldest entry.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "scrapeCache",
+      "line": 25,
+      "offset": 0,
+      "text": "ponytail: process-local and entry-capped, not byte-capped; move to Postgres or cap bytes if large pages crowd memory.",
+      "kind": "what"
+    }
+  ]
+}

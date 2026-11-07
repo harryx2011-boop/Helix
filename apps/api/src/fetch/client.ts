@@ -14,14 +14,12 @@ import type { RenderIdentity } from '../browser/profiles.js';
 
 export interface FetchOptions {
   url: string;
-  /** false selects tier 0 (plain); true selects tier 1 (TLS-impersonating). */
   impersonate: boolean;
   profile?: string | undefined;
   proxy?: string | undefined;
   headers?: Record<string, string> | undefined;
   timeoutMs?: number | undefined;
   signal?: AbortSignal | undefined;
-  /** Operator opt-in: follow redirects onto private addresses. */
   allowPrivate?: boolean | undefined;
 }
 
@@ -29,7 +27,6 @@ export interface FetchResult {
   success: boolean;
   status?: number | undefined;
   headers: Record<string, string>;
-  /** Every `Set-Cookie` line; `headers` keeps only one of them. */
   setCookies?: string[] | undefined;
   body?: string | undefined;
   profileUsed?: string | undefined;
@@ -98,8 +95,6 @@ export class FetchClient {
   async fetch(options: FetchOptions): Promise<FetchResult> {
     const started = Date.now();
     const timeoutMs = options.timeoutMs ?? 30_000;
-    // A little headroom over the inner timeout, so the service can report
-    // its own failure rather than being cut off mid-answer.
     const timeout = AbortSignal.timeout(timeoutMs + 5_000);
     const signal = options.signal ? AbortSignal.any([timeout, options.signal]) : timeout;
 

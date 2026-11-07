@@ -10,28 +10,18 @@ import { cn } from '@/lib/utils';
 
 export type PromptSurface = 'hero' | 'app';
 
-/**
- * Class vocabulary per surface. The hero sits on the light marketing tokens,
- * `/app` on the dark shadcn tokens; the box and picker are one component
- * rendered on both, so every colour is looked up here rather than written
- * inline.
- */
 export const SURFACE: Record<
   PromptSurface,
   {
     box: string;
-    /** The box while its textarea has focus: a ring on the hero, a border tint on the app. */
     boxFocus: string;
-    /** The box while a run is in flight. */
     boxBusy: string;
-    /** The in-flight progress bar's fill. */
     bar: string;
     hairline: string;
     ink: string;
     muted: string;
     faint: string;
     chip: string;
-    /** An icon-only button inside a chip: no border, tonal hover. */
     ghost: string;
     kbd: string;
     option: string;
@@ -109,11 +99,6 @@ interface FormatPickerProps {
   onChange: (formats: Format[]) => void;
 }
 
-/**
- * The toolbar's `Format: Markdown` button and the card grid it opens. Cards
- * are the API's own format ids (lib/formats.ts); the HTML card carries the
- * cleaned / raw pair as a variant row. Multi-select, order kept stable.
- */
 export function FormatPicker({ surface, formats, onChange }: FormatPickerProps) {
   const s = SURFACE[surface];
   const [open, setOpen] = React.useState(false);
@@ -149,7 +134,6 @@ export function FormatPicker({ surface, formats, onChange }: FormatPickerProps) 
           collisionPadding={16}
           aria-label="Format"
           data-surface={surface === 'hero' ? 'marketing' : 'app'}
-          // The marketing surface rule paints its own background after the utilities; the popover is the white card, not the page.
           style={surface === 'hero' ? { background: 'var(--m-surface)' } : undefined}
           className={cn(
             'z-50 w-[min(calc(100vw-32px),632px)] rounded-panel p-4 outline-none animate-slide-up',
@@ -260,7 +244,6 @@ function FormatCardView({
 
 const LIST_WIDTHS = ['w-10/12', 'w-8/12', 'w-11/12', 'w-7/12'];
 
-/** Schematic drawn with the surface's illustration tokens. Decorative only. */
 function Illustration({ kind, surface }: { kind: FormatIllustration; surface: PromptSurface }) {
   const s = SURFACE[surface];
   const line = cn('h-1 rounded-pill', s.tileStroke);

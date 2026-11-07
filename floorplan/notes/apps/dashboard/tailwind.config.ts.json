@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/tailwind.config.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "config",
+      "line": 3,
+      "offset": 0,
+      "text": "Two surfaces, one config (WEBSITE.md §3): `m-*` / `violet-*` tokens belong to the\nlight marketing surface; the shadcn-style hsl tokens belong to the dark app.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "config.theme.extend.keyframes.metadata-lens",
+      "line": 101,
+      "offset": 0,
+      "text": "The lens walks a slow S down the page. Every coordinate below, and the\ncounter-translate in `metadata-lens-content`, is computed from one\npath — see the note in metadata-scanning.tsx. Editing one without the\nother breaks the magnification alignment.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "config.theme.extend.keyframes.metadata-lens-content",
+      "line": 108,
+      "offset": 0,
+      "text": "The magnified copy counter-translates so the point under the glass is\nthe point on the page beneath it: for a lens centre (cx, cy),\ntranslate(LENS/2 - ZOOM*cx, LENS/2 - ZOOM*cy) scale(ZOOM) with\ntransform-origin 0 0. LENS = 62, ZOOM = 1.85.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "config.theme.extend.keyframes.metadata-tag-in",
+      "line": 115,
+      "offset": 0,
+      "text": "A tag surfaces as the sweep passes it, holds while the sweep finishes\nthe page, then clears before the next pass so the loop reads as a\nfresh scan rather than an accumulating pile.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "config.theme.extend.keyframes.metadata-tag-out",
+      "line": 120,
+      "offset": 0,
+      "text": "The scrub reads the same mechanism backwards: the tag is already\nthere and the sweep takes it away.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "config.theme.extend.animation.metadata-lens",
+      "line": 139,
+      "offset": 0,
+      "text": "Duration is set per-instance so the lens, the magnified copy and the\ntags stay locked to one cycle. `ease-in-out` on the lens because a\nhand moving a glass slows at each turn of the path; linear would read\nas a machine part. The two lens tracks MUST share a timing function\nor the magnified copy drifts out of register with its own lens.",
+      "kind": "why"
+    }
+  ]
+}

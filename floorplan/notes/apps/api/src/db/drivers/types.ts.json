@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/db/drivers/types.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 4,
+      "offset": null,
+      "text": "The slice of `pg.Pool` the API uses. `pg.Pool` satisfies it as-is, so the\npg driver hands back the real pool; PGlite is adapted to it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "DriverOptions.dataDir",
+      "line": 29,
+      "offset": 0,
+      "text": "Unset keeps PGlite in memory, which is what the real-engine tests use.",
+      "kind": "doc"
+    }
+  ]
+}

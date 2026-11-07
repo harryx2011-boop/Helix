@@ -9,12 +9,6 @@ import {
 } from './engines.js';
 import type { BrowserProfile } from './profiles.js';
 
-/**
- * Two lines these tests hold. Chromium's launch flags must never reach an
- * engine that would refuse to start on them, and an identity must never be
- * presented on an engine that contradicts it — a Chrome UA over Gecko is a
- * positive detection signal, which is worse than spoofing nothing.
- */
 
 function profile(browser: string): BrowserProfile {
   return {
@@ -40,8 +34,6 @@ describe('launch arguments', () => {
   });
 
   it('sends no chromium switches to firefox or webkit', () => {
-    // These are Chromium command-line switches. Firefox and WebKit do not
-    // accept them, so passing them through breaks the launch outright.
     expect(launchArgsFor('firefox')).toEqual([]);
     expect(launchArgsFor('webkit')).toEqual([]);
   });

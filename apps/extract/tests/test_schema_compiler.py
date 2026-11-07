@@ -30,9 +30,6 @@ class TestValidation:
 
     @pytest.mark.parametrize("keyword", ["minItems", "maxItems", "minProperties", "maxProperties"])
     def test_rejects_keywords_that_induce_fabrication(self, keyword: str) -> None:
-        # A model told to return at least three items invents a third rather
-        # than reporting that it found two. Vendors document this as a caveat
-        # and pass the request through anyway; refusing is more useful.
         with pytest.raises(SchemaError) as exc:
             validate_schema({"type": "array", keyword: 3})
 
@@ -51,8 +48,6 @@ class TestValidation:
         assert "properties.items" in exc.value.path
 
     def test_rejects_a_schema_with_too_many_fields(self) -> None:
-        # Accuracy degrades measurably past roughly thirty fields, so this is a
-        # quality guard rather than a technical limit.
         schema = {
             "type": "object",
             "properties": {f"field{i}": {"type": "string"} for i in range(35)},
@@ -72,26 +67,18 @@ class TestOpenAI:
         assert compiled["json_schema"]["strict"] is True
 
     def test_requires_every_property_and_forbids_extras(self) -> None:
-        # Strict mode's own rules, which are stricter than JSON Schema's.
         schema = compile_openai(SIMPLE)["json_schema"]["schema"]
 
         assert set(schema["required"]) == {"title", "price"}
         assert schema["additionalProperties"] is False
 
     def test_makes_optional_fields_nullable_rather_than_absent(self) -> None:
-        # `price` was not required. Strict mode has no way to express that, so
-        # the field becomes nullable — the model can still say "not found".
         schema = compile_openai(SIMPLE)["json_schema"]["schema"]
 
         assert schema["properties"]["price"]["type"] == ["number", "null"]
         assert schema["properties"]["title"]["type"] == "string"
 
     def test_leaves_a_free_form_map_open(self) -> None:
-        # An object with no declared properties is a free-form map. Stamping
-        # `additionalProperties: false` on it forbids every key, which under
-        # strict mode makes the field structurally unfillable — the schema
-        # designer returned an empty `properties` on every request until this
-        # case was excluded.
         compiled = compile_openai(
             {
                 "type": "object",
@@ -121,9 +108,6 @@ class TestOpenAI:
         assert schema["properties"]["author"]["additionalProperties"] is False
 
     def test_makes_an_enum_only_optional_field_nullable(self) -> None:
-        # `status` has no `type`, only `enum`. Without a null branch it stays
-        # required and non-nullable under strict mode, which forces the model
-        # to fabricate a value it never found.
         schema = compile_openai(
             {
                 "type": "object",
@@ -227,9 +211,6 @@ class TestOpenAI:
 
 class TestAnthropic:
     def test_uses_auto_choice_with_a_strict_tool(self) -> None:
-        # A forced tool_choice (`{"type": "tool", ...}` or "any") is a 400 on
-        # Claude Fable 5.1; strict mode plus auto choice gets schema-valid
-        # arguments without forcing the call.
         compiled = compile_anthropic(SIMPLE)
 
         assert compiled["tool_choice"] == {"type": "auto"}
@@ -242,8 +223,6 @@ class TestAnthropic:
         assert compiled["tools"][0]["name"] == "pull_data"
 
     def test_strictifies_the_input_schema(self) -> None:
-        # Same strict-mode compilation OpenAI gets: every property required,
-        # optional fields nullable, additionalProperties false.
         compiled = compile_anthropic(SIMPLE)
         schema = compiled["tools"][0]["input_schema"]
 
@@ -252,8 +231,6 @@ class TestAnthropic:
         assert schema["properties"]["price"]["type"] == ["number", "null"]
 
     def test_leaves_a_free_form_map_open(self) -> None:
-        # A property-less object is a free-form map; additionalProperties:
-        # false on it would make the field structurally unfillable.
         compiled = compile_anthropic(
             {
                 "type": "object",
@@ -298,8 +275,6 @@ class TestGemini:
         assert compiled["properties"]["x"]["nullable"] is True
 
     def test_drops_keywords_gemini_does_not_understand(self) -> None:
-        # Gemini rejects the entire request for one unrecognised keyword, so
-        # dropping them is the difference between working and failing.
         schema = {
             "type": "object",
             "properties": {"x": {"type": "string", "pattern": "^a", "format": "email"}},
@@ -320,7 +295,6 @@ class TestCompileFor:
         "provider", ["openai", "ollama", "vllm", "openrouter", "openai-compatible"]
     )
     def test_routes_openai_compatible_providers_to_one_adapter(self, provider: str) -> None:
-        # "OpenAI-compatible" is exactly the claim that this wire format works.
         assert compile_for(provider, SIMPLE)["type"] == "json_schema"
 
     def test_routes_native_providers_to_their_own_shape(self) -> None:

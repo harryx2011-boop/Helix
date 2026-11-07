@@ -1,17 +1,6 @@
 import { checkUrl } from '../core/url-guard.js';
 import { isLocalProvider, type LocalProvider } from './repository.js';
 
-/**
- * Lists the models a local runtime (Ollama, vLLM, OpenAI-compatible) actually
- * has installed, so a caller can pick one instead of typing it blind.
- *
- * The base URL fetched here is always the caller's own, stored against their
- * own Helix API key — the same value `PUT /providers/:provider` already
- * accepts with no URL-safety gate, because it names their own runtime rather
- * than a third party's. `checkUrl` still runs, for scheme and shape, but with
- * private addresses allowed: a local runtime is loopback or LAN by design,
- * and refusing that would break the one thing this endpoint exists for.
- */
 
 export interface ModelInfo {
   name: string;
@@ -31,14 +20,12 @@ function stripTrailingSlash(url: string): string {
   return url.replace(/\/+$/, '');
 }
 
-/** Ollama's native API lives at the origin; the stored `baseUrl` may carry an OpenAI-compatible `/v1` suffix or not. */
 export function ollamaTagsUrl(baseUrl: string): string {
   const trimmed = stripTrailingSlash(baseUrl);
   const root = trimmed.endsWith('/v1') ? trimmed.slice(0, -'/v1'.length) : trimmed;
   return `${root}/api/tags`;
 }
 
-/** vLLM and generic OpenAI-compatible servers expose the OpenAI `GET /v1/models` shape at whatever base URL was stored. */
 export function openAiModelsUrl(baseUrl: string): string {
   return `${stripTrailingSlash(baseUrl)}/models`;
 }
@@ -96,7 +83,6 @@ export async function listLocalProviderModels(
 
   let response: Response;
   try {
-    // Never followed: a redirect would take the call to a host nobody checked.
     response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), redirect: 'manual' });
   } catch {
     return { ok: false, reason: 'unreachable', message: `Could not reach ${provider} at ${baseUrl}.` };

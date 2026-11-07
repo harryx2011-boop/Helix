@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/settings/store.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "StoredSetting",
+      "line": 5,
+      "offset": 0,
+      "text": "Persisted setting overrides.\n\nThe environment stays the source of defaults; a row here overrides one. An\ninstance with an empty table behaves exactly as it did before this existed,\nand clearing a row reverts to the environment value rather than to a\nhardcoded one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SettingView.envValue",
+      "line": 17,
+      "offset": 0,
+      "text": "The value the environment supplies, shown so an operator can see what they overrode.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "readOverrides",
+      "line": 27,
+      "offset": 6,
+      "text": "A key retired from the registry stays in the table but is never applied:\ndeleting rows on deploy would silently discard an operator's intent.",
+      "kind": "why"
+    }
+  ]
+}

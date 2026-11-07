@@ -41,19 +41,12 @@ export interface BrowserProfile {
   browser: string;
   version: string;
   platform: string;
-  /** Null until `tools/capture` records it from a real browser. */
   capturedAt: string | null;
-  /** False for a hand-written definition. Applied anyway, but logged on every use. */
   verified: boolean;
   headers?: { userAgent?: string; acceptLanguage?: string };
   js: ProfileJs;
 }
 
-/**
- * `packages/profiles/definitions` at the repo root in development; beside
- * `dist/` when the bundle is staged. Walks upward from this module, as
- * `mcp/spec.ts` does for openapi.yaml, so both layouts resolve.
- */
 function definitionsDir(): string {
   const start = dirname(fileURLToPath(import.meta.url));
   let dir = start;
@@ -64,7 +57,6 @@ function definitionsDir(): string {
     if (parent === dir) break;
     dir = parent;
   }
-  // src/browser -> apps/api -> apps -> repo root
   return join(start, '..', '..', '..', '..', 'packages', 'profiles', 'definitions');
 }
 
@@ -78,8 +70,6 @@ export function loadProfiles(logger?: Log, dir = definitionsDir()): Map<string, 
   try {
     files = readdirSync(dir).filter((f) => f.endsWith('.json'));
   } catch {
-    // No definitions shipped is a valid state: the browser tier then applies
-    // nothing, which is what it did before profiles existed.
     cache = loaded;
     return loaded;
   }
@@ -98,7 +88,6 @@ export function loadProfiles(logger?: Log, dir = definitionsDir()): Map<string, 
   return loaded;
 }
 
-/** Test seam: forget what was loaded so a different directory can be read. */
 export function resetProfileCache(): void {
   cache = undefined;
 }
@@ -107,10 +96,6 @@ export function getProfile(id: string | undefined, logger?: Log): BrowserProfile
   if (!id) return undefined;
   const profile = loadProfiles(logger).get(id);
 
-  // An unverified profile is still applied — it beats presenting the host
-  // machine's real fingerprint, and silently ignoring a caller's explicit
-  // request would be its own surprise. But it is said out loud, because the
-  // values are plausible rather than measured.
   if (profile && !profile.verified) {
     logger?.warn(
       { profile: profile.id },
@@ -121,12 +106,6 @@ export function getProfile(id: string | undefined, logger?: Log): BrowserProfile
   return profile;
 }
 
-/**
- * A per-instance secret the canvas seed is keyed with.
- *
- * Derived once from whichever instance secret exists, and from random bytes if
- * none does. It never leaves the process; only its effect on pixels is visible.
- */
 let instanceSecret: Buffer | undefined;
 
 function secret(): Buffer {
@@ -138,31 +117,10 @@ function secret(): Buffer {
   return instanceSecret;
 }
 
-/** Test seam: forget the derived secret so a different environment can be read. */
 export function resetInstanceSecret(): void {
   instanceSecret = undefined;
 }
 
-/**
- * A stable 32-bit seed for this identity, keyed with an instance-local secret.
- *
- * Two properties have to hold at once, and only one of them is obvious.
- *
- * Stable: real browsers return an identical canvas hash on every read, so a
- * value that varies between two reads is itself the tell.
- *
- * *Unpredictable to the page.* Deriving the seed from the profile id alone —
- * which is what this did first — makes it a pure function of a value that ships
- * in a public repo. A tracker recomputes it off-box, inverts the transform, and
- * recovers the true hardware canvas hash: strictly worse than not perturbing at
- * all, because every install then hands out the same stable identifier behind a
- * veneer of protection. (Cortex shipped and measured exactly this: 0 of 4096
- * bytes differed after inversion.)
- *
- * Keying with an instance secret keeps the stability and removes the
- * predictability. The fallback is random rather than public — it degrades
- * toward unpredictable, never toward guessable.
- */
 function seedFor(profile: BrowserProfile): number {
   const source = profile.js.canvasSeed && profile.js.canvasSeed !== 'per-session' ? profile.js.canvasSeed : profile.id;
   const digest = createHmac('sha256', secret()).update(source).digest();
@@ -174,7 +132,6 @@ export interface UaBrand {
   version: string;
 }
 
-/** What the launched browser reports about itself, read once per launch. */
 export interface BrowserIdentity {
   userAgent: string;
   brands: UaBrand[];
@@ -201,7 +158,6 @@ export interface UserAgentOverride {
   };
 }
 
-/** The headless shell's UA with the reduced version a real Chrome sends. */
 export function headfulUserAgent(userAgent: string): string {
   return userAgent.replace(/HeadlessChrome\/(\d+)[\d.]*/, 'Chrome/$1.0.0.0');
 }
@@ -214,14 +170,6 @@ function platformOf(userAgent: string): string | undefined {
   return undefined;
 }
 
-/**
- * The UA, Accept-Language and client hints for one page.
- *
- * Playwright's `userAgent` option changes the string but not `sec-ch-ua` or
- * `navigator.userAgentData`, which keep saying "HeadlessChrome" at the real
- * version. The browser's own brand list is kept, GREASE entry and order
- * included, with the headless brand renamed and the version moved to the UA's.
- */
 export function userAgentOverride(
   identity: BrowserIdentity,
   profile: BrowserProfile | undefined,
@@ -240,7 +188,6 @@ export function userAgentOverride(
 
   return {
     userAgent,
-    // Chrome adds the q-values itself; passing them through doubles them.
     acceptLanguage: (profile?.headers?.acceptLanguage ?? 'en-US,en')
       .split(',')
       .map((tag) => tag.split(';')[0]?.trim())

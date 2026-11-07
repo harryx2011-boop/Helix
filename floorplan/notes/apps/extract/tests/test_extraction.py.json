@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_extraction.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TestExtract.test_drops_navigation_and_footer_furniture",
+      "line": 36,
+      "offset": 3,
+      "text": "Chrome around the content is exactly what onlyMainContent exists to remove.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "TestExtract.test_resolves_links_against_the_page_url",
+      "line": 43,
+      "offset": 4,
+      "text": "Relative hrefs must not survive as relative.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "TestExtract.test_falls_back_to_the_whole_document_rather_than_returning_nothing",
+      "line": 67,
+      "offset": 1,
+      "text": "A page with no recognisable article region should still yield its text.\nReturning empty here is the worse failure.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "TestExtract.test_auto_recovers_when_the_precise_engine_finds_little",
+      "line": 97,
+      "offset": 1,
+      "text": "trafilatura favours precision and can strip an unusual layout to\nnothing; `auto` exists to notice that and try the other engine.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "TestContentHash.test_ignores_whitespace_and_case_churn",
+      "line": 112,
+      "offset": 1,
+      "text": "Reformatting is not a content change. If it hashed differently, every\nincremental crawl would re-fetch pages that had not actually moved.",
+      "kind": "what"
+    }
+  ]
+}

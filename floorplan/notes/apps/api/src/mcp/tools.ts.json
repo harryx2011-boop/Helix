@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/mcp/tools.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HttpMethod",
+      "line": 4,
+      "offset": 0,
+      "text": "MCP tools are generated from openapi.yaml, never written by hand, so a tool's\nname, description and input schema cannot drift from the HTTP contract. Only\noperations the running server actually serves become tools: the spec may\ndescribe an endpoint before its route exists, and an agent must not be\noffered a tool that 404s.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ToolDef.path",
+      "line": 16,
+      "offset": 0,
+      "text": "Spec path, e.g. `/jobs/{id}`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "CONFIRM_REQUIRED",
+      "line": 23,
+      "offset": 0,
+      "text": "Operations an MCP client must confirm before they run.\n\nWHY THE GATE IS HERE AND NOT ON THE ROUTES. A curl caller who sends DELETE\nchose that verb. A model reached it by inference from a description, and\n`CallTool` hands it to `app.inject` with no idea one operation is heavier\nthan another — a DELETE dispatches exactly like a GET. The asymmetry is in\nthe caller, so the gate belongs at the caller's boundary.\n\nWHY THESE FOUR AND NOT EVERY MUTATION. Twenty operations mutate, but most of\nthem ARE the product: /scrape, /crawl, /search and /interact all POST, and\ngating those would mean confirming a scrape. What is listed here is the set a\ncaller cannot undo — a stored credential that silently re-points every later\ninference call, and deletes that take their history with them.\n\n`putProvider` is the sharpest and the reason this exists: per its own spec\ntext, every LLM-backed request made with this Helix key afterwards uses the\nsupplied credential instead of the instance's. A tool that can redirect all\ndownstream inference should not fire on one inferred call.\n\n`confirm` is model-supplied, so this stops an INFERRED call and not an\nINSTRUCTED one — the same limit Canvas's confirm has. It buys a turn in which\na human sees what is about to happen, which is the whole claim.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "needsConfirmation",
+      "line": 50,
+      "offset": 0,
+      "text": "The warning for an operation that needs confirming, or undefined if it does not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "generateTools",
+      "line": 142,
+      "offset": 32,
+      "text": "An operation that cannot be undone advertises `confirm` and says why in\nthe description, so the model learns the requirement from the manifest\nrather than from a refusal. The property is added to the SCHEMA only —\n`planRequest` strips it before the request is built, so the HTTP\ncontract is untouched and a curl caller never sees it.",
+      "kind": "why"
+    },
+    {
+      "id": "n6",
+      "symbol": "planRequest",
+      "line": 180,
+      "offset": 0,
+      "text": "Split MCP tool arguments into the HTTP pieces of a request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "planRequest",
+      "line": 185,
+      "offset": 5,
+      "text": "`confirm` is an MCP-layer argument, never part of the HTTP contract. It is\ndropped unconditionally rather than only for gated operations, so a model\nthat sends it on some other tool cannot push an unexpected field into a\nrequest body the route will then reject.",
+      "kind": "why"
+    }
+  ]
+}

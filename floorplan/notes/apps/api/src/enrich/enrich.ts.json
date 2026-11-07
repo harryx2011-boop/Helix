@@ -1,0 +1,151 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/enrich/enrich.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 7,
+      "offset": null,
+      "text": "The enrichment core: turn screened pages into fields that are either grounded\nor null.\n\nPure. Every input is already-fetched content and an already-returned model\nanswer, so the whole decision path - routing, verification, the reason a field\nis null - is testable without a network, a model or a database.\n\nThe invariant this file exists to hold, stated once: NO VALUE REACHES THE\nCALLER THAT THE CODE COULD NOT TIE TO TEXT IT FETCHED ITSELF. A field the\nmodel claimed but could not ground is not downgraded, flagged or annotated. It\nis null, with the reason it is null.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "NULL_REASONS",
+      "line": 7,
+      "offset": 0,
+      "text": "Every reason a field can come back null. A closed set, so a caller can branch on it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "Citation.quote",
+      "line": 23,
+      "offset": 0,
+      "text": "The passage that states the value, verified to appear in the fetched page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "Citation.locator",
+      "line": 24,
+      "offset": 0,
+      "text": "Where in the page it was read: an element for a structural hit, `body` for a model hit.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "EnrichedField.citation",
+      "line": 30,
+      "offset": 0,
+      "text": "Null when `value` is null; a verified citation otherwise.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "EnrichedField.phase",
+      "line": 31,
+      "offset": 0,
+      "text": "Which phase produced the value. Null when none did.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "EnrichedField.reason",
+      "line": 32,
+      "offset": 0,
+      "text": "Why `value` is null. Null when a value was found.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "EnrichedField.evidence",
+      "line": 33,
+      "offset": 0,
+      "text": "How the value was established, in the code own terms.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "EnrichedField.evidence.valueInCitation",
+      "line": 34,
+      "offset": 0,
+      "text": "Whether the value itself was found inside its cited passage. False for booleans, which cannot be.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "EnrichedField.evidence.sourcesConsidered",
+      "line": 35,
+      "offset": 0,
+      "text": "How many screened pages were searched for this field.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "reasonFor",
+      "line": 50,
+      "offset": 0,
+      "text": "Grounding rejections map one-to-one onto null reasons; the sets are deliberately the same words.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "routeStructural",
+      "line": 54,
+      "offset": 0,
+      "text": "Phase one and two: try to answer each field from page structure.\n\nReturns the fields that were answered and the fields still open. Only the open\nones are worth a model call, which is the entire point of routing: a page with\na JSON-LD Organization block answers `name`, `description` and `foundingDate`\nfor free, and asking a model for them costs money to get a worse answer.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "ModelClaim",
+      "line": 86,
+      "offset": 0,
+      "text": "One field as the model is asked to return it. Every part of this is a claim, not a fact.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "acceptModelFields",
+      "line": 97,
+      "offset": 0,
+      "text": "Phase three: accept only what can be verified.\n\n`sources` is built by the caller from pages the code fetched, so it is an\nallowlist the model cannot add to. A citation attributed to a URL that is not\nin it fails for that reason alone, which is what stops the model laundering a\nfabricated value through a plausible-looking URL.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "acceptModelFields",
+      "line": 109,
+      "offset": 12,
+      "text": "The model said the pages do not state it. That is a real answer, and the\none this endpoint is built to make safe to give.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "EnrichOutcome.sourcesUsed",
+      "line": 158,
+      "offset": 0,
+      "text": "Pages that became evidence, in the order they were read.",
+      "kind": "doc"
+    },
+    {
+      "id": "n17",
+      "symbol": "EnrichOutcome.sourcesRejected",
+      "line": 159,
+      "offset": 0,
+      "text": "Pages that were fetched and discarded, with the guardrail that discarded them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "assemble",
+      "line": 162,
+      "offset": 0,
+      "text": "Assemble the final answer from the structural pass and the verified model\npass, filling anything neither produced with an explicit reason.\n\n`modelReason` is how the caller says the model phase did not run - no provider\nconfigured, or it failed - so that a field left open by routing comes back as\n`model_unavailable` rather than the untrue `not_stated`.",
+      "kind": "doc"
+    }
+  ]
+}

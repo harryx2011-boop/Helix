@@ -3,13 +3,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-/*
- * Ambient background primitives for the marketing surface (landing-revamp-plan
- * "Firecrawl-like ... code animations running in the background"). All three
- * share the same contract: text spans not canvas, a single throttled ticker,
- * paused off-screen, settled deterministic frame under reduced motion, and a
- * seeded first paint so server and client agree.
- */
 
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -46,10 +39,6 @@ export function useInView(ref: React.RefObject<Element | null>): boolean {
   return inView;
 }
 
-/* ---------------------------------------------------------------------- */
-/* GridCells: hairline cell grid with slowly changing cell markers,        */
-/* violet ✦ nodes at chosen intersections and mono bracket labels.         */
-/* ---------------------------------------------------------------------- */
 
 type Corner = 'tl' | 'tr' | 'bl' | 'br';
 type Marker = '·' | '▪' | '+' | '▫';
@@ -58,18 +47,13 @@ const MARKERS: Marker[] = ['·', '▪', '+', '▫'];
 export interface GridCellsProps {
   cell?: number;
   labels?: Partial<Record<Corner, string>>;
-  /** Intersections (col, row) that carry a ✦ node. */
   sparkles?: [number, number][];
-  /** How many cells carry a marker at once. */
   density?: number;
   seed?: number;
-  /** Fade the grid toward the bottom (hero) or keep it flat (CTA). */
   fade?: 'bottom' | 'none';
   quiet?: boolean;
   className?: string;
-  /** Cells that carry a small pixel-square cluster, centred in the cell. */
   clusters?: { col: number; row: number; size?: 3 | 4; accent?: boolean; assemble?: boolean }[];
-  /** Draw a small `+` crosshair at every grid intersection (lg+ only). */
   crosshairs?: boolean;
 }
 
@@ -80,7 +64,6 @@ const CORNER_CLASS: Record<Corner, string> = {
   br: 'right-4 bottom-4',
 };
 
-/** Markers stay in the outer thirds so they never sit under centred copy. */
 function outerCol(rng: () => number, cols: number): number {
   const side = Math.max(1, Math.floor(cols * 0.3));
   const c = Math.floor(rng() * side);
@@ -227,21 +210,14 @@ export function GridCells({
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* PixelSquares: an n×n cluster of tiny squares, some on some off, one       */
-/* flipping at a time. Deterministic seeded first paint, throttled ticker,  */
-/* paused off-screen, static under reduced motion.                          */
-/* ---------------------------------------------------------------------- */
 
 export interface PixelSquaresProps {
   size?: 3 | 4;
   seed?: number;
-  /** Let one square in the cluster render in violet instead of ink grey. */
   accent?: boolean;
   scale?: 'sm' | 'md';
   quiet?: boolean;
   className?: string;
-  /** 'flip': one random cell toggles at a time (default). 'assemble': cells fill in a seeded order, hold, then clear and repeat. */
   mode?: 'flip' | 'assemble';
 }
 
@@ -250,7 +226,6 @@ function initialCells(n: number, seed: number): boolean[] {
   return Array.from({ length: n * n }, () => rng() < 0.42);
 }
 
-/** Deterministic shuffled fill order for 'assemble' mode (Fisher-Yates over a seeded rng). */
 function assembleOrder(n: number, seed: number): number[] {
   const rng = mulberry32(seed);
   const order = Array.from({ length: n * n }, (_, i) => i);
@@ -360,23 +335,15 @@ export function PixelSquares({ size = 4, seed = 1, accent, scale = 'sm', quiet, 
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* AsciiHelix: a rotating double helix drawn with characters. Depth picks   */
-/* the glyph and the layer (back strand in ink, front strand in violet),    */
-/* rungs join the strands. Three <pre> layers per frame, no per-cell spans. */
-/* ---------------------------------------------------------------------- */
 
 const STRAND_BACK = '.:-';
 const STRAND_MID = '+=*';
 const STRAND_FRONT = '#%@';
 
 export interface AsciiHelixProps {
-  /** Cells across the axis (strand swing + margin). */
   cols?: number;
-  /** Cells along the axis. */
   rows?: number;
   orientation?: 'vertical' | 'horizontal';
-  /** Cells per full turn. */
   pitch?: number;
   seed?: number;
   fps?: number;
@@ -463,11 +430,6 @@ export function AsciiHelix({ cols = 20, rows = 28, orientation = 'vertical', pit
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* AmbientCode: fragments of real Helix wire format drifting in and out    */
-/* of a section's background, each scrambling from glyph noise to its      */
-/* settled text. Violet strings, green status, ink keys.                   */
-/* ---------------------------------------------------------------------- */
 
 interface Fragment {
   id: number;
@@ -580,19 +542,12 @@ function resolveText(target: string, progress: number, id: number, tick: number)
   return out;
 }
 
-/* ---------------------------------------------------------------------- */
-/* CodeRain: a coarse grid of short wire-format tokens fading in and out,   */
-/* laid out as two <pre> layers (ink + violet-48) like AsciiHelix so the    */
-/* DOM cost stays two nodes regardless of grid size. Deterministic first    */
-/* paint, throttled ticker, paused off-screen, static under reduced motion. */
-/* ---------------------------------------------------------------------- */
 
 const RAIN_TOKENS = ['{', '}', '[ ]', '"url":', '200', '->', '0x1f', '·', ':', '='];
 
 export interface CodeRainProps {
   cols?: number;
   rows?: number;
-  /** Fraction of cells that carry a token at once (0-1). */
   density?: number;
   seed?: number;
   quiet?: boolean;

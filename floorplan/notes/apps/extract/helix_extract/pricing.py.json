@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/pricing.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Rate",
+      "line": 29,
+      "offset": 4,
+      "text": "Multipliers on `input_per_million`, not standalone rates: every provider\nthat reports cache tokens prices them as a fraction or multiple of the\nsame fresh-input rate, never a rate of their own.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": "PRICE_TABLE",
+      "line": 33,
+      "offset": 0,
+      "text": "USD per 1,000,000 tokens. Keyed by (provider, model) rather than model alone,\nbecause the same model name can mean different rates behind different wire\nformats (e.g. an OpenRouter-routed model is not this table's problem to\nprice — see the note below).\n\nAnthropic: platform.claude.com/docs/en/about-claude/pricing, checked\n2026-09-05. Cache read at 0.1x input and cache write at 1.25x input are\nAnthropic's own published ratios, uniform across this model family.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "PRICE_TABLE",
+      "line": 39,
+      "offset": 6,
+      "text": "OpenAI, Gemini and OpenRouter entries go here ONLY with a cited source\nchecked against this codebase's actual DEFAULT_MODELS/adapter model set\n(see llm.py). None are added speculatively: an uncited row is a guess\nwearing a price tag, and this table's whole point is refusing to guess.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "PRICE_TABLE",
+      "line": 39,
+      "offset": 6,
+      "text": "Local runtimes speak the OpenAI wire format but run on the operator's\nown hardware — priced at exactly zero, not absent, so a caller reading\n`cost_usd` sees a real answer rather than the \"unpriced\" case reserved\nfor a model this table has no opinion on.",
+      "kind": "what"
+    }
+  ]
+}

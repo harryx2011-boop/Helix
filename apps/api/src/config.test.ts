@@ -3,11 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 import { loadConfig } from './config.js';
 
-/**
- * The driver default decides whether an operator with nothing configured gets
- * a working instance. Unset HELIX_DB follows DATABASE_URL: present means the
- * existing Postgres keeps serving, absent means the in-process engine.
- */
 
 const base = { DATABASE_URL: 'postgres://localhost/helix' } as NodeJS.ProcessEnv;
 
@@ -40,13 +35,6 @@ describe('db', () => {
   });
 });
 
-/**
- * `int()` backs every numeric setting, including pool sizes that a caller can
- * hang the whole instance with if a bad value is silently coerced to
- * something small. `Number.parseInt` stops at the first non-digit character
- * instead of rejecting the value, so "1e3" becomes 1, "0x10" becomes 0 and
- * "12abc" becomes 12 -- each one a config typo that should fail loudly.
- */
 describe('int()', () => {
   it('rejects a value parseInt would silently truncate', () => {
     expect(() => loadConfig({ ...base, HELIX_PORT: '1e3' })).toThrow();

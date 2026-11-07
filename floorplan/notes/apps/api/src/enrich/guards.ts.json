@@ -1,0 +1,111 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/enrich/guards.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SOURCE_REJECTIONS",
+      "line": 4,
+      "offset": 0,
+      "text": "Source guardrails: what may become evidence for an enriched field.\n\nEnrichment is search-driven, so the candidate set is whatever a SERP returned\nfor a sparse identifier. That set reliably contains registrar parking pages,\n\"coming soon\" placeholders and social profiles, none of which carry the facts\nbeing asked for but all of which read as plausible prose to a model. Rejecting\nthem here is cheaper than un-inventing a value later, and it is the difference\nbetween \"no data\" and a confident wrong answer.\n\nEvery rejection names a reason, because the reason travels to the caller when\na field ends up null.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CONTENT_FLOOR_CHARS",
+      "line": 23,
+      "offset": 0,
+      "text": "Minimum characters of extracted text before a page counts as having said\nanything. A real about/team/pricing page clears this several times over; a\nplaceholder rarely reaches it even counting its own boilerplate.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SHORT_PAGE_CHARS",
+      "line": 25,
+      "offset": 0,
+      "text": "Length above which the phrase-based parked and placeholder tests stop\napplying. Those tests match short marketing phrases that a long, genuine page\nmay quote in passing; a real parking page is a few hundred characters of\nnothing. Without this bound, \"coming soon\" in a product roadmap would discard\nthe roadmap.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "SOCIAL_BLOCKLIST",
+      "line": 27,
+      "offset": 0,
+      "text": "Hosts whose pages are mostly interstitial, login-walled or infinite-scroll\nchrome. They do carry facts, but the fraction that survives extraction is\nnoise, and a citation into one cannot be re-verified by a caller who is not\nlogged in.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "PARKING_HOSTS",
+      "line": 42,
+      "offset": 0,
+      "text": "Registrar and hosting parking services, matched on the host serving the page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "PARKED_PHRASES",
+      "line": 56,
+      "offset": 0,
+      "text": "Phrases identifying a parked or for-sale domain, matched against a lowercased,\nwhitespace-collapsed body so markup and line wrapping cannot hide them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "PLACEHOLDER_PHRASES",
+      "line": 68,
+      "offset": 0,
+      "text": "Phrases identifying a site that exists but has not launched, or a default server page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "matchesHost",
+      "line": 95,
+      "offset": 0,
+      "text": "True when `host` is the blocked domain or a subdomain of it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "screenSource",
+      "line": 124,
+      "offset": 0,
+      "text": "Whether one fetched page may become evidence.\n\nOrder is most-specific-first where reasons overlap: a parked page is also\nbelow the content floor, and \"parked\" is the more useful reason to hand back.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "screenUrl",
+      "line": 149,
+      "offset": 0,
+      "text": "URL validation for a source before it is fetched.\n\n`checkUrl` is the same SSRF guard the scrape pipeline uses. Enrichment reaches\nthis path with URLs a search backend chose rather than URLs a caller typed, so\nthe guard applies with more force here, not less.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "screenUrl",
+      "line": 150,
+      "offset": 1,
+      "text": "The blocklist is a URL-level decision and belongs before the fetch, not\nafter it. Screening it only on fetched content means a blocklisted page is\nrequested anyway, and - since these hosts serve an interstitial to a\nnon-browser client - it is then rejected for whatever the interstitial\nlooked like, reporting a reason that is true but not the actual one.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "canonicaliseUrl",
+      "line": 162,
+      "offset": 0,
+      "text": "Canonical form for dedupe: host lowercased, tracking params and fragment dropped, trailing slash normalised.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "dedupeByUrl",
+      "line": 178,
+      "offset": 0,
+      "text": "Drops repeat URLs, keeping first-seen order.",
+      "kind": "doc"
+    }
+  ]
+}

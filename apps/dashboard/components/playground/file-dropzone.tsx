@@ -16,16 +16,9 @@ interface FileDropzoneProps {
   accept: string;
   file: File | null;
   onFileChange: (file: File | null) => void;
-  /** Shown when no file is selected and the zone is not being dragged over. */
   idleHint: string;
 }
 
-/**
- * Drop-to-select file zone shared by every playground form that takes an
- * upload. `dragDepth` counts nested dragenter/dragleave pairs — those fire for
- * every child element the pointer crosses, so a plain boolean flickers as it
- * moves over the label's own contents.
- */
 export function FileDropzone({ id, accept, file, onFileChange, idleHint }: FileDropzoneProps) {
   const [dragging, setDragging] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -36,8 +29,6 @@ export function FileDropzone({ id, accept, file, onFileChange, idleHint }: FileD
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // The prompt box can clear the file too; without this the native input
-  // still holds it and picking the same file again fires no change event.
   React.useEffect(() => {
     if (file === null && fileInputRef.current) fileInputRef.current.value = '';
   }, [file]);
@@ -56,11 +47,6 @@ export function FileDropzone({ id, accept, file, onFileChange, idleHint }: FileD
         }}
       />
 
-      {/*
-        A label rather than a div: clicking anywhere in the zone opens the
-        picker and keyboard focus reaches the real input, so the drop zone
-        costs no accessibility to gain its size.
-      */}
       <label
         htmlFor={id}
         onDragEnter={(event) => {

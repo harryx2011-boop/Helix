@@ -47,7 +47,6 @@ describe('secrets', () => {
     expect(logs.join()).toContain('moved to')
   })
 
-  // A base64 file is the secret in the clear; on Windows a file mode does not protect it.
   it('never writes the secrets without OS encryption, and says so', () => {
     const logs: string[] = []
     const s = loadOrCreateSecrets(file, cipher(false), (m) => logs.push(m), rand)

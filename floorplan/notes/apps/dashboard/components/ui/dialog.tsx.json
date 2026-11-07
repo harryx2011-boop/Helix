@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/ui/dialog.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "DialogContent",
+      "line": 37,
+      "offset": 9,
+      "text": "`min-w-0` on the grid and its children: a grid track sizes to its\ncontent's min-content width, so one unbreakable line (a long shell\ncommand in a <pre>) pushed the panel past max-w-* and the content\nspilled out the side. `max-h`/`overflow-y-auto` do the same for a\ntall dialog, which otherwise ran off the top and bottom of the\nviewport with no way to reach either end.",
+      "kind": "why"
+    }
+  ]
+}

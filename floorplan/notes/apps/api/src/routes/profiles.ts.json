@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/profiles.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ProfileHealthRow",
+      "line": 5,
+      "offset": 0,
+      "text": "Success/block rate for one fingerprint profile.\n\n`documents.profile` and `fetch_failures.profile` both name the identity that\nwas applied, win or lose, so the rate is real usage against this profile\nrather than a count of failures alone.",
+      "kind": "doc"
+    }
+  ]
+}

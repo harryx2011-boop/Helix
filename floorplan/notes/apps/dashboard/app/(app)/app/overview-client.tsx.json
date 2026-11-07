@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(app)/app/overview-client.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ExploreRow",
+      "line": 57,
+      "offset": 1,
+      "text": "Map lives inside Search/Crawl (WEBSITE.md §11: \"not a seventh product\") — only the\nsix standalone products get a cell, so the grid never orphans a lone item on its own row.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": "ApiKeyRow",
+      "line": 124,
+      "offset": 5,
+      "text": "The key lives in this browser, so revealing it is a local toggle rather\nthan a request for something the server is holding.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "OverviewClient",
+      "line": 265,
+      "offset": 7,
+      "text": "Omitted by the static-export build, which cannot read searchParams on the server.",
+      "kind": "doc"
+    }
+  ]
+}

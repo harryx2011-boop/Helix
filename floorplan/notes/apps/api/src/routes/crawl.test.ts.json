@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/crawl.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Call",
+      "line": 5,
+      "offset": 0,
+      "text": "Route contract tests. Postgres and URL discovery are replaced with fakes:\nthe point is the request/response surface — aliases, caps, validation and\nthe `/crawl/{jobId}` view — not the crawl itself.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "db",
+      "line": 21,
+      "offset": 7,
+      "text": "The row POST /crawl { resume } reads, and how many tasks it re-queues.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 99,
+      "offset": null,
+      "text": "The seed is the caller's choice of what this instance connects to, and it\nis written to the frontier for a worker to fetch later. Without the guard\nthe job is accepted and the SSRF happens out of band, in the worker.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 312,
+      "offset": null,
+      "text": "The name becomes part of the vector store's URL path.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 378,
+      "offset": null,
+      "text": "openapi.yaml has always declared these as the closed Format enum. Validating\nas a bare string accepted a name nothing serves, then dropped it per page,\nwhich reads as the format silently not working.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 557,
+      "offset": null,
+      "text": "`/crawl/{jobId}` serves the same rows as `/jobs/{id}`: one operator owns\nevery key, so neither statement carries an owner predicate.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 614,
+      "offset": null,
+      "text": "An unexpired lease is the evidence a worker is alive and holding it.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 629,
+      "offset": null,
+      "text": "A worker killed with -9 leaves the job at 'running' with a lease nobody\nrenews. Refusing that as already_running is what made the strand\npermanent: the worker will not re-claim a 'running' row either, so the\njob had no way back. See 012_job_leases.sql.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 724,
+      "offset": null,
+      "text": "changesOnly filters on hashes the crawl must have loaded to compare.",
+      "kind": "why"
+    }
+  ]
+}

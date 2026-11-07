@@ -4,11 +4,6 @@ import { InternalTickets, registerAuth } from './auth.js';
 import { RateLimiter } from './rate-limit.js';
 import type { ApiKey } from './api-keys.js';
 
-/**
- * The recorder is only worth having if the auth hook actually calls it. A
- * usage module wired to nothing looks identical to a working one from the
- * outside, so these assert the hook itself rather than the module.
- */
 
 const KEY: ApiKey = {
   id: '0f6c1d2e-3a4b-4c5d-8e6f-7a8b9c0d1e2f',
@@ -22,8 +17,6 @@ const KEY: ApiKey = {
 
 function build(usage: { record: ReturnType<typeof vi.fn> } | undefined, rateLimit = 1000) {
   const app = Fastify();
-  // The limiter takes the key's own rateLimit as an override, so the budget
-  // under test lives on the key rather than on the limiter.
   const key: ApiKey = { ...KEY, rateLimit };
   registerAuth(app, {
     verifyApiKey: async (token: string) => (token === 'helix-good' ? key : undefined),

@@ -15,14 +15,12 @@ class Settings(BaseSettings):
 
     port: int = 7402
 
-    # --- LLM (BYOK) --------------------------------------------------------
     helix_llm_provider: str = "openai"
     helix_llm_model: str = "gpt-4o-mini"
 
     openai_api_key: str | None = None
     openai_base_url: str | None = None
     anthropic_api_key: str | None = None
-    # Either name works for Gemini; the spec documents GOOGLE_API_KEY.
     gemini_api_key: str | None = None
     google_api_key: str | None = None
     openrouter_api_key: str | None = None
@@ -30,16 +28,12 @@ class Settings(BaseSettings):
     openai_compatible_api_key: str | None = None
     openai_compatible_base_url: str | None = None
 
-    # --- embeddings --------------------------------------------------------
-    # Local by default, so chunking and vector sync need no keys and cost nothing.
     helix_embedding_provider: str = "local"
     helix_embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     voyage_api_key: str | None = None
     cohere_api_key: str | None = None
 
-    # --- local-embeddings runtime (desktop exe) ------------------------------
-    # The exe ships without torch; the runtime pack is fetched here on first use.
     helix_runtime_dir: str | None = None
     helix_embeddings_runtime_url: str = (
         "https://github.com/harryx2011-boop/helix-releases/releases/latest/download/"

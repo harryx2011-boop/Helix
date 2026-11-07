@@ -15,7 +15,6 @@ const MODES: { value: EndpointMode; label: string; hint: string }[] = [
 
 interface MetadataFormProps {
   url: string;
-  /** Owned by the playground so the prompt box's paperclip and this form share one file. */
   file: File | null;
   onFileChange: (file: File | null) => void;
   onSubmit: (request: MetadataRequest | FormData, mode: EndpointMode) => void;

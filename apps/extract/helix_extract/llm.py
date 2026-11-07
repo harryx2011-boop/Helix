@@ -62,21 +62,14 @@ class ExtractionResult:
     model_used: str
     blocks_kept: int = 0
     blocks_total: int = 0
-    # The passages that reached the model, when the caller asked for them.
     sources: list[dict[str, Any]] = field(default_factory=list)
-    # Which provider actually answered, and every provider tried and abandoned
-    # before it — empty when the first (resolved) provider succeeded.
     provider_used: str = ""
     fallback_from: list[dict[str, str]] = field(default_factory=list)
-    # From pricing.PRICE_TABLE; None when (provider, model) is unpriced rather
-    # than free — see that module's note on the distinction.
     cost_usd: float | None = None
     tokens_cache_read: int | None = None
     tokens_cache_write: int | None = None
 
 
-# What a provider override runs when the request names no model. The instance's
-# HELIX_LLM_MODEL belongs to the instance's provider and means nothing elsewhere.
 DEFAULT_MODELS: dict[str, str] = {
     "openai": "gpt-4o-mini",
     "anthropic": "claude-sonnet-4-5",
@@ -85,12 +78,9 @@ DEFAULT_MODELS: dict[str, str] = {
     "openrouter": "openai/gpt-4o-mini",
 }
 
-# Providers whose model names are interchangeable, so the instance default carries over.
 _LOCAL_OPENAI_WIRE = frozenset({"ollama", "vllm", "openai-compatible"})
 _GEMINI = frozenset({"gemini", "google"})
 
-# Caller-supplied provider keys are tried in this order when the request names
-# no provider and the instance default has no key of its own to fall back on.
 _CALLER_KEY_PRIORITY = ("anthropic", "openai", "gemini", "openrouter")
 
 
@@ -242,7 +232,6 @@ def _openai_wire_credentials(
                 "OPENAI_COMPATIBLE_BASE_URL.",
                 fallback_eligible=True,
             )
-        # A local runtime needs no real key, but the SDK requires the field.
         return caller_key or settings.openai_compatible_api_key or "not-needed", base_url
 
     if caller_key:
@@ -273,8 +262,6 @@ async def _call_openai(
     key, url = _openai_wire_credentials(provider, caller_key, caller_base_url)
     client = AsyncOpenAI(api_key=key, base_url=url) if url else AsyncOpenAI(api_key=key)
 
-    # OpenAI reports only a cache READ count (`prompt_tokens_details.cached_tokens`);
-    # there is no separate write charge on this wire format, so writes stay 0.
     cache_read = 0
 
     async def run() -> tuple[dict[str, Any], int, int, str]:
@@ -337,8 +324,6 @@ async def _call_anthropic(
     use_output_format = _anthropic_supports_output_format()
     compiled = None if use_output_format else compile_anthropic(schema)
 
-    # Populated only when the request set `cache_control` (not currently the
-    # case here); absent on a plain call, so both default to 0 rather than None.
     cache_read = 0
     cache_write = 0
 
@@ -376,11 +361,6 @@ async def _call_anthropic(
                     "structured-output request."
                 ) from exc
         else:
-            # Auto tool choice plus a system-prompt instruction, not a forced
-            # tool_choice (a 400 on Claude Fable 5.1) — so a model can still
-            # answer in text instead of calling the tool; that is a content
-            # failure (the model's own answer), not a transport one, so it
-            # must not trigger cross-provider fallback.
             data = None
             for block in response.content:
                 if getattr(block, "type", None) == "tool_use":
@@ -432,8 +412,6 @@ async def _call_gemini(
 
     client = genai.Client(api_key=api_key)
 
-    # Gemini reports only a cache READ count; there is no separate write
-    # charge reported back to the caller, so writes stay 0.
     cache_read = 0
 
     async def run() -> tuple[dict[str, Any], int, int, str]:
@@ -502,7 +480,6 @@ async def _dispatch(
     raise ProviderError(f"Unknown provider: {provider}")
 
 
-# Total providers a single call will try, the resolved one plus fallback hops.
 MAX_PROVIDERS = 3
 
 
@@ -544,10 +521,6 @@ async def extract_structured(
     )
     default_provider = settings.helix_llm_provider.lower()
 
-    # N of M below is always this call's own selection — one `content` string,
-    # one `relevance.select()` result — never a crawl- or batch-level aggregate;
-    # callers sum blocks_kept/blocks_total across pages downstream of this
-    # return, but nothing summed ever flows back into the notice itself.
     selection = relevance.select(content, schema, prompt, max_tokens=max_input_tokens)
     fenced = wrap(selection.text, origin="page")
     if selection.kept_count and selection.kept_count < selection.total:
@@ -578,12 +551,6 @@ async def extract_structured(
                 fallback_eligible = exc.fallback_eligible
                 reason = str(exc)
             else:
-                # Every SDK has its own exception tree (auth, not-found, rate
-                # limit, transport, a runtime answering with something other
-                # than JSON). To the caller they are all one thing: the model
-                # step failed, and here is why. A raw exception reaching here
-                # already survived `call_structured`'s own retry+classify, so
-                # it is content-class, not transport — never fallback-eligible.
                 reason = describe_failure(current_provider, current_model, exc)
                 fallback_eligible = False
 

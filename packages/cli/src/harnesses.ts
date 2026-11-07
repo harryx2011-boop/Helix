@@ -15,7 +15,6 @@ export type HarnessId = 'claude-code' | 'cursor' | 'codex' | 'windsurf';
 export interface Harness {
   id: HarnessId;
   label: string;
-  /** Paths (relative to home) whose presence means the harness is installed. */
   markers: string[];
   mcpConfigPath: (home: string) => string;
   skillPath: (home: string) => string;

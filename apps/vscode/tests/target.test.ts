@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { candidatePorts, findApi, type FetchLike } from '../src/target';
 
-/** Answers `/v1/health` on the given ports, refuses the rest. */
 function healthOn(answers: Record<number, { status: number; body: unknown }>): FetchLike {
   return vi.fn(async (url: string) => {
     const port = Number(new URL(url).port);

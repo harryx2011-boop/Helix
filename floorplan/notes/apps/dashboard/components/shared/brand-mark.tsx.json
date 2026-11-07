@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/brand-mark.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BrandMark",
+      "line": 4,
+      "offset": 0,
+      "text": "A platform's or client's real mark. `mono` forces currentColor, e.g. white on the violet button.",
+      "kind": "doc"
+    }
+  ]
+}

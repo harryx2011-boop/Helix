@@ -2,16 +2,9 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { registerDocument, DOCUMENT_OPS } from './document.js';
 
-/**
- * The dispatcher forwards; the operations themselves are tested by their own
- * suites. What matters here is that the forward is faithful: the right target,
- * the body intact, the status and headers passed back, and binary responses
- * (a scrub returns file bytes) not corrupted on the way through.
- */
 
 let app: FastifyInstance | undefined;
 
-/** Stands in for the real routes, echoing what it was handed. */
 async function build(): Promise<FastifyInstance> {
   const instance = Fastify();
 
@@ -128,9 +121,6 @@ describe('POST /v1/document', () => {
       payload: '{ not json',
     });
 
-    // Fastify's own JSON parser answers before the handler runs. The wildcard
-    // parser the dispatcher adds is a fallback for other content types, not a
-    // replacement, so this stays a clean 400 rather than reaching the forward.
     expect(response.statusCode).toBe(400);
   });
 

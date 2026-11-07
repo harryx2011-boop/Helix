@@ -147,7 +147,6 @@ describe('POST /search', () => {
     expect(body.error).toBe('search_failed');
     expect(body.message).toBe('searxng answered HTTP 403 for web; searxng answered HTTP 403 for news');
 
-    // A failed call must not be served from the cache once the backend recovers.
     provider.search.mockResolvedValueOnce({ hits: [hit('https://a.test/1', 1)], failures: [] });
     const second = await post(app, { query: 'x', sources: ['web', 'news'] });
     expect(second.status).toBe(200);
@@ -380,7 +379,6 @@ describe('POST /search', () => {
             resolve(success(options.url));
             return;
           }
-          // The rest hang until the signal cuts them, as a stalled host would.
           options.signal.addEventListener('abort', () =>
             resolve({ ...failure(options.url), reason: 'timeout' as const, detail: 'cut' }),
           );

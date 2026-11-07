@@ -1,0 +1,183 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/pipeline.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 86,
+      "offset": null,
+      "text": "The invariant this whole pipeline exists to hold. A challenge page that\nreaches the caller as markdown silently poisons their dataset.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 100,
+      "offset": null,
+      "text": "Recognised by the body markers, which survive every tier — the header is\nonly present on the first hop.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 101,
+      "offset": null,
+      "text": "The caller can see what was tried, so a retry is an informed decision.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 105,
+      "offset": null,
+      "text": "A shell yields no text, so the pipeline must move up. It stops at the\nfirst tier that actually produces content — here the cheapest browser.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 176,
+      "offset": null,
+      "text": "A Next.js page that ships real content needs no browser. Escalating on\nframework markers alone burns the expensive tier for nothing.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 195,
+      "offset": null,
+      "text": "Capability requirements are known up front; walking the ladder first would\nwaste two round trips on tiers that cannot produce an image.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 220,
+      "offset": null,
+      "text": "The caller asked for plain. Silently upgrading would misreport the cost.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 237,
+      "offset": null,
+      "text": "A different profile or proxy may still work, and the caller is told so.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 278,
+      "offset": null,
+      "text": "The invariant does not get weaker just because extracted text is absent —\ndetectBlock still has status/headers/body fingerprints to work with.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": null,
+      "line": 295,
+      "offset": null,
+      "text": "With extraction, an empty page still returns `extracted = { text: '', ... }`\n(a defined, truthy object) once the ladder is exhausted — shouldEscalate\nreports escalate:false because there is no higher tier, and the pipeline\nreturns success with empty content rather than a failure. skipExtraction\nmust preserve that same shape rather than inventing a new failure mode.",
+      "kind": "why"
+    },
+    {
+      "id": "n11",
+      "symbol": null,
+      "line": 349,
+      "offset": null,
+      "text": "The only backoff figure in the exchange the host actually stated.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 368,
+      "offset": null,
+      "text": "The form implementations forget. A host that sends it and is met with a\none-second default gets hammered straight through its own cooldown.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": null,
+      "line": 380,
+      "offset": null,
+      "text": "A nonsense value should fall back to our own backoff, not become a crawl\nthat sleeps for a week.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": null,
+      "line": 435,
+      "offset": null,
+      "text": "The ladder endpoint reports why a page climbed; the reason has to be kept\non the result, not only logged.",
+      "kind": "why"
+    },
+    {
+      "id": "n15",
+      "symbol": null,
+      "line": 490,
+      "offset": null,
+      "text": "A heavier tier resolves the same name the same way; walking four tiers on\nNXDOMAIN only burns a browser launch and the full timeout per tier.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": null,
+      "line": 508,
+      "offset": null,
+      "text": "Extraction still runs for metadata, so its empty text must not drive a\nbrowser render for a caller who only asked for the raw bytes.",
+      "kind": "why"
+    },
+    {
+      "id": "n17",
+      "symbol": null,
+      "line": 800,
+      "offset": null,
+      "text": "Extracts what the html actually holds, so a challenge page reads as empty\nand the article reads as content. A fixed return would make every tier look\nidentical to the classifier.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": null,
+      "line": 818,
+      "offset": null,
+      "text": "Serves the challenge to chromium and the article to camoufox.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": null,
+      "line": 835,
+      "offset": null,
+      "text": "The sites camoufox exists for are the ones chromium loses, and they were\nunreachable unless the caller already knew to name the tier.",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": null,
+      "line": 863,
+      "offset": null,
+      "text": "And the failure still names the wall rather than a missing tier.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": null,
+      "line": 869,
+      "offset": null,
+      "text": "A conditional re-fetch is the only mechanism that avoids the download, and\na 304 carries no body by definition. Scored as `empty`, it made every\nunchanged page in an incremental crawl a fetch failure — so the feature\nthat exists to save work was recording the saving as damage.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": null,
+      "line": 879,
+      "offset": null,
+      "text": "Nothing to extract, so the extract hop must not be paid for either.",
+      "kind": "why"
+    }
+  ]
+}

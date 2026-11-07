@@ -3,12 +3,6 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 
-/**
- * openapi.yaml is the source of truth for the MCP tool surface. It lives at the
- * repo root in development and beside `dist/` in the container image, so the
- * loader walks upward from this module until it finds one. HELIX_OPENAPI_PATH
- * overrides the search.
- */
 
 export type JsonObject = Record<string, unknown>;
 
@@ -57,11 +51,6 @@ function resolvePointer(root: OpenApiSpec, ref: string): unknown {
   return node;
 }
 
-/**
- * Inline every `$ref` so a tool's input schema stands alone: MCP clients never
- * see the `components` section. A reference that points back into itself is
- * replaced by a bare object rather than recursing forever.
- */
 export function deref<T = unknown>(node: T, root: OpenApiSpec, stack: readonly string[] = []): T {
   if (Array.isArray(node)) {
     return node.map((item) => deref(item, root, stack)) as T;
@@ -84,10 +73,6 @@ export function deref<T = unknown>(node: T, root: OpenApiSpec, stack: readonly s
   return out as T;
 }
 
-/**
- * Collapse a top-level `allOf` of object schemas into one object schema so the
- * tool's `properties` are visible without the client having to merge them.
- */
 export function flattenAllOf(schema: JsonObject): JsonObject {
   const members = schema['allOf'];
   if (!Array.isArray(members)) return schema;

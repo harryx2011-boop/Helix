@@ -1,0 +1,111 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/vectors/sink.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ChunkToStore",
+      "line": 6,
+      "offset": 0,
+      "text": "Vector sinks.\n\nWrite crawl output straight into the operator's own vector store, so a RAG\npipeline is one call rather than a crawl followed by a bespoke loader. The\nstore belongs to them — Helix holds no copy and charges nothing for the hop.\n\nThe property that makes re-crawling viable: **point IDs are deterministic**,\nderived from the URL and the chunk's anchor. Re-crawling a site updates the\nvectors in place instead of appending a second copy of every chunk, which is\nwhat happens when IDs are random and is why re-indexing usually means wiping\nthe collection first.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "StoreRequest.model",
+      "line": 18,
+      "offset": 0,
+      "text": "The model that made the embeddings, kept so a later query can refuse to mix models.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "QueryHit.score",
+      "line": 40,
+      "offset": 0,
+      "text": "Cosine similarity: 1 is the same direction, 0 unrelated.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "CollectionModels",
+      "line": 43,
+      "offset": 0,
+      "text": "What a collection records about the model its chunks were embedded with,\nmeasured against the model about to embed a query.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "CollectionModels.otherModel",
+      "line": 45,
+      "offset": 0,
+      "text": "A recorded model other than the one asked about, when any chunk carries one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "CollectionModels.untracked",
+      "line": 46,
+      "offset": 0,
+      "text": "Some chunks were stored before the model was recorded.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "collectionName",
+      "line": 59,
+      "offset": 0,
+      "text": "The collection a destination writes to, and so the one a search of it reads.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "MismatchedEmbeddingDimensionsError",
+      "line": 65,
+      "offset": 0,
+      "text": "A batch mixed embeddings from more than one dimensionality, so the collection could not be sized from chunk 0 alone.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "deterministicId",
+      "line": 84,
+      "offset": 0,
+      "text": "A UUID v5-style identifier derived from the chunk's identity.\n\nSame URL plus same anchor gives the same id on every crawl, which is what\nmakes an upsert an update rather than a duplicate.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "deterministicId",
+      "line": 87,
+      "offset": 3,
+      "text": "Shape the digest as a UUID and stamp version 5 and the RFC 4122 variant, so\nstores that validate UUID format accept it.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "QdrantSink.store",
+      "line": 185,
+      "offset": 42,
+      "text": "Qdrant does not distinguish insert from update in its response, so the\ncount is reported as stored rather than guessed at.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "PgVectorSink.ensureCollection",
+      "line": 285,
+      "offset": 1,
+      "text": "The `chunks` table already exists from the migration. Collections are a\ncolumn here rather than a separate table, so nothing to create.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "PgVectorSink.store",
+      "line": 298,
+      "offset": 11,
+      "text": "xmax is zero on an insert and non-zero on an update, which is how\nPostgres lets an upsert report which one happened.",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/actions.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MAX_TOTAL_WAIT_MS",
+      "line": 6,
+      "offset": 0,
+      "text": "Pre-scrape browser actions.\n\nScripted steps, deliberately not an agent: the caller says exactly what to do,\nand the same input produces the same run. Agentic navigation is a separate\nconcern with different failure modes and different costs.\n\nTotal wait across a request is capped, and every step is also bounded by the\nrequest's own deadline, so a caller cannot hold a browser context open\nbeyond `timeout` with a chain of long sleeps or slow clicks.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "RunActionsOptions.deadline",
+      "line": 9,
+      "offset": 0,
+      "text": "Absolute time (ms since epoch) after which no step may still be running.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "runActions",
+      "line": 66,
+      "offset": 8,
+      "text": "Never 0: Playwright reads a zero timeout as \"no timeout\".",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": "runActions",
+      "line": 103,
+      "offset": 45,
+      "text": "Types into whatever currently has focus, so a click must precede it.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": "runActions",
+      "line": 128,
+      "offset": 70,
+      "text": "Runs in page context. Only reachable by an authenticated caller who\nalready controls what this instance fetches.",
+      "kind": "what"
+    }
+  ]
+}

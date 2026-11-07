@@ -13,10 +13,6 @@ const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefine
 
 const STORAGE_KEY = 'helix.theme';
 
-/**
- * Dark-first: an operator's console defaults to dark regardless of OS
- * preference (FRONTEND.md §3), but a stored choice always wins.
- */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = React.useState<Theme>('dark');
 

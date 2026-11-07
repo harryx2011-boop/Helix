@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shell/key-menu.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "KeyMenu",
+      "line": 19,
+      "offset": 0,
+      "text": "Masked-key display plus the two escape hatches the plan calls for:\n\"offer a way to change or clear it\" (FRONTEND.md F0).",
+      "kind": "doc"
+    }
+  ]
+}

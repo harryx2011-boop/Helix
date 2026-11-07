@@ -102,9 +102,6 @@ describe('POST /robots-check', () => {
     expect(RobotsCache).toHaveBeenCalledWith('GPTBot', expect.anything());
   });
 
-  /* The URL is the caller's choice of what this instance connects to. Without
-     the guard, `/robots-check` fetches `http://127.0.0.1:<port>/robots.txt` and
-     reports on internal content. */
   it('refuses a private or link-local address', async () => {
     const forUrl = vi.fn(async () => mockRules());
     vi.mocked(RobotsCache).mockImplementation(() => ({ forUrl }) as unknown as RobotsCache);

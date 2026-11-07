@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/providers.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Row",
+      "line": 6,
+      "offset": 0,
+      "text": "Route contract tests. Postgres is replaced with an in-memory fake so the\npoint stays the request/response surface and the encryption round trip,\nnot a real database.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "realFetch",
+      "line": 115,
+      "offset": 0,
+      "text": "Saving a credential now verifies it against the provider first, so every PUT\nin this file would otherwise make a real network call and be refused. The\ndefault stub answers 200 — \"the provider accepted it\" — leaving each test\nfree to assert the storage contract it is actually about. Tests that care\nabout a REJECTED credential override this with their own stub.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 224,
+      "offset": null,
+      "text": "The guarantee this endpoint gained: a credential the provider rejects is\nnever stored. Storing it would report `configured: true` and paint\n\"Connected\" for a key that cannot work.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 239,
+      "offset": null,
+      "text": "A provider outage must not refuse a good key. The credential is stored and\nthe caller is told it could not be checked.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 258,
+      "offset": null,
+      "text": "The plaintext goes to the provider in a header and into the database\nencrypted. It must never come back in the refusal message.",
+      "kind": "why"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 285,
+      "offset": null,
+      "text": "A caller-supplied base URL is an egress target: stored, forwarded to\nextract, and fetched server-side with the caller's key attached. An API key\nis handed to many users, so without this guard one of them could point the\ninstance at cloud metadata and read the host's credentials back out.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 305,
+      "offset": null,
+      "text": "The exemption is the private-address rule and only that rule: loopback and\nLAN are exactly where Ollama and vLLM live.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 329,
+      "offset": null,
+      "text": "Loopback and LAN are where a local runtime lives; link-local and CGNAT are\nnot. 169.254.169.254 is the cloud metadata endpoint, and naming a provider\n\"ollama\" must not be enough to reach it.",
+      "kind": "why"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 600,
+      "offset": null,
+      "text": "Cloud providers used to be refused here, which left the four of them with a\nfree-text model box and no discovery at all. They now answer from the live\ncatalogue, falling back to the curated list — so with no key stored and the\ncatalogue unreachable, the answer is still a usable list rather than a 400.",
+      "kind": "what"
+    }
+  ]
+}

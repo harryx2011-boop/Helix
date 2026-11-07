@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/char-chart.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CharChartProps.formatKind",
+      "line": 21,
+      "offset": 0,
+      "text": "Server-safe alternative to `format` — a function prop can't cross a\nserver/client boundary, so pages that compose this from a server\ncomponent pass a plain string kind instead. `format` wins if both are given.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "visibleLabelIndices",
+      "line": 40,
+      "offset": 0,
+      "text": "Thin x-axis labels to at most ~12 visible entries, evenly spaced, always keeping the last.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "CharChart",
+      "line": 98,
+      "offset": 47,
+      "text": "glyph grid",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "CharChart",
+      "line": 127,
+      "offset": 76,
+      "text": "transparent hover overlay",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "CharChart",
+      "line": 149,
+      "offset": 98,
+      "text": "baseline",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "CharChart",
+      "line": 157,
+      "offset": 106,
+      "text": "x-axis labels",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "CharChart",
+      "line": 169,
+      "offset": 118,
+      "text": "screen-reader table fallback",
+      "kind": "what"
+    }
+  ]
+}

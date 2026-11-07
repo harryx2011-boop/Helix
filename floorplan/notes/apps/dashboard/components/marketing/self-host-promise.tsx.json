@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/self-host-promise.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ClaimTabs",
+      "line": 61,
+      "offset": 0,
+      "text": "Tabbed claims: one strip switches between the four self-host proofs, evidence shown for the active tab.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SelfHostPromise",
+      "line": 83,
+      "offset": 0,
+      "text": "WEBSITE.md §4.5: centerpiece section. Centered header w/ ambient code texture, terminal replay, tabbed claims.",
+      "kind": "doc"
+    }
+  ]
+}

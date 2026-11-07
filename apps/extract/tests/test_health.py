@@ -24,8 +24,6 @@ def test_health_reports_ok() -> None:
 
 
 def test_health_never_leaks_key_material() -> None:
-    # Health says WHETHER a provider is configured, never what the key is.
-    # A health endpoint is often the least-guarded route in a deployment.
     response = client.get("/health")
     body = response.json()
 
@@ -37,7 +35,5 @@ def test_health_never_leaks_key_material() -> None:
 
 
 def test_embedding_works_without_any_key() -> None:
-    # The local model is the default precisely so chunking and vector sync work
-    # for someone evaluating Helix with no accounts anywhere.
     response = client.get("/health")
     assert response.json()["embedding_model"]

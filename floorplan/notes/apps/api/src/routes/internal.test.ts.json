@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/internal.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "KeyRow",
+      "line": 6,
+      "offset": 0,
+      "text": "The key-sync surface the hosted website mirrors its keys through.\n\nIts only trust boundary is a shared secret, and the route is the whole of\nthat boundary — there is no per-caller identity behind it. So the gate gets\ntested from every angle a mistake could open it: absent, wrong, wrong shape,\nright value in the wrong header form, and the disabled-by-default case that\nis what a self-host deployment actually runs.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "db",
+      "line": 22,
+      "offset": 7,
+      "text": "Mirrors ON CONFLICT (key_hash) DO UPDATE: an import is idempotent and\nun-revokes, which is how the website re-enables a key it re-issues.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "build",
+      "line": 59,
+      "offset": 0,
+      "text": "A default parameter would fire on an explicit `undefined`, quietly turning\nthe disabled-instance cases back into enabled ones.",
+      "kind": "what"
+    }
+  ]
+}

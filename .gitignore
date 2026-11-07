@@ -37,17 +37,12 @@ coverage/
 # research captures (large binaries)
 research/firecrawl-capture/out/
 research/firecrawl-capture/node_modules/
-graphify-out/*.html
 apps/dashboard/.screenshots/
 .worktrees/
 .pgdata/
 
 .vercel
 .env*
-
-graphify-out/cache/
-graphify-out/.graphify_python
-apps/graphify-out/
 
 # Supabase CLI link state
 supabase/.temp/

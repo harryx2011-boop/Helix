@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/enrich/fence.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "OPEN",
+      "line": 2,
+      "offset": 0,
+      "text": "Structural fencing for untrusted page text.\n\nEnrichment sends the model text authored by whoever controls the site the\nsearch backend pointed at. A prose instruction not to obey it is worth\nwriting and is not the boundary; the boundary is a marker the content cannot\nproduce, and the only way to guarantee that is to remove any occurrence of the\nmarker from the payload before wrapping it.\n\nThe marker is ASCII. A non-ASCII sentinel raises UnicodeEncodeError the moment\nanything downstream writes it to a cp1252 console, which takes down the call\nrather than protecting it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "Fenced",
+      "line": 5,
+      "offset": 0,
+      "text": "A wrapped payload. Branded so that slicing one is a type error: a clip that\nlands mid-string takes the closing marker with it and leaves a bare opening\nmarker, which a matched-pair test reads as clean while the rest of the\ndocument sits in trusted position. Clip the payload before wrapping, never\nafter.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "defang",
+      "line": 7,
+      "offset": 0,
+      "text": "Neutralises any marker the content itself contains, so it cannot end its own fence.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "FenceOptions.omittedChars",
+      "line": 13,
+      "offset": 0,
+      "text": "Characters of the payload that were dropped before wrapping, when it was clipped.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "fence",
+      "line": 16,
+      "offset": 0,
+      "text": "Wrap untrusted text, naming where it came from.\n\nWhen the caller clipped the payload it says so inside the fence, with the\ncount. A model handed a complete-looking payload concludes the missing thing\ndoes not exist, and answers \"not stated\" with total confidence; telling it\nwhat was cut is what makes a truthful \"I could not see it\" possible.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "clipForFence",
+      "line": 24,
+      "offset": 0,
+      "text": "Clip untrusted text to a character budget, returning what to wrap and how much\nwas dropped. Always call this BEFORE `fence`, never on its result.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "FENCE_INSTRUCTION",
+      "line": 29,
+      "offset": 0,
+      "text": "What the fence means, stated to the model. A marker the model was never told\nabout does nothing at all.",
+      "kind": "doc"
+    }
+  ]
+}

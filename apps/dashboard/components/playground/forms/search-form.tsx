@@ -16,7 +16,6 @@ interface SearchFormProps {
   loading: boolean;
 }
 
-/** Google `tbs` windows; the value `any` sends no filter. */
 const TIME_WINDOWS: { value: string; label: string }[] = [
   { value: 'any', label: 'Any time' },
   { value: 'qdr:d', label: 'Past day' },

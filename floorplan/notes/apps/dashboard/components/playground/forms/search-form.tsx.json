@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/forms/search-form.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TIME_WINDOWS",
+      "line": 19,
+      "offset": 0,
+      "text": "Google `tbs` windows; the value `any` sends no filter.",
+      "kind": "doc"
+    }
+  ]
+}

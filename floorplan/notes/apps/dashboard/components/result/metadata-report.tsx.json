@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/result/metadata-report.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "RISK_BADGE",
+      "line": 17,
+      "offset": 0,
+      "text": "A metadata report a person can act on.\n\nThe one design decision that matters here: **the risk bands are the\nstructure, not a column.** A flat table of forty tag/value pairs is\ntechnically the same information and useless — the reader's question is\n\"does this file give away something I care about\", and the answer has to be\nlegible before they read a single row.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MetadataScrubView",
+      "line": 134,
+      "offset": 4,
+      "text": "Object URLs are per-blob and leak if the component remounts with a new one.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "MetadataScrubView",
+      "line": 173,
+      "offset": 43,
+      "text": "Retained comes first and is visually louder than removed. A reader who\nstops at the first section must not walk away believing the file is\nclean when something is still in it.",
+      "kind": "why"
+    }
+  ]
+}

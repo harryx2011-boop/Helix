@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/result/metadata-strip.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MetadataStripProps",
+      "line": 6,
+      "offset": 0,
+      "text": "Timing and hash are surfaced from the raw response, since Document.metadata doesn't carry them (see openapi.yaml Metadata vs. the route's actual payload).",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MetadataStrip",
+      "line": 13,
+      "offset": 1,
+      "text": "Server-reported timing (pipeline duration) is authoritative; the client\nstopwatch (round-trip including network) is the fallback for callers\nthat pass no metadata.timingMs.",
+      "kind": "what"
+    }
+  ]
+}

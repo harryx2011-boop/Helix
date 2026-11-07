@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/monitor.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BASE_PATH",
+      "line": 21,
+      "offset": 0,
+      "text": "Monitor.\n\nCreate a watch on one URL, read its state and timeline, adjust or pause it,\ndelete it. Checks run on the scheduler, not in the request; `POST .../check`\nasks the scheduler for one right now, under the same claim and budget.\n\nEvery monitor belongs to the API key that created it. A key that holds\nanother key's monitor id gets 404, the same answer as for an id that does\nnot exist.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MonitorRouteDeps.allowPrivateUrls",
+      "line": 123,
+      "offset": 0,
+      "text": "`HELIX_ALLOW_PRIVATE_URLS`: let monitors watch loopback and private-range addresses.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "MonitorRouteDeps.resolveHost",
+      "line": 124,
+      "offset": 0,
+      "text": "DNS lookup used by the URL guard. Injected by tests; defaults to the system resolver.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "selectorConflict",
+      "line": 171,
+      "offset": 0,
+      "text": "`trigger.selector` and a non-empty `includeSelectors` name the same knob twice.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "registerMonitor",
+      "line": 261,
+      "offset": 3,
+      "text": "The monitor, if it exists and belongs to the calling key.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "registerMonitor",
+      "line": 296,
+      "offset": 38,
+      "text": "A caller's proxy is a host every check connects to, so it meets the egress rules once, here.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "registerMonitor",
+      "line": 384,
+      "offset": 126,
+      "text": "A null `nextCheckAt` on a monitor that is not paused is a running\ncheck's claim. Setting a time now would let the scheduler claim it\nagain before that check ends; the check's own reschedule reads the\nnew schedule when it finishes.",
+      "kind": "what"
+    }
+  ]
+}

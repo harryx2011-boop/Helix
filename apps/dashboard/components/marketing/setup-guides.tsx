@@ -33,7 +33,6 @@ const FETCH_LINK: Record<FetchMode, { href: string; label: string }> = {
   llms: { href: '/llms.txt', label: 'View llms.txt' },
 };
 
-/** The two-option pill that sits in a terminal panel's chrome. */
 function PanelToggle<T extends string>({ options, value, onChange }: { options: readonly { id: T; label: string }[]; value: T; onChange: (id: T) => void }) {
   return (
     <div className="flex items-center gap-1 rounded-pill bg-white/[0.06] p-0.5">
@@ -124,7 +123,6 @@ const SCRAPE_RESPONSE = `{
   "warnings": []
 }`;
 
-/** Tabbed request/response for the SDK, CLI and agent wiring, then one onboarding band for coding agents. */
 export function SetupGuides() {
   const [active, setActive] = React.useState<SetupLang>('python');
   const [wireMode, setWireMode] = React.useState<'skill' | 'mcp'>('skill');

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/usage.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Call",
+      "line": 4,
+      "offset": 0,
+      "text": "The recorder and its aggregates against a fake pool. What matters here is\nthat a request is attributed to the right bucket, that a flush failure is\nsurvivable, and that the aggregates are computed by the query rather than in\nJS, so the assertions are mostly about the SQL that goes out.",
+      "kind": "doc"
+    }
+  ]
+}

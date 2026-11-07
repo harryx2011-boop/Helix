@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/robots.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CACHE_TTL_MS",
+      "line": 7,
+      "offset": 0,
+      "text": "robots.txt, per RFC 9309.\n\nRespected by default. The override exists, requires an explicit flag, and is\nlogged — a scraper that ignores robots.txt is a reputational problem before it\nis a technical one.\n\n`Crawl-delay` is honoured despite being absent from RFC 9309. Google ignores\nit; we do not, because a directive a site owner took the trouble to write is\nworth following even when the standard does not require it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CACHE_TTL_MS",
+      "line": 7,
+      "offset": 0,
+      "text": "RFC 9309 suggests at most 24h",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "MAX_ROBOTS_BYTES",
+      "line": 8,
+      "offset": 0,
+      "text": "RFC 9309 requires parsing at least 500 KiB",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "PERMISSIVE",
+      "line": 23,
+      "offset": 0,
+      "text": "Everything is permitted — used when robots.txt is absent or unreadable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "RobotsCache.#fetch",
+      "line": 61,
+      "offset": 4,
+      "text": "Redirects are followed by hand so every hop is checked: a public host\nanswering 302 to an internal address is the usual way around a check\nmade only on the first URL.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "RobotsCache.#fetch",
+      "line": 84,
+      "offset": 27,
+      "text": "404 means no rules exist, which is permission. A 5xx means we could not\nfind out — and guessing \"allowed\" there would be presumptuous, but\nrefusing to crawl on a transient upstream error is worse. RFC 9309\ntreats unreachable as unavailable; we follow that and allow.",
+      "kind": "what"
+    }
+  ]
+}

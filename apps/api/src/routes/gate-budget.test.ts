@@ -7,13 +7,6 @@ import type { ExtractClient } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
 import type * as HostGateModule from '../core/host-gate.js';
 
-/**
- * Time spent waiting for the host's turn is part of the caller's `timeout`,
- * not added on top of it: a 30 s scrape must not take 40 s.
- *
- * The gate is replaced by one that reports a 20 s wait without spending it,
- * and the fetch shows what budget the pipeline was given.
- */
 
 const WAITED_MS = 20_000;
 
@@ -60,7 +53,6 @@ function extractClient(): ExtractClient {
 
 const browserPool = {} as BrowserPool;
 
-/** The `timeoutMs` the first fetch was given. */
 function fetchBudget(client: FetchClient): number {
   const fetch = client.fetch as unknown as { mock: { calls: [{ timeoutMs: number }][] } };
   return fetch.mock.calls[0]![0].timeoutMs;

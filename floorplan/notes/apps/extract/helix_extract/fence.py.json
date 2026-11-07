@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/fence.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "_defang_origin",
+      "line": 33,
+      "offset": 1,
+      "text": "Defang and quote-escape only — see module docstring for why this does\nnot also restrict to ASCII.",
+      "kind": "why"
+    }
+  ]
+}

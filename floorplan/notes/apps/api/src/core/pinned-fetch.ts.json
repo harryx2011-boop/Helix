@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/pinned-fetch.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PinnedFetchOptions",
+      "line": 8,
+      "offset": 0,
+      "text": "A fetch whose address check and connection use the same DNS answer.\n\nChecking a name and then calling `fetch` resolves it twice, and a name with\na zero TTL can answer a public address to the check and a private one to the\nconnection. Here the check runs inside the socket's own lookup, so the\naddress that passed is the address connected to.\n\nIt never follows redirects: callers that follow them do so by hand and send\neach hop back through this function. It does not decompress bodies, so it\nsends no Accept-Encoding of its own.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PinnedFetchOptions.blocked",
+      "line": 9,
+      "offset": 0,
+      "text": "True for an address that must not be reached. Defaults to every non-public address.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "pinnedFetch",
+      "line": 90,
+      "offset": 0,
+      "text": "The default pinned fetch: every non-public address refused.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,183 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/persistent-frontier.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FLUSH_THRESHOLD",
+      "line": 6,
+      "offset": 0,
+      "text": "A frontier that survives a restart.\n\nThe in-memory {@link Frontier} owns scope rules and dedup; this wraps it with\na Postgres-backed queue so a worker that dies mid-crawl resumes where it\nstopped instead of starting over. On a ten-thousand-page crawl that is the\ndifference between a blip and losing an hour of work.\n\nWrites are batched. One INSERT per discovered URL would make the database the\nbottleneck long before the network was.\n\nClaims are LEASES, not flags. A worker that exits cleanly returns its claims;\na worker that is killed cannot, and a bare 'running' status would strand those\nrows forever — the crawl completes reporting fewer pages than it queued, with\nno failure row to explain the gap. Every claim therefore carries an expiry\nthat the holder extends while it works, and any worker may reclaim a task\nwhose lease has passed. Expiry is decided by the database clock, never by the\nworker's: two machines whose clocks disagree by a minute would otherwise\nreclaim each other's live work.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "LEASE_SECONDS",
+      "line": 9,
+      "offset": 0,
+      "text": "How long a claim is good for.\n\nLong enough that a slow chromium render plus its extraction finishes inside\nit, short enough that a crashed worker's queue is recovered while the crawl\nis still running. Too short is worse than too long: it hands live work to a\nsecond worker and pays for the same page twice.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "RENEW_INTERVAL_MS",
+      "line": 11,
+      "offset": 0,
+      "text": "Renewals are attempted at a third of the lease, so one lost round trip is survivable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "PersistentFrontier.#workerId",
+      "line": 23,
+      "offset": 0,
+      "text": "Identifies this worker's claims so `release()` returns only its own.\nWithout it, a shutting-down worker would requeue tasks another worker had\nlegitimately reclaimed and is fetching right now.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "PersistentFrontier.#claimed",
+      "line": 25,
+      "offset": 0,
+      "text": "Claimed in the database, not yet handed to a fetcher.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "PersistentFrontier.#inFlight",
+      "line": 26,
+      "offset": 0,
+      "text": "Handed out and being fetched right now.\n\nTracked separately from `#claimed` because these are the rows whose lease\nmost needs renewing and whose loss on shutdown actually costs a page. Before\nthis existed, `next()` spliced an item out of `#claimed` and the frontier\nforgot a row that was still 'running' in Postgres — so a shutdown requeued\nonly the unstarted buffer, and every page mid-fetch was stranded.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "PersistentFrontier.resume",
+      "line": 35,
+      "offset": 0,
+      "text": "Rebuild in-memory state from the queue after a restart.\n\nCompleted URLs are re-added to the dedup filter — without that, a resumed\ncrawl would happily re-enqueue everything it had already finished.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "PersistentFrontier.resume",
+      "line": 36,
+      "offset": 1,
+      "text": "Reclaim first: a task whose lease died with its worker is queued work,\nand reading the queue before recovering it would leave it out of the\nrestored count and out of the crawl.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "PersistentFrontier.resume",
+      "line": 44,
+      "offset": 9,
+      "text": "Depth is irrelevant here: this only needs to mark the URL as seen.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "PersistentFrontier.resume",
+      "line": 46,
+      "offset": 11,
+      "text": "Those adds populated the queue as a side effect; drain it so only genuinely\npending work is dispensed.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "PersistentFrontier.reclaimExpired",
+      "line": 66,
+      "offset": 0,
+      "text": "Return tasks whose lease has expired to the queue.\n\nSafe to run while other workers hold live leases: the WHERE clause only\nmatches rows whose expiry is already in the past by the database's own\nclock, so a task being actively renewed is never taken from under its\nholder. Comparing against a timestamp computed in Node would make that\nguarantee depend on two machines agreeing about the time.\n\nA task that has burned through its attempts is failed rather than requeued.\nA URL that kills three workers in a row will kill the fourth, and an\nunbounded reclaim loop turns one poison page into a crawl that never ends.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "PersistentFrontier.renewLeases",
+      "line": 84,
+      "offset": 0,
+      "text": "Push this worker's leases forward.\n\nRate-limited by the caller's clock rather than run per fetch: the renewal\nexists to outlive a slow page, not to be a round trip attached to every one.\n`status = 'running'` in the WHERE means a lease already reclaimed by another\nworker is not silently taken back — the row has moved on, and this worker's\nresult for it will be discarded by the same condition on completion.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "PersistentFrontier.add",
+      "line": 99,
+      "offset": 0,
+      "text": "Offer a URL. Accepted URLs are queued for the next flush.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "PersistentFrontier.flush",
+      "line": 118,
+      "offset": 0,
+      "text": "Write queued discoveries. Called on a threshold and before waiting.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "PersistentFrontier.flush",
+      "line": 124,
+      "offset": 6,
+      "text": "One multi-row INSERT rather than N statements.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "PersistentFrontier.next",
+      "line": 145,
+      "offset": 0,
+      "text": "Take the next URL for a host with capacity, marking it claimed.\n\nClaims are batched: marking one row at a time would put a round trip in\nfront of every single fetch.",
+      "kind": "doc"
+    },
+    {
+      "id": "n17",
+      "symbol": "PersistentFrontier.next",
+      "line": 153,
+      "offset": 8,
+      "text": "Pull a batch out of the in-memory queue regardless of host availability,\nthen hand back whichever of them a free host can take.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "PersistentFrontier.next",
+      "line": 162,
+      "offset": 17,
+      "text": "The claim matches rows by URL, so any still buffered must exist first;\notherwise the claim misses, the fetch runs unowned and its result is dropped.",
+      "kind": "why"
+    },
+    {
+      "id": "n19",
+      "symbol": "PersistentFrontier.#leased",
+      "line": 184,
+      "offset": 0,
+      "text": "Every URL this worker holds a lease on, buffered or in flight.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "PersistentFrontier.markCompleted",
+      "line": 188,
+      "offset": 0,
+      "text": "Record a finished page, but only while this worker still holds the claim.\n\n`claimed_by` is the same guard `release()` carries, and for the same reason:\na worker whose lease expired mid-fetch is no longer the owner of that row,\nand flipping it to a terminal status would take the page away from the\nworker now fetching it and store the document twice. The caller is told\nwhether the row moved so it can drop a result the queue has moved past.",
+      "kind": "doc"
+    },
+    {
+      "id": "n21",
+      "symbol": "PersistentFrontier.markCompleted",
+      "line": 190,
+      "offset": 2,
+      "text": "The lease is cleared with the status. A terminal row keeping a stale\nexpiry is what a reclaim sweep would read as abandoned work.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "PersistentFrontier.release",
+      "line": 211,
+      "offset": 0,
+      "text": "Return unfetched claims to the queue, so a shutdown loses nothing.",
+      "kind": "doc"
+    }
+  ]
+}

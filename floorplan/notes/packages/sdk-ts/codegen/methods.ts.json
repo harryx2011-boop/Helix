@@ -1,0 +1,135 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/sdk-ts/codegen/methods.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SdkMethod",
+      "line": 2,
+      "offset": 0,
+      "text": "The SDK's method table. Each row names an operation in openapi.yaml and\nholds only what the spec cannot say: the method's public name where it\ndiffers from the operationId, the TypeScript types from src/types.ts where\nthe spec's schema is inline, and argument shapes kept for compatibility.\nHTTP method, path, path and query parameters, whether a body is optional,\nmultipart fields, 204-means-void and unauthenticated routes all come from\nthe spec. codegen/generate.ts turns this into src/client.ts.\n\nEvery operation in the spec is either a row here or listed in NOT_IN_SDK,\nand the generator refuses to run otherwise, so a new endpoint cannot land\nin the spec without a decision about the SDK.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SdkMethod.name",
+      "line": 3,
+      "offset": 0,
+      "text": "Public method name.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SdkMethod.op",
+      "line": 4,
+      "offset": 0,
+      "text": "operationId in openapi.yaml.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "SdkMethod.pathArgs",
+      "line": 6,
+      "offset": 0,
+      "text": "Argument names for the path parameters, in path order, where they differ from the spec's.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "SdkMethod.pathTypes",
+      "line": 7,
+      "offset": 0,
+      "text": "TypeScript types for path parameters, by spec name, where `string`/`number` is too loose.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "SdkMethod.query",
+      "line": 8,
+      "offset": 0,
+      "text": "How query parameters are taken: one options object (default), one argument each, or not at all.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "SdkMethod.queryType",
+      "line": 9,
+      "offset": 0,
+      "text": "Named type for the options object; otherwise it is written out from the spec's parameters.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "SdkMethod.request",
+      "line": 10,
+      "offset": 0,
+      "text": "Type of the body argument where the spec's JSON schema is inline or broader.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "SdkMethod.bodyArg",
+      "line": 11,
+      "offset": 0,
+      "text": "Name of the body argument. Defaults to `request`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "SdkMethod.upload",
+      "line": 12,
+      "offset": 0,
+      "text": "An upload type accepted in place of `request` and sent as multipart/form-data.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "SdkMethod.bodyFrom",
+      "line": 13,
+      "offset": 0,
+      "text": "Builds the body from one argument instead of taking it whole.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "SdkMethod.response",
+      "line": 14,
+      "offset": 0,
+      "text": "Return type where the spec's response schema is inline or differs.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "SdkMethod.decode",
+      "line": 15,
+      "offset": 0,
+      "text": "A function in src/transport.ts that decodes a non-JSON response.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "SdkMethod.url",
+      "line": 16,
+      "offset": 0,
+      "text": "Build and return the URL instead of sending a request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "SDK_METHODS",
+      "line": 112,
+      "offset": 93,
+      "text": "Typed `unknown` since before generation; the spec's MonitorSnapshot would narrow it.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "NOT_IN_SDK",
+      "line": 140,
+      "offset": 0,
+      "text": "Operations in the spec with no SDK method, and why.",
+      "kind": "doc"
+    }
+  ]
+}

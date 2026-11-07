@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/db/drivers/pg.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "pgDriver",
+      "line": 15,
+      "offset": 11,
+      "text": "An idle client erroring is not fatal — the pool replaces it. Logging it\nmatters because a silent connection churn looks like random slowness.",
+      "kind": "why"
+    }
+  ]
+}

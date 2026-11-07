@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/mode.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "HOSTED",
+      "line": 1,
+      "offset": 0,
+      "text": "One app, two build modes (DESKTOP-PLAN.md Phase 2).\n\nHosted:    HELIX_HOSTED=1 — the public website on Vercel, server output, no instance and no accounts.\nSelf-host: default       — local API-key gate, static export served by the API.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "instanceUrl",
+      "line": 7,
+      "offset": 0,
+      "text": "The instance URL to show a person. Off the dev port with no baked URL, the\nAPI serves this page itself (the desktop app, a self-host export), so the\npage's own origin is the instance; `resolveBaseUrl` in `lib/api.ts` makes the\nsame call for requests. Browser-only: server render and export get the fallback.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "instanceMcpUrl",
+      "line": 14,
+      "offset": 0,
+      "text": "`MCP_URL` for display, on the same origin rule as `instanceUrl`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "MCP_URL",
+      "line": 20,
+      "offset": 0,
+      "text": "The API serves MCP at `/mcp` on its own host; a hosted deployment may front it with `https://mcp.helix.dev/v1`.",
+      "kind": "doc"
+    }
+  ]
+}

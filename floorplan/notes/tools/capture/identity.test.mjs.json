@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "tools/capture/identity.test.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CHROME_MAC",
+      "line": 14,
+      "offset": 0,
+      "text": "These decide whether a recording is written and what identity it claims. A\nwrong answer here produces a definition marked `verified: true` that describes\na browser nobody runs — worse than having no definition at all.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 59,
+      "offset": null,
+      "text": "A Mac with a touchscreen-shaped report is still a Mac.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 67,
+      "offset": null,
+      "text": "Safari/605 is the WebKit build; Version/18.5 is Safari's own.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 128,
+      "offset": null,
+      "text": "Mirrors available() in apps/fetch/src/profile.rs. Read from the Rust\nsource rather than duplicated here: a frozen copy is what lets the two\ndrift, and a name this list carries that resolve() does not know would\nrecreate the chrome-149-macos bug one level up.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 141,
+      "offset": null,
+      "text": "Safari is the one that differs, and getting it wrong is a single-field giveaway.",
+      "kind": "what"
+    }
+  ]
+}

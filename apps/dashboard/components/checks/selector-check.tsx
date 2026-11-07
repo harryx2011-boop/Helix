@@ -62,7 +62,6 @@ export function SelectorCheck() {
 
   const blocked = needsKey(apiKey) && ready;
 
-  // One fetch, many selectors: matching is local, so typing re-runs without another request.
   const result = React.useMemo(
     () => (html === null ? null : matchSelector(html, selector, kind)),
     [html, selector, kind],

@@ -5,13 +5,6 @@ import { cn } from '@/lib/utils';
 import { useInView, useReducedMotion } from './ambient';
 import { FIELD_TONE, type FieldTone } from './field-tone';
 
-/*
- * AsciiFluid: a character field whose glyph density follows a slowly
- * drifting wave surface, so it reads as liquid rising and settling. Two
- * <pre> layers (ink for the body, violet for the crests) like AsciiHelix,
- * so the DOM cost is two nodes at any size. Deterministic first paint,
- * paused off-screen, static under reduced motion.
- */
 
 const BODY = ' ..::--==++**##%%';
 const CREST = 'X%#';
@@ -26,7 +19,6 @@ function smooth(t: number): number {
   return t * t * (3 - 2 * t);
 }
 
-/** Value noise on a 2-D lattice, lerped across an integer time step so it drifts rather than flickers. */
 export function noise(x: number, y: number, t: number, seed: number): number {
   const x0 = Math.floor(x);
   const y0 = Math.floor(y);

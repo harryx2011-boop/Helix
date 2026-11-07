@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shell/api-key-gate.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ApiKeyGate",
+      "line": 11,
+      "offset": 0,
+      "text": "Blocks the app behind a key prompt until one is stored. Not a login —\nthere is no account behind it, just a bearer token this instance already\nissued (FRONTEND.md §3, \"Auth, and its honest limit\").",
+      "kind": "doc"
+    }
+  ]
+}

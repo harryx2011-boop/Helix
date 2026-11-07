@@ -146,7 +146,6 @@ function DocSection({ title, children }: { title: string; children: React.ReactN
   );
 }
 
-/** Renders a docs-content body: text with backtick spans as inline code. */
 function InlineCode({ text }: { text: string }) {
   const parts = text.split('`');
   return (

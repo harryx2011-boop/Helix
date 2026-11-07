@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/document.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "app",
+      "line": 6,
+      "offset": 0,
+      "text": "The dispatcher forwards; the operations themselves are tested by their own\nsuites. What matters here is that the forward is faithful: the right target,\nthe body intact, the status and headers passed back, and binary responses\n(a scrub returns file bytes) not corrupted on the way through.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "build",
+      "line": 8,
+      "offset": 0,
+      "text": "Stands in for the real routes, echoing what it was handed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 124,
+      "offset": null,
+      "text": "Fastify's own JSON parser answers before the handler runs. The wildcard\nparser the dispatcher adds is a fallback for other content types, not a\nreplacement, so this stays a clean 400 rather than reaching the forward.",
+      "kind": "what"
+    }
+  ]
+}

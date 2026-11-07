@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/scripts/check-changelog.mjs",
+  "description": "Fails when the changelog data and the repository disagree: a tag or a manifest version with no entry, an entry with",
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "no source, a wrong release kind, a commit that does not match its tag, or a list that does not descend by version.\nNeeds full git history and tags (a shallow clone fails on purpose). Run: npm run check:changelog",
+      "kind": "what"
+    }
+  ]
+}

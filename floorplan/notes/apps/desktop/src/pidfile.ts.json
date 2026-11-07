@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/src/pidfile.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CREATION_TOLERANCE_MS",
+      "line": 23,
+      "offset": 0,
+      "text": "Spawn-to-creation skew is milliseconds; the slack covers clock steps without letting a recycled pid match.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "imageOf",
+      "line": 25,
+      "offset": 0,
+      "text": "The image name Windows reports for a command; a bare `node` resolved from PATH runs as node.exe.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "planStaleKills",
+      "line": 57,
+      "offset": 0,
+      "text": "A record is a live stale child only if its pid still runs the same image, created when we spawned it.",
+      "kind": "doc"
+    }
+  ]
+}

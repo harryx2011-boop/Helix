@@ -1,0 +1,423 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/metadata.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Risk",
+      "line": 39,
+      "offset": 0,
+      "text": "--- model ------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "Finding",
+      "line": 66,
+      "offset": 9,
+      "text": "Whether a scrub can remove this one. A few entries are structural and\nsurvive by necessity; saying so beats silently keeping them.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "ScanResult",
+      "line": 73,
+      "offset": 4,
+      "text": "Set when a container opened but one of its parts could not be read. The\nscan is still returned — a partial report beats none — but the caller has\nto know it is partial or it will read absence as safety.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": "ScrubResult",
+      "line": 80,
+      "offset": 4,
+      "text": "Detected and NOT removed. Never silently empty: a scrub that left\nsomething behind must name it.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 94,
+      "offset": null,
+      "text": "--- risk ranking ------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "_EXACT_RISK",
+      "line": 94,
+      "offset": 0,
+      "text": "Exact keys first, then substrings. A key matched by neither lands at\nLOW / OTHER: an unknown tag is still reported, but it does not inflate the\nrisk summary on the strength of a name nobody recognised.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "_EXACT_RISK",
+      "line": 95,
+      "offset": 1,
+      "text": "Location — the highest-consequence disclosure in a consumer photo.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "_EXACT_RISK",
+      "line": 105,
+      "offset": 11,
+      "text": "Identity — names a person, not a machine.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "_EXACT_RISK",
+      "line": 115,
+      "offset": 21,
+      "text": "Device — a serial number is a durable cross-file fingerprint.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "_EXACT_RISK",
+      "line": 124,
+      "offset": 30,
+      "text": "Software — reveals the toolchain, and often an internal build string.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "_EXACT_RISK",
+      "line": 131,
+      "offset": 37,
+      "text": "Timestamps — a working-hours pattern across many files deanonymises.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "_EXACT_RISK",
+      "line": 138,
+      "offset": 44,
+      "text": "Content descriptors.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "_EMAIL_RE",
+      "line": 167,
+      "offset": 0,
+      "text": "A value shaped like an email address or a home-directory path is high-risk\nwhatever key it arrived under: the key vocabularies of XMP and docProps are\nopen-ended, so the name alone can never be the whole test.",
+      "kind": "why"
+    },
+    {
+      "id": "n14",
+      "symbol": "_MAX_VALUE_CHARS",
+      "line": 170,
+      "offset": 0,
+      "text": "Beyond this a value is a blob (a thumbnail, an ICC profile, a base64 packet)\nand pasting it into the response helps nobody.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "classify",
+      "line": 179,
+      "offset": 6,
+      "text": "Drop a namespace prefix (\"xmp:CreatorTool\") before the substring pass,\nand try the bare name against the exact table first.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "classify",
+      "line": 190,
+      "offset": 17,
+      "text": "The value can only raise the band, never lower it.",
+      "kind": "why"
+    },
+    {
+      "id": "n17",
+      "symbol": "_finding",
+      "line": 204,
+      "offset": 9,
+      "text": "Say it was cut. A value silently truncated to look complete is how a\nreader concludes the rest of it does not exist.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "_SOI",
+      "line": 210,
+      "offset": 0,
+      "text": "--- JPEG --------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "_JPEG_META_MARKERS",
+      "line": 212,
+      "offset": 0,
+      "text": "Segments carrying metadata rather than image data. APP0 (JFIF) is structural\nand stays: some decoders read density and thumbnail framing from it.",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": "_JPEG_META_MARKERS",
+      "line": 213,
+      "offset": 1,
+      "text": "APP1 — EXIF and XMP",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "_JPEG_META_MARKERS",
+      "line": 214,
+      "offset": 2,
+      "text": "APP2 — ICC profile / FlashPix",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "_JPEG_META_MARKERS",
+      "line": 224,
+      "offset": 12,
+      "text": "Picture Info / Ducky",
+      "kind": "what"
+    },
+    {
+      "id": "n23",
+      "symbol": "_JPEG_META_MARKERS",
+      "line": 225,
+      "offset": 13,
+      "text": "APP13 — Photoshop IRB / IPTC",
+      "kind": "what"
+    },
+    {
+      "id": "n24",
+      "symbol": "_JPEG_META_MARKERS",
+      "line": 226,
+      "offset": 14,
+      "text": "APP14",
+      "kind": "what"
+    },
+    {
+      "id": "n25",
+      "symbol": "_JPEG_META_MARKERS",
+      "line": 228,
+      "offset": 16,
+      "text": "COM",
+      "kind": "what"
+    },
+    {
+      "id": "n26",
+      "symbol": "_EXIF_TAGS",
+      "line": 231,
+      "offset": 0,
+      "text": "EXIF tag ids this module names. An unnamed tag is still reported, as\n\"Tag0x<id>\", so a scan never calls a file clean for want of a label.",
+      "kind": "why"
+    },
+    {
+      "id": "n27",
+      "symbol": "_TYPE_SIZES",
+      "line": 266,
+      "offset": 0,
+      "text": "Bytes per component, by EXIF type id.",
+      "kind": "what"
+    },
+    {
+      "id": "n28",
+      "symbol": "_MAX_IFD_ENTRIES",
+      "line": 268,
+      "offset": 0,
+      "text": "Guards on values read out of a file that may be malformed or hostile: a\ncorrupt entry count would otherwise drive a multi-million-iteration loop, and\na corrupt size a gigabyte-sized slice.",
+      "kind": "why"
+    },
+    {
+      "id": "n29",
+      "symbol": "_segments",
+      "line": 288,
+      "offset": 16,
+      "text": "SOS",
+      "kind": "what"
+    },
+    {
+      "id": "n30",
+      "symbol": "_segments",
+      "line": 290,
+      "offset": 18,
+      "text": "standalone markers",
+      "kind": "what"
+    },
+    {
+      "id": "n31",
+      "symbol": "_format_value",
+      "line": 302,
+      "offset": 1,
+      "text": "ASCII",
+      "kind": "what"
+    },
+    {
+      "id": "n32",
+      "symbol": "_format_value",
+      "line": 304,
+      "offset": 3,
+      "text": "RATIONAL / SRATIONAL — GPS coordinates live here",
+      "kind": "what"
+    },
+    {
+      "id": "n33",
+      "symbol": "_format_value",
+      "line": 321,
+      "offset": 20,
+      "text": "BYTE / SBYTE / UNDEFINED, and anything unrecognised.",
+      "kind": "what"
+    },
+    {
+      "id": "n34",
+      "symbol": "_parse_exif",
+      "line": 384,
+      "offset": 23,
+      "text": "A GPS pointer can sit in either IFD; the outer one wins if both name it.",
+      "kind": "what"
+    },
+    {
+      "id": "n35",
+      "symbol": "_parse_exif",
+      "line": 392,
+      "offset": 31,
+      "text": "A raw DMS triple (\"51, 30, 26\") is the single most consequential\nfinding in a consumer photo and the least readable. Resolving it to a\ndecimal pair is what makes the report actionable rather than technically\ncorrect — a reader should not have to do the arithmetic to learn that\nthe file gives away a home address.",
+      "kind": "what"
+    },
+    {
+      "id": "n36",
+      "symbol": "scan_jpeg",
+      "line": 480,
+      "offset": 17,
+      "text": "The rest are vendor-specific inside, but their presence and size are\nthemselves the disclosure — an ICC profile names the editing suite.",
+      "kind": "what"
+    },
+    {
+      "id": "n37",
+      "symbol": "_PNG_SIG",
+      "line": 513,
+      "offset": 0,
+      "text": "--- PNG ---------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n38",
+      "symbol": "_PNG_META_CHUNKS",
+      "line": 515,
+      "offset": 0,
+      "text": "Ancillary chunks carrying metadata. Critical chunks (IHDR, PLTE, IDAT, IEND)\nand rendering-relevant ancillaries (gAMA, cHRM, sRGB, tRNS, pHYs) are never\ntouched: dropping them changes how the image displays.",
+      "kind": "why"
+    },
+    {
+      "id": "n39",
+      "symbol": "scan_png",
+      "line": 587,
+      "offset": 24,
+      "text": "An XMP packet arrives as an iTXt keyed `XML:com.adobe.xmp`.",
+      "kind": "what"
+    },
+    {
+      "id": "n40",
+      "symbol": null,
+      "line": 608,
+      "offset": null,
+      "text": "--- OOXML (docx / pptx / xlsx) ----------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n41",
+      "symbol": "_OOXML_PROP_PARTS",
+      "line": 608,
+      "offset": 0,
+      "text": "The parts carrying authorship. `custom.xml` holds whatever the organisation\nput there, which in practice is where template and matter references hide.",
+      "kind": "what"
+    },
+    {
+      "id": "n42",
+      "symbol": "_OOXML_TRACKED_SUFFIXES",
+      "line": 610,
+      "offset": 0,
+      "text": "Parts naming people that cannot be dropped without corrupting the document:\na relationship elsewhere in the package still points at them.",
+      "kind": "what"
+    },
+    {
+      "id": "n43",
+      "symbol": "_OOXML_MAX_ENTRIES",
+      "line": 640,
+      "offset": 0,
+      "text": "A small upload can declare gigabytes of entries. Read sizes are bounded by\nwhat each entry declares, so checking the declared sizes bounds the inflate.",
+      "kind": "what"
+    },
+    {
+      "id": "n44",
+      "symbol": "scan_ooxml",
+      "line": 683,
+      "offset": 25,
+      "text": "custom.xml wraps each value in a typed child (`<vt:lpwstr>`) whose own\ntag is meaningless — the name lives on the parent's attribute. Those\nchildren are consumed by their parent and skipped on their own pass,\nor every custom property is reported twice, once under a useless key.",
+      "kind": "what"
+    },
+    {
+      "id": "n45",
+      "symbol": "_PDF_INFO_KEYS",
+      "line": 737,
+      "offset": 0,
+      "text": "--- PDF ---------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n46",
+      "symbol": "_pdf_document",
+      "line": 754,
+      "offset": 7,
+      "text": "pdfium raises its own error types",
+      "kind": "what"
+    },
+    {
+      "id": "n47",
+      "symbol": "scan_pdf",
+      "line": 777,
+      "offset": 7,
+      "text": "a key pdfium cannot read is not a scan failure",
+      "kind": "what"
+    },
+    {
+      "id": "n48",
+      "symbol": "scan_pdf",
+      "line": 784,
+      "offset": 14,
+      "text": "XMP lives in a metadata stream pdfium does not expose. Reading it out of\nthe raw bytes is crude, but it is the packet's documented framing, and a\nPDF whose XMP names an author while DocInfo is empty is common enough\nthat skipping it would make the scan actively misleading.",
+      "kind": "what"
+    },
+    {
+      "id": "n49",
+      "symbol": "scrub_pdf",
+      "line": 814,
+      "offset": 20,
+      "text": "The packet keeps its byte length: xref offsets past it are absolute, so it\nis overwritten with padding rather than deleted.",
+      "kind": "what"
+    },
+    {
+      "id": "n50",
+      "symbol": "scrub_pdf",
+      "line": 822,
+      "offset": 28,
+      "text": "Re-scan: a finding still present afterwards is retained, not removed.",
+      "kind": "what"
+    },
+    {
+      "id": "n51",
+      "symbol": "scrub_pdf",
+      "line": 826,
+      "offset": 32,
+      "text": "The rewrite produced bytes we cannot re-open. Return the original\nrather than a file we cannot vouch for.",
+      "kind": "what"
+    },
+    {
+      "id": "n52",
+      "symbol": "_SCANNERS",
+      "line": 849,
+      "offset": 0,
+      "text": "--- dispatch ----------------------------------------------------------------",
+      "kind": "what"
+    }
+  ]
+}

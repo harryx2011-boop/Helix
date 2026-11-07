@@ -1,12 +1,3 @@
-/**
- * Starts voice-core on first use, the way Composer starts its sidecar
- * (ensureStarted in D:\Composer\src\main\sidecar.ts): nothing spawns until a
- * mic is pressed, and concurrent callers share one wait.
- *
- * Several apps share one service on one port. If the port already answers as
- * voice-core, the supervisor attaches with the token from its instance file instead
- * of spawning a second copy, and never kills a service it did not start.
- */
 
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import crypto from "node:crypto";
@@ -26,9 +17,7 @@ export interface ServiceCommand {
 export interface SupervisorOptions {
   command: ServiceCommand;
   port?: number;
-  /** Extra service env, e.g. VOICE_CORE_MODEL, VOICE_CORE_DEVICE, VOICE_CORE_CUDA_DIR. */
   env?: Record<string, string>;
-  /** Where the service writes instance-<port>.json; defaults to %LOCALAPPDATA%\voice-core. */
   stateDir?: string;
   readyTimeoutMs?: number;
   onLog?: (line: string) => void;
@@ -45,14 +34,11 @@ export function defaultStateDir(): string {
   return path.join(base, "voice-core");
 }
 
-/** The PyInstaller build an app ships under resources, e.g. `<resources>/voice-core`. */
 export function packagedCommand(dir: string): ServiceCommand {
   const exe = path.join(dir, process.platform === "win32" ? "voice-core.exe" : "voice-core");
   return { file: exe, args: [], cwd: dir };
 }
 
-/** uv ships as uv.cmd on some installs, which spawn cannot exec without a shell,
- *  and `shell: true` concatenates argv instead of escaping it. */
 function resolveUv(): string {
   if (process.platform !== "win32") return "uv";
   for (const dir of (process.env.PATH ?? "").split(path.delimiter)) {
@@ -65,7 +51,6 @@ function resolveUv(): string {
   return "uv.exe";
 }
 
-/** A checkout of D:\voice-core run through its uv project. */
 export function devCommand(projectDir: string): ServiceCommand {
   return { file: resolveUv(), args: ["run", "--project", projectDir, "python", "-m", "voice_core"], cwd: projectDir };
 }
@@ -93,7 +78,6 @@ export class VoiceCoreSupervisor {
     return this._status;
   }
 
-  /** True when this supervisor spawned the running service. */
   get ownsService(): boolean {
     return this.owned && this.child !== null;
   }
@@ -118,7 +102,6 @@ export class VoiceCoreSupervisor {
       try {
         cb(next);
       } catch {
-        // a listener's failure is its own
       }
     }
   }
@@ -129,7 +112,6 @@ export class VoiceCoreSupervisor {
     this.opts.onLog?.(line);
   }
 
-  /** Resolves with a connection once the service answers, or null if it cannot come up. */
   ensureStarted(): Promise<VoiceCoreConnection | null> {
     const ready = this.connection();
     if (ready && this.child) return Promise.resolve(ready);
@@ -142,7 +124,6 @@ export class VoiceCoreSupervisor {
   }
 
   private async bringUp(): Promise<VoiceCoreConnection | null> {
-    // An attached service belongs to another app and may have exited since.
     if (this._status === "ready" && !this.owned && this.token && (await this.health(this.token))?.authorized) {
       return this.connection();
     }
@@ -153,8 +134,6 @@ export class VoiceCoreSupervisor {
       const spawned = await this.spawnService();
       if (spawned || this.stopping) return spawned;
     }
-    // Either the port was already taken, or another app won the race to bind it
-    // (the loser exits before loading anything); its service is the one to use.
     const running = existing ?? (await this.health());
     const conn = running?.service === "voice-core" ? await this.attach() : null;
     if (conn) return conn;
@@ -163,8 +142,6 @@ export class VoiceCoreSupervisor {
     return null;
   }
 
-  /** The winner of a start race writes its instance file just after binding, so
-   *  it may not exist yet on the first read. */
   private async attach(): Promise<VoiceCoreConnection | null> {
     const deadline = Date.now() + ATTACH_WAIT_MS;
     for (;;) {
@@ -245,14 +222,12 @@ export class VoiceCoreSupervisor {
           this.setStatus("stopped");
         } else {
           this.record(why);
-          // During start, bringUp decides between attaching and reporting a crash.
           if (done) this.setStatus("crashed");
         }
         finish(null);
       };
       proc.on("error", (err) => {
         this.record(`process error: ${err.message}`);
-        // A spawn that never started (ENOENT) emits no exit event.
         if (proc.pid === undefined) gone("the service could not be started");
       });
       proc.on("exit", (code, signal) => gone(`exited (code ${code ?? "null"}, signal ${signal ?? "null"})`));
@@ -293,8 +268,6 @@ export class VoiceCoreSupervisor {
     });
   }
 
-  /** On Windows the service runs under a uv or bootloader parent, so killing the
-   *  pid alone leaves the port bound. */
   private kill(proc: ChildProcess): void {
     if (proc.pid === undefined) return;
     if (process.platform === "win32") {
@@ -306,7 +279,6 @@ export class VoiceCoreSupervisor {
     proc.kill();
   }
 
-  /** Kills the service only if this supervisor started it; an attached one is left running. */
   stop(): Promise<void> {
     this.stopping = true;
     const proc = this.child;

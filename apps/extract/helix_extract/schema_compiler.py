@@ -23,8 +23,6 @@ from __future__ import annotations
 
 from typing import Any
 
-# Keywords that induce fabrication. A model told to return at least three items
-# will invent a third rather than report that it found two.
 FABRICATION_KEYWORDS = ("minItems", "maxItems", "minProperties", "maxProperties")
 
 
@@ -81,10 +79,6 @@ def _strictify(schema: dict[str, Any]) -> dict[str, Any]:
     """
     out = dict(schema)
 
-    # An object that declares no properties is a free-form map, not an empty
-    # record. Stamping `additionalProperties: false` on it forbids every key,
-    # which under strict mode makes the field structurally unfillable — the
-    # model cannot emit content it is not allowed to emit.
     if out.get("type") == "object" and not out.get("properties"):
         return out
 
@@ -101,8 +95,6 @@ def _strictify(schema: dict[str, Any]) -> dict[str, Any]:
 
             child = _strictify(value)
 
-            # An optional field becomes nullable rather than absent, so the model
-            # can still say "not found" without violating strict mode.
             if key not in declared_required:
                 child_type = child.get("type")
                 if isinstance(child_type, str):
@@ -110,9 +102,6 @@ def _strictify(schema: dict[str, Any]) -> dict[str, Any]:
                 elif isinstance(child_type, list) and "null" not in child_type:
                     child = {**child, "type": [*child_type, "null"]}
                 elif child_type is None:
-                    # No `type` at all — an `enum`, `$ref`, `const`, or a bare
-                    # `anyOf`/`oneOf`. There is no type list to extend, so wrap
-                    # the whole thing in an anyOf with a null branch instead.
                     if "anyOf" in child and isinstance(child["anyOf"], list):
                         if not any(branch == {"type": "null"} for branch in child["anyOf"]):
                             child = {**child, "anyOf": [*child["anyOf"], {"type": "null"}]}
@@ -181,7 +170,6 @@ def compile_anthropic_output_format(schema: dict[str, Any], name: str = "extract
     return {"type": "json_schema", "schema": _strictify(schema)}
 
 
-# Gemini uses uppercase type names and understands only a subset of JSON Schema.
 _GEMINI_TYPES = {
     "string": "STRING",
     "number": "NUMBER",
@@ -199,13 +187,10 @@ def _to_gemini(schema: dict[str, Any]) -> dict[str, Any]:
 
     for key, value in schema.items():
         if key not in _GEMINI_SUPPORTED:
-            # Silently dropping unknown keywords is correct here: Gemini rejects
-            # the whole request for one it does not recognise.
             continue
 
         if key == "type":
             if isinstance(value, list):
-                # A nullable union becomes the base type plus a nullable flag.
                 non_null = [t for t in value if t != "null"]
                 if non_null:
                     out["type"] = _GEMINI_TYPES.get(non_null[0], "STRING")

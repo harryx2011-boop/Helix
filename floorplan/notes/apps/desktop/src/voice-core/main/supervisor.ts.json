@@ -1,0 +1,135 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/src/voice-core/main/supervisor.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "Starts voice-core on first use, the way Composer starts its sidecar\n(ensureStarted in D:\\Composer\\src\\main\\sidecar.ts): nothing spawns until a\nmic is pressed, and concurrent callers share one wait.\n\nSeveral apps share one service on one port. If the port already answers as\nvoice-core, the supervisor attaches with the token from its instance file instead\nof spawning a second copy, and never kills a service it did not start.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SupervisorOptions.env",
+      "line": 20,
+      "offset": 0,
+      "text": "Extra service env, e.g. VOICE_CORE_MODEL, VOICE_CORE_DEVICE, VOICE_CORE_CUDA_DIR.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SupervisorOptions.stateDir",
+      "line": 21,
+      "offset": 0,
+      "text": "Where the service writes instance-<port>.json; defaults to %LOCALAPPDATA%\\voice-core.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "packagedCommand",
+      "line": 37,
+      "offset": 0,
+      "text": "The PyInstaller build an app ships under resources, e.g. `<resources>/voice-core`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "resolveUv",
+      "line": 42,
+      "offset": 0,
+      "text": "uv ships as uv.cmd on some installs, which spawn cannot exec without a shell,\nand `shell: true` concatenates argv instead of escaping it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "devCommand",
+      "line": 54,
+      "offset": 0,
+      "text": "A checkout of D:\\voice-core run through its uv project.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "VoiceCoreSupervisor.ownsService",
+      "line": 81,
+      "offset": 0,
+      "text": "True when this supervisor spawned the running service.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "VoiceCoreSupervisor.setStatus",
+      "line": 105,
+      "offset": 7,
+      "text": "a listener's failure is its own",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "VoiceCoreSupervisor.ensureStarted",
+      "line": 115,
+      "offset": 0,
+      "text": "Resolves with a connection once the service answers, or null if it cannot come up.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "VoiceCoreSupervisor.bringUp",
+      "line": 127,
+      "offset": 1,
+      "text": "An attached service belongs to another app and may have exited since.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "VoiceCoreSupervisor.bringUp",
+      "line": 137,
+      "offset": 11,
+      "text": "Either the port was already taken, or another app won the race to bind it\n(the loser exits before loading anything); its service is the one to use.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "VoiceCoreSupervisor.attach",
+      "line": 145,
+      "offset": 0,
+      "text": "The winner of a start race writes its instance file just after binding, so\nit may not exist yet on the first read.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "VoiceCoreSupervisor.spawnService",
+      "line": 225,
+      "offset": 43,
+      "text": "During start, bringUp decides between attaching and reporting a crash.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "VoiceCoreSupervisor.spawnService",
+      "line": 231,
+      "offset": 49,
+      "text": "A spawn that never started (ENOENT) emits no exit event.",
+      "kind": "why"
+    },
+    {
+      "id": "n15",
+      "symbol": "VoiceCoreSupervisor.kill",
+      "line": 271,
+      "offset": 0,
+      "text": "On Windows the service runs under a uv or bootloader parent, so killing the\npid alone leaves the port bound.",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": "VoiceCoreSupervisor.stop",
+      "line": 282,
+      "offset": 0,
+      "text": "Kills the service only if this supervisor started it; an attached one is left running.",
+      "kind": "doc"
+    }
+  ]
+}

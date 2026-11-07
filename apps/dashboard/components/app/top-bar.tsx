@@ -13,7 +13,6 @@ function truncateUrl(url: string): string {
 }
 
 function WorkspacePill() {
-  // The export is rendered with the fallback; the real origin is swapped in after mount so hydration matches.
   const [url, setUrl] = React.useState(PUBLIC_API_URL);
   React.useEffect(() => setUrl(instanceUrl()), []);
   return (
@@ -28,7 +27,6 @@ function WorkspacePill() {
 }
 
 function PaletteTrigger() {
-  // Rendered as Ctrl on the server and swapped after mount, so the markup matches on hydration.
   const [mac, setMac] = React.useState(false);
   React.useEffect(() => setMac(/Mac|iPhone|iPad/.test(navigator.userAgent)), []);
   return (

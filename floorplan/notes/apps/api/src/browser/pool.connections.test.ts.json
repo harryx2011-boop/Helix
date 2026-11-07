@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/pool.connections.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FakeBrowser",
+      "line": 4,
+      "offset": 0,
+      "text": "The shared connection to an external browser (camoufox here; lightpanda and\na remote CDP endpoint go through the same `#connection`).\n\nDriven through the public ways in, `probeExternalTiers()` and `render()`,\nwith a fake `firefox.connect` that counts connects and lets a test drop a\nconnection.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 131,
+      "offset": null,
+      "text": "Stale without the event having fired yet: Playwright reports the close\nasynchronously, so both callers see the dead handle.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 135,
+      "offset": null,
+      "text": "One reconnect shared by both. A second would leave a live connection\nthat nothing tracks and close() never closes.",
+      "kind": "why"
+    }
+  ]
+}

@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { EMBED_HELLO, EMBED_KEY, listenForEmbedKey, type EmbedWindow } from './embed';
 
-/** A window inside a frame, with a parent that records what it was sent. */
 function framedWindow() {
   const listeners: ((event: MessageEvent) => void)[] = [];
   const parent = { postMessage: vi.fn() };

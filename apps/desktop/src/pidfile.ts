@@ -20,10 +20,8 @@ export interface PidStore {
   readAll(): PidRecord[]
 }
 
-// Spawn-to-creation skew is milliseconds; the slack covers clock steps without letting a recycled pid match.
 export const CREATION_TOLERANCE_MS = 10_000
 
-/** The image name Windows reports for a command; a bare `node` resolved from PATH runs as node.exe. */
 export function imageOf(command: string): string {
   const base = path.basename(command).toLowerCase()
   return path.extname(base) ? base : `${base}.exe`
@@ -56,7 +54,6 @@ export function fileStore(dir: string): PidStore {
   }
 }
 
-/** A record is a live stale child only if its pid still runs the same image, created when we spawned it. */
 export function planStaleKills(records: PidRecord[], procs: ProcInfo[], tolerance = CREATION_TOLERANCE_MS): PidRecord[] {
   const byPid = new Map(procs.map((p) => [p.pid, p]))
   return records.filter((r) => {

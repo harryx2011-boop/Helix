@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/result/markdown-code-block.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "highlighterPromise",
+      "line": 8,
+      "offset": 0,
+      "text": "Fenced code block: renders plain text immediately (safe mid-stream, no\nhighlighter dependency on the critical path), then swaps in Shiki markup\nonce the lazy-loaded highlighter resolves. An unknown or missing fence\nlanguage stays plain. Shiki's own singleton highlighter is cached at\nmodule scope so repeated blocks on one page share it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MarkdownCodeBlock",
+      "line": 68,
+      "offset": 15,
+      "text": "Dual-theme output: Shiki emits both palettes as CSS variables and\nswitches on the nearest `.dark` ancestor, the same mechanism the\ndashboard's own tokens use, rather than hardcoding one theme.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "MarkdownCodeBlock",
+      "line": 90,
+      "offset": 37,
+      "text": "Shiki's own output — generated HTML from a fixed theme/grammar set, not user input.\nIts light/dark colors are CSS variables (`--shiki-light`/`--shiki-dark`)\nswitched by the `.dark .shiki` rule in globals.css, the same `.dark`\nclass the dashboard's own tokens key off.",
+      "kind": "what"
+    }
+  ]
+}

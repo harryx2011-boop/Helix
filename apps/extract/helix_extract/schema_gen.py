@@ -29,9 +29,6 @@ from .schema_compiler import (
     compile_openai,
 )
 
-# A schema for schemas: loose enough to admit any valid JSON Schema object, but
-# it pins down the shape a model reaches for reliably (object/array/properties)
-# rather than leaving the field wide open to unstructured text.
 META_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -147,10 +144,6 @@ async def _call_anthropic_json(
 
         response = await client.messages.create(**kwargs)
 
-        # An unusable answer here (no tool call, or text that isn't valid
-        # JSON) returns `{}` rather than raising `SchemaError` — `generate_schema`
-        # already has its own repair-retry for exactly this shape of failure
-        # via `_is_usable_schema`, and short-circuiting it would drop that.
         data: dict[str, Any] = {}
         if use_output_format:
             text = next((b.text for b in response.content if getattr(b, "type", None) == "text"), None)
@@ -276,8 +269,6 @@ async def generate_schema(
         raise ProviderError(describe_failure(resolved_provider, resolved_model, exc)) from exc
 
     if not _is_usable_schema(schema):
-        # One repair attempt: re-prompt with the failure named, rather than
-        # failing outright on a model that returned close-but-not-quite JSON.
         try:
             schema, repair_input, repair_output, model_used = await _run(
                 user_prompt + REPAIR_SUFFIX, resolved_provider, resolved_model, caller_key, caller_base_url

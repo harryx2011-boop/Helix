@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/forms/extract-form.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TEXTAREA_CLASS",
+      "line": 11,
+      "offset": 0,
+      "text": "Matches crawl-form's textarea: there is no ui/textarea component.",
+      "kind": "doc"
+    }
+  ]
+}

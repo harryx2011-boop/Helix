@@ -1,14 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * Job retrieval, pagination and cancellation.
- *
- * Postgres is a fake that understands enough of each statement to model the
- * things the route depends on: that cancellation is a conditional UPDATE which
- * matches nothing once a job has finished, and that a malformed id must never
- * reach a uuid column at all.
- */
 
 interface JobRow {
   id: string;
@@ -72,10 +64,6 @@ const db = vi.hoisted(() => {
   const query = vi.fn(async (text: string, values: unknown[] = []) => {
     state.calls.push({ text, values });
 
-    // The owner predicate is read out of the statement rather than restated
-    // here, both halves of it. Modelling the clause from memory would let the
-    // route widen it — to `OR true`, say — while these tests still reported
-    // another tenant's job as hidden.
     const scoped = (rows: JobRow[], keyId: unknown): JobRow[] => {
       const clause = /AND \(api_key_id = \$\d+::uuid OR ([^)]+)\)/.exec(text);
       if (!clause) return rows;
@@ -109,9 +97,6 @@ const db = vi.hoisted(() => {
 
     if (text.startsWith('UPDATE jobs')) {
       const [id, type] = values as [string, string | null];
-      // The cancellable statuses are read out of the statement rather than
-      // restated here. Hardcoding them would make this fake enforce the
-      // guard itself, and the route could drop its WHERE clause unnoticed.
       const clause = /status IN \(([^)]*)\)/.exec(text);
       const cancellable = clause
         ? [...clause[1]!.matchAll(/'([^']+)'/g)].map((m) => m[1]!)
@@ -132,8 +117,6 @@ const db = vi.hoisted(() => {
     }
 
     if (text.includes('SELECT 1 FROM jobs')) {
-      // Two probes share this statement: cancellation passes the type in $2 and
-      // the key in $3, the errors route passes the key in $2 and no type.
       const hasType = text.includes('type = $2::job_type');
       const [id] = values as [string];
       const type = hasType ? (values[1] as string | null | undefined) : null;
@@ -212,10 +195,6 @@ function doc(over: Partial<DocRow> = {}): DocRow {
   };
 }
 
-/**
- * `caller` stands in for the auth hook, which has already resolved the key by
- * the time a route runs. Defaults to KEY_A.
- */
 async function build(
   options: { caller?: string | null } = {},
 ): Promise<FastifyInstance> {
@@ -275,7 +254,6 @@ describe('GET /v1/jobs/:id', () => {
     const response = await app.inject({ method: 'GET', url: '/v1/jobs/not-a-uuid' });
 
     expect(response.statusCode).toBe(404);
-    // A malformed value reaching a uuid column is a 500 for what is a typo.
     expect(db.state.calls).toHaveLength(0);
   });
 
@@ -391,10 +369,6 @@ describe('GET /v1/jobs/:id', () => {
     expect(response.statusCode).toBe(400);
   });
 
-  /**
-   * `jobs.api_key_id` is populated by crawl and batch, but one operator owns
-   * every key, so the read path must not filter on it.
-   */
   it('serves a job to a caller whose key did not create it, under self-host', async () => {
     app = await build();
     db.state.jobs = [job({ api_key_id: KEY_B })];

@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/search/providers.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 30,
+      "offset": null,
+      "text": "Without the parentheses the OR would apply to the query terms too.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 52,
+      "offset": null,
+      "text": "Google expects `qdr:d`, not `qdr:d1`.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 75,
+      "offset": null,
+      "text": "Silently returning zero results would look like \"the web has no answer\".",
+      "kind": "what"
+    }
+  ]
+}

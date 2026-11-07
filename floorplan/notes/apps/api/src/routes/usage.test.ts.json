@@ -1,0 +1,55 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/usage.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Call",
+      "line": 6,
+      "offset": 0,
+      "text": "Usage route contract. Postgres is a fake, so what is asserted is the surface:\nthe window bounds, that the query is scoped to the calling key alone, and the\naggregation shape the dashboard reads.\n\nThe bounds matter more than they look: `hours` reaches a timestamp comparison\non a table that grows with traffic, so an unbounded value is a full scan a\ncaller can ask for.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "db",
+      "line": 34,
+      "offset": 15,
+      "text": "Postgres reports a missing relation as 42P01; the shape matters because\nthe route may only degrade on this and not on an arbitrary fault.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "build",
+      "line": 121,
+      "offset": 2,
+      "text": "The same redacting handler index.ts installs. Without it a bare Fastify\nreturns the driver's own message, so a leak test on a handler-less app\nwould be measuring the harness rather than the API.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 350,
+      "offset": null,
+      "text": "429 is counted as rate-limited only, never folded into errors.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 451,
+      "offset": null,
+      "text": "Characterisation, not approval. `request_usage` arrives in migration 011, so\nan instance that has not run it answers 500 here rather than degrading to an\nempty chart. The dashboard's usage panel is the caller; if that is ever\nchanged to degrade, this test is what should fail and say so.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 471,
+      "offset": null,
+      "text": "`/usage/all` totals every key on the instance, all of them the one\noperator's, so it is always registered.",
+      "kind": "doc"
+    }
+  ]
+}

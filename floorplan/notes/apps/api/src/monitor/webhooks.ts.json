@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/webhooks.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 9,
+      "offset": null,
+      "text": "Webhook delivery for monitors.\n\nStripe-shaped: exponential backoff over roughly three days, then a dead\nletter the caller can replay. Not three retries over twenty minutes. Every\ndelivery is a row, claimed with SKIP LOCKED under a lease that outlasts the\nwhole batch, so a restart resumes and two processes never send the same one.\n\nThe target is resolved before every send and refused when it is not a\npublic address; a refusal dead-letters at once, since retrying it would\nonly probe the network again. Failure text is a category (`timeout`,\n`unreachable`, `HTTP 503`), never the resolver's or socket's own words.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 9,
+      "offset": null,
+      "text": "One signing scheme for every Helix webhook: the monitor dispatcher and\nwebhooks/dispatcher.ts both sign through webhooks/signature.ts, so a change\nto the scheme cannot reach one sender and miss the other.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "postWebhook",
+      "line": 13,
+      "offset": 0,
+      "text": "The default sender. Redirects are not followed: a public host answering\n302 to a private one is the same hole as naming the private one directly.\nThe response body is drained so the socket goes back to the pool.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "postWebhook",
+      "line": 15,
+      "offset": 2,
+      "text": "Pinned, so the address checked above is the address the send reaches.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "describeFailure",
+      "line": 20,
+      "offset": 0,
+      "text": "How a failed attempt is recorded.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "DispatcherOptions.defaultSecret",
+      "line": 29,
+      "offset": 0,
+      "text": "Instance-wide signing secret; a webhook's own `secret` wins when set.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "WebhookDispatcher.tick",
+      "line": 80,
+      "offset": 0,
+      "text": "Deliver everything due. Returns one entry per attempted delivery.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "WebhookDispatcher.tick",
+      "line": 84,
+      "offset": 4,
+      "text": "Attempts run one after another, so the lease must cover the whole\nbatch at its slowest plus a margin, or a second process re-claims\nrows this one has not reached yet.",
+      "kind": "why"
+    }
+  ]
+}

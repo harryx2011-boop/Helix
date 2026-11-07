@@ -11,13 +11,10 @@ export interface HealthDeps {
   browserPool?: BrowserPool;
   remoteCdpConfigured?: boolean;
   detectLocal?: DetectLocal;
-  /** From config, which a stored setting can set when the env does not. */
   searxngUrl?: string | undefined;
-  /** Clock for the probe cache. Injected by tests. */
   now?: () => number;
 }
 
-/** How long one round of live probes answers every request. The route is open, so a burst must not multiply into probes. */
 const PROBE_CACHE_MS = 5_000;
 
 interface HealthReport {
@@ -25,13 +22,6 @@ interface HealthReport {
   body: Record<string, unknown>;
 }
 
-/**
- * Health, including each dependency's latency and which BYOK providers are configured.
- *
- * Provider status reports only whether a credential is present and which model
- * is selected. Key material is never returned — a health endpoint is often the
- * least-guarded route in a deployment.
- */
 export async function registerHealth(app: FastifyInstance, deps: HealthDeps): Promise<void> {
   const now = deps.now ?? Date.now;
   let cached: { at: number; report: Promise<HealthReport> } | undefined;
@@ -40,7 +30,6 @@ export async function registerHealth(app: FastifyInstance, deps: HealthDeps): Pr
     if (!cached || now() - cached.at >= PROBE_CACHE_MS) {
       const report = buildReport(deps);
       cached = { at: now(), report };
-      // A failed round must not be served for the whole window.
       report.catch(() => {
         if (cached?.report === report) cached = undefined;
       });
@@ -68,11 +57,10 @@ async function buildReport(deps: HealthDeps): Promise<HealthReport> {
           env['OPENAI_COMPATIBLE_API_KEY'],
       ),
       model: env['HELIX_LLM_MODEL'] ?? 'unset',
-      // Names only: this route is open, and a detected runtime is offered, not used.
       detected: detected.map((runtime) => runtime.provider),
     },
     embedding: {
-      configured: true, // the local model needs no key
+      configured: true,
       model: env['HELIX_EMBEDDING_MODEL'] ?? 'local',
     },
     proxy: { configured: Boolean(env['HELIX_PROXY_URL']) },

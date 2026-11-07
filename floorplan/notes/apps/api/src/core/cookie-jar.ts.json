@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/cookie-jar.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CookieIdentity",
+      "line": 3,
+      "offset": 0,
+      "text": "Cookies a host set, replayed only to the identity that earned them.\n\nA clearance cookie (`cf_clearance`, `__cf_bm`, `datadome`) is bound to the\nIP, User-Agent and TLS fingerprint it was issued to; sent from another, it is\nitself a bot signal. So the key is host + proxy (the IP) + tier + profile\n(the UA and TLS identity), never the host alone.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "parseSetCookies",
+      "line": 10,
+      "offset": 0,
+      "text": "`name -> value`, with `null` for a cookie the host deleted.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "liveCookies",
+      "line": 29,
+      "offset": 0,
+      "text": "The cookies still set after these lines, as a crawl session's jar takes them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "cookieJar",
+      "line": 81,
+      "offset": 0,
+      "text": "ponytail: process-local, so a restart re-earns each clearance once; persist if that shows up.",
+      "kind": "what"
+    }
+  ]
+}

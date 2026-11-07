@@ -21,13 +21,11 @@ export interface PaletteItem {
   subtitle?: string;
   meta?: string;
   keywords?: readonly string[];
-  /** Lowercased prose; matched last and weakest, so a page that mentions "crawl" ranks under the Crawl route. */
   body?: string;
   icon: GlyphIcon;
   run: () => void | Promise<void>;
 }
 
-/** One entry of `/search-index.json`, built from the markdown twins at build time. */
 export interface DocIndexEntry {
   path: string;
   href: string;
@@ -60,13 +58,6 @@ function isSubsequence(needle: string, haystack: string): boolean {
   return needle.length === 0;
 }
 
-/**
- * Higher is better; 0 is no match. The ladder is deliberate: a title equal to
- * the query beats one that starts with it, which beats one that contains it,
- * and any of those beats a keyword hit, which beats a fuzzy subsequence, which
- * beats a body mention. Body matching only counts tokens of three characters
- * or more, or "how do i use crawl" would match every page on "i" and "do".
- */
 export function scoreItem(item: PaletteItem, query: string): number {
   const q = normalize(query);
   if (!q) return 0;
@@ -85,10 +76,6 @@ export function scoreItem(item: PaletteItem, query: string): number {
 
   const body = item.body;
   if (body) {
-    // A body hit that also names the page ("crawl" in "Web Crawling API")
-    // outranks the same words in a neighbouring page's prose. Title only:
-    // every endpoint doc shares a "When to use it" heading, so a keyword hit
-    // on "use" would hand the same bonus to all of them.
     const meaningful = toks.filter((t) => t.length >= 3);
     const named = meaningful.some((t) => title.includes(t)) ? 5 : 0;
     if (body.includes(q)) {
@@ -102,11 +89,6 @@ export function scoreItem(item: PaletteItem, query: string): number {
   return score;
 }
 
-/**
- * Sections in display order. With a query, the section holding the best match
- * leads, so "crawl" opens on the Crawl route while "how do i use crawl" opens
- * on the Crawl docs. Ties keep the canonical order.
- */
 export function search(items: readonly PaletteItem[], query: string, perGroup: number): PaletteSection[] {
   const scored = items
     .map((item, index) => ({ item, index, score: scoreItem(item, query) }))

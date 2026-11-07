@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/actions.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 43,
+      "offset": null,
+      "text": "Never zero: Playwright reads 0 as \"no timeout\".",
+      "kind": "why"
+    }
+  ]
+}

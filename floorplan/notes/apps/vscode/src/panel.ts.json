@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/vscode/src/panel.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "panel",
+      "line": 6,
+      "offset": 0,
+      "text": "One panel, reused: a second \"Helix: Open\" moves it rather than adding another.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "createPanel",
+      "line": 23,
+      "offset": 3,
+      "text": "The app holds form state and a running request; hiding the tab must not drop them.",
+      "kind": "why"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Handoff — 2026-10-10: backlog audit
 
-The 2026-10-07 handoff below is closed: 2.3.2 is pushed, tagged (`v2.3.2`) and installed. The open work and the restart prompt are in the Helix entry of `~/.claude/BACKLOG.md`, organized by Harry's five suite goals (`SUITE-PLAN.md` Phases 1-6): Phase 1 is partial, Phases 3-6 are not started.
+The 2026-10-07 handoff below is closed: 2.3.2 is pushed, tagged (`v2.3.2`) and installed. The open work and the restart prompt are in the Helix entry of `~/.claude/BACKLOG.md`, organized by Harry's five suite goals (`docs/plans/2026-10-05-suite-plan.md` Phases 1-6): Phase 1 is partial, Phases 3-6 are not started.
 
 ---
 

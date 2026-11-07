@@ -1,18 +1,9 @@
 import type { Tier } from './escalation.js';
 
-/**
- * Per-host floor for `tier: auto`: the tier a host last served a page at after
- * blocking a lower one. A repeat visit starts there instead of earning the same
- * block again, which also spares the IP's reputation the bot-scored first hop.
- *
- * Only block-driven climbs are learned. A climb for missing content is a fact
- * about one page (an SPA route), not about the host's bot wall.
- */
 export class TierMemory {
   readonly #ttlMs: number;
   readonly #maxHosts: number;
   readonly #now: () => number;
-  // Map keeps insertion order, so the first key is the oldest entry.
   readonly #hosts = new Map<string, { tier: Tier; at: number }>();
 
   constructor(options: { ttlMs?: number; maxHosts?: number; now?: () => number } = {}) {
@@ -54,5 +45,4 @@ function hostOf(url: string): string | undefined {
   }
 }
 
-// ponytail: process-local, so a restart relearns each host once; persist to Postgres if that cost shows up.
 export const tierMemory = new TierMemory();

@@ -1,0 +1,103 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/host-gate.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 9,
+      "offset": null,
+      "text": "Per-host pacing for the single-page routes.\n\nA crawl has always been paced: `PolitenessController` (AIMD, see its header)\nhas governed `/crawl` since it existed. `/scrape` and `/extract` had nothing,\nwhich made the limit easy to walk around — twenty `/extract` URLs on one host,\nor an agent firing `/scrape` in a loop, hit that host as fast as the pool\nallowed. The host sees one tool either way, so the limit belongs to the\ninstance, not to the route: one controller, shared.\n\nWhat this class adds over the controller is only the waiting. The controller\nanswers \"may I, and if not how long\" and expects the caller to own the loop;\nthe crawl loop does that itself against its own frontier, and a route cannot.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "DEFAULT_MAX_WAIT_MS",
+      "line": 9,
+      "offset": 0,
+      "text": "How long a single request will wait for its turn before going anyway.\n\nponytail: a courtesy ceiling, not a contract. A crawl can afford to wait out\na 30-second block backoff because nobody is watching it; a caller who asked\nfor one page cannot, and failing their request to protect a host they\nexplicitly named is the wrong trade for a single-user tool. Make it a hard\nlimit (refuse with 429 past the wait) if Helix ever serves more than its\noperator.\n\nThe cost of that trade, stated: a host that sent `Retry-After` longer than\nthis ceiling is asked again at once, for as long as its backoff lasts, while\na shorter one is waited out. Sitting through the ceiling first would not\nchange that, only make every call to the host 10 s slower.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "POLL_MS",
+      "line": 11,
+      "offset": 0,
+      "text": "Polling step while a slot is held by someone else.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ROUTE_POLITENESS",
+      "line": 13,
+      "offset": 0,
+      "text": "The controller a route gets: AIMD pacing without the absolute freeze.\n\nA block collapses the host's concurrency to one and holds it there through\nprobation — that is the pacing, and it survives here. What does not is the\n30-second wall-clock backoff: it is right for an unattended crawl, and wrong\nfor a caller sitting in front of the request, who would wait out the ceiling\nand have it proceed anyway. A `Retry-After` the host actually sent is still\nhonoured, because that is the host speaking rather than this side guessing.\n\nCapped at 2,000 hosts, as `TierMemory` is: this controller lives as long as\nthe process, and one entry per host ever asked would otherwise only grow.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "HostGate.run",
+      "line": 29,
+      "offset": 0,
+      "text": "Run `fn` under this host's limit, reporting the outcome back to the\ncontroller so a 429 or a block actually slows the next call.\n\n`outcomeOf` reads the status and block verdict out of whatever `fn`\nreturns; without it the call counts as a plain success, which is right for\na caller that has no response to report.\n\n`signal` ends the wait early: a caller that has gone away should not keep\na queue position, and its request should never start.\n\n`fn` is told how long it waited, so a caller with a timeout can spend\nonly what is left of it rather than adding the wait on top.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "HostGate.run",
+      "line": 38,
+      "offset": 9,
+      "text": "An unparseable URL has no host to pace. The route's own guard rejects it\nmoments later; pacing it under the key \"undefined\" would only group\nunrelated failures together.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "HostGate.run",
+      "line": 54,
+      "offset": 25,
+      "text": "Scored as a server error: a throw may be this instance failing, but it\nmay as well be the host dropping the connection, and scoring it as a\nsuccess would ramp a flapping endpoint up instead of down.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "HostGate.#acquire",
+      "line": 63,
+      "offset": 0,
+      "text": "True when a slot was taken and must be released; false when the wait ran out.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "HostGate.#acquire",
+      "line": 71,
+      "offset": 8,
+      "text": "A wait longer than the ceiling (a stated Retry-After, usually) ends in\ngoing ahead anyway, so sitting through the ceiling first protects nothing.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "gateOutcome",
+      "line": 83,
+      "offset": 0,
+      "text": "What a pipeline result tells the gate about the host.\n\nA failure with no status (a timeout, a dead host, DNS) is scored as a server\nerror: left without a status it would take the controller's success path\nand ramp a host that is not answering up. A request the caller abandoned\nsays nothing about the host, so it keeps no status.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "sleep",
+      "line": 96,
+      "offset": 0,
+      "text": "Waits `ms`, or rejects with the signal's reason as soon as it aborts.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "hostGate",
+      "line": 110,
+      "offset": 0,
+      "text": "The instance's one gate. Shared on purpose: two routes pacing a host\nseparately is the same as not pacing it.",
+      "kind": "doc"
+    }
+  ]
+}

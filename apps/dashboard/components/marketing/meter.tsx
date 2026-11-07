@@ -6,10 +6,8 @@ import { useInView, useReducedMotion } from '@/components/shared/ambient';
 
 export interface MeterRow {
   label: string;
-  /** 0–100. */
   value: number;
   accent?: boolean;
-  /** Thin variant only: replaces the percent readout (e.g. "14.2 kb"). */
   display?: string;
 }
 
@@ -20,11 +18,6 @@ export interface MeterPanelProps {
   className?: string;
 }
 
-/**
- * Illustrative ratio bars. Grow from zero on scroll-in and hold; the values
- * are an example distribution, never this instance's telemetry, and the
- * panel says so. Reduced motion pins every bar at its value with no transition.
- */
 export function MeterPanel({ rows, label, size = 'pill', className }: MeterPanelProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();

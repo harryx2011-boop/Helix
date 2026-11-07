@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(app)/app/layout.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "AppLayout",
+      "line": 5,
+      "offset": 0,
+      "text": "The app has no accounts: the browser holds an instance key in localStorage\nand `ApiKeyGate` blocks the app until one is pasted.",
+      "kind": "doc"
+    }
+  ]
+}

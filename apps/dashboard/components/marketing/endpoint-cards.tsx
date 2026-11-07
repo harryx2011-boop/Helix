@@ -7,7 +7,6 @@ import { IconTile } from './icon-tile';
 
 export interface EndpointCardItem {
   id: Endpoint;
-  /** One or two lines. The catalog tagline is written for rows, not centred cells. */
   blurb: string;
   fresh?: boolean;
 }
@@ -17,11 +16,6 @@ export interface EndpointCardsProps {
   className?: string;
 }
 
-/**
- * One hairline row of endpoint cells: centred tile, name, a two-line blurb and
- * a "Learn more" line. The whole cell is the link. Four across at lg, two at
- * sm, stacked below. The parent needs no `data-reveal-group`; the row is one.
- */
 export function EndpointCards({ items, className }: EndpointCardsProps) {
   return (
     <div

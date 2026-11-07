@@ -53,12 +53,6 @@ import { SiteIcon } from '@/components/result/site-icon';
 import { AnimatedCode } from '@/components/shared/animated-code';
 import { AsciiFlow } from '@/components/shared/ascii-fields';
 
-/**
- * A one-shot reveal (never `scramble` — that mode is reserved for decorative
- * idle widgets, not real response data the user is meant to read, per
- * research/17-firecrawl-code-animation-prompt-box.md §1/§4) of a fresh result's
- * JSON, keyed so it replays whenever a new response lands.
- */
 function AnimatedJsonView({ data }: { data: unknown }) {
   const text = JSON.stringify(data, null, 2);
   return (
@@ -89,18 +83,9 @@ interface ResultsProps {
   loading: boolean;
   timingMs: number | undefined;
   error: string | undefined;
-  /**
-   * What is currently in flight. A skeleton is the right placeholder for a
-   * response whose shape is known; a metadata read is work of unknown length
-   * over a file the user just handed over, and gets an animation that shows
-   * the work instead.
-   */
   pending?: { kind: PlaygroundResult['kind']; filename?: string | undefined } | undefined;
-  /** The tab the run came from: names the Endpoint cell and the share link. */
   endpoint: Endpoint;
-  /** The prompt value the run was made with (URL or query). */
   input?: string | undefined;
-  /** Go back: return to the prompt with the result cleared. */
   onBack?: (() => void) | undefined;
 }
 
@@ -137,10 +122,6 @@ function useCopy(): [boolean, (text: string) => void] {
   return [copied, copy];
 }
 
-/**
- * Markdown against the raw HTML it came from, by byte size. A proxy for the
- * token saving, hence the tilde; shown only when the API returned both.
- */
 function tokenSaving(data: Document): number | undefined {
   if (typeof data.rawHtml !== 'string' || typeof data.markdown !== 'string') return undefined;
   const raw = new TextEncoder().encode(data.rawHtml).length;
@@ -253,7 +234,6 @@ interface Fact {
 
 interface ChromeProps {
   endpoint: Endpoint;
-  /** Identity bar centre: favicon + host for URLs, the query for search. */
   subject: { url?: string | undefined; label: string };
   status: { ok: boolean; label: string };
   facts?: Fact[];
@@ -261,7 +241,6 @@ interface ChromeProps {
   count?: number | undefined;
   hint?: string | undefined;
   downloads?: DownloadDef[];
-  /** Copied by Debug issue: everything needed to file a report. */
   debug: unknown;
   showBack?: boolean;
   onBack?: (() => void) | undefined;
@@ -269,7 +248,6 @@ interface ChromeProps {
   children: React.ReactNode;
 }
 
-/** One chrome for every kind: identity bar, fact cells, results header, then the body. */
 function Chrome({ endpoint, subject, status, facts = [], title = 'Result', count, hint, downloads = [], debug, showBack, onBack, input, children }: ChromeProps) {
   const def = endpointById(endpoint);
   const EndpointIcon = def?.icon ?? FileText;
@@ -426,8 +404,6 @@ function ScreenshotView({ result }: { result: Extract<ScreenshotResponse, { succ
 
 function ExtractView({ result }: { result: ExtractResponse }) {
   const rows = result.data;
-  // Every field except the provenance envelope, in first-row order so the table
-  // reads the way the schema was written.
   const columns = React.useMemo(() => {
     const seen = new Set<string>();
     for (const row of rows) {
@@ -646,10 +622,6 @@ function DocumentResult({
 
 export function Results({ result, loading, timingMs, error, pending, endpoint, input, onBack }: ResultsProps) {
   if (loading) {
-    // File-shaped work gets the lens: an upload the user just handed over, a
-    // wait of unknown length, and a skeleton that would be shaped like the
-    // wrong thing. Everything else keeps the skeleton, which is correct where
-    // the response shape IS known.
     const LENS_MODE = { metadata: 'scan', 'metadata-scrub': 'scrub', parse: 'parse' } as const;
     const lensMode = pending ? LENS_MODE[pending.kind as keyof typeof LENS_MODE] : undefined;
     if (lensMode) {
@@ -860,8 +832,6 @@ export function Results({ result, loading, timingMs, error, pending, endpoint, i
           </Chrome>
         );
       }
-      // The operation is chosen at runtime, so the shape is only known to the
-      // caller. JSON is the honest rendering rather than guessing a view.
       return (
         <Chrome endpoint={endpoint} subject={subjectFromInput} status={{ ok: true, label: 'Success' }} facts={timeFact} title="Document" debug={debug} input={input}>
           <AnimatedJsonView data={result.response} />

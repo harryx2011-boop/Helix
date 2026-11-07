@@ -19,9 +19,7 @@ interface AgentTarget {
   id: 'claude-code' | 'codex' | 'cursor';
   label: string;
   mark: string;
-  /** Where "Open in" goes. A deep link installs Helix's MCP server directly; a docs URL is the fallback for tools with no install scheme. */
   href: string;
-  /** Copy the setup prompt on the way out, for tools that open to a prompt box rather than an installer. */
   copiesPrompt: boolean;
 }
 
@@ -37,12 +35,6 @@ const TARGETS: readonly AgentTarget[] = [
   { id: 'cursor', label: 'Cursor', mark: '/agents/cursor.png', href: '', copiesPrompt: false },
 ];
 
-/**
- * A split pill: copy the setup prompt, or open Helix in the agent you already
- * use. The three marks are the affordance — they say "your tool is here"
- * before the menu opens. Secondary weight, so it sits under the CTA pair
- * without competing with it.
- */
 export function SetupPrompt({ className }: { className?: string }) {
   const [copied, setCopied] = React.useState(false);
   const timer = React.useRef<number | undefined>(undefined);

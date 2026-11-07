@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/status/sampler.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 9,
+      "offset": null,
+      "text": "The sampler ticks once a minute. Without a re-entrancy guard, a tick whose\ndependency check hangs never returns the pool connection, and every\nsubsequent interval stacks another check on top of it until the pool is\nexhausted.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 37,
+      "offset": null,
+      "text": "A short interval keeps three ticks well inside the checks' own overall\ntime bound, so the first tick is still genuinely in flight when the\nnext two are due -- the guard under test is `#ticking`, not the checks\ntimeout completing the hung check for us.",
+      "kind": "what"
+    }
+  ]
+}

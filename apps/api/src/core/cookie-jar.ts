@@ -1,13 +1,5 @@
 import type { Tier } from './escalation.js';
 
-/**
- * Cookies a host set, replayed only to the identity that earned them.
- *
- * A clearance cookie (`cf_clearance`, `__cf_bm`, `datadome`) is bound to the
- * IP, User-Agent and TLS fingerprint it was issued to; sent from another, it is
- * itself a bot signal. So the key is host + proxy (the IP) + tier + profile
- * (the UA and TLS identity), never the host alone.
- */
 export interface CookieIdentity {
   url: string;
   proxy: string | undefined;
@@ -15,7 +7,6 @@ export interface CookieIdentity {
   profile: string | undefined;
 }
 
-/** `name -> value`, with `null` for a cookie the host deleted. */
 export function parseSetCookies(lines: readonly string[], now = Date.now()): Record<string, string | null> {
   const out: Record<string, string | null> = {};
   for (const line of lines) {
@@ -35,7 +26,6 @@ export function parseSetCookies(lines: readonly string[], now = Date.now()): Rec
   return out;
 }
 
-/** The cookies still set after these lines, as a crawl session's jar takes them. */
 export function liveCookies(lines: readonly string[] | undefined): Record<string, string> | undefined {
   if (!lines || lines.length === 0) return undefined;
   const live = Object.entries(parseSetCookies(lines)).filter((e): e is [string, string] => e[1] !== null);
@@ -88,5 +78,4 @@ function keyOf({ url, proxy, tier, profile }: CookieIdentity): string | undefine
   }
 }
 
-// ponytail: process-local, so a restart re-earns each clearance once; persist if that shows up.
 export const cookieJar = new CookieJar();

@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/cli/src/writers.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SERVER_ID",
+      "line": 5,
+      "offset": 0,
+      "text": "File writers shared by every harness. Each preserves whatever else is in the\nfile: a user's other MCP servers and settings are not ours to touch.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "upsertJsonMcpServer",
+      "line": 30,
+      "offset": 0,
+      "text": "Sets `mcpServers.helix` in a JSON config, keeping every other key.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "upsertTomlSection",
+      "line": 62,
+      "offset": 0,
+      "text": "Replaces the `[mcp_servers.helix]` table (and any of its sub-tables) in a\nTOML file, leaving the rest byte-for-byte intact. Full TOML parsing is not\nneeded to do that safely: tables start at column 0 with `[`.",
+      "kind": "doc"
+    }
+  ]
+}

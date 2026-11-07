@@ -59,10 +59,6 @@ export class HostNotAllowedError extends Error {
   }
 }
 
-/**
- * Throws when the URL may not be fetched. Resolution failures are left to the
- * fetch itself so they keep their `dns` classification.
- */
 export async function assertPublicUrl(url: URL, lookup: Lookup): Promise<void> {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new HostNotAllowedError('`url` must use http or https.');

@@ -1,8 +1,3 @@
-/**
- * The plain-language docs: install, how it works, settings, privacy and help.
- * The developer references (API, MCP, command line, one page per feature) stay in `docs-content.ts`.
- * Engine, model and port names are allowed here and nowhere else on the marketing site.
- */
 export type Block =
   | { p: string }
   | { ul: string[] }

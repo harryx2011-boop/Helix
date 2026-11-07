@@ -7,11 +7,6 @@ import { CodePanel } from '@/components/shared/code-panel';
 import { useReducedMotion } from '@/components/shared/ambient';
 import { FRAME_MS, LAST_FRAME, frameAt } from '@/lib/install-frames';
 
-/**
- * Plays the install sequence once when scrolled into view and holds on the
- * terminal frame. Reduced motion renders the terminal frame directly: every
- * frame is legible as a still, so nothing is lost (DESIGN.md §6).
- */
 export function InstallSequence({ installer, className }: { installer: string; className?: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();

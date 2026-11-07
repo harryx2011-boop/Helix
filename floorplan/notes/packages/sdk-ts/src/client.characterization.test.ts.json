@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/sdk-ts/src/client.characterization.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 1,
+      "offset": null,
+      "text": "Characterization test for HelixClient.\n\nPins the exact HTTP request every public method sends today: method, URL,\nheaders, and body shape. This is the safety net for the planned rewrite\n(client generated from openapi.yaml) - every assertion here must still\nhold, unchanged, once the client is regenerated.\n\nNot a spec: some of what is pinned (e.g. metadataScrub's AbortError\nbehaviour, noted inline) is known to be changing and is deliberately left\nunpinned rather than asserted.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 609,
+      "offset": null,
+      "text": "Part order follows openapi.yaml's ParseUpload schema; the route reads each\nfield by name (routes/parse.ts), so only the set of parts is pinned.",
+      "kind": "what"
+    }
+  ]
+}

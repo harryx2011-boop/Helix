@@ -1,0 +1,207 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/ascii-fields.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "useTicker",
+      "line": 10,
+      "offset": 0,
+      "text": "Three more character fields, each a different motion so the page does not\nrepeat one motif. All share the contract of AsciiHelix and AsciiFluid: two\n<pre> layers, deterministic first paint, paused off-screen, static under\nreduced motion, and a tick rate low enough to read as ambient texture.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "FieldProps.tone",
+      "line": 31,
+      "offset": 0,
+      "text": "`app` swaps the marketing ink tokens for the dark surface's foreground and primary.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 58,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 58,
+      "offset": null,
+      "text": "AsciiNoise: a domain-warped value-noise cloud. Glyph weight follows the",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 58,
+      "offset": null,
+      "text": "field, so dense and sparse regions drift and fold into each other like",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 58,
+      "offset": null,
+      "text": "smoke. Meant for wide backgrounds; mask it at the edges where it mounts.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "CLOUD",
+      "line": 59,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 90,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 90,
+      "offset": null,
+      "text": "AsciiFlow: particles carried by a slowly turning vector field, leaving",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": null,
+      "line": 90,
+      "offset": null,
+      "text": "trails that decay into lighter glyphs. Reads as streamlines in a fluid.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "TRAIL",
+      "line": 91,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 169,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": null,
+      "line": 169,
+      "offset": null,
+      "text": "AsciiOrbit: concentric rings of glyphs turning at different speeds, a",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": null,
+      "line": 169,
+      "offset": null,
+      "text": "pulse of heavier characters travelling around each. The character cell",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": null,
+      "line": 169,
+      "offset": null,
+      "text": "is taller than it is wide, so the x radius is stretched to read round.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "RING",
+      "line": 170,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": null,
+      "line": 207,
+      "offset": null,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": null,
+      "line": 207,
+      "offset": null,
+      "text": "AsciiSegments: eight arc segments with gaps between them, turning as one",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": null,
+      "line": 207,
+      "offset": null,
+      "text": "body while a highlight travels the ring. Eight arcs on 45° centres read",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": null,
+      "line": 207,
+      "offset": null,
+      "text": "as a segmented band, distinct from `orbit`, which is continuous rings.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": "SEG",
+      "line": 208,
+      "offset": 0,
+      "text": "----------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "SEG_DUTY",
+      "line": 209,
+      "offset": 0,
+      "text": "Fraction of each 45° cell that is ink; the rest is the gap. Matches the mark's 34°/45°.",
+      "kind": "doc"
+    },
+    {
+      "id": "n23",
+      "symbol": "segmentLayers",
+      "line": 221,
+      "offset": 10,
+      "text": "Outer bands lag, so the ring reads as one body with depth rather than\nthree independent spinners.",
+      "kind": "what"
+    },
+    {
+      "id": "n24",
+      "symbol": "segmentLayers",
+      "line": 224,
+      "offset": 13,
+      "text": "Position within this segment's 45° cell; outside the duty cycle is gap.",
+      "kind": "what"
+    },
+    {
+      "id": "n25",
+      "symbol": "segmentLayers",
+      "line": 236,
+      "offset": 25,
+      "text": "The eight inner dots, on the same 45° centres as the segments.",
+      "kind": "what"
+    }
+  ]
+}

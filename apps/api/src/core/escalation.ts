@@ -53,11 +53,9 @@ export const DEFAULT_MAX_TIER: Tier = 'browser';
 export interface Capabilities {
   screenshot?: boolean;
   actions?: boolean;
-  /** Canvas, WebGL, or anything needing real visual layout. */
   visualLayout?: boolean;
   pdfRender?: boolean;
   waitFor?: number;
-  /** The request must leave through a proxy. */
   proxy?: boolean;
 }
 
@@ -78,14 +76,6 @@ export function tierSupports(tier: Tier, caps: Capabilities): boolean {
   return needsBrowser ? tier === 'browser' : true;
 }
 
-/**
- * The lowest tier that can satisfy the request at all. Capability requirements
- * are known up front, so there is no reason to start below them.
- *
- * Never `plain`: it sends no User-Agent and a non-browser JA4, which a WAF scores
- * as a bot before `tls` runs, for the same round trip. `plain` stays reachable
- * as an explicit tier.
- */
 export function minimumViableTier(caps: Capabilities): Tier {
   for (const tier of TIER_ORDER) {
     if (tier === 'plain') continue;
@@ -95,9 +85,7 @@ export function minimumViableTier(caps: Capabilities): Tier {
 }
 
 const MIN_CONTENT_CHARS = 200;
-/** Below this an extraction is a placeholder ("Loading..."), not a short page. */
 const MIN_SHORT_PAGE_CHARS = 40;
-/** Visible text the extractor may leave out of a short page (title, a link) and still have found it all. */
 const SHORT_PAGE_SLACK_CHARS = 100;
 
 const EMPTY_ROOT = /<div[^>]+id=["'](root|app|__next|__nuxt)["'][^>]*>\s*<\/div>/i;
@@ -112,26 +100,15 @@ function visibleText(html: string): string {
     .trim();
 }
 
-// A body that is overwhelmingly script is a shell, whatever framework made it.
 function scriptHeavy(html: string): boolean {
   const scriptBytes = (html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) ?? []).join('').length;
   return html.length > 0 && scriptBytes / html.length > 0.9;
 }
 
-/**
- * Whether the raw HTML actually carries the content, or is a hydration shell.
- *
- * Deliberately signal-based rather than framework-based.
- */
 export function contentLooksAbsent(html: string, extractedText?: string): boolean {
-  // Nav and footer boilerplate would pass the raw-HTML checks below, so an
-  // extraction that ran and came back short is the deciding signal.
   if (extractedText !== undefined) {
     const text = extractedText.trim();
     if (text.length >= MIN_CONTENT_CHARS) return false;
-    // A short page is complete (example.com) when the extractor found nearly all
-    // of its visible text and nothing marks it as a shell; a browser would only
-    // render the same sentence seconds later.
     return (
       text.length < MIN_SHORT_PAGE_CHARS ||
       EMPTY_ROOT.test(html) ||
@@ -150,7 +127,6 @@ export interface EscalationInput {
   currentTier: Tier;
   response: ResponseFacts;
   capabilities: Capabilities;
-  /** Tier ceiling for this request, if the caller set one. */
   maxTier?: Tier;
 }
 
@@ -172,8 +148,6 @@ export function shouldEscalate(input: EscalationInput): EscalationDecision {
     return undefined;
   };
 
-  // A block is the strongest reason to move up — though a higher tier is only
-  // part of the answer; a different profile or proxy often matters more.
   const verdict = detectBlock(response);
   if (verdict.blocked) {
     const nextTier = next(currentIndex);
@@ -186,7 +160,6 @@ export function shouldEscalate(input: EscalationInput): EscalationDecision {
       : { escalate: false, reason: 'blocked, but no higher tier is available' };
   }
 
-  // Content genuinely missing from the raw HTML.
   if (contentLooksAbsent(response.body, response.extractedText)) {
     const nextTier = next(currentIndex);
     return nextTier

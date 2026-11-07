@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/job-cost.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "CostRow",
+      "line": 6,
+      "offset": 0,
+      "text": "What a job actually consumed, beside the projection it was made against.\n\nEvery figure here was measured or saved when the job ran. One that was not\nis `null`, and `reasons` says why: a zero would claim the job used nothing,\nand a projection recomputed now would describe today's site, not the one the\njob crawled.",
+      "kind": "doc"
+    }
+  ]
+}

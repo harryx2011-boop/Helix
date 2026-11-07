@@ -13,14 +13,6 @@ interface TaskRow {
   leaseExpiresAt: number | null;
 }
 
-/**
- * A fake job_tasks table.
- *
- * It models the SQL the frontier actually issues rather than replaying fixed
- * rows, because every property under test here is about what a WHERE clause
- * does and does not match. `now` is settable so lease expiry can be reached
- * without waiting five minutes for it.
- */
 const db = vi.hoisted(() => {
   const state = {
     rows: [] as TaskRow[],
@@ -48,7 +40,6 @@ const db = vi.hoisted(() => {
       return { rows: [], rowCount: 0 };
     }
 
-    // Reclaim: only rows whose lease is already past, by the database's clock.
     if (t.includes("SET status = CASE WHEN attempts + 1 >= max_attempts")) {
       const hit = state.rows.filter(
         (r) => r.status === 'running' && r.leaseExpiresAt !== null && r.leaseExpiresAt < state.now,
@@ -169,7 +160,6 @@ describe('PersistentFrontier — leases', () => {
     const row = db.state.rows[0];
     expect(row?.status).toBe('running');
     expect(row?.claimedBy).toBe('worker-a');
-    // A claim without an expiry is the flag this design exists to replace.
     expect(row?.leaseExpiresAt).toBeGreaterThan(db.state.now);
   });
 
@@ -179,7 +169,6 @@ describe('PersistentFrontier — leases', () => {
     await dead.flush();
     await dead.next(() => true);
 
-    // No release(): the process was killed, so nothing ran on the way out.
     db.state.now += 6 * 60 * 1000;
 
     const reclaimed = await new PersistentFrontier(JOB_ID, options, 'worker-b').reclaimExpired();
@@ -195,8 +184,6 @@ describe('PersistentFrontier — leases', () => {
     await holder.flush();
     await holder.next(() => true);
 
-    // Well inside the lease. Taking this would hand live work to a second
-    // worker and pay for the same page twice.
     db.state.now += 60 * 1000;
 
     expect(await new PersistentFrontier(JOB_ID, options, 'worker-b').reclaimExpired()).toBe(0);
@@ -213,7 +200,6 @@ describe('PersistentFrontier — leases', () => {
     await frontier.renewLeases(db.state.now);
 
     db.state.now += 4 * 60 * 1000;
-    // Without the renewal the original lease would have expired by now.
     expect(await new PersistentFrontier(JOB_ID, options, 'worker-b').reclaimExpired()).toBe(0);
   });
 
@@ -227,7 +213,6 @@ describe('PersistentFrontier — leases', () => {
     const second = await frontier.renewLeases(db.state.now + 100);
 
     expect(first).toBe(1);
-    // The renewal exists to outlive a slow page, not to attach a query to each.
     expect(second).toBe(0);
   });
 
@@ -238,8 +223,6 @@ describe('PersistentFrontier — leases', () => {
     seed.add(url, 0);
     await seed.flush();
 
-    // Three workers in turn: each resumes, claims the task, and is killed
-    // before it can finish — the shape of a page that reliably OOMs a renderer.
     for (let round = 0; round < 3; round++) {
       const worker = new PersistentFrontier(JOB_ID, options, `worker-${round}`);
       await worker.resume();
@@ -248,8 +231,6 @@ describe('PersistentFrontier — leases', () => {
       await worker.reclaimExpired();
     }
 
-    // An unbounded reclaim loop turns one poison page into a crawl that never
-    // ends, so a task that has burned its attempts is failed instead.
     expect(db.state.rows[0]?.status).toBe('failed');
     expect(db.state.rows[0]?.attempts).toBe(3);
   });
@@ -260,7 +241,6 @@ describe('PersistentFrontier — leases', () => {
     await a.flush();
     await a.next(() => true);
 
-    // Another worker legitimately reclaimed the row and is fetching it now.
     db.state.rows[0] = {
       ...(db.state.rows[0] as TaskRow),
       claimedBy: 'worker-b',
@@ -281,8 +261,6 @@ describe('PersistentFrontier — leases', () => {
 
     await frontier.markCompleted('https://example.com/a');
 
-    // A terminal row keeping a stale expiry is what a reclaim sweep would read
-    // as abandoned work, and the page would be fetched a second time.
     expect(db.state.rows[0]?.leaseExpiresAt).toBeNull();
     db.state.now += 60 * 60 * 1000;
     expect(await frontier.reclaimExpired()).toBe(0);
@@ -301,7 +279,6 @@ describe('PersistentFrontier — leases', () => {
     const resumed = await new PersistentFrontier(JOB_ID, options, 'worker-b').resume();
 
     expect(resumed.reclaimed).toBe(1);
-    // Reclaimed before the queue is read, so the recovered task is restored too.
     expect(resumed.restored).toBe(1);
     expect(resumed.alreadyDone).toBe(1);
   });
@@ -316,7 +293,6 @@ describe('PersistentFrontier — leases', () => {
     const second = new PersistentFrontier(JOB_ID, options, 'worker-b');
     await second.resume();
 
-    // Persistent dedup: a completed URL stays seen across the restart.
     expect(second.add('https://example.com/a', 0)).toBe(false);
     expect(second.pending).toBe(0);
   });
@@ -328,14 +304,11 @@ describe('PersistentFrontier — in-flight work', () => {
     frontier.add('https://example.com/a', 0);
     await frontier.flush();
 
-    // Handed to a fetcher and still in progress when SIGTERM arrives.
     const item = await frontier.next(() => true);
     expect(item?.url).toBe('https://example.com/a');
 
     await frontier.release();
 
-    // A page mid-fetch is the one most worth recovering, and the one a queue
-    // that forgets its handouts silently loses.
     expect(db.state.rows[0]?.status).toBe('queued');
     expect(db.state.rows[0]?.claimedBy).toBeNull();
   });
@@ -346,8 +319,6 @@ describe('PersistentFrontier — in-flight work', () => {
     await frontier.flush();
     await frontier.next(() => true);
 
-    // These are exactly the leases that need renewing: a slow render is what
-    // pushes a fetch past the lease in the first place.
     expect(await frontier.renewLeases(db.state.now)).toBe(1);
   });
 
@@ -369,8 +340,6 @@ describe('PersistentFrontier — in-flight work', () => {
     await frontier.flush();
     await frontier.next(() => true);
 
-    // The worker loop ends on pending === 0. Forgetting handed-out work here
-    // would end the crawl while a page was still being fetched.
     expect(frontier.pending).toBe(1);
   });
 });
@@ -382,14 +351,12 @@ describe('PersistentFrontier — a reclaimed task is not marked by its old holde
     await a.flush();
     await a.next(() => true);
 
-    // A's lease expires and B reclaims and re-claims the task.
     db.state.now += 6 * 60 * 1000;
     const b = new PersistentFrontier(JOB_ID, options, 'worker-b');
     await b.resume();
     await b.next(() => true);
     expect(db.state.rows[0]?.claimedBy).toBe('worker-b');
 
-    // A finally finishes the page it started and reports it.
     const marked = await a.markCompleted('https://example.com/a');
 
     expect(marked, 'a stale holder must not flip a row it no longer owns').toBe(false);
@@ -425,9 +392,6 @@ describe('PersistentFrontier — a reclaimed task is not marked by its old holde
     expect(db.state.rows[0]?.status).toBe('completed');
   });
 
-  // The worker adds discovered links and flushes only past a threshold, so a
-  // claim that ran before the INSERT matched nothing and the fetched page was
-  // dropped: a crawl kept its seed and lost every page it discovered.
   it('claims a page that was added but not yet flushed', async () => {
     const frontier = new PersistentFrontier(JOB_ID, options, 'worker-a');
     frontier.add('https://example.com/a', 1);

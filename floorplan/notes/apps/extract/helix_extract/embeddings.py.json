@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/embeddings.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "LOCAL_DIMENSIONS",
+      "line": 21,
+      "offset": 0,
+      "text": "all-MiniLM-L6-v2, matching the pgvector column width in the schema.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "_embed_local",
+      "line": 63,
+      "offset": 3,
+      "text": "encode() is CPU-bound and synchronous; running it inline would block the\nevent loop for the whole batch.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "_embed_openai",
+      "line": 87,
+      "offset": 13,
+      "text": "No client-level timeout is set above, so this is the only ceiling on a\nstalled connection — same reasoning as provider.py's own CALL_TIMEOUT_SECONDS.",
+      "kind": "what"
+    }
+  ]
+}

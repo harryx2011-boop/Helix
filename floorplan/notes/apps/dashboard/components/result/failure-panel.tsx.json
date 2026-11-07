@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/result/failure-panel.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ReasonCopy.nextStep",
+      "line": 11,
+      "offset": 0,
+      "text": "A concrete next step, not a generic \"try again\" — this is what the plan calls the important part.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "REASON_COPY.service_unavailable.explanation",
+      "line": 98,
+      "offset": 0,
+      "text": "Deliberately points at Helix's own infrastructure, not the target site.\nReporting this as a block would send an operator chasing an anti-bot\nproblem that does not exist — the fetch never left the building.",
+      "kind": "why"
+    }
+  ]
+}

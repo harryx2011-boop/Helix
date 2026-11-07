@@ -1,0 +1,127 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/interact-actions.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MAX_TOTAL_WAIT_MS",
+      "line": 9,
+      "offset": 0,
+      "text": "Interact actions: the spec's union (research/api-specs/browser-interaction-api.md §5).\n\nDistinct from the pre-scrape `actions[]` on /scrape, which runs inside a\none-shot render. These run against a page that persists between calls, so a\n`navigate` here is a real action rather than the implicit first step, and\n`extract` returns its answer as the run's `output`.\n\nDeterministic by construction: every action names its target. The only model\ncall is `extract`, and it runs against the operator's configured provider.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MAX_JS_RETURN_CHARS",
+      "line": 12,
+      "offset": 0,
+      "text": "Serialized size of one `executeJavascript` return value.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "InteractActionSchema.amount",
+      "line": 22,
+      "offset": 0,
+      "text": "Pixels. Omitted: one viewport height.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "InteractOutcome.output",
+      "line": 42,
+      "offset": 0,
+      "text": "Result of the last `extract`: the answer string, or the JSON of a schema result.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "InteractOutcome.data",
+      "line": 43,
+      "offset": 0,
+      "text": "Structured result of the last `extract`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "InteractOutcome.screenshot",
+      "line": 44,
+      "offset": 0,
+      "text": "Last screenshot as a data URL.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "InteractActionDeps.lookup",
+      "line": 53,
+      "offset": 0,
+      "text": "DNS for the URL guard; tests supply a fake.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "ActionError",
+      "line": 56,
+      "offset": 0,
+      "text": "A failed action, carrying what the route's typed failure envelope needs.\n`reason` is the same enum every other fetch failure uses, so a client that\nalready handles Scrape needs nothing new.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "ActionError.pageUnresponsive",
+      "line": 62,
+      "offset": 0,
+      "text": "The page's main thread did not come back. Chromium cannot interrupt a\nscript that never yields, so the only way to reclaim the session is to\nclose it; the route does that whatever the caller asked for.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "withTimeout",
+      "line": 91,
+      "offset": 0,
+      "text": "`page.evaluate` has no timeout of its own; a script that never settles must not hold the request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "guardPage",
+      "line": 103,
+      "offset": 0,
+      "text": "Keeps every request the page makes on the public internet: navigations,\nredirects, subresources, and anything a script fetches. The `navigate`\ncheck gives a clear answer for the URL the caller named; this catches the\nrest. Each host is resolved once per page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "answerSchema",
+      "line": 141,
+      "offset": 0,
+      "text": "A prompt without a schema still runs through structured extraction: one string field.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "pageText",
+      "line": 151,
+      "offset": 0,
+      "text": "What the model sees. Boilerplate-stripped markdown when helix-extract is up,\nso the caller's own token bill stays proportional to the content; the page's\nvisible text otherwise.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "runOne",
+      "line": 265,
+      "offset": 75,
+      "text": "Playwright reads a timeout of 0 as no timeout at all, so an exhausted\nbudget has to fail here rather than be passed on.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "runOne",
+      "line": 293,
+      "offset": 103,
+      "text": "Runs in page context. The value stays in the page as a handle until\nits size is known, so a script cannot push hundreds of megabytes\nthrough CDP into the response.",
+      "kind": "what"
+    }
+  ]
+}

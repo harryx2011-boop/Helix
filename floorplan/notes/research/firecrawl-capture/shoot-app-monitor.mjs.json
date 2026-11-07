@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "research/firecrawl-capture/shoot-app-monitor.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "envText",
+      "line": 6,
+      "offset": 0,
+      "text": "Authenticated screenshots of /app (WEBSITE.md §12 DoD). Reads Clerk keys from apps/dashboard/.env.local.",
+      "kind": "what"
+    }
+  ]
+}

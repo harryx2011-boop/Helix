@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/engines.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "RenderEngine",
+      "line": 4,
+      "offset": 0,
+      "text": "Engines the chromium tier can be driven by.\n\nPlaywright ships all three, so the cost of offering them is not the download\nbut the details that differ underneath: launch flags, what a context option\nactually does, and whether an identity still hangs together. Each of those is\nsettled here rather than at the call site, because a per-engine `if` scattered\nthrough the pool is how one engine quietly loses a security control.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CHROMIUM_ARGS",
+      "line": 18,
+      "offset": 0,
+      "text": "Launch flags, per engine.\n\nThe Chromium set is not decoration: `--no-sandbox` and `--disable-dev-shm-usage`\nare what keep it alive in a container with a small `/dev/shm`. They are also\nChromium-only switches — Firefox and WebKit take a different command line\nentirely and treat an unknown flag as an error or as a URL to open, so passing\nthem through would break the launch rather than degrade it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "CHROMIUM_ARGS",
+      "line": 25,
+      "offset": 7,
+      "text": "Playwright's --enable-automation otherwise sets navigator.webdriver to true.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": "ENGINE_FAMILIES",
+      "line": 32,
+      "offset": 0,
+      "text": "Whether an identity can be presented on this engine at all.\n\nThe transport layer already refuses to assemble an identity piecemeal (see\nthe coherence validator in apps/fetch); the same rule has to hold here. A\nChrome profile on Firefox contradicts itself in the one place detection looks\nfirst — `navigator.userAgent` says Chrome while the JS engine answers like\nGecko, and no amount of getter patching reconciles the two. That is strictly\nworse than presenting nothing, because a coherent unspoofed Firefox is\nunremarkable while a Chrome-claiming Gecko is a positive signal.\n\nSo a profile is applied only on the engine family it describes, and a\nmismatch drops the profile rather than the request: the caller still gets\ntheir page, and `profileUsed` comes back absent so the substitution is\nvisible instead of silent.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "supportsMobileEmulation",
+      "line": 42,
+      "offset": 0,
+      "text": "Firefox accepts `isMobile` and silently does nothing with it: measured, the\nviewport narrows but `ontouchstart` never appears, so a page branching on\ntouch still serves its desktop layout. Reporting that as a phone render would\nrepeat exactly the lie the lightpanda `mobile` warning exists to prevent.",
+      "kind": "doc"
+    }
+  ]
+}

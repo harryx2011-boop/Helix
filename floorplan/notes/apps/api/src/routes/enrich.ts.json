@@ -1,0 +1,119 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/enrich.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FIELD_TYPES",
+      "line": 25,
+      "offset": 0,
+      "text": "POST /v1/enrich - sparse identifier in, grounded columns out.\n\nThe endpoint exists to be trustworthy rather than complete. Everything it\nreturns is tied to a passage in a page it fetched; everything it cannot tie is\n`null` with the reason. That trade is deliberate and is the product: an\nenrichment API that fabricates a plausible headquarters city is worse than one\nthat says it does not know, because the first cannot be checked at scale.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PROVIDERS",
+      "line": 27,
+      "offset": 0,
+      "text": "Providers a caller may name. Declared as an enum so an unknown name is a 400\nfrom this route rather than a 503 from two services away.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "EnrichRouteDeps.searchProvider",
+      "line": 71,
+      "offset": 0,
+      "text": "Used to find sources when the caller supplies no `urls`. Absent means the caller must supply them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "EnrichRouteDeps.concurrency",
+      "line": 73,
+      "offset": 0,
+      "text": "How many candidate pages are read at once.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "findCandidates",
+      "line": 76,
+      "offset": 0,
+      "text": "Candidate URLs for a subject: the caller list if given, otherwise a search.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "soleLocalProvider",
+      "line": 98,
+      "offset": 0,
+      "text": "The caller's local runtime, when that is the only thing they have configured.\n\nhelix-extract auto-picks a provider from the caller's stored keys, but walks\ncloud providers only: a local runtime is identified by a base URL rather than\na key and is reachable solely when named. So a caller whose one configured\nprovider is Ollama would get \"no provider configured\" while looking straight\nat a running Ollama. Naming it for them is the fix; when they have configured\nmore than one, the choice is theirs and this stays out of it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "readCandidate",
+      "line": 109,
+      "offset": 0,
+      "text": "Read one candidate and decide whether it may be evidence.\n\nThe URL guard runs before the fetch and the content guards after it, because\nneither can be judged from the other: a safe URL can serve a parking page, and\na parking page on an unsafe URL must never be fetched at all.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "readCandidate",
+      "line": 124,
+      "offset": 15,
+      "text": "rawHtml is what the metadata phase reads; without it every field would\nfall through to the model even when the page states it in JSON-LD.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "readCandidate",
+      "line": 134,
+      "offset": 25,
+      "text": "Not a content judgement: the page never arrived. Saying it fell below the\ncontent floor would report a fact about text that was never fetched.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": "registerEnrich",
+      "line": 244,
+      "offset": 89,
+      "text": "Phase one and two. Anything answered here costs no model call at all.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "registerEnrich",
+      "line": 246,
+      "offset": 91,
+      "text": "The allowlist the model is checked against. Built from what the code\nfetched, keyed by the URL the code fetched it from.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "registerEnrich",
+      "line": 277,
+      "offset": 122,
+      "text": "A model that cannot be reached leaves the open fields unanswered.\nSaying \"not stated\" there would be a lie about the pages.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "emptyOutcome",
+      "line": 316,
+      "offset": 0,
+      "text": "Every field null for the same reason, when there was nothing to read.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "emptyOutcome",
+      "line": 324,
+      "offset": 8,
+      "text": "Same shape as the success path, down to `subject` and the `sources` object:\na caller must never have to branch on which of the two they received.",
+      "kind": "why"
+    }
+  ]
+}

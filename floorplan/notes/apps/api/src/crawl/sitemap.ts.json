@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/sitemap.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MAX_URLS",
+      "line": 7,
+      "offset": 0,
+      "text": "Sitemap discovery.\n\nHandles both `<urlset>` and the recursive `<sitemapindex>` case, with hard\ncaps on total URLs and recursion depth — a sitemap index can point at\nthousands of children, and an unbounded walk is a denial of service against\nyourself.\n\n`<lastmod>` is captured but treated as a hint. In the wild it is frequently\nstale or simply fabricated, so it can inform incremental crawl decisions but\nmust never be the only evidence a page is unchanged.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MAX_SITEMAP_BYTES",
+      "line": 10,
+      "offset": 0,
+      "text": "the 50MiB limit from the spec",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "SitemapFetcher.fetch",
+      "line": 46,
+      "offset": 0,
+      "text": "Fetch one sitemap, following index files to their children.\n\n`seen` guards against a sitemap index that points back at itself, directly\nor through a cycle.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "SitemapFetcher.fetch",
+      "line": 57,
+      "offset": 11,
+      "text": "A sitemap URL is quoted from a remote robots.txt, so the host is the\ncaller's choice twice over: once in the file and again in whatever it\nredirects to. Every hop is checked rather than the first alone.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "SitemapFetcher.fetch",
+      "line": 96,
+      "offset": 50,
+      "text": "A sitemap index: recurse into each child, spending the remaining budget.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "SitemapFetcher.discover",
+      "line": 123,
+      "offset": 0,
+      "text": "Find a site's sitemaps: those declared in robots.txt, then the conventional\npath as a fallback.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "SitemapFetcher.discover",
+      "line": 135,
+      "offset": 12,
+      "text": "A sitemap index can list the same URL through two children.",
+      "kind": "what"
+    }
+  ]
+}

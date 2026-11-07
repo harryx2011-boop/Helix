@@ -1,0 +1,111 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/mcp/slim.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Budget",
+      "line": 4,
+      "offset": 0,
+      "text": "The MCP manifest is read by a model, and every listed schema is paid for in\ncontext each time a tool loads. openapi.yaml serves docs and SDK codegen\ntoo, so its prose stays long; this module shrinks only what `tools/list`\nadvertises. No property, type, bound, enum value or `required` entry is\nremoved, and the HTTP route validates the call whatever the manifest says.\n\nFour moves: terse wording (lead sentence, bounded), structure trims that\nchange no meaning (OpenAPI-only `discriminator`, the default\n`additionalProperties: true` and `default: false`, a one-member `allOf`),\nshared sub-schemas hoisted into `$defs` so an option object repeated inside\none tool is written once, and an option repeated across tools documented\nonce (see `slimManifest`).",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "DEFAULT_BUDGET",
+      "line": 10,
+      "offset": 0,
+      "text": "Characters of prose kept: tool summary plus lead sentence, a top-level option, an option nested inside one (none: names, types and enums say enough).",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "MIN_SHARED",
+      "line": 16,
+      "offset": 0,
+      "text": "Below this a `$ref` costs readability and some clients' patience for no real saving.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "MIN_PROSE",
+      "line": 18,
+      "offset": 0,
+      "text": "A repeated option loses its prose only when there is enough of it to be worth a pointer.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "POINTER_PROSE",
+      "line": 20,
+      "offset": 0,
+      "text": "A tool that lost this much prose to another tool says where it went.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "SENTENCE",
+      "line": 24,
+      "offset": 0,
+      "text": "A semicolon ends a clause that stands alone; \"e.g.\" and \"i.e.\" do not end a sentence.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "SUBORDINATE",
+      "line": 26,
+      "offset": 0,
+      "text": "A sentence that opens this way is complete only with its main clause.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "sentencesWithin",
+      "line": 28,
+      "offset": 0,
+      "text": "Whole sentences of `text` that fit `max`; empty when not even the first does.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "brief",
+      "line": 38,
+      "offset": 0,
+      "text": "First paragraph, whitespace collapsed, whole sentences up to `max` (the lead\nsentence may run to 1.7x). A lone sentence longer than that is cut at its\nlast clause boundary, or dropped: a fragment that ends mid-thought misleads.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "briefTool",
+      "line": 49,
+      "offset": 0,
+      "text": "Summary line plus whole sentences of the first body paragraph, up to `max`; the `Returns:` tail is dropped.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "LITERAL_KEYS",
+      "line": 58,
+      "offset": 0,
+      "text": "Values, not schemas: a `description` key inside them is data.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "hoistShared",
+      "line": 137,
+      "offset": 0,
+      "text": "Hoist sub-schemas that occur twice or more into `$defs`, largest saving first.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "slimManifest",
+      "line": 187,
+      "offset": 0,
+      "text": "Slim a whole tool list. An option that several tools take with the same\nschema and wording (the scrape options on scrape, crawl, batch, monitor...)\nis documented on the first tool that lists it; later tools keep its name,\ntypes, bounds and enum values and drop the repeated prose, and their\ndescription says where the prose lives.",
+      "kind": "doc"
+    }
+  ]
+}

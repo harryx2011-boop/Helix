@@ -5,11 +5,6 @@ import type { DocumentOp, DocumentRequest } from '@/lib/api';
 import { FormFooter } from './form-footer';
 import { cn } from '@/lib/utils';
 
-/**
- * The dispatcher's operations, in the order a caller usually wants them.
- * `scrub` is deliberately absent: it answers with file bytes rather than JSON,
- * and the Metadata tab already handles that response properly.
- */
 const OPS: readonly { id: Exclude<DocumentOp, 'scrub'>; label: string; hint: string }[] = [
   { id: 'parse', label: 'Parse', hint: 'The document as markdown, or as JSON against a schema.' },
   { id: 'metadata', label: 'Metadata', hint: 'What the file discloses about who and what made it.' },

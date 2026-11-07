@@ -1,12 +1,4 @@
-/**
- * The script that runs inside the browser being recorded.
- *
- * Kept as its own file, and as plain JS rather than a template string, so the
- * thing being evaluated is readable and reviewable on its own. Everything here
- * runs in the page, so it may only use what a page has.
- */
 
-/** Fonts a fingerprinter would plausibly probe for. Absent ones are simply not reported. */
 const FONT_CANDIDATES = [
   'Arial',
   'Arial Black',
@@ -32,11 +24,6 @@ const FONT_CANDIDATES = [
   'Verdana',
 ];
 
-/**
- * There is no API that lists installed fonts, so this measures instead: render
- * a string in a candidate with a known fallback, and if the width differs from
- * the fallback alone, the candidate resolved to something real.
- */
 function detectFonts(candidates) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -63,8 +50,6 @@ function webglStrings() {
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
   if (!gl) return { vendor: null, renderer: null };
 
-  // The unmasked pair is what fingerprinters read; the plain VENDOR is almost
-  // always "WebKit" and tells nobody anything.
   const ext = gl.getExtension('WEBGL_debug_renderer_info');
   return {
     vendor: ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR),
@@ -72,14 +57,6 @@ function webglStrings() {
   };
 }
 
-/**
- * A canvas hash read twice.
- *
- * Two identical reads are the expected result and the point of recording it: a
- * browser that returns different bytes on consecutive reads is either already
- * spoofed or running an anti-fingerprinting extension, and its surface should
- * not be recorded as a baseline.
- */
 function canvasReads() {
   const canvas = document.createElement('canvas');
   canvas.width = 240;
@@ -108,8 +85,6 @@ globalThis.__helixReadSurface = () => {
     acceptLanguage: navigator.languages ? navigator.languages.join(',') : navigator.language,
     platform: navigator.platform,
     hardwareConcurrency: navigator.hardwareConcurrency ?? null,
-    // Firefox and Safari do not implement deviceMemory at all; null is the
-    // honest recording, not a guess.
     deviceMemory: typeof navigator.deviceMemory === 'number' ? navigator.deviceMemory : null,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     screen: {

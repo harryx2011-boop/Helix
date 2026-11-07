@@ -1,17 +1,10 @@
 import type * as vscode from 'vscode';
 
-/**
- * The API key, kept in VS Code's SecretStorage (the OS keychain), never in
- * settings. Asked for once (Harry's call, 2026-10-17) and handed to the
- * framed app on request.
- */
 
 const SECRET_ID = 'helix.apiKey';
 
-/** Shorter than this after `helix-` is no key Helix mints. */
 const MIN_KEY_BODY = 8;
 
-/** Why `value` is not a usable key, or undefined when it is. */
 export function keyProblem(value: string): string | undefined {
   const key = value.trim();
   if (!key.startsWith('helix-')) return 'Paste an API key that starts with helix-.';
@@ -27,7 +20,6 @@ export function clearKey(secrets: vscode.SecretStorage): Thenable<void> {
   return secrets.delete(SECRET_ID);
 }
 
-/** Prompts for a key and stores it. Undefined when the prompt was dismissed. */
 export async function promptForKey(
   secrets: vscode.SecretStorage,
   window: typeof vscode.window,

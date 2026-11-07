@@ -9,13 +9,6 @@ import type { ExtractClient } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
 import { mapWithLimit } from '../core/map-with-limit.js';
 
-/**
- * Search, optionally reading every result in the same call.
- *
- * That combination is the point. Search APIs return snippets; scraping APIs need
- * URLs. Doing both in one request turns "what does the web say about X" from an
- * orchestration problem into a single call.
- */
 
 const FORMATS = ['markdown', 'text', 'rawHtml', 'links', 'screenshot'] as const;
 const SOURCES = ['web', 'news', 'images'] as const;
@@ -33,7 +26,6 @@ const ScrapeOptionsSchema = z.object({
   profile: z.string().optional(),
 });
 
-/** A hostname as a `site:` operator accepts it: labels and dots, no scheme, no path. */
 const DomainSchema = z
   .string()
   .max(253)
@@ -63,7 +55,6 @@ const SearchRequestSchema = z.object({
     .regex(/^\d{1,4}[hdwmy]$/i, 'expected a relative window such as 24h, 7d, 1m or 1y')
     .optional(),
   scrapeOptions: ScrapeOptionsSchema.optional(),
-  /** Pre-spec alias of `scrapeOptions`, kept so early callers keep working. */
   scrape: ScrapeOptionsSchema.optional(),
 });
 
@@ -75,17 +66,12 @@ export interface SearchRouteDeps {
   fetchClient: FetchClient;
   extractClient: ExtractClient;
   browserPool?: BrowserPool | undefined;
-  /** Operator ceiling on `limit`. */
   maxResults?: number | undefined;
-  /** How many result pages one search call may read at once. */
   scrapeConcurrency?: number | undefined;
-  /** Provider-hit cache lifetime; 0 disables the cache. */
   cacheTtlMs?: number | undefined;
-  /** Wall-clock budget for one call, backend query and page reads included. */
   maxDurationMs?: number | undefined;
 }
 
-/** Category shorthands, expanded into search operators. */
 const CATEGORY_OPERATORS: Record<string, string> = {
   github: 'site:github.com',
   research: '(site:arxiv.org OR site:pubmed.ncbi.nlm.nih.gov OR filetype:pdf)',
@@ -163,8 +149,6 @@ export async function registerSearch(
     }
 
     if (!deps.provider?.configured()) {
-      // Search is the one capability that cannot be self-hosted without a
-      // backend, so say plainly what is missing rather than returning nothing.
       return reply.code(503).send({
         error: 'search_unavailable',
         message:
@@ -181,8 +165,6 @@ export async function registerSearch(
     const providerQuery = {
       query,
       limit: body.limit,
-      // Each source is one billed backend call and `limit` more pages to read,
-      // so a repeated source must not multiply either.
       sources: [...new Set(body.sources)],
       lang: body.lang?.toLowerCase(),
       country: body.country?.toLowerCase(),
@@ -192,8 +174,6 @@ export async function registerSearch(
       excludeDomains: body.excludeDomains,
     };
 
-    // One budget covers the whole call. When it is spent, or the caller has
-    // gone, every in-flight read is cut and no further page is scheduled.
     const controller = new AbortController();
     const budget = setTimeout(() => {
       controller.abort(new Error(`search timed out: the ${maxDurationMs}ms budget for this call was spent`));
@@ -235,8 +215,6 @@ export async function registerSearch(
         for (const failure of outcome.failures) {
           warnings.push(`${failure.source}: ${failure.message}`);
         }
-        // A list a failed source is missing from is not the answer to this
-        // query; only a complete one may be reused.
         if (outcome.failures.length === 0) cache.set(providerQuery, hits);
       }
 
@@ -261,7 +239,6 @@ export async function registerSearch(
 
       for (const [source, sourceHits] of Object.entries(grouped) as [SearchSource, SearchHit[]][]) {
         if (source === 'images') {
-          // Image results carry no page to read, so scraping them is pure waste.
           data[source] = sourceHits.map(baseItem);
           continue;
         }
@@ -319,7 +296,6 @@ function groupBySource(hits: SearchHit[]): Partial<Record<SearchSource, SearchHi
   for (const hit of hits) {
     (grouped[hit.source] ??= []).push(hit);
   }
-  // `web` is always present so callers can index `data.web` without a guard.
   grouped.web ??= [];
   return grouped;
 }
@@ -368,8 +344,6 @@ async function readResult(
     );
 
     if (!result.success) {
-      // One unreachable result must not fail the whole search. The failure
-      // travels with its own row so the caller can see which.
       return {
         ...item,
         failure: {

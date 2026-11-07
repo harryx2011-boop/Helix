@@ -5,11 +5,6 @@ import { StructuredError, type ExtractClient } from '../extract/client.js';
 import type { FetchClient } from '../fetch/client.js';
 import type { BrowserPool } from '../browser/pool.js';
 
-/**
- * The rule worth testing here is the one that distinguishes this endpoint from
- * a model call with a schema attached: a field the page does not support is
- * dropped and reported, never returned as though it were read.
- */
 
 interface StructuredStub {
   data?: Record<string, unknown>;
@@ -17,12 +12,6 @@ interface StructuredStub {
   error?: Error;
 }
 
-/**
- * Carries both methods the route reaches for: `extract` (the pipeline's own
- * text extraction) and `structured` (the model step). Built together rather
- * than merged later — spreading a stub to override one method is what silently
- * dropped the other.
- */
 function extractClient(stub: StructuredStub = {}): ExtractClient {
   return {
     extract: vi.fn(async () => ({
@@ -57,7 +46,6 @@ const PAGE =
   '<html><body><h1>Pricing</h1><p>The Pro plan is $79 per month, billed monthly, ' +
   'with everything in Starter plus priority support and a higher rate limit.</p></body></html>';
 
-/** Answers every fetch with the same readable page, so the pipeline succeeds. */
 function fetchClient(): FetchClient {
   return {
     fetch: vi.fn(async () => ({
@@ -71,12 +59,6 @@ function fetchClient(): FetchClient {
   } as unknown as FetchClient;
 }
 
-/**
- * Present so an escalation has somewhere to go. The pipeline escalates on
- * evidence, and a short fixture page can read as a block; without a pool that
- * becomes `no browser pool is configured` and the row is lost for a reason
- * that has nothing to do with what these tests are checking.
- */
 function browserPool(): BrowserPool {
   return {
     render: vi.fn(async () => ({
@@ -238,11 +220,8 @@ describe('POST /extract', () => {
     });
 
     expect(response.statusCode).toBe(400);
-    // A named field makes it the caller's request that is wrong, which is the
-    // same distinction /scrape draws; an unnamed one is `invalid_schema`.
     expect(response.json().error).toBe('invalid_request');
     expect(response.json().field).toBe('schema');
-    // One 400, not one per URL.
     expect(response.json().message).toContain('JSON Schema types');
   });
 
@@ -297,7 +276,6 @@ describe('POST /extract', () => {
 });
 
 describe('POST /extract concurrency', () => {
-  /** Hosts, not paths: the per-host gate paces one host and these tests are about the route. */
   const URLS = [
     'https://one.example/a',
     'https://two.example/b',
@@ -305,7 +283,6 @@ describe('POST /extract concurrency', () => {
     'https://four.example/d',
   ];
 
-  /** Finishes the first call last, so completion order cannot be the input order. */
   function reorderingExtractClient(): ExtractClient {
     let call = 0;
     const base = extractClient();
@@ -367,8 +344,6 @@ describe('POST /extract concurrency', () => {
   });
 
   it('still ends the whole request on a schema the provider refused', async () => {
-    // The point of stopping: the same 400 would arrive for all four URLs, and
-    // the caller has one schema to fix.
     const client = extractClient({
       error: new StructuredError(400, 'schema.properties: unsupported type', 'schema.properties'),
     });

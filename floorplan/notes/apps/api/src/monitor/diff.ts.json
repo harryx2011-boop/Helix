@@ -1,0 +1,223 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/diff.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Granularity",
+      "line": 2,
+      "offset": 0,
+      "text": "Text diff at word, line or character granularity.\n\nMyers' shortest edit script in its linear-space form: the middle snake is\nfound by searching from both ends, the problem splits there, and only two\nfrontier arrays of O(N+M) integers exist at any time. Pages differ in a\nhandful of places, so the common prefix and suffix are peeled off first and\nD stays small. A page that was replaced wholesale (a consent wall, a\nrelaunch, a language switch) would need O((N+M)·D) time to trace token by\ntoken; past a comparison budget the changed region is reported as one\ndelete and one insert and the diff is marked `coarse`.\n\nThe result is a list of runs — equal, insert, delete — collapsed so\nconsecutive tokens of one kind form a single hunk with readable text.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "Diff.added",
+      "line": 11,
+      "offset": 0,
+      "text": "Tokens inserted and deleted, at the chosen granularity.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "Diff.changeRatio",
+      "line": 13,
+      "offset": 0,
+      "text": "Changed tokens over the larger side's token count. 0 when identical.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "Diff.text",
+      "line": 15,
+      "offset": 0,
+      "text": "Line-oriented rendering with `+` / `-` / ` ` prefixes, for humans.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "Diff.coarse",
+      "line": 16,
+      "offset": 0,
+      "text": "Set when the edit script was too long to trace token by token and the\nchanged region is one delete followed by one insert. Counts are exact\nfor a full replacement and an upper bound otherwise.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "Diff.truncated",
+      "line": 17,
+      "offset": 0,
+      "text": "Set on a stored or delivered copy whose `ops` and `text` were dropped for size.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "Diff.summary",
+      "line": 18,
+      "offset": 0,
+      "text": "`summarizeDiff` of this change, set once a check records it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "COMPARISON_BUDGET",
+      "line": 21,
+      "offset": 0,
+      "text": "Token comparisons the search may spend before falling back to a coarse\ndiff. Bounds CPU per check; memory is O(N+M) regardless.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "tokenize",
+      "line": 33,
+      "offset": 8,
+      "text": "Keep the whitespace tokens so the diff can be re-joined verbatim.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "Box.fx",
+      "line": 44,
+      "offset": 0,
+      "text": "Point to emit instead when the box is empty; -1 for none.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "Snake",
+      "line": 48,
+      "offset": 0,
+      "text": "[x1, y1, x2, y2]: the middle snake, entered by one edit from (x1, y1).",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "findPath",
+      "line": 115,
+      "offset": 0,
+      "text": "The edit path through the grid as a flat list of points, from (0, 0) to\n(n, m). Divide and conquer on an explicit stack: a deep split on a long\npage must not overflow the call stack.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "render",
+      "line": 173,
+      "offset": 10,
+      "text": "Word and character diffs are rendered inline so a moved price reads as\n`[-$29-]{+$34+}` rather than two full copies of the paragraph.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "attempt",
+      "line": 188,
+      "offset": 6,
+      "text": "Whitespace tokens exist only so a word diff re-joins verbatim; they are\nnot counted as changes.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "diffText",
+      "line": 237,
+      "offset": 0,
+      "text": "Diff two texts. A rewrite too large to trace at word or character\ngranularity within the budget is retried at line granularity (far fewer\ntokens, and what a human reads for a large change anyway); the returned\n`granularity` says which one applied. Past that, the changed region is one\ndelete and one insert, flagged `coarse`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": "boundedDiff",
+      "line": 254,
+      "offset": 0,
+      "text": "The copy of a diff that gets written to a history row or a webhook body.\nPast `maxBytes` the ops and rendered text are dropped, keeping the counts:\na monitor on a large page that changes often must not grow the database by\nthe page size on every check.",
+      "kind": "doc"
+    },
+    {
+      "id": "n17",
+      "symbol": "JsonFieldChange",
+      "line": 260,
+      "offset": 0,
+      "text": "A field that changed between two structured-extraction results, dot-\npathed for nested objects (`address.city`) and index-pathed for arrays\n(`items.0.price`). `before`/`after` are omitted, not null, when a field was\nadded or removed, so \"the field is now null\" is distinguishable from \"the\nfield did not exist\".",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "JsonDiff.changeRatio",
+      "line": 269,
+      "offset": 0,
+      "text": "Changed fields over the total fields seen across both sides, 0 when identical.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": "JsonDiff.summary",
+      "line": 270,
+      "offset": 0,
+      "text": "`summarizeDiff` of this change, set once a check records it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "diffJson",
+      "line": 277,
+      "offset": 0,
+      "text": "Field-level diff of two JSON values from structured extraction. Unlike\n`diffText`, this never falls back to comparing serialized JSON as text: a\nkey reordering or whitespace change in `JSON.stringify` output would read\nas a change to every field, which defeats the point of asking which fields\nchanged.",
+      "kind": "doc"
+    },
+    {
+      "id": "n21",
+      "symbol": "SUMMARY_PASSAGES",
+      "line": 319,
+      "offset": 0,
+      "text": "Changed passages a summary quotes, in page order.",
+      "kind": "doc"
+    },
+    {
+      "id": "n22",
+      "symbol": "SUMMARY_PASSAGE_CHARS",
+      "line": 320,
+      "offset": 0,
+      "text": "Characters of one quoted passage before it is clipped.",
+      "kind": "doc"
+    },
+    {
+      "id": "n23",
+      "symbol": "SUMMARY_FIELDS",
+      "line": 321,
+      "offset": 0,
+      "text": "JSON field paths named per kind before the rest are only counted.",
+      "kind": "doc"
+    },
+    {
+      "id": "n24",
+      "symbol": "summarizeDiff",
+      "line": 323,
+      "offset": 0,
+      "text": "A short plain-language account of a change, for a person reading a monitor\nhistory or a webhook.\n\nBuilt by fixed rules from the diff alone, so the same change always reads\nthe same and costs nothing to produce. It reports what the diff already\nholds: the counts, then the first few passages that changed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n25",
+      "symbol": "summarizeTextDiff",
+      "line": 331,
+      "offset": 4,
+      "text": "A coarse diff's counts are an upper bound, so the summary says so.",
+      "kind": "what"
+    },
+    {
+      "id": "n26",
+      "symbol": "changedPassages",
+      "line": 341,
+      "offset": 0,
+      "text": "Adjacent inserts (or deletes) merged into one passage, blank ones dropped.",
+      "kind": "doc"
+    },
+    {
+      "id": "n27",
+      "symbol": "clip",
+      "line": 354,
+      "offset": 0,
+      "text": "Clipped by code point: a cut through a surrogate pair is a string jsonb rejects.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/sessions.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 14,
+      "offset": null,
+      "text": "Rotating per request is what this design exists to avoid: an identity\nthat arrived and was accepted is the one most likely to be accepted again.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 34,
+      "offset": null,
+      "text": "A single login-walled URL must not churn the whole pool.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 41,
+      "offset": null,
+      "text": "The status says success; the classifier says otherwise, and it is right.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 55,
+      "offset": null,
+      "text": "A missing page says nothing about who asked for it.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": null,
+      "line": 90,
+      "offset": null,
+      "text": "Re-picking a profile per request is the incoherence apps/fetch refuses to\nstart on, one level up: the TLS identity would stop matching the UA the\nsame session presented a moment ago.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": null,
+      "line": 103,
+      "offset": null,
+      "text": "A profile that hops between exits mid-session presents one browser\narriving from two networks, which is a stronger signal than either alone.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": null,
+      "line": 121,
+      "offset": null,
+      "text": "Replacing a blocked identity with the same pairing is not a rotation.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 130,
+      "offset": null,
+      "text": "No proxy is a real configuration, not a degraded one — this class must\nnever reach for the environment to find a second source of proxies.",
+      "kind": "why"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 150,
+      "offset": null,
+      "text": "Carrying a retired identity's cookies into a fresh profile would be the\nmost direct way to link the two.",
+      "kind": "what"
+    }
+  ]
+}

@@ -108,14 +108,10 @@ describe('the shared connection', () => {
     await pool.render(remoteRender);
     expect(fake.connects).toBe(1);
 
-    // Stale without the event having fired yet: Playwright reports the close
-    // asynchronously, so both callers see the dead handle.
     fake.browsers[0]!.connected = false;
 
     await Promise.all([pool.render(remoteRender), pool.render(remoteRender)]);
 
-    // One reconnect shared by both. A second would leave a live connection
-    // that nothing tracks and close() never closes.
     expect(fake.connects).toBe(2);
     await pool.close();
   });

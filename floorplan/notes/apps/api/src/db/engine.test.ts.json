@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/db/engine.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MIGRATIONS",
+      "line": 11,
+      "offset": 0,
+      "text": "The shipped migrations and queue SQL on the real engine, through the same\n`createPool` the API boots with. No server, no Postgres: PGlite in memory.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 47,
+      "offset": null,
+      "text": "Verbatim from CrawlWorker.#claimJob.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 102,
+      "offset": null,
+      "text": "chunks.embedding is vector(384); a unit vector along one axis per chunk\nmakes the expected ranking exact.",
+      "kind": "what"
+    }
+  ]
+}

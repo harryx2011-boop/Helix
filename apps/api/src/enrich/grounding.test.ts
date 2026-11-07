@@ -70,7 +70,6 @@ describe('an ungrounded field is rejected', () => {
   });
 
   it('rejects a real passage reused to carry a value it does not state', () => {
-    // The passage is genuinely in the page. The value is not in the passage.
     const verdict = verifyGrounding({
       value: 'Berlin',
       citation: 'The company is headquartered in Rotterdam, the Netherlands',

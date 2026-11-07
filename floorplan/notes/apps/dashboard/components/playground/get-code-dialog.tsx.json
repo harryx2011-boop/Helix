@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/get-code-dialog.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "GetCodeDialogProps.pathSuffix",
+      "line": 20,
+      "offset": 0,
+      "text": "For an endpoint with more than one operation, e.g. `/scrub` on Metadata.",
+      "kind": "doc"
+    }
+  ]
+}

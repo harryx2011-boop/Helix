@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/uploads.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "UPLOAD_ACCEPT",
+      "line": 3,
+      "offset": 0,
+      "text": "The `accept` list for every endpoint that takes a multipart `file`. The\nendpoint's form and the prompt box's paperclip both read it here, so the\ntwo cannot disagree; an endpoint absent from this map takes no upload and\nthe box shows no paperclip for it.",
+      "kind": "doc"
+    }
+  ]
+}

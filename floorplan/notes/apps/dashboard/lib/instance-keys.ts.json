@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/instance-keys.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "InstanceKey",
+      "line": 7,
+      "offset": 0,
+      "text": "API keys, called straight from the browser against the instance.\n\nSelf-host serves this dashboard as a static export from the API itself, so\nthere is no dashboard server and no route handler to proxy through. The\ninstance already owns the whole key lifecycle at `/v1/keys`; this is the\nclient for it.\n\nAuthenticated with the instance's admin token, not an API key: one operator\nowns an instance, and only that operator manages its keys. The desktop app\nsupplies the token; a self-hosted instance takes it from the settings page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "call",
+      "line": 56,
+      "offset": 20,
+      "text": "Unregistered key routes answer the framework's \"Route <method>:<url> not found\"; any other 404 is not that.",
+      "kind": "what"
+    }
+  ]
+}

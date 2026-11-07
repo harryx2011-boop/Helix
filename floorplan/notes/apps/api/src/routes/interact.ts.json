@@ -1,0 +1,127 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/interact.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "InteractRequestSchema",
+      "line": 25,
+      "offset": 0,
+      "text": "POST /interact, POST /interact/session, GET|DELETE /interact/session/:id,\nand the live view at /interact/live/:id (+ /stream).\n\nThe endpoint shape follows research/api-specs/browser-interaction-api.md §4;\nthe runtime is the Playwright pool and the in-process session registry. A\nsession is a leased page: it keeps cookies, storage and focus between calls\nuntil the caller closes it or a timeout does.\n\nFailures inside a run are reported in a 200 with `success: false`, the same\nenvelope every other endpoint uses, plus the index of the action that failed.\nA non-2xx means the request itself was wrong: bad body, unknown session,\nsession busy, or the operator's session cap.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "InteractRouteDeps.publicUrl",
+      "line": 47,
+      "offset": 0,
+      "text": "Public origin of this instance; live-view URLs are built on it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "InteractRouteDeps.castFactory",
+      "line": 48,
+      "offset": 0,
+      "text": "Overridable for tests; the default opens a CDP session on the page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "InteractRouteDeps.lookup",
+      "line": 49,
+      "offset": 0,
+      "text": "DNS for the URL guard; tests supply a fake.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "MAX_LIVE_VIEWERS",
+      "line": 53,
+      "offset": 0,
+      "text": "Streams one session may fan out to. A leaked link cannot become unbounded work.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "CLOSED_UNDER_RUN",
+      "line": 55,
+      "offset": 0,
+      "text": "Playwright's wording when the page went away under a running call.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "registerInteract",
+      "line": 87,
+      "offset": 30,
+      "text": "Open a session and fence its page. The guard is part of opening: a page\nthat can reach the instance's own network must never be handed out.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "registerInteract",
+      "line": 106,
+      "offset": 49,
+      "text": "The implicit navigation from `url` sits ahead of the caller's list.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "registerInteract",
+      "line": 233,
+      "offset": 176,
+      "text": "`sessionOpen` answers for the registry, not for what the caller asked:\na DELETE or the hard timeout can take the page away under a run.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "registerInteract",
+      "line": 251,
+      "offset": 194,
+      "text": "A failed run on a session the caller wants to keep stays open so the\ncaller can inspect it, retry, or close it. A one-shot run is cleaned\nup, and so is a page whose script never came back.",
+      "kind": "why"
+    },
+    {
+      "id": "n11",
+      "symbol": "registerInteract",
+      "line": 324,
+      "offset": 267,
+      "text": "Live view. Authenticated by the per-session token in the URL rather than\nthe API key: a browser tab opened from a link cannot send a bearer header.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "registerInteract",
+      "line": 369,
+      "offset": 312,
+      "text": "Frames go through a sink that honours socket backpressure: a viewer\nthat stops reading gets the newest frame when it resumes, and the\nprocess never buffers the ones it missed.",
+      "kind": "why"
+    },
+    {
+      "id": "n13",
+      "symbol": "registerInteract",
+      "line": 395,
+      "offset": 338,
+      "text": "The same stream over a WebSocket, for a viewer that wants one. SSE stays\nthe default: it needs nothing beyond the HTTP server and reconnects itself.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "registerInteract",
+      "line": 435,
+      "offset": 378,
+      "text": "The stream is one-way; a viewer that sends anything is ignored rather\nthan trusted, since this connection carries no authority to act.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "viewerHtml",
+      "line": 456,
+      "offset": 0,
+      "text": "The viewer. One image element fed by the event stream; nothing to load from\nanywhere else, so it works on an instance with no outbound network.\nTokens: app dark ground, violet accent, 6px radius, mono micro-labels.",
+      "kind": "doc"
+    }
+  ]
+}

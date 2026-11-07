@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/changelog.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ReleaseKind",
+      "line": 1,
+      "offset": 0,
+      "text": "Every Helix version, newest first. One entry per version.\n\nSources, per entry: the git tag, the version history of the root `package.json`, the release commit message and\nthe diff, with `context.md` for 1.18.0 onward. `kind` records how a version was released:\n`tagged`      a `v<version>` tag sits on a Helix commit.\n`untagged`    the manifest carried the version but no tag was cut.\n`foreign-tag` the tag exists but belongs to another project merged into the history (Canvas).\n`baseline`    the first manifest version; never released.\n`scripts/check-changelog.mjs` compares this list with the tags and the manifest history.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "validateChangelog",
+      "line": 571,
+      "offset": 0,
+      "text": "Returns every problem found in a changelog list; an empty array means it is sound.",
+      "kind": "doc"
+    }
+  ]
+}

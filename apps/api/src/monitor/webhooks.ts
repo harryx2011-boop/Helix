@@ -5,41 +5,18 @@ import { assertPublicTarget, BlockedTargetError } from '../core/webhook-target.j
 import { pinnedFetch } from '../core/pinned-fetch.js';
 import type { DeliveryRecord, MonitorStore } from './store.js';
 
-/**
- * Webhook delivery for monitors.
- *
- * Stripe-shaped: exponential backoff over roughly three days, then a dead
- * letter the caller can replay. Not three retries over twenty minutes. Every
- * delivery is a row, claimed with SKIP LOCKED under a lease that outlasts the
- * whole batch, so a restart resumes and two processes never send the same one.
- *
- * The target is resolved before every send and refused when it is not a
- * public address; a refusal dead-letters at once, since retrying it would
- * only probe the network again. Failure text is a category (`timeout`,
- * `unreachable`, `HTTP 503`), never the resolver's or socket's own words.
- */
 
-/* One signing scheme for every Helix webhook: the monitor dispatcher and
-   webhooks/dispatcher.ts both sign through webhooks/signature.ts, so a change
-   to the scheme cannot reach one sender and miss the other. */
 export { signPayload };
 
 export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal }) => Promise<{ status: number }>;
 
-/**
- * The default sender. Redirects are not followed: a public host answering
- * 302 to a private one is the same hole as naming the private one directly.
- * The response body is drained so the socket goes back to the pool.
- */
 export const postWebhook: FetchLike = async (url, init) => {
   await assertPublicTarget(url);
-  // Pinned, so the address checked above is the address the send reaches.
   const response = await pinnedFetch(url, { ...init, redirect: 'manual' });
   await response.body?.cancel().catch(() => undefined);
   return { status: response.status };
 };
 
-/** How a failed attempt is recorded. */
 export function describeFailure(error: unknown): string {
   if (error instanceof BlockedTargetError) return `blocked: ${error.message}`;
   if (error instanceof Error && error.name === 'AbortError') return 'timeout';
@@ -49,7 +26,6 @@ export function describeFailure(error: unknown): string {
 export interface DispatcherOptions {
   store: MonitorStore;
   fetch?: FetchLike | undefined;
-  /** Instance-wide signing secret; a webhook's own `secret` wins when set. */
   defaultSecret?: string | undefined;
   maxAttempts?: number | undefined;
   tickMs?: number | undefined;
@@ -101,14 +77,10 @@ export class WebhookDispatcher {
     this.#timer = undefined;
   }
 
-  /** Deliver everything due. Returns one entry per attempted delivery. */
   async tick(): Promise<DeliveryAttempt[]> {
     if (this.#ticking) return [];
     this.#ticking = true;
     try {
-      // Attempts run one after another, so the lease must cover the whole
-      // batch at its slowest plus a margin, or a second process re-claims
-      // rows this one has not reached yet.
       const lease = this.#batch * this.#timeoutMs + 30_000;
       const due = await this.#store.claimDeliveries(this.#now(), this.#batch, lease);
       const results: DeliveryAttempt[] = [];

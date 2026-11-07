@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/enrich/grounding.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 73,
+      "offset": null,
+      "text": "The passage is genuinely in the page. The value is not in the passage.",
+      "kind": "what"
+    }
+  ]
+}

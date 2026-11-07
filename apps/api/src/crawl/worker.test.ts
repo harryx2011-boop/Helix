@@ -12,15 +12,10 @@ const db = vi.hoisted(() => {
   const state = {
     calls: [] as Call[],
     request: undefined as CrawlJobRequest | undefined,
-    /** Whether this worker still holds the task claim when it marks a page. */
     claimHeld: true,
-    /** Task rows still queued or running when the crawl finishes. */
     leftover: 0,
-    /** The claimed job's type; undefined keeps the projection out of older tests. */
     type: undefined as string | undefined,
-    /** Queued task rows resume() finds, as the crawl route leaves the seed. */
     queued: [] as { url: string; depth: number; site: string }[],
-    /** `crawl_state` rows an incremental run loads before it fetches anything. */
     crawlState: [] as Record<string, unknown>[],
   };
   const query = vi.fn(async (text: string, values: unknown[] = []) => {
@@ -30,12 +25,9 @@ const db = vi.hoisted(() => {
       state.request = undefined;
       return request ? { rows: [{ id: JOB_ID, request, type: state.type }], rowCount: 1 } : { rows: [], rowCount: 0 };
     }
-    // The guarded mark: no row matches once another worker has reclaimed the
-    // lease, which is what tells the worker its result is stale.
     if (text.includes('UPDATE job_tasks') && text.includes('claimed_by = $3')) {
       return { rows: [], rowCount: state.claimHeld ? 1 : 0 };
     }
-    // The outcome write lands: zero rows here reads as a cancellation mid-finish.
     if (text.includes('rejections = $6')) return { rows: [], rowCount: 1 };
     if (text.includes('FROM crawl_state')) return { rows: state.crawlState, rowCount: state.crawlState.length };
     if (text.includes('SELECT url, depth, site FROM job_tasks')) return { rows: state.queued, rowCount: state.queued.length };
@@ -218,14 +210,10 @@ describe('CrawlWorker conditional re-fetches', () => {
     const result = JSON.parse(String(outcome?.values[4])) as Record<string, number>;
     expect(result['pagesUnchanged']).toBe(1);
 
-    // And no empty document written over the one already stored: a 304 body is
-    // absent, not blank.
     expect(db.state.calls.filter((c) => c.text.includes('INSERT INTO documents'))).toEqual([]);
   });
 
   it('says so when a 304 page could not lead the crawl to the pages below it', async () => {
-    // A 304 has no body, so no links: the frontier cannot expand past it. A
-    // clean "unchanged" alone would hide that the pages below were never asked for.
     db.state.request = baseRequest({ incremental: true });
     db.state.crawlState = [stored];
     runPipeline.mockResolvedValueOnce(notModified());
@@ -254,8 +242,6 @@ describe('CrawlWorker conditional re-fetches', () => {
   });
 
   it('writes no empty document for a 304 on a crawl that is not incremental', async () => {
-    // The caller can send their own If-None-Match in `headers`; the 304 that
-    // answers it has no body to store, incremental or not.
     db.state.request = baseRequest();
     runPipeline.mockResolvedValueOnce(notModified());
 
@@ -266,9 +252,6 @@ describe('CrawlWorker conditional re-fetches', () => {
   });
 
   it('keeps the stored validators when a 304 repeats none of them', async () => {
-    // A 304 may send no ETag at all. Writing the empty body's hash and a null
-    // etag would leave the next run with nothing to ask with, so the saving
-    // would last exactly one crawl.
     db.state.request = baseRequest({ incremental: true });
     db.state.crawlState = [stored];
     runPipeline.mockResolvedValueOnce(notModified());
@@ -415,8 +398,6 @@ describe('CrawlWorker identity and politeness wiring', () => {
 
     const options = runPipeline.mock.calls[0]?.[0] as { profile?: string; proxy?: string };
     expect(options.proxy).toBe('http://proxy.example:8080');
-    // The pair travels together: splitting them is the incoherence the Rust
-    // profile validator refuses to start on.
     expect(typeof options.profile === 'string' || options.profile === undefined).toBe(true);
   });
 
@@ -426,7 +407,6 @@ describe('CrawlWorker identity and politeness wiring', () => {
 
     await workerWith().runOnce();
 
-    // No proxy is a real configuration. The worker must not invent one.
     expect((runPipeline.mock.calls[0]?.[0] as { proxy?: string }).proxy).toBeUndefined();
   });
 
@@ -448,15 +428,11 @@ describe('CrawlWorker identity and politeness wiring', () => {
       (call) => (call[0] as { profile?: string }).profile,
     );
     expect(profiles.length).toBeGreaterThan(1);
-    // With one identity in the pool every page presents it. More than one live
-    // session legitimately means more than one identity — what must never
-    // happen is an identity being reassembled per request.
     expect(new Set(profiles).size).toBe(1);
   });
 });
 
 describe('a cancelled job stops the work it is paying for', () => {
-  /** Makes `SELECT status FROM jobs` answer 'cancelled' from the first poll. */
   function cancelImmediately(): void {
     const original = db.query.getMockImplementation()!;
     db.query.mockImplementation((async (text: string, values: unknown[] = []) => {
@@ -464,8 +440,6 @@ describe('a cancelled job stops the work it is paying for', () => {
         return { rows: [{ status: 'cancelled' }], rowCount: 1 };
       }
       return original(text, values);
-      // The fake answers several different row shapes; the mock's inferred
-      // signature only knows the first one it saw.
     }) as unknown as typeof original);
   }
 
@@ -507,8 +481,6 @@ describe('a cancelled job stops the work it is paying for', () => {
     });
     await worker.runOnce();
 
-    // `usage` is written on the completing UPDATE; an abort must not appear
-    // there as a page the extractor tried and lost.
     const update = db.state.calls.find(
       (c) => c.text.includes('UPDATE jobs') && c.text.includes('usage'),
     );
@@ -551,8 +523,6 @@ describe('a cancelled job stops the work it is paying for', () => {
   it('does not record a page aborted by the cancellation as a fetch failure', async () => {
     cancelImmediately();
     runPipeline.mockImplementation(async (options: { signal?: AbortSignal }) => {
-      // Wait for the cancellation poll to fire, then answer the way the
-      // pipeline does once its signal is aborted.
       await new Promise((resolve) => setTimeout(resolve, 60));
       if (!options.signal?.aborted) return pipelineSuccess();
       return {
@@ -569,8 +539,6 @@ describe('a cancelled job stops the work it is paying for', () => {
 
     await buildWorker().runOnce();
 
-    // A cancelled crawl reporting hundreds of broken URLs is the failure this
-    // avoids; the row is left leased so `release()` can requeue it.
     expect(db.state.calls.some((c) => c.text.includes('INSERT INTO fetch_failures'))).toBe(false);
     expect(db.state.calls.some((c) => c.text.includes("SET status = 'failed'"))).toBe(false);
   });
@@ -589,8 +557,6 @@ describe('a cancelled job stops the work it is paying for', () => {
 
     await buildWorker().runOnce();
 
-    // Left unmarked it would stay leased and the loop would spin until the
-    // lease expired, so this one still has to reach the frontier.
     expect(db.state.calls.some((c) => c.text.includes("SET status = 'failed'"))).toBe(true);
   });
 
@@ -601,9 +567,6 @@ describe('a cancelled job stops the work it is paying for', () => {
       options.signal?.addEventListener('abort', () => {
         aborted = true;
       });
-      // The cancellation poll only fires 2s after the loop starts, so a page
-      // has to still be outstanding then for the abort to reach it at all —
-      // which is exactly the situation this guards.
       await new Promise((resolve) => setTimeout(resolve, 2_500));
       return pipelineSuccess();
     });
@@ -617,8 +580,6 @@ describe('a cancelled job stops the work it is paying for', () => {
 
 describe('CrawlWorker task claims', () => {
   it('does not store a page whose claim another worker has taken', async () => {
-    // The lease expired mid-fetch and a second worker reclaimed the task. This
-    // worker's result is stale: storing it writes the page twice.
     db.state.claimHeld = false;
     db.state.request = baseRequest();
     runPipeline.mockResolvedValueOnce(pipelineSuccess());
@@ -648,8 +609,6 @@ describe('CrawlWorker task claims', () => {
 
 describe('CrawlWorker sitemap seeding', () => {
   it('does not fetch the sitemap when the crawl cannot go past the seed', async () => {
-    // Every sitemap entry is offered at depth 1, so at maxDepth 0 the whole
-    // fetch is spent to have every entry rejected as too deep.
     db.state.request = baseRequest({ sitemap: 'include', maxDepth: 0 });
     runPipeline.mockResolvedValueOnce(pipelineSuccess());
 
@@ -670,9 +629,6 @@ describe('CrawlWorker sitemap seeding', () => {
   });
 
   it('renews the job lease once the sitemap phase is done', async () => {
-    // Discovery, resume and the incremental state load all run before the loop
-    // renews anything, and a slow preamble is exactly when another worker
-    // reclaims the job out from under this one.
     db.state.request = baseRequest({ sitemap: 'include', maxDepth: 2 });
     runPipeline.mockResolvedValue(pipelineSuccess());
 
@@ -708,8 +664,6 @@ describe('CrawlWorker — a finished job accounts for every page', () => {
     expect(update.values[8]).toBeNull();
   });
 
-  // A fetched page whose task row this worker no longer held was dropped with
-  // nothing on the job to say so, and the crawl read as complete.
   it('warns when a fetched page is discarded because the task was not held', async () => {
     db.state.request = baseRequest();
     db.state.claimHeld = false;
@@ -807,9 +761,6 @@ describe('CrawlWorker — what a job cost, and what it was projected to cost', (
   });
 });
 
-// The crawl route queues the seed row before the worker claims the job. Read
-// as a resume, that one row switched off the projection and sitemap seeding
-// for every crawl submitted through the API.
 describe('CrawlWorker — a crawl whose seed the route already queued', () => {
   it('still starts fresh: projects the crawl and seeds from the sitemap', async () => {
     db.state.request = baseRequest({ sitemap: 'include', maxDepth: 2 });
@@ -846,7 +797,6 @@ describe('CrawlWorker session cookies', () => {
     first.content.links.push('https://example.com/b');
     runPipeline.mockResolvedValueOnce(first).mockResolvedValueOnce(pipelineSuccess());
 
-    // One identity, so both pages share its jar.
     const worker = new CrawlWorker({
       fetchClient: {} as never,
       extractClient: extractClient(),

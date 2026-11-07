@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "research/firecrawl-capture/probe-clerk-signin.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BASE",
+      "line": 5,
+      "offset": 0,
+      "text": "Browser-level diagnosis of the deployed Clerk sign-in. curl is misleading here:\nwithout Accept: text/html, Clerk treats the request as non-page and rewrites\n/app to 404, which is not what a person in a browser sees.",
+      "kind": "what"
+    }
+  ]
+}

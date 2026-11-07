@@ -8,11 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AsciiNoise } from '@/components/shared/ascii-fields';
 
-/**
- * Blocks the app behind a key prompt until one is stored. Not a login —
- * there is no account behind it, just a bearer token this instance already
- * issued (FRONTEND.md §3, "Auth, and its honest limit").
- */
 export function ApiKeyGate({ children }: { children: React.ReactNode }) {
   const { apiKey, setApiKey } = useApiKey();
   const [draft, setDraft] = React.useState('');

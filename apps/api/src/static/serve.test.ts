@@ -160,7 +160,6 @@ describe('framing the UI from VS Code', () => {
 
   beforeAll(async () => {
     framed = Fastify();
-    // As `index.ts` registers it: helmet's X-Frame-Options SAMEORIGIN on every reply.
     await framed.register(helmet, { contentSecurityPolicy: false });
     framed.get('/v1/health', async () => ({ status: 'ok' }));
     await registerStatic(framed, { dir });
@@ -178,11 +177,8 @@ describe('framing the UI from VS Code', () => {
     expect(res.headers['content-security-policy']).toContain("frame-ancestors 'self' vscode-webview: vscode-file:");
   });
 
-  // The renderer holds the API key and admin token, so a page must not load
-  // script from anywhere else, evaluate strings, embed plugins or rebase links.
   it('restricts where a UI page may load script from', async () => {
     const csp = String((await framed.inject({ method: 'GET', url: '/app' })).headers['content-security-policy']);
-    // blob: is the dictation mic's AudioWorklet, which the page builds from its own source.
     expect(csp).toContain("script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("base-uri 'self'");

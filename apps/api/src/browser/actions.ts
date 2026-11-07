@@ -2,22 +2,10 @@ import type { Page } from 'playwright';
 import { z } from 'zod';
 import { captureScreenshot } from './screenshot.js';
 
-/**
- * Pre-scrape browser actions.
- *
- * Scripted steps, deliberately not an agent: the caller says exactly what to do,
- * and the same input produces the same run. Agentic navigation is a separate
- * concern with different failure modes and different costs.
- *
- * Total wait across a request is capped, and every step is also bounded by the
- * request's own deadline, so a caller cannot hold a browser context open
- * beyond `timeout` with a chain of long sleeps or slow clicks.
- */
 
 const MAX_TOTAL_WAIT_MS = 60_000;
 
 export interface RunActionsOptions {
-  /** Absolute time (ms since epoch) after which no step may still be running. */
   deadline?: number | undefined;
 }
 
@@ -75,7 +63,6 @@ export async function runActions(
   const actions = parseActions(input);
   const outcome: ActionOutcome = { screenshots: [], scrapes: [], javascriptReturns: [] };
 
-  // Never 0: Playwright reads a zero timeout as "no timeout".
   const remaining = (): number =>
     options.deadline === undefined ? Number.POSITIVE_INFINITY : Math.max(1, options.deadline - Date.now());
 
@@ -113,7 +100,6 @@ export async function runActions(
       }
 
       case 'write':
-        // Types into whatever currently has focus, so a click must precede it.
         await page.keyboard.type(action.text);
         break;
 
@@ -139,8 +125,6 @@ export async function runActions(
       }
 
       case 'executeJavascript': {
-        // Runs in page context. Only reachable by an authenticated caller who
-        // already controls what this instance fetches.
         const value: unknown = await page.evaluate(action.script);
         outcome.javascriptReturns.push(value);
         break;

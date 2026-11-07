@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_pricing.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TestCostUsd.test_known_anthropic_usage_prices_to_six_decimals_including_cache_read",
+      "line": 10,
+      "offset": 1,
+      "text": "claude-sonnet-5: input 2.0/M, output 10.0/M, cache read at 0.1x input.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "TestCostUsd.test_unknown_model_returns_none_with_tokens_intact",
+      "line": 22,
+      "offset": 3,
+      "text": "The Usage the caller built is untouched by an unpriced lookup.",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/service-token.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "stubFetch",
+      "line": 6,
+      "offset": 0,
+      "text": "With a service token configured, the API sends it on every call to the fetch and extract services.",
+      "kind": "doc"
+    }
+  ]
+}

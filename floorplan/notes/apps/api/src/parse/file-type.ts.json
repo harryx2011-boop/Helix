@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/parse/file-type.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FileType",
+      "line": 2,
+      "offset": 0,
+      "text": "Decide what kind of file a parse request carries.\n\nContent-type headers lie often enough (generic `application/octet-stream`\nfrom object stores, `text/plain` from misconfigured CDNs) that the bytes get\nthe final word where they can: a PDF starts with `%PDF`, PNG and JPEG have\nfixed signatures. Office files are all zip containers, so they fall back to\nthe declared type and then the filename extension.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CONTENT_TYPE_FOR",
+      "line": 6,
+      "offset": 0,
+      "text": "The content type helix-extract expects for each file kind.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "Classification.reason",
+      "line": 62,
+      "offset": 0,
+      "text": "Why it could not be classified, for the failure detail.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "classifyFile",
+      "line": 84,
+      "offset": 19,
+      "text": "Office containers: the bytes cannot tell docx from pptx; the declared\ntype or the name has to.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "classifyFile",
+      "line": 91,
+      "offset": 26,
+      "text": "Only now does the declared type get a say: a PDF served as text/html by a\nmisconfigured server was already recognised from its bytes above.",
+      "kind": "what"
+    }
+  ]
+}

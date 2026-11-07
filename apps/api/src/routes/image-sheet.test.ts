@@ -212,7 +212,6 @@ describe('POST /image-sheet', () => {
   });
 });
 
-/** A 64x48 PNG: a left-to-right or right-to-left ramp, optionally dimmed or noisy, so its dHash is known. */
 async function ramp(direction: 'rtl' | 'ltr', { dim = 0, width = 64 }: { dim?: number; width?: number } = {}): Promise<Buffer> {
   const w = 64;
   const raw = Buffer.alloc(w * 48);

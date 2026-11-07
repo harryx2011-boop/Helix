@@ -1,15 +1,6 @@
 import { chromium, firefox, webkit, type BrowserType } from 'playwright';
 import type { BrowserProfile } from './profiles.js';
 
-/**
- * Engines the chromium tier can be driven by.
- *
- * Playwright ships all three, so the cost of offering them is not the download
- * but the details that differ underneath: launch flags, what a context option
- * actually does, and whether an identity still hangs together. Each of those is
- * settled here rather than at the call site, because a per-engine `if` scattered
- * through the pool is how one engine quietly loses a security control.
- */
 export type RenderEngine = 'chromium' | 'firefox' | 'webkit';
 
 export const RENDER_ENGINES: readonly RenderEngine[] = ['chromium', 'firefox', 'webkit'] as const;
@@ -24,15 +15,6 @@ export function browserTypeFor(engine: RenderEngine): BrowserType {
   return TYPES[engine];
 }
 
-/**
- * Launch flags, per engine.
- *
- * The Chromium set is not decoration: `--no-sandbox` and `--disable-dev-shm-usage`
- * are what keep it alive in a container with a small `/dev/shm`. They are also
- * Chromium-only switches — Firefox and WebKit take a different command line
- * entirely and treat an unknown flag as an error or as a URL to open, so passing
- * them through would break the launch rather than degrade it.
- */
 const CHROMIUM_ARGS: readonly string[] = [
   '--disable-dev-shm-usage',
   '--no-sandbox',
@@ -40,7 +22,6 @@ const CHROMIUM_ARGS: readonly string[] = [
   '--disable-background-timer-throttling',
   '--disable-backgrounding-occluded-windows',
   '--disable-renderer-backgrounding',
-  // Playwright's --enable-automation otherwise sets navigator.webdriver to true.
   '--disable-blink-features=AutomationControlled',
   // WebRTC's STUN is UDP, which no HTTP proxy carries: unlocked, a page reaches loopback
   // and the LAN around the guard proxy, and shows the real address behind a caller's proxy.

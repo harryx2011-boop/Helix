@@ -17,7 +17,6 @@ const CONFIRM_TIMEOUT_MS = 4000;
 export interface ProviderMeta {
   id: ProviderId;
   name: string;
-  /** Local runtimes take a base URL instead of an API key. */
   local?: boolean;
   placeholder?: string;
   baseUrlPlaceholder?: string;
@@ -40,7 +39,6 @@ export const PROVIDER_META: ProviderMeta[] = [
   { id: 'openai-compatible', name: 'OpenAI-compatible', local: true, baseUrlPlaceholder: 'https://your-host/v1' },
 ];
 
-/** `docs.vllm.ai` / `ollama.com` ship real PNG marks; `openai-compatible` isn't a company and gets a lucide icon instead. */
 export function ProviderIcon({ meta }: { meta: ProviderMeta }) {
   if (meta.id === 'openai-compatible') {
     return (
@@ -69,19 +67,6 @@ function modelMeta(model: ProviderModel): string | undefined {
   return parts.length ? parts.join(' · ') : undefined;
 }
 
-/**
- * Browses the models this provider will actually serve, next to the free-text
- * model input it never replaces — a provider may hold a model this list can't
- * see (a local runtime still pulling, a cloud model newer than the catalogue).
- *
- * For a LOCAL runtime the API fetches against the base URL already saved, not
- * whatever sits unsaved in the text field, so a pending edit never gets
- * silently checked against the old host — hence the `savedBaseUrl` gate.
- *
- * A CLOUD provider needs no base URL, and its catalogue answers even with no
- * key stored (the curated list), so browsing is offered from the start rather
- * than only after a save.
- */
 function ModelPicker({
   providerId,
   providerName,
@@ -169,7 +154,6 @@ function ModelPicker({
   );
 }
 
-/** A runtime the API found answering on its default address, offered only while nothing is stored for it. */
 function detectedRuntime(status: ProviderStatus): { baseUrl: string; models: string[] } | undefined {
   return status.source === 'none' ? status.detected : undefined;
 }
@@ -214,8 +198,6 @@ export function ProviderRow({
 }) {
   const detected = detectedRuntime(status);
   const [apiKeyInput, setApiKeyInput] = React.useState('');
-  /* A detected address pre-fills the field, so "Use it" and a hand-typed URL
-     share one save path — nothing is stored until the button is clicked. */
   const [baseUrlInput, setBaseUrlInput] = React.useState(status.baseUrl ?? detected?.baseUrl ?? '');
   const [model, setModel] = React.useState(status.model ?? '');
   const [saving, setSaving] = React.useState(false);
@@ -255,10 +237,6 @@ export function ProviderRow({
         updatedAt: new Date().toISOString(),
       });
       if (!meta.local) setApiKeyInput('');
-      /* The API refuses an outright rejected credential, so reaching here means
-         the provider either accepted it or could not be asked. Saying "saved"
-         for both would put back the green-dot lie: an unproven credential is
-         stored, and the caller is told exactly that. */
       if (result.warning) {
         toast.warning(`${meta.name} ${meta.local ? 'connection' : 'key'} saved, but unverified.`, {
           description: result.warning,

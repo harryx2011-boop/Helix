@@ -1,18 +1,3 @@
-/**
- * Text diff at word, line or character granularity.
- *
- * Myers' shortest edit script in its linear-space form: the middle snake is
- * found by searching from both ends, the problem splits there, and only two
- * frontier arrays of O(N+M) integers exist at any time. Pages differ in a
- * handful of places, so the common prefix and suffix are peeled off first and
- * D stays small. A page that was replaced wholesale (a consent wall, a
- * relaunch, a language switch) would need O((N+M)·D) time to trace token by
- * token; past a comparison budget the changed region is reported as one
- * delete and one insert and the diff is marked `coarse`.
- *
- * The result is a list of runs — equal, insert, delete — collapsed so
- * consecutive tokens of one kind form a single hunk with readable text.
- */
 
 export type Granularity = 'word' | 'line' | 'character';
 
@@ -23,30 +8,16 @@ export interface DiffOp {
 
 export interface Diff {
   granularity: Granularity;
-  /** Tokens inserted and deleted, at the chosen granularity. */
   added: number;
   removed: number;
-  /** Changed tokens over the larger side's token count. 0 when identical. */
   changeRatio: number;
   ops: DiffOp[];
-  /** Line-oriented rendering with `+` / `-` / ` ` prefixes, for humans. */
   text: string;
-  /**
-   * Set when the edit script was too long to trace token by token and the
-   * changed region is one delete followed by one insert. Counts are exact
-   * for a full replacement and an upper bound otherwise.
-   */
   coarse?: true;
-  /** Set on a stored or delivered copy whose `ops` and `text` were dropped for size. */
   truncated?: true;
-  /** `summarizeDiff` of this change, set once a check records it. */
   summary?: string;
 }
 
-/**
- * Token comparisons the search may spend before falling back to a coarse
- * diff. Bounds CPU per check; memory is O(N+M) regardless.
- */
 const COMPARISON_BUDGET = 40_000_000;
 const MIN_EDITS = 64;
 const MAX_EDITS = 4_096;
@@ -59,7 +30,6 @@ export function tokenize(input: string, granularity: Granularity): string[] {
     case 'character':
       return Array.from(input);
     case 'word':
-      // Keep the whitespace tokens so the diff can be re-joined verbatim.
       return input.split(/(\s+)/).filter((t) => t.length > 0);
   }
 }
@@ -71,12 +41,10 @@ interface Box {
   top: number;
   right: number;
   bottom: number;
-  /** Point to emit instead when the box is empty; -1 for none. */
   fx: number;
   fy: number;
 }
 
-/** [x1, y1, x2, y2]: the middle snake, entered by one edit from (x1, y1). */
 type Snake = [number, number, number, number];
 
 function midpoint(a: string[], b: string[], box: Box, limit: number): Snake | null {
@@ -144,11 +112,6 @@ function midpoint(a: string[], b: string[], box: Box, limit: number): Snake | nu
   return null;
 }
 
-/**
- * The edit path through the grid as a flat list of points, from (0, 0) to
- * (n, m). Divide and conquer on an explicit stack: a deep split on a long
- * page must not overflow the call stack.
- */
 function findPath(a: string[], b: string[], limit: number): number[] {
   const points: number[] = [];
   const stack: Box[] = [{ left: 0, top: 0, right: a.length, bottom: b.length, fx: -1, fy: -1 }];
@@ -207,8 +170,6 @@ function render(ops: DiffOp[], granularity: Granularity): string {
     return lines.join('\n');
   }
 
-  // Word and character diffs are rendered inline so a moved price reads as
-  // `[-$29-]{+$34+}` rather than two full copies of the paragraph.
   let out = '';
   for (const op of ops) {
     if (op.op === 'equal') out += op.text;
@@ -224,8 +185,6 @@ function attempt(before: string, after: string, granularity: Granularity, mode: 
   const n = a.length;
   const m = b.length;
 
-  // Whitespace tokens exist only so a word diff re-joins verbatim; they are
-  // not counted as changes.
   const counts = (token: string): boolean => granularity !== 'word' || !/^\s+$/.test(token);
   const joiner = granularity === 'line' ? '\n' : '';
 
@@ -275,13 +234,6 @@ function attempt(before: string, after: string, granularity: Granularity, mode: 
   };
 }
 
-/**
- * Diff two texts. A rewrite too large to trace at word or character
- * granularity within the budget is retried at line granularity (far fewer
- * tokens, and what a human reads for a large change anyway); the returned
- * `granularity` says which one applied. Past that, the changed region is one
- * delete and one insert, flagged `coarse`.
- */
 export function diffText(before: string, after: string, granularity: Granularity = 'word'): Diff {
   if (before === after) {
     const ops: DiffOp[] = before.length === 0 ? [] : [{ op: 'equal', text: before }];
@@ -299,25 +251,12 @@ export function diffText(before: string, after: string, granularity: Granularity
   return attempt(before, after, granularity, 'coarse');
 }
 
-/**
- * The copy of a diff that gets written to a history row or a webhook body.
- * Past `maxBytes` the ops and rendered text are dropped, keeping the counts:
- * a monitor on a large page that changes often must not grow the database by
- * the page size on every check.
- */
 export function boundedDiff(diff: Diff, maxBytes: number): Diff {
   if (Buffer.byteLength(JSON.stringify(diff), 'utf8') <= maxBytes) return diff;
   const { ops: _ops, text: _text, ...rest } = diff;
   return { ...rest, ops: [], text: '', truncated: true };
 }
 
-/**
- * A field that changed between two structured-extraction results, dot-
- * pathed for nested objects (`address.city`) and index-pathed for arrays
- * (`items.0.price`). `before`/`after` are omitted, not null, when a field was
- * added or removed, so "the field is now null" is distinguishable from "the
- * field did not exist".
- */
 export interface JsonFieldChange {
   path: string;
   before?: unknown;
@@ -327,9 +266,7 @@ export interface JsonFieldChange {
 export interface JsonDiff {
   granularity: 'json';
   fields: JsonFieldChange[];
-  /** Changed fields over the total fields seen across both sides, 0 when identical. */
   changeRatio: number;
-  /** `summarizeDiff` of this change, set once a check records it. */
   summary?: string;
 }
 
@@ -337,13 +274,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/**
- * Field-level diff of two JSON values from structured extraction. Unlike
- * `diffText`, this never falls back to comparing serialized JSON as text: a
- * key reordering or whitespace change in `JSON.stringify` output would read
- * as a change to every field, which defeats the point of asking which fields
- * changed.
- */
 export function diffJson(before: unknown, after: unknown): JsonDiff {
   const fields: JsonFieldChange[] = [];
   let total = 0;
@@ -386,21 +316,10 @@ export function diffJson(before: unknown, after: unknown): JsonDiff {
 }
 
 
-/** Changed passages a summary quotes, in page order. */
 const SUMMARY_PASSAGES = 3;
-/** Characters of one quoted passage before it is clipped. */
 const SUMMARY_PASSAGE_CHARS = 80;
-/** JSON field paths named per kind before the rest are only counted. */
 const SUMMARY_FIELDS = 5;
 
-/**
- * A short plain-language account of a change, for a person reading a monitor
- * history or a webhook.
- *
- * Built by fixed rules from the diff alone, so the same change always reads
- * the same and costs nothing to produce. It reports what the diff already
- * holds: the counts, then the first few passages that changed.
- */
 export function summarizeDiff(diff: Diff | JsonDiff): string {
   return diff.granularity === 'json' ? summarizeJsonDiff(diff) : summarizeTextDiff(diff);
 }
@@ -409,7 +328,6 @@ function summarizeTextDiff(diff: Diff): string {
   if (diff.added === 0 && diff.removed === 0) return 'No change.';
 
   const unit = diff.added === 1 ? diff.granularity : `${diff.granularity}s`;
-  // A coarse diff's counts are an upper bound, so the summary says so.
   const hedge = diff.coarse ? 'Up to ' : '';
   const lines = [`${hedge}${diff.added} ${unit} added, ${diff.removed} removed.`];
 
@@ -420,7 +338,6 @@ function summarizeTextDiff(diff: Diff): string {
   return lines.join('\n');
 }
 
-/** Adjacent inserts (or deletes) merged into one passage, blank ones dropped. */
 function changedPassages(ops: DiffOp[]): DiffOp[] {
   const passages: DiffOp[] = [];
   for (const op of ops) {
@@ -434,7 +351,6 @@ function changedPassages(ops: DiffOp[]): DiffOp[] {
     .filter((passage) => passage.text.length > 0);
 }
 
-/** Clipped by code point: a cut through a surrogate pair is a string jsonb rejects. */
 function clip(text: string): string {
   const characters = Array.from(text);
   if (characters.length <= SUMMARY_PASSAGE_CHARS) return text;

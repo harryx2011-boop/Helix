@@ -84,12 +84,10 @@ export class Supervisor extends EventEmitter {
     return Object.fromEntries(this.children.map((c) => [c.spec.name, c.state]))
   }
 
-  /** The label of the first child, in registry order, that is not yet healthy. */
   currentLabel(): string | null {
     return this.children.find((c) => c.state === 'starting' || c.state === 'restarting')?.spec.label ?? null
   }
 
-  /** Brings up every child that is not already healthy, so a second call retries only the failures. */
   async startAll(): Promise<{ ok: true } | { ok: false; failures: Failure[] }> {
     this.stopping = false
     const pending = this.children.filter((c) => c.state !== 'healthy')
@@ -218,7 +216,6 @@ export class Supervisor extends EventEmitter {
         } catch {}
       }
     }
-    // Above the API's own 8 s shutdown ceiling, so PGlite closes before anything is killed.
     const grace = this.deps.stopGraceMs ?? 10000
     const graceful = live.filter((c) => c.spec.ipc)
     const deadline = this.deps.now() + grace

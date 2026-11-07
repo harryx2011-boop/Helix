@@ -6,20 +6,6 @@ import { Button } from '@/components/ui/button';
 import { setupPrompt } from '@/lib/setup-prompt';
 import { cn } from '@/lib/utils';
 
-/**
- * The offer to do the setup for them, on the last step of onboarding.
- *
- * The person finishing this wizard has answers saved and a key minted, and
- * still has to wire Helix into whatever they are actually building. That is
- * the moment the offer is worth making — not on the marketing page they have
- * already left.
- *
- * It hands the work to their own coding agent rather than pretending to run
- * anything from the browser: `setupPrompt()` is the same prompt the marketing
- * page ships, written for an agent that installs the skill, finds a key
- * without ever printing it, and smoke-tests the result. A button here cannot
- * touch their filesystem; an agent in their editor can.
- */
 export function LocalSetupOffer({ className }: { className?: string }) {
   const [copied, setCopied] = React.useState(false);
   const timer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -33,9 +19,6 @@ export function LocalSetupOffer({ className }: { className?: string }) {
       clearTimeout(timer.current);
       timer.current = setTimeout(() => setCopied(false), 1600);
     } catch {
-      // A denied clipboard permission is not an error worth a banner: the
-      // prompt is on the setup page too, and saying nothing beats a toast the
-      // user cannot act on.
     }
   };
 
@@ -62,8 +45,6 @@ export function LocalSetupOffer({ className }: { className?: string }) {
         {copied ? 'Copied' : 'Copy setup prompt'}
       </Button>
 
-      {/* Announced on copy without moving anything: the button label already
-          changed, but a screen reader needs the change said out loud. */}
       <span aria-live="polite" className="sr-only">
         {copied ? 'Setup prompt copied to your clipboard.' : ''}
       </span>

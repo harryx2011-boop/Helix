@@ -1,0 +1,127 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/frontier.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 15,
+      "offset": null,
+      "text": "The crawl frontier.\n\nBreadth-first, partitioned by host, with Bloom-filter dedup. A billion URLs at\na 0.1% false-positive rate costs roughly 1.8GB against about 40GB for an exact\nset — a 22x saving that decides whether a large crawl fits in memory at all.\n\nThe tradeoff is honest: a false positive silently skips a page that was never\nvisited. At 0.1% that is one page in a thousand, and the alternative is either\nan exact set that does not fit or a database round trip per candidate URL.\nSmall crawls use an exact set, where the question does not arise.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "EXACT_SET_THRESHOLD",
+      "line": 15,
+      "offset": 0,
+      "text": "Below this, an exact Set is cheaper and has no false positives at all.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "FrontierItem.url",
+      "line": 29,
+      "offset": 0,
+      "text": "Fetched and stored as-is: the key for `job_tasks` rows and documents.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "FrontierItem.key",
+      "line": 30,
+      "offset": 0,
+      "text": "The normalised form, used only to recognise the same page twice.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "Frontier.constructor",
+      "line": 65,
+      "offset": 9,
+      "text": "Sized for the declared limit at a 0.1% false-positive rate.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "Frontier.add",
+      "line": 83,
+      "offset": 0,
+      "text": "Offer a URL. Returns whether it was accepted.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "Frontier.add",
+      "line": 94,
+      "offset": 11,
+      "text": "The seed is what the caller asked to crawl. Path filters describe what\nto follow from it: `includePaths: ['/blog/*']` from a site root must\nstill fetch the root to find the blog, or the crawl returns nothing.",
+      "kind": "why"
+    },
+    {
+      "id": "n8",
+      "symbol": "Frontier.add",
+      "line": 95,
+      "offset": 12,
+      "text": "#inScope records its own reason",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "Frontier.#inScope",
+      "line": 128,
+      "offset": 18,
+      "text": "Exclusion wins over inclusion: a URL matching both is excluded, because\nthe narrower statement is the one the caller meant.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": "Frontier.next",
+      "line": 139,
+      "offset": 0,
+      "text": "Take the next URL for a host with capacity.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "Frontier.peekLast",
+      "line": 152,
+      "offset": 0,
+      "text": "The most recently accepted item, without removing it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "Frontier.drain",
+      "line": 156,
+      "offset": 0,
+      "text": "Empty the queue while keeping the dedup filter.\n\nUsed when resuming: URLs already completed must stay \"seen\" so they are not\nre-enqueued, but they must not be handed out as work again either.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "Frontier.pending",
+      "line": 160,
+      "offset": 0,
+      "text": "Whether any work remains, regardless of host availability.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "Frontier.rejections",
+      "line": 176,
+      "offset": 0,
+      "text": "Why URLs were turned away.\n\nSurfaced to the caller because \"we crawled 12 pages\" is a very different\nstatement from \"we crawled 12 pages and rejected 4,000 as off-site\" — and a\nsilent cap reads as complete coverage when it is not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "Frontier.hosts",
+      "line": 180,
+      "offset": 0,
+      "text": "Distinct hosts currently queued.",
+      "kind": "doc"
+    }
+  ]
+}

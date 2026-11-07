@@ -6,11 +6,6 @@ const LINKS = [
   { label: 'Checks', href: '/checks' },
 ] as const;
 
-/**
- * The browser-side tools keep the light `--m-*` surface they were designed on;
- * only the marketing chrome around them is gone, so the header links back to
- * the app instead.
- */
 export default function ToolsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div data-surface="marketing" className="relative isolate min-h-screen bg-m-bg font-sans text-m-ink">

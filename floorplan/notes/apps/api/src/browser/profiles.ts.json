@@ -1,0 +1,135 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/profiles.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ProfileScreen",
+      "line": 8,
+      "offset": 0,
+      "text": "Browser identity profiles, JS layer.\n\nThe transport layer is not here: TLS and HTTP/2 emulation belong to\nhelix-fetch, which delegates them to `wreq-util`'s presets. What the browser\ntier owns is everything a page can read about the machine it thinks it is\nrunning on — WebGL strings, core count, memory, timezone, screen, fonts.\n\nA definition with `verified: false` was not captured from a real browser. Its\nJS surface is plausible rather than measured, which is exactly the kind of\ndetail detection looks for. It is still applied when a caller names it —\na guessed identity beats leaking the host machine's real one — but it is\nlogged every time. `tools/capture` records a verified definition.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "BrowserProfile.capturedAt",
+      "line": 30,
+      "offset": 0,
+      "text": "Null until `tools/capture` records it from a real browser.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "BrowserProfile.verified",
+      "line": 31,
+      "offset": 0,
+      "text": "False for a hand-written definition. Applied anyway, but logged on every use.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "definitionsDir",
+      "line": 36,
+      "offset": 0,
+      "text": "`packages/profiles/definitions` at the repo root in development; beside\n`dist/` when the bundle is staged. Walks upward from this module, as\n`mcp/spec.ts` does for openapi.yaml, so both layouts resolve.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "definitionsDir",
+      "line": 46,
+      "offset": 10,
+      "text": "src/browser -> apps/api -> apps -> repo root",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "loadProfiles",
+      "line": 59,
+      "offset": 8,
+      "text": "No definitions shipped is a valid state: the browser tier then applies\nnothing, which is what it did before profiles existed.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "resetProfileCache",
+      "line": 77,
+      "offset": 0,
+      "text": "Test seam: forget what was loaded so a different directory can be read.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "getProfile",
+      "line": 85,
+      "offset": 4,
+      "text": "An unverified profile is still applied — it beats presenting the host\nmachine's real fingerprint, and silently ignoring a caller's explicit\nrequest would be its own surprise. But it is said out loud, because the\nvalues are plausible rather than measured.",
+      "kind": "why"
+    },
+    {
+      "id": "n9",
+      "symbol": "instanceSecret",
+      "line": 95,
+      "offset": 0,
+      "text": "A per-instance secret the canvas seed is keyed with.\n\nDerived once from whichever instance secret exists, and from random bytes if\nnone does. It never leaves the process; only its effect on pixels is visible.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "resetInstanceSecret",
+      "line": 106,
+      "offset": 0,
+      "text": "Test seam: forget the derived secret so a different environment can be read.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "seedFor",
+      "line": 110,
+      "offset": 0,
+      "text": "A stable 32-bit seed for this identity, keyed with an instance-local secret.\n\nTwo properties have to hold at once, and only one of them is obvious.\n\nStable: real browsers return an identical canvas hash on every read, so a\nvalue that varies between two reads is itself the tell.\n\n*Unpredictable to the page.* Deriving the seed from the profile id alone —\nwhich is what this did first — makes it a pure function of a value that ships\nin a public repo. A tracker recomputes it off-box, inverts the transform, and\nrecovers the true hardware canvas hash: strictly worse than not perturbing at\nall, because every install then hands out the same stable identifier behind a\nveneer of protection. (Cortex shipped and measured exactly this: 0 of 4096\nbytes differed after inversion.)\n\nKeying with an instance secret keeps the stability and removes the\npredictability. The fallback is random rather than public — it degrades\ntoward unpredictable, never toward guessable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "BrowserIdentity",
+      "line": 121,
+      "offset": 0,
+      "text": "What the launched browser reports about itself, read once per launch.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "headfulUserAgent",
+      "line": 147,
+      "offset": 0,
+      "text": "The headless shell's UA with the reduced version a real Chrome sends.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "userAgentOverride",
+      "line": 159,
+      "offset": 0,
+      "text": "The UA, Accept-Language and client hints for one page.\n\nPlaywright's `userAgent` option changes the string but not `sec-ch-ua` or\n`navigator.userAgentData`, which keep saying \"HeadlessChrome\" at the real\nversion. The browser's own brand list is kept, GREASE entry and order\nincluded, with the headless brand renamed and the version moved to the UA's.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "userAgentOverride",
+      "line": 177,
+      "offset": 18,
+      "text": "Chrome adds the q-values itself; passing them through doubles them.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "fingerprintScript",
+      "line": 195,
+      "offset": 0,
+      "text": "The init script a context runs before any page code.\n\nWith no profile it still runs on chromium: the headless shell has no\n`window.chrome` and no plugins, which a page reads without any identity\nbeing asked for. Every replaced function and getter reports itself as\nnative code through one patched `Function.prototype.toString`.\n\nEvery override is guarded: a property that cannot be redefined is left alone\nrather than throwing, because a page that sees an exception from a getter has\nlearned more about us than the value would have told it.",
+      "kind": "doc"
+    }
+  ]
+}

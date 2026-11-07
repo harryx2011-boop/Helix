@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/service-token.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SERVICE_TOKEN_HEADER",
+      "line": 2,
+      "offset": 0,
+      "text": "The shared secret the API sends to the fetch and extract services.\n\nSet HELIX_SERVICE_TOKEN on all three and the services answer only the API,\nnot any other process or container that can reach their ports.",
+      "kind": "doc"
+    }
+  ]
+}

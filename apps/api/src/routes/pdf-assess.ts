@@ -6,13 +6,6 @@ import { fetchRemote, readMultipart, RequestError, type FileInput } from './pars
 import { defaultLookup, HostNotAllowedError, type Lookup } from '../parse/remote.js';
 import { createPinnedFetch, type PinnedFetch } from '../core/pinned-fetch.js';
 
-/**
- * Whether a PDF needs OCR, without converting it.
- *
- * Wraps helix-extract's `/assess` — the same classifier `/parse` runs before
- * choosing a parser — so a caller can decide whether a full parse is worth
- * paying for, or route straight to OCR, before spending either.
- */
 
 const PdfAssessJsonRequestSchema = z.object({
   url: z.string().url(),
@@ -53,7 +46,6 @@ function tooLargeBody(request: FastifyRequest, maxBytes: number): Record<string,
 
 export async function registerPdfAssess(app: FastifyInstance, deps: PdfAssessRouteDeps): Promise<void> {
   const lookup = deps.lookup ?? defaultLookup;
-  // Pinned: the address the lookup checked is the address connected to.
   const fetchImpl = deps.fetchImpl ?? createPinnedFetch({ lookup });
   const bodyLimit = deps.maxUploadBytes + MAX_UPLOAD_HEADROOM;
 

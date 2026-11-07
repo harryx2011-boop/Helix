@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/endpoints.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Endpoint",
+      "line": 1,
+      "offset": 0,
+      "text": "The endpoints the playground and activity views cover.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "RunnableEndpoint",
+      "line": 14,
+      "offset": 0,
+      "text": "The subset the SDK client and the playground can actually call.\n\nCurrently every endpoint, kept as its own name so a catalogued-but-not-yet-\ncallable endpoint stays a compile error at the four surfaces that render a\nplayground link, rather than a 404 discovered by clicking one.",
+      "kind": "doc"
+    }
+  ]
+}

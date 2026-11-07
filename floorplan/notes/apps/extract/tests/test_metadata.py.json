@@ -1,0 +1,159 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_metadata.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "_tiff",
+      "line": 20,
+      "offset": 0,
+      "text": "--- builders ----------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "TestClassify",
+      "line": 107,
+      "offset": 0,
+      "text": "--- risk ranking ------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "TestClassify.test_an_email_in_the_value_escalates_whatever_the_key",
+      "line": 124,
+      "offset": 1,
+      "text": "The key vocabularies of XMP and docProps are open-ended, so the name\nalone can never be the whole test.",
+      "kind": "why"
+    },
+    {
+      "id": "n4",
+      "symbol": "TestClassify.test_the_value_can_only_raise_the_band",
+      "line": 131,
+      "offset": 1,
+      "text": "A plain value under a high-risk key stays high.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "TestJpeg",
+      "line": 149,
+      "offset": 0,
+      "text": "--- JPEG --------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "TestJpeg.test_resolves_gps_to_a_decimal_coordinate",
+      "line": 183,
+      "offset": 14,
+      "text": "A raw DMS triple is the least readable form of the most consequential\nfinding; the decimal pair is what makes the report actionable.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "TestJpeg.test_scrub_removes_every_metadata_segment_and_keeps_the_image",
+      "line": 231,
+      "offset": 11,
+      "text": "A re-scan is the only honest proof; the intent to remove is not proof.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "TestJpeg.test_a_zero_length_segment_is_not_left_behind",
+      "line": 240,
+      "offset": 1,
+      "text": "Emptying rather than removing would still tell a reader the file once\ncarried EXIF; the segment must be gone entirely.",
+      "kind": "why"
+    },
+    {
+      "id": "n9",
+      "symbol": "TestJpeg.test_a_truncated_segment_chain_does_not_hang_or_raise",
+      "line": 248,
+      "offset": 1,
+      "text": "A length that runs past the end stops the walk rather than looping.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "TestPng",
+      "line": 254,
+      "offset": 0,
+      "text": "--- PNG ---------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "TestPng.test_scrub_keeps_the_image_and_drops_the_metadata",
+      "line": 278,
+      "offset": 6,
+      "text": "The image itself must survive intact.",
+      "kind": "why"
+    },
+    {
+      "id": "n12",
+      "symbol": "TestPng.test_scrub_keeps_rendering_chunks_that_are_not_metadata",
+      "line": 283,
+      "offset": 1,
+      "text": "Dropping gAMA would change how the image displays.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "TestOoxml",
+      "line": 293,
+      "offset": 0,
+      "text": "--- OOXML -------------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "TestOoxml.test_reads_custom_properties_once_under_their_real_name",
+      "line": 314,
+      "offset": 12,
+      "text": "The typed wrapper's own tag is meaningless and must not be reported.",
+      "kind": "why"
+    },
+    {
+      "id": "n15",
+      "symbol": "TestOoxml.test_scrub_reports_a_comments_part_as_retained_rather_than_claiming_it_is_clean",
+      "line": 338,
+      "offset": 9,
+      "text": "Dropping it would break a relationship and corrupt the document, so it\nstays — and the report must say so, or the caller acts on \"clean\".",
+      "kind": "why"
+    },
+    {
+      "id": "n16",
+      "symbol": "TestOoxml.test_scrub_flattens_entry_timestamps",
+      "line": 345,
+      "offset": 1,
+      "text": "A zip entry's own mtime is metadata; keeping it would leak what the\nscrub just removed.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "TestOoxml.test_a_malformed_property_part_warns_instead_of_failing_the_scan",
+      "line": 351,
+      "offset": 2,
+      "text": "A partial report beats none, but the caller has to know it is partial.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "TestDispatch",
+      "line": 361,
+      "offset": 0,
+      "text": "--- dispatch ----------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "TestValueHandling.test_an_oversized_value_says_it_was_truncated",
+      "line": 379,
+      "offset": 1,
+      "text": "A value silently cut to look complete is how a reader concludes the\nrest of it does not exist.",
+      "kind": "what"
+    }
+  ]
+}

@@ -2,11 +2,6 @@ import { createServer, type Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createPinnedFetch } from './pinned-fetch.js';
 
-/**
- * The pinned fetch checks what a name resolves to inside the connection's own
- * lookup, so the address it checked is the address it connects to. A local
- * server stands in for the private target: a refused request never reaches it.
- */
 
 let server: Server;
 let port = 0;

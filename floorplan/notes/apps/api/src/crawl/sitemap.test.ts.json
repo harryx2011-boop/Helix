@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/sitemap.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "URLSET",
+      "line": 5,
+      "offset": 0,
+      "text": "Where the sitemap fetch is allowed to end up. A sitemap URL is quoted from a\nremote robots.txt, so it is attacker-chosen twice over: once in the file and\nagain in whatever it redirects to.",
+      "kind": "doc"
+    }
+  ]
+}

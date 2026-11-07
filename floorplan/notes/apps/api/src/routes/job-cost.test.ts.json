@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/job-cost.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 69,
+      "offset": null,
+      "text": "A zero would say the job used no tokens; nobody measured them.",
+      "kind": "what"
+    }
+  ]
+}

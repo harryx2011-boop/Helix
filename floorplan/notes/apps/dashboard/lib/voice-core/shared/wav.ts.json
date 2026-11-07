@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/voice-core/shared/wav.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "encodeWav",
+      "line": 1,
+      "offset": 0,
+      "text": "A 16-bit mono WAV around raw PCM, for POST /transcribe.",
+      "kind": "doc"
+    }
+  ]
+}

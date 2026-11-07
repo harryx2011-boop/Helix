@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/forms/screenshot-form.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PRESETS",
+      "line": 12,
+      "offset": 0,
+      "text": "Named device sizes, so the common cases are one click rather than two numbers.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ScreenshotForm",
+      "line": 39,
+      "offset": 12,
+      "text": "PNG has no lossy setting, and JPEG has no alpha. Rather than let the form\noffer a control the server will ignore, each is hidden where it means\nnothing — the same rule the route applies when it builds its encode options.",
+      "kind": "what"
+    }
+  ]
+}

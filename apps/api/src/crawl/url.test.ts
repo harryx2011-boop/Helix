@@ -12,8 +12,6 @@ import {
 
 describe('normaliseUrl', () => {
   it('collapses the variants of one page into a single key', () => {
-    // The complaint that motivates this: a crawl returning site.com/,
-    // www.site.com/ and site.com/#top as three separate pages.
     const canonical = normaliseUrl('https://site.com/page');
 
     expect(normaliseUrl('https://www.site.com/page')).toBe(canonical);
@@ -24,7 +22,6 @@ describe('normaliseUrl', () => {
   });
 
   it('strips tracking parameters but keeps meaningful ones', () => {
-    // ?page=2 is a different document; ?utm_source is the same one.
     expect(normaliseUrl('https://site.com/list?utm_source=twitter&page=2')).toBe(
       'https://site.com/list?page=2',
     );
@@ -80,8 +77,6 @@ describe('siteOf', () => {
   });
 
   it('handles two-level public suffixes', () => {
-    // Getting this wrong would treat bbc.co.uk and itv.co.uk as one site and
-    // pace them against a shared budget.
     expect(siteOf('https://news.bbc.co.uk/story')).toBe('bbc.co.uk');
     expect(siteOf('https://shop.example.com.au')).toBe('example.com.au');
   });
@@ -116,8 +111,6 @@ describe('matchesAnyPattern', () => {
   });
 
   it('treats an invalid pattern as matching nothing', () => {
-    // A broken regex must not silently become "match everything", which would
-    // turn an exclude rule into a crawl-nothing rule.
     expect(matchesAnyPattern('https://s.com/x', ['[unclosed'])).toBe(false);
   });
 
@@ -138,7 +131,6 @@ describe('glob path patterns', () => {
   });
 
   it('matches everything under a prefix with a trailing star', () => {
-    // The spec's own example: include /blog/*, exclude /blog/tag/*.
     expect(matchesAnyPattern('https://s.com/blog/post-1', ['/blog/*'])).toBe(true);
     expect(matchesAnyPattern('https://s.com/blog/2024/post-1', ['/blog/*'])).toBe(true);
     expect(matchesAnyPattern('https://s.com/blog/tag/x', ['/blog/tag/*'])).toBe(true);
@@ -163,8 +155,6 @@ describe('glob path patterns', () => {
   });
 
   it('matches the directory itself with a trailing star', () => {
-    // The seed `https://example.com/blog/` normalises to `/blog`; the spec's
-    // `/blog/*` must still cover it.
     expect(matchesAnyPattern('https://s.com/blog', ['/blog/*'])).toBe(true);
     expect(matchesAnyPattern('https://s.com/blog/', ['/blog/*'])).toBe(true);
     expect(matchesAnyPattern('https://s.com/', ['/blog/*'])).toBe(false);

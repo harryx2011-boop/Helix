@@ -17,7 +17,6 @@ interface GetCodeDialogProps {
   apiKey: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** For an endpoint with more than one operation, e.g. `/scrub` on Metadata. */
   pathSuffix?: string | undefined;
 }
 

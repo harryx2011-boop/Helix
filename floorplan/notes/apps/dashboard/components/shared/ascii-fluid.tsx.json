@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/ascii-fluid.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BODY",
+      "line": 9,
+      "offset": 0,
+      "text": "AsciiFluid: a character field whose glyph density follows a slowly\ndrifting wave surface, so it reads as liquid rising and settling. Two\n<pre> layers (ink for the body, violet for the crests) like AsciiHelix,\nso the DOM cost is two nodes at any size. Deterministic first paint,\npaused off-screen, static under reduced motion.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "noise",
+      "line": 22,
+      "offset": 0,
+      "text": "Value noise on a 2-D lattice, lerped across an integer time step so it drifts rather than flickers.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/voice-core/shared/speak.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n2",
+      "symbol": "speak",
+      "line": 37,
+      "offset": 0,
+      "text": "Raw 24 kHz int16 mono from POST /v1/audio/speech. `voice` is a VoiceStudio\nprofile id, or \"default\" for its own default voice.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "speak",
+      "line": 63,
+      "offset": 26,
+      "text": "A JSON error with a 200 would otherwise be played as noise.",
+      "kind": "why"
+    }
+  ]
+}

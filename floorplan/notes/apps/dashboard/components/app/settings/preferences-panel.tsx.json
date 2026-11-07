@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/settings/preferences-panel.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FORMATS",
+      "line": 15,
+      "offset": 0,
+      "text": "Mirrors FORMATS in apps/api/src/routes/scrape.ts; nothing the API will not accept.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PreferencesPanel",
+      "line": 64,
+      "offset": 6,
+      "text": "`system` resolves once here rather than subscribing: the /app surface is\npinned dark by its own layout, so this only takes effect on marketing\nand self-host pages, and re-resolving on every OS change would fight a\ndeliberate choice made on this screen.",
+      "kind": "what"
+    }
+  ]
+}

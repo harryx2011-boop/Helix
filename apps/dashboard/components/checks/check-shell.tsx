@@ -7,11 +7,6 @@ import { cn } from '@/lib/utils';
 import { getApiKey } from '@/lib/auth';
 import { CHECK_TABS, TAB_LABELS, type CheckTab } from '@/lib/checks-tabs';
 
-/**
- * Checks calls the instance directly and needs the operator's own key, which
- * `(tools)` does not mount an ApiKeyProvider for — this reads the same
- * `localStorage` entry that provider does.
- */
 export function useCheckKey(): { apiKey: string | null; ready: boolean } {
   const [apiKey, setKey] = React.useState<string | null>(null);
   const [ready, setReady] = React.useState(false);
@@ -22,7 +17,6 @@ export function useCheckKey(): { apiKey: string | null; ready: boolean } {
   return { apiKey, ready };
 }
 
-/** Without the browser-held key there is nothing to call with. */
 export function needsKey(apiKey: string | null): boolean {
   return !apiKey;
 }
@@ -88,7 +82,6 @@ export function KeyNote() {
   );
 }
 
-/** Busy state for a submit button; the label stays put so the row does not reflow. */
 export function RunLabel({ busy, children }: { busy: boolean; children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center gap-2">
@@ -107,7 +100,6 @@ export function ResultRow({ label, children }: { label: string; children: React.
   );
 }
 
-/** A verdict headline: one word, then the detail underneath. */
 export function Verdict({ tone, headline, detail }: { tone: 'good' | 'bad' | 'warn'; headline: string; detail?: string }) {
   return (
     <div className="flex items-start gap-3 border-b border-m-border-faint px-5 py-4">

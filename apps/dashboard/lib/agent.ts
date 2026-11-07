@@ -22,7 +22,6 @@ export interface AgentPageResult {
   errorMessage?: string;
 }
 
-/** Runs an async task list with a bounded number in flight, preserving input order in the output. */
 async function runWithConcurrency<T, R>(items: T[], limit: number, task: (item: T, index: number) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let cursor = 0;
@@ -44,7 +43,6 @@ function failureMessage(response: ScrapeResponse): string {
   return response.failure.detail ?? response.failure.reason;
 }
 
-/** Reads one URL and pulls its `jsonOptions.schema` extraction, keyed for the agent's merged results view. */
 export async function scrapeForSchema(
   url: string,
   schema: Record<string, unknown>,
@@ -80,7 +78,6 @@ export async function scrapeUrlsForSchema(
   });
 }
 
-/** Search-driven mode: search for the prompt, then read each result's `json` extraction. */
 export async function searchForSchema(
   prompt: string,
   schema: Record<string, unknown>,
@@ -102,7 +99,6 @@ export async function searchForSchema(
   });
 }
 
-/** Flattens one level of nested objects/arrays into dotted keys, for CSV export. */
 export function flattenRow(row: Record<string, unknown>, prefix = ''): Record<string, string> {
   const flat: Record<string, string> = {};
   for (const [key, value] of Object.entries(row)) {

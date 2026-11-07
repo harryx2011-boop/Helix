@@ -1,4 +1,3 @@
-/** Runs `fn` over `items` with at most `limit` in flight, preserving order. */
 export async function mapWithLimit<T, R>(
   items: readonly T[],
   limit: number,

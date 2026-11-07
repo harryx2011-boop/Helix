@@ -14,11 +14,6 @@ export interface VoicePlan {
   env: Record<string, string>
 }
 
-/**
- * Where voice-core comes from: an override folder, the build staged next to the other
- * resources, then a sibling checkout run through uv (development only). Null means this
- * install has no dictation, which the UI reports instead of failing the app.
- */
 export function resolveVoice(i: VoiceInput): VoicePlan | null {
   const exe = (dir: string) => path.join(dir, 'voice-core.exe')
   const override = i.env.HELIX_VOICE_CORE_DIR
@@ -31,7 +26,6 @@ export function resolveVoice(i: VoiceInput): VoicePlan | null {
   else if (i.exists(path.join(sibling, 'pyproject.toml'))) command = devCommand(sibling)
   if (!command) return null
 
-  // cuBLAS is 737 MB, so it is not in the installer by default; a folder with it beside the build turns CUDA on.
   const cuda = path.join(i.resources, 'voice-core-cuda')
   return { command, env: i.exists(cuda) ? { VOICE_CORE_CUDA_DIR: cuda } : {} }
 }

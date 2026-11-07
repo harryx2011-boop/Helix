@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/run-endpoint.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "EndpointMode",
+      "line": 31,
+      "offset": 0,
+      "text": "Metadata has two operations behind one tab, and the scrub answers with file\nbytes rather than JSON. The caller names which one it wants; everything else\nabout the call path is unchanged.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "runEndpoint",
+      "line": 39,
+      "offset": 0,
+      "text": "The browser calls the operator's own instance directly with the key from `useApiKey()`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "callInstance",
+      "line": 53,
+      "offset": 0,
+      "text": "Each branch returns a different response shape; the caller asserts the union member it expects for the endpoint it asked for.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "callInstance",
+      "line": 88,
+      "offset": 35,
+      "text": "The dispatcher forwards by `op`, which the form puts in the body. An\nupload goes to the operation's own route instead: `/document` would\nhave to name the op in the query string, and the file tabs already\ncall `/parse` and `/metadata` directly.",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "research/firecrawl-capture/shoot-bento.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 26,
+      "offset": null,
+      "text": "meter-bearing section shots at settled state",
+      "kind": "what"
+    }
+  ]
+}

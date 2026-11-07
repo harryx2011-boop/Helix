@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/ui/select.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SelectContent",
+      "line": 39,
+      "offset": 8,
+      "text": "A local runtime can list an open-ended number of installed models, so the\nviewport needs its own scroll or the list runs off a short screen.",
+      "kind": "what"
+    }
+  ]
+}

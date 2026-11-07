@@ -2,14 +2,6 @@ import type { FastifyInstance } from 'fastify';
 import { getPool } from '../db/pool.js';
 import { CURSOR, PAGE_SIZE, isJobId, notFound } from './jobs.js';
 
-/**
- * Which tier served each page of a job, and why it climbed to get there.
- *
- * The ladder is Helix's own evidence trail: a page that needed a browser
- * says which cheaper tier it tried first and what that tier returned. Pages
- * recorded before the pipeline kept its climbs answer `escalations: null`
- * rather than an empty list, which would claim the first tier served them.
- */
 
 interface LadderRow {
   url: string;

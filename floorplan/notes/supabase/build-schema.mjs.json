@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "supabase/build-schema.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "here",
+      "line": 7,
+      "offset": 0,
+      "text": "Builds supabase/schema.sql: one file that takes a FRESH Supabase project to\nthe full hosted schema — the API's own migrations, then the hosted ones.\n\nThe API records each migration it applies in `schema_migrations` with a\nsha256 of the file, and refuses to re-run one it has seen. The generated\nfile seeds that table with the same hashes, so an API booting against a\nproject set up this way finds nothing to do rather than failing on\n`CREATE TABLE api_keys` a second time.\n\nFresh projects only: the API migrations do not use IF NOT EXISTS.",
+      "kind": "doc"
+    }
+  ]
+}

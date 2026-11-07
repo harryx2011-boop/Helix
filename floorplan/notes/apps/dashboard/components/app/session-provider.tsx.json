@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/session-provider.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "useAppSession",
+      "line": 5,
+      "offset": 0,
+      "text": "The app runs against the operator's own instance; the session is the API key held in localStorage.",
+      "kind": "doc"
+    }
+  ]
+}

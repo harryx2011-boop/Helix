@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "tools/capture/identity.mjs",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "Pure functions deriving a profile's identity from a recorded surface, and the\nchecks that decide whether a recording is usable at all.\n\nSeparated from the driver so they can be tested without launching a browser —\nthese are exactly the parts where a wrong answer produces a definition that\nlooks authoritative and is not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "RESOLVABLE",
+      "line": 2,
+      "offset": 0,
+      "text": "Identities apps/fetch can actually present. Mirrors `available()` in apps/fetch/src/profile.rs.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "HEADER_TABLE_SIZE",
+      "line": 49,
+      "offset": 0,
+      "text": "HTTP/2 header table size the Rust validator requires per engine.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "browserFromUserAgent",
+      "line": 51,
+      "offset": 0,
+      "text": "Edge's user-agent contains \"Chrome\" too, so order matters: the more specific\nengine has to be tested first or every Edge capture records as Chrome.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "versionFromUserAgent",
+      "line": 69,
+      "offset": 0,
+      "text": "Safari reports its own version under `Version/`, not `Safari/` (which is the WebKit build).",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "recordingProblems",
+      "line": 75,
+      "offset": 0,
+      "text": "Why this recording should not be written.\n\nEach of these describes a browser no real user has: a headless UA is a\ndetection signal in itself, and a software rasteriser fingerprints as\n\"no GPU\" rather than as a desktop. Recording either under `verified: true`\nwould be worse than having no profile.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "versionMismatch",
+      "line": 99,
+      "offset": 0,
+      "text": "The id names one identity and the recording another; the transport layer would contradict the UA.",
+      "kind": "doc"
+    }
+  ]
+}

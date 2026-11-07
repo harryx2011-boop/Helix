@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/ladder/fetch-ladder.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FetchLadderProps.resolvedTier",
+      "line": 17,
+      "offset": 0,
+      "text": "The tier that produced the returned result, or undefined on total failure.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "FetchLadder",
+      "line": 20,
+      "offset": 0,
+      "text": "Renders every rung Helix walked, in ladder order — not just the attempted\nset — so a caller sees both which tiers were tried and which were skipped\nbecause escalation stopped early or was never needed.",
+      "kind": "doc"
+    }
+  ]
+}

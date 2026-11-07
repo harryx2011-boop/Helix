@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/settings.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Settings",
+      "line": 18,
+      "offset": 5,
+      "text": "--- LLM (BYOK) --------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "Settings",
+      "line": 24,
+      "offset": 11,
+      "text": "Either name works for Gemini; the spec documents GOOGLE_API_KEY.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "Settings",
+      "line": 31,
+      "offset": 18,
+      "text": "--- embeddings --------------------------------------------------------\nLocal by default, so chunking and vector sync need no keys and cost nothing.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "Settings",
+      "line": 37,
+      "offset": 24,
+      "text": "--- local-embeddings runtime (desktop exe) ------------------------------\nThe exe ships without torch; the runtime pack is fetched here on first use.",
+      "kind": "what"
+    }
+  ]
+}

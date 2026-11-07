@@ -1,0 +1,127 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/store.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MonitorStatus",
+      "line": 9,
+      "offset": 0,
+      "text": "Monitor persistence.\n\nOne interface, two implementations: Postgres for the running service, and\nan in-memory store so the scheduler, checker, dispatcher and routes can be\ntested end to end without a database. The interface is the contract; the\nSQL is a detail.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "DiffOptions.inline",
+      "line": 26,
+      "offset": 0,
+      "text": "Include the diff in the webhook body so no follow-up request is needed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "MonitorJsonOptions",
+      "line": 29,
+      "offset": 0,
+      "text": "When set, a check extracts structured JSON from the page (via helix-extract\n`/structured`, the same path `/scrape`'s `jsonOptions` uses) and diffs the\ntwo JSON objects field by field instead of diffing markdown text. The text\ndiff still runs first to decide whether the page changed at all; JSON\nextraction only runs on a real change, so a quiet page never pays for a\nmodel call.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "MonitorWebhook.secret",
+      "line": 43,
+      "offset": 0,
+      "text": "Per-webhook HMAC secret. Falls back to the instance secret when unset.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "MonitorRecord.claimedAt",
+      "line": 62,
+      "offset": 0,
+      "text": "When the current claim was taken; null once the check ends.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "MonitorPatch.checkOutcome",
+      "line": 92,
+      "offset": 0,
+      "text": "How a check ended. `ok` clears `error` back to `active`; `error` marks the\nmonitor `error`. Neither touches a paused monitor: a pause that lands\nwhile a check is running must survive the check's final write.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "MONITOR_LIST_LIMIT",
+      "line": 163,
+      "offset": 0,
+      "text": "Ceiling on `list`. Both stores apply it, so a caller cannot tell them apart by\nhow much they return; the route reports truncation rather than implying the\npage is the whole set.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "MonitorStore.claimDue",
+      "line": 171,
+      "offset": 0,
+      "text": "Atomically take the active monitors due at `now`, clearing `nextCheckAt`\nso a second worker does not take them too. The caller must set the next\ntime back when the check ends, whatever the outcome.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "MonitorStore.claim",
+      "line": 172,
+      "offset": 0,
+      "text": "Claim one monitor for a check outside the schedule. Undefined when it is\npaused, missing, or already claimed by a running check.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "MonitorStore.listStuck",
+      "line": 173,
+      "offset": 0,
+      "text": "Monitors claimed before `before` and never released: a crash mid-check.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "MonitorStore.enqueueDelivery",
+      "line": 185,
+      "offset": 0,
+      "text": "Returns undefined when the dedupe key already exists.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "MonitorStore.claimDeliveries",
+      "line": 186,
+      "offset": 0,
+      "text": "Claimed rows are not due again until `now + leaseMs`, so a concurrent tick skips them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "MemoryMonitorStore",
+      "line": 196,
+      "offset": 0,
+      "text": "---------------------------------------------------------------- memory",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "MemoryMonitorStore.pruneSnapshots",
+      "line": 342,
+      "offset": 8,
+      "text": "The newest snapshot always survives: it is the baseline for the next diff.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "MonitorRow",
+      "line": 460,
+      "offset": 0,
+      "text": "---------------------------------------------------------------- postgres",
+      "kind": "what"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/brand-marks.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BRAND_MARKS",
+      "line": 1,
+      "offset": 0,
+      "text": "Marks for platforms and agent clients named in the UI. Files are bundled in\npublic (Iconify `logos` set for the platforms, the apps' own icons for the\nagents) so a surface paints offline. `mono` marks are drawn in currentColor;\nevery other mark keeps its own colors and is never recolored.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/top-bar.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "WorkspacePill",
+      "line": 16,
+      "offset": 1,
+      "text": "The export is rendered with the fallback; the real origin is swapped in after mount so hydration matches.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "PaletteTrigger",
+      "line": 30,
+      "offset": 1,
+      "text": "Rendered as Ctrl on the server and swapped after mount, so the markup matches on hydration.",
+      "kind": "what"
+    }
+  ]
+}

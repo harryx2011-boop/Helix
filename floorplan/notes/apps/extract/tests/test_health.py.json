@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_health.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "test_health_never_leaks_key_material",
+      "line": 27,
+      "offset": 1,
+      "text": "Health says WHETHER a provider is configured, never what the key is.\nA health endpoint is often the least-guarded route in a deployment.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": "test_embedding_works_without_any_key",
+      "line": 38,
+      "offset": 1,
+      "text": "The local model is the default precisely so chunking and vector sync work\nfor someone evaluating Helix with no accounts anywhere.",
+      "kind": "what"
+    }
+  ]
+}

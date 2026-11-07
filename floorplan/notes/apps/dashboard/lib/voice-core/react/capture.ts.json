@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/voice-core/react/capture.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Mic",
+      "line": 14,
+      "offset": 0,
+      "text": "What the dictation controller needs from a microphone; MicCapture is the browser one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MicOptions.workletUrl",
+      "line": 22,
+      "offset": 0,
+      "text": "A served copy of the worklet, for a CSP that blocks blob: worklets.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "MicCapture",
+      "line": 37,
+      "offset": 0,
+      "text": "Browser mic capture at 16 kHz PCM16, after Composer's src/renderer/lib/audio/capture.ts.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "MicCapture.session",
+      "line": 42,
+      "offset": 0,
+      "text": "Bumped by stop(): a start() still awaiting the permission prompt or the\nworklet sees it and releases what it opened instead of leaving the mic live.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "MicCapture.start",
+      "line": 71,
+      "offset": 20,
+      "text": "A remembered device that has since been unplugged must not lock dictation out.",
+      "kind": "why"
+    }
+  ]
+}

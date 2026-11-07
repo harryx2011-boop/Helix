@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/shared/ocean.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FPS",
+      "line": 8,
+      "offset": 0,
+      "text": "Water, in the same idiom as AsciiHelix: a glyph field recomputed by one\nthrottled ticker, paused off-screen, a settled deterministic frame under\nreduced motion, and a seeded first paint so server and client agree. Two\nlayers — an ink field and violet crests — stacked as absolutely positioned\n<pre> blocks so the crests read as sitting on top of the swell.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "SURFACE",
+      "line": 10,
+      "offset": 0,
+      "text": "Glyphs by surface height, low to high.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "height",
+      "line": 21,
+      "offset": 0,
+      "text": "Three sines at unrelated frequencies, so the swell never visibly repeats\nwithin a session. `depth` weights near rows heavier than far ones, which is\nwhat makes a flat character grid read as a surface receding from the viewer.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "oceanLayers",
+      "line": 40,
+      "offset": 11,
+      "text": "A crest: drawn only on the front layer, so the two never overprint.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": "AsciiOcean",
+      "line": 61,
+      "offset": 0,
+      "text": "A band of swell with travelling crests. Sized by cols/rows; overflow is hidden, so oversize it and centre it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "waveLayers",
+      "line": 103,
+      "offset": 11,
+      "text": "The glyph follows the slope, so the line reads as drawn rather than dotted.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "waveLayers",
+      "line": 105,
+      "offset": 13,
+      "text": "A sparse trail one row under the crest, so the wave has a body.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "AsciiWave",
+      "line": 119,
+      "offset": 0,
+      "text": "A single travelling sine drawn in glyphs — the wave, as distinct from the ocean's field.",
+      "kind": "doc"
+    }
+  ]
+}

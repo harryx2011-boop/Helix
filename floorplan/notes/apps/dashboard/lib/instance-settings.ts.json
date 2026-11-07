@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/instance-settings.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "STORAGE_KEY",
+      "line": 7,
+      "offset": 0,
+      "text": "Instance settings, called straight from the browser.\n\nSelf-host serves this dashboard as a static export from the API itself, so\nthere is no dashboard server to hold a secret and no route handler to proxy\nthrough. The operator's admin token therefore lives in localStorage beside\nthe API key, the same way self-host already handles credentials.\n\nThe token authenticates the operator, not a caller: it is the same\n`HELIX_INTERNAL_ADMIN_TOKEN` the instance was started with.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SettingsError.confirm",
+      "line": 60,
+      "offset": 0,
+      "text": "Set when the API refused pending a confirmation naming this key.",
+      "kind": "doc"
+    }
+  ]
+}

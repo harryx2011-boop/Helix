@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/markdown-twins.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "AGENT_BLOCK",
+      "line": 11,
+      "offset": 0,
+      "text": "Markdown twins: every marketing page is also served as plain markdown, no\nchrome, at the same path with `.md` appended (WEBSITE.md §9.4). This module\nis the single source both `/md/[[...slug]]` and `/llms.txt` read from.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MARKDOWN_TWIN_PATHS",
+      "line": 179,
+      "offset": 0,
+      "text": "Every markdown-twinned path, without the leading slash or trailing `.md`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "resolveMarkdownTwin",
+      "line": 192,
+      "offset": 0,
+      "text": "Resolves the markdown body for a twin path (e.g. `scrape`, `docs/crawl`, `architecture`). Undefined if unknown.",
+      "kind": "doc"
+    }
+  ]
+}

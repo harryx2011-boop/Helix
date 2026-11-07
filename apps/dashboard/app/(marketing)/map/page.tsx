@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   description: "List a site's URLs without reading them. Sitemap first, then the seed page's own links; filter by a term and cap the count.",
 };
 
-/* Request and response mirror POST /map in openapi.yaml. */
 const REQUEST = `POST /v1/map
 {
   "url": "https://example.com",

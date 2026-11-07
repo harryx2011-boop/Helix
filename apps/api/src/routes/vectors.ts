@@ -4,14 +4,6 @@ import { ExtractHttpError, type ExtractClient } from '../extract/client.js';
 import { collectionName, createSink, type VectorSink } from '../vectors/sink.js';
 import { DestinationSchema } from './crawl.js';
 
-/**
- * Semantic search over what a crawl wrote to a vector destination.
- *
- * The query is embedded by the same helix-extract that embedded the chunks, and
- * the search refuses to run when the collection was embedded with a different
- * model: vectors from two models live in unrelated spaces, and scoring one
- * against the other returns confident nonsense rather than an error.
- */
 
 const MAX_QUERY_CHARS = 2000;
 

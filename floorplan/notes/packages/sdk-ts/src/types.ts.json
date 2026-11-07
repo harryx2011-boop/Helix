@@ -1,0 +1,375 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/sdk-ts/src/types.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Format",
+      "line": 1,
+      "offset": 0,
+      "text": "Every format /scrape and /crawl serve (openapi.yaml Format).",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MetadataRisk",
+      "line": 253,
+      "offset": 0,
+      "text": "How much a disclosed value gives away. An ordinal band, not a probability.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "MetadataFinding.group",
+      "line": 265,
+      "offset": 0,
+      "text": "Where it was read from: `exif`, `gps`, `xmp`, `docinfo`, `core`, `app`, `custom`, `png`, `tracked`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "MetadataFinding.value",
+      "line": 267,
+      "offset": 0,
+      "text": "A long value is truncated and says so, so a cut value is never read as complete.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "MetadataFinding.removable",
+      "line": 270,
+      "offset": 0,
+      "text": "False where the format cannot drop the entry without corrupting the file.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "MetadataRiskSummary",
+      "line": 273,
+      "offset": 0,
+      "text": "Always carries all three bands, so absent and zero never have to be told apart.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "MetadataScan.findings",
+      "line": 297,
+      "offset": 0,
+      "text": "Sorted worst-first.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "MetadataResponseSuccess.warnings",
+      "line": 305,
+      "offset": 0,
+      "text": "A container opened but a part could not be read: the report is partial.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "MetadataScrubReport.removed",
+      "line": 317,
+      "offset": 0,
+      "text": "Sorted worst-first.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "MetadataScrubReport.retained",
+      "line": 318,
+      "offset": 0,
+      "text": "Detected and NOT removed, each with `removable: false`. Non-empty means the\nfile is not fully clean — check this before treating it as safe to publish.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "MetadataScrubSuccess",
+      "line": 332,
+      "offset": 0,
+      "text": "A successful scrub: the cleaned bytes, plus what was taken out and what stayed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "MetadataScrubSuccess.data",
+      "line": 334,
+      "offset": 0,
+      "text": "The cleaned file.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "MetadataScrubSuccess.filename",
+      "line": 335,
+      "offset": 0,
+      "text": "The name the API suggests: `<original>.scrubbed.<ext>`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "CrawlRequest.url",
+      "line": 418,
+      "offset": 0,
+      "text": "Required unless `resume` names an existing job, whose seed is already known.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "CrawlRequest.resume",
+      "line": 419,
+      "offset": 0,
+      "text": "Revive a cancelled crawl under its original id. Mutually exclusive with\n`url`: a resumed crawl keeps the seed it started with.",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": "CrawlRequest.changesOnly",
+      "line": 434,
+      "offset": 0,
+      "text": "Omit unchanged pages from the result set. Implies `incremental`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n17",
+      "symbol": "CrawlRequest.maxPagesPerPath",
+      "line": 435,
+      "offset": 0,
+      "text": "Cap on pages sharing a path prefix; bounds calendar and facet traps.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "CrawlRequest.includeContent",
+      "line": 436,
+      "offset": 0,
+      "text": "Glob or regex matched against extracted content, after the fetch.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": "CrawlRequest.scrapeOptions.jsonOptions",
+      "line": 440,
+      "offset": 0,
+      "text": "Structured extraction applied to every page of the crawl.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "EnrichRequest.urls",
+      "line": 875,
+      "offset": 0,
+      "text": "Sources to read. Omit to let the instance find them, which needs a search backend.",
+      "kind": "doc"
+    },
+    {
+      "id": "n21",
+      "symbol": "EnrichNullReason",
+      "line": 882,
+      "offset": 0,
+      "text": "Why a field came back null. A closed set, so a caller can branch on it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n22",
+      "symbol": "EnrichCitation.quote",
+      "line": 907,
+      "offset": 0,
+      "text": "The passage stating the value, verified to appear in the fetched page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n23",
+      "symbol": "EnrichCitation.locator",
+      "line": 908,
+      "offset": 0,
+      "text": "Where it was read: an element for a structural hit, `body` for a model hit.",
+      "kind": "doc"
+    },
+    {
+      "id": "n24",
+      "symbol": "EnrichedField",
+      "line": 911,
+      "offset": 0,
+      "text": "One enriched column.\n\n`value` is non-null only where the API could tie it to a passage in a page it\nfetched itself; otherwise it is null and `reason` says why. There is no\nmiddle state, so `value !== null` is the only check a caller needs.",
+      "kind": "doc"
+    },
+    {
+      "id": "n25",
+      "symbol": "EnrichedField.evidence.valueInCitation",
+      "line": 918,
+      "offset": 0,
+      "text": "False for booleans, which cannot appear literally in their own citation.",
+      "kind": "doc"
+    },
+    {
+      "id": "n26",
+      "symbol": "EnrichResponseSuccess.warnings",
+      "line": 935,
+      "offset": 0,
+      "text": "Present when there was nothing to read; every field is null for one reason.",
+      "kind": "doc"
+    },
+    {
+      "id": "n27",
+      "symbol": "UsageOptions.hours",
+      "line": 946,
+      "offset": 0,
+      "text": "Window in hours, 1 to 2160. Defaults to 168 (seven days).",
+      "kind": "doc"
+    },
+    {
+      "id": "n28",
+      "symbol": "UsageResponse.rateLimited",
+      "line": 963,
+      "offset": 0,
+      "text": "Requests the limiter rejected in the window.",
+      "kind": "doc"
+    },
+    {
+      "id": "n29",
+      "symbol": "UsageResponse.byEndpoint",
+      "line": 966,
+      "offset": 0,
+      "text": "Grouped by route family, busiest first. Capped at 50 families.",
+      "kind": "doc"
+    },
+    {
+      "id": "n30",
+      "symbol": "UsageResponse.window",
+      "line": 974,
+      "offset": 0,
+      "text": "Counts are stored hourly, so this is not live headroom. Read\n`X-RateLimit-Remaining` on any response for that.",
+      "kind": "doc"
+    },
+    {
+      "id": "n31",
+      "symbol": "CrawlResumeResponse",
+      "line": 1005,
+      "offset": 0,
+      "text": "A resumed crawl answers with its original id rather than a new one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n32",
+      "symbol": "ScreenshotRequest.fullPage",
+      "line": 1016,
+      "offset": 0,
+      "text": "Everything below the fold, capped server-side and reported in `warnings` when clipped.",
+      "kind": "doc"
+    },
+    {
+      "id": "n33",
+      "symbol": "ScreenshotRequest.selector",
+      "line": 1017,
+      "offset": 0,
+      "text": "Capture one element. A selector matching nothing warns rather than silently framing the page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n34",
+      "symbol": "ScreenshotRequest.quality",
+      "line": 1020,
+      "offset": 0,
+      "text": "JPEG and WebP only; ignored on PNG.",
+      "kind": "doc"
+    },
+    {
+      "id": "n35",
+      "symbol": "ScreenshotRequest.omitBackground",
+      "line": 1021,
+      "offset": 0,
+      "text": "Transparent where the page paints nothing. Ignored on JPEG.",
+      "kind": "doc"
+    },
+    {
+      "id": "n36",
+      "symbol": "ScreenshotRequest.viewport",
+      "line": 1022,
+      "offset": 0,
+      "text": "Cannot be combined with `mobile`, which sets its own phone viewport.",
+      "kind": "doc"
+    },
+    {
+      "id": "n37",
+      "symbol": "ScreenshotSuccess.data.screenshot",
+      "line": 1036,
+      "offset": 0,
+      "text": "A `data:` URL, or null when the tier that succeeded captured no image.",
+      "kind": "doc"
+    },
+    {
+      "id": "n38",
+      "symbol": "ExtractRequest.schema",
+      "line": 1048,
+      "offset": 0,
+      "text": "One of `schema` or `prompt` is required.",
+      "kind": "doc"
+    },
+    {
+      "id": "n39",
+      "symbol": "ExtractRequest.allowUngrounded",
+      "line": 1053,
+      "offset": 0,
+      "text": "Keep fields the source does not support. They are reported in `dropped` either way.",
+      "kind": "doc"
+    },
+    {
+      "id": "n40",
+      "symbol": "DroppedField",
+      "line": 1058,
+      "offset": 0,
+      "text": "A field the model returned that nothing in the page supports.",
+      "kind": "doc"
+    },
+    {
+      "id": "n41",
+      "symbol": "ExtractRow._source.blocksKept",
+      "line": 1068,
+      "offset": 0,
+      "text": "How much of the page reached the model, so a thin answer is explicable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n42",
+      "symbol": "ExtractResponse.dropped",
+      "line": 1077,
+      "offset": 0,
+      "text": "Fields discarded for want of a grounding span. Never silently absent.",
+      "kind": "doc"
+    },
+    {
+      "id": "n43",
+      "symbol": "ExtractResponse.warnings",
+      "line": 1078,
+      "offset": 0,
+      "text": "A URL that could not be read appears here rather than failing the request.",
+      "kind": "doc"
+    },
+    {
+      "id": "n44",
+      "symbol": "DocumentOp",
+      "line": 1090,
+      "offset": 0,
+      "text": "The operations `POST /document` dispatches to.",
+      "kind": "doc"
+    },
+    {
+      "id": "n45",
+      "symbol": "DocumentRequest",
+      "line": 1092,
+      "offset": 0,
+      "text": "A `/document` request: the operation, plus whatever that operation takes.\n\nThe fields are the union of the four underlying requests rather than a\ndiscriminated type, because the dispatcher forwards the body untouched and\neach operation validates its own.",
+      "kind": "doc"
+    },
+    {
+      "id": "n46",
+      "symbol": "DocumentResponse",
+      "line": 1094,
+      "offset": 0,
+      "text": "Whatever the dispatched operation answers with.\n\nLeft open rather than a union of the four: the operation is chosen at\nruntime, so a caller that wants a narrow type should call the operation's own\nmethod instead. `scrub` in particular answers with file bytes, which\n`metadataScrub` unwraps and this does not.",
+      "kind": "doc"
+    }
+  ]
+}

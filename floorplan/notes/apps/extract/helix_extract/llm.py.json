@@ -1,0 +1,119 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/helix_extract/llm.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ExtractionResult",
+      "line": 65,
+      "offset": 8,
+      "text": "The passages that reached the model, when the caller asked for them.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "ExtractionResult",
+      "line": 66,
+      "offset": 9,
+      "text": "Which provider actually answered, and every provider tried and abandoned\nbefore it — empty when the first (resolved) provider succeeded.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "ExtractionResult",
+      "line": 68,
+      "offset": 11,
+      "text": "From pricing.PRICE_TABLE; None when (provider, model) is unpriced rather\nthan free — see that module's note on the distinction.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "DEFAULT_MODELS",
+      "line": 73,
+      "offset": 0,
+      "text": "What a provider override runs when the request names no model. The instance's\nHELIX_LLM_MODEL belongs to the instance's provider and means nothing elsewhere.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "_LOCAL_OPENAI_WIRE",
+      "line": 81,
+      "offset": 0,
+      "text": "Providers whose model names are interchangeable, so the instance default carries over.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "_CALLER_KEY_PRIORITY",
+      "line": 84,
+      "offset": 0,
+      "text": "Caller-supplied provider keys are tried in this order when the request names\nno provider and the instance default has no key of its own to fall back on.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "_openai_wire_credentials",
+      "line": 235,
+      "offset": 29,
+      "text": "A local runtime needs no real key, but the SDK requires the field.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "_call_openai",
+      "line": 265,
+      "offset": 15,
+      "text": "OpenAI reports only a cache READ count (`prompt_tokens_details.cached_tokens`);\nthere is no separate write charge on this wire format, so writes stay 0.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "_call_anthropic",
+      "line": 327,
+      "offset": 18,
+      "text": "Populated only when the request set `cache_control` (not currently the\ncase here); absent on a plain call, so both default to 0 rather than None.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "_call_anthropic",
+      "line": 364,
+      "offset": 55,
+      "text": "Auto tool choice plus a system-prompt instruction, not a forced\ntool_choice (a 400 on Claude Fable 5.1) — so a model can still\nanswer in text instead of calling the tool; that is a content\nfailure (the model's own answer), not a transport one, so it\nmust not trigger cross-provider fallback.",
+      "kind": "why"
+    },
+    {
+      "id": "n11",
+      "symbol": "_call_gemini",
+      "line": 415,
+      "offset": 17,
+      "text": "Gemini reports only a cache READ count; there is no separate write\ncharge reported back to the caller, so writes stay 0.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "MAX_PROVIDERS",
+      "line": 483,
+      "offset": 0,
+      "text": "Total providers a single call will try, the resolved one plus fallback hops.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "extract_structured",
+      "line": 524,
+      "offset": 38,
+      "text": "N of M below is always this call's own selection — one `content` string,\none `relevance.select()` result — never a crawl- or batch-level aggregate;\ncallers sum blocks_kept/blocks_total across pages downstream of this\nreturn, but nothing summed ever flows back into the notice itself.",
+      "kind": "why"
+    },
+    {
+      "id": "n14",
+      "symbol": "extract_structured",
+      "line": 554,
+      "offset": 68,
+      "text": "Every SDK has its own exception tree (auth, not-found, rate\nlimit, transport, a runtime answering with something other\nthan JSON). To the caller they are all one thing: the model\nstep failed, and here is why. A raw exception reaching here\nalready survived `call_structured`'s own retry+classify, so\nit is content-class, not transport — never fallback-eligible.",
+      "kind": "why"
+    }
+  ]
+}

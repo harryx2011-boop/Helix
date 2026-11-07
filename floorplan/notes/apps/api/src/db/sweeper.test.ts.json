@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/db/sweeper.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "MIGRATIONS",
+      "line": 9,
+      "offset": 0,
+      "text": "The results sweeper on the real schema, PGlite in memory.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 45,
+      "offset": null,
+      "text": "expires_at keeps its 7-day default on every row here; only age decides.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 66,
+      "offset": null,
+      "text": "The old job's own document went with it through the cascade.",
+      "kind": "what"
+    }
+  ]
+}

@@ -3,26 +3,12 @@ import { z } from 'zod';
 import { createApiKey, listApiKeys, revokeApiKey } from '../core/api-keys.js';
 import { adminGate } from '../core/admin-gate.js';
 
-/**
- * API key management.
- *
- * These keys authenticate callers to this instance. They have nothing to do with
- * the operator's LLM, proxy or vector-store credentials, which live in the
- * environment and never pass through the API.
- *
- * One operator owns an instance, and only the operator's admin token
- * (HELIX_INTERNAL_ADMIN_TOKEN) manages its keys. An API key is a caller's
- * credential: it cannot mint, list or revoke keys. With no admin token set the
- * routes are not registered; HELIX_BOOTSTRAP_KEY still provides the first key.
- */
 
 export interface KeysRouteDeps {
   adminToken: string | undefined;
-  /** The instance's public URL; the admin gate accepts its host name beside loopback. */
   publicUrl?: string | undefined;
 }
 
-/** Served without an API key: the admin gate in this scope is the check. */
 const ADMIN_ONLY = { config: { public: () => true } };
 
 const CreateKeySchema = z.object({
@@ -57,7 +43,6 @@ function registerKeyRoutes(app: FastifyInstance): void {
     return reply.code(201).send({
       id: created.id,
       name: created.name,
-      // Returned exactly once. There is no way to recover it later.
       key: created.key,
       keyPrefix: created.keyPrefix,
       rateLimit: created.rateLimit,

@@ -86,7 +86,6 @@ const CASES: UseCase[] = [
   },
 ];
 
-/** WEBSITE.md §4.7: selectable use-case list driving a live demo panel. */
 export function UseCases() {
   const [active, setActive] = React.useState(0);
   const current = CASES[active]!;

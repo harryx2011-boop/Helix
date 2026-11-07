@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/auth-usage.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "KEY",
+      "line": 8,
+      "offset": 0,
+      "text": "The recorder is only worth having if the auth hook actually calls it. A\nusage module wired to nothing looks identical to a working one from the\noutside, so these assert the hook itself rather than the module.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "build",
+      "line": 20,
+      "offset": 2,
+      "text": "The limiter takes the key's own rateLimit as an override, so the budget\nunder test lives on the key rather than on the limiter.",
+      "kind": "what"
+    }
+  ]
+}

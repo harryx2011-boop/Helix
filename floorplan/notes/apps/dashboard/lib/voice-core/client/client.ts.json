@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/voice-core/client/client.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "StreamSession",
+      "line": 31,
+      "offset": 0,
+      "text": "One utterance over WS /stream. Frames sent before the socket opens are held\nand flushed on open, so audio captured while the service starts is kept.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "StreamSession.constructor",
+      "line": 46,
+      "offset": 5,
+      "text": "Callers that only await `ready` must not see an unhandled final rejection.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "StreamSession.stop",
+      "line": 111,
+      "offset": 0,
+      "text": "Ends the utterance; resolves with the final transcript.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "StreamSession.cancel",
+      "line": 122,
+      "offset": 6,
+      "text": "already closing",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "VoiceCoreClient.transcribe",
+      "line": 164,
+      "offset": 0,
+      "text": "One whole recording (any format the service decodes: WAV, WebM, Ogg...).",
+      "kind": "doc"
+    }
+  ]
+}

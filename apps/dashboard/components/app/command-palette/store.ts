@@ -34,11 +34,6 @@ export function usePaletteOpen(): boolean {
   return React.useSyncExternalStore(subscribe, () => open, () => false);
 }
 
-/**
- * The sidebar owns its collapsed state and its localStorage key; the palette
- * lives outside it. A request rather than shared state, so the sidebar keeps
- * deciding what "toggle" means at the current breakpoint.
- */
 const sidebarListeners = new Set<() => void>();
 
 export function requestSidebarToggle(): void {

@@ -1,31 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { getPool } from '../db/pool.js';
 
-/**
- * Job status, results and cancellation.
- *
- * Results are paginated by cursor rather than returned whole: a crawl of ten
- * thousand pages does not fit in one response, and a caller that has to guess
- * whether it received everything has not really received anything.
- *
- * The handlers are exported so `/crawl/{jobId}` can serve the same view under
- * the path the crawl spec documents.
- */
 
 export const PAGE_SIZE = 100;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/**
- * Job ids are uuids. Anything else is answered as not found before it reaches
- * a query: Postgres rejects a malformed value on a uuid column as an error,
- * which would surface as a 500 for what is a caller's typo.
- */
 export function isJobId(id: string): boolean {
   return UUID.test(id);
 }
 
-/** Only an offset this API handed out is a cursor. Postgres rejects a negative or oversized one. */
 export const CURSOR = /^\d{1,15}$/;
 
 export function notFound(requestId: string): RouteResult {
@@ -53,9 +37,7 @@ interface JobRow {
 
 export interface JobViewOptions {
   cursor?: string | undefined;
-  /** Path prefix used to build the `next` cursor link, e.g. `/v1/jobs`. */
   basePath: string;
-  /** Restrict to one job type; other types answer 404 on that path. */
   type?: string | undefined;
   requestId: string;
 }
@@ -144,9 +126,6 @@ export async function cancelJob(
 ): Promise<RouteResult> {
   if (!isJobId(id)) return notFound(options.requestId);
 
-  // Cancelling drops queued work but leaves finished results retrievable —
-  // and deliberately does not emit one failure webhook per abandoned URL,
-  // which turns a cancellation into a flood for the receiver.
   const { rows } = await getPool().query<{ id: string; status: string }>(
     `UPDATE jobs
         SET status = 'cancelled', finished_at = now()
@@ -186,12 +165,6 @@ interface JobRequestRow {
   request: Record<string, unknown>;
 }
 
-/**
- * A job's expected output shape, projected from the request that created it
- * rather than stored separately — `jobs.request` already holds the whole
- * original body, and a second copy would only be a chance for the two to
- * disagree.
- */
 export async function fetchJobSchema(id: string, options: { requestId: string }): Promise<RouteResult> {
   if (!isJobId(id)) return notFound(options.requestId);
 

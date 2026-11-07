@@ -5,13 +5,6 @@ import { Check, Copy } from '@/components/icons/lucide';
 import { cn } from '@/lib/utils';
 import { resolveShikiLang } from '@/lib/shiki-langs';
 
-/**
- * Fenced code block: renders plain text immediately (safe mid-stream, no
- * highlighter dependency on the critical path), then swaps in Shiki markup
- * once the lazy-loaded highlighter resolves. An unknown or missing fence
- * language stays plain. Shiki's own singleton highlighter is cached at
- * module scope so repeated blocks on one page share it.
- */
 let highlighterPromise: Promise<import('shiki').Highlighter> | undefined;
 
 function getHighlighter() {
@@ -72,9 +65,6 @@ export function MarkdownCodeBlock({ className, children }: { className?: string;
     getHighlighter()
       .then((highlighter) => {
         if (cancelled) return;
-        // Dual-theme output: Shiki emits both palettes as CSS variables and
-        // switches on the nearest `.dark` ancestor, the same mechanism the
-        // dashboard's own tokens use, rather than hardcoding one theme.
         setHtml(
           highlighter.codeToHtml(raw, {
             lang,
@@ -97,10 +87,6 @@ export function MarkdownCodeBlock({ className, children }: { className?: string;
       {html ? (
         <div
           className="[&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius)] [&_pre]:p-4 [&_pre]:text-[13px] [&_pre]:leading-relaxed"
-          // Shiki's own output — generated HTML from a fixed theme/grammar set, not user input.
-          // Its light/dark colors are CSS variables (`--shiki-light`/`--shiki-dark`)
-          // switched by the `.dark .shiki` rule in globals.css, the same `.dark`
-          // class the dashboard's own tokens key off.
           dangerouslySetInnerHTML={{ __html: html }}
         />
       ) : (

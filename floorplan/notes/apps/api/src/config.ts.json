@@ -1,0 +1,207 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/config.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "bool",
+      "line": 5,
+      "offset": 0,
+      "text": "Configuration is read once, at boot, and validated.\n\nProvider credentials (LLM, embedding, proxy, vector store) belong to the\noperator and arrive through the environment. They are never accepted over the\nAPI and never stored in the database — Helix calls your models with your keys.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ConfigSchema.host",
+      "line": 31,
+      "offset": 0,
+      "text": "Bind address. The desktop app sets 127.0.0.1 so the instance never reaches the LAN.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ConfigSchema.encryptionKey",
+      "line": 35,
+      "offset": 0,
+      "text": "AES-256-GCM key for stored provider keys, as 32 bytes of hex or base64. Unset derives it from HELIX_BOOTSTRAP_KEY (SHA-256), so self-host stays zero-config.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ConfigSchema.db",
+      "line": 37,
+      "offset": 0,
+      "text": "`pglite` runs Postgres in-process with its data under `dataDir`; `pg` connects to `databaseUrl`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "ConfigSchema.serviceToken",
+      "line": 42,
+      "offset": 0,
+      "text": "Shared secret sent to the fetch and extract services; each refuses calls without it when set.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "ConfigSchema.crawlDefaultLimit",
+      "line": 52,
+      "offset": 0,
+      "text": "Guard rails for crawls. Without a billing layer nothing else bounds a\nrunaway job, so the operator sets the default and the ceiling.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "ConfigSchema.webhookSecret",
+      "line": 56,
+      "offset": 0,
+      "text": "Webhook deliveries are signed only when a secret is configured.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "ConfigSchema.browserRecycleAfter",
+      "line": 61,
+      "offset": 0,
+      "text": "Recycle a browser process after this many pages, to bound memory growth.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "ConfigSchema.browserEngine",
+      "line": 64,
+      "offset": 0,
+      "text": "Which browser drives the render tier when a request does not name one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "ConfigSchema.browserChannel",
+      "line": 65,
+      "offset": 0,
+      "text": "Playwright channel for the chromium engine.\n\n`chromium` is the full browser; empty selects Playwright's default, which\nis the headless shell when one is installed. The full build is what the\nwalled sites measure differently: the shell announces itself in ways a\nhardened page reads, and it has no new-headless mode. Reversing\nDESKTOP-PLAN D14 (recorded there as D17), the desktop app now ships it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "ConfigSchema.remoteCdpUrl",
+      "line": 68,
+      "offset": 0,
+      "text": "A remote browser the render tier connects to instead of launching locally.\nUnset means launch locally, which is the only arrangement where the pages\nfetched and the headers sent stay on the operator's own machine.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "ConfigSchema.publicUrl",
+      "line": 70,
+      "offset": 0,
+      "text": "Where callers reach this instance from outside; live-view URLs are built on it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "ConfigSchema.allowPrivateUrls",
+      "line": 76,
+      "offset": 0,
+      "text": "Off by default: a caller-chosen URL must not reach loopback, link-local or\nprivate-range addresses, or an API key becomes a door to the instance's\nnetwork and cloud metadata. Turn on only for an instance that scrapes its\nown intranet and trusts every key it issues.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "ConfigSchema.searchProvider",
+      "line": 78,
+      "offset": 0,
+      "text": "`auto` picks SearXNG, then Serper, then SerpAPI, whichever has credentials.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "ConfigSchema.searxngUrl",
+      "line": 79,
+      "offset": 0,
+      "text": "The operator's own SearXNG instance; editable from the settings screen.",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": "ConfigSchema.searchCacheTtlMs",
+      "line": 82,
+      "offset": 0,
+      "text": "Provider-hit cache lifetime for identical queries; 0 disables it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n17",
+      "symbol": "ConfigSchema.searchMaxDurationMs",
+      "line": 83,
+      "offset": 0,
+      "text": "Wall-clock budget for one search call, backend query and page reads included.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "ConfigSchema.parseMaxUploadMb",
+      "line": 87,
+      "offset": 0,
+      "text": "Upload ceiling for `/parse`, enforced at the gateway before a byte reaches helix-extract.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": "ConfigSchema.parseMaxInflight",
+      "line": 88,
+      "offset": 0,
+      "text": "Parses held in memory at once; beyond this `/parse` answers 503 with Retry-After.",
+      "kind": "doc"
+    },
+    {
+      "id": "n20",
+      "symbol": "ConfigSchema.monitorMinIntervalSeconds",
+      "line": 90,
+      "offset": 0,
+      "text": "Shortest gap between two checks of one monitor, in seconds. Hourly by default.",
+      "kind": "doc"
+    },
+    {
+      "id": "n21",
+      "symbol": "ConfigSchema.monitorConcurrency",
+      "line": 91,
+      "offset": 0,
+      "text": "Checks running at once across all monitors on this instance.",
+      "kind": "doc"
+    },
+    {
+      "id": "n22",
+      "symbol": "ConfigSchema.monitorRetainChecks",
+      "line": 94,
+      "offset": 0,
+      "text": "History rows kept per monitor; older ones are pruned as checks run.",
+      "kind": "doc"
+    },
+    {
+      "id": "n23",
+      "symbol": "ConfigSchema.monitorMaxContentBytes",
+      "line": 95,
+      "offset": 0,
+      "text": "A page whose text exceeds this many bytes fails the check instead of being stored.",
+      "kind": "doc"
+    },
+    {
+      "id": "n24",
+      "symbol": "ConfigSchema.corsOrigins",
+      "line": 97,
+      "offset": 0,
+      "text": "Comma-separated allowed origins for the dashboard. Defaults to the dev\norigins for the split-port setup (dashboard 3400 -> API 7400). Set\nexplicitly in production to the dashboard's real origin.",
+      "kind": "what"
+    },
+    {
+      "id": "n25",
+      "symbol": "ConfigSchema.mcpTools",
+      "line": 106,
+      "offset": 0,
+      "text": "MCP tool names to expose (comma list); unset exposes every live operation.",
+      "kind": "what"
+    }
+  ]
+}

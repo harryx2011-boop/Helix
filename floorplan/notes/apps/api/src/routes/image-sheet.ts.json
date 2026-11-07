@@ -1,0 +1,119 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/image-sheet.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "DomainSchema",
+      "line": 16,
+      "offset": 0,
+      "text": "A contact sheet of image search results: several pages of the backend's\nImages category, filtered by size and aspect, deduplicated, one JSON row per\nimage. By default nothing is downloaded, so the instance never connects to an\nimage host. `visualDedupe` and `render: \"png\"` fetch each image's thumbnail\n(egress-guarded) to drop near-duplicates by perceptual hash and to draw one PNG.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ImageSheetRequestSchema.minAspect",
+      "line": 28,
+      "offset": 0,
+      "text": "Width over height; 1 is square, above 1 is landscape.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ImageSheetRequestSchema.dropUnsized",
+      "line": 30,
+      "offset": 0,
+      "text": "Exclude images the backend gave no pixel size for, instead of keeping them unfiltered.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "ImageSheetRequestSchema.render",
+      "line": 32,
+      "offset": 0,
+      "text": "`json` returns rows only; `png` also draws a contact sheet. Default json.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "ImageSheetRequestSchema.visualDedupe",
+      "line": 33,
+      "offset": 0,
+      "text": "Fetch thumbnails and drop near-duplicates. Defaults to on when `render` is `png`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "ImageSheetRequestSchema.includeDomains",
+      "line": 42,
+      "offset": 0,
+      "text": "Domain filters reach the backend only as `site:` operators; the rows are not\npost-filtered, so a backend that ignores operators drops them silently.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "ImageSheetRouteDeps.maxResults",
+      "line": 52,
+      "offset": 0,
+      "text": "Operator ceiling on `limit`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "ImageSheetRouteDeps.maxDurationMs",
+      "line": 53,
+      "offset": 0,
+      "text": "Wall-clock budget for one call.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "ImageSheetRouteDeps.fetchImage",
+      "line": 54,
+      "offset": 0,
+      "text": "Test seam: how thumbnails are fetched.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "PER_PAGE",
+      "line": 68,
+      "offset": 0,
+      "text": "What one backend call may return; the sheet's own `limit` is applied after filtering.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "IMAGE_FETCH_BUDGET_MS",
+      "line": 69,
+      "offset": 0,
+      "text": "Wall-clock budget for fetching every thumbnail of one call.",
+      "kind": "doc"
+    },
+    {
+      "id": "n12",
+      "symbol": "webUrl",
+      "line": 72,
+      "offset": 0,
+      "text": "An http(s) URL without its fragment, host lowercased; anything else (a data: URI, a script URL) is undefined.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "registerImageSheet",
+      "line": 170,
+      "offset": 86,
+      "text": "With near-duplicates to drop, read past `limit` so the sheet can still fill.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "registerImageSheet",
+      "line": 205,
+      "offset": 121,
+      "text": "A backend that does not report pixels cannot be judged; keep the image and say so.",
+      "kind": "what"
+    }
+  ]
+}

@@ -16,7 +16,6 @@ describe('PolitenessController', () => {
 
     controller.tryAcquire('a.com');
     expect(controller.tryAcquire('a.com').allowed).toBe(false);
-    // One slow host must not throttle a crawl across every other host.
     expect(controller.tryAcquire('b.com').allowed).toBe(true);
   });
 
@@ -29,7 +28,6 @@ describe('PolitenessController', () => {
 
     expect(controller.concurrencyFor('a.com')).toBe(1);
 
-    // An explicit rate-limit signal is obeyed, not interpreted.
     const blocked = controller.tryAcquire('a.com', now + 1_000);
     expect(blocked.allowed).toBe(false);
     expect(blocked.waitMs).toBeGreaterThan(25_000);
@@ -54,7 +52,6 @@ describe('PolitenessController', () => {
       controller.release('a.com', { statusCode: 200, latencyMs: 100 });
     }
 
-    // Additive increase: one extra slot, not a jump back to the ceiling.
     expect(controller.concurrencyFor('a.com')).toBe(3);
   });
 
@@ -72,7 +69,6 @@ describe('PolitenessController', () => {
   it('backs off when latency degrades sharply', () => {
     const controller = new PolitenessController({ initialConcurrency: 8 });
 
-    // Establish a baseline the spike can be measured against.
     for (let i = 0; i < 10; i++) {
       controller.tryAcquire('a.com');
       controller.release('a.com', { statusCode: 200, latencyMs: 100 });
@@ -102,8 +98,6 @@ describe('PolitenessController', () => {
 
     controller.setCrawlDelay('a.com', 2);
 
-    // A site asking to be paced gets one request at a time, spaced as asked —
-    // its stated wish outranks whatever adaptation would have chosen.
     expect(controller.concurrencyFor('a.com')).toBe(1);
     expect(controller.tryAcquire('a.com', now).allowed).toBe(true);
 
@@ -133,8 +127,6 @@ describe('PolitenessController — block evidence', () => {
     const now = 5_000_000;
 
     controller.tryAcquire('a.com', now);
-    // A Cloudflare interstitial arrives as 200. Reading the status alone would
-    // score this as a healthy fetch and ramp straight into the wall.
     controller.release('a.com', { statusCode: 200, latencyMs: 80, blocked: true }, now);
 
     expect(controller.concurrencyFor('a.com')).toBe(1);
@@ -168,8 +160,6 @@ describe('PolitenessController — block evidence', () => {
       now,
     );
 
-    // The host stated a number. Guessing shorter than asked is what earns the
-    // next block, so the stated value wins over our own default.
     expect(controller.tryAcquire('a.com', now + 60_000).allowed).toBe(false);
     expect(controller.tryAcquire('a.com', now + 121_000).allowed).toBe(true);
   });
@@ -182,7 +172,6 @@ describe('PolitenessController — block evidence', () => {
     controller.release('a.com', { statusCode: 200, latencyMs: 50, blocked: true }, now);
     now += 60_000;
 
-    // Enough clean fetches to have ramped twice were this an ordinary recovery.
     for (let i = 0; i < 16; i++) {
       controller.tryAcquire('a.com', now);
       controller.release('a.com', { statusCode: 200, latencyMs: 50 }, now);
@@ -207,8 +196,6 @@ describe('PolitenessController — block evidence', () => {
       now += 10;
     }
 
-    // Recovery is real, not permanent punishment — a host that blocked once and
-    // has behaved since should not be crawled at one request forever.
     expect(controller.onProbation('a.com')).toBe(false);
     expect(controller.concurrencyFor('a.com')).toBeGreaterThan(1);
   });
@@ -243,14 +230,10 @@ describe('PolitenessController — clamps', () => {
     controller.tryAcquire('a.com');
     controller.release('a.com', { statusCode: 429, latencyMs: 50 });
 
-    // The floor is the operator saying "never go slower than this". A 429
-    // collapses to it, not through it.
     expect(controller.concurrencyFor('a.com')).toBe(2);
   });
 
   it('starts no higher than the ceiling when the initial value exceeds it', () => {
-    // An operator lowering maxHostConcurrency below a default initial value
-    // would otherwise run the whole crawl above the ceiling they just set.
     const controller = new PolitenessController({ initialConcurrency: 50, maxConcurrency: 4 });
 
     expect(controller.concurrencyFor('a.com')).toBe(4);
@@ -263,8 +246,6 @@ describe('PolitenessController — clamps', () => {
   });
 
   it('resolves an inverted floor and ceiling rather than running unbounded', () => {
-    // Two settings written at different times can contradict each other. The
-    // ceiling wins, because it is the one that bounds harm to the target host.
     const controller = new PolitenessController({ minConcurrency: 20, maxConcurrency: 3 });
 
     expect(controller.concurrencyFor('a.com')).toBe(3);
@@ -306,7 +287,6 @@ describe('PolitenessController host cap', () => {
 
     controller.tryAcquire('new.com');
 
-    // Nothing idle to drop, so the map grows rather than lose a held slot or a stated wait.
     expect(controller.stats().hosts).toBe(3);
     expect(controller.inFlightFor('busy.com')).toBe(1);
     expect(controller.tryAcquire('backoff.com').allowed).toBe(false);

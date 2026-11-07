@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/next.config.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "website",
+      "line": 8,
+      "offset": 0,
+      "text": "The public website carries marketing and docs only; the app ships in the\ndesktop download (DESKTOP-PLAN.md Phase 2). Vercel sets VERCEL=1 at build.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": "nextConfig",
+      "line": 11,
+      "offset": 0,
+      "text": "Self-host: static export served by the Fastify API at `/` (FRONTEND.md §3).\nHosted: the public website on Vercel, server output so the redirects below run.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "nextConfig",
+      "line": 13,
+      "offset": 2,
+      "text": "Two dev servers on one checkout fight over `.next` — the second dies on a\nlocked `.next/trace`. Setting this lets a second instance build elsewhere:\n  NEXT_DIST_DIR=.next-alt pnpm exec next dev -p 3401",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "nextConfig.pageExtensions",
+      "line": 14,
+      "offset": 0,
+      "text": "Self-host once took `.tsx` only, to drop the hosted `route.ts` handlers.\nWith that set, `next build` could not resolve a single `(app)/app` page\n(measured 2026-09-25), and Phase 2b deleted those handlers anyway.\nRoute handlers must NOT use a dotted extension like `route.hosted.ts`:\nVercel's builder derives the client-reference-manifest name by stripping\nonly the last extension and fails the build on the file it cannot find.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": "nextConfig.typescript",
+      "line": 15,
+      "offset": 0,
+      "text": "`pnpm build:fast` has already type-checked with tsgo (seconds, against\nNext's ~90 s tsc pass) and sets this; `build`, Docker and Vercel check.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "nextConfig.images",
+      "line": 16,
+      "offset": 0,
+      "text": "Self-host serves the static export with no image-optimization server, so\nnext/image must fall back to plain <img>. Hosted has a server and gets\nreal optimization; the two next/image call sites (setup-prompt agent\nmarks) are .png, not SVG, so hosted needs no per-image unoptimized prop.",
+      "kind": "why"
+    },
+    {
+      "id": "n7",
+      "symbol": "nextConfig",
+      "line": 19,
+      "offset": 8,
+      "text": "`headers()` only runs with server output; the static export has none.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "nextConfig.webpack",
+      "line": 27,
+      "offset": 1,
+      "text": "E:\\ is a USB flash volume with confirmed exFAT filesystem corruption\n(chkdsk: bad volume bitmap). Webpack's persistent disk cache snapshots\nnode_modules into .next/cache and intermittently fails to read it back\n(\"Unable to snapshot resolve dependencies\"), which then cascades into\nspurious \"Can't resolve\" errors for real files. Memory cache in dev\navoids touching the unreliable disk cache entirely.",
+      "kind": "what"
+    }
+  ]
+}

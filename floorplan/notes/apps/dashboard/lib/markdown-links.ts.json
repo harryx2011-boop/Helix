@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/markdown-links.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SAFE_PROTOCOL",
+      "line": 1,
+      "offset": 0,
+      "text": "Link policy for rendered markdown (used on scraped, untrusted page content):\nonly http(s) and mailto become links. A relative URL (no scheme) is same-origin\nand stays safe. Anything else — `javascript:`, `data:`, `file:`, `vbscript:` —\nis refused. Mirrors react-markdown's own `defaultUrlTransform` scheme-detection\n(a colon before the first `/`, `?` or `#` is a protocol), but with a narrower\nallowlist than upstream's `https?|ircs?|mailto|xmpp`, and closes three holes\nupstream leaves open: a protocol-relative URL (`//evil.com`, which a browser\nresolves against the current scheme) has no colon and would otherwise read as\n\"relative\"; a backslash (`\\\\evil.com`, `/\\evil.com`) is normalised to `/` by\nbrowsers before that same check runs; and a scheme can be smuggled past a raw\ncolon scan by percent- or entity-encoding the colon itself.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "normalizeHref",
+      "line": 6,
+      "offset": 0,
+      "text": "`false` return means \"definitely unsafe, stop here\"; a string return is the normalised value plus its scheme (`''` when relative).",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "normalizeHref",
+      "line": 7,
+      "offset": 1,
+      "text": "Browsers strip leading control characters and whitespace, and treat a\nbackslash as a path separator the same as a forward slash, before ever\nlooking at scheme or host — normalise the same way before judging safety.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": "normalizeHref",
+      "line": 9,
+      "offset": 3,
+      "text": "\"//host/…\" (and now-normalised \"\\\\host\", \"/\\host\") is protocol-relative:\na browser resolves it against the current scheme, so it is never \"just a\nrelative path\" even though it has no colon.",
+      "kind": "why"
+    },
+    {
+      "id": "n5",
+      "symbol": "normalizeHref",
+      "line": 11,
+      "offset": 5,
+      "text": "A scheme can be smuggled past the plain-colon scan below by encoding the\ncolon; refuse outright rather than trying to decode and re-check.",
+      "kind": "what"
+    },
+    {
+      "id": "n6",
+      "symbol": "isHttpHref",
+      "line": 36,
+      "offset": 0,
+      "text": "Whether a href is (or resolves as) http(s) — used to decide `target=\"_blank\"`/`rel=\"noopener noreferrer\"`, so it must use the exact same scheme detection `isSafeHref` does, not a separate regex a future edit could drift out of sync with.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "markdownUrlTransform",
+      "line": 42,
+      "offset": 0,
+      "text": "react-markdown `urlTransform`: passes safe URLs through, drops the rest so no `href` is emitted.",
+      "kind": "doc"
+    }
+  ]
+}

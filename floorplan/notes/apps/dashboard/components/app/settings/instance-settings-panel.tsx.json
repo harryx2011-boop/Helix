@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/settings/instance-settings-panel.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "BooleanSetting",
+      "line": 69,
+      "offset": 13,
+      "text": "A guarded setting is refused without a confirmation naming it. Asking\nhere keeps the decision at the moment of the change rather than behind\na mode the operator might forget they left on.",
+      "kind": "what"
+    }
+  ]
+}

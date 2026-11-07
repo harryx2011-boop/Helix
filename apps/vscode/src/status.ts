@@ -1,6 +1,5 @@
 import type { ApiTarget } from './target';
 
-/** What the status-bar item shows. `warning` picks the warning background. */
 export interface StatusView {
   text: string;
   tooltip: string;

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/status.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Call",
+      "line": 5,
+      "offset": 0,
+      "text": "`/status/history` contract. Postgres is a fake: what matters here is that\nthe route shapes the query's rows into ascending per-day buckets, clamps\n`days`, and serves a cached response inside the 60s window.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/keys.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "KEY_PREFIX",
+      "line": 3,
+      "offset": 0,
+      "text": "`helix-` + 16 chars from [A-Za-z0-9] (WEBSITE.md §8).",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "keyPrefix",
+      "line": 17,
+      "offset": 0,
+      "text": "`helix-a7K2` — the part safe to show in tables.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "maskApiKey",
+      "line": 25,
+      "offset": 0,
+      "text": "`helix-a7K2………sT1`",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "encryptApiKey",
+      "line": 41,
+      "offset": 0,
+      "text": "AES-256-GCM. Ciphertext carries the auth tag appended (16 bytes).",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/screenshot.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "browserPool",
+      "line": 28,
+      "offset": 5,
+      "text": "Echoed back as the capture result, so a test can assert what reached the pool.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 198,
+      "offset": null,
+      "text": "The invariant this route must not weaken by skipping extraction: a\nbot-challenge page must never come back as a successful screenshot.",
+      "kind": "why"
+    }
+  ]
+}

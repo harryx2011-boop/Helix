@@ -1,24 +1,9 @@
 'use client';
 
-/**
- * Stateless key generation for deployments with no key store.
- *
- * When the instance cannot be reached there is nothing to persist a key into.
- * Rather than disable the page, mint the key in the browser and show it once: nothing is sent to a
- * server, nothing is stored, and no record of it exists anywhere afterwards.
- *
- * A key only becomes real when the operator adds it to their own instance —
- * `POST /internal/keys` mirrors one in, or HELIX_BOOTSTRAP_KEY sets it at boot.
- */
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const KEY_LENGTH = 32;
 
-/**
- * 32 chars from a 62-symbol alphabet (~190 bits). Uses the browser CSPRNG and
- * rejects biased draws rather than taking `% ALPHABET.length`, which would
- * favour the first 8 letters.
- */
 export function generateEphemeralKey(): string {
   const limit = 256 - (256 % ALPHABET.length);
   let key = '';

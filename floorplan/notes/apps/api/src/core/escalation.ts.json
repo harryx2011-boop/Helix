@@ -1,0 +1,143 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/escalation.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "Fetch-tier escalation.\n\nFive tiers, cheapest first:\n\nplain       ~5ms     raw HTTP, no TLS mimicry\ntls        ~50ms     coherent JA4 + HTTP/2 settings (helix-fetch)\nlightpanda ~25ms     JS execution, no layout or canvas\nchromium   ~2-5s     full render, screenshots, actions\ncamoufox   ~3-6s     hardened Firefox, for sites the render tier still loses\n\nThe rule that matters: escalate on EVIDENCE, never on a guess about the\nframework a site uses. Next.js, Nuxt and SvelteKit routinely server-render\nreal content, so \"detected React, therefore browser\" burns the expensive tier\non pages a plain fetch already answered. What we test is whether the content\nis actually present.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "DEFAULT_MAX_TIER",
+      "line": 14,
+      "offset": 0,
+      "text": "The ceiling when a caller does not set one.\n\nCamoufox sits above it deliberately. It is off by default, needs a separate\nprocess an operator opted into, and costs more than the tier below it — so it\nis reached by asking for it, never by walking up the ladder. `maxTier` opts\na request in.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "Capabilities.visualLayout",
+      "line": 19,
+      "offset": 0,
+      "text": "Canvas, WebGL, or anything needing real visual layout.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "Capabilities.proxy",
+      "line": 22,
+      "offset": 0,
+      "text": "The request must leave through a proxy.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "Capabilities.unavailable",
+      "line": 23,
+      "offset": 0,
+      "text": "Tiers this instance cannot run (a disabled lightpanda or camoufox).",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "tierSupports",
+      "line": 32,
+      "offset": 0,
+      "text": "Lightpanda has no layout engine, so anything visual must skip it. It is also\nskipped when a proxy is required: the pool cannot confirm that a proxy handed\nover CDP is honoured there, and a fetch that quietly leaves from the\ninstance's own address is worse than one tier fewer.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "minimumViableTier",
+      "line": 47,
+      "offset": 0,
+      "text": "The lowest tier that can satisfy the request at all. Capability requirements\nare known up front, so there is no reason to start below them.\n\nNever `plain`: it sends no User-Agent and a non-browser JA4, which a WAF scores\nas a bot before `tls` runs, for the same round trip. `plain` stays reachable\nas an explicit tier.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "minimumViableTier",
+      "line": 48,
+      "offset": 1,
+      "text": "Bounded by the default ceiling, so a capability requirement can never\n*start* a request at the opt-in tier: camoufox supports everything chromium\ndoes, and picking the lowest viable tier without this bound would still\nnever choose it — but the bound is stated rather than relied upon.",
+      "kind": "why"
+    },
+    {
+      "id": "n9",
+      "symbol": "MIN_SHORT_PAGE_CHARS",
+      "line": 57,
+      "offset": 0,
+      "text": "Below this an extraction is a placeholder (\"Loading...\"), not a short page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "SHORT_PAGE_SLACK_CHARS",
+      "line": 58,
+      "offset": 0,
+      "text": "Visible text the extractor may leave out of a short page (title, a link) and still have found it all.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "scriptHeavy",
+      "line": 72,
+      "offset": 0,
+      "text": "A body that is overwhelmingly script is a shell, whatever framework made it.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "contentLooksAbsent",
+      "line": 77,
+      "offset": 0,
+      "text": "Whether the raw HTML actually carries the content, or is a hydration shell.\n\nDeliberately signal-based rather than framework-based.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "contentLooksAbsent",
+      "line": 78,
+      "offset": 1,
+      "text": "Nav and footer boilerplate would pass the raw-HTML checks below, so an\nextraction that ran and came back short is the deciding signal.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "contentLooksAbsent",
+      "line": 81,
+      "offset": 4,
+      "text": "A short page is complete (example.com) when the extractor found nearly all\nof its visible text and nothing marks it as a shell; a browser would only\nrender the same sentence seconds later.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "EscalationInput.maxTier",
+      "line": 99,
+      "offset": 0,
+      "text": "Tier ceiling for this request, if the caller set one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": "shouldEscalate",
+      "line": 120,
+      "offset": 18,
+      "text": "A block is the strongest reason to move up — though a higher tier is only\npart of the answer; a different profile or proxy often matters more.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "shouldEscalate",
+      "line": 132,
+      "offset": 30,
+      "text": "Content genuinely missing from the raw HTML.",
+      "kind": "what"
+    }
+  ]
+}

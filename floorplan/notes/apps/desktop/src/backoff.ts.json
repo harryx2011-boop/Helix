@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/src/backoff.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "nextRestartDelay",
+      "line": 4,
+      "offset": 0,
+      "text": "The delay before the next restart, or null once every try in the window is spent.",
+      "kind": "doc"
+    }
+  ]
+}

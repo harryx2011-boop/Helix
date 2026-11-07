@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/enrich/enrich.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 37,
+      "offset": null,
+      "text": "The model is asked for exactly the field structure could not supply.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 54,
+      "offset": null,
+      "text": "Same page, HTML withheld: nothing can be re-derived, so nothing is claimed.",
+      "kind": "what"
+    }
+  ]
+}

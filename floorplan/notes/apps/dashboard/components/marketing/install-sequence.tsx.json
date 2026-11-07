@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/install-sequence.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "InstallSequence",
+      "line": 10,
+      "offset": 0,
+      "text": "Plays the install sequence once when scrolled into view and holds on the\nterminal frame. Reduced motion renders the terminal frame directly: every\nframe is legible as a still, so nothing is lost (DESIGN.md §6).",
+      "kind": "doc"
+    }
+  ]
+}

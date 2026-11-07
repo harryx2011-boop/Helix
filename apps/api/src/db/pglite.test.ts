@@ -2,12 +2,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { pgliteDriver } from './drivers/pglite.js';
 import type { Pool, PoolClient } from './drivers/types.js';
 
-/**
- * The PGlite driver against the real engine, in memory. PGlite has one
- * connection, so the driver's mutex is the only thing keeping a bare query out
- * of someone else's open transaction. These are the tests that fail if it
- * stops doing that.
- */
 
 let pool: Pool;
 
@@ -57,8 +51,6 @@ describe('pglite driver: one connection behind a mutex', () => {
 
     const results = await Promise.allSettled([tx('A', 60), stray('q1'), tx('B', 40), stray('q2'), tx('C', 20), stray('q3')]);
 
-    // Each transaction sees only committed rows plus its own; no stray query
-    // sees an uncommitted row; B's rollback leaves nothing behind.
     expect(log).toEqual(['A:A', 'q1:A', 'B:A,B', 'q2:A', 'C:A,C', 'q3:A,C']);
     expect(results.map((r) => r.status)).toEqual(['fulfilled', 'fulfilled', 'rejected', 'fulfilled', 'fulfilled', 'fulfilled']);
   });

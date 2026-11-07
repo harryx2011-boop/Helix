@@ -23,7 +23,6 @@ export interface TranscribeResult {
   text: string;
   duration_ms: number;
   decode_ms: number;
-  /** Stream only: the utterance hit the service's length cap and was finalized there. */
   truncated?: boolean;
 }
 

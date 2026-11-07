@@ -21,8 +21,6 @@ describe('panelHtml', () => {
   });
 
   it('relays a key only when the webview host sent it, not a frame inside the app', () => {
-    // Measured in VS Code 1.137: a host message carries the webview's own origin,
-    // and its source is not `window.parent`. No frame inside the app has that origin.
     expect(html).toContain('event.origin === window.origin && message.type === "helix:key"');
   });
 

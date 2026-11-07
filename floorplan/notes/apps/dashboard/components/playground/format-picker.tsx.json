@@ -1,0 +1,71 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/playground/format-picker.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SURFACE",
+      "line": 13,
+      "offset": 0,
+      "text": "Class vocabulary per surface. The hero sits on the light marketing tokens,\n`/app` on the dark shadcn tokens; the box and picker are one component\nrendered on both, so every colour is looked up here rather than written\ninline.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SURFACE.boxFocus",
+      "line": 17,
+      "offset": 0,
+      "text": "The box while its textarea has focus: a ring on the hero, a border tint on the app.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SURFACE.boxBusy",
+      "line": 18,
+      "offset": 0,
+      "text": "The box while a run is in flight.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "SURFACE.bar",
+      "line": 19,
+      "offset": 0,
+      "text": "The in-flight progress bar's fill.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "SURFACE.ghost",
+      "line": 25,
+      "offset": 0,
+      "text": "An icon-only button inside a chip: no border, tonal hover.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "FormatPicker",
+      "line": 102,
+      "offset": 0,
+      "text": "The toolbar's `Format: Markdown` button and the card grid it opens. Cards\nare the API's own format ids (lib/formats.ts); the HTML card carries the\ncleaned / raw pair as a variant row. Multi-select, order kept stable.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "FormatPicker",
+      "line": 137,
+      "offset": 35,
+      "text": "The marketing surface rule paints its own background after the utilities; the popover is the white card, not the page.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "Illustration",
+      "line": 247,
+      "offset": 0,
+      "text": "Schematic drawn with the surface's illustration tokens. Decorative only.",
+      "kind": "doc"
+    }
+  ]
+}

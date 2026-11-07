@@ -88,11 +88,9 @@ describe('WebhookDispatcher', () => {
     expect(row?.lastError).toBe('HTTP 503');
     expect(row?.nextRetryAt.getTime()).toBe(clock + 60_000);
 
-    // Not due yet: nothing happens.
     clock += 30_000;
     expect(await dispatcher.tick()).toEqual([]);
 
-    // Walk the whole schedule.
     for (let attempt = 2; attempt <= WEBHOOK_MAX_ATTEMPTS; attempt += 1) {
       [row] = await store.listDeliveries(monitor.id, 10);
       clock = row!.nextRetryAt.getTime();
@@ -135,7 +133,6 @@ describe('WebhookDispatcher', () => {
     await store.markDead(queued!.id, WEBHOOK_MAX_ATTEMPTS, 'HTTP 500', 500);
 
     expect(await store.replayDelivery(monitor.id, queued!.id)).toMatchObject({ status: 'pending', attempts: 0 });
-    // A second replay of a now-pending row is refused.
     expect(await store.replayDelivery(monitor.id, queued!.id)).toBeUndefined();
 
     const dispatcher = new WebhookDispatcher({ store, fetch: async () => ({ status: 204 }) });
@@ -193,7 +190,6 @@ describe('WebhookDispatcher', () => {
       batch: 3,
       requestTimeoutMs: 15_000,
       fetch: async () => {
-        // Rows not yet attempted must be leased past this whole batch.
         const pending = await store.listDeliveries(monitor.id, 10);
         leases.push(...pending.filter((d) => d.attempts === 0).map((d) => d.nextRetryAt.getTime() - clock));
         return { status: 200 };

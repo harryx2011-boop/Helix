@@ -1,7 +1,4 @@
 // Next.js needs inline scripts for hydration and React writes inline style
-// attributes, so script-src and style-src keep 'unsafe-inline'. Everything
-// else stays same-origin: fonts are self-hosted and the site loads no
-// third-party script, image, frame or connection.
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",

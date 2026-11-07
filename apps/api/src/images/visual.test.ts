@@ -50,7 +50,6 @@ describe('fetchImageBytes', () => {
     return `http://127.0.0.1:${(server.address() as AddressInfo).port}/x`;
   }
   const pass = async () => ({ ok: true as const });
-  // The test server is on loopback, so both the check and the connection are opened up.
   const open = { guard: pass, fetchImpl: createPinnedFetch({ blocked: () => false }) };
 
   it('refuses a private address by default', async () => {
@@ -58,7 +57,6 @@ describe('fetchImageBytes', () => {
     expect(await fetchImageBytes(url, AbortSignal.timeout(2000))).toBeUndefined();
   });
 
-  // The connection checks its own DNS answer, so a check that passed earlier is not the last word.
   it('refuses a private address at connect time even when the URL check passed', async () => {
     let hit = false;
     const url = await serve((_q, s) => {

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/app/providers/providers-panel.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ProvidersPanel",
+      "line": 67,
+      "offset": 50,
+      "text": "The panel cannot tell a wrong key from an absent service, and the\nsecond is far likelier on a fresh checkout — so it names the step\nrather than leaving someone re-typing a credential that was fine.",
+      "kind": "what"
+    }
+  ]
+}

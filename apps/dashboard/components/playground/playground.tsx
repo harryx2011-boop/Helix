@@ -66,9 +66,6 @@ export function Playground() {
     requestedTab && runnableById(requestedTab) ? requestedTab : 'scrape',
   );
 
-  // Preferences arrive after mount (localStorage), so the default endpoint is
-  // applied once, and only when the URL did not already name a tab — a link
-  // into a specific tab must win over a stored preference.
   const appliedDefault = React.useRef(false);
   React.useEffect(() => {
     if (appliedDefault.current || !prefsHydrated || requestedTab) return;
@@ -76,13 +73,8 @@ export function Playground() {
     if (runnableById(preferences.defaultEndpoint)) setActiveId(preferences.defaultEndpoint);
   }, [prefsHydrated, requestedTab, preferences.defaultEndpoint]);
   const [promptValue, setPromptValue] = React.useState(requestedUrl ?? '');
-  // One file for the box's paperclip and the upload-taking forms alike, so a
-  // paste into the box is what the form submits, not a second copy.
   const [attachment, setAttachment] = React.useState<File | null>(null);
 
-  // A sidebar row carries `tab` alone (no `url`), so the tab must follow the
-  // URL on every navigation, not just the ones that also bring a url — else
-  // the pill row and the sidebar's active row can point at different tabs.
   const lastTab = React.useRef(requestedTab ?? '');
   React.useEffect(() => {
     if (requestedTab === lastTab.current) return;
@@ -93,8 +85,6 @@ export function Playground() {
     }
   }, [requestedTab]);
 
-  // `selectTab` replaces the URL without `url`, so only a link that carries
-  // one (the hero, the command palette) re-targets an already-mounted playground.
   const lastDeepLink = React.useRef(`${requestedTab ?? ''}|${requestedUrl ?? ''}`);
   React.useEffect(() => {
     const key = `${requestedTab ?? ''}|${requestedUrl ?? ''}`;
@@ -144,9 +134,6 @@ export function Playground() {
     setTimingMs(undefined);
   };
 
-  // The toolbar's Format picker owns the scrape `formats` array. The Options
-  // form still builds `extract` when a schema is set, and that only reaches
-  // the API alongside `json`, so the two are merged rather than one winning.
   const withFormats = (request: ScrapeRequest): Record<string, unknown> => {
     const merged = new Set<Format>(formats.length > 0 ? formats : DEFAULT_FORMATS);
     if (request.extract || request.jsonOptions) merged.add('json');
@@ -165,8 +152,6 @@ export function Playground() {
       setLoading(true);
       setError(undefined);
       setResult(undefined);
-      // The filename is only known on the upload path; the animation falls back
-      // to its own copy when the request came from a URL.
       const uploaded = body instanceof FormData ? body.get('file') : null;
       setPending({ kind, filename: uploaded instanceof File ? uploaded.name : undefined });
       const started = performance.now();
@@ -203,11 +188,6 @@ export function Playground() {
   const openCode = (endpoint: Endpoint, body: Record<string, unknown>, mode: EndpointMode = 'scan') =>
     setCodeDialog({ endpoint, body, ...(mode === 'scrub' ? { pathSuffix: '/scrub' } : {}) });
 
-  // Each form owns its own submit-ready state (schema validity, actions, etc.); the
-  // prompt box's Run button proxies to the mounted form's native submit so that
-  // validation stays colocated with the fields that produce it. The form stays
-  // mounted (visually collapsed via sr-only) whether or not Options is expanded,
-  // so this always finds the current endpoint's form.
   const formsContainerRef = React.useRef<HTMLDivElement>(null);
   const submitActiveForm = () => {
     formsContainerRef.current?.querySelector('form')?.requestSubmit();
@@ -377,7 +357,6 @@ export function Playground() {
   );
 }
 
-// Re-export response types consumed by forms/results for convenience.
 export type {
   ScrapeResponse,
   MapResponse,

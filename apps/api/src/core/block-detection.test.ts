@@ -10,8 +10,6 @@ const facts = (overrides: Partial<ResponseFacts>): ResponseFacts => ({
 
 describe('detectBlock', () => {
   it('flags a Cloudflare challenge that returns HTTP 200', () => {
-    // The case that matters most: upstream says 200, body is an interstitial.
-    // Returning this as content is how a scraper silently poisons a dataset.
     const verdict = detectBlock(
       facts({
         statusCode: 200,
@@ -55,8 +53,6 @@ describe('detectBlock', () => {
   });
 
   it('does not flag a page merely for mentioning Cloudflare', () => {
-    // A blog post about CDNs is not a block page. Fingerprints must be specific
-    // enough that discussion of a vendor does not trip them.
     const body = `<html><body><article>
       We migrated our DNS to Cloudflare last quarter and saw latency improve.
       ${'This is ordinary prose about infrastructure choices. '.repeat(40)}
@@ -67,17 +63,12 @@ describe('detectBlock', () => {
   });
 
   it('treats a short body alone as insufficient evidence', () => {
-    // A legitimately tiny page is not a block. This signal only corroborates.
     const verdict = detectBlock(facts({ body: '<html><body>Hi</body></html>' }));
     expect(verdict.blocked).toBe(false);
     expect(verdict.confidence).toBeLessThan(0.5);
   });
 
   it('does not flag a full page that carries Cloudflare bot-management scripts or a vendor name', () => {
-    // Cloudflare injects /cdn-cgi/challenge-platform/scripts/jsd/main.js into ordinary
-    // pages, sites embed Turnstile on login forms, and READMEs name DataDome. Probed
-    // live 2026-10-05: discord.com, medium.com and github READMEs were all flagged,
-    // walking every tier and failing pages the tls tier had already fetched.
     const prose = 'Ordinary article text about scraping tools and their trade-offs. '.repeat(40);
     for (const marker of [
       '<script src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"></script>',
@@ -98,9 +89,6 @@ describe('detectBlock', () => {
   });
 
   it('flags a human-verification interstitial that returns HTTP 200', () => {
-    // Reddit's wall: 200, a short page, no vendor marker. Scored as an empty
-    // success before this signal existed, which is the worst answer available —
-    // the crawl believed it had read the page.
     const verdict = detectBlock(
       facts({
         statusCode: 200,
@@ -123,8 +111,6 @@ describe('detectBlock', () => {
   });
 
   it('does not flag an article that discusses human verification', () => {
-    // The same phrase in prose on a real page is content, not a wall. The
-    // interstitial gate is what separates them.
     const prose = 'How CAPTCHAs prove your humanity, and why that is a problem. '.repeat(40);
     const verdict = detectBlock(
       facts({
@@ -256,8 +242,6 @@ describe('classifyTransportError', () => {
   });
 
   it('never returns a block or challenge for a transport error', () => {
-    // A transport failure is a failure to reach the site at all. The site said
-    // nothing, so nothing it "did" — block, challenge — can be the reason.
     const reasons = ['fetch failed', 'ENOTFOUND', 'ETIMEDOUT', 'SSL error', 'weird'].map(
       classifyTransportError,
     );

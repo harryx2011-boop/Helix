@@ -1,11 +1,6 @@
-/**
- * Recent scrape results for `maxAge`. The caller states how stale an answer it
- * accepts; anything older is fetched again.
- */
 export class ScrapeCache<T> {
   readonly #maxEntries: number;
   readonly #now: () => number;
-  // Map keeps insertion order, so the first key is the oldest entry.
   readonly #entries = new Map<string, { value: T; at: number }>();
 
   constructor(options: { maxEntries?: number; now?: () => number } = {}) {
@@ -27,5 +22,4 @@ export class ScrapeCache<T> {
   }
 }
 
-// ponytail: process-local and entry-capped, not byte-capped; move to Postgres or cap bytes if large pages crowd memory.
 export const scrapeCache = new ScrapeCache<Record<string, unknown>>();

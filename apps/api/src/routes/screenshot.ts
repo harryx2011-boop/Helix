@@ -6,22 +6,11 @@ import type { ExtractClient } from '../extract/client.js';
 import type { BrowserPool } from '../browser/pool.js';
 import { checkUrl, pinProxyUrl, type HostResolver } from '../core/url-guard.js';
 
-/**
- * Screenshot-only fast path.
- *
- * Same pipeline `/scrape` uses with `formats: [screenshot]`, minus every other
- * format field in the response. `screenshot` already forces the Chromium tier
- * inside the pipeline, so this saves a caller nothing on tier selection — only
- * on response size and, via `skipExtraction`, on the markdown extraction pass
- * neither this route nor its caller ever reads.
- */
 
 const ScreenshotRequestSchema = z
   .object({
     url: z.string().url(),
-    /** Everything below the fold, capped at `MAX_FULL_PAGE_HEIGHT` and said so when clipped. */
     fullPage: z.boolean().default(false),
-    /** Capture one element. A selector matching nothing warns rather than silently framing the page. */
     selector: z.string().min(1).max(500).optional(),
     clip: z
       .object({
@@ -32,9 +21,7 @@ const ScreenshotRequestSchema = z
       })
       .optional(),
     format: z.enum(['png', 'jpeg', 'webp']).default('png'),
-    /** JPEG and WebP only; ignored on PNG, which has no lossy setting. */
     quality: z.number().int().min(1).max(100).optional(),
-    /** Transparent where the page paints nothing. Ignored on JPEG, which has no alpha. */
     omitBackground: z.boolean().default(false),
     viewport: z
       .object({
@@ -43,9 +30,7 @@ const ScreenshotRequestSchema = z
         dpr: z.number().min(1).max(3).optional(),
       })
       .optional(),
-    /** Emulates the dark colour scheme, for pages that honour prefers-color-scheme. */
     darkMode: z.boolean().default(false),
-    /** Keeps ad and consent-dialog chrome out of the frame. */
     blockAds: z.boolean().default(false),
     mobile: z.boolean().default(false),
     proxy: z.string().optional(),
@@ -57,8 +42,6 @@ const ScreenshotRequestSchema = z
     profile: z.string().optional(),
   })
   .superRefine((body, ctx) => {
-    // Both name a region; honouring one silently would return an image that
-    // is not what either asked for.
     if (body.selector && body.clip) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -110,7 +93,6 @@ export async function registerScreenshot(app: FastifyInstance, deps: ScreenshotR
       });
     }
 
-    // A caller's proxy is a host this instance connects to; the operator's is trusted.
     let callerProxy: string | undefined;
     if (body.proxy !== undefined) {
       const proxyVerdict = await pinProxyUrl(body.proxy, { allowPrivate: deps.allowPrivateUrls, resolve: deps.resolveHost });
@@ -182,9 +164,6 @@ export async function registerScreenshot(app: FastifyInstance, deps: ScreenshotR
     if (!result.content.screenshot) {
       warnings.push('screenshot: no image was captured at the tier that succeeded.');
     }
-    // A clipped full-page capture, or a selector that matched nothing, returns
-    // an image that looks like what was asked for. The capture layer says so;
-    // this is where the caller hears it.
     if (result.screenshotResult?.warning) warnings.push(result.screenshotResult.warning);
 
     const captured = result.screenshotResult;

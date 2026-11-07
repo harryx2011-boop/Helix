@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/terminal-replay.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TranscriptLine",
+      "line": 8,
+      "offset": 0,
+      "text": "§4.5a: types the first-run transcript line by line on scroll-in, with\n`◇/◆` health rows, then holds settled. Replay button re-runs it.",
+      "kind": "doc"
+    }
+  ]
+}

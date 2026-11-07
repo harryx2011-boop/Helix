@@ -4,17 +4,10 @@ import * as React from 'react';
 import type { Endpoint } from './endpoints';
 import type { Format } from './api';
 
-/**
- * Per-browser preferences. Deliberately not on `profiles`: these describe the
- * machine someone is sitting at, not the account — a phone and a desktop want
- * different answers, and a self-host install has no account to hang them on.
- */
 export interface Preferences {
-  /** `system` follows the OS; the app surface is dark-first regardless (FRONTEND.md §3). */
   appearance: 'dark' | 'light' | 'system';
   defaultEndpoint: Endpoint;
   defaultFormat: Format;
-  /** Overrides the OS setting in one direction only: it can force motion off, never on. */
   reduceMotion: boolean;
   sidebarStartsCollapsed: boolean;
 }
@@ -29,7 +22,6 @@ export const DEFAULT_PREFERENCES: Preferences = {
 
 const STORAGE_KEY = 'helix.app.preferences';
 
-/** The sidebar reads its own key on mount, so the preference seeds that rather than replacing it. */
 export const SIDEBAR_STORAGE_KEY = 'helix.app.sidebarCollapsed';
 
 function read(): Preferences {
@@ -38,8 +30,6 @@ function read(): Preferences {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_PREFERENCES;
     const parsed = JSON.parse(raw) as Partial<Preferences>;
-    // Spread over the defaults rather than trusting the shape: a preference
-    // added after someone's last visit is absent from their stored object.
     return { ...DEFAULT_PREFERENCES, ...parsed };
   } catch {
     return DEFAULT_PREFERENCES;
@@ -50,8 +40,6 @@ function write(prefs: Preferences): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
   } catch {
-    // A browser with storage disabled still gets a working session; the
-    // preference simply does not survive the tab.
   }
 }
 
@@ -85,11 +73,8 @@ export function usePreferences(): {
       write(next);
       if (key === 'sidebarStartsCollapsed') {
         try {
-          // The sidebar stores '1'/'0', not 'true'/'false'; writing the wrong
-          // shape here reads back as collapsed either way.
           window.localStorage.setItem(SIDEBAR_STORAGE_KEY, value ? '1' : '0');
         } catch {
-          // Same as above: the session still works without persistence.
         }
       }
       broadcast(next);
@@ -100,11 +85,6 @@ export function usePreferences(): {
   return { preferences, setPreference, hydrated };
 }
 
-/**
- * True when motion should be suppressed: the OS asks for it, or the user set
- * the override here. Components already honour `prefers-reduced-motion` in CSS;
- * this covers the JS-driven fields, which CSS cannot reach.
- */
 export function usePrefersReducedMotion(): boolean {
   const { preferences } = usePreferences();
   const [system, setSystem] = React.useState(false);

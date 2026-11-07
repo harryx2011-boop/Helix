@@ -34,7 +34,6 @@ describe('field routing', () => {
     });
     expect(answered.get('foundingDate')).toMatchObject({ value: '2011', phase: 'metadata', confidence: 'high' });
 
-    // The model is asked for exactly the field structure could not supply.
     expect(open.map((f) => f.name)).toEqual(['headquarters']);
   });
 
@@ -52,7 +51,6 @@ describe('field routing', () => {
   });
 
   it('does not treat a metadata value as structural when the HTML no longer yields it', () => {
-    // Same page, HTML withheld: nothing can be re-derived, so nothing is claimed.
     const noHtml: PageEvidence = { url: URL, text: TEXT };
     expect(routeStructural(fields, [noHtml]).answered.size).toBe(0);
   });

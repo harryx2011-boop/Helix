@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/section-frame.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FrameColumn",
+      "line": 5,
+      "offset": 0,
+      "text": "Firecrawl-style page frame: two vertical hairlines run the full page height,\nmounted once in `(marketing)/layout.tsx` around every section. `FrameBand`\ndraws the between-section band, bleeding its horizontal hairlines out to\nthe viewport edge since the column itself has no horizontal hairline.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "FrameBandProps.step",
+      "line": 14,
+      "offset": 0,
+      "text": "Seeds the ambient fields so neighbouring bands never share a pattern.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "FrameBand",
+      "line": 19,
+      "offset": 0,
+      "text": "Band between sections, split at ~45% by a hairline; the section H2 beneath it carries the label.",
+      "kind": "doc"
+    }
+  ]
+}

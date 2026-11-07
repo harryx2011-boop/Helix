@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/providers/models.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ModelInfo",
+      "line": 5,
+      "offset": 0,
+      "text": "Lists the models a local runtime (Ollama, vLLM, OpenAI-compatible) actually\nhas installed, so a caller can pick one instead of typing it blind.\n\nThe base URL fetched here is always the caller's own, stored against their\nown Helix API key — the same value `PUT /providers/:provider` already\naccepts with no URL-safety gate, because it names their own runtime rather\nthan a third party's. `checkUrl` still runs, for scheme and shape, but with\nprivate addresses allowed: a local runtime is loopback or LAN by design,\nand refusing that would break the one thing this endpoint exists for.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ollamaTagsUrl",
+      "line": 23,
+      "offset": 0,
+      "text": "Ollama's native API lives at the origin; the stored `baseUrl` may carry an OpenAI-compatible `/v1` suffix or not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "openAiModelsUrl",
+      "line": 29,
+      "offset": 0,
+      "text": "vLLM and generic OpenAI-compatible servers expose the OpenAI `GET /v1/models` shape at whatever base URL was stored.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "listLocalProviderModels",
+      "line": 86,
+      "offset": 18,
+      "text": "Never followed: a redirect would take the call to a host nobody checked.",
+      "kind": "why"
+    }
+  ]
+}

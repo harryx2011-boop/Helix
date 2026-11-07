@@ -8,7 +8,6 @@ export const dynamic = 'force-static';
 
 const STANDALONE = ['download', 'status', 'privacy', 'terms'];
 
-/** The public marketing and docs pages; the app itself is not on the website. */
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = SITE_URL.replace(/\/$/, '');
   const paths = new Set<string>([

@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/scroll-motion-loader.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ScrollMotion",
+      "line": 5,
+      "offset": 0,
+      "text": "gsap, gsap/ScrollTrigger and lenis are ~60-70 KB gzip and only ever run in\nthe browser. ssr:false requires a Client Component boundary, which is this\nfile; the layout that renders it stays a plain server component and the\nbundle loads after paint instead of blocking it.",
+      "kind": "what"
+    }
+  ]
+}

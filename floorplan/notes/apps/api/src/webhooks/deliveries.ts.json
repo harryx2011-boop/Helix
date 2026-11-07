@@ -1,0 +1,63 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/webhooks/deliveries.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "WEBHOOK_EVENTS",
+      "line": 2,
+      "offset": 0,
+      "text": "Webhook deliveries: what gets queued, and when it is retried.\n\nThe queue is the `webhook_deliveries` table. Rows are at-least-once by\ndesign, so every one carries a dedupe key and receivers are told to be\nidempotent. Nothing here talks HTTP; the dispatcher does.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "wantsEvent",
+      "line": 26,
+      "offset": 0,
+      "text": "Whether the config subscribes to an event. No `events` list means all of them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "WEBHOOK_MAX_ATTEMPTS",
+      "line": 34,
+      "offset": 0,
+      "text": "The one retry policy for every Helix webhook: crawl and job deliveries\n(webhooks/dispatcher.ts) and monitor deliveries (monitor/webhooks.ts).",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "retryDelayMs",
+      "line": 36,
+      "offset": 0,
+      "text": "Exponential backoff: one minute, doubling, capped at six hours. Twenty\nattempts span roughly three days, which is the window a receiver that is\ndown for a weekend needs. Not three retries over twenty minutes.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "EnqueueInput.key",
+      "line": 46,
+      "offset": 0,
+      "text": "Disambiguates events of the same type within one job, e.g. the page URL.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "enqueueDelivery",
+      "line": 55,
+      "offset": 0,
+      "text": "Queue one delivery. Returns false when the config does not subscribe to the\nevent or the row already exists — the queue is at-least-once and a resumed\ncrawl may try to re-emit an event it already emitted.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "purgeSettledDeliveries",
+      "line": 84,
+      "offset": 0,
+      "text": "Drop delivered and dead rows older than the retention window. Dead letters\nstay inspectable for as long as the results they refer to; after that the\ntable would only grow.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "packages/sdk-ts/codegen/generate.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "here",
+      "line": 8,
+      "offset": 0,
+      "text": "Generates src/client.ts from openapi.yaml and codegen/methods.ts.\n\nThe spec is read through the loader the MCP tools use (apps/api/src/mcp),\nso the SDK and the MCP surface are two derivations of one document.\n\ntsx codegen/generate.ts          write src/client.ts\ntsx codegen/generate.ts --check  exit 1 if src/client.ts is stale",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "params",
+      "line": 63,
+      "offset": 12,
+      "text": "Path order, not declaration order, fixes the argument order.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": "render",
+      "line": 183,
+      "offset": 0,
+      "text": "Render src/client.ts. Throws when the spec and the method table disagree.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "renderReadme",
+      "line": 219,
+      "offset": 0,
+      "text": "The README's method table, between its markers.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "outputs",
+      "line": 236,
+      "offset": 0,
+      "text": "Each generated file, with what it holds now and what it should hold.",
+      "kind": "doc"
+    }
+  ]
+}

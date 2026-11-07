@@ -1,14 +1,7 @@
-/**
- * The commands and config snippets the connect sheet, the Overview panel and
- * the docs print. Mirrors what `@helix/cli init` writes (packages/cli/src/writers.ts):
- * a snippet pasted by hand and a file written by the CLI must produce the same
- * server entry.
- */
 
 export const CONNECT_CLIENTS = ['Claude Code', 'Cursor', 'Codex', 'Windsurf', 'Generic'] as const;
 export type ConnectClient = (typeof CONNECT_CLIENTS)[number];
 
-/** Defaults baked into `@helix/cli`; flags are only printed when the app's values differ. */
 export const CLI_DEFAULT_MCP_URL = 'https://mcp.helix.dev/v1';
 export const CLI_DEFAULT_SITE_URL = 'https://helix.dev';
 
@@ -34,7 +27,6 @@ export function claudeMcpAddCommand({ apiKey, mcpUrl }: ConnectTarget): string[]
 const bearer = (apiKey: string) => `Bearer ${apiKey}`;
 
 export interface ConnectSnippet {
-  /** Where the snippet goes: a file path, or "terminal". */
   target: string;
   lines: string[];
 }

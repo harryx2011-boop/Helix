@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/desktop/scripts/verify-dictation.mjs",
+  "description": "Phase B gate (voice-core plan): dictation lands in the agent composer of the packaged app.",
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 2,
+      "offset": null,
+      "text": "Launches the app with a fake microphone that plays a recorded WAV, drives the composer's mic\nbutton through the app's own debug port, and prints what happened. No OS input, no real mic.\n\n  node scripts/verify-dictation.mjs [exe] [--wav <file>] [--seconds 14] [--port 9334]\n\nIt refuses to run while an installed Helix holds the desktop ports, and it keeps its own\nuser-data folder, so the installed app's data is never touched.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 124,
+      "offset": null,
+      "text": "already gone",
+      "kind": "what"
+    }
+  ]
+}

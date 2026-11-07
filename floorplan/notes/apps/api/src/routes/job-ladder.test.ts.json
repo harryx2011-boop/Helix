@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/job-ladder.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 75,
+      "offset": null,
+      "text": "An empty list would claim the first tier served the page; for a page\nrecorded before climbs were kept, nobody knows.",
+      "kind": "what"
+    }
+  ]
+}

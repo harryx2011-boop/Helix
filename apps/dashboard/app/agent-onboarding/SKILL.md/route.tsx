@@ -4,11 +4,6 @@ import { docsEndpointList, ENDPOINT_DOCS, docsCurlExample } from '@/lib/docs-con
 
 export const dynamic = 'force-static';
 
-/**
- * Public, ungated agent onboarding (WEBSITE.md §2, §9.3): the same generator that
- * produces a per-user SKILL.md, run here with every endpoint and no key. Explains
- * how to obtain a key, which endpoints exist, and the request shapes.
- */
 export async function GET() {
   return new NextResponse(buildSkillMd(), {
     headers: { 'Content-Type': 'text/markdown; charset=utf-8' },

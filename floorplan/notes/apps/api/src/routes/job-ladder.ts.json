@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/job-ladder.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "LadderRow",
+      "line": 6,
+      "offset": 0,
+      "text": "Which tier served each page of a job, and why it climbed to get there.\n\nThe ladder is Helix's own evidence trail: a page that needed a browser\nsays which cheaper tier it tried first and what that tier returned. Pages\nrecorded before the pipeline kept its climbs answer `escalations: null`\nrather than an empty list, which would claim the first tier served them.",
+      "kind": "doc"
+    }
+  ]
+}

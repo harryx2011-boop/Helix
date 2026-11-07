@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/app/(marketing)/docs/[slug]/page.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "InlineCode",
+      "line": 149,
+      "offset": 0,
+      "text": "Renders a docs-content body: text with backtick spans as inline code.",
+      "kind": "doc"
+    }
+  ]
+}

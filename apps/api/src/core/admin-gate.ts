@@ -1,22 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { safeEqual } from './api-keys.js';
 
-/**
- * The admin-token gate for operator routes (`/settings`, `/internal`, `/v1/keys`).
- *
- * Register it as an `onRequest` hook inside an encapsulated plugin that holds
- * only the gated routes. The router then decides which requests it covers:
- * every spelling of a path that reaches one of those handlers meets the gate,
- * whatever the raw URL looked like.
- *
- * The Host check refuses a request addressed to any name other than loopback or
- * the configured public URL. A page on another site that rebinds its own name
- * to 127.0.0.1 still sends its own name as the Host, so it is refused here.
- */
 
 const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 
-/** The lowercase host name of a Host header or URL, port removed. */
 function hostNameOf(value: string, withScheme: boolean): string | undefined {
   try {
     return new URL(withScheme ? value : `http://${value}`).hostname.toLowerCase();
@@ -27,9 +14,7 @@ function hostNameOf(value: string, withScheme: boolean): string | undefined {
 
 export interface AdminGateOptions {
   token: string;
-  /** The instance's public URL; its host name is accepted beside loopback. */
   publicUrl?: string | undefined;
-  /** The 401 message, so each surface keeps its own wording. */
   message?: string;
 }
 

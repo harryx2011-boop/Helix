@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/checks/selector-check.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SelectorCheck",
+      "line": 65,
+      "offset": 12,
+      "text": "One fetch, many selectors: matching is local, so typing re-runs without another request.",
+      "kind": "what"
+    }
+  ]
+}

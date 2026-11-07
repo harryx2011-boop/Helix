@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/checks/pdf-check.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PdfCheck",
+      "line": 39,
+      "offset": 11,
+      "text": "The route rejects non-PDFs server-side; filtering here saves the round trip.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/lib/formats.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FormatVariant",
+      "line": 3,
+      "offset": 0,
+      "text": "The format picker's cards. Every id is one the API validates\n(apps/api/src/routes/scrape.ts FORMATS); formats the spec names but nothing\nserves yet (summary, images, pdf) are deliberately absent.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "FormatCard.variants",
+      "line": 13,
+      "offset": 0,
+      "text": "Selecting the card selects `variants[0]`; the variant row switches or adds.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "FormatCard.hint",
+      "line": 15,
+      "offset": 0,
+      "text": "One line under the name when the format needs something set elsewhere.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "summarizeFormats",
+      "line": 45,
+      "offset": 0,
+      "text": "\"Markdown\", \"Markdown +2\", or \"None\" for the toolbar button.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "toggleFormat",
+      "line": 51,
+      "offset": 0,
+      "text": "Toggles one id, keeping catalog order so the summary is stable.",
+      "kind": "doc"
+    }
+  ]
+}

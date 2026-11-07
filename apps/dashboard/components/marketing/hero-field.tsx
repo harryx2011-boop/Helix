@@ -12,13 +12,6 @@ export interface HeroFieldProps {
   className?: string;
 }
 
-/**
- * One of the four character fields in its standard hero placement. Mount
- * inside a `relative` wrapper and keep the content `relative` so it paints
- * above. `cloud` is a ring around the centred title, `wave` flanks it at the
- * sides, `flow` sits behind it with the centre cleared, `orbit` hangs at the
- * right edge. Every placement is hidden on small screens.
- */
 export function HeroField({ motif, seed = 3, tone = 'marketing', className }: HeroFieldProps) {
   switch (motif) {
     case 'cloud':

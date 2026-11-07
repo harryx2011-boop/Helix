@@ -2,14 +2,7 @@ import { mkdir } from 'node:fs/promises';
 import type { PGlite } from '@electric-sql/pglite';
 import type { Driver, Pool, PoolClient, QueryResult } from './types.js';
 
-/**
- * Postgres compiled to WASM, running in this process, with its data in a
- * folder. One engine means one connection, so a mutex stands in for the pool:
- * `connect()` holds it until `release()`, and a bare `query()` queues behind
- * any open transaction instead of landing inside it.
- */
 
-// OIDs from pg_type; importing the constants would load the engine eagerly.
 const INT8 = 20;
 const NUMERIC = 1700;
 const BYTEA = 17;
@@ -27,7 +20,6 @@ class Mutex {
 }
 
 async function open(dataDir: string | undefined): Promise<PGlite> {
-  // Loaded here, not at the top, so the pg path never pulls in the WASM build.
   const [{ PGlite }, { uuid_ossp }, { vector }] = await Promise.all([
     import('@electric-sql/pglite'),
     import('@electric-sql/pglite/contrib/uuid_ossp'),
@@ -37,9 +29,6 @@ async function open(dataDir: string | undefined): Promise<PGlite> {
   const db = new PGlite({
     ...(dataDir ? { dataDir } : {}),
     extensions: { uuid_ossp, vector },
-    // Parity with node-postgres, which the query sites were written against:
-    // int8 and numeric stay strings (an int8 past 2^53 would otherwise become
-    // a BigInt that JSON.stringify throws on), bytea arrives as a Buffer.
     parsers: {
       [INT8]: (value: string) => value,
       [NUMERIC]: (value: string) => value,
@@ -52,8 +41,6 @@ async function open(dataDir: string | undefined): Promise<PGlite> {
 
 async function run<R>(db: PGlite, text: string, values?: unknown[]): Promise<QueryResult<R>> {
   try {
-    // PGlite's query() is the extended protocol, one statement only; a migration
-    // file is many. pg sends a parameterless call as a simple query, so exec() it.
     if (values === undefined) {
       const results = await db.exec(text);
       const last = results.at(-1);
@@ -62,8 +49,6 @@ async function run<R>(db: PGlite, text: string, values?: unknown[]): Promise<Que
     const result = await db.query<R>(text, values);
     return { rows: result.rows, rowCount: result.rowCount ?? result.affectedRows ?? null };
   } catch (error) {
-    // PGlite attaches the bound values; the request logger serialises every
-    // enumerable field, and desktop log files ride along with bug reports.
     if (typeof error === 'object' && error !== null) {
       delete (error as { params?: unknown }).params;
       delete (error as { queryOptions?: unknown }).queryOptions;
@@ -137,7 +122,6 @@ export const pgliteDriver: Driver = ({ dataDir }, logger) => {
       }
     },
 
-    // A single in-process engine has no idle connections to lose.
     on: () => pool,
   };
 

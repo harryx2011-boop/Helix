@@ -1,0 +1,191 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/routes/metadata.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "OptionsSchema",
+      "line": 16,
+      "offset": 0,
+      "text": "POST /v1/metadata — what a file discloses, and /v1/metadata/scrub — a copy without it.\n\nThe Metadata API is the read-and-remove half of document handling: `/parse`\nanswers what a file *says*, this answers what it *reveals* about the person\nand machine that produced it. Same two inputs as `/parse` (a multipart\n`file` or a JSON `url`), same intake rules — public hosts only, checked on\nevery redirect, and the operator's upload ceiling enforced before a byte\nleaves the process.\n\n**The scrub answers with the file, not with a description of it.** A base64\nenvelope would hold two more copies of a 25 MB upload; the cleaned bytes are\nthe response body and the report rides in `X-Helix-Metadata-Report`. A caller\nwho wants only the report asks for the scan.\n\n**A scrub reports what survived.** Formats differ in what they can drop\nwithout corrupting the file — a Word comments part is still pointed at by a\nrelationship, and pdfium re-emits DocInfo it cannot write. Those come back\nunder `retained`, never silently dropped from the report, because a caller\nacting on \"clean\" when something remains is the one failure this endpoint\nexists to prevent.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "OptionsSchema.timeout",
+      "line": 17,
+      "offset": 0,
+      "text": "Remote fetch budget for the `url` path, in milliseconds.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "RISK_ORDER",
+      "line": 24,
+      "offset": 0,
+      "text": "Ranked worst-first: a report a human reads is ordered by consequence.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "MetadataRouteDeps.fetchImpl",
+      "line": 30,
+      "offset": 0,
+      "text": "Injectable for tests; defaults to global fetch.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "MetadataRouteDeps.lookup",
+      "line": 31,
+      "offset": 0,
+      "text": "Injectable for tests; defaults to the system resolver.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "MetadataRouteDeps.maxInFlight",
+      "line": 32,
+      "offset": 0,
+      "text": "Files held in memory at once before the route answers 503.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "readMultipart",
+      "line": 94,
+      "offset": 0,
+      "text": "--- multipart --------------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": "filenameFromUrl",
+      "line": 128,
+      "offset": 0,
+      "text": "--- remote fetch -----------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "classifyRemoteError",
+      "line": 150,
+      "offset": 0,
+      "text": "The detail names the class of error and its code only. The underlying message\ncarries the resolved address and port, which would turn the response into a\nprobe of whatever the gateway can reach.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "fetchRemote",
+      "line": 174,
+      "offset": 8,
+      "text": "Redirects are followed by hand so every hop is checked against the host\npolicy: an allowed public host answering 302 to an internal address is the\nusual way around a check made only on the first URL.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "fetchRemote",
+      "line": 229,
+      "offset": 63,
+      "text": "Streamed so a server that lies about (or omits) content-length is still\nstopped at the ceiling rather than after the whole body is resident.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "Intake",
+      "line": 257,
+      "offset": 0,
+      "text": "--- shared intake ----------------------------------------------------------",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": "extractFailure",
+      "line": 265,
+      "offset": 3,
+      "text": "422 is helix-extract's answer for bytes its reader could not open: a\ncorrupt or mislabelled file, which retrying will not fix.",
+      "kind": "what"
+    },
+    {
+      "id": "n14",
+      "symbol": "registerMetadata",
+      "line": 282,
+      "offset": 2,
+      "text": "Pinned: the address the lookup checked is the address connected to.",
+      "kind": "what"
+    },
+    {
+      "id": "n15",
+      "symbol": "registerMetadata",
+      "line": 284,
+      "offset": 4,
+      "text": "Multipart framing adds headers and boundaries on top of the file itself.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "registerMetadata",
+      "line": 286,
+      "offset": 6,
+      "text": "Each request holds its file in memory for as long as helix-extract takes,\nand the per-key rate limit counts requests, not bytes. This is the bound on\nresident uploads.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "registerMetadata",
+      "line": 295,
+      "offset": 15,
+      "text": "Refuse before the body is buffered; the handler re-checks when it\nactually takes a slot.",
+      "kind": "what"
+    },
+    {
+      "id": "n18",
+      "symbol": "registerMetadata",
+      "line": 321,
+      "offset": 41,
+      "text": "Read the file from either input shape. Throws RequestError, or returns a typed failure to send.",
+      "kind": "doc"
+    },
+    {
+      "id": "n19",
+      "symbol": "registerMetadata",
+      "line": 332,
+      "offset": 52,
+      "text": "The framed body is not needed again; only the file's own bytes stay\nresident for the request.",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": "registerMetadata",
+      "line": 372,
+      "offset": 92,
+      "text": "Classify the bytes, or send the typed failure that says why we could not.",
+      "kind": "doc"
+    },
+    {
+      "id": "n21",
+      "symbol": "registerMetadata",
+      "line": 545,
+      "offset": 265,
+      "text": "The cleaned file IS the body. The report rides in a header so a caller\ncan stream the response straight to disk without unwrapping anything.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": "scrubbedFilename",
+      "line": 557,
+      "offset": 0,
+      "text": "`report.pdf` becomes `report.scrubbed.pdf`; a nameless upload gets one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n23",
+      "symbol": "scrubbedFilename",
+      "line": 560,
+      "offset": 3,
+      "text": "Quotes and control characters would break out of the Content-Disposition\nheader; a path separator would make the name a directory traversal in a\nclient that saves it verbatim.",
+      "kind": "what"
+    }
+  ]
+}

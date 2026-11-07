@@ -1,0 +1,223 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/worker.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "db",
+      "line": 15,
+      "offset": 4,
+      "text": "Whether this worker still holds the task claim when it marks a page.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "db",
+      "line": 16,
+      "offset": 5,
+      "text": "Task rows still queued or running when the crawl finishes.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "db",
+      "line": 17,
+      "offset": 6,
+      "text": "The claimed job's type; undefined keeps the projection out of older tests.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "db",
+      "line": 18,
+      "offset": 7,
+      "text": "Queued task rows resume() finds, as the crawl route leaves the seed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "db",
+      "line": 19,
+      "offset": 8,
+      "text": "`crawl_state` rows an incremental run loads before it fetches anything.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "db",
+      "line": 28,
+      "offset": 17,
+      "text": "The guarded mark: no row matches once another worker has reclaimed the\nlease, which is what tells the worker its result is stale.",
+      "kind": "what"
+    },
+    {
+      "id": "n7",
+      "symbol": "db",
+      "line": 31,
+      "offset": 20,
+      "text": "The outcome write lands: zero rows here reads as a cancellation mid-finish.",
+      "kind": "what"
+    },
+    {
+      "id": "n8",
+      "symbol": null,
+      "line": 213,
+      "offset": null,
+      "text": "And no empty document written over the one already stored: a 304 body is\nabsent, not blank.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": null,
+      "line": 217,
+      "offset": null,
+      "text": "A 304 has no body, so no links: the frontier cannot expand past it. A\nclean \"unchanged\" alone would hide that the pages below were never asked for.",
+      "kind": "why"
+    },
+    {
+      "id": "n10",
+      "symbol": null,
+      "line": 245,
+      "offset": null,
+      "text": "The caller can send their own If-None-Match in `headers`; the 304 that\nanswers it has no body to store, incremental or not.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": null,
+      "line": 255,
+      "offset": null,
+      "text": "A 304 may send no ETag at all. Writing the empty body's hash and a null\netag would leave the next run with nothing to ask with, so the saving\nwould last exactly one crawl.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": null,
+      "line": 401,
+      "offset": null,
+      "text": "The pair travels together: splitting them is the incoherence the Rust\nprofile validator refuses to start on.",
+      "kind": "what"
+    },
+    {
+      "id": "n13",
+      "symbol": null,
+      "line": 410,
+      "offset": null,
+      "text": "No proxy is a real configuration. The worker must not invent one.",
+      "kind": "why"
+    },
+    {
+      "id": "n14",
+      "symbol": null,
+      "line": 431,
+      "offset": null,
+      "text": "With one identity in the pool every page presents it. More than one live\nsession legitimately means more than one identity — what must never\nhappen is an identity being reassembled per request.",
+      "kind": "why"
+    },
+    {
+      "id": "n15",
+      "symbol": null,
+      "line": 436,
+      "offset": null,
+      "text": "Makes `SELECT status FROM jobs` answer 'cancelled' from the first poll.",
+      "kind": "doc"
+    },
+    {
+      "id": "n16",
+      "symbol": null,
+      "line": 443,
+      "offset": null,
+      "text": "The fake answers several different row shapes; the mock's inferred\nsignature only knows the first one it saw.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": null,
+      "line": 484,
+      "offset": null,
+      "text": "`usage` is written on the completing UPDATE; an abort must not appear\nthere as a page the extractor tried and lost.",
+      "kind": "why"
+    },
+    {
+      "id": "n18",
+      "symbol": null,
+      "line": 526,
+      "offset": null,
+      "text": "Wait for the cancellation poll to fire, then answer the way the\npipeline does once its signal is aborted.",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": null,
+      "line": 542,
+      "offset": null,
+      "text": "A cancelled crawl reporting hundreds of broken URLs is the failure this\navoids; the row is left leased so `release()` can requeue it.",
+      "kind": "what"
+    },
+    {
+      "id": "n20",
+      "symbol": null,
+      "line": 560,
+      "offset": null,
+      "text": "Left unmarked it would stay leased and the loop would spin until the\nlease expired, so this one still has to reach the frontier.",
+      "kind": "what"
+    },
+    {
+      "id": "n21",
+      "symbol": null,
+      "line": 570,
+      "offset": null,
+      "text": "The cancellation poll only fires 2s after the loop starts, so a page\nhas to still be outstanding then for the abort to reach it at all —\nwhich is exactly the situation this guards.",
+      "kind": "what"
+    },
+    {
+      "id": "n22",
+      "symbol": null,
+      "line": 583,
+      "offset": null,
+      "text": "The lease expired mid-fetch and a second worker reclaimed the task. This\nworker's result is stale: storing it writes the page twice.",
+      "kind": "what"
+    },
+    {
+      "id": "n23",
+      "symbol": null,
+      "line": 612,
+      "offset": null,
+      "text": "Every sitemap entry is offered at depth 1, so at maxDepth 0 the whole\nfetch is spent to have every entry rejected as too deep.",
+      "kind": "what"
+    },
+    {
+      "id": "n24",
+      "symbol": null,
+      "line": 632,
+      "offset": null,
+      "text": "Discovery, resume and the incremental state load all run before the loop\nrenews anything, and a slow preamble is exactly when another worker\nreclaims the job out from under this one.",
+      "kind": "what"
+    },
+    {
+      "id": "n25",
+      "symbol": null,
+      "line": 667,
+      "offset": null,
+      "text": "A fetched page whose task row this worker no longer held was dropped with\nnothing on the job to say so, and the crawl read as complete.",
+      "kind": "what"
+    },
+    {
+      "id": "n26",
+      "symbol": null,
+      "line": 764,
+      "offset": null,
+      "text": "The crawl route queues the seed row before the worker claims the job. Read\nas a resume, that one row switched off the projection and sitemap seeding\nfor every crawl submitted through the API.",
+      "kind": "what"
+    },
+    {
+      "id": "n27",
+      "symbol": null,
+      "line": 800,
+      "offset": null,
+      "text": "One identity, so both pages share its jar.",
+      "kind": "what"
+    }
+  ]
+}

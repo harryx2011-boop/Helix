@@ -2,19 +2,6 @@ import { createHash } from 'node:crypto';
 import { getPool } from '../db/pool.js';
 import type { Log } from '../core/logger.js';
 
-/**
- * Vector sinks.
- *
- * Write crawl output straight into the operator's own vector store, so a RAG
- * pipeline is one call rather than a crawl followed by a bespoke loader. The
- * store belongs to them — Helix holds no copy and charges nothing for the hop.
- *
- * The property that makes re-crawling viable: **point IDs are deterministic**,
- * derived from the URL and the chunk's anchor. Re-crawling a site updates the
- * vectors in place instead of appending a second copy of every chunk, which is
- * what happens when IDs are random and is why re-indexing usually means wiping
- * the collection first.
- */
 
 export interface ChunkToStore {
   text: string;
@@ -28,7 +15,6 @@ export interface StoreRequest {
   url: string;
   collection: string;
   chunks: ChunkToStore[];
-  /** The model that made the embeddings, kept so a later query can refuse to mix models. */
   model?: string | undefined;
   metadata?: Record<string, unknown> | undefined;
 }
@@ -51,19 +37,12 @@ export interface QueryHit {
   anchor: string;
   url: string;
   headingPath: string[];
-  /** Cosine similarity: 1 is the same direction, 0 unrelated. */
   score: number;
 }
 
-/**
- * What a collection records about the model its chunks were embedded with,
- * measured against the model about to embed a query.
- */
 export interface CollectionModels {
   exists: boolean;
-  /** A recorded model other than the one asked about, when any chunk carries one. */
   otherModel: string | undefined;
-  /** Some chunks were stored before the model was recorded. */
   untracked: boolean;
   dimensions: number | undefined;
 }
@@ -77,14 +56,12 @@ export interface VectorSink {
   health(): Promise<boolean>;
 }
 
-/** The collection a destination writes to, and so the one a search of it reads. */
 export function collectionName(destination: { collection?: string | undefined; namespace?: string | undefined }): string {
   return destination.collection ?? destination.namespace ?? 'default';
 }
 
 const MODEL_KEY = 'embeddingModel';
 
-/** A batch mixed embeddings from more than one dimensionality, so the collection could not be sized from chunk 0 alone. */
 export class MismatchedEmbeddingDimensionsError extends Error {
   constructor(expected: number, offending: Array<{ index: number; length: number }>) {
     super(
@@ -104,17 +81,9 @@ function assertConsistentDimensions(chunks: ChunkToStore[]): number {
   return expected;
 }
 
-/**
- * A UUID v5-style identifier derived from the chunk's identity.
- *
- * Same URL plus same anchor gives the same id on every crawl, which is what
- * makes an upsert an update rather than a duplicate.
- */
 export function deterministicId(url: string, anchor: string): string {
   const hash = createHash('sha256').update(`${url} ${anchor}`).digest('hex');
 
-  // Shape the digest as a UUID and stamp version 5 and the RFC 4122 variant, so
-  // stores that validate UUID format accept it.
   const bytes = hash.slice(0, 32).split('');
   bytes[12] = '5';
   const variant = Number.parseInt(hash[16] ?? '8', 16);
@@ -213,8 +182,6 @@ export class QdrantSink implements VectorSink {
       'upserted into qdrant',
     );
 
-    // Qdrant does not distinguish insert from update in its response, so the
-    // count is reported as stored rather than guessed at.
     return { stored: points.length, updated: 0, collection: request.collection };
   }
 
@@ -315,8 +282,6 @@ export class PgVectorSink implements VectorSink {
   }
 
   async ensureCollection(_collection: string, _dimensions: number): Promise<void> {
-    // The `chunks` table already exists from the migration. Collections are a
-    // column here rather than a separate table, so nothing to create.
   }
 
   async store(request: StoreRequest): Promise<StoreResult> {
@@ -330,8 +295,6 @@ export class PgVectorSink implements VectorSink {
     for (const chunk of request.chunks) {
       const id = deterministicId(request.url, chunk.anchor);
 
-      // xmax is zero on an insert and non-zero on an update, which is how
-      // Postgres lets an upsert report which one happened.
       const { rows } = await getPool().query<{ inserted: boolean }>(
         `INSERT INTO chunks (id, collection, url, anchor, text, tokens, embedding, metadata, model, dimensions)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

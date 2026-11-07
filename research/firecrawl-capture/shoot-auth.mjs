@@ -2,8 +2,6 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 
-// Unauthenticated captures of the auth surface (sign-in / sign-up) at desktop,
-// wide and mobile, plus a reduced-motion pass so the static frame is reviewed too.
 const BASE = process.env.BASE ?? 'http://localhost:3400';
 const ROUTES = process.argv.slice(2).length ? process.argv.slice(2) : ['/sign-in', '/sign-up'];
 const OUT = path.resolve('../../apps/dashboard/.screenshots');
@@ -26,7 +24,6 @@ for (const [w, h, tag, motion] of passes) {
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`${tag}: ${m.text()}`); });
   for (const route of ROUTES) {
     await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
-    // Clerk mounts after hydration; the ambient tickers need a beat to advance past frame 0.
     await page.waitForTimeout(4500);
     const name = route.replace(/\W+/g, '-').replace(/^-|-$/g, '') || 'root';
     await page.screenshot({ path: path.join(OUT, `auth-${name}-${tag}.png`), fullPage: false });

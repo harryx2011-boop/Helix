@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/state.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 21,
+      "offset": null,
+      "text": "The only mechanism that avoids the download itself: a 304 has no body.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 31,
+      "offset": null,
+      "text": "A raw ISO string here would be ignored by most servers.",
+      "kind": "what"
+    },
+    {
+      "id": "n3",
+      "symbol": null,
+      "line": 44,
+      "offset": null,
+      "text": "A content hash cannot be turned into a conditional request — it is only\nknowable after fetching, so it saves processing rather than bandwidth.",
+      "kind": "what"
+    },
+    {
+      "id": "n4",
+      "symbol": null,
+      "line": 58,
+      "offset": null,
+      "text": "Never seen is not the same as unchanged, and must never skip the write.",
+      "kind": "why"
+    }
+  ]
+}

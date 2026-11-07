@@ -1,0 +1,15 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/extract/tests/test_assess_endpoint.py",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "test_does_not_convert_anything_only_classifies",
+      "line": 41,
+      "offset": 1,
+      "text": "A markdown-conversion field appearing here would mean this silently grew\ninto a second /document, rather than staying the classification-only step.",
+      "kind": "what"
+    }
+  ]
+}

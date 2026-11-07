@@ -1,0 +1,159 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/search/providers.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SearchSource",
+      "line": 4,
+      "offset": 0,
+      "text": "Search backends.\n\nA search index is not something a scraping tool builds, so Helix brings none.\nThree adapters ship: SearXNG (self-hostable, no key, the zero-dependency\ndefault when SEARXNG_URL is set) and two BYOK SERP APIs, Serper and SerpAPI,\nbilled to the operator's own account.\n\nSerper is preferred over SerpAPI when both keys are present because at\ncomparable volume it runs roughly 10-25x cheaper for the same Google results.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SearchQuery.lang",
+      "line": 10,
+      "offset": 0,
+      "text": "Two-letter UI language, e.g. `en`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SearchQuery.country",
+      "line": 11,
+      "offset": 0,
+      "text": "Two-letter country, e.g. `us`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "SearchQuery.freshness",
+      "line": 12,
+      "offset": 0,
+      "text": "Relative window, e.g. `24h`, `7d`; converted to `tbs` when `tbs` is absent.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "SearchQuery.tbs",
+      "line": 13,
+      "offset": 0,
+      "text": "Google-style time filter, e.g. `qdr:m`. Wins over `freshness`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "SearchQuery.page",
+      "line": 16,
+      "offset": 0,
+      "text": "1-based result page; a backend without paging ignores it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "SearchHit.width",
+      "line": 28,
+      "offset": 0,
+      "text": "Image results only; pixels, when the backend reports them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "SourceFailure",
+      "line": 32,
+      "offset": 0,
+      "text": "One requested source the backend could not answer.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "ProviderResult",
+      "line": 37,
+      "offset": 0,
+      "text": "What a backend call produced. A source that fails is reported, not hidden:\nan operator problem (bad key, quota, a down instance) must reach the caller\nas a failure rather than as \"the web has no answer\".",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "applyOperators",
+      "line": 64,
+      "offset": 0,
+      "text": "Domain filters as Google search operators, which every backend passes through.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "applyOperators",
+      "line": 68,
+      "offset": 4,
+      "text": "One domain is a plain filter; several need an OR group.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "freshnessToTbs",
+      "line": 79,
+      "offset": 0,
+      "text": "Relative windows to Google's `tbs` parameter.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "resolveTbs",
+      "line": 89,
+      "offset": 0,
+      "text": "The effective time filter: an explicit `tbs` wins over a relative `freshness`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "tbsToSearxngRange",
+      "line": 93,
+      "offset": 0,
+      "text": "SearXNG only knows day / month / year, so a Google `tbs` window rounds up to\nthe smallest SearXNG range that still contains it.",
+      "kind": "doc"
+    },
+    {
+      "id": "n15",
+      "symbol": "SerperProvider.search",
+      "line": 136,
+      "offset": 14,
+      "text": "Each source is a separate endpoint, and the limit applies per source.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "SerperProvider.search",
+      "line": 197,
+      "offset": 75,
+      "text": "One source failing should not lose the results from the others.",
+      "kind": "what"
+    },
+    {
+      "id": "n17",
+      "symbol": "SearxngProvider",
+      "line": 301,
+      "offset": 0,
+      "text": "SearXNG: a self-hosted metasearch engine, queried over its JSON API.\n\nThe instance must list `json` under `search.formats` in its settings.yml;\na stock install answers JSON requests with 403 otherwise.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "SearxngProvider.search",
+      "line": 337,
+      "offset": 22,
+      "text": "SearXNG takes a locale rather than separate language and country.",
+      "kind": "what"
+    },
+    {
+      "id": "n19",
+      "symbol": "createSearchProvider",
+      "line": 406,
+      "offset": 0,
+      "text": "`auto` picks the first backend with credentials: SearXNG (no key, no cost),\nthen Serper, then SerpAPI. Naming a backend explicitly skips the search.",
+      "kind": "doc"
+    }
+  ]
+}

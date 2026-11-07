@@ -1,14 +1,6 @@
 import type { ProviderKeyMap, ProviderModelMap, ProviderBaseUrlMap } from '../extract/client.js';
 import { resolveProviderKeys as loadProviderKeys, type ResolvedProviderKeys } from './repository.js';
 
-/**
- * Converts stored provider keys into the shape `ExtractClient` sends on.
- *
- * Route handlers call `resolveProviderKeys` once per request (empty when the
- * caller has stored none) and pass the three maps to `structured`/`schema`
- * unchanged; the extract client omits them entirely when none carries
- * anything, so a caller with no stored keys sees identical behaviour to today.
- */
 export { loadProviderKeys as resolveProviderKeys };
 
 export interface ClientKeys {

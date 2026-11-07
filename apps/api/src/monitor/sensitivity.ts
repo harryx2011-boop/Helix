@@ -1,12 +1,3 @@
-/**
- * Sensitivity: what counts as a change.
- *
- * `any` compares the extracted text verbatim. `significant` first strips the
- * noise most pages carry on every load — relative timestamps, clock times,
- * dates, rotating tracking parameters — so a "3 minutes ago" ticking over does
- * not page anyone at 4am. These are heuristics, not judgement; a model-scored
- * relevance pass is deliberately not part of v1 (spec §7).
- */
 
 export type Sensitivity = 'any' | 'significant';
 

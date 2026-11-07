@@ -95,8 +95,6 @@ describe('runPipeline', () => {
   });
 
   it('NEVER returns a Cloudflare challenge as content, even at HTTP 200', async () => {
-    // The invariant this whole pipeline exists to hold. A challenge page that
-    // reaches the caller as markdown silently poisons their dataset.
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'] },
       deps({
@@ -112,16 +110,11 @@ describe('runPipeline', () => {
     expect(result.success).toBe(false);
     if (result.success) return;
     expect(result.reason).toBe('challenge');
-    // Recognised by the body markers, which survive every tier — the header is
-    // only present on the first hop.
     expect(result.detectedBy).toContain('cloudflare-challenge');
-    // The caller can see what was tried, so a retry is an informed decision.
     expect(result.tiersAttempted.length).toBeGreaterThan(1);
   });
 
   it('escalates off a shell page rather than returning nothing', async () => {
-    // A shell yields no text, so the pipeline must move up. It stops at the
-    // first tier that actually produces content — here the cheapest browser.
     const browserPool = browserPoolReturning(ARTICLE);
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'] },
@@ -192,8 +185,6 @@ describe('runPipeline', () => {
   });
 
   it('does not escalate for server-rendered pages that merely look like SPAs', async () => {
-    // A Next.js page that ships real content needs no browser. Escalating on
-    // framework markers alone burns the expensive tier for nothing.
     const nextjs = `<html><body><div id="__next"><article>${'Server-rendered content. '.repeat(40)}</article></div><script id="__NEXT_DATA__">{}</script></body></html>`;
     const browserPool = browserPoolReturning(nextjs);
 
@@ -240,7 +231,6 @@ describe('runPipeline', () => {
       }),
     );
 
-    // The caller asked for plain. Silently upgrading would misreport the cost.
     expect(result.tiersAttempted).toEqual(['plain']);
     expect(browserPool.render).not.toHaveBeenCalled();
   });
@@ -257,7 +247,6 @@ describe('runPipeline', () => {
     expect(result.success).toBe(false);
     if (result.success) return;
     expect(result.reason).toBe('blocked');
-    // A different profile or proxy may still work, and the caller is told so.
     expect(result.escalationAvailable).toBe(true);
   });
 
@@ -299,8 +288,6 @@ describe('runPipeline with skipExtraction', () => {
   });
 
   it('NEVER returns a Cloudflare challenge as success, even with extraction skipped', async () => {
-    // The invariant does not get weaker just because extracted text is absent —
-    // detectBlock still has status/headers/body fingerprints to work with.
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['screenshot'], skipExtraction: true },
       deps({
@@ -318,11 +305,6 @@ describe('runPipeline with skipExtraction', () => {
   });
 
   it('behaves like the extracted-empty-string case at the ceiling tier: succeeds with empty content, matching /scrape parity', async () => {
-    // With extraction, an empty page still returns `extracted = { text: '', ... }`
-    // (a defined, truthy object) once the ladder is exhausted — shouldEscalate
-    // reports escalate:false because there is no higher tier, and the pipeline
-    // returns success with empty content rather than a failure. skipExtraction
-    // must preserve that same shape rather than inventing a new failure mode.
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['screenshot'], skipExtraction: true, tier: 'chromium' },
       deps({ browserPool: browserPoolReturning('') }),
@@ -373,7 +355,6 @@ describe('runPipeline — Retry-After', () => {
     );
 
     expect(result.success).toBe(false);
-    // The only backoff figure in the exchange the host actually stated.
     if (!result.success) expect(result.retryAfterSeconds).toBe(120);
   });
 
@@ -393,8 +374,6 @@ describe('runPipeline — Retry-After', () => {
       blockedWith({ 'retry-after': at }),
     );
 
-    // The form implementations forget. A host that sends it and is met with a
-    // one-second default gets hammered straight through its own cooldown.
     if (!result.success) {
       expect(result.retryAfterSeconds).toBeGreaterThan(80);
       expect(result.retryAfterSeconds).toBeLessThanOrEqual(91);
@@ -407,8 +386,6 @@ describe('runPipeline — Retry-After', () => {
       blockedWith({ 'retry-after': '999999' }),
     );
 
-    // A nonsense value should fall back to our own backoff, not become a crawl
-    // that sleeps for a week.
     if (!result.success) expect(result.retryAfterSeconds).toBeUndefined();
   });
 
@@ -464,8 +441,6 @@ describe('runPipeline � empty extraction on a server-rendered page', () => {
     expect(result.content.markdown).toContain('Real article text');
   });
 
-  // The ladder endpoint reports why a page climbed; the reason has to be kept
-  // on the result, not only logged.
   it('records each climb and the reason for it', async () => {
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['markdown'] },
@@ -519,8 +494,6 @@ describe('runPipeline � empty extraction on a server-rendered page', () => {
   });
 
   it('stops at the first tier when the domain does not resolve', async () => {
-    // A heavier tier resolves the same name the same way; walking four tiers on
-    // NXDOMAIN only burns a browser launch and the full timeout per tier.
     const fetchClient = {
       fetch: vi.fn(async () => ({ success: false, error: 'dns error: failed to lookup address information', timingMs: 5 })),
       health: vi.fn(async () => true),
@@ -539,8 +512,6 @@ describe('runPipeline � empty extraction on a server-rendered page', () => {
   });
 
   it('does not escalate when no requested format needs extracted text', async () => {
-    // Extraction still runs for metadata, so its empty text must not drive a
-    // browser render for a caller who only asked for the raw bytes.
     const browserPool = browserPoolReturning(ARTICLE);
     const result = await runPipeline(
       { url: 'https://example.com', formats: ['rawHtml'] },

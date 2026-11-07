@@ -1,0 +1,47 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/favicon.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "IconCandidate",
+      "line": 2,
+      "offset": 0,
+      "text": "Favicon resolution.\n\nPure string parsing — this module never fetches anything. It returns a URL\nfor the client to load, so favicon resolution stays free and side-effect-free\nno matter how many pages a caller scrapes, crawls or searches.\n\nThe codebase has no HTML parser dependency (extraction happens out-of-process\nin helix-extract); a regex scan over the `<head>` follows the same house style\nas `block-detection.ts`'s single left-to-right walk over tags, rather than\nadding cheerio/linkedom for one field.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "sizeOf",
+      "line": 21,
+      "offset": 0,
+      "text": "`\"32x32\"` -> 32. `\"any\"` and malformed values sort last.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "resolveHref",
+      "line": 48,
+      "offset": 0,
+      "text": "Resolve `href` against `finalUrl`. `data:` URIs pass through unresolved.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "resolveHref",
+      "line": 52,
+      "offset": 4,
+      "text": "`new URL` already resolves protocol-relative (`//host/x.ico`) hrefs\nagainst the base URL's own protocol.",
+      "kind": "what"
+    },
+    {
+      "id": "n5",
+      "symbol": "resolveFavicon",
+      "line": 58,
+      "offset": 0,
+      "text": "Resolve the favicon URL for a page.\n\nPrefers the page's own declared icon (`<link rel=\"icon\">`, `\"shortcut icon\"`,\nor `\"apple-touch-icon\"`), picking the candidate with the largest declared\n`sizes` (ties and undeclared sizes keep document order). Falls back to\n`/favicon.ico` at the origin when nothing is declared or `html` is missing.\n\nNever makes a network request — a malformed or absent `sizes`/`href` degrades\ngracefully rather than throwing.",
+      "kind": "doc"
+    }
+  ]
+}

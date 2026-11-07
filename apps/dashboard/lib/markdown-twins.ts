@@ -7,11 +7,6 @@ import { generateCode } from './codegen';
 import type { Endpoint } from './endpoints';
 import { CHANGELOG, formatDate, kindNote } from './changelog';
 
-/**
- * Markdown twins: every marketing page is also served as plain markdown, no
- * chrome, at the same path with `.md` appended (WEBSITE.md §9.4). This module
- * is the single source both `/md/[[...slug]]` and `/llms.txt` read from.
- */
 
 const AGENT_BLOCK = [
   '---',
@@ -181,7 +176,6 @@ const STATIC_DOCS_MARKDOWN: Record<string, string> = {
 
 const PRODUCT_ENDPOINTS = ENDPOINTS.filter((e) => e.product).map((e) => e.id);
 
-/** Every markdown-twinned path, without the leading slash or trailing `.md`. */
 export const MARKDOWN_TWIN_PATHS: readonly string[] = [
   ...PRODUCT_ENDPOINTS,
   'self-host',
@@ -195,7 +189,6 @@ export const MARKDOWN_TWIN_PATHS: readonly string[] = [
   'docs/skills',
 ];
 
-/** Resolves the markdown body for a twin path (e.g. `scrape`, `docs/crawl`, `architecture`). Undefined if unknown. */
 export async function resolveMarkdownTwin(path: string): Promise<string | undefined> {
   if (path === 'self-host') return selfHostMarkdown();
   if (path === 'architecture') return architectureMarkdown();

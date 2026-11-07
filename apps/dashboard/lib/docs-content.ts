@@ -25,11 +25,6 @@ const ALL_FAILURE_REASONS: FailureReason[] = [
   'service_unavailable',
 ];
 
-/**
- * Purpose / when-to-use / response-shape / failure reasons per endpoint — the
- * single source for both `/docs/[slug]` and the generated SKILL.md (WEBSITE.md
- * §9.3), so the two surfaces cannot drift from each other.
- */
 export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
   scrape: {
     id: 'scrape',
@@ -125,12 +120,10 @@ export const ENDPOINT_DOCS: Partial<Record<Endpoint, EndpointDocs>> = {
   },
 };
 
-/** Sections offered by the docs index and the SKILL.md generator (WEBSITE.md §9.3). */
 export function docsEndpointList() {
   return ENDPOINTS.filter((e) => e.product);
 }
 
-/** curl example for an endpoint, used by both `/docs/[slug]` and SKILL.md. */
 export function docsCurlExample(id: Endpoint, apiKey?: string): string {
   const body = EXAMPLE_REQUEST[id];
   return generateCode('curl', { endpoint: id, body, ...(apiKey ? { apiKey } : {}) });
@@ -143,12 +136,6 @@ export function docsEndpointOrThrow(id: string) {
   return { def, docs };
 }
 
-/* ------------------------------------------------------------------------- */
-/* Agent surfaces (WEBSITE.md §9): MCP, CLI, Skills.                          */
-/*                                                                            */
-/* Plain strings, no JSX, so `/docs/[slug]`, the `.md` twins and the docs     */
-/* index all render the same words. Backticks mark inline code.               */
-/* ------------------------------------------------------------------------- */
 
 export type AgentSurfaceSlug = 'mcp' | 'cli' | 'skills';
 
@@ -161,12 +148,10 @@ export interface DocSectionContent {
 export interface AgentSurfaceDocs {
   slug: AgentSurfaceSlug;
   title: string;
-  /** One line for the docs index card and the markdown frontmatter. */
   summary: string;
   sections: DocSectionContent[];
 }
 
-/** The tool name for every endpoint whose route is live; the MCP server derives the same names from openapi.yaml operationIds. */
 export function liveMcpToolNames(): string[] {
   return ENDPOINTS.filter((e) => e.status === 'live').map((e) => mcpToolName(e.id));
 }
@@ -257,12 +242,6 @@ export function isAgentSurfaceSlug(slug: string): slug is AgentSurfaceSlug {
   return (AGENT_SURFACE_SLUGS as readonly string[]).includes(slug);
 }
 
-/* ------------------------------------------------------------------------- */
-/* Reference pages: api-reference, sdks, agents.                              */
-/*                                                                            */
-/* Same plain-string DocSectionContent shape as agentSurfaceDocs, rendered by */
-/* the same StaticShell + ContentSection pair in `/docs/[slug]`.              */
-/* ------------------------------------------------------------------------- */
 
 export type ReferenceSlug = 'api-reference' | 'sdks' | 'agents';
 
@@ -271,7 +250,6 @@ export interface ReferenceDoc {
   title: string;
   summary: string;
   sections: DocSectionContent[];
-  /** Rendered as a distinct list, not folded into a paragraph — api-reference only. */
   endpointRows?: { method: string; path: string; productName: string; tagline: string; docHref: string }[];
 }
 
@@ -281,7 +259,6 @@ export function isReferenceSlug(slug: string): slug is ReferenceSlug {
   return (REFERENCE_SLUGS as readonly string[]).includes(slug);
 }
 
-/** The six live endpoints, method + path + auth, one line each, linking to their own doc page. */
 export function apiReferenceDoc(): ReferenceDoc {
   const endpoints = docsEndpointList();
   return {
@@ -327,7 +304,6 @@ r = requests.post(
 )
 print(r.json())`;
 
-/** Honest state: sdk-ts is an empty package, @helix/cli is unpublished. Plain HTTP is what works today. */
 export function sdksDoc(): ReferenceDoc {
   return {
     slug: 'sdks',
@@ -361,7 +337,6 @@ export function sdksDoc(): ReferenceDoc {
   };
 }
 
-/** Index over the three agent surfaces (MCP, CLI, Skills), linking onward to each. */
 export function agentsIndexDoc(): ReferenceDoc {
   return {
     slug: 'agents',

@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/triggers.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "TriggerOptions",
+      "line": 4,
+      "offset": 0,
+      "text": "Triggers narrow which changes fire a webhook. Keyword triggers need no model\ncall: \"tell me when 'Out of stock' disappears\" is a string search on two\nsnapshots, and that is enough for most watches.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "TriggerOptions.selector",
+      "line": 7,
+      "offset": 0,
+      "text": "Watch only this part of the page. Shorthand for `scrapeOptions.includeSelectors`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "TriggerOptions.minChangeRatio",
+      "line": 8,
+      "offset": 0,
+      "text": "Ignore changes smaller than this fraction of the content (0–1).",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "evaluateTrigger",
+      "line": 27,
+      "offset": 0,
+      "text": "Evaluate a change that has already passed the sensitivity filter. `before`\nis null on the first check, when nothing can have appeared or disappeared.",
+      "kind": "doc"
+    }
+  ]
+}

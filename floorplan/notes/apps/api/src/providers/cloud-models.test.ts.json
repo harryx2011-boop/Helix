@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/providers/cloud-models.test.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": null,
+      "line": 42,
+      "offset": null,
+      "text": "Gemini names models `models/x` in its catalogue but takes the bare id\neverywhere else, so a picker that passed the prefixed form through would\nhand back a value that fails on use.",
+      "kind": "what"
+    },
+    {
+      "id": "n2",
+      "symbol": null,
+      "line": 62,
+      "offset": null,
+      "text": "A picker that empties itself when the network hiccups is worse than one\nshowing slightly stale names the caller can still edit by hand.",
+      "kind": "what"
+    }
+  ]
+}

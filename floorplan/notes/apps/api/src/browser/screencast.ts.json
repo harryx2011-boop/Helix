@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/browser/screencast.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "ScreencastFrame",
+      "line": 5,
+      "offset": 0,
+      "text": "Read-only live view of a session, from Chrome's own screencast.\n\n`Page.startScreencast` pushes a JPEG whenever the compositor produces a new\nframe and stays silent while the page is still, so an idle session costs no\nbandwidth. Frames fan out to every attached viewer; the cast starts with the\nfirst viewer and stops with the last, never running for nobody.\n\nTransport to the browser is server-sent events rather than a WebSocket: the\nstream is one-way, and SSE needs nothing beyond the HTTP server already here.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "ScreencastFrame.data",
+      "line": 6,
+      "offset": 0,
+      "text": "Base64 JPEG.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "CastSession",
+      "line": 21,
+      "offset": 0,
+      "text": "The slice of a CDP session the cast uses; tests supply a fake.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "Screencast.#ensureStarted",
+      "line": 96,
+      "offset": 20,
+      "text": "Chrome holds the next frame until this one is acknowledged.",
+      "kind": "what"
+    }
+  ]
+}

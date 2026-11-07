@@ -1,0 +1,39 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/vscode/src/html.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "PanelPage",
+      "line": 2,
+      "offset": 0,
+      "text": "The panel's page: one full-size iframe on the Helix app, and a small\nscript that passes the API key from the extension to that iframe.\n\nThe key never sits in this HTML. The framed app asks for it\n(`helix:embed-hello`, from `apps/dashboard/lib/embed.ts`); this page asks\nthe extension, then posts the answer to the iframe at its exact origin.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "PanelPage.origin",
+      "line": 3,
+      "offset": 0,
+      "text": "`http://127.0.0.1:<port>`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "PanelPage.path",
+      "line": 4,
+      "offset": 0,
+      "text": "The app page to open, e.g. `/app` or `/app/playground?tab=monitor`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "PanelPage.nonce",
+      "line": 5,
+      "offset": 0,
+      "text": "A fresh random value per render, for the script's CSP nonce.",
+      "kind": "doc"
+    }
+  ]
+}

@@ -22,7 +22,6 @@ interface Release {
 
 const INSTALLER = /^Helix-Setup-.+\.exe$/;
 
-/** The NSIS installer in a release, or null when the release has none (a draft, a prerelease, or assets still uploading). */
 export function pickInstaller(release: Release): Installer | null {
   if (release.draft === true || release.prerelease === true || typeof release.tag_name !== 'string') return null;
   const assets = Array.isArray(release.assets) ? (release.assets as ReleaseAsset[]) : [];
@@ -31,11 +30,6 @@ export function pickInstaller(release: Release): Installer | null {
   return { version: release.tag_name.replace(/^v/, ''), url: asset.browser_download_url, bytes: asset.size };
 }
 
-/**
- * The latest published installer, re-checked every ten minutes. Null until the
- * first release exists and on any failure, so the page shows "coming soon"
- * rather than a download link that 404s.
- */
 export async function fetchLatestInstaller(): Promise<Installer | null> {
   try {
     const res = await fetch(`https://api.github.com/repos/${RELEASES_REPO}/releases/latest`, {

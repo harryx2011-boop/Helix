@@ -24,7 +24,6 @@ const TABLE_OPTIONS: { value: NonNullable<ParseRequest['tables']>; label: string
 
 interface ParseFormProps {
   url: string;
-  /** Owned by the playground so the prompt box's paperclip and this form share one file. */
   file: File | null;
   onFileChange: (file: File | null) => void;
   onSubmit: (request: ParseRequest | FormData) => void;
@@ -32,7 +31,6 @@ interface ParseFormProps {
   loading: boolean;
 }
 
-/** A JSON object becomes a schema; anything else is a prompt. */
 function jsonOptionsFrom(instruction: string): ParseJsonOptions | undefined {
   const trimmed = instruction.trim();
   if (!trimmed) return undefined;
@@ -43,7 +41,6 @@ function jsonOptionsFrom(instruction: string): ParseJsonOptions | undefined {
         return { schema: parsed as Record<string, unknown> };
       }
     } catch {
-      // Not valid JSON: treat it as a prompt.
     }
   }
   return { prompt: trimmed };
@@ -57,8 +54,6 @@ export function ParseForm({ url, file, onFileChange, onSubmit, onGetCode, loadin
   const [instruction, setInstruction] = React.useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // The prompt box can clear the file too; without this the native input
-  // still holds it and picking the same file again fires no change event.
   React.useEffect(() => {
     if (file === null && fileInputRef.current) fileInputRef.current.value = '';
   }, [file]);

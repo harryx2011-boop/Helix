@@ -1,0 +1,151 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/crawl/sessions.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "SessionPoolOptions",
+      "line": 5,
+      "offset": 0,
+      "text": "Session pool for crawling.\n\nA session is one coherent identity — a browser profile, a proxy exit and a\ncookie jar — held together and reused while it keeps working, retired when it\nstarts earning blocks.\n\nReuse is the whole point, and it is the opposite of what most rotation code\ndoes. Rotating per request throws away the thing that makes a crawl look\nordinary: an identity that arrived, was accepted, kept its cookies and came\nback. A site watching one exit fetch two hundred pages under two hundred\ndifferent fingerprints has been handed a stronger signal than the\nfingerprints were hiding. So: rotate on failure, never on schedule.\n\nCOHERENCE IS THE INVARIANT. `apps/fetch/src/profile.rs` refuses to start on a\nprofile whose user-agent contradicts its HTTP/2 settings, because detection\nneeds only one layer to disagree. The same rule applies one level up: a\nsession pins ONE profile id for its whole life and hands that id to every\ntier it is used on. It never re-picks a profile per request, and it never\ncomposes an identity out of parts — a Chrome UA over a Firefox TLS\nfingerprint is more detectable than no spoofing at all.\n\nProxies come from the instance's existing configuration, resolved by the\ncaller (`HELIX_PROXY_URL`, or a request's `proxy` option). This class picks\namong the URLs it is handed; it does not read the environment, and it is not\na second proxy system.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "SessionPoolOptions.proxyUrls",
+      "line": 6,
+      "offset": 0,
+      "text": "Proxy URLs this pool may hand out, already resolved from instance config.\nEmpty means direct, which is a real configuration and not a degraded one.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "SessionPoolOptions.profileIds",
+      "line": 7,
+      "offset": 0,
+      "text": "Profile ids to draw identities from. Defaults to everything installed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "SessionPoolOptions.maxSessions",
+      "line": 8,
+      "offset": 0,
+      "text": "Live sessions held at once.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "SessionPoolOptions.maxBlocks",
+      "line": 9,
+      "offset": 0,
+      "text": "Blocks one session absorbs before it is retired.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "SessionPoolOptions.maxRequests",
+      "line": 10,
+      "offset": 0,
+      "text": "Requests one session serves before it is retired regardless of health.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "Session.profileId",
+      "line": 16,
+      "offset": 0,
+      "text": "Pinned for this session's whole life. Re-picking it would break coherence.",
+      "kind": "doc"
+    },
+    {
+      "id": "n8",
+      "symbol": "SessionOutcome.blocked",
+      "line": 27,
+      "offset": 0,
+      "text": "The classifier's verdict. A challenge served as 200 still counts.",
+      "kind": "doc"
+    },
+    {
+      "id": "n9",
+      "symbol": "SessionOutcome.cookies",
+      "line": 29,
+      "offset": 0,
+      "text": "Cookies the response set, merged into this session's jar.",
+      "kind": "doc"
+    },
+    {
+      "id": "n10",
+      "symbol": "DEFAULTS.maxBlocks",
+      "line": 34,
+      "offset": 0,
+      "text": "Two, not one. A single block is often the page rather than the identity — a\nURL behind a login wall retiring an otherwise healthy session would churn\nthe whole pool on a site with a handful of protected pages.",
+      "kind": "doc"
+    },
+    {
+      "id": "n11",
+      "symbol": "SessionPool.constructor",
+      "line": 58,
+      "offset": 6,
+      "text": "`undefined` is a real entry, not an empty list: it means \"go direct\",\nwhich an instance with no proxy configured must still be able to do.",
+      "kind": "why"
+    },
+    {
+      "id": "n12",
+      "symbol": "SessionPool.acquire",
+      "line": 65,
+      "offset": 0,
+      "text": "Take a session to use for one request.\n\nThe least-used live session wins rather than a round robin. Spreading load\nevenly is what keeps every identity under the rate that gets any one of\nthem noticed; a round robin does the same until a session is retired, then\nquietly concentrates its replacement's traffic into a burst.",
+      "kind": "doc"
+    },
+    {
+      "id": "n13",
+      "symbol": "SessionPool.release",
+      "line": 77,
+      "offset": 0,
+      "text": "Report how a request on this session went.\n\nReturns whether the session was retired, so a caller can say so rather than\ndiscovering later that the identity under it silently changed.",
+      "kind": "doc"
+    },
+    {
+      "id": "n14",
+      "symbol": "SessionPool.release",
+      "line": 84,
+      "offset": 7,
+      "text": "403 and 429 count alongside the classifier's verdict because both are the\nhost reacting to this identity in particular, which is exactly the\nevidence that should cost a session its life.",
+      "kind": "why"
+    },
+    {
+      "id": "n15",
+      "symbol": "SessionPool.release",
+      "line": 98,
+      "offset": 21,
+      "text": "An age ceiling as well as a health one. A session that has worked five\nhundred times carries a request history that is itself a fingerprint, and\ncookies whose age no longer matches a plausible visit.",
+      "kind": "what"
+    },
+    {
+      "id": "n16",
+      "symbol": "SessionPool.#create",
+      "line": 119,
+      "offset": 1,
+      "text": "The two cursors advance independently so a retired pairing is not\nimmediately recreated: a session blocked on (profile A, proxy X) would\notherwise be replaced by that same pair whenever the two lists happen to\nbe the same length.",
+      "kind": "why"
+    },
+    {
+      "id": "n17",
+      "symbol": "SessionPool.profileFor",
+      "line": 141,
+      "offset": 0,
+      "text": "The profile this session presents, if it is one this instance carries.\n\nRead through `getProfile` rather than held on the session, so an unverified\ndefinition is logged on use the way it is everywhere else.",
+      "kind": "doc"
+    },
+    {
+      "id": "n18",
+      "symbol": "SessionPool.cookieHeader",
+      "line": 145,
+      "offset": 0,
+      "text": "The jar as a `Cookie` header, or undefined while the session has none.",
+      "kind": "doc"
+    }
+  ]
+}

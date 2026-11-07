@@ -2,15 +2,6 @@ import type { DetectedRuntime } from './detect.js';
 import { getPool } from '../db/pool.js';
 import { decryptSecret, encryptSecret, last4 } from './crypto.js';
 
-/**
- * Caller-supplied LLM provider keys.
- *
- * A caller stores their own Anthropic/OpenAI/Gemini/OpenRouter key, or a local
- * runtime's base URL (Ollama/vLLM/OpenAI-compatible), against their Helix API
- * key; every LLM-backed call made with that key then uses it instead of the
- * instance's environment credentials. The plaintext is never logged and never
- * returned after storage — only its last 4 characters are.
- */
 
 export const PROVIDERS = [
   'anthropic',
@@ -23,7 +14,6 @@ export const PROVIDERS = [
 ] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
-/** Local runtimes are identified by a base URL rather than a key; most need no credential at all. */
 export const LOCAL_PROVIDERS = ['ollama', 'vllm', 'openai-compatible'] as const;
 export type LocalProvider = (typeof LOCAL_PROVIDERS)[number];
 
@@ -39,7 +29,6 @@ export interface ProviderKeyStatus {
   model?: string | null;
   baseUrl?: string | null;
   updatedAt?: string;
-  /** A runtime answering on its default address that is not set up yet: offered, never used. */
   detected?: { baseUrl: string; models: string[] };
 }
 
@@ -86,12 +75,6 @@ export async function upsertProviderKey(
     keyLast4 = last4(opts.apiKey);
   }
 
-  /* COALESCE against the existing row on every conflicting column: a PUT that
-     only touches baseUrl (the local-provider case, e.g. re-pointing a running
-     vLLM instance after a key was already stored for it) carries no apiKey,
-     and EXCLUDED.key_ciphertext alone would be NULL — overwriting a key that
-     is still good. There is no partial-clear path into this route; removing a
-     provider entirely goes through deleteProviderKey instead. */
   const { rows } = await getPool().query<{ model: string | null; base_url: string | null }>(
     `INSERT INTO provider_keys (api_key_id, provider, key_ciphertext, key_iv, key_last4, model, base_url)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -111,7 +94,6 @@ export async function upsertProviderKey(
   return { last4: keyLast4, model: row.model, baseUrl: row.base_url };
 }
 
-/** Idempotent: deleting an unstored provider key is not an error. */
 export async function deleteProviderKey(apiKeyId: string, provider: Provider): Promise<void> {
   await getPool().query('DELETE FROM provider_keys WHERE api_key_id = $1 AND provider = $2', [apiKeyId, provider]);
 }
@@ -149,7 +131,6 @@ export async function getProviderStatuses(
 
 export type ResolvedProviderKeys = Partial<Record<Provider, { key?: string | null; model?: string | null; baseUrl?: string | null }>>;
 
-/** Decrypted provider keys for one Helix API key, keyed by provider. Empty when the caller stored none. */
 export async function resolveProviderKeys(apiKeyId: string, encryptionKey: Buffer): Promise<ResolvedProviderKeys> {
   const rows = await listProviderKeys(apiKeyId);
   const resolved: ResolvedProviderKeys = {};

@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/footer.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FooterLink",
+      "line": 10,
+      "offset": 0,
+      "text": "WEBSITE.md §4.9. Three groups, hairline-divided rows, no Company column.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "COLUMNS",
+      "line": 60,
+      "offset": 45,
+      "text": "A link is dropped rather than rendered href-less when its URL is blanked,\nwhich is how a self-host build removes a sibling app it does not run.",
+      "kind": "what"
+    }
+  ]
+}

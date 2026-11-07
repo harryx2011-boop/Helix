@@ -8,7 +8,6 @@ interface ReasonCopy {
   icon: LucideIcon;
   title: string;
   explanation: string;
-  /** A concrete next step, not a generic "try again" — this is what the plan calls the important part. */
   nextStep: (failure: FetchFailure) => string;
 }
 
@@ -96,9 +95,6 @@ const REASON_COPY: Record<FailureReason, ReasonCopy> = {
   service_unavailable: {
     icon: ServerOff,
     title: 'Service unavailable',
-    // Deliberately points at Helix's own infrastructure, not the target site.
-    // Reporting this as a block would send an operator chasing an anti-bot
-    // problem that does not exist — the fetch never left the building.
     explanation:
       'A Helix service was unreachable, so the fetch could not be attempted. This is an infrastructure problem on your side, not a response from the target site.',
     nextStep: () =>

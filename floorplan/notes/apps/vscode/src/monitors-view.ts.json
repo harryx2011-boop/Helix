@@ -1,0 +1,23 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/vscode/src/monitors-view.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "Connection",
+      "line": 4,
+      "offset": 0,
+      "text": "Where to read monitors from, or a sentence saying why it cannot.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "MonitorsView",
+      "line": 11,
+      "offset": 0,
+      "text": "The Monitors view: each monitor, and under it its latest checks with their summaries.",
+      "kind": "doc"
+    }
+  ]
+}

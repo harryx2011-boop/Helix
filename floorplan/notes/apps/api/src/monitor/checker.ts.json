@@ -1,0 +1,103 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/monitor/checker.ts",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "FetchOutcome",
+      "line": 9,
+      "offset": 0,
+      "text": "One check of one monitor.\n\nFetch the page, compare it with the last snapshot, decide whether that\ncounts as a change, record the outcome, and queue a webhook if it does.\nUnchanged pages store no new snapshot and send nothing — the check row is\nthe only trace they leave, which is what makes them free.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "CheckerDeps.extractJson",
+      "line": 16,
+      "offset": 0,
+      "text": "Runs structured extraction for a monitor with `jsonOptions` set. Only\ncalled on a change that already passed the trigger, so a quiet or\nfiltered check never pays for a model call. A failure is logged and\nfalls back to the text diff rather than failing the check.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "CheckerDeps.maxContentBytes",
+      "line": 18,
+      "offset": 0,
+      "text": "A page larger than this is a failed check, not a stored snapshot.",
+      "kind": "doc"
+    },
+    {
+      "id": "n4",
+      "symbol": "CheckerDeps.basePath",
+      "line": 19,
+      "offset": 0,
+      "text": "Base path used to build `snapshotUrl`, e.g. `/v1/monitor`.",
+      "kind": "doc"
+    },
+    {
+      "id": "n5",
+      "symbol": "MAX_DIFF_BYTES",
+      "line": 32,
+      "offset": 0,
+      "text": "A stored or delivered diff past this size keeps its counts and loses its\nops and text. History rows are written on every changed check and never\nexpire by content size, so the page must not be copied into them whole.",
+      "kind": "doc"
+    },
+    {
+      "id": "n6",
+      "symbol": "includeSelectorsFor",
+      "line": 42,
+      "offset": 0,
+      "text": "`trigger.selector` is shorthand for `includeSelectors`; the explicit list wins when both are set.",
+      "kind": "doc"
+    },
+    {
+      "id": "n7",
+      "symbol": "diffForPayload",
+      "line": 64,
+      "offset": 11,
+      "text": "Inline off withholds the page text, and the summary quotes it, so that\npayload gets the summary's counts line only.",
+      "kind": "why"
+    },
+    {
+      "id": "n8",
+      "symbol": "runCheck",
+      "line": 130,
+      "offset": 60,
+      "text": "Summarized from the full diff, before a size bound drops its passages.",
+      "kind": "what"
+    },
+    {
+      "id": "n9",
+      "symbol": "runCheck",
+      "line": 158,
+      "offset": 88,
+      "text": "`checked` is every check; `changed` is the subset that fired. A webhook\non both gets both for a change, each under its own dedupe key.",
+      "kind": "what"
+    },
+    {
+      "id": "n10",
+      "symbol": "runCheck",
+      "line": 212,
+      "offset": 142,
+      "text": "A whitespace-only edit differs verbatim but tokenizes to no added or\nremoved tokens, since whitespace tokens are not counted as changes. Left\nalone that reaches the trigger with an empty diff and fires on nothing.",
+      "kind": "what"
+    },
+    {
+      "id": "n11",
+      "symbol": "runCheck",
+      "line": 218,
+      "offset": 148,
+      "text": "The baseline moves whenever the content really differs, so the next\nkeyword check compares against what the page says now.",
+      "kind": "what"
+    },
+    {
+      "id": "n12",
+      "symbol": "runCheck",
+      "line": 230,
+      "offset": 160,
+      "text": "The text diff always decides whether the change fires; JSON extraction is\nan additional, more expensive view taken only once a change is already\ngoing out, so a trigger that suppresses the change never pays for it.",
+      "kind": "why"
+    }
+  ]
+}

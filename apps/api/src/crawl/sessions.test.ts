@@ -11,8 +11,6 @@ describe('SessionPool', () => {
     pool.release(first, { statusCode: 200 });
     const second = pool.acquire();
 
-    // Rotating per request is what this design exists to avoid: an identity
-    // that arrived and was accepted is the one most likely to be accepted again.
     expect(second.id).toBe(first.id);
   });
 
@@ -33,7 +31,6 @@ describe('SessionPool', () => {
     const session = pool.acquire();
     pool.release(session, { blocked: true });
 
-    // A single login-walled URL must not churn the whole pool.
     expect(pool.acquire().id).toBe(session.id);
   });
 
@@ -41,7 +38,6 @@ describe('SessionPool', () => {
     const pool = new SessionPool({ profileIds: PROFILES, maxBlocks: 1 });
 
     const session = pool.acquire();
-    // The status says success; the classifier says otherwise, and it is right.
     expect(pool.release(session, { statusCode: 200, blocked: true }).retired).toBe(true);
   });
 
@@ -56,7 +52,6 @@ describe('SessionPool', () => {
     const pool = new SessionPool({ profileIds: PROFILES, maxSessions: 1, maxBlocks: 1 });
 
     const session = pool.acquire();
-    // A missing page says nothing about who asked for it.
     expect(pool.release(session, { statusCode: 404 }).retired).toBe(false);
   });
 
@@ -108,8 +103,6 @@ describe('SessionPool — identity coherence', () => {
     const a = pool.acquire();
     const b = pool.acquire();
 
-    // A profile that hops between exits mid-session presents one browser
-    // arriving from two networks, which is a stronger signal than either alone.
     expect(a.proxyUrl).not.toBe(b.proxyUrl);
     expect(a.profileId).not.toBe(b.profileId);
     for (let i = 0; i < 10; i++) pool.release(a, { statusCode: 200 });
@@ -128,7 +121,6 @@ describe('SessionPool — identity coherence', () => {
     pool.release(blockedSession, { blocked: true });
 
     const replacement = pool.acquire();
-    // Replacing a blocked identity with the same pairing is not a rotation.
     expect(
       replacement.profileId !== blockedSession.profileId ||
         replacement.proxyUrl !== blockedSession.proxyUrl,
@@ -138,8 +130,6 @@ describe('SessionPool — identity coherence', () => {
   it('goes direct rather than inventing a proxy when none is configured', () => {
     const pool = new SessionPool({ profileIds: PROFILES });
 
-    // No proxy is a real configuration, not a degraded one — this class must
-    // never reach for the environment to find a second source of proxies.
     expect(pool.acquire().proxyUrl).toBeUndefined();
   });
 
@@ -160,8 +150,6 @@ describe('SessionPool — identity coherence', () => {
     pool.release(first, { statusCode: 200, cookies: { sid: 'abc' } });
     pool.release(first, { blocked: true });
 
-    // Carrying a retired identity's cookies into a fresh profile would be the
-    // most direct way to link the two.
     expect(pool.cookieHeader(pool.acquire())).toBeUndefined();
   });
 

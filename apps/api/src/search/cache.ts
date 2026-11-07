@@ -1,10 +1,5 @@
 import type { SearchHit, SearchQuery } from './providers.js';
 
-/**
- * Short-lived cache of backend hits, keyed on the full query. Identical
- * searches within the window reuse the ranked list instead of re-hitting the
- * backend; the pages themselves are always read fresh.
- */
 export class SearchCache {
   readonly #ttlMs: number;
   readonly #entries = new Map<string, { hits: SearchHit[]; expiresAt: number }>();
@@ -29,13 +24,8 @@ export class SearchCache {
 
   set(query: SearchQuery, hits: SearchHit[]): void {
     if (this.#ttlMs === 0) return;
-    // An empty list is not worth a slot: it is the shape a failed or degraded
-    // backend call produces, and serving it for the whole window would hide a
-    // recovery behind "no results".
     if (hits.length === 0) return;
     if (this.#entries.size >= 1000) {
-      // Bounded: the oldest insertion goes first, which is close enough to LRU
-      // for a cache measured in seconds.
       const oldest = this.#entries.keys().next().value;
       if (oldest !== undefined) this.#entries.delete(oldest);
     }

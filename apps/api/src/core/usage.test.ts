@@ -1,11 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * The recorder and its aggregates against a fake pool. What matters here is
- * that a request is attributed to the right bucket, that a flush failure is
- * survivable, and that the aggregates are computed by the query rather than in
- * JS, so the assertions are mostly about the SQL that goes out.
- */
 
 interface Call {
   text: string;

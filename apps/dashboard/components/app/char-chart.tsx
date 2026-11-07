@@ -18,11 +18,6 @@ export interface CharChartProps {
   labels: string[];
   height?: number;
   format?: (n: number) => string;
-  /**
-   * Server-safe alternative to `format` — a function prop can't cross a
-   * server/client boundary, so pages that compose this from a server
-   * component pass a plain string kind instead. `format` wins if both are given.
-   */
   formatKind?: CharChartFormatKind;
   variant?: 'bars' | 'area';
 }
@@ -42,7 +37,6 @@ function seriesColorClass(index: number): (typeof SERIES_COLOR_CLASSES)[number] 
   return SERIES_COLOR_CLASSES[index % SERIES_COLOR_CLASSES.length] ?? SERIES_COLOR_CLASSES[0];
 }
 
-/** Thin x-axis labels to at most ~12 visible entries, evenly spaced, always keeping the last. */
 function visibleLabelIndices(count: number, max = 12): Set<number> {
   if (count <= max) return new Set(Array.from({ length: count }, (_, i) => i));
   const step = Math.ceil(count / max);
@@ -101,7 +95,6 @@ export function CharChart({ series, labels, height = 8, format, formatKind, vari
       <div className="overflow-x-auto">
         <div className="inline-flex min-w-full flex-col gap-0" style={{ minWidth: `${columnCount * 14}px` }}>
           <div className="relative flex" onMouseLeave={() => setHoverIndex(null)}>
-            {/* glyph grid */}
             <div className="flex font-mono text-xs leading-none">
               {Array.from({ length: columnCount }, (_, colIndex) => (
                 <div
@@ -131,7 +124,6 @@ export function CharChart({ series, labels, height = 8, format, formatKind, vari
                       </div>
                     );
                   })}
-                  {/* transparent hover overlay */}
                   <div className="absolute inset-0 cursor-default" aria-hidden />
                 </div>
               ))}
@@ -154,7 +146,6 @@ export function CharChart({ series, labels, height = 8, format, formatKind, vari
             )}
           </div>
 
-          {/* baseline */}
           <div className="flex font-mono text-xs leading-none text-primary" aria-hidden>
             {Array.from({ length: columnCount }, (_, i) => (
               <span key={i} className="flex h-3 w-[14px] shrink-0 items-center justify-center">
@@ -163,7 +154,6 @@ export function CharChart({ series, labels, height = 8, format, formatKind, vari
             ))}
           </div>
 
-          {/* x-axis labels */}
           <div className="flex font-mono text-[11px] leading-none text-muted-foreground">
             {labels.map((label, i) => (
               <span key={i} className="flex h-4 w-[14px] shrink-0 items-start justify-center">
@@ -176,7 +166,6 @@ export function CharChart({ series, labels, height = 8, format, formatKind, vari
         </div>
       </div>
 
-      {/* screen-reader table fallback */}
       <table className="sr-only">
         <caption>Chart data</caption>
         <thead>

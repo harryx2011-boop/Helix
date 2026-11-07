@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/dashboard/components/marketing/nav-menus.tsx",
+  "description": null,
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "GROUP_LABEL",
+      "line": 41,
+      "offset": 0,
+      "text": "Human label per catalog group, in the order the nav lists them.",
+      "kind": "doc"
+    },
+    {
+      "id": "n2",
+      "symbol": "API_GROUPS",
+      "line": 55,
+      "offset": 0,
+      "text": "The API menu, derived from the catalog rather than hand-listed: a new\n`product: true` endpoint appears here without touching this file.",
+      "kind": "doc"
+    },
+    {
+      "id": "n3",
+      "symbol": "ENDPOINT_ROWS",
+      "line": 61,
+      "offset": 0,
+      "text": "Flat order, for the mobile drawer and anything that cannot render columns.",
+      "kind": "doc"
+    }
+  ]
+}

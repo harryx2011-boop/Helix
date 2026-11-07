@@ -1,7 +1,4 @@
 // Live smoke over every openapi.yaml operation against a running instance.
-// Usage: HELIX_API_KEY=helix-... node apps/api/scripts/smoke-live.mjs [baseUrl]
-// Without a key it runs the open routes and proves every protected route answers 401.
-// It never mutates provider config; the key it creates is revoked before exit.
 
 const BASE = (process.argv[2] ?? process.env.HELIX_URL ?? 'http://127.0.0.1:7400').replace(/\/$/, '');
 const KEY = process.env.HELIX_API_KEY;
@@ -63,7 +60,6 @@ async function poll(path, done, tries = 40) {
   return r;
 }
 
-// Open routes and the auth wall.
 await check('health', 'GET', '/v1/health', undefined, [200], (j) => (j.status === 'ok' ? { note: Object.entries(j.services).map(([k, v]) => `${k}:${v.status}`).join(' ') } : `status ${j.status}`), { auth: false });
 await check('status history', 'GET', '/v1/status/history', undefined, [200], null, { auth: false });
 await check('live view, unknown id', 'GET', '/v1/interact/live/sess_nope', undefined, [401, 404, 410], null, { auth: false });
@@ -101,7 +97,6 @@ if (!KEY) {
 
 const hasMd = (j) => (j.success && j.data?.markdown?.length > 0 ? { note: `tier ${j.data.metadata?.tier}, ${j.data.markdown.length} chars` } : `success=${j.success} md=${j.data?.markdown?.length ?? 'none'} ${JSON.stringify(j.failure ?? '')}`);
 
-// Reads.
 await check('scrape', 'POST', '/v1/scrape', { url: 'https://docs.python.org/3/', formats: ['markdown', 'links'] }, [200], hasMd);
 await check('scrape auto, example.com', 'POST', '/v1/scrape', { url: 'https://example.com' }, [200], (j) => (j.success ? { note: `tier ${j.data.metadata.tier} via ${j.data.metadata.tiersAttempted.join('>')}` } : 'failed'));
 await check('scrape, validation', 'POST', '/v1/scrape', { url: 'not a url' }, [400]);
@@ -112,7 +107,6 @@ await check('robots-check', 'POST', '/v1/robots-check', { url: 'https://www.goog
 await check('diff', 'POST', '/v1/diff', { before: { text: 'a b c' }, after: { text: 'a x c' } }, [200], (j) => (j.diff?.added === 1 ? null : 'wrong diff'));
 await check('diff json', 'POST', '/v1/diff', { mode: 'json', before: { a: 1 }, after: { a: 2 } }, [200]);
 
-// Documents.
 await check('parse', 'POST', '/v1/parse', { url: PDF, maxPages: 1 }, [200], hasMd);
 await check('pdf-assess', 'POST', '/v1/pdf-assess', { url: PDF }, [200], (j) => (j.success ? { note: `needsOcr ${j.data.needsOcr}` } : 'failed'));
 await check('metadata', 'POST', '/v1/metadata', { url: DOC_PDF }, [200], (j) => (j.data?.findings?.length ? { note: `${j.data.findings.length} findings` } : 'no findings'));
@@ -120,14 +114,12 @@ await check('metadata/scrub', 'POST', '/v1/metadata/scrub', { url: DOC_PDF }, [2
 await check('document op=metadata', 'POST', '/v1/document', { op: 'metadata', url: DOC_PDF }, [200]);
 await check('document op=parse', 'POST', '/v1/document', { op: 'parse', url: PDF, maxPages: 1 }, [200], hasMd);
 
-// Model-backed: a typed failure is correct when no LLM is configured.
 const modelOk = (j) => (j.success ? { note: 'model answered' } : { note: `typed failure: ${j.failure?.reason ?? j.warnings?.[0]?.slice(0, 60)}` });
 await check('agent/schema', 'POST', '/v1/agent/schema', { prompt: 'product name and price' }, [200], modelOk);
 await check('extract', 'POST', '/v1/extract', { urls: ['https://example.com'], schema: { type: 'object', properties: { title: { type: 'string' } } } }, [200], modelOk);
 await check('enrich', 'POST', '/v1/enrich', { subject: 'Python', fields: [{ name: 'creator' }], urls: ['https://docs.python.org/3/faq/general.html'] }, [200], (j) => ({ note: `creator=${JSON.stringify(j.data?.creator?.value)} ${j.data?.creator?.reason ?? ''}` }));
 await check('search', 'POST', '/v1/search', { query: 'helix', limit: 1 }, [200, 503], (j) => (j.error === 'search_unavailable' ? { note: 'no backend configured' } : null));
 
-// Crawl lifecycle.
 await check('crawl/estimate', 'POST', '/v1/crawl/estimate', { url: 'https://docs.python.org/3/tutorial/', limit: 5 }, [200], (j) => ({ note: `${j.pages} pages projected` }));
 const crawl = await check('crawl', 'POST', '/v1/crawl', { url: 'https://docs.python.org/3/tutorial/', limit: 3, maxDepth: 1 }, [200, 202], (j) => (j.id ? null : 'no id'));
 if (crawl.json?.id) {
@@ -151,7 +143,6 @@ if (batch.json?.id) {
   await check('batch cancel, finished', 'DELETE', `/v1/batch/scrape/${batch.json.id}`, undefined, [200, 409]);
 }
 
-// Interact sessions.
 await check('interact', 'POST', '/v1/interact', { url: 'https://example.com', actions: [{ type: 'executeJavascript', script: 'document.title' }] }, [200], (j) => (j.javascriptReturns?.[0] === 'Example Domain' ? null : JSON.stringify(j).slice(0, 150)));
 const sess = await check('interact/session', 'POST', '/v1/interact/session', { url: 'https://example.com' }, [200, 201], (j) => (j.sessionId ? null : 'no sessionId'));
 if (sess.json?.sessionId) {
@@ -165,7 +156,6 @@ if (sess.json?.sessionId) {
   await check('interact/session delete', 'DELETE', `/v1/interact/session/${sid}`, undefined, [200, 204]);
 }
 
-// Monitor lifecycle.
 const mon = await check('monitor create', 'POST', '/v1/monitor', { url: 'https://example.com', schedule: { every: '1d' } }, [200, 201], (j) => (j.id ? null : 'no id'));
 await check('monitor list', 'GET', '/v1/monitor', undefined, [200], (j) => (j.monitors?.some((m) => m.id === mon.json?.id) ? null : 'new monitor missing from list'));
 if (mon.json?.id) {
@@ -174,7 +164,6 @@ if (mon.json?.id) {
   await check('monitor patch', 'PATCH', m, { sensitivity: 'significant' }, [200], (j) => (j.sensitivity === 'significant' ? null : `sensitivity ${j.sensitivity}`));
   await check('monitor check', 'POST', `${m}/check`, undefined, [200], (j) => (j.check?.reason === 'first' ? null : { note: j.check?.reason }));
   const hist = await check('monitor history', 'GET', `${m}/history`, undefined, [200], (j) => (j.entries?.length ? null : 'empty'));
-  // Snapshot ids are numbered across every monitor, so follow this one's link from its history.
   const snapshotUrl = hist.json?.entries?.find((e) => e.snapshotUrl)?.snapshotUrl;
   await check('monitor snapshot', 'GET', snapshotUrl ?? `${m}/snapshots/0`, undefined, [200]);
   await check('monitor deliveries', 'GET', `${m}/deliveries`, undefined, [200]);
@@ -183,11 +172,9 @@ if (mon.json?.id) {
   await check('monitor get, deleted', 'GET', m, undefined, [404]);
 }
 
-// Account and instance.
 await check('usage', 'GET', '/v1/usage', undefined, [200]);
 await check('usage/all', 'GET', '/v1/usage/all', undefined, [200, 403]);
 await check('providers', 'GET', '/v1/providers', undefined, [200]);
-// A local runtime is browsed only after its base URL is saved; unsaved is a 400 naming `baseUrl`.
 await check('providers/{p}/models', 'GET', '/v1/providers/ollama/models', undefined, [200, 400, 503], (j) =>
   j.error === 'invalid_request' && j.field !== 'baseUrl' ? `400 on ${j.field}` : null);
 await check('providers put, invalid', 'PUT', '/v1/providers/openai', { apiKey: 'x' }, [400, 403]);

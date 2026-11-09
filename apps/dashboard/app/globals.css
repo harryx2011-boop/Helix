@@ -112,6 +112,21 @@
   }
 }
 
+/*
+ * Colour slots for @harry registry parts (D:/harry-ui/docs/specs/colour-slots.md).
+ * Tailwind 3 keeps bare HSL numbers, so each slot wraps the token its shadcn class
+ * reads today. Repeated on .dark: the /app surface sets .dark on a div, and a slot
+ * declared only on :root would keep the light colours there.
+ */
+:root,
+.dark {
+  --h-subtle: hsl(var(--muted));
+  --h-subtle-fg: hsl(var(--muted-foreground));
+  --h-selected: hsl(var(--accent));
+  --h-selected-fg: hsl(var(--accent-foreground));
+  --h-line: hsl(var(--border));
+}
+
 * {
   border-color: hsl(var(--border));
 }

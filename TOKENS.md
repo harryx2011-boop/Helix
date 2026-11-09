@@ -59,6 +59,11 @@ Source of truth: `apps/dashboard/app/globals.css` (CSS variables) and `apps/dash
 | `--tier-tls` | `262 93% 85%` | dark: fetch-ladder tier, TLS | `apps/dashboard/app/globals.css:78` |
 | `--tier-lightpanda` | `258 90% 76%` | dark: fetch-ladder tier, lightpanda | `apps/dashboard/app/globals.css:79` |
 | `--tier-chromium` | `262 91% 68%` | dark: fetch-ladder tier, chromium | `apps/dashboard/app/globals.css:80` |
+| `--h-subtle` | `hsl(var(--muted))` | @harry part slot: tracks, quiet fills (both themes; also set on `.dark`) | `apps/dashboard/app/globals.css:123` |
+| `--h-subtle-fg` | `hsl(var(--muted-foreground))` | @harry part slot: quiet text, idle dots | `apps/dashboard/app/globals.css:124` |
+| `--h-selected` | `hsl(var(--accent))` | @harry part slot: selected row fill | `apps/dashboard/app/globals.css:125` |
+| `--h-selected-fg` | `hsl(var(--accent-foreground))` | @harry part slot: selected row text | `apps/dashboard/app/globals.css:126` |
+| `--h-line` | `hsl(var(--border))` | @harry part slot: borders, rings, separators | `apps/dashboard/app/globals.css:127` |
 
 ## Type
 | token | value | use | source |

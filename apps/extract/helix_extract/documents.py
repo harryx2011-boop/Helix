@@ -13,8 +13,9 @@ Parser selection, cheapest first:
 
 - **pypdfium2** (Apache/BSD) for clean text layers. Chosen over the faster
   PyMuPDF, whose AGPL licence would contaminate a permissively-licensed project.
-- **Marker** for scanned or garbled documents. Apache-2.0, matches a frontier
-  VLM on olmocr-bench at roughly five times MinerU's throughput.
+- **Marker** for scanned or garbled documents, when the opt-in `marker` extra is
+  installed. Apache-2.0, matches a frontier VLM on olmocr-bench at roughly five
+  times MinerU's throughput. Without it, Docling does the OCR.
 - **Docling** when table fidelity matters. Leads on tables at 97.9% despite a
   lower general score — different tools genuinely win different sub-tasks.
 """
@@ -72,9 +73,9 @@ def classify_content_type(content_type: str) -> DocumentKind:
 def available_parsers() -> list[str]:
     """Which parsers this deployment can actually reach.
 
-    Marker and Docling live in the `documents` extra, so a base install has
-    neither. Reporting that honestly beats accepting a request that will quietly
-    fall back to an empty answer.
+    Docling lives in the `documents` extra and Marker in the `marker` extra, so a
+    base install has neither. Reporting that honestly beats accepting a request
+    that will quietly fall back to an empty answer.
     """
     parsers = ["pypdfium2", "python-docx", "python-pptx", "openpyxl"]
 
@@ -433,22 +434,20 @@ def parse(
 
 
 def _ocr_pdf(data: bytes, max_pages: int | None) -> tuple[str, str]:
-    """OCR a scanned PDF with Marker, if it is installed.
+    """OCR a scanned PDF with Marker, else Docling, whichever is installed.
 
-    Marker lives in the `documents` extra because it pulls ML models that most
-    deployments do not need. When it is absent, say so plainly rather than
-    returning whatever the broken text layer held — that is exactly the mojibake
-    this module exists to prevent.
+    Marker is its own `marker` extra: every marker-pdf release pins pillow<11,
+    so it cannot share an install with the patched Pillow in `documents`.
+    Docling OCRs scans too, so it answers when Marker is absent. When neither is
+    installed, say so plainly rather than returning whatever the broken text
+    layer held, which is exactly the mojibake this module exists to prevent.
     """
     try:
         from marker.converters.pdf import PdfConverter  # type: ignore[import-not-found]
         from marker.models import create_model_dict  # type: ignore[import-not-found]
         from marker.output import text_from_rendered  # type: ignore[import-not-found]
     except ImportError:
-        return (
-            "",
-            "none",
-        )
+        return _docling_pdf(data)
 
     converter = PdfConverter(artifact_dict=create_model_dict())
     rendered = converter(data)

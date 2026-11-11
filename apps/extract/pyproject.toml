@@ -40,17 +40,29 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Heavier parsers, opt-in. Marker matches a frontier VLM on olmocr-bench at
-# roughly five times MinerU's throughput; Docling leads on table fidelity.
+# Heavier parsers, opt-in. Docling leads on table fidelity and OCRs scans.
+# Pillow is held at 12.2 or newer here: older releases carry known image
+# decoder advisories (out-of-bounds write on a crafted image).
 documents = [
-    "marker-pdf>=1.2.0",
     "docling>=2.14.0",
+    "pillow>=12.2.0",
+]
+# Marker matches a frontier VLM on olmocr-bench at roughly five times MinerU's
+# throughput, but every marker-pdf release pins pillow<11, so it cannot share an
+# install with `documents`. Opt in knowingly: `uv sync --extra marker`.
+marker = [
+    "marker-pdf>=1.2.0",
 ]
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "ruff>=0.8.0",
     "mypy>=1.13.0",
+]
+
+[tool.uv]
+conflicts = [
+    [{ extra = "documents" }, { extra = "marker" }],
 ]
 
 [build-system]

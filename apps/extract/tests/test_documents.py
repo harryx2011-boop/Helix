@@ -196,7 +196,44 @@ class TestParse:
             parse(b"\x89PNG", "image/png")
 
 
-@pytest.mark.usefixtures("marker_absent")
+@pytest.fixture
+def docling_absent(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "docling", None)
+    monkeypatch.setitem(sys.modules, "docling.document_converter", None)
+
+
+@pytest.fixture
+def fake_docling(monkeypatch: pytest.MonkeyPatch) -> None:
+    import types
+
+    class _Document:
+        def export_to_markdown(self) -> str:
+            return "# scanned by docling"
+
+    class _Result:
+        document = _Document()
+
+    class _Converter:
+        def convert(self, _source: object) -> _Result:
+            return _Result()
+
+    module = types.ModuleType("docling.document_converter")
+    module.DocumentConverter = _Converter  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "docling", types.ModuleType("docling"))
+    monkeypatch.setitem(sys.modules, "docling.document_converter", module)
+
+
+@pytest.mark.usefixtures("marker_absent", "fake_docling")
+class TestOcrFallsBackToDoclingWithoutMarker:
+    def test_ocr_runs_through_docling_when_marker_is_not_installed(self) -> None:
+        result = parse(make_short_pdf(""), "application/pdf", ocr="auto")
+
+        assert result.markdown == "# scanned by docling"
+        assert result.ocr_applied
+        assert result.parser_used == "docling"
+
+
+@pytest.mark.usefixtures("marker_absent", "docling_absent")
 class TestShortPdfWithoutOcr:
 
     @pytest.mark.parametrize("ocr", ["auto", "always", "never"])

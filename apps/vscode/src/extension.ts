@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { localFetch } from './local-fetch';
 import { clearKey, promptForKey, readKey } from './key';
 import { MonitorsView, type Connection } from './monitors-view';
 import { showPanel } from './panel';
@@ -23,7 +24,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const refreshStatus = async (): Promise<ApiTarget | null> => {
     const tried = ports();
-    target = await findApi(tried, fetch);
+    target = await findApi(tried, localFetch);
     const view = statusView(target, tried);
     status.text = view.text;
     status.tooltip = view.tooltip;
@@ -91,7 +92,7 @@ export function deactivate(): void {}
 
 async function servesApp(origin: string): Promise<boolean> {
   try {
-    const response = await fetch(`${origin}/app`, { method: 'HEAD', signal: AbortSignal.timeout(3_000) });
+    const response = await localFetch(`${origin}/app`, { method: 'HEAD', signal: AbortSignal.timeout(3_000) });
     return response.ok && (response.headers.get('content-type') ?? '').includes('text/html');
   } catch {
     return false;

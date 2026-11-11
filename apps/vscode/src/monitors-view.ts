@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { localFetch } from './local-fetch';
 import { checkRow, fetchHistory, fetchMonitors, monitorRow, type CheckItem, type MonitorItem, type Row } from './monitors';
 
 export type Connection = { origin: string; apiKey: string } | string;
@@ -33,12 +34,12 @@ export class MonitorsView implements vscode.TreeDataProvider<Node>, vscode.Dispo
 
     try {
       if (!node) {
-        const monitors = await fetchMonitors(connection.origin, connection.apiKey, fetch);
+        const monitors = await fetchMonitors(connection.origin, connection.apiKey, localFetch);
         if (monitors.length === 0) return [message('No monitors yet. Create one with "Helix: Open Web Monitoring".')];
         return monitors.map((monitor) => ({ kind: 'monitor', monitor }));
       }
 
-      const checks = await fetchHistory(connection.origin, connection.apiKey, node.monitor.id, fetch);
+      const checks = await fetchHistory(connection.origin, connection.apiKey, node.monitor.id, localFetch);
       if (checks.length === 0) return [message('No checks yet.')];
       return checks.map((check) => ({ kind: 'check', check }));
     } catch (error) {

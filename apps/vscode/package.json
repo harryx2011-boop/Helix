@@ -2,7 +2,7 @@
   "name": "helix",
   "displayName": "Helix",
   "description": "Open the Helix app inside VS Code, watch its API health in the status bar, and read what your web monitors saw change.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "UNLICENSED",
   "publisher": "harry",

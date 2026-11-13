@@ -71,3 +71,12 @@ SemVer; currently **2.3.2** in the root `package.json` — the one source of tru
 ## Design
 
 UI work reads `DESIGN-SYSTEM.md` and `TOKENS.md` first; no raw colour, size or easing outside `TOKENS.md` (format: `~/.claude/reference/design-system-files.md`).
+
+## Cloud VM (boat)
+
+Heavy work (installs, full test suites, lint, builds, dev servers) can run in this project's boat.dev Linux VM instead of on the PC. Rules and setup steps: `~/.claude/reference/boat-vms.md`. Skill: `aether-vm`; command: `/vm`.
+
+- Tools: `aether-vm.*` through Aether (`run`, `sync`, `status`, `stop`, `cost`), or the standalone `boat` MCP (`mcp__boat__*`).
+- Never send a secret, an env var or a `.env` file to the VM. Ask Harry before a new VM, a fork, a delete or a size change.
+- A test that fails in the VM counts only after the same file fails on the PC.
+- **VM:** none yet. First heavy job: `/vm setup` (asks Harry first).

@@ -475,6 +475,18 @@ describe('POST /scrape engine and tier selection', () => {
     expect(deps.fetchClient.render).toHaveBeenCalledWith(expect.objectContaining({ stealth: true, solveCloudflare: true }));
   });
 
+  it('S22: a challenge failure carries challengeMs on the wire', async () => {
+    const challenge = '<html><head><title>Just a moment...</title></head><body><div class="cf-browser-verification">Checking your browser before accessing</div></body></html>';
+    const fetchClient = {
+      fetch: vi.fn(async () => ({ success: true, status: 403, headers: {}, body: challenge, timingMs: 5 })),
+      render: vi.fn(async () => ({ success: true, status: 403, headers: {}, body: challenge, challengeMs: 18_200, timingMs: 19_000 })),
+      health: vi.fn(async () => true),
+    } as unknown as FetchClient;
+    const { app } = await build({ fetchClient });
+    const res = await post(app, { url: 'https://example.com', tier: 'browser', solveCloudflare: true });
+    expect(res.json().failure).toMatchObject({ reason: 'challenge', challengeMs: 18_200 });
+  });
+
   it('leaves stealth and the solver off unless asked', async () => {
     const { app, deps } = await build();
     await post(app, { url: 'https://example.com', tier: 'browser' });

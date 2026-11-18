@@ -101,6 +101,22 @@ describe('a challenge on the browser rung gets one solver retry (answer 10)', ()
     expect(client.render).toHaveBeenCalledTimes(1);
   });
 
+  it('S20: a challenge the solver could not clear reports how long the solver tried', async () => {
+    const client = fetchClient(CHALLENGE, [CHALLENGE]);
+    client.render.mockImplementation(async (options: RenderOptions) => ({
+      success: true, status: 200, headers: {}, body: CHALLENGE, timingMs: 5,
+      ...(options.solveCloudflare ? { challengeMs: 16_400 } : {}),
+    }));
+    const result = await runPipeline(
+      { url: 'https://example.com/a', formats: ['markdown'], tier: 'browser' },
+      deps({ fetchClient: client }),
+    );
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.reason).toBe('challenge');
+    expect(result.challengeMs).toBe(16_400);
+  });
+
   it('S19: retries only on a challenge verdict', () => {
     expect(wantsChallengeRetry({ solveCloudflare: undefined, reason: 'challenge' })).toBe(true);
     expect(wantsChallengeRetry({ solveCloudflare: true, reason: 'challenge' })).toBe(false);

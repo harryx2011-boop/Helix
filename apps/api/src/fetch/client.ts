@@ -77,6 +77,7 @@ export interface RenderResult {
   cookies?: BrowserCookie[] | undefined;
   /** The profile actually presented. Absent when none was sent or it could not be applied. */
   profileUsed?: string | undefined;
+  challengeMs?: number | undefined;
   timingMs: number;
   error?: string | undefined;
 }
@@ -200,6 +201,7 @@ export class FetchClient {
         final_url?: string;
         cookies?: BrowserCookie[];
         profile_used?: string | null;
+        challenge_ms?: number;
         timing_ms?: number;
         error?: string;
       };
@@ -211,6 +213,7 @@ export class FetchClient {
         finalUrl: body.final_url,
         cookies: body.cookies,
         profileUsed: body.profile_used ?? undefined,
+        challengeMs: body.challenge_ms,
         timingMs: body.timing_ms ?? Date.now() - started,
         error: body.error,
       };

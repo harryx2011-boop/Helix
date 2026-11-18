@@ -92,6 +92,7 @@ export interface PipelineFailure {
   escalationAvailable: boolean;
   timingMs: number;
   retryAfterSeconds?: number | undefined;
+  challengeMs?: number | undefined;
 }
 
 export type PipelineResult = PipelineSuccess | PipelineFailure;
@@ -186,6 +187,7 @@ interface TierAttempt {
   screenshotResult?: ScreenshotResult | undefined;
   transportError?: string | undefined;
   setCookies?: string[] | undefined;
+  challengeMs?: number | undefined;
 }
 
 /**
@@ -289,6 +291,7 @@ async function attemptTier(
       facts: { statusCode: rendered.status ?? 0, headers: rendered.headers, body: rendered.body ?? '' },
       finalUrl: rendered.finalUrl,
       profileUsed: rendered.profileUsed,
+      challengeMs: rendered.challengeMs,
       ...(resolved.warnings.length > 0 ? { warnings: resolved.warnings } : {}),
       transportError: rendered.success ? undefined : (rendered.error ?? 'helix-scrape render failed'),
     };
@@ -604,6 +607,7 @@ async function walkLadder(
       profileUsed: attempt.profileUsed,
       escalationAvailable: verdict.blocked,
       timingMs: Date.now() - started,
+      ...(attempt.challengeMs === undefined ? {} : { challengeMs: attempt.challengeMs }),
       ...(() => {
         const after = retryAfterSeconds(attempt.facts.headers);
         return after === undefined ? {} : { retryAfterSeconds: after };

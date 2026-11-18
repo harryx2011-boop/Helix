@@ -299,6 +299,7 @@ export async function registerScrape(
           tiersAttempted: result.tiersAttempted,
           profile: result.profileUsed,
           escalationAvailable: result.escalationAvailable,
+          challengeMs: result.challengeMs,
         },
         warnings,
       });

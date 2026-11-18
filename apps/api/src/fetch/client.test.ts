@@ -113,6 +113,15 @@ describe('FetchClient', () => {
     expect(result.profileUsed).toBe('chrome-148');
   });
 
+  it("S21: reads helix-scrape's challenge_ms as challengeMs", async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ success: true, status: 200, headers: {}, body: '<html></html>', challenge_ms: 19_850, timing_ms: 21_000 })),
+    );
+    const result = await new FetchClient('http://127.0.0.1:7403').render({ url: 'https://example.com', solveCloudflare: true });
+    expect(result.challengeMs).toBe(19_850);
+  });
+
   it('reports an unreachable helix-scrape as a service problem, not a page problem', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed'); }));
     const result = await new FetchClient('http://127.0.0.1:7403').render({ url: 'https://example.com' });

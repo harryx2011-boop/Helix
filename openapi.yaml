@@ -4932,6 +4932,9 @@ components:
         escalationAvailable:
           type: boolean
           description: Whether a higher tier, another profile or a different proxy could still be tried.
+        challengeMs:
+          type: integer
+          description: How long the Cloudflare solver ran on the browser tier, in milliseconds. Present only when it ran (capped at 20000).
 
     Estimate:
       type: object

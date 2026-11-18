@@ -13,7 +13,6 @@ venv/
 .mypy_cache/
 
 target/
-Cargo.lock
 
 .env
 .env.local

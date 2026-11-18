@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from curl_cffi.requests import BrowserType
+
 from helix_scrape.profiles import DEFAULT_TARGET, available, resolve
 
 

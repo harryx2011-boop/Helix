@@ -38,6 +38,7 @@ const ConfigSchema = z.object({
   databaseUrl: z.string().optional(),
   dataDir: z.string().default(join(process.cwd(), 'data')),
   fetchUrl: z.string().default('http://localhost:7403'),
+  renderUrl: z.string().optional(),
   extractUrl: z.string().default('http://localhost:7402'),
   serviceToken: z.string().optional(),
 
@@ -128,6 +129,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     databaseUrl: env.DATABASE_URL || undefined,
     dataDir: env.HELIX_DATA_DIR || undefined,
     fetchUrl: env.HELIX_FETCH_URL,
+    renderUrl: env.HELIX_RENDER_URL || undefined,
     extractUrl: env.HELIX_EXTRACT_URL,
     serviceToken: env.HELIX_SERVICE_TOKEN || undefined,
     respectRobots: env.HELIX_RESPECT_ROBOTS,

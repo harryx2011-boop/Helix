@@ -35,6 +35,14 @@ describe('db', () => {
   });
 });
 
+describe('renderUrl', () => {
+  it('S4: reads HELIX_RENDER_URL and leaves it unset when empty, so renders follow the fetch address', () => {
+    expect(loadConfig({ HELIX_RENDER_URL: 'http://127.0.0.1:7403' }).renderUrl).toBe('http://127.0.0.1:7403');
+    expect(loadConfig({ HELIX_RENDER_URL: '' }).renderUrl).toBeUndefined();
+    expect(loadConfig({}).renderUrl).toBeUndefined();
+  });
+});
+
 describe('int()', () => {
   it('rejects a value parseInt would silently truncate', () => {
     expect(() => loadConfig({ ...base, HELIX_PORT: '1e3' })).toThrow();

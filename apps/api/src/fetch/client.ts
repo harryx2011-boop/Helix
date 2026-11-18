@@ -83,11 +83,13 @@ export interface RenderResult {
 
 export class FetchClient {
   readonly #baseUrl: string;
+  readonly #renderUrl: string;
   readonly #logger: Log | undefined;
   readonly #serviceToken: string | undefined;
 
-  constructor(baseUrl: string, logger?: Log, serviceToken?: string) {
+  constructor(baseUrl: string, logger?: Log, serviceToken?: string, renderUrl?: string) {
     this.#baseUrl = baseUrl.replace(/\/$/, '');
+    this.#renderUrl = (renderUrl ?? baseUrl).replace(/\/$/, '');
     this.#logger = logger;
     this.#serviceToken = serviceToken;
   }
@@ -162,7 +164,7 @@ export class FetchClient {
     const timeout = AbortSignal.timeout(timeoutMs + 5_000);
     const signal = options.signal ? AbortSignal.any([timeout, options.signal]) : timeout;
     try {
-      const response = await fetch(`${this.#baseUrl}/render`, {
+      const response = await fetch(`${this.#renderUrl}/render`, {
         method: 'POST',
         headers: withServiceToken(this.#serviceToken, { 'content-type': 'application/json' }),
         body: JSON.stringify({
@@ -225,13 +227,17 @@ export class FetchClient {
   }
 
   async health(): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.#baseUrl}/health`, {
-        signal: AbortSignal.timeout(2_000),
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
+    const bases = this.#renderUrl === this.#baseUrl ? [this.#baseUrl] : [this.#baseUrl, this.#renderUrl];
+    const answers = await Promise.all(bases.map((base) => probe(`${base}/health`)));
+    return answers.every(Boolean);
+  }
+}
+
+async function probe(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(2_000) });
+    return response.ok;
+  } catch {
+    return false;
   }
 }

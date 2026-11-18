@@ -119,4 +119,44 @@ describe('FetchClient', () => {
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/fetch failed|helix-scrape/);
   });
+
+  it('S1: sends /fetch to the fetch address and /render to the render address when they differ', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        return new Response(JSON.stringify({ success: true, status: 200, headers: {}, body: '' }), { status: 200 });
+      }),
+    );
+    const client = new FetchClient('http://127.0.0.1:7401', undefined, undefined, 'http://127.0.0.1:7403/');
+    await client.fetch({ url: 'https://example.com', impersonate: true });
+    await client.render({ url: 'https://example.com' });
+    expect(calls).toEqual(['http://127.0.0.1:7401/fetch', 'http://127.0.0.1:7403/render']);
+  });
+
+  it('S2: renders on the fetch address when no render address is set', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        return new Response(JSON.stringify({ success: true, status: 200, headers: {}, body: '' }), { status: 200 });
+      }),
+    );
+    await new FetchClient('http://127.0.0.1:7403').render({ url: 'https://example.com' });
+    expect(calls).toEqual(['http://127.0.0.1:7403/render']);
+  });
+
+  it('S3: reports unhealthy when the render service is down even if fetch answers', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.startsWith('http://127.0.0.1:7403')) throw new TypeError('fetch failed');
+        return new Response('{}', { status: 200 });
+      }),
+    );
+    const client = new FetchClient('http://127.0.0.1:7401', undefined, undefined, 'http://127.0.0.1:7403');
+    expect(await client.health()).toBe(false);
+  });
 });

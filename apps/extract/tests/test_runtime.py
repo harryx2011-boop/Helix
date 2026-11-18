@@ -189,7 +189,7 @@ def test_a_pack_without_site_packages_fails(tmp_path: Path) -> None:
 def test_runtime_dir_defaults_under_localappdata(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(runtime.settings, "helix_runtime_dir", None)
     monkeypatch.setenv("LOCALAPPDATA", r"C:\Users\x\AppData\Local")
-    assert runtime.default_runtime_dir() == Path(r"C:\Users\x\AppData\Local\Helix\runtime")
+    assert runtime.default_runtime_dir() == Path(r"C:\Users\x\AppData\Local") / "Helix" / "runtime"
 
     monkeypatch.setattr(runtime.settings, "helix_runtime_dir", r"D:\rt")
     assert runtime.default_runtime_dir() == Path(r"D:\rt")

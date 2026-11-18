@@ -16,7 +16,10 @@ pub fn public_only(addrs: Vec<SocketAddr>) -> Result<Vec<SocketAddr>, String> {
         return Err("name did not resolve".into());
     }
     if let Some(bad) = addrs.iter().find(|a| is_private_ip(a.ip())) {
-        return Err(format!("resolves to a private or local address ({})", bad.ip()));
+        return Err(format!(
+            "resolves to a private or local address ({})",
+            bad.ip()
+        ));
     }
     Ok(addrs)
 }
@@ -28,7 +31,8 @@ impl Resolve for PublicOnlyResolver {
     fn resolve(&self, name: Name) -> Resolving {
         let host = name.as_str().to_owned();
         Box::pin(async move {
-            let found: Vec<SocketAddr> = tokio::net::lookup_host((host.as_str(), 0)).await?.collect();
+            let found: Vec<SocketAddr> =
+                tokio::net::lookup_host((host.as_str(), 0)).await?.collect();
             let addrs = public_only(found)?;
             Ok(Box::new(addrs.into_iter()) as Addrs)
         })
@@ -58,7 +62,12 @@ mod tests {
 
     #[test]
     fn public_only_refuses_v6_forms_that_carry_a_private_address() {
-        for text in ["[::7f00:1]:0", "[fec0::1]:0", "[2002:7f00:1::]:0", "[2002:a9fe:a9fe::1]:0"] {
+        for text in [
+            "[::7f00:1]:0",
+            "[fec0::1]:0",
+            "[2002:7f00:1::]:0",
+            "[2002:a9fe:a9fe::1]:0",
+        ] {
             let addr: SocketAddr = text.parse().unwrap();
             assert!(public_only(vec![addr]).is_err(), "{text} passed");
         }

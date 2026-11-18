@@ -316,8 +316,8 @@ fn read_definitions(dir: &Path) -> anyhow::Result<Vec<Profile>> {
             continue;
         }
         let text = std::fs::read_to_string(&path)?;
-        let profile: Profile = serde_json::from_str(&text)
-            .map_err(|e| anyhow::anyhow!("{}: {e}", path.display()))?;
+        let profile: Profile =
+            serde_json::from_str(&text).map_err(|e| anyhow::anyhow!("{}: {e}", path.display()))?;
         profiles.push(profile);
     }
     Ok(profiles)
@@ -362,7 +362,9 @@ pub fn load_all() -> anyhow::Result<()> {
     }
 
     if loaded.is_empty() {
-        tracing::debug!("no profile definitions found; the transport layer still presents its own identities");
+        tracing::debug!(
+            "no profile definitions found; the transport layer still presents its own identities"
+        );
     }
 
     PROFILES.get_or_init(|| loaded);
@@ -397,7 +399,10 @@ mod tests {
         }
 
         let profiles = read_definitions(dir).expect("definitions should parse");
-        assert!(!profiles.is_empty(), "expected at least one shipped definition");
+        assert!(
+            !profiles.is_empty(),
+            "expected at least one shipped definition"
+        );
 
         for profile in &profiles {
             profile

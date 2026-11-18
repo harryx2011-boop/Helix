@@ -23,14 +23,14 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use http_body_util::{BodyExt, LengthLimitError, Limited};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::{LazyLock, Mutex, PoisonError};
 use std::time::{Duration, Instant};
-use http_body_util::{BodyExt, LengthLimitError, Limited};
-use wreq::redirect;
 use url::Url;
+use wreq::redirect;
 
 #[derive(Debug, Deserialize)]
 struct FetchRequest {
@@ -190,8 +190,7 @@ struct ClientKey {
 
 // ponytail: cleared wholesale past 64 keys; LRU if callers rotate many proxies.
 const MAX_CLIENTS: usize = 64;
-static CLIENTS: LazyLock<Mutex<HashMap<ClientKey, wreq::Client>>> =
-    LazyLock::new(Default::default);
+static CLIENTS: LazyLock<Mutex<HashMap<ClientKey, wreq::Client>>> = LazyLock::new(Default::default);
 
 static MAX_BODY_BYTES: LazyLock<usize> = LazyLock::new(|| {
     std::env::var("HELIX_FETCH_MAX_BODY_BYTES")
@@ -358,7 +357,10 @@ async fn fetch(Json(req): Json<FetchRequest>) -> Json<FetchResponse> {
     let mut error = None;
     // A body that fails to decode is still a real answer about the transport —
     // report the status and headers rather than discarding everything.
-    let body = match Limited::new(wreq::Body::from(response), max).collect().await {
+    let body = match Limited::new(wreq::Body::from(response), max)
+        .collect()
+        .await
+    {
         Ok(collected) => Some(String::from_utf8_lossy(&collected.to_bytes()).into_owned()),
         Err(e) if e.is::<LengthLimitError>() => {
             error = Some(format!("body exceeds {max} bytes"));
@@ -478,8 +480,11 @@ mod tests {
             }
             _ => head.as_bytes().to_vec(),
         };
-        let mut out = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n{extra}\r\n", body.len())
-            .into_bytes();
+        let mut out = format!(
+            "HTTP/1.1 200 OK\r\ncontent-length: {}\r\n{extra}\r\n",
+            body.len()
+        )
+        .into_bytes();
         out.extend(body);
         out
     }
@@ -525,14 +530,16 @@ mod tests {
     #[tokio::test]
     async fn tls_tier_asks_for_compression_like_chrome_and_decodes_it() {
         let (base, _) = serve().await;
-        let echo = call(serde_json::json!({ "url": format!("{base}/echo"), "allow_private": true })).await;
+        let echo =
+            call(serde_json::json!({ "url": format!("{base}/echo"), "allow_private": true })).await;
         let head = echo.body.unwrap();
         assert!(
             head.contains("accept-encoding: gzip, deflate, br, zstd\r\n"),
             "no Chrome accept-encoding in: {head}"
         );
 
-        let res = call(serde_json::json!({ "url": format!("{base}/gzip"), "allow_private": true })).await;
+        let res =
+            call(serde_json::json!({ "url": format!("{base}/gzip"), "allow_private": true })).await;
         assert_eq!(res.body.as_deref(), Some("compressed hello"));
     }
 
@@ -544,16 +551,25 @@ mod tests {
         call(plain.clone()).await;
         tokio::time::sleep(Duration::from_millis(100)).await;
         call(plain).await;
-        assert_eq!(connections.load(Ordering::SeqCst), 1, "same key opened a second connection");
+        assert_eq!(
+            connections.load(Ordering::SeqCst),
+            1,
+            "same key opened a second connection"
+        );
 
         call(serde_json::json!({ "url": format!("{base}/echo"), "allow_private": true, "profile": "edge-148" })).await;
-        assert_eq!(connections.load(Ordering::SeqCst), 2, "another identity shared a connection");
+        assert_eq!(
+            connections.load(Ordering::SeqCst),
+            2,
+            "another identity shared a connection"
+        );
     }
 
     #[tokio::test]
     async fn body_over_the_cap_is_refused() {
         let (base, _) = serve().await;
-        let res = call(serde_json::json!({ "url": format!("{base}/big"), "allow_private": true })).await;
+        let res =
+            call(serde_json::json!({ "url": format!("{base}/big"), "allow_private": true })).await;
         assert!(res.body.is_none());
         let error = res.error.unwrap_or_default();
         assert!(error.starts_with("body exceeds "), "got error {error:?}");
@@ -563,15 +579,24 @@ mod tests {
     #[tokio::test]
     async fn default_identity_presents_windows() {
         let (base, _) = serve().await;
-        let res = call(serde_json::json!({ "url": format!("{base}/echo"), "allow_private": true })).await;
+        let res =
+            call(serde_json::json!({ "url": format!("{base}/echo"), "allow_private": true })).await;
         let head = res.body.unwrap();
-        assert!(head.contains("sec-ch-ua-platform: \"windows\"\r\n"), "head: {head}");
-        assert!(head.contains("user-agent: mozilla/5.0 (windows nt 10.0; win64; x64)"), "head: {head}");
+        assert!(
+            head.contains("sec-ch-ua-platform: \"windows\"\r\n"),
+            "head: {head}"
+        );
+        assert!(
+            head.contains("user-agent: mozilla/5.0 (windows nt 10.0; win64; x64)"),
+            "head: {head}"
+        );
     }
 
     #[tokio::test]
     async fn transport_error_keeps_its_dns_cause() {
-        let res = call(serde_json::json!({ "url": "https://nonexistent-host-helix-test.invalid/" })).await;
+        let res =
+            call(serde_json::json!({ "url": "https://nonexistent-host-helix-test.invalid/" }))
+                .await;
         let error = res.error.unwrap_or_default();
         assert!(error.to_lowercase().contains("dns"), "got error {error:?}");
     }
@@ -579,9 +604,14 @@ mod tests {
     #[tokio::test]
     async fn every_set_cookie_survives() {
         let (base, _) = serve().await;
-        let res = call(serde_json::json!({ "url": format!("{base}/cookies"), "allow_private": true })).await;
+        let res =
+            call(serde_json::json!({ "url": format!("{base}/cookies"), "allow_private": true }))
+                .await;
         let json = serde_json::to_value(&res).unwrap();
-        assert_eq!(json["set_cookies"], serde_json::json!(["a=1; Path=/", "b=2; Path=/"]));
+        assert_eq!(
+            json["set_cookies"],
+            serde_json::json!(["a=1; Path=/", "b=2; Path=/"])
+        );
         assert!(json["headers"]["set-cookie"].is_string());
     }
 }

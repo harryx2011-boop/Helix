@@ -105,4 +105,18 @@ Fixed limits whatever the answers: no paid human CAPTCHA-solving service, no ima
 | B8 headed Chrome | done `d7f9f05` | npmjs headless 403 to headed 200; rebrowser red rows 3 to 1 |
 | B9 challenge budget and retry | done `d7f9f05`, `c19f2f4` | pytest S8-S9, vitest S17-S19; not yet run against a live challenge |
 | Go live (restart 7400 and 7403) | blocked | the restart of the shared API needs Harry's go (permission check refused it) |
-| B10-B13, C-G | not started | |
+| Full API suite on the VM | 1704 of 1740 pass | 36 failures in 2 files, all browser tests (no Chromium on the VM); Chromium then installed there and a rerun started (VM job `j5f3e42d049`, result not read) |
+| CI agent changes | uncommitted, unverified | stopped mid-task at Harry's "stop here": 32 modified files (`.github/workflows/ci.yml`, `apps/extract/**` lint and format, `apps/fetch/src/*.rs` and `build.rs` fmt/clippy, `openapi.yaml`). Verify or discard before any commit |
+| B10-B13, C-G | not started | step 15 capture: `tools/capture/` already exists (capture.mjs, identity.mjs, 17 tests); extend it, do not rebuild it |
+
+## Next session (stopped 2026-11-18 at Harry's "stop here")
+
+State: 13 commits on local `main` not pushed (`git log origin/main..main`). Running and left running: helix-scrape on 7403 (new code not loaded until restart), the old API on 7400 (old code), Rust helix-fetch 1.7.0 on 7401. The Agent37 VM sleeps by itself after 15 idle minutes.
+
+Order:
+1. Read this file and `context.md` Current state. Check `git status` for the CI agent's 32 uncommitted files.
+2. CI: verify each fix (redocly lint pinned, extract `ruff check`/`ruff format --check`/pytest, `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` with `CARGO_TARGET_DIR=C:/Builds/helix/fetch-target -j 4`, compose `POSTGRES_PASSWORD` in the job env), commit one logical change per commit, then decide on committing `apps/fetch/Cargo.lock`.
+3. Ask Harry for the restart of 7400 and 7403 (stop pid on each, then `node ~/.claude/hooks/helix-ensure.js`); then live-check through `helix_scrape`: npmjs.com/package/express (expect headed 200), a robots-disallowed URL (expect `robots_denied`), nopecha.com/demo/cloudflare (challenge retry, 20 s budget).
+4. Push `main` (Harry chose push per batch; the site redeploys) once CI is green locally.
+5. Read VM job `j5f3e42d049` (`node D:/agent37-mcp/src/cli.ts logs --cwd D:\Helix --job j5f3e42d049 --json`); a failure counts only if the same file fails on the PC.
+6. Then B10 ladder registry (rungs `camoufox`, `real` as registry entries; add them to `STEALTH_TIERS`), B11 Camoufox, B12 real Chrome profile over CDP (scrapling 0.5.1 `AsyncRemoteSession`), B13 `rebrowser-playwright`, C14 `host_sessions`, C15 capture (extend `tools/capture`), D, E (proof runner, Firecrawl Local head-to-head), F, G.

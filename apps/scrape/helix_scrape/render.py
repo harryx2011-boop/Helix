@@ -1,13 +1,15 @@
-"""The browser tier: /render on Scrapling's patched Chromium (`AsyncStealthySession`).
+"""The browser tier: /render on Scrapling's `AsyncStealthySession`.
 
-Scrapling 0.5 has no plain (non-stealth) browser, so the patched one is always used
+Scrapling 0.5 has no plain (non-stealth) browser, so its session is always used
 (docs/adr/0001-scrapling.md). What stays opt-in is behaviour a site would notice: `stealth`
-adds canvas noise, a WebRTC lock and a search referer, and `solve_cloudflare` clicks
-through a challenge. Neither is ever turned on here by default.
+adds canvas noise (headless only), a WebRTC lock and a search referer, and `solve_cloudflare`
+clicks through a challenge. Neither is ever turned on here by default.
 
-The browser runs on the Chromium Helix already stages for Playwright, so no second browser
-is downloaded. Each render gets its own browser and closes it: nothing (cookies, storage,
-proxy) carries from one caller to the next, and the API owns host sessions.
+With Google Chrome installed the browser is headed real Chrome, window off-screen, one
+persistent profile per host, nothing injected (`chrome.py`). Otherwise it runs on the
+Chromium Helix stages for Playwright, headless, with the caller's identity applied. A
+headless render gets its own browser and closes it; a headed one keeps its host's profile
+(cookies, storage) for the next, and renders of one host take turns.
 
 Security: unless the operator allowed private addresses, every connection the browser
 makes goes through `GuardProxy`, which applies `/fetch`'s rule (resolve once, refuse any
@@ -30,6 +32,20 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
+from helix_scrape.chrome import (
+    ChallengeTimeoutError,
+    challenge_budget_ms,
+    chrome_candidates,
+    chromium_path,
+    find_chrome,
+    headed_enabled,
+    headed_options,
+    profile_dir,
+    profile_lock,
+    scrapling_flags,
+    slot_gate,
+    with_challenge_budget,
+)
 from helix_scrape.fetcher import _is_literal, _parse, max_body_bytes
 from helix_scrape.guard import is_private_host, lookup_public
 from helix_scrape.guard_proxy import GuardProxy, Lookup
@@ -43,36 +59,6 @@ LOOKUP: Lookup = lookup_public
 _CLOSE_GRACE_S = 5
 _PRIVATE = "private or local address, which this instance does not fetch"
 _REDIRECTED_PRIVATE = "request failed: redirected to a private or local address"
-_EXECUTABLES = (
-    ("chrome-win64", "chrome.exe"),
-    ("chrome-win", "chrome.exe"),
-    ("chrome-linux64", "chrome"),
-    ("chrome-linux", "chrome"),
-)
-
-
-def _max_renders() -> int:
-    try:
-        return max(1, int(os.environ["HELIX_SCRAPE_MAX_RENDERS"]))
-    except (KeyError, ValueError):
-        return 2
-
-
-# A browser is a few hundred MB and a busy CPU; a crawl must not open dozens at once.
-# Renders wait for a slot on the event loop, not in a worker thread: the default executor
-# also resolves names for /fetch (loop.getaddrinfo), and queued renders must not fill it.
-# One gate per loop (the service has one; each test has its own), kept on the loop itself:
-# a semaphore that has waited points back at its loop, so a map keyed by loop never let go.
-_GATE = "_helix_render_gate"
-
-
-def _slot_gate() -> asyncio.Semaphore:
-    loop = asyncio.get_running_loop()
-    gate: asyncio.Semaphore | None = getattr(loop, _GATE, None)
-    if gate is None:
-        gate = asyncio.Semaphore(_max_renders())
-        setattr(loop, _GATE, gate)
-    return gate
 
 
 def _session_class() -> Any:
@@ -81,36 +67,8 @@ def _session_class() -> Any:
     return AsyncStealthySession
 
 
-def chromium_path() -> str | None:
-    """The staged Chromium: `HELIX_CHROMIUM_PATH`, else the newest `chromium-<rev>` under
-    `PLAYWRIGHT_BROWSERS_PATH` (or Playwright's default folder). None lets patchright use
-    its own download, which Helix does not ship.
-    """
-    explicit = os.environ.get("HELIX_CHROMIUM_PATH")
-    if explicit:
-        return explicit
-    root = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
-    if not root:
-        local = os.environ.get("LOCALAPPDATA")
-        root = (
-            str(Path(local) / "ms-playwright")
-            if local
-            else str(Path.home() / ".cache" / "ms-playwright")
-        )
-    folder = Path(root)
-    if not folder.is_dir():
-        return None
-    revisions = sorted(
-        (int(d.name.split("-", 1)[1]), d)
-        for d in folder.iterdir()
-        if d.is_dir() and re.fullmatch(r"chromium-\d+", d.name)
-    )
-    for _, directory in reversed(revisions):
-        for sub, name in _EXECUTABLES:
-            exe = directory / sub / name
-            if exe.is_file():
-                return str(exe)
-    return None
+def _chrome_path() -> str | None:
+    return find_chrome(chrome_candidates(os.environ, sys.platform))
 
 
 def _cookie(cookie: CookieIn, url: str) -> dict[str, Any]:
@@ -144,6 +102,10 @@ class _LastDocument:
         # The caller's profile, once presented, and the CDP session that holds its override.
         self.profile_used: str | None = None
         self.identity_session: Any = None
+        self.challenge_ms: int | None = None
+
+    def record_challenge(self, ms: int) -> None:
+        self.challenge_ms = ms
 
     async def setup(self, page: Any) -> None:
         def on_request(request: Any) -> None:
@@ -179,24 +141,34 @@ def _page_setup(req: RenderRequest, last: _LastDocument) -> Any:
     return setup
 
 
-def _session_options(
-    req: RenderRequest, guard: GuardProxy | None, last: _LastDocument
-) -> dict[str, Any]:
+def _browser_kind(req: RenderRequest, profile: Path | None, block_webrtc: bool) -> dict[str, Any]:
+    if profile is not None:
+        headed = headed_options(profile, scrapling_flags(), block_webrtc=block_webrtc)
+        return {**headed, "hide_canvas": False}
     return {
         **(session_options(req.identity) if req.identity else {}),
-        "page_setup": _page_setup(req, last),
         "executable_path": chromium_path(),
         "headless": True,
+        "hide_canvas": req.stealth,
+    }
+
+
+def _session_options(
+    req: RenderRequest, guard: GuardProxy | None, last: _LastDocument, profile: Path | None
+) -> dict[str, Any]:
+    # WebRTC's STUN is UDP, which no HTTP proxy carries: unlocked, a page reaches
+    # loopback and LAN around the guard and shows the real address behind a proxy.
+    block_webrtc = req.stealth or guard is not None or bool(req.proxy)
+    return {
+        **_browser_kind(req, profile, block_webrtc),
+        "page_setup": _page_setup(req, last),
         "retries": 1,
         "timeout": req.timeout_ms,
         "wait": req.wait_ms,
         "wait_selector": req.wait_selector,
         "network_idle": req.network_idle,
         "solve_cloudflare": req.solve_cloudflare,
-        "hide_canvas": req.stealth,
-        # WebRTC's STUN is UDP, which no HTTP proxy carries: unlocked, a page reaches
-        # loopback and LAN around the guard and shows the real address behind a proxy.
-        "block_webrtc": req.stealth or guard is not None or bool(req.proxy),
+        "block_webrtc": block_webrtc,
         "google_search": req.stealth,
         "block_ads": req.block_ads,
         "disable_resources": req.disable_resources,
@@ -220,6 +192,8 @@ def _describe(
     text = str(error).split("\n", 1)[0].strip()
     code = re.search(r"net::ERR_[A-Z_]+", text)
     name = code.group(0) if code else ""
+    if isinstance(error, ChallengeTimeoutError):
+        return str(error)
     if guard and name in ("net::ERR_TUNNEL_CONNECTION_FAILED", "net::ERR_PROXY_CONNECTION_FAILED"):
         # Only the page's own path explains a failed navigation; a refused image does not.
         path = last.navigated | {_authority(req.url)}
@@ -247,12 +221,21 @@ def _ended_somewhere_refused(final_url: str, req: RenderRequest, guard: GuardPro
 
 
 async def _browse(
-    req: RenderRequest, guard: GuardProxy | None, last: _LastDocument, started: float
+    req: RenderRequest,
+    guard: GuardProxy | None,
+    last: _LastDocument,
+    started: float,
+    profile: Path | None,
 ) -> RenderResponse:
     def elapsed() -> int:
         return int((time.monotonic() - started) * 1000)
 
-    async with _session_class()(**_session_options(req, guard, last)) as session:
+    session_class = _session_class()
+    if req.solve_cloudflare:
+        session_class = with_challenge_budget(
+            session_class, challenge_budget_ms(os.environ), last.record_challenge
+        )
+    async with session_class(**_session_options(req, guard, last, profile)) as session:
         page = await session.fetch(req.url)
 
     final_url = str(page.url)
@@ -280,11 +263,14 @@ async def _browse(
         final_url=final_url,
         cookies=[dict(c) for c in page.cookies or ()],
         profile_used=last.profile_used,
+        challenge_ms=last.challenge_ms,
         timing_ms=elapsed(),
     )
 
 
-async def _render_in_loop(req: RenderRequest, started: float) -> RenderResponse:
+async def _render_in_loop(
+    req: RenderRequest, started: float, profile: Path | None
+) -> RenderResponse:
     remaining_s = req.timeout_ms / 1000 - (time.monotonic() - started)
     guard = None if req.allow_private or req.proxy else GuardProxy(lookup=LOOKUP)
     last = _LastDocument()
@@ -293,25 +279,28 @@ async def _render_in_loop(req: RenderRequest, started: float) -> RenderResponse:
             await stack.enter_async_context(guard)
         try:
             return await asyncio.wait_for(
-                _browse(req, guard, last, started), max(remaining_s, 0.001)
+                _browse(req, guard, last, started, profile), max(remaining_s, 0.001)
             )
         except TimeoutError:
             error = f"timeout after {req.timeout_ms}ms"
             if req.solve_cloudflare:
                 error += " (the Cloudflare challenge was not solved in time)"
-            return RenderResponse.failure(error, int((time.monotonic() - started) * 1000))
+            failed = RenderResponse.failure(error, int((time.monotonic() - started) * 1000))
+            failed.challenge_ms = last.challenge_ms
+            return failed
         except Exception as error:
             failed = RenderResponse.failure(_describe(error, req, guard, last), 0)
             failed.timing_ms = int((time.monotonic() - started) * 1000)
+            failed.challenge_ms = last.challenge_ms
             return failed
     raise AssertionError("unreachable")  # pragma: no cover
 
 
-def _render_in_thread(req: RenderRequest, started: float) -> RenderResponse:
+def _render_in_thread(req: RenderRequest, started: float, profile: Path | None) -> RenderResponse:
     """A browser needs subprocess pipes, which the Selector loop uvicorn runs on Windows
     lacks (curl_cffi needs that loop), so each render gets a Proactor loop of its own."""
     factory = asyncio.ProactorEventLoop if sys.platform == "win32" else None
-    return asyncio.run(_render_in_loop(req, started), loop_factory=factory)
+    return asyncio.run(_render_in_loop(req, started, profile), loop_factory=factory)
 
 
 async def render(req: RenderRequest) -> RenderResponse:
@@ -341,15 +330,33 @@ async def render(req: RenderRequest) -> RenderResponse:
     def remaining_s() -> float:
         return req.timeout_ms / 1000 - (time.monotonic() - started)
 
-    gate = _slot_gate()
+    waiting = f"timeout after {req.timeout_ms}ms (waiting for a free browser)"
+    profile: Path | None = None
+    host_lock: asyncio.Lock | None = None
+    if headed_enabled(os.environ, sys.platform, _chrome_path()):
+        profile = profile_dir(host, os.environ)
+        req = req.model_copy(update={"identity": None})
+        host_lock = profile_lock(host)
+        try:
+            await asyncio.wait_for(host_lock.acquire(), max(remaining_s(), 0.001))
+        except TimeoutError:
+            return RenderResponse.failure(waiting, elapsed())
+
+    def unlock(_: object = None) -> None:
+        if host_lock is not None:
+            host_lock.release()
+
+    gate = slot_gate()
     try:
         await asyncio.wait_for(gate.acquire(), max(remaining_s(), 0.001))
-    except TimeoutError:
-        return RenderResponse.failure(
-            f"timeout after {req.timeout_ms}ms (waiting for a free browser)", elapsed()
-        )
+    except BaseException as error:
+        unlock()
+        if isinstance(error, TimeoutError):
+            return RenderResponse.failure(waiting, elapsed())
+        raise
     # The slot is freed when the thread ends or, for a browser that will not close, once the
     # grace past the deadline is spent; two hung renders used to lock /render until a restart.
+    # The host's profile stays locked until the thread ends: a browser may still hold it.
     released = False
 
     def free(_: object = None) -> None:
@@ -358,8 +365,9 @@ async def render(req: RenderRequest) -> RenderResponse:
             released = True
             gate.release()
 
-    work = asyncio.ensure_future(asyncio.to_thread(_render_in_thread, req, started))
+    work = asyncio.ensure_future(asyncio.to_thread(_render_in_thread, req, started, profile))
     work.add_done_callback(free)
+    work.add_done_callback(unlock)
     try:
         return await asyncio.wait_for(asyncio.shield(work), remaining_s() + _CLOSE_GRACE_S)
     except TimeoutError:

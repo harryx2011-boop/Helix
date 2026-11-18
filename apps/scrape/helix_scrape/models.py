@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SerializerFunctionWrapHandler, model_serializer
 
 
 class FetchRequest(BaseModel):
@@ -119,8 +119,16 @@ class RenderResponse(BaseModel):
     cookies: list[dict[str, Any]] = Field(default_factory=list)
     # The profile actually presented. Absent when none was asked for or it could not be.
     profile_used: str | None = None
+    challenge_ms: int | None = None
     timing_ms: int = 0
     error: str | None = None
+
+    @model_serializer(mode="wrap")
+    def _without_empty_challenge(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
+        if data.get("challenge_ms") is None:
+            data.pop("challenge_ms", None)
+        return data
 
     @classmethod
     def failure(cls, error: str, timing_ms: int) -> RenderResponse:

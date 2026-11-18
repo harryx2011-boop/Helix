@@ -20,7 +20,7 @@ from typing import Any, ClassVar
 import pytest
 
 from helix_scrape import render as render_module
-from helix_scrape.models import RenderIdentity, RenderRequest, Screen
+from helix_scrape.models import RenderIdentity, RenderRequest, RenderResponse, Screen
 from helix_scrape.render import chromium_path, render
 
 
@@ -412,7 +412,7 @@ def test_a_closed_loops_browser_gate_is_freed(monkeypatch: pytest.MonkeyPatch) -
 
     async def gate() -> asyncio.Semaphore:
         # A wait binds the semaphore to its loop (`_loop`), the reference that kept it alive.
-        slots = render_module._slot_gate()
+        slots = render_module.slot_gate()
         await slots.acquire()
         waiter = asyncio.ensure_future(slots.acquire())
         await asyncio.sleep(0)
@@ -504,6 +504,146 @@ async def test_s5_a_browser_that_never_closes_frees_its_slot_after_the_grace(
         assert second.success, second.error
     finally:
         unstick.set()
+
+
+@pytest.fixture(autouse=True)
+def _headless_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HELIX_SCRAPE_HEADED", "0")
+
+
+@pytest.fixture
+def headed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    monkeypatch.delenv("HELIX_SCRAPE_HEADED")
+    monkeypatch.setenv("DISPLAY", ":0")
+    monkeypatch.setenv("HELIX_SCRAPE_PROFILE_DIR", str(tmp_path))
+    monkeypatch.setattr(render_module, "_chrome_path", lambda: "C:/chrome/chrome.exe")
+    return tmp_path
+
+
+async def test_s6_headed_chrome_is_real_chrome_off_screen_on_a_host_profile(
+    recorder: type[_Recorder], headed: Path
+) -> None:
+    result = await render(RenderRequest(url="https://shop.example.com/a"))
+    assert result.success, result.error
+    options = recorder.opened[0]
+    assert options["real_chrome"] is True
+    assert options["headless"] is False
+    assert "executable_path" not in options
+    assert options["user_data_dir"] == str(headed / "shop.example.com")
+    assert "--window-position=-32000,-32000" in options["additional_args"]["args"]
+    assert options["hide_canvas"] is False
+
+
+async def test_s6_headed_chrome_injects_no_identity(
+    recorder: type[_Recorder], headed: Path
+) -> None:
+    result = await render(RenderRequest(url="https://example.com/", identity=_profile()))
+    assert result.profile_used is None
+    options = recorder.opened[0]
+    for key in ("useragent", "locale", "timezone_id", "init_script"):
+        assert key not in options
+
+
+async def test_s6_headed_chrome_keeps_the_guard_and_the_webrtc_lock(
+    recorder: type[_Recorder], headed: Path
+) -> None:
+    await render(RenderRequest(url="https://example.com/"))
+    options = recorder.opened[0]
+    assert options["proxy"].startswith("http://127.0.0.1:")
+    assert options["block_webrtc"] is True
+    assert "--force-webrtc-ip-handling-policy" in options["additional_args"]["args"]
+
+
+async def test_s7_without_chrome_the_headless_staged_chromium_and_identity_remain(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("HELIX_SCRAPE_HEADED")
+    monkeypatch.setattr(render_module, "_chrome_path", lambda: None)
+    result = await render(RenderRequest(url="https://example.com/", identity=_profile()))
+    options = recorder.opened[0]
+    assert options["headless"] is True
+    assert "real_chrome" not in options and "user_data_dir" not in options
+    assert options["useragent"] == "UA-137"
+    assert result.success, result.error
+
+
+async def test_s8_renders_of_one_host_wait_for_each_other_and_other_hosts_run_alongside(
+    recorder: type[_Recorder], headed: Path
+) -> None:
+    recorder.delay_s = 0.3
+    await asyncio.gather(
+        render(RenderRequest(url="https://same.example/a")),
+        render(RenderRequest(url="https://same.example/b")),
+    )
+    assert recorder.peak == 1
+    recorder.peak = 0
+    await asyncio.gather(
+        render(RenderRequest(url="https://one.example/")),
+        render(RenderRequest(url="https://two.example/")),
+    )
+    assert recorder.peak == 2
+
+
+async def test_s8_a_render_stuck_behind_its_host_times_out_and_frees_the_host_for_later(
+    recorder: type[_Recorder], headed: Path
+) -> None:
+    recorder.delay_s = 0.6
+    first, second = await asyncio.gather(
+        render(RenderRequest(url="https://same.example/a", timeout_ms=5_000)),
+        render(RenderRequest(url="https://same.example/b", timeout_ms=300)),
+    )
+    assert first.success
+    assert second.error == "timeout after 300ms (waiting for a free browser)"
+    recorder.delay_s = 0
+    assert (await render(RenderRequest(url="https://same.example/c"))).success
+
+
+class _Solving(_Recorder):
+    nap = 5.0
+
+    async def _cloudflare_solver(self, page: object, _attempts: int = 0) -> None:
+        await asyncio.sleep(self.nap)
+
+    async def fetch(self, url: str) -> _Page:
+        if self._kwargs["solve_cloudflare"]:
+            await self._cloudflare_solver(object())
+        return await super().fetch(url)
+
+
+async def test_s9_a_challenge_that_is_not_solved_in_the_budget_fails_with_the_time_spent(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import re
+
+    monkeypatch.setenv("HELIX_SCRAPE_CHALLENGE_BUDGET_MS", "250")
+    monkeypatch.setattr(render_module, "_session_class", lambda: _Solving)
+    result = await render(
+        RenderRequest(url="https://example.com/", solve_cloudflare=True, timeout_ms=10_000)
+    )
+    assert not result.success
+    match = re.fullmatch(r"challenge: not solved within (\d+)ms", result.error or "")
+    assert match, result.error
+    assert result.challenge_ms == int(match.group(1)) >= 250
+    assert result.timing_ms < 3_000
+
+
+async def test_s9_a_solved_challenge_reports_the_time_it_took(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(_Solving, "nap", 0.05)
+    monkeypatch.setattr(render_module, "_session_class", lambda: _Solving)
+    result = await render(RenderRequest(url="https://example.com/", solve_cloudflare=True))
+    assert result.success, result.error
+    assert result.challenge_ms is not None and 40 <= result.challenge_ms < 2_000
+
+
+async def test_s9_no_challenge_time_is_reported_when_solving_was_not_asked(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(render_module, "_session_class", lambda: _Solving)
+    result = await render(RenderRequest(url="https://example.com/"))
+    assert result.success, result.error
+    assert result.challenge_ms is None
 
 
 # --- deadline and errors ---------------------------------------------------------------
@@ -706,3 +846,10 @@ async def test_browser_presents_the_profile_to_the_server_and_the_page() -> None
     assert page["tz"] == "Europe/London"
     assert page["screen"] == 1728
     assert page["marker"] == "set"
+
+
+def test_s9_the_response_carries_challenge_ms_only_when_there_is_one() -> None:
+    assert "challenge_ms" not in RenderResponse.failure("x", 1).model_dump()
+    assert "challenge_ms" not in RenderResponse.failure("x", 1).model_dump_json()
+    solved = RenderResponse(success=True, challenge_ms=900)
+    assert solved.model_dump()["challenge_ms"] == 900

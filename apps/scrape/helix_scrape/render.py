@@ -299,8 +299,11 @@ async def _render_in_loop(
 def _render_in_thread(req: RenderRequest, started: float, profile: Path | None) -> RenderResponse:
     """A browser needs subprocess pipes, which the Selector loop uvicorn runs on Windows
     lacks (curl_cffi needs that loop), so each render gets a Proactor loop of its own."""
-    factory = asyncio.ProactorEventLoop if sys.platform == "win32" else None
-    return asyncio.run(_render_in_loop(req, started, profile), loop_factory=factory)
+    if sys.platform == "win32":
+        return asyncio.run(
+            _render_in_loop(req, started, profile), loop_factory=asyncio.ProactorEventLoop
+        )
+    return asyncio.run(_render_in_loop(req, started, profile))
 
 
 async def render(req: RenderRequest) -> RenderResponse:

@@ -134,3 +134,9 @@ Chromium with a Cloudflare solver, adaptive selectors, spiders and network captu
   `about:blank`. `profile_used` is reported only once the identity was applied. Measured: the
   server saw the profile UA, its full Accept-Language and `sec-ch-ua` at the profile's version
   and platform; the page saw the same brands, timezone, screen and script.
+
+## Amendment, 2026-11-18
+
+- Pin moved to scrapling 0.5.1 (`apps/scrape/pyproject.toml`). Its one breaking change is for remote CDP browsers (new `RemoteSession` / `AsyncRemoteSession` classes), which `render.py` does not use; those classes fit the planned real-browser rung.
+- The dev venv runs Python 3.13.13, not the 3.12 recorded above; `requires-python` stays `>=3.12`.
+- The `tls` tier moves back to the Rust `helix-fetch` (restored from `9a2542b^`); helix-scrape keeps browser rendering. Decision record: ADR 0006, plan `docs/plans/2026-11-18-stealth-ladder.md`.

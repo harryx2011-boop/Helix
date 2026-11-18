@@ -16,8 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # No `version:` here: pnpm comes from "packageManager" in package.json, and
+      # the action refuses to run when both name a version.
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,8 +32,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # No `version:` here: pnpm comes from "packageManager" in package.json, and
+      # the action refuses to run when both name a version.
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -85,11 +87,16 @@ jobs:
       # The spec is the source of truth for all three runtimes. If it stops
       # being valid, every generated client silently drifts — the exact bug
       # class this project is built to avoid.
-      - run: npx --yes @redocly/cli@latest lint openapi.yaml
+      - run: npx --yes @redocly/cli@2.80.0 lint openapi.yaml
 
   compose:
     name: docker compose boots
     runs-on: ubuntu-latest
+    env:
+      # compose has no default for the database password on purpose, and
+      # .env.example leaves it empty. A throwaway value for this ephemeral
+      # job only; it is not a secret and never leaves the runner.
+      POSTGRES_PASSWORD: ci-only-throwaway
     steps:
       - uses: actions/checkout@v4
       - run: cp .env.example .env
@@ -101,3 +108,18 @@ jobs:
         run: docker compose logs
       - if: always()
         run: docker compose down -v
+
+  fetch:
+    name: fetch (Rust)
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: apps/fetch }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: 'clippy, rustfmt' }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/fetch }
+      - run: cargo fmt --check
+      - run: cargo clippy -- -D warnings
+      - run: cargo test

@@ -94,4 +94,15 @@ Fixed limits whatever the answers: no paid human CAPTCHA-solving service, no ima
 | Step | State | Evidence |
 |---|---|---|
 | Interview | done 2026-11-18 | 16 answers above |
-| Agent37 key window | opened 2026-11-18 | waiting on Harry's paste |
+| Agent37 VM | done 2026-11-18 | `helix` = `8miggdoak6`, `vm`, 4/8, runs as root; repo by GitHub clone + git bundle; `agent37-mcp` run now creates its folder first (S26, uncommitted in that repo) |
+| A1 render address | done `cd3f98c` | client tests S1-S3, config S4 |
+| A2 Rust tls core restored, hook starts 7403 | done `35e07af`, `~/.claude` `205d5a2` | cargo release build 6m16s; `/render` live on 7403: quotes.toscrape.com/js 10 quotes |
+| A3 404 as not_found | not needed | the 404 was the missing `/render` route on the Rust exe (audit line 80); A1 and A2 removed it |
+| A4 hung render frees slot | done `dab3ac6` | pytest S5 |
+| A5 scrapling 0.5.1 | done `42a7964` | pytest 149, ADR 0001 amended |
+| A6 CI green | in progress | causes: pnpm version twice, POSTGRES_PASSWORD unset, unpinned redocly (9 struct errors), extract ruff (about 150), Rust job missing |
+| B7 robots gate | done `c19f2f4` | S13-S16 |
+| B8 headed Chrome | done `d7f9f05` | npmjs headless 403 to headed 200; rebrowser red rows 3 to 1 |
+| B9 challenge budget and retry | done `d7f9f05`, `c19f2f4` | pytest S8-S9, vitest S17-S19; not yet run against a live challenge |
+| Go live (restart 7400 and 7403) | blocked | the restart of the shared API needs Harry's go (permission check refused it) |
+| B10-B13, C-G | not started | |

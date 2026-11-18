@@ -9,6 +9,10 @@ exercised against it.
 
 ## Next
 
+- [ ] **Stealth ladder (2026-11-18).** `docs/plans/2026-11-18-stealth-ladder.md` holds Harry's 16 answers, the
+      batches and a Progress table; it folds in Phases 0-2 of `2026-11-11-helix-v3-revamp.md`. The captured-profiles
+      item below is its step 15.
+
 - [x] **`docs/plans/2026-09-26-followups-plan.md`** (2026-09-26): done. Phases 0–4 landed (crawl/batch URL fix, loud failures,
       Ollama detection, `/jobs/{id}/ladder` + `/cost`, `/vectors/search` in 2.1.0); the closing live smoke is 64/0/2.
 - [ ] **RLS keyed on `profile_id` from the Clerk claim.** 1.11.1 closed the browser

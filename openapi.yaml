@@ -2559,7 +2559,7 @@ paths:
                   successes: { type: integer }
                   failures: { type: integer }
                   successRate: { type: number, description: 'successes / attempts. 0 to 1.' }
-                  lastUsedAt: { type: string, format: date-time, nullable: true }
+                  lastUsedAt: { type: [string, 'null'], format: date-time }
         '404': { $ref: '#/components/responses/NotFound' }
 
 components:
@@ -2681,7 +2681,7 @@ components:
             name: { type: string }
             keyPrefix: { type: string }
             rateLimit: { type: integer }
-            lastUsedAt: { type: string, format: date-time, nullable: true }
+            lastUsedAt: { type: [string, 'null'], format: date-time }
         window:
           type: object
           description: The period the counts cover. Not live rate-limit headroom.
@@ -3777,7 +3777,7 @@ components:
                 rows: { type: integer }
                 cellWidth: { type: integer }
                 cellHeight: { type: integer }
-                cells: { type: integer, description: Cells drawn, row-major in `images` order; images past 24 are not drawn. }
+                cells: { type: integer, description: 'Cells drawn, row-major in `images` order; images past 24 are not drawn.' }
         warnings:
           type: array
           items: { type: string }
@@ -3785,7 +3785,7 @@ components:
           type: object
           properties:
             backend: { type: string, enum: [searxng, serper, serpapi] }
-            query: { type: string, description: The query sent, including motion-reference terms. }
+            query: { type: string, description: 'The query sent, including motion-reference terms.' }
             pagesFetched: { type: integer }
             candidates: { type: integer, description: Image rows the backend returned. }
             kept: { type: integer }
@@ -3940,7 +3940,6 @@ components:
       required: [value, confidence, citation, phase, reason, evidence]
       properties:
         value:
-          nullable: true
           description: |
             The value, or `null` when none could be grounded. A `null` here is a
             real answer, not an error - see `reason`.
@@ -3948,10 +3947,10 @@ components:
             - { type: string }
             - { type: number }
             - { type: boolean }
+            - { type: 'null' }
         confidence:
-          type: string
-          nullable: true
-          enum: [high, medium, low]
+          type: [string, 'null']
+          enum: [high, medium, low, null]
           description: |
             An ordinal band, NOT a probability, and NOT calibrated - no error
             rate is claimed for any band because none has been measured.
@@ -3971,17 +3970,14 @@ components:
 
             `null` whenever `value` is `null`.
         citation:
-          nullable: true
-          allOf: [{ $ref: '#/components/schemas/EnrichCitation' }]
+          oneOf: [{ $ref: '#/components/schemas/EnrichCitation' }, { type: 'null' }]
           description: Null whenever `value` is null.
         phase:
-          type: string
-          nullable: true
-          enum: [metadata, structural, model]
+          type: [string, 'null']
+          enum: [metadata, structural, model, null]
           description: Which extractor phase produced the value.
         reason:
-          type: string
-          nullable: true
+          type: [string, 'null']
           enum:
             - no_sources
             - all_sources_rejected
@@ -3992,6 +3988,7 @@ components:
             - citation_too_short
             - unknown_source_url
             - model_unavailable
+            - null
           description: |
             Why `value` is null. Null when a value was found.
 

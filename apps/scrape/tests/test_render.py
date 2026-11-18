@@ -476,6 +476,36 @@ async def test_a_render_that_never_gets_a_browser_times_out(
     assert result.error == "timeout after 300ms (waiting for a free browser)"
 
 
+async def test_s5_a_browser_that_never_closes_frees_its_slot_after_the_grace(
+    recorder: type[_Recorder], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Two hung renders used to lock /render until a restart (audit 2026-11-11).
+    monkeypatch.setenv("HELIX_SCRAPE_MAX_RENDERS", "1")
+    monkeypatch.setattr(render_module, "_CLOSE_GRACE_S", 0.2)
+    unstick = threading.Event()
+    hung = {"left": 1}
+
+    class _Stuck(_Recorder):
+        async def fetch(self, url: str) -> _Page:
+            if hung["left"]:
+                await asyncio.sleep(10)
+            return await super().fetch(url)
+
+        async def __aexit__(self, *_: object) -> None:
+            if hung["left"]:
+                hung["left"] = 0
+                unstick.wait(10)
+
+    monkeypatch.setattr(render_module, "_session_class", lambda: _Stuck)
+    try:
+        first = await render(RenderRequest(url="https://example.com/", timeout_ms=300))
+        assert first.error == "timeout after 300ms"
+        second = await render(RenderRequest(url="https://example.com/", timeout_ms=2_000))
+        assert second.success, second.error
+    finally:
+        unstick.set()
+
+
 # --- deadline and errors ---------------------------------------------------------------
 
 

@@ -348,11 +348,20 @@ async def render(req: RenderRequest) -> RenderResponse:
         return RenderResponse.failure(
             f"timeout after {req.timeout_ms}ms (waiting for a free browser)", elapsed()
         )
-    # The slot is freed when the thread ends, not when the caller stops waiting: a browser
-    # past its deadline still counts until it has closed.
+    # The slot is freed when the thread ends or, for a browser that will not close, once the
+    # grace past the deadline is spent; two hung renders used to lock /render until a restart.
+    released = False
+
+    def free(_: object = None) -> None:
+        nonlocal released
+        if not released:
+            released = True
+            gate.release()
+
     work = asyncio.ensure_future(asyncio.to_thread(_render_in_thread, req, started))
-    work.add_done_callback(lambda _: gate.release())
+    work.add_done_callback(free)
     try:
         return await asyncio.wait_for(asyncio.shield(work), remaining_s() + _CLOSE_GRACE_S)
     except TimeoutError:
+        free()
         return RenderResponse.failure(f"timeout after {req.timeout_ms}ms", elapsed())

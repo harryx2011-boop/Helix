@@ -77,7 +77,8 @@ function wrapFetchError(error: unknown): never {
 
 export function toFormData(upload: { file: Blob; filename?: string }, fields: readonly string[]): FormData {
   const form = new FormData();
-  form.set('file', upload.file, upload.filename);
+  if (upload.filename === undefined) form.set('file', upload.file);
+  else form.set('file', upload.file, upload.filename);
   const values = upload as unknown as Record<string, unknown>;
   for (const field of fields) {
     const value = values[field];

@@ -12,6 +12,7 @@ import {
 } from './escalation.js';
 import { classifyTransportError, detectBlock, type FailureReason, type ResponseFacts } from './block-detection.js';
 import { resolveFavicon } from './favicon.js';
+import { ROBOTS_DENIED_DETAIL, isStealthTier, stealthRobots, wantsChallengeRetry, type StealthRobots } from './stealth-policy.js';
 import type { TierMemory } from './tier-memory.js';
 import type { CookieJar } from './cookie-jar.js';
 import type { FetchClient } from '../fetch/client.js';
@@ -102,6 +103,7 @@ export interface PipelineDeps {
   logger?: Log | undefined;
   tierMemory?: TierMemory | undefined;
   cookieJar?: CookieJar | undefined;
+  stealthRobots?: StealthRobots | undefined;
 }
 
 function capabilitiesFor(options: PipelineOptions): Capabilities {
@@ -256,7 +258,8 @@ async function attemptTier(
   if (!needsPlaywright(options, deps.browserPool)) {
     // helix-scrape's browser is Chromium: a profile of another family is dropped, as on the pool.
     const resolved = resolveProfileForEngine(options.profile, 'chromium', deps.logger);
-    const rendered = await deps.fetchClient.render({
+    const renderStarted = Date.now();
+    const request = {
       url: options.url,
       proxy: options.proxy,
       headers: options.headers,
@@ -271,7 +274,17 @@ async function attemptTier(
       allowPrivate: options.allowPrivate,
       identity: resolved.profile && renderIdentity(resolved.profile),
       signal: options.signal,
-    });
+    };
+    let rendered = await deps.fetchClient.render(request);
+    const firstVerdict = rendered.success
+      ? detectBlock({ statusCode: rendered.status ?? 0, headers: rendered.headers, body: rendered.body ?? '' })
+      : undefined;
+    if (wantsChallengeRetry({ solveCloudflare: options.solveCloudflare, reason: firstVerdict?.reason })) {
+      const left = options.timeout === undefined ? undefined : options.timeout - (Date.now() - renderStarted);
+      if (left === undefined || left > 0) {
+        rendered = await deps.fetchClient.render({ ...request, solveCloudflare: true, timeoutMs: left });
+      }
+    }
     return {
       facts: { statusCode: rendered.status ?? 0, headers: rendered.headers, body: rendered.body ?? '' },
       finalUrl: rendered.finalUrl,
@@ -402,6 +415,20 @@ async function walkLadder(
         tier,
         tiersAttempted,
         escalationAvailable: true,
+        timingMs: Date.now() - started,
+      };
+    }
+
+    if (isStealthTier(tier) && !(await (deps.stealthRobots ?? stealthRobots).allows(options.url))) {
+      return {
+        success: false,
+        url: options.url,
+        reason: 'robots_denied',
+        detail: ROBOTS_DENIED_DETAIL,
+        detectedBy: [],
+        tier,
+        tiersAttempted,
+        escalationAvailable: false,
         timingMs: Date.now() - started,
       };
     }

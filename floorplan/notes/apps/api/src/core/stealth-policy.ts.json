@@ -1,0 +1,31 @@
+{
+  "$schema": "synapse-q/notes@1",
+  "file": "apps/api/src/core/stealth-policy.ts",
+  "description": "Rules for the stealth rungs: robots.txt gate and the one challenge-solver retry.",
+  "notes": [
+    {
+      "id": "n1",
+      "symbol": "STEALTH_TIERS",
+      "line": 9,
+      "offset": 0,
+      "text": "Rungs that try to look like a person. They run only where robots.txt allows the URL, on every route including single /scrape (Harry, 2026-11-18, answer 8; ADR 0006). The plain and tls tiers are unchanged. Camoufox and the real-browser rung join this set when they are added.",
+      "kind": "why"
+    },
+    {
+      "id": "n2",
+      "symbol": "stealthRobots",
+      "line": 29,
+      "offset": 0,
+      "text": "The one gate the API configures at boot with a RobotsCache (index.ts). Unconfigured it allows everything, so tests and tools that build a pipeline without it read no robots.txt. PipelineDeps.stealthRobots overrides it per call.",
+      "kind": "why"
+    },
+    {
+      "id": "n3",
+      "symbol": "wantsChallengeRetry",
+      "line": 31,
+      "offset": 0,
+      "text": "helix-scrape runs Scrapling's Cloudflare solver only when asked, because the solver polls about 5 s on every page just to look for a challenge. So the API asks for it once, after the browser rung came back with a challenge verdict. The solver has a 20 s budget in helix-scrape (answer 10).",
+      "kind": "why"
+    }
+  ]
+}

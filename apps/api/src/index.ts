@@ -65,6 +65,8 @@ import { pinProxyUrl } from './core/url-guard.js';
 import type { MonitorRecord } from './monitor/store.js';
 import { tierMemory } from './core/tier-memory.js';
 import { cookieJar } from './core/cookie-jar.js';
+import { stealthRobots } from './core/stealth-policy.js';
+import { RobotsCache } from './crawl/robots.js';
 
 const config = loadConfig();
 
@@ -126,6 +128,7 @@ try {
 }
 
 const fetchClient = new FetchClient(config.fetchUrl, app.log, config.serviceToken, config.renderUrl);
+stealthRobots.configure(new RobotsCache(config.userAgent, app.log));
 const extractClient = new ExtractClient(config.extractUrl, app.log, config.serviceToken);
 
 const browserPool = new BrowserPool({

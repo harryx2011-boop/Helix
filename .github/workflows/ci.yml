@@ -25,6 +25,9 @@ jobs:
           cache: pnpm
       - run: pnpm install
       - run: pnpm --filter @helix/api typecheck
+      # The pool tests launch every engine; without these the 2 browser test
+      # files fail with "browser is not installed".
+      - run: pnpm --filter @helix/api exec playwright install --with-deps chromium firefox webkit
       - run: pnpm --filter @helix/api test
 
   sdk:

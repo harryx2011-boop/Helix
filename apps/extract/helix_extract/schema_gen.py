@@ -44,7 +44,7 @@ SYSTEM_PROMPT = system_prompt("schema_design")
 
 REPAIR_SUFFIX = (
     "\n\nThe previous answer was not a valid JSON Schema object (it needs a "
-    "top-level \"type\": \"object\" and a \"properties\" object). Return a "
+    'top-level "type": "object" and a "properties" object). Return a '
     "corrected schema."
 )
 
@@ -58,7 +58,9 @@ class SchemaGenResult:
     model_used: str
 
 
-def _user_prompt(prompt: str, urls: list[str] | None, hint: dict[str, Any] | None, instruction: str | None) -> str:
+def _user_prompt(
+    prompt: str, urls: list[str] | None, hint: dict[str, Any] | None, instruction: str | None
+) -> str:
     parts = [f"Data to extract: {prompt}"]
     if urls:
         parts.append("Example URLs this will run against:\n" + "\n".join(urls))
@@ -136,7 +138,9 @@ async def _call_anthropic_json(
             messages=[{"role": "user", "content": user_prompt}],
         )
         if use_output_format:
-            kwargs["output_config"] = {"format": compile_anthropic_output_format(META_SCHEMA, name="schema_design")}
+            kwargs["output_config"] = {
+                "format": compile_anthropic_output_format(META_SCHEMA, name="schema_design")
+            }
         else:
             assert compiled is not None
             kwargs["tools"] = compiled["tools"]
@@ -146,7 +150,9 @@ async def _call_anthropic_json(
 
         data: dict[str, Any] = {}
         if use_output_format:
-            text = next((b.text for b in response.content if getattr(b, "type", None) == "text"), None)
+            text = next(
+                (b.text for b in response.content if getattr(b, "type", None) == "text"), None
+            )
             if text is not None:
                 try:
                     data = json.loads(text)
@@ -217,7 +223,11 @@ async def _run(
         return await _call_gemini_json(user_prompt, model, caller_key=caller_key)
     if provider == "openai" or provider == "openrouter" or provider in _LOCAL_OPENAI_WIRE:
         return await _call_openai_json(
-            user_prompt, model, provider=provider, caller_key=caller_key, caller_base_url=caller_base_url
+            user_prompt,
+            model,
+            provider=provider,
+            caller_key=caller_key,
+            caller_base_url=caller_base_url,
         )
     raise ProviderError(f"Unknown provider: {provider}")
 
@@ -271,7 +281,11 @@ async def generate_schema(
     if not _is_usable_schema(schema):
         try:
             schema, repair_input, repair_output, model_used = await _run(
-                user_prompt + REPAIR_SUFFIX, resolved_provider, resolved_model, caller_key, caller_base_url
+                user_prompt + REPAIR_SUFFIX,
+                resolved_provider,
+                resolved_model,
+                caller_key,
+                caller_base_url,
             )
             tokens_input += repair_input
             tokens_output += repair_output
@@ -282,7 +296,8 @@ async def generate_schema(
 
         if not _is_usable_schema(schema):
             raise ProviderError(
-                f"{resolved_provider} ({model_used}) did not return a usable JSON Schema after a repair attempt."
+                f"{resolved_provider} ({model_used}) did not return a usable JSON Schema "
+                "after a repair attempt."
             )
 
     return SchemaGenResult(

@@ -7,8 +7,9 @@ routing, defaults and error translation around them are what is under test.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 import pytest
 
@@ -20,7 +21,9 @@ SCHEMA = {"type": "object", "properties": {"title": {"type": "string"}}}
 
 
 def _result(model: str) -> llm.ExtractionResult:
-    return llm.ExtractionResult(data={"title": "T"}, tokens_input=1, tokens_output=1, model_used=model)
+    return llm.ExtractionResult(
+        data={"title": "T"}, tokens_input=1, tokens_output=1, model_used=model
+    )
 
 
 @dataclass
@@ -71,15 +74,17 @@ class _FakeAsyncAnthropic:
     @classmethod
     def factory(
         cls, response: _FakeMessage, captured: dict[str, Any]
-    ) -> Callable[..., "_FakeAsyncAnthropic"]:
-        def _make(*_args: object, **_kwargs: object) -> "_FakeAsyncAnthropic":
+    ) -> Callable[..., _FakeAsyncAnthropic]:
+        def _make(*_args: object, **_kwargs: object) -> _FakeAsyncAnthropic:
             return cls(response, captured)
 
         return _make
 
 
 class TestResolve:
-    def test_instance_default_when_nothing_is_overridden(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_instance_default_when_nothing_is_overridden(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
         monkeypatch.setattr(settings, "helix_llm_model", "claude-sonnet-4-5")
         assert llm._resolve(None, None) == ("anthropic", "claude-sonnet-4-5")
@@ -88,7 +93,9 @@ class TestResolve:
         monkeypatch.setattr(settings, "helix_llm_provider", "openai")
         assert llm._resolve("gpt-4.1", "openai") == ("openai", "gpt-4.1")
 
-    def test_provider_override_does_not_carry_the_instance_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_provider_override_does_not_carry_the_instance_model(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
         monkeypatch.setattr(settings, "helix_llm_model", "claude-sonnet-4-5")
         provider, model = llm._resolve(None, "openai")
@@ -103,7 +110,9 @@ class TestResolve:
         monkeypatch.setattr(settings, "helix_llm_model", "gemini-2.5-pro")
         assert llm._resolve(None, "google") == ("google", "gemini-2.5-pro")
 
-    def test_local_runtime_without_a_model_is_the_callers_to_fix(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_local_runtime_without_a_model_is_the_callers_to_fix(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
         with pytest.raises(llm.RequestError) as excinfo:
             llm._resolve(None, "ollama")
@@ -162,7 +171,9 @@ class TestResolve:
         assert provider == "openai"
         assert model == llm.DEFAULT_MODELS["openai"]
 
-    def test_no_auto_pick_when_the_caller_stored_no_keys(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_no_auto_pick_when_the_caller_stored_no_keys(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(settings, "helix_llm_provider", "openai")
         monkeypatch.setattr(settings, "openai_api_key", None)
         monkeypatch.setattr(settings, "openai_compatible_base_url", None)
@@ -170,7 +181,9 @@ class TestResolve:
         assert provider == "openai"
         assert model == llm.DEFAULT_MODELS["openai"]
 
-    def test_explicit_provider_with_a_caller_stored_model_uses_it(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_explicit_provider_with_a_caller_stored_model_uses_it(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(settings, "helix_llm_provider", "anthropic")
         monkeypatch.setattr(settings, "helix_llm_model", "claude-sonnet-4-5")
         provider, model = llm._resolve(
@@ -188,13 +201,17 @@ class TestOpenAiWireCredentials:
         assert key == "sk-or"
         assert url is not None and "openrouter.ai" in url
 
-    def test_openrouter_without_a_key_names_the_setting(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_openrouter_without_a_key_names_the_setting(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(settings, "openai_api_key", "sk-openai")
         monkeypatch.setattr(settings, "openrouter_api_key", None)
         with pytest.raises(llm.ProviderError, match="OPENROUTER_API_KEY"):
             llm._openai_wire_credentials("openrouter")
 
-    def test_local_runtime_needs_a_base_url_not_a_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_local_runtime_needs_a_base_url_not_a_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(settings, "openai_compatible_base_url", "http://localhost:11434/v1")
         monkeypatch.setattr(settings, "openai_compatible_api_key", None)
         assert llm._openai_wire_credentials("ollama") == ("not-needed", "http://localhost:11434/v1")
@@ -202,17 +219,27 @@ class TestOpenAiWireCredentials:
         with pytest.raises(llm.ProviderError, match="base URL"):
             llm._openai_wire_credentials("vllm")
 
-    def test_caller_base_url_overrides_the_instance_one(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(settings, "openai_compatible_base_url", "http://instance-runtime:11434/v1")
+    def test_caller_base_url_overrides_the_instance_one(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            settings, "openai_compatible_base_url", "http://instance-runtime:11434/v1"
+        )
         monkeypatch.setattr(settings, "openai_compatible_api_key", None)
-        key, url = llm._openai_wire_credentials("ollama", caller_base_url="http://callers-own-box:11434/v1")
+        key, url = llm._openai_wire_credentials(
+            "ollama", caller_base_url="http://callers-own-box:11434/v1"
+        )
         assert key == "not-needed"
         assert url == "http://callers-own-box:11434/v1"
 
-    def test_caller_base_url_works_with_no_instance_base_url_at_all(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_caller_base_url_works_with_no_instance_base_url_at_all(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(settings, "openai_compatible_base_url", None)
         monkeypatch.setattr(settings, "openai_compatible_api_key", None)
-        key, url = llm._openai_wire_credentials("vllm", caller_base_url="http://callers-own-box:8000/v1")
+        key, url = llm._openai_wire_credentials(
+            "vllm", caller_base_url="http://callers-own-box:8000/v1"
+        )
         assert key == "not-needed"
         assert url == "http://callers-own-box:8000/v1"
 
@@ -223,13 +250,17 @@ class TestOpenAiWireCredentials:
         with pytest.raises(llm.ProviderError, match="OPENAI_API_KEY"):
             llm._openai_wire_credentials("openai")
 
-    def test_caller_key_overrides_the_instance_openai_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_caller_key_overrides_the_instance_openai_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(settings, "openai_api_key", "sk-instance")
         key, url = llm._openai_wire_credentials("openai", caller_key="sk-caller")
         assert key == "sk-caller"
         assert url == settings.openai_base_url
 
-    def test_caller_key_overrides_the_instance_openrouter_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_caller_key_overrides_the_instance_openrouter_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(settings, "openrouter_api_key", "sk-or-instance")
         key, url = llm._openai_wire_credentials("openrouter", caller_key="sk-or-caller")
         assert key == "sk-or-caller"
@@ -240,7 +271,7 @@ class TestOpenAiWireCredentials:
     ) -> None:
         monkeypatch.setattr(settings, "openai_api_key", None)
         monkeypatch.setattr(settings, "openai_compatible_base_url", None)
-        key, url = llm._openai_wire_credentials("openai", caller_key="sk-caller-only")
+        key, _url = llm._openai_wire_credentials("openai", caller_key="sk-caller-only")
         assert key == "sk-caller-only"
 
 
@@ -266,7 +297,9 @@ class TestExtractStructured:
         assert "not found" in message
 
     @pytest.mark.asyncio
-    async def test_routes_the_override_to_that_provider(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_routes_the_override_to_that_provider(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         seen: dict[str, object] = {}
 
         async def openai_stub(
@@ -292,11 +325,18 @@ class TestExtractStructured:
         assert result.data == {"title": "T"}
 
     @pytest.mark.asyncio
-    async def test_passes_the_callers_key_for_the_resolved_provider(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_passes_the_callers_key_for_the_resolved_provider(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         seen: dict[str, object] = {}
 
         async def anthropic_stub(
-            _content: str, _schema: dict, _prompt: str | None, model: str, *, caller_key: str | None = None
+            _content: str,
+            _schema: dict,
+            _prompt: str | None,
+            model: str,
+            *,
+            caller_key: str | None = None,
         ) -> llm.ExtractionResult:
             seen["caller_key"] = caller_key
             return _result(model)
@@ -306,7 +346,9 @@ class TestExtractStructured:
         monkeypatch.setattr(llm, "_call_anthropic", anthropic_stub)
 
         await llm.extract_structured(
-            "content", SCHEMA, provider_keys={"anthropic": "sk-ant-caller", "openai": "sk-openai-caller"}
+            "content",
+            SCHEMA,
+            provider_keys={"anthropic": "sk-ant-caller", "openai": "sk-openai-caller"},
         )
         assert seen["caller_key"] == "sk-ant-caller"
 
@@ -336,17 +378,30 @@ class TestExtractStructured:
         monkeypatch.setattr(settings, "openai_compatible_base_url", None)
         monkeypatch.setattr(llm, "_call_openai", openai_stub)
 
-        result = await llm.extract_structured("content", SCHEMA, provider_keys={"openai": "sk-openai-caller"})
+        result = await llm.extract_structured(
+            "content", SCHEMA, provider_keys={"openai": "sk-openai-caller"}
+        )
 
-        assert seen == {"provider": "openai", "caller_key": "sk-openai-caller", "model": llm.DEFAULT_MODELS["openai"]}
+        assert seen == {
+            "provider": "openai",
+            "caller_key": "sk-openai-caller",
+            "model": llm.DEFAULT_MODELS["openai"],
+        }
         assert result.data == {"title": "T"}
 
     @pytest.mark.asyncio
-    async def test_behaviour_is_unchanged_with_no_caller_keys(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_behaviour_is_unchanged_with_no_caller_keys(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         seen: dict[str, object] = {}
 
         async def anthropic_stub(
-            _content: str, _schema: dict, _prompt: str | None, model: str, *, caller_key: str | None = None
+            _content: str,
+            _schema: dict,
+            _prompt: str | None,
+            model: str,
+            *,
+            caller_key: str | None = None,
         ) -> llm.ExtractionResult:
             seen["caller_key"] = caller_key
             return _result(model)
@@ -359,7 +414,9 @@ class TestExtractStructured:
         assert seen["caller_key"] is None
 
     @pytest.mark.asyncio
-    async def test_sources_are_the_passages_that_reached_the_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_sources_are_the_passages_that_reached_the_model(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         async def stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
             return _result("m")
 
@@ -436,7 +493,9 @@ class TestExtractStructured:
         assert expected in seen["content"]
 
     @pytest.mark.asyncio
-    async def test_no_clip_notice_when_nothing_was_trimmed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_no_clip_notice_when_nothing_was_trimmed(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         seen: dict[str, object] = {}
 
         async def stub(content: str, *_args: object, **_kwargs: object) -> llm.ExtractionResult:
@@ -457,7 +516,9 @@ class TestCrossProviderFallback:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         async def anthropic_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
-            raise llm.ProviderError("anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True)
+            raise llm.ProviderError(
+                "anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True
+            )
 
         openai_calls: list[str | None] = []
 
@@ -521,7 +582,9 @@ class TestCrossProviderFallback:
         openai_calls = 0
 
         async def anthropic_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
-            raise llm.ProviderError("anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True)
+            raise llm.ProviderError(
+                "anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True
+            )
 
         async def openai_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
             nonlocal openai_calls
@@ -534,7 +597,10 @@ class TestCrossProviderFallback:
 
         with pytest.raises(llm.ProviderError):
             await llm.extract_structured(
-                "content", SCHEMA, provider="anthropic", provider_keys={"openai": "sk-openai-caller"}
+                "content",
+                SCHEMA,
+                provider="anthropic",
+                provider_keys={"openai": "sk-openai-caller"},
             )
         assert openai_calls == 0
 
@@ -543,12 +609,19 @@ class TestCrossProviderFallback:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         async def anthropic_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
-            raise llm.ProviderError("anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True)
+            raise llm.ProviderError(
+                "anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True
+            )
 
         gemini_calls: list[str | None] = []
 
         async def gemini_stub(
-            _content: str, _schema: dict, _prompt: str | None, model: str, *, caller_key: str | None = None
+            _content: str,
+            _schema: dict,
+            _prompt: str | None,
+            model: str,
+            *,
+            caller_key: str | None = None,
         ) -> llm.ExtractionResult:
             gemini_calls.append(caller_key)
             return _result(model)
@@ -576,7 +649,9 @@ class TestCrossProviderFallback:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         async def anthropic_stub(*_args: object, **_kwargs: object) -> llm.ExtractionResult:
-            raise llm.ProviderError("anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True)
+            raise llm.ProviderError(
+                "anthropic (claude-sonnet-4-5): HTTP 503", fallback_eligible=True
+            )
 
         openai_keys_seen: list[str | None] = []
 
@@ -654,9 +729,13 @@ class TestAnthropicRequestShape:
         monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: True)
         captured: dict[str, Any] = {}
         response = _FakeMessage(content=[_TextBlock(text='{"title": "T"}')])
-        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+        monkeypatch.setattr(
+            "anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured)
+        )
 
-        result = await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+        result = await llm._call_anthropic(
+            "content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant"
+        )
 
         kwargs = captured["kwargs"]
         assert "tools" not in kwargs
@@ -671,9 +750,13 @@ class TestAnthropicRequestShape:
         monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: False)
         captured: dict[str, Any] = {}
         response = _FakeMessage(content=[_ToolUseBlock(input={"title": "T"})])
-        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+        monkeypatch.setattr(
+            "anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured)
+        )
 
-        result = await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+        result = await llm._call_anthropic(
+            "content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant"
+        )
 
         kwargs = captured["kwargs"]
         assert kwargs["tool_choice"] == {"type": "auto"}
@@ -691,7 +774,9 @@ class TestAnthropicRequestShape:
         monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: False)
         captured: dict[str, Any] = {}
         response = _FakeMessage(content=[_ToolUseBlock(input={"meta": {}})])
-        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+        monkeypatch.setattr(
+            "anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured)
+        )
 
         schema = {
             "type": "object",
@@ -713,10 +798,14 @@ class TestAnthropicRequestShape:
         response = _FakeMessage(
             content=[_TextBlock(text="I can't find that on the page.")], stop_reason="end_turn"
         )
-        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+        monkeypatch.setattr(
+            "anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured)
+        )
 
         with pytest.raises(SchemaError) as excinfo:
-            await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+            await llm._call_anthropic(
+                "content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant"
+            )
         assert "did not call" in str(excinfo.value)
         assert "end_turn" in str(excinfo.value)
 
@@ -727,10 +816,14 @@ class TestAnthropicRequestShape:
         monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: True)
         captured: dict[str, Any] = {}
         response = _FakeMessage(content=[], stop_reason="max_tokens")
-        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+        monkeypatch.setattr(
+            "anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured)
+        )
 
         with pytest.raises(SchemaError) as excinfo:
-            await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+            await llm._call_anthropic(
+                "content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant"
+            )
         assert "no text content" in str(excinfo.value)
         assert "max_tokens" in str(excinfo.value)
 
@@ -741,10 +834,14 @@ class TestAnthropicRequestShape:
         monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: True)
         captured: dict[str, Any] = {}
         response = _FakeMessage(content=[_TextBlock(text="not json")])
-        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+        monkeypatch.setattr(
+            "anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured)
+        )
 
         with pytest.raises(SchemaError) as excinfo:
-            await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
+            await llm._call_anthropic(
+                "content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant"
+            )
         assert "not valid JSON" in str(excinfo.value)
 
     @pytest.mark.asyncio
@@ -753,8 +850,12 @@ class TestAnthropicRequestShape:
     ) -> None:
         monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: False)
         captured: dict[str, Any] = {}
-        response = _FakeMessage(content=[_TextBlock(text="no tool call here")], stop_reason="end_turn")
-        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+        response = _FakeMessage(
+            content=[_TextBlock(text="no tool call here")], stop_reason="end_turn"
+        )
+        monkeypatch.setattr(
+            "anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured)
+        )
 
         openai_calls = 0
 
@@ -782,7 +883,9 @@ class TestAnthropicOutputFormatFeatureGate:
         monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: True)
         captured: dict[str, Any] = {}
         response = _FakeMessage(content=[_TextBlock(text='{"title": "T"}')])
-        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+        monkeypatch.setattr(
+            "anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured)
+        )
 
         await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
 
@@ -797,7 +900,9 @@ class TestAnthropicOutputFormatFeatureGate:
         monkeypatch.setattr(llm, "_anthropic_supports_output_format", lambda: False)
         captured: dict[str, Any] = {}
         response = _FakeMessage(content=[_ToolUseBlock(input={"title": "T"})])
-        monkeypatch.setattr("anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured))
+        monkeypatch.setattr(
+            "anthropic.AsyncAnthropic", _FakeAsyncAnthropic.factory(response, captured)
+        )
 
         await llm._call_anthropic("content", SCHEMA, None, "claude-sonnet-4-5", caller_key="sk-ant")
 

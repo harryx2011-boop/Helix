@@ -10,7 +10,7 @@ from helix_extract.main import app
 client = TestClient(app)
 
 CONTENT = (
-    "<<<HELIX_UNTRUSTED origin=\"https://acme.example/about\"\n"
+    '<<<HELIX_UNTRUSTED origin="https://acme.example/about"\n'
     "Acme Robotics is headquartered in Rotterdam, the Netherlands. The company was "
     "founded in 2011 and employs 240 people. We are hiring across engineering.\n"
     ">>>HELIX_UNTRUSTED"
@@ -36,7 +36,11 @@ class TestGroundedFieldsSurvive:
     def test_accepts_a_value_quoted_from_the_content(self):
         [verdict] = verify_fields(
             CONTENT,
-            {"hq": claim("Rotterdam", "Acme Robotics is headquartered in Rotterdam, the Netherlands.")},
+            {
+                "hq": claim(
+                    "Rotterdam", "Acme Robotics is headquartered in Rotterdam, the Netherlands."
+                )
+            },
         )
         assert verdict.grounded is True
         assert verdict.value == "Rotterdam"
@@ -46,7 +50,11 @@ class TestGroundedFieldsSurvive:
     def test_accepts_a_citation_retyped_with_different_case_and_spacing(self):
         [verdict] = verify_fields(
             CONTENT,
-            {"hq": claim("Rotterdam", "acme robotics is  headquartered in ROTTERDAM, the netherlands")},
+            {
+                "hq": claim(
+                    "Rotterdam", "acme robotics is  headquartered in ROTTERDAM, the netherlands"
+                )
+            },
         )
         assert verdict.grounded is True
 
@@ -62,7 +70,11 @@ class TestUngroundedFieldsAreDropped:
     def test_drops_a_citation_that_is_not_in_the_content(self):
         [verdict] = verify_fields(
             CONTENT,
-            {"hq": claim("Berlin", "Acme Robotics is headquartered in Berlin, Germany, since 2011.")},
+            {
+                "hq": claim(
+                    "Berlin", "Acme Robotics is headquartered in Berlin, Germany, since 2011."
+                )
+            },
         )
         assert verdict.grounded is False
         assert verdict.reason == "citation_not_in_content"
@@ -71,7 +83,11 @@ class TestUngroundedFieldsAreDropped:
     def test_drops_a_real_passage_carrying_a_value_it_does_not_state(self):
         [verdict] = verify_fields(
             CONTENT,
-            {"hq": claim("Berlin", "Acme Robotics is headquartered in Rotterdam, the Netherlands.")},
+            {
+                "hq": claim(
+                    "Berlin", "Acme Robotics is headquartered in Rotterdam, the Netherlands."
+                )
+            },
         )
         assert verdict.reason == "value_not_in_citation"
         assert verdict.value is None
@@ -86,10 +102,18 @@ class TestUngroundedFieldsAreDropped:
         assert len(normalise("Rotterdam")) < MIN_CITATION_CHARS
 
     def test_drops_a_passage_the_trimmer_removed_even_though_it_is_on_the_page(self):
-        trimmed = "<<<HELIX_UNTRUSTED origin=\"https://acme.example/\"\nAcme Robotics builds warehouse automation.\n>>>HELIX_UNTRUSTED"
+        trimmed = (
+            '<<<HELIX_UNTRUSTED origin="https://acme.example/"\n'
+            "Acme Robotics builds warehouse automation.\n"
+            ">>>HELIX_UNTRUSTED"
+        )
         [verdict] = verify_fields(
             trimmed,
-            {"hq": claim("Rotterdam", "Acme Robotics is headquartered in Rotterdam, the Netherlands.")},
+            {
+                "hq": claim(
+                    "Rotterdam", "Acme Robotics is headquartered in Rotterdam, the Netherlands."
+                )
+            },
         )
         assert verdict.reason == "citation_not_in_content"
 
@@ -118,7 +142,8 @@ class TestBooleans:
 
     def test_a_boolean_still_needs_a_real_passage(self):
         [verdict] = verify_fields(
-            CONTENT, {"hiring": claim(True, "The company has frozen all hiring indefinitely this year.")}
+            CONTENT,
+            {"hiring": claim(True, "The company has frozen all hiring indefinitely this year.")},
         )
         assert verdict.reason == "citation_not_in_content"
 
@@ -133,8 +158,12 @@ class TestVerifyEndpoint:
             json={
                 "content": CONTENT,
                 "claims": {
-                    "hq": claim("Rotterdam", "Acme Robotics is headquartered in Rotterdam, the Netherlands."),
-                    "invented": claim("Berlin", "Acme Robotics is headquartered in Berlin, Germany, since 2011."),
+                    "hq": claim(
+                        "Rotterdam", "Acme Robotics is headquartered in Rotterdam, the Netherlands."
+                    ),
+                    "invented": claim(
+                        "Berlin", "Acme Robotics is headquartered in Berlin, Germany, since 2011."
+                    ),
                     "absent": claim(None, ""),
                 },
             },

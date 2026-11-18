@@ -35,7 +35,6 @@ from .schema_compiler import (
 )
 from .settings import settings
 
-
 SYSTEM_PROMPT = system_prompt("extract")
 
 
@@ -98,7 +97,9 @@ def _instance_has_key(provider: str, provider_base_urls: dict[str, str] | None =
     if provider == "openrouter":
         return bool(settings.openrouter_api_key)
     if provider in _LOCAL_OPENAI_WIRE:
-        return bool(settings.openai_compatible_base_url) or bool((provider_base_urls or {}).get(provider))
+        return bool(settings.openai_compatible_base_url) or bool(
+            (provider_base_urls or {}).get(provider)
+        )
     if provider == "openai":
         return bool(settings.openai_api_key or settings.openai_compatible_base_url)
     return False
@@ -152,7 +153,8 @@ def _fallback_candidates(
     return [
         candidate
         for candidate in _CALLER_KEY_PRIORITY
-        if candidate != current and _has_usable_credential(candidate, provider_keys, provider_base_urls)
+        if candidate != current
+        and _has_usable_credential(candidate, provider_keys, provider_base_urls)
     ]
 
 
@@ -196,8 +198,9 @@ def _resolve(
     fallback = DEFAULT_MODELS.get(resolved_provider)
     if fallback is None:
         raise RequestError(
-            f"`model` is required with provider \"{resolved_provider}\": this instance's default "
-            f"model belongs to \"{default_provider}\" and there is no standard model for a local runtime.",
+            f'`model` is required with provider "{resolved_provider}": this instance\'s default '
+            f'model belongs to "{default_provider}" and there is no standard model for a '
+            "local runtime.",
             field="model",
         )
     return resolved_provider, fallback
@@ -228,7 +231,7 @@ def _openai_wire_credentials(
         base_url = caller_base_url or settings.openai_compatible_base_url
         if not base_url:
             raise ProviderError(
-                f"No base URL configured for provider \"{provider}\"; store one or set "
+                f'No base URL configured for provider "{provider}"; store one or set '
                 "OPENAI_COMPATIBLE_BASE_URL.",
                 fallback_eligible=True,
             )
@@ -239,7 +242,10 @@ def _openai_wire_credentials(
     if settings.openai_api_key:
         return settings.openai_api_key, settings.openai_base_url
     if settings.openai_compatible_base_url:
-        return settings.openai_compatible_api_key or "not-needed", settings.openai_compatible_base_url
+        return (
+            settings.openai_compatible_api_key or "not-needed",
+            settings.openai_compatible_base_url,
+        )
     raise ProviderError(
         "No LLM credentials configured. Set OPENAI_API_KEY, or point "
         "OPENAI_COMPATIBLE_BASE_URL at a local runtime.",
@@ -347,10 +353,13 @@ async def _call_anthropic(
         cache_write = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
 
         if use_output_format:
-            text = next((b.text for b in response.content if getattr(b, "type", None) == "text"), None)
+            text = next(
+                (b.text for b in response.content if getattr(b, "type", None) == "text"), None
+            )
             if text is None:
                 raise SchemaError(
-                    f"anthropic ({response.model}) returned no text content for a structured-output request "
+                    f"anthropic ({response.model}) returned no text content for a "
+                    "structured-output request "
                     f"(stop_reason: {response.stop_reason})."
                 )
             try:
@@ -368,7 +377,7 @@ async def _call_anthropic(
                     break
             if data is None:
                 raise SchemaError(
-                    f"anthropic ({response.model}) did not call the \"extract\" tool "
+                    f'anthropic ({response.model}) did not call the "extract" tool '
                     f"(stop_reason: {response.stop_reason})."
                 )
 
@@ -408,7 +417,9 @@ async def _call_gemini(
 
     api_key = caller_key or settings.gemini_api_key or settings.google_api_key
     if not api_key:
-        raise ProviderError("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set.", fallback_eligible=True)
+        raise ProviderError(
+            "GEMINI_API_KEY (or GOOGLE_API_KEY) is not set.", fallback_eligible=True
+        )
 
     client = genai.Client(api_key=api_key)
 
@@ -541,7 +552,13 @@ async def extract_structured(
         caller_base_url = (provider_base_urls or {}).get(current_provider)
         try:
             result = await _dispatch(
-                current_provider, current_model, trimmed, schema, prompt, caller_key, caller_base_url
+                current_provider,
+                current_model,
+                trimmed,
+                schema,
+                prompt,
+                caller_key,
+                caller_base_url,
             )
             break
         except SchemaError:

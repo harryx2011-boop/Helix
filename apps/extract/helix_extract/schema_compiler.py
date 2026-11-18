@@ -159,7 +159,9 @@ def compile_anthropic(schema: dict[str, Any], name: str = "extract") -> dict[str
     }
 
 
-def compile_anthropic_output_format(schema: dict[str, Any], name: str = "extraction") -> dict[str, Any]:
+def compile_anthropic_output_format(
+    schema: dict[str, Any], name: str = "extraction"
+) -> dict[str, Any]:
     """An ``output_config.format`` payload for the Anthropic Messages API.
 
     Preferred over :func:`compile_anthropic`'s tool trick wherever the

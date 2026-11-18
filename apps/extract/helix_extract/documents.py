@@ -141,10 +141,7 @@ def looks_garbled(text: str) -> bool:
         return True
 
     words = re.findall(r"[^\W\d_]{2,}", sample)
-    if considered > 200 and len(words) < considered / 50:
-        return True
-
-    return False
+    return considered > 200 and len(words) < considered / 50
 
 
 def assess_pdf(data: bytes) -> PdfAssessment:

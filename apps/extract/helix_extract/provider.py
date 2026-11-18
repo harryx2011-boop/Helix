@@ -20,8 +20,9 @@ from __future__ import annotations
 
 import asyncio
 import random
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, TypeVar
+from typing import Any, TypeVar
 
 from .schema_compiler import SchemaError
 
@@ -67,7 +68,11 @@ def _is_retryable(exc: Exception) -> bool:
     status = _status_of(exc)
     if status == 429 or (status is not None and status >= 500):
         return True
-    return getattr(exc, "__cause__", None) is not None and status is None and _looks_like_network_error(exc)
+    return (
+        getattr(exc, "__cause__", None) is not None
+        and status is None
+        and _looks_like_network_error(exc)
+    )
 
 
 def _looks_like_network_error(exc: Exception) -> bool:
@@ -112,9 +117,15 @@ async def call_structured(
     last_exc: Exception | None = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            data, tokens_in, tokens_out, model_used = await asyncio.wait_for(call(), timeout=CALL_TIMEOUT_SECONDS)
+            data, tokens_in, tokens_out, model_used = await asyncio.wait_for(
+                call(), timeout=CALL_TIMEOUT_SECONDS
+            )
             return CallOutcome(
-                data=data, tokens_input=tokens_in, tokens_output=tokens_out, model_used=model_used, attempts=attempt
+                data=data,
+                tokens_input=tokens_in,
+                tokens_output=tokens_out,
+                model_used=model_used,
+                attempts=attempt,
             )
         except (ProviderError, RequestError, SchemaError):
             raise
@@ -123,7 +134,7 @@ async def call_structured(
                 f"{provider} ({model}) did not respond within {CALL_TIMEOUT_SECONDS:.0f}s.",
                 fallback_eligible=False,
             ) from exc
-        except Exception as exc:  # noqa: BLE001 - every SDK has its own exception tree
+        except Exception as exc:
             last_exc = exc
             retryable = _is_retryable(exc)
             if attempt >= MAX_ATTEMPTS or not retryable:

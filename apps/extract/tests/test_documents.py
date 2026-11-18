@@ -235,7 +235,6 @@ class TestOcrFallsBackToDoclingWithoutMarker:
 
 @pytest.mark.usefixtures("marker_absent", "docling_absent")
 class TestShortPdfWithoutOcr:
-
     @pytest.mark.parametrize("ocr", ["auto", "always", "never"])
     def test_keeps_a_short_clean_text_layer(self, ocr: str) -> None:
         data = make_short_pdf("Dummy PDF file")
@@ -281,7 +280,9 @@ class TestCorruptFiles:
             ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
         ],
     )
-    def test_reports_a_broken_office_container_as_the_files_fault(self, content_type: str, kind: str) -> None:
+    def test_reports_a_broken_office_container_as_the_files_fault(
+        self, content_type: str, kind: str
+    ) -> None:
         with pytest.raises(DocumentError, match=f"could not be parsed as {kind}"):
             parse(self.ZIP_STUB, content_type)
 

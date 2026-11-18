@@ -17,6 +17,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field, model_validator
 
 from . import (
+    __version__,
     chunking,
     documents,
     embeddings,
@@ -29,7 +30,6 @@ from . import (
     service_auth,
 )
 from .schema_compiler import SchemaError
-from . import __version__
 from .settings import settings
 
 app = FastAPI(
@@ -176,7 +176,9 @@ async def assess_pdf_route(request: Request) -> PdfAssessmentResponse:
     if content_type not in ("application/pdf", "application/x-pdf"):
         raise HTTPException(
             status_code=415,
-            detail=f"assessment is only defined for PDFs, not {content_type or 'an unspecified type'}",
+            detail=(
+                f"assessment is only defined for PDFs, not {content_type or 'an unspecified type'}"
+            ),
         )
 
     assessment = documents.assess_pdf(data)
@@ -363,7 +365,6 @@ async def structured(request: StructuredRequest) -> StructuredResponse:
     )
 
 
-
 class EnrichVerifyRequest(BaseModel):
     content: str
     claims: dict
@@ -409,6 +410,7 @@ async def enrich_verify(request: EnrichVerifyRequest) -> EnrichVerifyResponse:
         grounded_count=sum(1 for v in verdicts if v.grounded),
         rejected_count=sum(1 for v in verdicts if v.reason is not None),
     )
+
 
 class SchemaRequest(BaseModel):
     prompt: str
@@ -471,7 +473,7 @@ class ChunkRequest(BaseModel):
     embed: bool = False
 
     @model_validator(mode="after")
-    def _overlap_within_budget(self) -> "ChunkRequest":
+    def _overlap_within_budget(self) -> ChunkRequest:
         if self.overlap >= self.max_tokens:
             raise ValueError("overlap must be smaller than max_tokens")
         return self

@@ -11,7 +11,9 @@ class TestCostUsd:
         cost = cost_usd("anthropic", "claude-sonnet-5", usage)
         assert cost is not None
         assert round(cost, 6) == round(
-            (100_000 / 1_000_000) * 2.0 + (50_000 / 1_000_000) * 10.0 + (200_000 / 1_000_000) * 2.0 * 0.1,
+            (100_000 / 1_000_000) * 2.0
+            + (50_000 / 1_000_000) * 10.0
+            + (200_000 / 1_000_000) * 2.0 * 0.1,
             6,
         )
         assert round(cost, 6) == 0.74

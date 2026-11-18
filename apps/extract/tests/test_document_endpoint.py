@@ -23,7 +23,9 @@ def test_answers_415_for_a_type_it_cannot_parse() -> None:
 
 
 def test_answers_422_for_a_corrupt_file_rather_than_500() -> None:
-    response = client.post("/document", content=b"PK\x03\x04" + b"\x00" * 32, headers={"content-type": DOCX})
+    response = client.post(
+        "/document", content=b"PK\x03\x04" + b"\x00" * 32, headers={"content-type": DOCX}
+    )
     assert response.status_code == 422
     assert "could not be parsed as docx" in response.json()["detail"]
 

@@ -16,7 +16,9 @@ import pytest
 from helix_extract import metadata as m
 
 
-def _tiff(entries: list[tuple[int, int, bytes]], gps: list[tuple[int, int, bytes]] | None = None) -> bytes:
+def _tiff(
+    entries: list[tuple[int, int, bytes]], gps: list[tuple[int, int, bytes]] | None = None
+) -> bytes:
     """Assemble a little-endian TIFF block, optionally with a GPS sub-IFD."""
     gps = gps or []
 
@@ -60,14 +62,21 @@ def _segment(marker: int, payload: bytes) -> bytes:
     return bytes([0xFF, marker]) + struct.pack(">H", len(payload) + 2) + payload
 
 
-def _exif_segment(entries: list[tuple[int, int, bytes]], gps: list[tuple[int, int, bytes]] | None = None) -> bytes:
+def _exif_segment(
+    entries: list[tuple[int, int, bytes]], gps: list[tuple[int, int, bytes]] | None = None
+) -> bytes:
     return _segment(0xE1, b"Exif\x00\x00" + _tiff(entries, gps))
 
 
 def _png(*chunks: tuple[bytes, bytes]) -> bytes:
     out = bytearray(m._PNG_SIG)
     for kind, payload in chunks:
-        out += struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
+        out += (
+            struct.pack(">I", len(payload))
+            + kind
+            + payload
+            + struct.pack(">I", zlib.crc32(kind + payload))
+        )
     return bytes(out)
 
 
@@ -92,15 +101,14 @@ def _docx(parts: dict[str, str]) -> bytes:
 
 CORE_XML = (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-    '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
+    "<cp:coreProperties "
+    'xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
     'xmlns:dc="http://purl.org/dc/elements/1.1/">'
     "<dc:creator>Jane Roe</dc:creator>"
     "<cp:lastModifiedBy>john.smith@acme.example</cp:lastModifiedBy>"
     "<dc:title>Q3 Memo</dc:title>"
     "</cp:coreProperties>"
 )
-
-
 
 
 class TestClassify:
@@ -120,7 +128,10 @@ class TestClassify:
         assert m.classify("xmp:CreatorTool", "Photoshop")[0] is m.Risk.MEDIUM
 
     def test_an_email_in_the_value_escalates_whatever_the_key(self) -> None:
-        assert m.classify("Comment", "ping me at jane@example.com") == (m.Risk.HIGH, m.Category.IDENTITY)
+        assert m.classify("Comment", "ping me at jane@example.com") == (
+            m.Risk.HIGH,
+            m.Category.IDENTITY,
+        )
 
     def test_a_home_directory_path_escalates(self) -> None:
         assert m.classify("Template", r"C:\Users\jroe\Templates\matter.dotx")[0] is m.Risk.HIGH
@@ -141,8 +152,6 @@ class TestSummarize:
             m.Finding("g", "k", "v", m.Risk.LOW, m.Category.OTHER),
         ]
         assert m.summarize(findings) == {"high": 2, "medium": 0, "low": 1}
-
-
 
 
 class TestJpeg:
@@ -248,8 +257,6 @@ class TestJpeg:
         assert m.scan_jpeg(data).findings == []
 
 
-
-
 class TestPng:
     def test_reads_text_chunks(self) -> None:
         data = _png_image((b"tEXt", b"Author\x00Jane Roe"), (b"tEXt", b"Software\x00GIMP 2.10"))
@@ -269,7 +276,9 @@ class TestPng:
         assert found["ModificationTime"].value == "2026-09-03T14:30:00Z"
 
     def test_scrub_keeps_the_image_and_drops_the_metadata(self) -> None:
-        data = _png_image((b"tEXt", b"Author\x00Jane Roe"), (b"tIME", struct.pack(">HBBBBB", 2026, 9, 3, 1, 2, 3)))
+        data = _png_image(
+            (b"tEXt", b"Author\x00Jane Roe"), (b"tIME", struct.pack(">HBBBBB", 2026, 9, 3, 1, 2, 3))
+        )
         result = m.scrub_png(data)
 
         assert result.removed
@@ -287,8 +296,6 @@ class TestPng:
             m.scan_png(b"\x89PNGX")
 
 
-
-
 class TestOoxml:
     def test_reads_core_properties(self) -> None:
         found = {f.key: f for f in m.scan_ooxml(_docx({"docProps/core.xml": CORE_XML})).findings}
@@ -301,9 +308,11 @@ class TestOoxml:
     def test_reads_custom_properties_once_under_their_real_name(self) -> None:
         custom = (
             '<?xml version="1.0"?>'
-            '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" '
+            "<Properties "
+            'xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" '
             'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
-            '<property fmtid="{D5}" pid="2" name="MatterNumber"><vt:lpwstr>ACM-2026-118</vt:lpwstr></property>'
+            '<property fmtid="{D5}" pid="2" name="MatterNumber">'
+            "<vt:lpwstr>ACM-2026-118</vt:lpwstr></property>"
             "</Properties>"
         )
         findings = m.scan_ooxml(_docx({"docProps/custom.xml": custom})).findings
@@ -325,7 +334,9 @@ class TestOoxml:
         assert "word/document.xml" in names
         assert m.scan_ooxml(result.data).findings == []
 
-    def test_scrub_reports_a_comments_part_as_retained_rather_than_claiming_it_is_clean(self) -> None:
+    def test_scrub_reports_a_comments_part_as_retained_rather_than_claiming_it_is_clean(
+        self,
+    ) -> None:
         data = _docx(
             {
                 "docProps/core.xml": CORE_XML,
@@ -353,8 +364,6 @@ class TestOoxml:
     def test_bytes_that_are_not_a_zip_raise(self) -> None:
         with pytest.raises(m.MetadataError):
             m.scan_ooxml(b"PK not really")
-
-
 
 
 class TestDispatch:

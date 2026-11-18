@@ -45,11 +45,27 @@ _MARKUP = re.compile(r"[*_`#>|]")
 
 _PUNCTUATION = str.maketrans(
     {
-        "‘": "'", "’": "'", "‚": "'", "‛": "'", "′": "'",
-        "“": '"', "”": '"', "„": '"', "‟": '"', "″": '"',
-        "‐": "-", "‑": "-", "‒": "-", "–": "-", "—": "-",
-        "―": "-", "−": "-",
-        "•": "*", "‣": "*", "◦": "*", "⁃": "*",
+        "‘": "'",
+        "’": "'",
+        "‚": "'",
+        "‛": "'",
+        "′": "'",
+        "“": '"',
+        "”": '"',
+        "„": '"',
+        "‟": '"',
+        "″": '"',
+        "‐": "-",
+        "‑": "-",
+        "‒": "-",
+        "–": "-",
+        "—": "-",
+        "―": "-",
+        "−": "-",
+        "•": "*",
+        "‣": "*",
+        "◦": "*",
+        "⁃": "*",
     }
 )
 
@@ -150,16 +166,12 @@ def verify_fields(content: str, claims: dict[str, Any]) -> list[FieldVerdict]:
             continue
 
         if normalise(citation) not in haystack:
-            verdicts.append(
-                FieldVerdict(name, None, None, False, "citation_not_in_content", False)
-            )
+            verdicts.append(FieldVerdict(name, None, None, False, "citation_not_in_content", False))
             continue
 
         contained = value_in_citation(value, citation)
         if not isinstance(value, bool) and not contained:
-            verdicts.append(
-                FieldVerdict(name, None, None, False, "value_not_in_citation", False)
-            )
+            verdicts.append(FieldVerdict(name, None, None, False, "value_not_in_citation", False))
             continue
 
         verdicts.append(FieldVerdict(name, value, citation, True, None, contained))

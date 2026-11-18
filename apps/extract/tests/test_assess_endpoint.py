@@ -26,17 +26,29 @@ def test_answers_415_for_an_unspecified_type() -> None:
 
 
 def test_accepts_application_x_pdf_as_a_pdf_alias() -> None:
-    response = client.post("/assess", content=b"%PDF-1.4\n%%EOF", headers={"content-type": "application/x-pdf"})
+    response = client.post(
+        "/assess", content=b"%PDF-1.4\n%%EOF", headers={"content-type": "application/x-pdf"}
+    )
     assert response.status_code == 200
 
 
 def test_returns_the_assessment_shape_for_a_pdf() -> None:
-    response = client.post("/assess", content=b"%PDF-1.4\n%%EOF", headers={"content-type": "application/pdf"})
+    response = client.post(
+        "/assess", content=b"%PDF-1.4\n%%EOF", headers={"content-type": "application/pdf"}
+    )
     assert response.status_code == 200
     body = response.json()
-    assert set(body.keys()) == {"pages", "chars_extracted", "needs_ocr", "suspected_garbled_text", "reason"}
+    assert set(body.keys()) == {
+        "pages",
+        "chars_extracted",
+        "needs_ocr",
+        "suspected_garbled_text",
+        "reason",
+    }
 
 
 def test_does_not_convert_anything_only_classifies() -> None:
-    response = client.post("/assess", content=b"%PDF-1.4\n%%EOF", headers={"content-type": "application/pdf"})
+    response = client.post(
+        "/assess", content=b"%PDF-1.4\n%%EOF", headers={"content-type": "application/pdf"}
+    )
     assert "markdown" not in response.json()

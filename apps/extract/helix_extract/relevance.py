@@ -46,13 +46,100 @@ TOP_BAND_MAX_FRACTION = 0.5
 TOP_BAND_RATIO = 0.6
 
 STOPWORDS = frozenset(
-    """
-    a an the and or but if then else of in on at to for with by from as is are was were
-    be been being have has had do does did will would shall should may might must can
-    could this that these those it its it's i you he she we they them their there here
-    what which who whom when where why how all any both each few more most other some
-    such no nor not only own same so than too very just about into over after before
-    """.split()
+    [
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "but",
+        "if",
+        "then",
+        "else",
+        "of",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "with",
+        "by",
+        "from",
+        "as",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "shall",
+        "should",
+        "may",
+        "might",
+        "must",
+        "can",
+        "could",
+        "this",
+        "that",
+        "these",
+        "those",
+        "it",
+        "its",
+        "it's",
+        "i",
+        "you",
+        "he",
+        "she",
+        "we",
+        "they",
+        "them",
+        "their",
+        "there",
+        "here",
+        "what",
+        "which",
+        "who",
+        "whom",
+        "when",
+        "where",
+        "why",
+        "how",
+        "all",
+        "any",
+        "both",
+        "each",
+        "few",
+        "more",
+        "most",
+        "other",
+        "some",
+        "such",
+        "no",
+        "nor",
+        "not",
+        "only",
+        "own",
+        "same",
+        "so",
+        "than",
+        "too",
+        "very",
+        "just",
+        "about",
+        "into",
+        "over",
+        "after",
+        "before",
+    ]
 )
 
 _WORD = re.compile(r"[a-z0-9][a-z0-9'-]*")
@@ -229,9 +316,14 @@ def select(
     blocks = split_blocks(markdown)
     if not blocks:
         excerpt = markdown[:budget_chars]
-        return Selection(text=excerpt, kept=[Block(text=excerpt, score=0.0, index=0)], kept_count=0, total=0)
+        return Selection(
+            text=excerpt, kept=[Block(text=excerpt, score=0.0, index=0)], kept_count=0, total=0
+        )
 
-    scored = [Block(text=block, score=score_block(block, wanted), index=i) for i, block in enumerate(blocks)]
+    scored = [
+        Block(text=block, score=score_block(block, wanted), index=i)
+        for i, block in enumerate(blocks)
+    ]
 
     if all(block.score == 0 for block in scored):
         kept: list[Block] = []
@@ -252,7 +344,10 @@ def select(
             )
 
         return Selection(
-            text="\n\n".join(b.text for b in kept), kept=kept, kept_count=len(kept), total=len(blocks)
+            text="\n\n".join(b.text for b in kept),
+            kept=kept,
+            kept_count=len(kept),
+            total=len(blocks),
         )
 
     ranked = sorted(scored, key=lambda b: b.score, reverse=True)

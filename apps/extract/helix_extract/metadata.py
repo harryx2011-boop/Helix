@@ -89,7 +89,6 @@ class MetadataError(Exception):
         self.kind = kind
 
 
-
 _EXACT_RISK: dict[str, tuple[Risk, Category]] = {
     "gpslatitude": (Risk.HIGH, Category.LOCATION),
     "gpslongitude": (Risk.HIGH, Category.LOCATION),
@@ -202,8 +201,9 @@ def _finding(group: str, key: str, value: object, *, removable: bool = True) -> 
     if len(text) > _MAX_VALUE_CHARS:
         text = f"{text[: _MAX_VALUE_CHARS - 32]}… [{len(text)} chars, truncated]"
     risk, category = classify(key, text)
-    return Finding(group=group, key=key, value=text, risk=risk, category=category, removable=removable)
-
+    return Finding(
+        group=group, key=key, value=text, risk=risk, category=category, removable=removable
+    )
 
 
 _SOI = b"\xff\xd8"
@@ -262,7 +262,20 @@ _GPS_TAGS: dict[int, str] = {
     0x001D: "GPSDateStamp",
 }
 
-_TYPE_SIZES: dict[int, int] = {1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 1, 7: 1, 8: 2, 9: 4, 10: 8, 11: 4, 12: 8}
+_TYPE_SIZES: dict[int, int] = {
+    1: 1,
+    2: 1,
+    3: 2,
+    4: 4,
+    5: 8,
+    6: 1,
+    7: 1,
+    8: 2,
+    9: 4,
+    10: 8,
+    11: 4,
+    12: 8,
+}
 
 _MAX_IFD_ENTRIES = 512
 _MAX_VALUE_BYTES = 1 << 20
@@ -312,7 +325,9 @@ def _format_value(raw: bytes, type_id: int, components: int, order: str) -> str:
         return ", ".join(parts)
     if type_id in (3, 4, 8, 9):
         width = 2 if type_id in (3, 8) else 4
-        code = {(2, False): "H", (4, False): "I", (2, True): "h", (4, True): "i"}[(width, type_id in (8, 9))]
+        code = {(2, False): "H", (4, False): "I", (2, True): "h", (4, True): "i"}[
+            (width, type_id in (8, 9))
+        ]
         return ", ".join(
             str(struct.unpack(order + code, raw[k * width : k * width + width])[0])
             for k in range(min(components, len(raw) // width))
@@ -409,7 +424,7 @@ def _dms_to_degrees(value: str) -> float | None:
         return None
     if not numbers:
         return None
-    degrees, minutes, seconds = (numbers + [0.0, 0.0])[:3]
+    degrees, minutes, seconds = [*numbers, 0.0, 0.0][:3]
     return degrees + minutes / 60 + seconds / 3600
 
 
@@ -508,7 +523,6 @@ def scrub_jpeg(data: bytes) -> ScrubResult:
     return ScrubResult(data=bytes(out), removed=scanned.findings, warnings=scanned.warnings)
 
 
-
 _PNG_SIG = b"\x89PNG\r\n\x1a\n"
 
 _PNG_META_CHUNKS = frozenset({b"tEXt", b"zTXt", b"iTXt", b"tIME", b"eXIf", b"iCCP"})
@@ -601,7 +615,6 @@ def scrub_png(data: bytes) -> ScrubResult:
     for _, start, end, _ in keep:
         out.extend(data[start:end])
     return ScrubResult(data=bytes(out), removed=scanned.findings, warnings=scanned.warnings)
-
 
 
 _OOXML_PROP_PARTS = ("docProps/core.xml", "docProps/app.xml", "docProps/custom.xml")
@@ -729,11 +742,21 @@ def scrub_ooxml(data: bytes) -> ScrubResult:
             f"{len(retained)} part(s) naming people were kept: removing them would break a "
             "relationship and corrupt the document. Accept the comments in the editor and re-run."
         )
-    return ScrubResult(data=buffer.getvalue(), removed=removed, retained=retained, warnings=warnings)
+    return ScrubResult(
+        data=buffer.getvalue(), removed=removed, retained=retained, warnings=warnings
+    )
 
 
-
-_PDF_INFO_KEYS = ("Title", "Author", "Subject", "Keywords", "Creator", "Producer", "CreationDate", "ModDate")
+_PDF_INFO_KEYS = (
+    "Title",
+    "Author",
+    "Subject",
+    "Keywords",
+    "Creator",
+    "Producer",
+    "CreationDate",
+    "ModDate",
+)
 
 _EMPTY_XMP = (
     b'<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>'
@@ -743,7 +766,7 @@ _EMPTY_XMP = (
 _XMP_TERMINATOR = b'<?xpacket end="w"?>'
 
 
-def _pdf_document(data: bytes):  # noqa: ANN202 - pdfium does not export its type
+def _pdf_document(data: bytes):
     try:
         import pypdfium2 as pdfium
     except ImportError as exc:  # pragma: no cover - declared dependency
@@ -826,11 +849,18 @@ def scrub_pdf(data: bytes) -> ScrubResult:
             data=data,
             removed=[],
             retained=[replace(found, removable=False) for found in scanned.findings],
-            warnings=[*scanned.warnings, f"the scrubbed PDF could not be re-read, so nothing was changed: {exc}"],
+            warnings=[
+                *scanned.warnings,
+                f"the scrubbed PDF could not be re-read, so nothing was changed: {exc}",
+            ],
         )
 
     surviving = {(found.group, found.key, found.value) for found in after.findings}
-    removed = [found for found in scanned.findings if (found.group, found.key, found.value) not in surviving]
+    removed = [
+        found
+        for found in scanned.findings
+        if (found.group, found.key, found.value) not in surviving
+    ]
     retained = [
         replace(found, removable=False)
         for found in scanned.findings
@@ -838,11 +868,11 @@ def scrub_pdf(data: bytes) -> ScrubResult:
     ]
     if retained:
         warnings.append(
-            f"{len(retained)} PDF metadata value(s) survived the rewrite: pypdfium2 cannot write DocInfo, "
+            f"{len(retained)} PDF metadata value(s) survived the rewrite: "
+            "pypdfium2 cannot write DocInfo, "
             "so entries it re-emits are reported rather than silently claimed as removed."
         )
     return ScrubResult(data=out, removed=removed, retained=retained, warnings=warnings)
-
 
 
 _SCANNERS = {

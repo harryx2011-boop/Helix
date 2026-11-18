@@ -16,7 +16,9 @@ def test_structured_forwards_provider_keys_to_llm(monkeypatch: pytest.MonkeyPatc
 
     async def fake_extract_structured(**kwargs: object) -> llm.ExtractionResult:
         seen.update(kwargs)
-        return llm.ExtractionResult(data={"title": "T"}, tokens_input=1, tokens_output=1, model_used="m")
+        return llm.ExtractionResult(
+            data={"title": "T"}, tokens_input=1, tokens_output=1, model_used="m"
+        )
 
     monkeypatch.setattr(llm, "extract_structured", fake_extract_structured)
 

@@ -31,20 +31,20 @@ _TASK_INSTRUCTIONS: dict[PassKind, str] = {
     "extract": (
         "Extract the requested fields from the content. Use only what the "
         "content states. When a field is not present, return null for it "
-        "rather than guessing. When a tool named \"extract\" is available, "
+        'rather than guessing. When a tool named "extract" is available, '
         "call it with the extracted data rather than answering in text."
     ),
     "schema_design": (
         "You design JSON Schemas for web-data extraction. Given a description of "
         "the data someone wants pulled from a web page, produce a strict JSON "
-        "Schema: `type` is always \"object\"; every field in `properties` has a "
+        'Schema: `type` is always "object"; every field in `properties` has a '
         "`description` explaining what to extract; a field that is a list of "
         "records is `type: array` with `items` as a nested object schema; use "
         "`enum` when the request names a fixed set of categories or options; "
         "mark fields that must be present in `required`. Do not use minItems, "
         "maxItems, minProperties or maxProperties — these cause models to "
         "invent data to satisfy them. Return only the schema. When a tool "
-        "named \"schema_design\" is available, call it with the schema "
+        'named "schema_design" is available, call it with the schema '
         "rather than answering in text."
     ),
 }
@@ -63,4 +63,4 @@ def system_prompt(kind: PassKind) -> str:
     return "\n\n".join(blocks)
 
 
-__all__ = ["PassKind", "UNTRUSTED_CONTENT_BOUNDARY", "system_prompt"]
+__all__ = ["UNTRUSTED_CONTENT_BOUNDARY", "PassKind", "system_prompt"]

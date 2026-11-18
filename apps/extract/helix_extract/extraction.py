@@ -76,9 +76,7 @@ def _extract_links(doc_html: str, base_url: str) -> list[str]:
     return list(seen)
 
 
-def _apply_selectors(
-    doc_html: str, include: list[str], exclude: list[str]
-) -> str:
+def _apply_selectors(doc_html: str, include: list[str], exclude: list[str]) -> str:
     """Narrow or prune the document before extraction.
 
     Selector work happens first so the extractor sees only what the caller

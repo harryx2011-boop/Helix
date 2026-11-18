@@ -20,7 +20,9 @@ class _Status(Exception):
 
 class TestCallStructured:
     @pytest.mark.asyncio
-    async def test_succeeds_on_the_first_attempt_without_sleeping(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_succeeds_on_the_first_attempt_without_sleeping(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         async def no_sleep(_seconds: float) -> None:
             raise AssertionError("should not sleep on a clean first attempt")
 
@@ -37,7 +39,9 @@ class TestCallStructured:
         assert outcome.attempts == 1
 
     @pytest.mark.asyncio
-    async def test_retries_a_rate_limit_and_then_succeeds(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_retries_a_rate_limit_and_then_succeeds(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         async def instant_sleep(_seconds: float) -> None:
             return None
 
@@ -75,7 +79,9 @@ class TestCallStructured:
         assert calls["n"] == provider.MAX_ATTEMPTS
 
     @pytest.mark.asyncio
-    async def test_does_not_retry_a_non_retryable_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_does_not_retry_a_non_retryable_failure(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         async def no_sleep(_seconds: float) -> None:
             raise AssertionError("a 400 should not be retried")
 
@@ -92,7 +98,9 @@ class TestCallStructured:
         assert calls["n"] == 1
 
     @pytest.mark.asyncio
-    async def test_provider_error_passes_through_unretried(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_provider_error_passes_through_unretried(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         async def no_sleep(_seconds: float) -> None:
             raise AssertionError("a ProviderError is not retried")
 

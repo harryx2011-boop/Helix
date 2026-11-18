@@ -34,11 +34,11 @@ PRICE_TABLE: dict[tuple[str, str], Rate] = {
     ("anthropic", "claude-opus-5"): Rate(5.0, 25.0),
     ("anthropic", "claude-sonnet-5"): Rate(2.0, 10.0),
     ("anthropic", "claude-haiku-4-5"): Rate(1.0, 5.0),
-
-
     ("ollama", "*"): Rate(0.0, 0.0, cache_read_multiplier=0.0, cache_write_multiplier=0.0),
     ("vllm", "*"): Rate(0.0, 0.0, cache_read_multiplier=0.0, cache_write_multiplier=0.0),
-    ("openai-compatible", "*"): Rate(0.0, 0.0, cache_read_multiplier=0.0, cache_write_multiplier=0.0),
+    ("openai-compatible", "*"): Rate(
+        0.0, 0.0, cache_read_multiplier=0.0, cache_write_multiplier=0.0
+    ),
 }
 
 
@@ -69,8 +69,12 @@ def cost_usd(provider: str, model: str, usage: Usage) -> float | None:
     return (
         (usage.tokens_input / 1_000_000) * rate.input_per_million
         + (usage.tokens_output / 1_000_000) * rate.output_per_million
-        + (usage.tokens_cache_read / 1_000_000) * rate.input_per_million * rate.cache_read_multiplier
-        + (usage.tokens_cache_write / 1_000_000) * rate.input_per_million * rate.cache_write_multiplier
+        + (usage.tokens_cache_read / 1_000_000)
+        * rate.input_per_million
+        * rate.cache_read_multiplier
+        + (usage.tokens_cache_write / 1_000_000)
+        * rate.input_per_million
+        * rate.cache_write_multiplier
     )
 
 

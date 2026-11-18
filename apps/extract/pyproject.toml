@@ -56,7 +56,9 @@ marker = [
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
-    "ruff>=0.8.0",
+    # Exact: a new ruff adds rules and moves formatting, which fails CI with no
+    # code change. Bump it on purpose, with the lint and format fixes it brings.
+    "ruff==0.17.4",
     "mypy>=1.13.0",
 ]
 
@@ -78,6 +80,26 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+ignore = [
+    # `class X(str, Enum)` -> `StrEnum` changes str() and format() output
+    # (the member name becomes the value); these enums are wire values, so the
+    # class bases stay as they are.
+    "UP042",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Typographic quotes, dashes and bullets are the data here: the table maps them
+# to ASCII so a quoted passage still matches the page it was read from.
+"helix_extract/enrich.py" = ["RUF001"]
+# The dash class in the regex strips Markdown rules written with en and em dashes.
+"helix_extract/extraction.py" = ["RUF001"]
+# The fixture is Chinese text with a fullwidth comma on purpose.
+"tests/test_documents.py" = ["RUF001"]
+# Test doubles named after the HTTP status or provider error they stand in for
+# (NotFound, RateLimited): the names mirror the real SDK errors.
+"tests/test_llm.py" = ["N818"]
+"tests/test_provider.py" = ["N818"]
+"tests/test_schema_gen.py" = ["N818"]
 
 [tool.mypy]
 python_version = "3.12"

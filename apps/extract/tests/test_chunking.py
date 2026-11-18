@@ -160,7 +160,12 @@ class TestChunkEndpointValidation:
     def test_rejects_overlap_greater_than_max_tokens(self) -> None:
         response = client.post(
             "/chunk",
-            json={"text": "hello world", "url": "https://e.com/d", "max_tokens": 5, "overlap": 1000},
+            json={
+                "text": "hello world",
+                "url": "https://e.com/d",
+                "max_tokens": 5,
+                "overlap": 1000,
+            },
         )
         assert response.status_code == 422
 

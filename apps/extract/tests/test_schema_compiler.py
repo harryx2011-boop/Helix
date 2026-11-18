@@ -215,7 +215,9 @@ class TestAnthropic:
 
         assert compiled["tool_choice"] == {"type": "auto"}
         assert compiled["tools"][0]["strict"] is True
-        assert compiled["tools"][0]["input_schema"] == compile_openai(SIMPLE)["json_schema"]["schema"]
+        assert (
+            compiled["tools"][0]["input_schema"] == compile_openai(SIMPLE)["json_schema"]["schema"]
+        )
 
     def test_names_the_tool_consistently(self) -> None:
         compiled = compile_anthropic(SIMPLE, name="pull_data")

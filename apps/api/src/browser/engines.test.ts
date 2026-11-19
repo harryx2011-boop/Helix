@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import {
   browserTypeFor,
@@ -6,6 +7,7 @@ import {
   profileMatchesEngine,
   RENDER_ENGINES,
   supportsMobileEmulation,
+  webRtcLockScript,
 } from './engines.js';
 import type { BrowserProfile } from './profiles.js';
 
@@ -36,6 +38,28 @@ describe('launch arguments', () => {
   it('sends no chromium switches to firefox or webkit', () => {
     expect(launchArgsFor('firefox')).toEqual([]);
     expect(launchArgsFor('webkit')).toEqual([]);
+  });
+});
+
+describe('WebRTC lock', () => {
+  it('S23: only webkit needs a page script; chromium and firefox are locked at launch', () => {
+    expect(webRtcLockScript('webkit')).toBeTypeOf('string');
+    expect(webRtcLockScript('chromium')).toBeUndefined();
+    expect(webRtcLockScript('firefox')).toBeUndefined();
+  });
+
+  it('S24: the webkit script leaves a page no way to open a peer connection', () => {
+    class Peer {}
+    const page: Record<string, unknown> = { RTCPeerConnection: Peer, webkitRTCPeerConnection: Peer, RTCDataChannel: Peer };
+    page['globalThis'] = page;
+    runInNewContext(webRtcLockScript('webkit') ?? '', page);
+    expect(page['RTCPeerConnection']).toBeUndefined();
+    expect(page['webkitRTCPeerConnection']).toBeUndefined();
+    expect(page['RTCDataChannel']).toBeUndefined();
+    expect(() => {
+      page['RTCPeerConnection'] = Peer;
+    }).toThrow(TypeError);
+    expect(page['RTCPeerConnection']).toBeUndefined();
   });
 });
 

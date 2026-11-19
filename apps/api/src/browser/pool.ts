@@ -17,6 +17,7 @@ import {
   launchArgsFor,
   profileMatchesEngine,
   supportsMobileEmulation,
+  webRtcLockScript,
   type RenderEngine,
 } from './engines.js';
 
@@ -364,6 +365,8 @@ async function addIdentityScript(
   if (engine === 'chromium' || profile) {
     await context.addInitScript(fingerprintScript(profile, engine === 'chromium'));
   }
+  const lock = webRtcLockScript(engine);
+  if (lock) await context.addInitScript(lock);
 }
 
 /** Navigate, wait, act and capture, each step bounded by the shared deadline. */

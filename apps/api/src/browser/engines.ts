@@ -37,6 +37,18 @@ const CHROMIUM_ARGS: readonly string[] = [
  */
 export const FIREFOX_PREFS: Readonly<Record<string, boolean>> = { 'media.peerconnection.ice.proxy_only': true };
 
+const WEBRTC_CLASSES = ['RTCPeerConnection', 'webkitRTCPeerConnection', 'RTCDataChannel'];
+
+const WEBKIT_WEBRTC_LOCK = `(() => {
+  for (const name of ${JSON.stringify(WEBRTC_CLASSES)}) {
+    try { Object.defineProperty(globalThis, name, { value: undefined, writable: false, configurable: false }); } catch {}
+  }
+})();`;
+
+export function webRtcLockScript(engine: RenderEngine): string | undefined {
+  return engine === 'webkit' ? WEBKIT_WEBRTC_LOCK : undefined;
+}
+
 export function launchArgsFor(engine: RenderEngine): string[] {
   return engine === 'chromium' ? [...CHROMIUM_ARGS] : [];
 }

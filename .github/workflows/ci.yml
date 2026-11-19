@@ -14,6 +14,7 @@ jobs:
   api:
     name: api (TypeScript)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       # No `version:` here: pnpm comes from "packageManager" in package.json, and

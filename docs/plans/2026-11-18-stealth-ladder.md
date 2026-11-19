@@ -100,23 +100,22 @@ Fixed limits whatever the answers: no paid human CAPTCHA-solving service, no ima
 | A3 404 as not_found | not needed | the 404 was the missing `/render` route on the Rust exe (audit line 80); A1 and A2 removed it |
 | A4 hung render frees slot | done `dab3ac6` | pytest S5 |
 | A5 scrapling 0.5.1 | done `42a7964` | pytest 149, ADR 0001 amended |
-| A6 CI green | in progress | causes: pnpm version twice, POSTGRES_PASSWORD unset, unpinned redocly (9 struct errors), extract ruff (about 150), Rust job missing |
+| A6 CI green | local green, GitHub pending | first wave pushed `5e3d5b4` (cargo fmt `18a50a6`, Cargo.lock tracked `79b3f54`, extract ruff 0.17.4 pin and fixes `736bd17`, OpenAPI 3.1 nulls `c971012`, workflow fixes `efd1818`, scrape ruff pin `d9d84ba`, Playwright browsers in the api job `5e3d5b4`); GitHub run 44398726607 then showed 5 Linux-only failures, fixed and verified (Linux VM or Node 22): scrape mypy `522d846`, extract path test `c342304`, SDK Blob named "undefined" on Node 22 `0c8aa27`, WebKit WebRTC leak and timeout regex (see B9b), api Dockerfile copies `.npmrc` and `pnpm-lock.yaml` (the image had no `playwright`). Not pushed yet |
 | B7 robots gate | done `c19f2f4` | S13-S16 |
 | B8 headed Chrome | done `d7f9f05` | npmjs headless 403 to headed 200; rebrowser red rows 3 to 1 |
-| B9 challenge budget and retry | done `d7f9f05`, `c19f2f4` | pytest S8-S9, vitest S17-S19; not yet run against a live challenge |
-| Go live (restart 7400 and 7403) | blocked | the restart of the shared API needs Harry's go (permission check refused it) |
-| Full API suite on the VM | 1704 of 1740 pass | 36 failures in 2 files, all browser tests (no Chromium on the VM); Chromium then installed there and a rerun started (VM job `j5f3e42d049`, result not read) |
-| CI agent changes | uncommitted, unverified | stopped mid-task at Harry's "stop here": 32 modified files (`.github/workflows/ci.yml`, `apps/extract/**` lint and format, `apps/fetch/src/*.rs` and `build.rs` fmt/clippy, `openapi.yaml`). Verify or discard before any commit |
+| B9 challenge budget and retry | done `d7f9f05`, `c19f2f4`, `cd422e1` | pytest S8-S9, vitest S17-S22. Live 2026-11-18: scrapingcourse.com/cloudflare-challenge got the retry (solver about 16 s, not solved); the API had dropped `challenge_ms`, now `challengeMs` on the failure (S20-S22). nopecha.com/demo/cloudflare now redirects to /demo (no challenge), so it is no longer a test page |
+| B9b WebKit WebRTC lock | done, uncommitted at the time of writing | Linux WebKit sent 4 STUN packets around the private-address guard (CI and Agent37 VM); `webRtcLockScript` in `browser/engines.ts` removes the RTC classes in WebKit contexts; VM after the fix: webkit test passes; S23-S24 |
+| Go live | done 2026-11-18 | Harry's go; all 5 services (7400, 7401, 7402, 7403, 7440) restarted from `C:\devprojects\Helix`; hook `REPO` now `C:\devprojects\Helix`. Live: npmjs.com/package/express headed 200 (full page); google.com/search `robots_denied`; challenge see B9 |
+| Full API suite on the VM | 117 of 119 files pass | VM job `j5f3e42d049`: the 2 failing files (12 tests, firefox and webkit, not installed on the VM) pass on the PC after installing Playwright 1.62.1's builds (chromium-1234, firefox-1538, webkit-2336), which the PC also lacked |
+| CI agent changes | verified and committed | 32 files checked (17 of 25 extract files AST-identical, the rest lint-only), committed in 6 commits, pushed |
 | B10-B13, C-G | not started | step 15 capture: `tools/capture/` already exists (capture.mjs, identity.mjs, 17 tests); extend it, do not rebuild it |
 
 ## Next session (stopped 2026-11-18 at Harry's "stop here")
 
-State: 13 commits on local `main` not pushed (`git log origin/main..main`). Running and left running: helix-scrape on 7403 (new code not loaded until restart), the old API on 7400 (old code), Rust helix-fetch 1.7.0 on 7401. The Agent37 VM sleeps by itself after 15 idle minutes.
+State (2026-11-18, second session): the repo lives at `C:\devprojects\Helix` (D: copy is stale). All 5 services run from C: with the new code. `main` is pushed to `5e3d5b4`; the Linux CI fixes after it are local commits, push pending. VM tool: `node C:/devprojects/agent37-mcp/src/cli.ts <status|run|logs> --cwd C:\devprojects\Helix --json` (the VM shell has `pnpm` but no `npx`).
 
 Order:
-1. Read this file and `context.md` Current state. Check `git status` for the CI agent's 32 uncommitted files.
-2. CI: verify each fix (redocly lint pinned, extract `ruff check`/`ruff format --check`/pytest, `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` with `CARGO_TARGET_DIR=C:/Builds/helix/fetch-target -j 4`, compose `POSTGRES_PASSWORD` in the job env), commit one logical change per commit, then decide on committing `apps/fetch/Cargo.lock`.
-3. Ask Harry for the restart of 7400 and 7403 (stop pid on each, then `node ~/.claude/hooks/helix-ensure.js`); then live-check through `helix_scrape`: npmjs.com/package/express (expect headed 200), a robots-disallowed URL (expect `robots_denied`), nopecha.com/demo/cloudflare (challenge retry, 20 s budget).
-4. Push `main` (Harry chose push per batch; the site redeploys) once CI is green locally.
-5. Read VM job `j5f3e42d049` (`node D:/agent37-mcp/src/cli.ts logs --cwd D:\Helix --job j5f3e42d049 --json`); a failure counts only if the same file fails on the PC.
-6. Then B10 ladder registry (rungs `camoufox`, `real` as registry entries; add them to `STEALTH_TIERS`), B11 Camoufox, B12 real Chrome profile over CDP (scrapling 0.5.1 `AsyncRemoteSession`), B13 `rebrowser-playwright`, C14 `host_sessions`, C15 capture (extend `tools/capture`), D, E (proof runner, Firecrawl Local head-to-head), F, G.
+1. Push `main` and read the GitHub run (`gh run list -L 1`); the compose job is the one not reproduced locally beyond the install step.
+2. Tilion ideas (research `docs/research/2026-11-18-tilion.md`; Harry: "we take their ideas ... apply to helix"): pick which to plan, first candidates a typed `content_ok` result with `expect_text`/`expect_url`, and a network-inspect report.
+3. B10 ladder registry (rungs `camoufox`, `real` as registry entries; add them to `STEALTH_TIERS`), B11 Camoufox, B12 real Chrome profile over CDP (scrapling 0.5.1 `AsyncRemoteSession`), B13 `rebrowser-playwright`, C14 `host_sessions` (Tilion's versioned profiles, merge saves and login probe are worth folding in), C15 capture (extend `tools/capture`), D, E (proof runner; ComputeSDK's open benchmark suites are a candidate set), F, G.
+4. A Cloudflare test page that still challenges: scrapingcourse.com/cloudflare-challenge (the solver did not clear it from the home IP).

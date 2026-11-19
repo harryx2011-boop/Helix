@@ -74,9 +74,9 @@ UI work reads `DESIGN-SYSTEM.md` and `TOKENS.md` first; no raw colour, size or e
 
 ## Cloud VM (Agent37)
 
-Heavy work (installs, full test suites, lint, builds) runs in this project's Agent37 instance instead of on the PC. boat is retired (2026-11-18); plan `D:\Aether\docs\plans\2026-11-18-agent37-migration.md`.
+Heavy work (installs, full test suites, lint, builds) runs in this project's Agent37 instance instead of on the PC. boat is retired (2026-11-18); plan `C:\devprojects\Aether\docs\plans\2026-11-18-agent37-migration.md`.
 
-- Tools: the `D:\agent37-mcp` CLI, `node D:/agent37-mcp/src/cli.ts <action> --cwd D:\Helix --json` (`status`, `ensure`, `run`, `logs`, `sleep`, `usage`); a run longer than about 4 minutes uses `--background`, then `logs --job <id>`.
+- Tools: the `C:\devprojects\agent37-mcp` CLI, `node C:/devprojects/agent37-mcp/src/cli.ts <action> --cwd C:\devprojects\Helix --json` (`status`, `ensure`, `run --command "..."`, `logs`, `sleep`, `usage`); a run longer than about 4 minutes uses `--background`, then `logs --job <id>`. The VM shell has `pnpm` but no `npx` (use `pnpm exec`).
 - Never send a secret, an env var or a `.env` file to the VM. Ask Harry before a new instance, a fork, a delete or a size change. Spend cap $20 per month.
 - A test that fails in the VM counts only after the same file fails on the PC. Walled-site scraping stays on the PC (home IP); the VM's address is a datacenter's.
 - **VM:** `helix` = `8miggdoak6`, `agent37-ubuntu`, type `vm`, 4 vCPU / 8 GB, auto-sleep 15 min, created 2026-11-18. Runs as root. Repo at `/home/node/helix/helix`: a GitHub clone plus a git bundle of unpushed commits (Mutagen sync expects the `node@` SSH user, which this template lacks). `npx` is not on its PATH: use `corepack pnpm exec`.

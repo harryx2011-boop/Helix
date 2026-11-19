@@ -10,12 +10,12 @@ RUN corepack enable
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/schema/package.json ./packages/schema/
 COPY packages/sdk-ts/package.json ./packages/sdk-ts/
 COPY packages/cli/package.json ./packages/cli/
-RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 WORKDIR /app

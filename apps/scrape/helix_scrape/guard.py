@@ -100,5 +100,5 @@ async def lookup_public(host: str, port: int) -> list[str]:
     try:
         found = await asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM)
     except socket.gaierror as error:
-        raise ConnectionError(f"dns error: {error}") from error
+        raise ConnectionError("dns error: name did not resolve") from error
     return public_only(list(dict.fromkeys(str(info[4][0]) for info in found)))

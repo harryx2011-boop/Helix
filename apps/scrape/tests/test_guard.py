@@ -87,3 +87,20 @@ def test_public_only_refuses_any_private_answer() -> None:
 def test_public_only_refuses_an_empty_answer() -> None:
     with pytest.raises(ValueError, match="did not resolve"):
         public_only([])
+
+
+async def test_a_dns_failure_keeps_the_os_wording_out(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Linux words it "Name or service not known"; "service" makes the API's
+    # block detection report service_unavailable.
+    import asyncio
+    import socket
+
+    from helix_scrape.guard import lookup_public
+
+    async def refuse(*_args: object, **_kwargs: object) -> None:
+        raise socket.gaierror(socket.EAI_NONAME, "Name or service not known")
+
+    monkeypatch.setattr(asyncio.get_running_loop(), "getaddrinfo", refuse)
+    with pytest.raises(ConnectionError) as raised:
+        await lookup_public("nonexistent-host-helix-test.invalid", 443)
+    assert str(raised.value) == "dns error: name did not resolve"

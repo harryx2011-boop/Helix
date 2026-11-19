@@ -444,7 +444,7 @@ describe('the timeout is the whole budget', () => {
         await browsers.start();
         const started = Date.now();
         const stuck = await browsers.render({ url: `${origin}${path}`, allowPrivate: true, timeout: 2_000 });
-        expect(stuck.error).toMatch(/timeout/);
+        expect(stuck.error).toMatch(/timeout/i);
         expect(Date.now() - started).toBeLessThan(4_000);
 
         const next = await browsers.render({ url: origin, allowPrivate: true, timeout: 10_000 });

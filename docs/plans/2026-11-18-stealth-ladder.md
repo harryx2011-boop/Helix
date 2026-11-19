@@ -64,8 +64,14 @@ Fixed limits whatever the answers: no paid human CAPTCHA-solving service, no ima
 12. Real-browser rung (dedicated profile launcher, `remoteCdpUrl`).
 13. Node pool on `rebrowser-playwright`; overrides pruned against bot-detector.rebrowser.net.
 
+### Batch T: Tilion ideas (Harry picked 3 on 2026-11-18; research `docs/research/2026-11-18-tilion.md`)
+- T1. Content OK checks, right after step 10: scrape and interact results carry `content_ok` and a `status` enum; inputs `expect_text`, `expect_url`, `no_results_url`; a failed check is block evidence, so `auto` climbs on it.
+- T2. Network report: a `helix_inspect` tool over the Playwright pool that records `response` events for N seconds and returns JSON endpoints, auth signals and asset counts.
+- T3. Saved logins, built with step 14: a `save-auth` call after a live-view sign-in writes the host's cookies and UA to `host_sessions`; the table keeps the last N versions, and a `probe` (required cookie names) refuses a save that lost the login.
+- Not picked: session recordings.
+
 ### Batch C: sessions and identity
-14. Migration 016 `host_sessions`; `/render` cookies stored; `tls` replays them with the exact UA.
+14. Migration 016 `host_sessions`; `/render` cookies stored; `tls` replays them with the exact UA. Includes T3.
 15. `packages/profiles/tools/capture.mjs`; captured Chrome and Edge profiles from this PC.
 
 ### Batch D: Rust core speed and Obscura parts

@@ -1,4 +1,4 @@
-import { BloomFilter } from 'bloom-filters';
+import bloomFilters from 'bloom-filters';
 import {
   compilePathPatterns,
   depthFrom,
@@ -45,7 +45,7 @@ export class Frontier {
   readonly #options: FrontierOptions;
   readonly #queue: FrontierItem[] = [];
   readonly #exact: Set<string> | undefined;
-  readonly #bloom: BloomFilter | undefined;
+  readonly #bloom: InstanceType<typeof bloomFilters.BloomFilter> | undefined;
   #enqueued = 0;
   #dispensed = 0;
   readonly #rejections = new Map<RejectionReason, number>();
@@ -62,7 +62,7 @@ export class Frontier {
     if (options.limit <= EXACT_SET_THRESHOLD) {
       this.#exact = new Set<string>();
     } else {
-      this.#bloom = BloomFilter.create(options.limit, 0.001);
+      this.#bloom = bloomFilters.BloomFilter.create(options.limit, 0.001);
     }
   }
 

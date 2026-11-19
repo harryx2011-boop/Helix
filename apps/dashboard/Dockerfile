@@ -4,7 +4,8 @@
 #   docker build -f apps/dashboard/Dockerfile .
 
 FROM node:22-slim AS build
-WORKDIR /app
+# Same depth as the repo: the build reads ../../ARCHITECTURE.md.
+WORKDIR /repo/apps/dashboard
 
 # The API URL is baked at build time: a static export has no server to read
 # runtime env. This is why the compose file passes it as a build arg.
@@ -15,6 +16,7 @@ COPY apps/dashboard/package.json ./
 RUN npm install --no-audit --no-fund
 
 COPY apps/dashboard/ ./
+COPY ARCHITECTURE.md /repo/ARCHITECTURE.md
 RUN npm run build
 
 # Serve the static `out/` with a tiny static server. No Node server is needed at
@@ -24,7 +26,7 @@ WORKDIR /app
 
 RUN npm install -g serve@14
 
-COPY --from=build /app/out ./out
+COPY --from=build /repo/apps/dashboard/out ./out
 
 EXPOSE 3400
 
